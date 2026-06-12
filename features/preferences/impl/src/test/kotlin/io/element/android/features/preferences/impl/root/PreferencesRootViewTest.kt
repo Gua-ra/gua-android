@@ -12,8 +12,11 @@ package io.element.android.features.preferences.impl.root
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.element.android.features.preferences.impl.R
@@ -283,7 +286,8 @@ class PreferencesRootViewTest {
                 ),
                 onOpenDeveloperSettings = callback,
             )
-            clickOn(CommonStrings.common_developer_options)
+            val text = activity!!.getString(CommonStrings.common_developer_options)
+            onNode(hasText(text) and hasClickAction()).performScrollTo().performClick()
         }
     }
 
@@ -406,7 +410,8 @@ class PreferencesRootViewTest {
                 ),
                 onDeactivateClick = callback,
             )
-            clickOn(CommonStrings.action_delete_account)
+            val text = activity!!.getString(CommonStrings.action_delete_account)
+            onNode(hasText(text) and hasClickAction()).performScrollTo().performClick()
         }
     }
 
@@ -432,7 +437,7 @@ class PreferencesRootViewTest {
                 eventSink = eventsRecorder,
             ),
         )
-        onNodeWithText(version).performClick()
+        onNodeWithText(version).performScrollTo().performClick()
         eventsRecorder.assertSingle(PreferencesRootEvent.OnVersionInfoClick)
     }
 }
