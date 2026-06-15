@@ -45,6 +45,7 @@ import io.element.android.libraries.matrix.ui.messages.reply.aProfileDetailsRead
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableSet
 import java.util.UUID
 import kotlin.random.Random
 
@@ -57,6 +58,7 @@ fun aTimelineState(
     messageShield: MessageShield? = null,
     resolveVerifiedUserSendFailureState: ResolveVerifiedUserSendFailureState = aResolveVerifiedUserSendFailureState(),
     displayThreadSummaries: Boolean = false,
+    invalidMediaEvents: Set<EventId> = emptySet(),
     eventSink: (TimelineEvent) -> Unit = {},
 ): TimelineState {
     val focusedEventId = timelineItems.filterIsInstance<TimelineItem.Event>().getOrNull(focusedEventIndex)?.eventId
@@ -75,6 +77,7 @@ fun aTimelineState(
         messageShieldDialogData = messageShield?.let { MessageShieldData(it) },
         resolveVerifiedUserSendFailureState = resolveVerifiedUserSendFailureState,
         displayThreadSummaries = displayThreadSummaries,
+        invalidMediaEvents = invalidMediaEvents.toImmutableSet(),
         eventSink = eventSink,
     )
 }

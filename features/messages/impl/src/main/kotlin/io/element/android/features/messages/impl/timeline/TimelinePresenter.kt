@@ -15,6 +15,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -23,6 +24,7 @@ import androidx.compose.runtime.setValue
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
+import io.element.android.features.contentscanner.api.ContentScannerService
 import io.element.android.features.location.api.live.ActiveLiveLocationShareManager
 import io.element.android.features.messages.impl.MessagesNavigator
 import io.element.android.features.messages.impl.UserEventPermissions
@@ -63,6 +65,7 @@ import io.element.android.services.analytics.api.finishLongRunningTransaction
 import io.element.android.services.analyticsproviders.api.AnalyticsUserData
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
@@ -96,6 +99,7 @@ class TimelinePresenter(
     private val featureFlagService: FeatureFlagService,
     private val analyticsService: AnalyticsService,
     private val liveLocationShareManager: ActiveLiveLocationShareManager,
+    private val contentScannerService: ContentScannerService,
 ) : Presenter<TimelineState> {
     private val tag = "TimelinePresenter"
 
@@ -145,6 +149,8 @@ class TimelinePresenter(
         val displayThreadSummaries by produceState(false) {
             value = featureFlagService.isFeatureEnabled(FeatureFlags.Threads)
         }
+
+        val invalidMediaEvents = remember { mutableStateSetOf<EventId>() }
 
         fun handleEvent(event: TimelineEvent) {
             when (event) {
@@ -232,6 +238,17 @@ class TimelinePresenter(
                         threadRootId = event.threadRootEventId,
                         focusedEventId = event.focusedEvent,
                     )
+                }
+
+                is TimelineEvent.ValidateMedia -> {
+                    room.roomCoroutineScope.launch {
+                        contentScannerService.scan(event.mediaSource)
+                            .onSuccess { result ->
+                                if (!result) {
+                                    invalidMediaEvents.add(event.eventId)
+                                }
+                            }
+                    }
                 }
             }
         }
@@ -321,6 +338,7 @@ class TimelinePresenter(
             messageShieldDialogData = messageShieldDialogData.value,
             resolveVerifiedUserSendFailureState = resolveVerifiedUserSendFailureState,
             displayThreadSummaries = displayThreadSummaries,
+            invalidMediaEvents = invalidMediaEvents.toImmutableSet(),
             eventSink = ::handleEvent,
         )
     }

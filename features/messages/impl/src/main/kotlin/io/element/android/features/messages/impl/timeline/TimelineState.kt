@@ -20,6 +20,7 @@ import io.element.android.libraries.matrix.api.core.UniqueId
 import io.element.android.libraries.matrix.api.room.tombstone.PredecessorRoom
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.ImmutableSet
 import kotlin.time.Duration
 
 data class TimelineState(
@@ -33,6 +34,7 @@ data class TimelineState(
     val messageShieldDialogData: MessageShieldData?,
     val resolveVerifiedUserSendFailureState: ResolveVerifiedUserSendFailureState,
     val displayThreadSummaries: Boolean,
+    val invalidMediaEvents: ImmutableSet<EventId>,
     val eventSink: (TimelineEvent) -> Unit,
 ) {
     private val lastTimelineEvent = timelineItems.firstOrNull { it is TimelineItem.Event } as? TimelineItem.Event
