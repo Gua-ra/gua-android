@@ -204,7 +204,8 @@ class PreferencesRootViewTest {
                 ),
                 onOpenAnalytics = callback,
             )
-            clickOn(CommonStrings.common_analytics)
+            val text = activity!!.getString(CommonStrings.common_analytics)
+            onNode(hasText(text) and hasClickAction()).performScrollTo().performClick()
         }
     }
 
@@ -231,7 +232,8 @@ class PreferencesRootViewTest {
                 ),
                 onOpenRageShake = callback,
             )
-            clickOn(CommonStrings.common_report_a_problem)
+            val text = activity!!.getString(CommonStrings.common_report_a_problem)
+            onNode(hasText(text) and hasClickAction()).performScrollTo().performClick()
         }
     }
 
@@ -395,7 +397,8 @@ class PreferencesRootViewTest {
                 ),
                 onSignOutClick = callback,
             )
-            clickOn(CommonStrings.action_signout)
+            val text = activity!!.getString(CommonStrings.action_signout)
+            onNode(hasText(text) and hasClickAction()).performScrollTo().performClick()
         }
     }
 
