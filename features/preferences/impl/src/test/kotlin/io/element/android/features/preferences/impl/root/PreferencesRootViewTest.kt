@@ -257,6 +257,21 @@ class PreferencesRootViewTest : RobolectricTest() {
     }
 
     @Test
+    fun `click on PIN setup nudge opens two-step verification`() = runAndroidComposeUiTest {
+        val eventsRecorder = EventsRecorder<PreferencesRootEvent>(expectEvents = false)
+        ensureCalledOnce { callback ->
+            setView(
+                aPreferencesRootState(
+                    isLockScreenPinSetup = false,
+                    eventSink = eventsRecorder,
+                ),
+                onSetupTwoStepVerification = callback,
+            )
+            clickOn(R.string.screen_preferences_pin_nudge_action)
+        }
+    }
+
+    @Test
     fun `click on About invokes the expected callback`() = runAndroidComposeUiTest {
         val eventsRecorder = EventsRecorder<PreferencesRootEvent>(expectEvents = false)
         ensureCalledOnce { callback ->
@@ -445,6 +460,7 @@ private fun AndroidComposeUiTest<ComponentActivity>.setView(
     onOpenAnalytics: () -> Unit = EnsureNeverCalled(),
     onOpenRageShake: () -> Unit = EnsureNeverCalled(),
     onOpenLockScreenSettings: () -> Unit = EnsureNeverCalled(),
+    onSetupTwoStepVerification: () -> Unit = EnsureNeverCalled(),
     onOpenAbout: () -> Unit = EnsureNeverCalled(),
     onOpenDeveloperSettings: () -> Unit = EnsureNeverCalled(),
     onOpenAdvancedSettings: () -> Unit = EnsureNeverCalled(),
@@ -466,6 +482,7 @@ private fun AndroidComposeUiTest<ComponentActivity>.setView(
             onOpenAnalytics = onOpenAnalytics,
             onOpenRageShake = onOpenRageShake,
             onOpenLockScreenSettings = onOpenLockScreenSettings,
+            onSetupTwoStepVerification = onSetupTwoStepVerification,
             onOpenAbout = onOpenAbout,
             onOpenDeveloperSettings = onOpenDeveloperSettings,
             onOpenAdvancedSettings = onOpenAdvancedSettings,

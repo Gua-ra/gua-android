@@ -24,12 +24,14 @@ import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.preferences.impl.R
 import io.element.android.features.preferences.impl.user.UserPreferences
 import io.element.android.libraries.architecture.coverage.ExcludeFromCoverage
+import io.element.android.libraries.designsystem.atomic.molecules.ComposerAlertMolecule
 import io.element.android.libraries.designsystem.components.avatar.AvatarSize
 import io.element.android.libraries.designsystem.components.list.ListItemContent
 import io.element.android.libraries.designsystem.components.preferences.PreferencePage
 import io.element.android.libraries.designsystem.preview.ElementPreviewDark
 import io.element.android.libraries.designsystem.preview.ElementPreviewLight
 import io.element.android.libraries.designsystem.preview.PreviewWithLargeHeight
+import io.element.android.libraries.designsystem.text.toAnnotatedString
 import io.element.android.libraries.designsystem.theme.components.HorizontalDivider
 import io.element.android.libraries.designsystem.theme.components.IconSource
 import io.element.android.libraries.designsystem.theme.components.ListItem
@@ -54,6 +56,7 @@ fun PreferencesRootView(
     onOpenAnalytics: () -> Unit,
     onOpenRageShake: () -> Unit,
     onOpenLockScreenSettings: () -> Unit,
+    onSetupTwoStepVerification: () -> Unit,
     onOpenAbout: () -> Unit,
     onOpenDeveloperSettings: () -> Unit,
     onOpenAdvancedSettings: () -> Unit,
@@ -80,6 +83,10 @@ fun PreferencesRootView(
             },
             matrixUser = state.myUser,
         )
+        if (!state.isLockScreenPinSetup) {
+            // GUA FORK: the nudge sets up two-step verification (account PIN), not the local app-lock.
+            SetupPinBanner(onSetupTwoStepVerification)
+        }
         if (state.isMultiAccountEnabled) {
             MultiAccountSection(
                 state = state,
@@ -176,7 +183,24 @@ private fun ColumnScope.ManageAppSection(
         onClick = onOpenNotificationSettings,
     )
     ListItem(
-        headlineContent = { Text(stringResource(id = CommonStrings.common_screen_lock)) },
+        headlineContent = {
+            Text(
+                stringResource(
+                    id = if (state.isLockScreenPinSetup) {
+                        CommonStrings.common_screen_lock
+                    } else {
+                        R.string.screen_preferences_set_up_pin_title
+                    }
+                )
+            )
+        },
+        supportingContent = if (state.isLockScreenPinSetup) {
+            null
+        } else {
+            {
+                Text(stringResource(id = R.string.screen_preferences_set_up_pin_description))
+            }
+        },
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Lock())),
         onClick = onOpenLockScreenSettings,
     )
@@ -189,6 +213,20 @@ private fun ColumnScope.ManageAppSection(
         )
     }
     HorizontalDivider()
+}
+
+@Composable
+private fun SetupPinBanner(
+    onSetupTwoStepVerification: () -> Unit,
+) {
+    ComposerAlertMolecule(
+        avatar = null,
+        content = stringResource(id = R.string.screen_preferences_pin_nudge_message).toAnnotatedString(),
+        onSubmitClick = onSetupTwoStepVerification,
+        showIcon = true,
+        submitText = stringResource(id = R.string.screen_preferences_pin_nudge_action),
+        modifier = Modifier.padding(top = 8.dp),
+    )
 }
 
 @Composable
@@ -358,6 +396,7 @@ private fun ContentToPreview(state: PreferencesRootState) {
         onLinkNewDeviceClick = {},
         onOpenNotificationSettings = {},
         onOpenLockScreenSettings = {},
+        onSetupTwoStepVerification = {},
         onOpenUserProfile = {},
         onOpenBlockedUsers = {},
         onSignOutClick = {},
