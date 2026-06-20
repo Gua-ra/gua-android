@@ -108,6 +108,7 @@ fun PreferencesRootView(
             state = state,
             onOpenNotificationSettings = onOpenNotificationSettings,
             onOpenLockScreenSettings = onOpenLockScreenSettings,
+            onSetupTwoStepVerification = onSetupTwoStepVerification,
             onSecureBackupClick = onSecureBackupClick,
         )
 
@@ -175,6 +176,7 @@ private fun ColumnScope.ManageAppSection(
     state: PreferencesRootState,
     onOpenNotificationSettings: () -> Unit,
     onOpenLockScreenSettings: () -> Unit,
+    onSetupTwoStepVerification: () -> Unit,
     onSecureBackupClick: () -> Unit,
 ) {
     ListItem(
@@ -202,7 +204,9 @@ private fun ColumnScope.ManageAppSection(
             }
         },
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Lock())),
-        onClick = onOpenLockScreenSettings,
+        // GUA FORK: when no PIN is set this row offers account 2SV (6-digit), not the
+        // local 4-digit app-lock. When an app-lock PIN exists it manages the screen lock.
+        onClick = if (state.isLockScreenPinSetup) onOpenLockScreenSettings else onSetupTwoStepVerification,
     )
     if (state.showSecureBackup) {
         ListItem(
