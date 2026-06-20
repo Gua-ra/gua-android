@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_preferences_set_up_pin_title">Set up two-step verification</string>
+    <string name="screen_preferences_set_up_pin_description">Add a 6-digit account PIN for an extra layer of security.</string>
+    <string name="screen_preferences_pin_nudge_message">Add a 6-digit account PIN to better protect your account.</string>
+    <string name="screen_preferences_pin_nudge_action">Set up now</string>
+</resources>
