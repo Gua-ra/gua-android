@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2026 Element Creations Ltd.
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <!-- Gua onboarding/welcome copy. English source of truth lives here (temporary.xml);
+         the obsolete Element values were removed from localazy.xml to avoid a duplicate-resource
+         collision. Mirrors Element X iOS (screen_onboarding_welcome_title + the end-to-end
+         encrypted trust pill shown below it). -->
+    <string name="screen_onboarding_welcome_title">Welcome to Gua</string>
+    <string name="screen_onboarding_welcome_message">Private messaging, made simple.</string>
+    <string name="screen_onboarding_trust_encrypted">End-to-end encrypted</string>
+
+    <!-- Gua phone-first entry (Stage 3). Mirrors Element X iOS PhoneEntryScreen. -->
+    <string name="screen_phone_entry_title">What\'s your number?</string>
+    <string name="screen_phone_entry_message">We\'ll text you a code to confirm it\'s really you.</string>
+    <string name="screen_phone_entry_phone_number_label">Phone number</string>
+    <string name="screen_phone_entry_country_picker_a11y">Select country</string>
+
+    <!-- Gua country picker (Stage 3). -->
+    <string name="screen_country_picker_title">Select country</string>
+    <string name="screen_country_picker_search_placeholder">Search country</string>
+    <string name="screen_country_picker_empty">No matching countries</string>
+</resources>
