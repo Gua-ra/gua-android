@@ -15,20 +15,24 @@ import org.junit.Test
 private const val A_USER_ID = "@foo:example.org"
 private val aUserId = UserId(A_USER_ID)
 
+// GUA FORK: the homeserver suffix is never surfaced to end users, so the fallback/disambiguation
+// uses the homeserver-stripped handle (`@foo`) instead of the raw `@foo:example.org`.
+private val aDisplayHandle = aUserId.displayHandle
+
 class ProfileTimelineDetailsTest {
     @Test
     fun `getDisambiguatedDisplayName of Unavailable should be equal to userId`() {
-        assertThat(ProfileDetails.Unavailable.getDisambiguatedDisplayName(aUserId)).isEqualTo(A_USER_ID)
+        assertThat(ProfileDetails.Unavailable.getDisambiguatedDisplayName(aUserId)).isEqualTo(aDisplayHandle)
     }
 
     @Test
     fun `getDisambiguatedDisplayName of Error should be equal to userId`() {
-        assertThat(ProfileDetails.Error("An error").getDisambiguatedDisplayName(aUserId)).isEqualTo(A_USER_ID)
+        assertThat(ProfileDetails.Error("An error").getDisambiguatedDisplayName(aUserId)).isEqualTo(aDisplayHandle)
     }
 
     @Test
     fun `getDisambiguatedDisplayName of Pending should be equal to userId`() {
-        assertThat(ProfileDetails.Pending.getDisambiguatedDisplayName(aUserId)).isEqualTo(A_USER_ID)
+        assertThat(ProfileDetails.Pending.getDisambiguatedDisplayName(aUserId)).isEqualTo(aDisplayHandle)
     }
 
     @Test
@@ -39,7 +43,7 @@ class ProfileTimelineDetailsTest {
                 displayNameAmbiguous = false,
                 avatarUrl = null,
             ).getDisambiguatedDisplayName(aUserId)
-        ).isEqualTo(A_USER_ID)
+        ).isEqualTo(aDisplayHandle)
     }
 
     @Test
@@ -61,6 +65,6 @@ class ProfileTimelineDetailsTest {
                 displayNameAmbiguous = true,
                 avatarUrl = null,
             ).getDisambiguatedDisplayName(aUserId)
-        ).isEqualTo("Alice ($A_USER_ID)")
+        ).isEqualTo("Alice ($aDisplayHandle)")
     }
 }

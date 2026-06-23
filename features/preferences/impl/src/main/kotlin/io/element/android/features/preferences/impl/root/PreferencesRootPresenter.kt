@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import dev.zacsweers.metro.Inject
 import io.element.android.features.enterprise.api.SessionEnterpriseService
+import io.element.android.features.lockscreen.api.LockScreenService
 import io.element.android.features.logout.api.direct.DirectLogoutState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
@@ -57,6 +58,7 @@ class PreferencesRootPresenter(
     private val featureFlagService: FeatureFlagService,
     private val sessionStore: SessionStore,
     private val sessionEnterpriseService: SessionEnterpriseService,
+    private val lockScreenService: LockScreenService,
 ) : Presenter<PreferencesRootState> {
     @Composable
     override fun present(): PreferencesRootState {
@@ -115,6 +117,9 @@ class PreferencesRootPresenter(
         }
 
         val showLabsItem = remember { featureFlagService.getAvailableFeatures(isInLabs = true).isNotEmpty() }
+        val isLockScreenPinSetup by remember {
+            lockScreenService.isPinSetup()
+        }.collectAsState(initial = true)
 
         val directLogoutState = directLogoutPresenter.present()
 
@@ -151,6 +156,7 @@ class PreferencesRootPresenter(
             canDeactivateAccount = canDeactivateAccount,
             nbOfBlockedUsers = nbOfBlockedUsers,
             showLabsItem = showLabsItem,
+            isLockScreenPinSetup = isLockScreenPinSetup,
             directLogoutState = directLogoutState,
             snackbarMessage = snackbarMessage,
             eventSink = ::handleEvent,

@@ -100,14 +100,17 @@ class DefaultRoomLatestEventFormatter(
                 val message = sp.getString(CommonStrings.common_waiting_for_decryption_key)
                 message.prefixIfNeeded(senderDisambiguatedDisplayName, isDmRoom, isOutgoing)
             }
+            // GUA FORK: in 1:1 direct chats, membership/profile/state churn is suppressed from the
+            // timeline, so it must not surface in the room-list last-message preview either. Returning
+            // null leaves the preview blank (callers use .orEmpty()). Mirrors the iOS DM guards.
             is RoomMembershipContent -> {
-                roomMembershipContentFormatter.format(content, senderDisambiguatedDisplayName, isOutgoing)
+                if (isDmRoom) null else roomMembershipContentFormatter.format(content, senderDisambiguatedDisplayName, isOutgoing)
             }
             is ProfileChangeContent -> {
-                profileChangeContentFormatter.format(content, senderId, senderDisambiguatedDisplayName, isOutgoing)
+                if (isDmRoom) null else profileChangeContentFormatter.format(content, senderId, senderDisambiguatedDisplayName, isOutgoing)
             }
             is StateContent -> {
-                stateContentFormatter.format(content, senderDisambiguatedDisplayName, isOutgoing, RenderingMode.RoomList)
+                if (isDmRoom) null else stateContentFormatter.format(content, senderDisambiguatedDisplayName, isOutgoing, RenderingMode.RoomList)
             }
             is PollContent -> {
                 content.question.prefixWith(sp.getString(CommonStrings.common_poll_summary_prefix))

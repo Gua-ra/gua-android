@@ -12,8 +12,12 @@ package io.element.android.features.messages.impl.timeline.factories
  * Some data used to configure the creation of timeline items.
  * @param computeReadReceipts when false, read receipts will be empty.
  * @param computeReactions when false, reactions will be empty.
+ * @param isDirectOneToOneRoom GUA FORK: when true, the room is a 1:1 direct chat, so
+ * state/membership/profile-change events are dropped from the rendered timeline (and
+ * therefore never grouped into a "N room changes" summary), mirroring Element X iOS.
  */
 data class TimelineItemsFactoryConfig(
     val computeReadReceipts: Boolean,
     val computeReactions: Boolean,
+    val isDirectOneToOneRoom: Boolean,
 )

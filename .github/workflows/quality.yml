@@ -1,11 +1,9 @@
 name: Code Quality Checks
 
+# GUA FORK: auto-triggers disabled — lint/ktlint/detekt now run in gua-ci.yml. This heavier upstream
+# pipeline (konsist, docs TOC, full enterprise checks) is kept for manual reference only.
 on:
   workflow_dispatch:
-  pull_request:
-  merge_group:
-  push:
-    branches: [ main, develop ]
 
 permissions: {}
 

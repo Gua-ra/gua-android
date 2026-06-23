@@ -1,9 +1,9 @@
 name: Record screenshots
 
+# GUA FORK: auto-trigger disabled — screenshot recording is a manual maintenance task; verification
+# runs in gua-ci.yml. Keep available on demand via dispatch only.
 on:
   workflow_dispatch:
-  pull_request:
-    types: [ labeled ]
 
 permissions: {}
 

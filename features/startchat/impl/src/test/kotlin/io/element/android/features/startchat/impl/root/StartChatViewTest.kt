@@ -137,6 +137,7 @@ private fun AndroidComposeUiTest<ComponentActivity>.setStartChatView(
     onInviteFriendsClick: () -> Unit = EnsureNeverCalled(),
     onJoinRoomByAddressClick: () -> Unit = EnsureNeverCalled(),
     onRoomDirectorySearchClick: () -> Unit = EnsureNeverCalled(),
+    onFindFriendsClick: () -> Unit = EnsureNeverCalled(),
 ) {
     setContent {
         StartChatView(
@@ -147,6 +148,7 @@ private fun AndroidComposeUiTest<ComponentActivity>.setStartChatView(
             onInviteFriendsClick = onInviteFriendsClick,
             onJoinByAddressClick = onJoinRoomByAddressClick,
             onRoomDirectorySearchClick = onRoomDirectorySearchClick,
+            onFindFriendsClick = onFindFriendsClick,
         )
     }
 }

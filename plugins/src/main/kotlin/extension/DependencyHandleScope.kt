@@ -124,6 +124,9 @@ fun DependencyHandlerScope.allLibrariesImpl() {
     implementation(project(":libraries:oauth:impl"))
     implementation(project(":libraries:workmanager:impl"))
     implementation(project(":libraries:recentemojis:impl"))
+    // GUA FORK: the Gua federation resolver client (phone -> homeserver routing). Its
+    // @ContributesBinding(AppScope) DefaultResolverClient is aggregated into the app Metro graph here.
+    implementation(project(":libraries:guaresolver"))
 }
 
 fun DependencyHandlerScope.allServicesImpl() {

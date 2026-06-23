@@ -69,7 +69,8 @@ fun MatrixUserHeader(
             // Id
             if (matrixUser.displayName.isNullOrEmpty().not()) {
                 Text(
-                    text = matrixUser.userId.value,
+                    // GUA FORK: hide the homeserver suffix in the user handle.
+                    text = matrixUser.userId.displayHandle,
                     style = ElementTheme.typography.fontBodyMdRegular,
                     color = ElementTheme.colors.textSecondary,
                     maxLines = 1,

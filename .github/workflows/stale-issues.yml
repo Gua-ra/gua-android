@@ -1,8 +1,8 @@
 name: Close stale issues that are missing info.
 
+# GUA FORK: disabled — upstream issue-triage automation. Manual only.
 on:
-  schedule:
-    - cron: "30 1 * * *"
+  workflow_dispatch:
 
 permissions: {}
 

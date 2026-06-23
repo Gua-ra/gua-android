@@ -72,7 +72,8 @@ class TypingNotificationPresenterTest {
             assertThat(oneMemberTypingState.typingMembers.size).isEqualTo(1)
             assertThat(oneMemberTypingState.typingMembers.first()).isEqualTo(
                 TypingRoomMember(
-                    disambiguatedDisplayName = A_USER_ID_2.value,
+                    // GUA FORK: unknown members fall back to the homeserver-stripped handle.
+                    disambiguatedDisplayName = A_USER_ID_2.displayHandle,
                 )
             )
             // Preferences changes again
@@ -97,7 +98,8 @@ class TypingNotificationPresenterTest {
             assertThat(oneMemberTypingState.typingMembers.size).isEqualTo(1)
             assertThat(oneMemberTypingState.typingMembers.first()).isEqualTo(
                 TypingRoomMember(
-                    disambiguatedDisplayName = A_USER_ID_2.value,
+                    // GUA FORK: unknown members fall back to the homeserver-stripped handle.
+                    disambiguatedDisplayName = A_USER_ID_2.displayHandle,
                 )
             )
             // User stops typing
@@ -133,7 +135,8 @@ class TypingNotificationPresenterTest {
             assertThat(oneMemberTypingState.typingMembers.size).isEqualTo(1)
             assertThat(oneMemberTypingState.typingMembers.first()).isEqualTo(
                 TypingRoomMember(
-                    disambiguatedDisplayName = "Alice Doe (@bob:server.org)",
+                    // GUA FORK: ambiguous names disambiguate with the homeserver-stripped handle.
+                    disambiguatedDisplayName = "Alice Doe (@bob)",
                 )
             )
             // User stops typing
@@ -158,7 +161,8 @@ class TypingNotificationPresenterTest {
             assertThat(oneMemberTypingState.typingMembers.size).isEqualTo(1)
             assertThat(oneMemberTypingState.typingMembers.first()).isEqualTo(
                 TypingRoomMember(
-                    disambiguatedDisplayName = A_USER_ID_2.value,
+                    // GUA FORK: unknown members fall back to the homeserver-stripped handle.
+                    disambiguatedDisplayName = A_USER_ID_2.displayHandle,
                 )
             )
             // User is getting known
@@ -171,7 +175,8 @@ class TypingNotificationPresenterTest {
             val finalState = awaitItem()
             assertThat(finalState.typingMembers.first()).isEqualTo(
                 TypingRoomMember(
-                    disambiguatedDisplayName = "Alice Doe (@bob:server.org)",
+                    // GUA FORK: ambiguous names disambiguate with the homeserver-stripped handle.
+                    disambiguatedDisplayName = "Alice Doe (@bob)",
                 )
             )
         }

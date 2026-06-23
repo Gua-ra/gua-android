@@ -1,10 +1,8 @@
 name: Nightly reports
 
+# GUA FORK: scheduled reports disabled — upstream codecov/kover dashboards + secrets. Manual only.
 on:
   workflow_dispatch:
-  schedule:
-    # Every nights at 5
-    - cron: "0 5 * * *"
 
 permissions: {}
 

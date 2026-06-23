@@ -43,31 +43,34 @@ class DefaultEnterpriseServiceTest {
     }
 
     @Test
-    fun `semanticColorsFlow always emits the same value`() = runTest {
+    fun `semanticColorsFlow emits the Gua-accented colors`() = runTest {
         val defaultEnterpriseService = DefaultEnterpriseService()
         defaultEnterpriseService.semanticColorsFlow(null).test {
             val initialState = awaitItem()
-            assertThat(initialState).isEqualTo(SemanticColorsLightDark.default)
+            // Gua overrides the accent tokens, so this differs from the stock Compound default.
+            assertThat(initialState).isNotEqualTo(SemanticColorsLightDark.default)
+            assertThat(initialState.dark.iconAccentPrimary).isEqualTo(GUA_GREEN_BRIGHT)
+            assertThat(initialState.light.iconAccentPrimary).isEqualTo(GUA_GREEN_DEEP)
             awaitComplete()
         }
     }
 
     @Test
-    fun `brandColorsFlow always emits null`() = runTest {
+    fun `brandColorsFlow always emits the Gua brand green`() = runTest {
         val defaultEnterpriseService = DefaultEnterpriseService()
         defaultEnterpriseService.brandColorsFlow(null).test {
             val initialState = awaitItem()
-            assertThat(initialState).isNull()
+            assertThat(initialState).isEqualTo(GUA_GREEN_BRIGHT)
             awaitComplete()
         }
     }
 
     @Test
-    fun `semanticColorsFlow always emits the same value for a session`() = runTest {
+    fun `semanticColorsFlow emits the Gua-accented colors for a session`() = runTest {
         val defaultEnterpriseService = DefaultEnterpriseService()
         defaultEnterpriseService.semanticColorsFlow(A_SESSION_ID).test {
             val initialState = awaitItem()
-            assertThat(initialState).isEqualTo(SemanticColorsLightDark.default)
+            assertThat(initialState).isNotEqualTo(SemanticColorsLightDark.default)
             awaitComplete()
         }
     }

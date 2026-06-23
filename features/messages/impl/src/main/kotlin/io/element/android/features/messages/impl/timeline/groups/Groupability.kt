@@ -70,6 +70,24 @@ internal fun TimelineItem.Event.canBeGrouped(): Boolean {
 }
 
 /**
+ * GUA FORK: true for the rendered "room change" events (membership churn, profile changes and
+ * other state changes) that are suppressed in 1:1 direct chats. These are exactly the content
+ * types the timeline factory drops for a 1:1 DM (see
+ * `TimelineItemEventFactory.isSuppressedInDirectOneToOneRoom`), so they never reach the grouper
+ * and the collapsed "N room changes" summary is never produced. Mirrors the iOS `isDM` guards.
+ *
+ * Kept as a single classification so the runtime drop and any verification share one source of truth.
+ */
+internal fun TimelineItem.Event.isDirectOneToOneRoomChangeEvent(): Boolean {
+    return when (content) {
+        is TimelineItemProfileChangeContent,
+        is TimelineItemRoomMembershipContent,
+        is TimelineItemStateEventContent -> true
+        else -> false
+    }
+}
+
+/**
  * Return true if the Event can be grouped in a block of message bubbles.
  * When [canBeDisplayedInBubbleBlock] returns a value, [canBeGrouped] MUST return the opposite value.
  * Since the receiving type are not the same, the two functions exist.

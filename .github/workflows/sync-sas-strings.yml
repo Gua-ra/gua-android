@@ -1,9 +1,7 @@
 name: Sync SAS strings
+# GUA FORK: disabled — upstream SAS-string sync. Manual only.
 on:
   workflow_dispatch:
-  schedule:
-    # At 00:00 on every Monday UTC
-    - cron: '0 0 * * 1'
 
 permissions: {}
 

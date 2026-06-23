@@ -1,9 +1,7 @@
 name: Sync Localazy
+# GUA FORK: disabled — Localazy translation sync is an upstream-only integration (needs Localazy keys). Manual only.
 on:
   workflow_dispatch:
-  schedule:
-    # At 00:00 on every Monday UTC
-    - cron: '0 0 * * 1'
 
 permissions: {}
 

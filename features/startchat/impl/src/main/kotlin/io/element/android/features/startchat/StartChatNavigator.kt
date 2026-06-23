@@ -16,6 +16,7 @@ import io.element.android.libraries.architecture.overlay.Overlay
 import io.element.android.libraries.architecture.overlay.operation.hide
 import io.element.android.libraries.architecture.overlay.operation.show
 import io.element.android.libraries.matrix.api.core.RoomIdOrAlias
+import io.element.android.libraries.matrix.api.core.UserId
 
 interface StartChatNavigator : Plugin {
     fun onRoomCreated(roomIdOrAlias: RoomIdOrAlias, serverNames: List<String>)
@@ -23,6 +24,10 @@ interface StartChatNavigator : Plugin {
     fun onShowJoinRoomByAddress()
     fun onDismissJoinRoomByAddress()
     fun onOpenRoomDirectory()
+
+    // GUA FORK: open the Find friends contact-discovery screen, and a contact's profile from it.
+    fun onShowFindFriends()
+    fun onShowUserProfile(userId: UserId)
 }
 
 class DefaultStartChatNavigator(
@@ -46,5 +51,13 @@ class DefaultStartChatNavigator(
 
     override fun onDismissJoinRoomByAddress() {
         overlay.hide()
+    }
+
+    override fun onShowFindFriends() {
+        backstack.push(NavTarget.FindFriends)
+    }
+
+    override fun onShowUserProfile(userId: UserId) {
+        backstack.push(NavTarget.UserProfile(userId.value))
     }
 }

@@ -40,6 +40,8 @@ import io.element.android.features.login.impl.screens.confirmaccountprovider.Con
 import io.element.android.features.login.impl.screens.createaccount.CreateAccountNode
 import io.element.android.features.login.impl.screens.loginpassword.LoginPasswordNode
 import io.element.android.features.login.impl.screens.onboarding.OnBoardingNode
+import io.element.android.features.login.impl.screens.phoneentry.PhoneEntryNode
+import io.element.android.features.login.impl.screens.phoneentry.country.CountryPickerNode
 import io.element.android.features.login.impl.screens.searchaccountprovider.SearchAccountProviderNode
 import io.element.android.features.preferences.api.PreferencesEntryPoint
 import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
@@ -71,7 +73,10 @@ class LoginFlowNode(
     private val preferencesEntryPoint: PreferencesEntryPoint,
 ) : BaseFlowNode<LoginFlowNode.NavTarget>(
     backstack = BackStack(
-        initialElement = NavTarget.CheckClassicFlow,
+        // GUA FORK: phone-first onboarding is the only supported path. Do not expose
+        // Element's account-provider selection because Gua sign-in must stay pinned to
+        // Gua MAS/resolver.
+        initialElement = NavTarget.PhoneEntry,
         savedStateMap = buildContext.savedStateMap,
     ),
     buildContext = buildContext,
@@ -108,6 +113,13 @@ class LoginFlowNode(
     }
 
     sealed interface NavTarget : Parcelable {
+        // GUA FORK: phone-first entry (active path) + its country picker.
+        @Parcelize
+        data object PhoneEntry : NavTarget
+
+        @Parcelize
+        data object CountryPicker : NavTarget
+
         @Parcelize
         data object CheckClassicFlow : NavTarget
 
@@ -147,6 +159,30 @@ class LoginFlowNode(
 
     override fun resolve(navTarget: NavTarget, buildContext: BuildContext): Node {
         return when (navTarget) {
+            NavTarget.PhoneEntry -> {
+                val callback = object : PhoneEntryNode.Callback {
+                    override fun navigateToOAuth(oAuthDetails: OAuthDetails) {
+                        navigateToMas(oAuthDetails)
+                    }
+
+                    override fun navigateToCountryPicker() {
+                        backstack.push(NavTarget.CountryPicker)
+                    }
+                }
+                val params = inputs<Params>()
+                val inputs = PhoneEntryNode.Params(
+                    initialPhoneNumber = params.loginHint,
+                )
+                createNode<PhoneEntryNode>(buildContext, listOf(callback, inputs))
+            }
+            NavTarget.CountryPicker -> {
+                val callback = object : CountryPickerNode.Callback {
+                    override fun onDone() {
+                        backstack.pop()
+                    }
+                }
+                createNode<CountryPickerNode>(buildContext, listOf(callback))
+            }
             NavTarget.CheckClassicFlow -> {
                 val callback = object : ClassicFlowNode.Callback {
                     override fun navigateToOnBoarding(allowBackNavigation: Boolean) {
