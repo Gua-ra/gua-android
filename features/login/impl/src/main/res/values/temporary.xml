@@ -14,6 +14,7 @@
     <string name="screen_onboarding_trust_encrypted">End-to-end encrypted</string>
 
     <!-- Gua phone-first entry (Stage 3). Mirrors Element X iOS PhoneEntryScreen. -->
+    <string name="screen_phone_entry_welcome_title">Welcome to Gua</string>
     <string name="screen_phone_entry_title">What\'s your number?</string>
     <string name="screen_phone_entry_message">We\'ll text you a code to confirm it\'s really you.</string>
     <string name="screen_phone_entry_phone_number_label">Phone number</string>
