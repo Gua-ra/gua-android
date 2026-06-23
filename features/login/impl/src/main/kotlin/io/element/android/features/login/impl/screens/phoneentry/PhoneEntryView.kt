@@ -7,11 +7,13 @@
 
 package io.element.android.features.login.impl.screens.phoneentry
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,22 +23,24 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
-import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.login.LoginModeView
 import io.element.android.features.login.impl.screens.phoneentry.country.Country
 import io.element.android.libraries.architecture.AsyncData
+import io.element.android.libraries.designsystem.atomic.atoms.GuaWelcomeLogo
 import io.element.android.libraries.designsystem.atomic.molecules.ButtonColumnMolecule
-import io.element.android.libraries.designsystem.atomic.molecules.IconTitleSubtitleMolecule
 import io.element.android.libraries.designsystem.atomic.pages.HeaderFooterPage
-import io.element.android.libraries.designsystem.components.BigIcon
+import io.element.android.libraries.designsystem.background.GuaWelcomeBackground
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Button
@@ -62,13 +66,11 @@ fun PhoneEntryView(
 
     HeaderFooterPage(
         modifier = modifier,
+        // Paint the branded Gua aurora behind everything, and let it show through the page.
+        background = { GuaWelcomeBackground() },
+        containerColor = Color.Transparent,
         header = {
-            IconTitleSubtitleMolecule(
-                modifier = Modifier.padding(top = 60.dp),
-                iconStyle = BigIcon.Style.Default(CompoundIcons.Chat()),
-                title = stringResource(R.string.screen_phone_entry_title),
-                subTitle = stringResource(R.string.screen_phone_entry_message),
-            )
+            WelcomeHeader()
         },
         footer = {
             ButtonColumnMolecule {
@@ -98,6 +100,45 @@ fun PhoneEntryView(
             // Phone-first entry never produces password/account-creation modes (MAS OIDC only).
             onNeedLoginPassword = {},
             onCreateAccountContinue = {},
+        )
+    }
+}
+
+/**
+ * The branded welcome header for the first screen: the premium [GuaWelcomeLogo] (logo + aura +
+ * tilt parallax + one-shot entrance) above the title and message. Sits over the dark
+ * [GuaWelcomeBackground] aurora, so text uses light, brand-fixed colours (mirrors OnBoardingContent).
+ */
+@Composable
+private fun WelcomeHeader(
+    modifier: Modifier = Modifier,
+) {
+    // The aurora canvas is dark in both themes, so we use light text rather than theme tokens
+    // (which would be near-black in light mode and disappear against the green).
+    val titleColor = Color.White
+    val subtitleColor = Color.White.copy(alpha = 0.78f)
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 48.dp),
+        horizontalAlignment = CenterHorizontally,
+    ) {
+        GuaWelcomeLogo()
+        Spacer(modifier = Modifier.height(36.dp))
+        Text(
+            text = stringResource(R.string.screen_phone_entry_title),
+            color = titleColor,
+            style = ElementTheme.typography.fontHeadingLgBold,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = stringResource(R.string.screen_phone_entry_message),
+            color = subtitleColor,
+            style = ElementTheme.typography.fontBodyLgRegular,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp),
         )
     }
 }
@@ -147,6 +188,8 @@ private fun CountrySelectorButton(
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
+            // A quiet translucent "glass" surface so the dial code stays legible on the dark aurora.
+            .background(Color.White.copy(alpha = 0.14f))
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -159,7 +202,8 @@ private fun CountrySelectorButton(
             text = "+" + country.dialCode,
             modifier = Modifier.padding(start = 8.dp),
             style = ElementTheme.typography.fontBodyLgMedium,
-            color = ElementTheme.colors.textPrimary,
+            // Light, brand-fixed colour to read on the dark aurora regardless of light/dark theme.
+            color = Color.White,
         )
     }
 }
