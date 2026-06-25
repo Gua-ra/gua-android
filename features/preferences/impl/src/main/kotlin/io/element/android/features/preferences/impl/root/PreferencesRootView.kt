@@ -83,8 +83,9 @@ fun PreferencesRootView(
             },
             matrixUser = state.myUser,
         )
-        if (!state.isLockScreenPinSetup) {
-            // GUA FORK: the nudge sets up two-step verification (account PIN), not the local app-lock.
+        if (!state.isAccountPinSetup) {
+            // GUA FORK: the nudge sets up two-step verification (account PIN), not the local app-lock,
+            // so gate it on the account PIN status rather than isLockScreenPinSetup.
             SetupPinBanner(onSetupTwoStepVerification)
         }
         if (state.isMultiAccountEnabled) {
@@ -196,13 +197,8 @@ private fun ColumnScope.ManageAppSection(
                 )
             )
         },
-        supportingContent = if (state.isLockScreenPinSetup) {
-            null
-        } else {
-            {
-                Text(stringResource(id = R.string.screen_preferences_set_up_pin_description))
-            }
-        },
+        // GUA FORK: no subtitle — 2SV is more than a PIN, so we don't advertise a "6-digit PIN" here.
+        supportingContent = null,
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Lock())),
         // GUA FORK: when no PIN is set this row offers account 2SV (6-digit), not the
         // local 4-digit app-lock. When an app-lock PIN exists it manages the screen lock.

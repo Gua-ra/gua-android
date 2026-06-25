@@ -41,8 +41,6 @@ import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.text.buildAnnotatedStringWithStyledPart
 import io.element.android.libraries.designsystem.theme.components.Button
-import io.element.android.libraries.designsystem.theme.components.ButtonSize
-import io.element.android.libraries.designsystem.theme.components.TextButton
 import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.collections.immutable.persistentListOf
 
@@ -161,9 +159,10 @@ private fun AnalyticsOptInFooter(
             onClick = onAcceptTerms,
             modifier = Modifier.fillMaxWidth(),
         )
-        TextButton(
+        // GUA FORK: both choices are equal filled primary buttons (matching iOS, which uses
+        // `.compound(.primary)` on both) so neither option is visually nudged.
+        Button(
             text = stringResource(id = CommonStrings.action_not_now),
-            size = ButtonSize.Medium,
             onClick = onDeclineTerms,
             modifier = Modifier.fillMaxWidth(),
         )

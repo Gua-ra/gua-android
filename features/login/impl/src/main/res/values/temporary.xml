@@ -16,7 +16,8 @@
     <!-- Gua phone-first entry (Stage 3). Mirrors Element X iOS PhoneEntryScreen. -->
     <string name="screen_phone_entry_welcome_title">Welcome to Gua</string>
     <string name="screen_phone_entry_title">What\'s your number?</string>
-    <string name="screen_phone_entry_message">We\'ll text you a code to confirm it\'s really you.</string>
+    <string name="screen_phone_entry_message">Enter your phone number</string>
+    <string name="screen_phone_entry_footer">We\'ll text a verification code to this number.</string>
     <string name="screen_phone_entry_phone_number_label">Phone number</string>
     <string name="screen_phone_entry_country_picker_a11y">Select country</string>
 

@@ -31,6 +31,9 @@ data class PreferencesRootState(
     val nbOfBlockedUsers: Int,
     val showLabsItem: Boolean,
     val isLockScreenPinSetup: Boolean,
+    // GUA FORK: whether the account (2SV) PIN is set, per identityServiceClient.pinStatus().
+    // Distinct from isLockScreenPinSetup (the local app-lock PIN); the nudge banner advertises 2SV.
+    val isAccountPinSetup: Boolean,
     val directLogoutState: DirectLogoutState,
     val snackbarMessage: SnackbarMessage?,
     val eventSink: (PreferencesRootEvent) -> Unit,
