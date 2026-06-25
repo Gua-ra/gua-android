@@ -32,6 +32,10 @@ import io.element.android.libraries.matrix.api.permalink.PermalinkParser
 import io.element.android.libraries.matrix.api.room.RoomMember
 import io.element.android.libraries.matrix.api.timeline.MatrixTimelineItem
 import io.element.android.libraries.matrix.api.timeline.item.EventThreadInfo
+import io.element.android.libraries.matrix.api.timeline.item.event.EventContent
+import io.element.android.libraries.matrix.api.timeline.item.event.ProfileChangeContent
+import io.element.android.libraries.matrix.api.timeline.item.event.RoomMembershipContent
+import io.element.android.libraries.matrix.api.timeline.item.event.StateContent
 import io.element.android.libraries.matrix.api.timeline.item.event.getAvatarUrl
 import io.element.android.libraries.matrix.api.timeline.item.event.getDisambiguatedDisplayName
 import io.element.android.libraries.matrix.ui.messages.reply.map
@@ -52,13 +56,25 @@ class TimelineItemEventFactory(
         fun create(config: TimelineItemsFactoryConfig): TimelineItemEventFactory
     }
 
+    /**
+     * Build a [TimelineItem.Event] for the given SDK event.
+     *
+     * GUA FORK: returns null in 1:1 direct chats for state, membership and profile-change
+     * events. 1:1 chats are conversations, not "rooms", so this churn (joined/left/invited,
+     * name/avatar/topic/encryption changes, display-name/avatar updates) is suppressed.
+     * Dropping the items here means they are never grouped into a collapsed "N room changes"
+     * summary either. This mirrors Element X iOS `RoomTimelineItemFactory.buildTimelineItem`.
+     */
     suspend fun create(
         currentTimelineItem: MatrixTimelineItem.Event,
         index: Int,
         timelineItems: List<MatrixTimelineItem>,
         roomMembers: List<RoomMember>,
         renderReadReceipts: Boolean,
-    ): TimelineItem.Event {
+    ): TimelineItem.Event? {
+        if (config.isDirectOneToOneRoom && currentTimelineItem.event.content.isSuppressedInDirectOneToOneRoom()) {
+            return null
+        }
         val currentSender = currentTimelineItem.event.sender
         val groupPosition =
             computeGroupPosition(currentTimelineItem, timelineItems, index)
@@ -258,4 +274,17 @@ class TimelineItemEventFactory(
             else -> TimelineItemGroupPosition.None
         }
     }
+}
+
+/**
+ * GUA FORK: true for the state/membership/profile-change events that should not appear in a
+ * 1:1 direct chat timeline. Classified on the raw SDK [EventContent] so dropped items are never
+ * even built (and therefore never grouped into a collapsed "N room changes" summary).
+ * Mirrors the `isDM` guards in Element X iOS `RoomTimelineItemFactory`.
+ */
+private fun EventContent.isSuppressedInDirectOneToOneRoom(): Boolean = when (this) {
+    is StateContent,
+    is RoomMembershipContent,
+    is ProfileChangeContent -> true
+    else -> false
 }

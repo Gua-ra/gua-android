@@ -125,7 +125,8 @@ fun EditUserProfileView(
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 modifier = Modifier.fillMaxWidth(),
-                text = state.userId.value,
+                // GUA FORK: hide the homeserver suffix in the user handle.
+                text = state.userId.displayHandle,
                 style = ElementTheme.typography.fontBodyLgRegular,
                 textAlign = TextAlign.Center,
             )

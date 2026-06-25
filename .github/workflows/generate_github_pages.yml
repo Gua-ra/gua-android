@@ -1,9 +1,7 @@
 name: Generate GitHub Pages
+# GUA FORK: scheduled GitHub Pages generation disabled — upstream docs site. Manual only.
 on:
   workflow_dispatch:
-  schedule:
-    # At 00:00 on every Tuesday UTC
-    - cron: '0 0 * * 2'
 
 permissions: {}
 

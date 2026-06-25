@@ -66,6 +66,12 @@ interface BaseRoom : Closeable {
      */
     fun isDm() = roomInfoFlow.value.isDm
 
+    /**
+     * GUA FORK: returns whether the [BaseRoom] is a 1:1 direct chat, using the latest
+     * [RoomInfo]. See [RoomInfo.isDirectOneToOneRoom].
+     */
+    fun isDirectOneToOneRoom() = roomInfoFlow.value.isDirectOneToOneRoom
+
     fun predecessorRoom(): PredecessorRoom?
 
     /**

@@ -22,8 +22,10 @@ import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
 import io.element.android.features.createroom.api.CreateRoomEntryPoint
+import io.element.android.features.findfriends.api.FindFriendsEntryPoint
 import io.element.android.features.startchat.DefaultStartChatNavigator
 import io.element.android.features.startchat.api.StartChatEntryPoint
+import io.element.android.features.userprofile.api.UserProfileEntryPoint
 import io.element.android.features.startchat.impl.joinbyaddress.JoinRoomByAddressNode
 import io.element.android.features.startchat.impl.root.StartChatNode
 import io.element.android.libraries.architecture.BackstackView
@@ -33,6 +35,7 @@ import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.architecture.createNode
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.core.toRoomIdOrAlias
 import kotlinx.parcelize.Parcelize
 
@@ -42,6 +45,8 @@ class StartChatFlowNode(
     @Assisted buildContext: BuildContext,
     @Assisted plugins: List<Plugin>,
     private val createRoomEntryPoint: CreateRoomEntryPoint,
+    private val findFriendsEntryPoint: FindFriendsEntryPoint,
+    private val userProfileEntryPoint: UserProfileEntryPoint,
 ) : BaseFlowNode<StartChatFlowNode.NavTarget>(
     backstack = BackStack(
         initialElement = NavTarget.Root,
@@ -59,6 +64,13 @@ class StartChatFlowNode(
 
         @Parcelize
         data object JoinByAddress : NavTarget
+
+        // GUA FORK: Find friends contact-discovery screen + the profile it can open.
+        @Parcelize
+        data object FindFriends : NavTarget
+
+        @Parcelize
+        data class UserProfile(val userId: String) : NavTarget
     }
 
     private val callback: StartChatEntryPoint.Callback = callback()
@@ -91,6 +103,35 @@ class StartChatFlowNode(
             }
             NavTarget.JoinByAddress -> {
                 createNode<JoinRoomByAddressNode>(buildContext = buildContext, plugins = listOf(navigator))
+            }
+            NavTarget.FindFriends -> {
+                val callback = object : FindFriendsEntryPoint.Callback {
+                    override fun onStartChat(roomId: RoomId) {
+                        navigator.onRoomCreated(roomId.toRoomIdOrAlias(), emptyList())
+                    }
+
+                    override fun onOpenProfile(userId: UserId) {
+                        navigator.onShowUserProfile(userId)
+                    }
+                }
+                findFriendsEntryPoint.createNode(
+                    parentNode = this,
+                    buildContext = buildContext,
+                    callback = callback,
+                )
+            }
+            is NavTarget.UserProfile -> {
+                val callback = object : UserProfileEntryPoint.Callback {
+                    override fun navigateToRoom(roomId: RoomId) {
+                        navigator.onRoomCreated(roomId.toRoomIdOrAlias(), emptyList())
+                    }
+                }
+                userProfileEntryPoint.createNode(
+                    parentNode = this,
+                    buildContext = buildContext,
+                    params = UserProfileEntryPoint.Params(userId = UserId(navTarget.userId)),
+                    callback = callback,
+                )
             }
         }
     }

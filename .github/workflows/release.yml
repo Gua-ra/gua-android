@@ -1,9 +1,9 @@
 name: Create release App Bundle and APKs
 
+# GUA FORK: auto-trigger on main disabled — Play Store / signing / upload secrets are not wired for
+# the fork yet. Release signing reads from env (see app/build.gradle.kts). Manual dispatch only.
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
 
 permissions: {}
 

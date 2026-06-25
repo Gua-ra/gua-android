@@ -264,9 +264,10 @@ private fun RoomMemberActionsBottomSheet(
                     .fillMaxWidth()
             )
             // Show user ID only if it's different from the display name
-            if (bestName != user.userId.value) {
+            // GUA FORK: hide the homeserver suffix in the user handle.
+            if (bestName != user.userId.displayHandle) {
                 Text(
-                    text = user.userId.value,
+                    text = user.userId.displayHandle,
                     style = ElementTheme.typography.fontBodyMdRegular,
                     color = ElementTheme.colors.textSecondary,
                     maxLines = 1,

@@ -1,8 +1,8 @@
 name: Move labelled issues to correct boards and columns
 
+# GUA FORK: disabled — upstream issue-board automation (element-hq project boards). Manual only.
 on:
-  issues:
-    types: [labeled]
+  workflow_dispatch:
 
 permissions: {}
 

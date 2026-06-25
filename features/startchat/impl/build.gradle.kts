@@ -43,6 +43,9 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(projects.libraries.featureflag.api)
     implementation(projects.features.createroom.api)
+    // GUA FORK: surface Find friends from the new-chat / "+" flow.
+    implementation(projects.features.findfriends.api)
+    implementation(projects.features.userprofile.api)
     api(projects.features.startchat.api)
 
     testCommonDependencies(libs, true)
@@ -54,5 +57,6 @@ dependencies {
     testImplementation(projects.libraries.usersearch.test)
     testImplementation(projects.features.createroom.test)
     testImplementation(projects.features.startchat.test)
+    testImplementation(projects.features.findfriends.test)
     testImplementation(projects.libraries.featureflag.test)
 }

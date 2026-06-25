@@ -12,8 +12,11 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.bumble.appyx.core.modality.BuildContext
 import com.bumble.appyx.testing.junit4.util.MainDispatcherRule
 import com.google.common.truth.Truth.assertThat
+import com.bumble.appyx.core.node.Node
 import io.element.android.features.createroom.api.FakeCreateRoomEntryPoint
+import io.element.android.features.findfriends.test.FakeFindFriendsEntryPoint
 import io.element.android.features.startchat.api.StartChatEntryPoint
+import io.element.android.features.userprofile.api.UserProfileEntryPoint
 import io.element.android.libraries.matrix.api.core.RoomIdOrAlias
 import io.element.android.tests.testutils.lambda.lambdaError
 import io.element.android.tests.testutils.node.TestParentNode
@@ -35,6 +38,8 @@ class DefaultStartChatEntryPointTest {
                 buildContext = buildContext,
                 plugins = plugins,
                 createRoomEntryPoint = FakeCreateRoomEntryPoint(),
+                findFriendsEntryPoint = FakeFindFriendsEntryPoint { _, _ -> lambdaError() },
+                userProfileEntryPoint = FakeUserProfileEntryPoint(),
             )
         }
         val callback = object : StartChatEntryPoint.Callback {
@@ -48,5 +53,14 @@ class DefaultStartChatEntryPointTest {
         )
         assertThat(result).isInstanceOf(StartChatFlowNode::class.java)
         assertThat(result.plugins).contains(callback)
+    }
+
+    private class FakeUserProfileEntryPoint : UserProfileEntryPoint {
+        override fun createNode(
+            parentNode: Node,
+            buildContext: BuildContext,
+            params: UserProfileEntryPoint.Params,
+            callback: UserProfileEntryPoint.Callback,
+        ): Node = lambdaError()
     }
 }

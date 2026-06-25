@@ -71,6 +71,7 @@ dependencies {
     implementation(projects.libraries.oauth.api)
     implementation(projects.libraries.uiUtils)
     implementation(projects.libraries.wellknown.api)
+    implementation(projects.libraries.guaresolver)
     implementation(libs.androidx.browser)
     implementation(libs.androidx.webkit)
     implementation(libs.serialization.json)

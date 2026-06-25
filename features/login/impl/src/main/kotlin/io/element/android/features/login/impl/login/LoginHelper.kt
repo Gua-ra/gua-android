@@ -22,6 +22,7 @@ import io.element.android.features.login.impl.screens.onboarding.OnBoardingPrese
 import io.element.android.features.login.impl.web.WebClientUrlForAuthenticationRetriever
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.runCatchingUpdatingState
+import io.element.android.libraries.guaresolver.ResolverClient
 import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
 import io.element.android.libraries.matrix.api.auth.OAuthPrompt
 import io.element.android.libraries.oauth.api.OAuthAction
@@ -38,6 +39,7 @@ class LoginHelper(
     private val oAuthActionFlow: OAuthActionFlow,
     private val authenticationService: MatrixAuthenticationService,
     private val webClientUrlForAuthenticationRetriever: WebClientUrlForAuthenticationRetriever,
+    private val resolverClient: ResolverClient,
 ) {
     private val loginModeState: MutableState<AsyncData<LoginMode>> = mutableStateOf(AsyncData.Uninitialized)
 
@@ -96,6 +98,40 @@ class LoginHelper(
                     else -> ChangeServerError.from(it)
                 }
             }
+        )
+    }
+
+    /**
+     * GUA FORK: phone-first entry. Resolves the E.164 phone number to its homeserver via the Gua
+     * resolver, configures the auth service for that homeserver, then builds the MAS OIDC url with the
+     * phone as the OIDC `login_hint` — mirroring iOS `AuthenticationFlowCoordinator.handlePhoneSubmission`
+     * (resolve -> configure -> urlForOIDCLogin -> continueWithOIDC). The whole pipeline runs as one
+     * [loginModeState] Loading -> Success/Failure cycle; the resulting [LoginMode.OAuth] is handed to the
+     * navigator (Custom Tab) by the screen, exactly like the legacy account-provider path.
+     *
+     * The resolver decides login vs register; the homeserver base URL it returns is never surfaced in UI.
+     */
+    suspend fun submitPhone(e164Phone: String) {
+        suspend {
+            val resolution = resolverClient.resolve(e164Phone).getOrThrow()
+            val homeserverUrl = resolution.homeserver.baseUrl
+            val isAccountCreation = !resolution.exists
+            // Configure the auth service for the resolved homeserver, then build the OIDC url.
+            authenticationService.setHomeserver(homeserverUrl)
+                .map { matrixHomeServerDetails ->
+                    if (matrixHomeServerDetails.supportsOAuthLogin) {
+                        val oAuthPrompt = if (isAccountCreation) OAuthPrompt.Create else OAuthPrompt.Login
+                        LoginMode.OAuth(
+                            authenticationService.getOAuthUrl(prompt = oAuthPrompt, loginHint = e164Phone).getOrThrow()
+                        )
+                    } else {
+                        error("Unsupported login flow")
+                    }
+                }
+                .getOrThrow()
+        }.runCatchingUpdatingState(
+            state = loginModeState,
+            errorTransform = { ChangeServerError.from(it) }
         )
     }
 

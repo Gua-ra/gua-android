@@ -10,6 +10,7 @@ package io.element.android.features.startchat.impl
 
 import io.element.android.features.startchat.StartChatNavigator
 import io.element.android.libraries.matrix.api.core.RoomIdOrAlias
+import io.element.android.libraries.matrix.api.core.UserId
 
 class FakeStartChatNavigator(
     private val openRoomLambda: (roomIdOrAlias: RoomIdOrAlias, serverNames: List<String>) -> Unit = { _, _ -> },
@@ -17,6 +18,8 @@ class FakeStartChatNavigator(
     private val showJoinRoomByAddressLambda: () -> Unit = {},
     private val dismissJoinRoomByAddressLambda: () -> Unit = {},
     private val openRoomDirectoryLambda: () -> Unit = {},
+    private val showFindFriendsLambda: () -> Unit = {},
+    private val showUserProfileLambda: (UserId) -> Unit = {},
 ) : StartChatNavigator {
     override fun onRoomCreated(roomIdOrAlias: RoomIdOrAlias, serverNames: List<String>) {
         openRoomLambda(roomIdOrAlias, serverNames)
@@ -36,5 +39,13 @@ class FakeStartChatNavigator(
 
     override fun onOpenRoomDirectory() {
         openRoomDirectoryLambda()
+    }
+
+    override fun onShowFindFriends() {
+        showFindFriendsLambda()
+    }
+
+    override fun onShowUserProfile(userId: UserId) {
+        showUserProfileLambda(userId)
     }
 }

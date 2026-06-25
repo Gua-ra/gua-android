@@ -1,11 +1,8 @@
 name: Pull Request
+# GUA FORK: disabled — depends on the element-hq org (Vector Core team membership, ELEMENT_BOT_TOKEN).
+# None of these apply to the fork. Manual only.
 on:
-  pull_request_target:
-    types: [ opened, edited, labeled, unlabeled, synchronize ]
-  workflow_call: # zizmor: ignore[dangerous-triggers]
-    secrets:
-      ELEMENT_BOT_TOKEN:
-        required: true
+  workflow_dispatch:
 
 permissions: {}
 

@@ -64,6 +64,9 @@ open class PreferencesRootStateProvider : PreviewParameterProvider<PreferencesRo
                 showDeveloperSettings = true,
                 canDeactivateAccount = true,
             ),
+            aPreferencesRootState(
+                isLockScreenPinSetup = false,
+            ),
             // Minimal state
             aPreferencesRootState(),
         )
@@ -85,6 +88,7 @@ fun aPreferencesRootState(
     canDeactivateAccount: Boolean = false,
     nbOfBlockedUsers: Int = 0,
     showLabsItem: Boolean = false,
+    isLockScreenPinSetup: Boolean = true,
     directLogoutState: DirectLogoutState = aDirectLogoutState(),
     snackbarMessage: SnackbarMessage? = null,
     eventSink: (PreferencesRootEvent) -> Unit = {},
@@ -104,6 +108,7 @@ fun aPreferencesRootState(
     canDeactivateAccount = canDeactivateAccount,
     nbOfBlockedUsers = nbOfBlockedUsers,
     showLabsItem = showLabsItem,
+    isLockScreenPinSetup = isLockScreenPinSetup,
     directLogoutState = directLogoutState,
     snackbarMessage = snackbarMessage,
     eventSink = eventSink,
