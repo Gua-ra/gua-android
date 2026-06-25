@@ -29,6 +29,7 @@ import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatch
 import io.element.android.libraries.designsystem.utils.snackbar.collectSnackbarMessageAsState
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
+import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.indicator.api.IndicatorService
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.UserId
@@ -59,6 +60,7 @@ class PreferencesRootPresenter(
     private val sessionStore: SessionStore,
     private val sessionEnterpriseService: SessionEnterpriseService,
     private val lockScreenService: LockScreenService,
+    private val identityServiceClient: IdentityServiceClient,
 ) : Presenter<PreferencesRootState> {
     @Composable
     override fun present(): PreferencesRootState {
@@ -121,6 +123,14 @@ class PreferencesRootPresenter(
             lockScreenService.isPinSetup()
         }.collectAsState(initial = true)
 
+        // GUA FORK: the nudge banner advertises the account (2SV) PIN, so gate it on the account PIN
+        // status from the identity service (mirrors TwoStepVerificationPresenter), not the local app-lock.
+        val isAccountPinSetup by produceState(initialValue = false) {
+            val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken ?: return@produceState
+            identityServiceClient.pinStatus(accessToken)
+                .onSuccess { value = it }
+        }
+
         val directLogoutState = directLogoutPresenter.present()
 
         LaunchedEffect(Unit) {
@@ -157,6 +167,7 @@ class PreferencesRootPresenter(
             nbOfBlockedUsers = nbOfBlockedUsers,
             showLabsItem = showLabsItem,
             isLockScreenPinSetup = isLockScreenPinSetup,
+            isAccountPinSetup = isAccountPinSetup,
             directLogoutState = directLogoutState,
             snackbarMessage = snackbarMessage,
             eventSink = ::handleEvent,

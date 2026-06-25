@@ -185,6 +185,13 @@ private fun PhoneNumberField(
                     .testTag(TestTags.loginEmailUsername),
             )
         }
+        // Footer under the field, mirroring iOS ("We'll text a verification code to this number.").
+        Text(
+            text = stringResource(R.string.screen_phone_entry_footer),
+            color = OnAuroraSecondary,
+            style = ElementTheme.typography.fontBodySmRegular,
+            modifier = Modifier.padding(start = 4.dp, top = 8.dp),
+        )
     }
 }
 

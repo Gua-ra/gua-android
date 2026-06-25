@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="screen_preferences_set_up_pin_title">Configurar PIN</string>
-    <string name="screen_preferences_set_up_pin_description">Protege Gua con un PIN y biometría opcional.</string>
     <string name="screen_preferences_pin_nudge_message">Añade un PIN para proteger Gua si otra persona tiene tu teléfono.</string>
     <string name="screen_preferences_pin_nudge_action">Configurar ahora</string>
 </resources>
