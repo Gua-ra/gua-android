@@ -34,6 +34,7 @@ import io.element.android.features.preferences.impl.labs.LabsNode
 import io.element.android.features.preferences.impl.notifications.NotificationSettingsNode
 import io.element.android.features.preferences.impl.notifications.edit.EditDefaultNotificationSettingNode
 import io.element.android.features.preferences.impl.root.PreferencesRootNode
+import io.element.android.features.preferences.impl.twostepverification.TwoStepVerificationNode
 import io.element.android.features.preferences.impl.user.editprofile.EditUserProfileNode
 import io.element.android.libraries.architecture.BackstackView
 import io.element.android.libraries.architecture.BaseFlowNode
@@ -98,6 +99,10 @@ class PreferencesFlowNode(
         @Parcelize
         data object LockScreenSettings : NavTarget
 
+        // GUA FORK: Two-step verification (account PIN), distinct from the local 4-digit app-lock above.
+        @Parcelize
+        data object TwoStepVerification : NavTarget
+
         @Parcelize
         data class EditDefaultNotificationSetting(val isOneToOne: Boolean) : NavTarget
 
@@ -153,6 +158,10 @@ class PreferencesFlowNode(
 
                     override fun navigateToLockScreenSettings() {
                         backstack.push(NavTarget.LockScreenSettings)
+                    }
+
+                    override fun navigateToTwoStepVerification() {
+                        backstack.push(NavTarget.TwoStepVerification)
                     }
 
                     override fun navigateToAdvancedSettings() {
@@ -302,6 +311,9 @@ class PreferencesFlowNode(
                         }
                     }
                 )
+            }
+            NavTarget.TwoStepVerification -> {
+                createNode<TwoStepVerificationNode>(buildContext)
             }
             NavTarget.BlockedUsers -> {
                 createNode<BlockedUsersNode>(buildContext)

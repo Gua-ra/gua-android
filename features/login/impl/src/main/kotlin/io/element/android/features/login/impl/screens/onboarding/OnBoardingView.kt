@@ -9,28 +9,33 @@
 package io.element.android.features.login.impl.screens.onboarding
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.login.impl.R
@@ -41,6 +46,7 @@ import io.element.android.libraries.designsystem.atomic.atoms.ElementLogoAtomSiz
 import io.element.android.libraries.designsystem.atomic.molecules.ButtonColumnMolecule
 import io.element.android.libraries.designsystem.atomic.pages.FlowStepPage
 import io.element.android.libraries.designsystem.atomic.pages.OnBoardingPage
+import io.element.android.libraries.designsystem.background.GuaWelcomeBackground
 import io.element.android.libraries.designsystem.components.BigIcon
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
@@ -127,7 +133,9 @@ private fun AddFirstAccountScaffold(
 ) {
     OnBoardingPage(
         modifier = modifier,
-        renderBackground = state.onBoardingLogoResId == null,
+        // We paint our own full-bleed Gua-green "aurora" (see GuaWelcomeBackground) rather than the
+        // default Element onboarding image, for the branded welcome look that matches Gua iOS.
+        background = { GuaWelcomeBackground() },
         content = {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -190,50 +198,79 @@ private fun AddOtherAccountScaffold(
     )
 }
 
+/**
+ * The branded Gua welcome content: the premium Gua logo, a centered title + subtitle, and a quiet
+ * "end-to-end encrypted" trust pill. Sits over the [GuaWelcomeBackground] aurora, so text uses
+ * light, brand-fixed colours (the aurora is dark green in both light and dark themes).
+ */
 @Composable
 private fun OnBoardingContent(state: OnBoardingState) {
+    // The aurora canvas is dark in both themes, so we use light text rather than theme tokens
+    // (which would be near-black in light mode and disappear).
+    val titleColor = Color.White
+    val subtitleColor = Color.White.copy(alpha = 0.78f)
+
     Box(
         modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = BiasAlignment(
-                horizontalBias = 0f,
-                verticalBias = -0.4f
-            )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = CenterHorizontally,
         ) {
             ElementLogoAtom(
                 size = ElementLogoAtomSize.Large,
-                modifier = Modifier.padding(top = ElementLogoAtomSize.Large.shadowRadius / 2)
+                // Force the lighter glass treatment so the logo reads as a premium object on the
+                // dark aurora regardless of the active light/dark theme.
+                darkTheme = false,
+                modifier = Modifier.padding(top = ElementLogoAtomSize.Large.shadowRadius / 2),
             )
-        }
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = BiasAlignment(
-                horizontalBias = 0f,
-                verticalBias = 0.6f
+            Spacer(modifier = Modifier.height(40.dp))
+            Text(
+                text = stringResource(id = R.string.screen_onboarding_welcome_title),
+                color = titleColor,
+                style = ElementTheme.typography.fontHeadingLgBold,
+                textAlign = TextAlign.Center,
             )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalAlignment = CenterHorizontally,
-            ) {
-                Text(
-                    text = stringResource(id = R.string.screen_onboarding_welcome_title),
-                    color = ElementTheme.colors.textPrimary,
-                    style = ElementTheme.typography.fontHeadingLgBold,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(id = R.string.screen_onboarding_welcome_message, state.productionApplicationName),
-                    color = ElementTheme.colors.textSecondary,
-                    style = ElementTheme.typography.fontBodyLgRegular.copy(fontSize = 17.sp),
-                    textAlign = TextAlign.Center
-                )
-            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = stringResource(id = R.string.screen_onboarding_welcome_message),
+                color = subtitleColor,
+                style = ElementTheme.typography.fontBodyLgRegular,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 24.dp),
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            TrustEncryptedPill()
         }
+    }
+}
+
+@Composable
+private fun TrustEncryptedPill(
+    modifier: Modifier = Modifier,
+) {
+    // A quiet translucent capsule that reads cleanly on the dark aurora.
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(percent = 50))
+            .background(Color.White.copy(alpha = 0.14f))
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(
+            imageVector = CompoundIcons.Lock(),
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.85f),
+            modifier = Modifier.size(16.dp),
+        )
+        Text(
+            text = stringResource(id = R.string.screen_onboarding_trust_encrypted),
+            color = Color.White.copy(alpha = 0.85f),
+            style = ElementTheme.typography.fontBodyMdMedium,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
