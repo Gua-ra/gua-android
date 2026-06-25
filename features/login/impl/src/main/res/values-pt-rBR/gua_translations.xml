@@ -18,7 +18,8 @@
     <!-- Phone-first entry (ported from iOS screen_phone_login_* / screen_phone_entry_*). -->
     <string name="screen_phone_entry_welcome_title">"Bem-vindo ao Gua"</string>
     <string name="screen_phone_entry_title">"Qual é o seu número?"</string>
-    <string name="screen_phone_entry_message">"Vamos te enviar um código por mensagem para confirmar que é você mesmo."</string>
+    <string name="screen_phone_entry_message">"Digite seu número de telefone"</string>
+    <string name="screen_phone_entry_footer">"Vamos enviar um código de verificação por mensagem para este número."</string>
     <string name="screen_phone_entry_phone_number_label">"Número de telefone"</string>
     <string name="screen_phone_entry_country_picker_a11y">"Selecionar país"</string>
 

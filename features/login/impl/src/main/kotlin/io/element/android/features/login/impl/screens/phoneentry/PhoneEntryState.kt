@@ -36,7 +36,8 @@ data class PhoneEntryState(
 
     /**
      * E.164 numbers are 1-15 digits including the country code. Subscriber number minimum is
-     * generally 4 digits, so we require at least that and cap the total length.
+     * generally 4 digits, and the Gua resolver requires `+[1-9]\d{6,14}` (>= 7 total digits), so we
+     * require at least that, enforce the resolver's minimum total length and cap the total length.
      */
     val canContinue: Boolean
         get() = !isSubmitting && isValid(localDigits = localDigits, dialCode = selectedCountry.dialCode)
@@ -44,7 +45,7 @@ data class PhoneEntryState(
     companion object {
         fun isValid(localDigits: String, dialCode: String): Boolean {
             val totalDigits = dialCode.length + localDigits.length
-            return localDigits.length >= 4 && totalDigits <= 15
+            return localDigits.length >= 4 && totalDigits >= 7 && totalDigits <= 15
         }
     }
 }
