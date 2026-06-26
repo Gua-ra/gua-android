@@ -19,6 +19,7 @@ import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.notificationsettings.NotificationSettingsService
+import io.element.android.libraries.matrix.api.roomlist.LatestEventValue
 import io.element.android.libraries.matrix.api.roomlist.RoomList
 import io.element.android.libraries.matrix.api.roomlist.RoomListFilter
 import io.element.android.libraries.matrix.api.roomlist.RoomListService
@@ -204,10 +205,23 @@ class RoomListDataSource(
     }
 
     private fun buildAndCacheItem(roomSummaries: List<RoomSummary>, index: Int): RoomListRoomSummary? {
-        val roomListSummary = roomSummaries.getOrNull(index)?.let { roomListRoomSummaryFactory.create(it) }
+        // GUA FORK: hide stray empty "orphan" rooms so a half-created or never-joined chat (e.g. a
+        // failed start-chat) doesn't clutter the list. Mirrors iOS RoomSummary.isEmptyOrphanRoom.
+        val roomListSummary = roomSummaries.getOrNull(index)
+            ?.takeUnless { it.isEmptyOrphanRoom() }
+            ?.let { roomListRoomSummaryFactory.create(it) }
         diffCache[index] = roomListSummary
         return roomListSummary
     }
+
+    // GUA FORK: a stray empty room the SDK surfaces when a chat is created but the other member never
+    // joins (or creation half-failed) — no visible joined members (heroes), no messages, and at most
+    // the local user + one invited-but-never-joined peer. A real conversation always has a hero or a
+    // message, and an invite keeps a RoomInvite latestEvent, so neither is ever hidden.
+    private fun RoomSummary.isEmptyOrphanRoom(): Boolean =
+        info.heroes.isEmpty() &&
+            latestEvent is LatestEventValue.None &&
+            info.activeMembersCount <= 2
 
     private suspend fun rebuildAllRoomSummaries() {
         lock.withLock {
