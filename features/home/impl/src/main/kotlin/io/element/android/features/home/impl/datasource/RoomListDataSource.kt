@@ -205,10 +205,12 @@ class RoomListDataSource(
     }
 
     private fun buildAndCacheItem(roomSummaries: List<RoomSummary>, index: Int): RoomListRoomSummary? {
-        // GUA FORK: hide stray empty "orphan" rooms so a half-created or never-joined chat (e.g. a
-        // failed start-chat) doesn't clutter the list. Mirrors iOS RoomSummary.isEmptyOrphanRoom.
+        // GUA FORK: Gua has no Spaces concept (like iOS, where the room list never surfaces spaces), so
+        // hide m.space container rooms — otherwise they leak into the chat list looking like empty rooms.
+        // Also hide stray empty "orphan" rooms so a half-created or never-joined chat (e.g. a failed
+        // start-chat) doesn't clutter the list. Mirrors iOS RoomSummary.isEmptyOrphanRoom.
         val roomListSummary = roomSummaries.getOrNull(index)
-            ?.takeUnless { it.isEmptyOrphanRoom() }
+            ?.takeUnless { it.info.isSpace || it.isEmptyOrphanRoom() }
             ?.let { roomListRoomSummaryFactory.create(it) }
         diffCache[index] = roomListSummary
         return roomListSummary
