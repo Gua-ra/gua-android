@@ -46,4 +46,10 @@ sealed class ResolverError(message: String, cause: Throwable? = null) : Exceptio
 
     /** Too many attempts; the caller should back off (identity-service `code: "rate_limited"`). */
     data object RateLimited : ResolverError("Too many attempts. Please wait a moment and try again.")
+
+    /**
+     * The requested phone number is already linked to another account
+     * (identity-service `code: "phone_already_linked"`, HTTP 409).
+     */
+    data object PhoneAlreadyLinked : ResolverError("That phone number is already linked to another account.")
 }

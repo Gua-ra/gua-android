@@ -33,4 +33,20 @@
     <string name="screen_two_step_verification_same_as_current">Your new PIN must be different from your current PIN.</string>
     <string name="screen_two_step_verification_rate_limited">Too many attempts. Please wait a moment and try again.</string>
     <string name="screen_two_step_verification_updated">Two-step verification updated</string>
+    <string name="screen_change_phone_title">Change phone number</string>
+    <string name="screen_change_phone_intro_header">Change your number</string>
+    <string name="screen_change_phone_intro_message">We\'ll send a code to your new number. Your account, chats, and messages stay the same.</string>
+    <string name="screen_change_phone_new_header">New phone number</string>
+    <string name="screen_change_phone_new_footer">Enter the number you\'d like to use from now on.</string>
+    <string name="screen_change_phone_new_invalid">Please enter a valid phone number.</string>
+    <string name="screen_change_phone_pin_header">Enter your PIN</string>
+    <string name="screen_change_phone_pin_footer">Confirm your 6-digit PIN to authorize this change.</string>
+    <string name="screen_change_phone_pin_incorrect">That PIN is incorrect. Please try again.</string>
+    <string name="screen_change_phone_otp_header">Verify your new number</string>
+    <string name="screen_change_phone_otp_footer">Enter the 6-digit code we sent to your new number.</string>
+    <string name="screen_change_phone_otp_invalid">That code is invalid or has expired. Please try again.</string>
+    <string name="screen_change_phone_already_linked">That phone number is already linked to another account.</string>
+    <string name="screen_change_phone_updated">Your phone number has been updated.</string>
+    <string name="screen_change_phone_done_header">All set</string>
+    <string name="screen_change_phone_done_message">Your phone number has been updated. You\'ll use your new number to sign in from now on.</string>
 </resources>

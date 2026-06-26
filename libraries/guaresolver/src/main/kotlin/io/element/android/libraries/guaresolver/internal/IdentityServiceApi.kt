@@ -53,6 +53,20 @@ internal interface IdentityServiceApi {
         @Header("Authorization") authorization: String,
         @Body body: CompletePinChangeRequest,
     )
+
+    // GUA FORK: change phone number. Mirrors iOS' `otp/send` + `otp/change-number` endpoints.
+
+    @POST("otp/send")
+    suspend fun sendChangeNumberOtp(
+        @Header("Authorization") authorization: String,
+        @Body body: OtpSendRequest,
+    )
+
+    @POST("otp/change-number")
+    suspend fun changeNumber(
+        @Header("Authorization") authorization: String,
+        @Body body: OtpChangeNumberRequest,
+    )
 }
 
 @Serializable
@@ -104,6 +118,20 @@ internal data class CompletePinChangeRequest(
     val challengeId: String,
     val otpCode: String,
     val newPin: String,
+)
+
+@Serializable
+internal data class OtpSendRequest(
+    val phone: String,
+    val language: String? = null,
+)
+
+@Serializable
+internal data class OtpChangeNumberRequest(
+    val userId: String,
+    val newPhone: String,
+    val code: String,
+    val pin: String,
 )
 
 /**
