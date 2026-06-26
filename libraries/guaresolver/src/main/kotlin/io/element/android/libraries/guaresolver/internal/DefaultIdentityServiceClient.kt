@@ -123,6 +123,32 @@ class DefaultIdentityServiceClient(
             )
         }
 
+    // GUA FORK: Change phone number. Mirrors iOS `IdentityServiceClient` phone-change methods.
+
+    override suspend fun requestPhoneChangeOtp(accessToken: String, newPhone: String, language: String?): Result<Unit> =
+        runPinCall { api ->
+            api.sendChangeNumberOtp(
+                // The endpoint is unauthenticated server-side, but we still pass the Authorization
+                // header to match how the other identity-service calls build "Bearer $accessToken".
+                authorization = "Bearer $accessToken",
+                body = OtpSendRequest(phone = newPhone, language = language),
+            )
+        }
+
+    override suspend fun changePhoneNumber(
+        accessToken: String,
+        userId: String,
+        newPhone: String,
+        code: String,
+        pin: String,
+    ): Result<Unit> =
+        runPinCall { api ->
+            api.changeNumber(
+                authorization = "Bearer $accessToken",
+                body = OtpChangeNumberRequest(userId = userId, newPhone = newPhone, code = code, pin = pin),
+            )
+        }
+
     /**
      * Runs an identity-service PIN call against a freshly-built [IdentityServiceApi], mapping HTTP
      * failures onto the typed [ResolverError] PIN cases (mirroring iOS' status-code + `code`-field
@@ -165,8 +191,10 @@ class DefaultIdentityServiceClient(
             "pin_locked" -> ResolverError.PinLocked(retryAfterSeconds = retryAfter)
             "pin_change_cooldown" -> ResolverError.PinChangeCooldown(retryAfterSeconds = retryAfter)
             "pin_change_challenge_invalid" -> ResolverError.PinChangeChallengeInvalid
+            "phone_already_linked" -> ResolverError.PhoneAlreadyLinked
             "rate_limited" -> ResolverError.RateLimited
             else -> when (code()) {
+                409 -> ResolverError.PhoneAlreadyLinked
                 425 -> ResolverError.PinChangeCooldown(retryAfterSeconds = retryAfter)
                 429 -> ResolverError.RateLimited
                 else -> ResolverError.Server(code())

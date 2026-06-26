@@ -33,6 +33,7 @@ import io.element.android.features.preferences.impl.developer.DeveloperSettingsN
 import io.element.android.features.preferences.impl.labs.LabsNode
 import io.element.android.features.preferences.impl.notifications.NotificationSettingsNode
 import io.element.android.features.preferences.impl.notifications.edit.EditDefaultNotificationSettingNode
+import io.element.android.features.preferences.impl.changephonenumber.ChangePhoneNumberNode
 import io.element.android.features.preferences.impl.root.PreferencesRootNode
 import io.element.android.features.preferences.impl.twostepverification.TwoStepVerificationNode
 import io.element.android.features.preferences.impl.user.editprofile.EditUserProfileNode
@@ -103,6 +104,10 @@ class PreferencesFlowNode(
         @Parcelize
         data object TwoStepVerification : NavTarget
 
+        // GUA FORK: Change phone number (OTP to the new number, account PIN as the second factor).
+        @Parcelize
+        data object ChangePhoneNumber : NavTarget
+
         @Parcelize
         data class EditDefaultNotificationSetting(val isOneToOne: Boolean) : NavTarget
 
@@ -162,6 +167,10 @@ class PreferencesFlowNode(
 
                     override fun navigateToTwoStepVerification() {
                         backstack.push(NavTarget.TwoStepVerification)
+                    }
+
+                    override fun navigateToChangePhoneNumber() {
+                        backstack.push(NavTarget.ChangePhoneNumber)
                     }
 
                     override fun navigateToAdvancedSettings() {
@@ -314,6 +323,9 @@ class PreferencesFlowNode(
             }
             NavTarget.TwoStepVerification -> {
                 createNode<TwoStepVerificationNode>(buildContext)
+            }
+            NavTarget.ChangePhoneNumber -> {
+                createNode<ChangePhoneNumberNode>(buildContext)
             }
             NavTarget.BlockedUsers -> {
                 createNode<BlockedUsersNode>(buildContext)

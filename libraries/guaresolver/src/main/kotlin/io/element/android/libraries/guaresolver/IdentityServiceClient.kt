@@ -62,4 +62,27 @@ interface IdentityServiceClient {
      * [ResolverError.InvalidOtp], [ResolverError.PinChangeChallengeInvalid]).
      */
     suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit>
+
+    // GUA FORK: Change phone number. Android counterpart of iOS
+    // `IdentityServiceClientProtocol.requestPhoneChangeOtp / changePhoneNumber`.
+
+    /**
+     * Request an OTP to be sent to the [newPhone] the user wants to switch to. Mirrors iOS
+     * `requestPhoneChangeOtp`.
+     *
+     * @param language optional BCP-47 language tag (e.g. "en-US") so the code message is localised.
+     * @return [Result.success] on success, or [Result.failure] with a [ResolverError] (notably
+     * [ResolverError.RateLimited]).
+     */
+    suspend fun requestPhoneChangeOtp(accessToken: String, newPhone: String, language: String?): Result<Unit>
+
+    /**
+     * Complete the phone-number change: verifies the OTP [code] sent to the new number and the
+     * account [pin] as a second factor, then re-points the account to [newPhone]. Mirrors iOS
+     * `changePhoneNumber`.
+     *
+     * @return [Result.success] on success, or [Result.failure] with a [ResolverError] (e.g.
+     * [ResolverError.InvalidOtp], [ResolverError.InvalidPin], [ResolverError.PhoneAlreadyLinked]).
+     */
+    suspend fun changePhoneNumber(accessToken: String, userId: String, newPhone: String, code: String, pin: String): Result<Unit>
 }

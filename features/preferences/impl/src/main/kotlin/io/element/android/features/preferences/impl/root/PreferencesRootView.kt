@@ -57,6 +57,7 @@ fun PreferencesRootView(
     onOpenRageShake: () -> Unit,
     onOpenLockScreenSettings: () -> Unit,
     onSetupTwoStepVerification: () -> Unit,
+    onChangePhoneNumber: () -> Unit,
     onOpenAbout: () -> Unit,
     onOpenDeveloperSettings: () -> Unit,
     onOpenAdvancedSettings: () -> Unit,
@@ -110,6 +111,7 @@ fun PreferencesRootView(
             onOpenNotificationSettings = onOpenNotificationSettings,
             onOpenLockScreenSettings = onOpenLockScreenSettings,
             onSetupTwoStepVerification = onSetupTwoStepVerification,
+            onChangePhoneNumber = onChangePhoneNumber,
             onSecureBackupClick = onSecureBackupClick,
         )
 
@@ -178,6 +180,7 @@ private fun ColumnScope.ManageAppSection(
     onOpenNotificationSettings: () -> Unit,
     onOpenLockScreenSettings: () -> Unit,
     onSetupTwoStepVerification: () -> Unit,
+    onChangePhoneNumber: () -> Unit,
     onSecureBackupClick: () -> Unit,
 ) {
     ListItem(
@@ -203,6 +206,12 @@ private fun ColumnScope.ManageAppSection(
         // GUA FORK: when no PIN is set this row offers account 2SV (6-digit), not the
         // local 4-digit app-lock. When an app-lock PIN exists it manages the screen lock.
         onClick = if (state.isLockScreenPinSetup) onOpenLockScreenSettings else onSetupTwoStepVerification,
+    )
+    // GUA FORK: Change phone number — re-bind the account to a new number.
+    ListItem(
+        headlineContent = { Text(stringResource(id = R.string.screen_change_phone_title)) },
+        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Edit())),
+        onClick = onChangePhoneNumber,
     )
     if (state.showSecureBackup) {
         ListItem(
@@ -397,6 +406,7 @@ private fun ContentToPreview(state: PreferencesRootState) {
         onOpenNotificationSettings = {},
         onOpenLockScreenSettings = {},
         onSetupTwoStepVerification = {},
+        onChangePhoneNumber = {},
         onOpenUserProfile = {},
         onOpenBlockedUsers = {},
         onSignOutClick = {},
