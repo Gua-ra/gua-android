@@ -28,6 +28,9 @@ sealed interface ChangePhoneNumberEvents {
     /** The user tapped the primary "Continue" button. */
     data object Continue : ChangePhoneNumberEvents
 
+    /** The user tapped "Set up PIN" on the no-PIN interstitial; the Node opens the 2SV PIN-setup flow. */
+    data object SetUpPin : ChangePhoneNumberEvents
+
     /** The user cancelled the in-progress flow. */
     data object CancelEntry : ChangePhoneNumberEvents
 

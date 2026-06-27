@@ -41,6 +41,7 @@ import java.util.Locale
 @AssistedInject
 class ChangePhoneNumberPresenter(
     @Assisted private val navigateToCountryPicker: () -> Unit,
+    @Assisted private val navigateToPinSetup: () -> Unit,
     private val matrixClient: MatrixClient,
     private val sessionStore: SessionStore,
     private val identityServiceClient: IdentityServiceClient,
@@ -48,7 +49,10 @@ class ChangePhoneNumberPresenter(
 ) : Presenter<ChangePhoneNumberState> {
     @AssistedFactory
     interface Factory {
-        fun create(navigateToCountryPicker: () -> Unit): ChangePhoneNumberPresenter
+        fun create(
+            navigateToCountryPicker: () -> Unit,
+            navigateToPinSetup: () -> Unit,
+        ): ChangePhoneNumberPresenter
     }
 
     @Composable
@@ -61,6 +65,8 @@ class ChangePhoneNumberPresenter(
         var selectedCountry by remember { mutableStateOf(Country.deviceDefault) }
         var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
+        // Remaining fresh-2FA cooldown surfaced on the Cooldown interstitial (0 otherwise).
+        var cooldownRemainingSeconds by remember { mutableStateOf(0L) }
 
         // Apply any country picked in the shared CountryPicker child screen, then clear it.
         val pickedCountry by selectedCountryStore.flow.collectAsState()
@@ -84,6 +90,58 @@ class ChangePhoneNumberPresenter(
             localPhoneNumber = ""
             newPhone = ""
             reauthToken = ""
+            cooldownRemainingSeconds = 0L
+        }
+
+        // GUA FORK: WhatsApp belt-and-suspenders gate. On Intro Continue we fetch the PIN status FIRST
+        // and branch BEFORE touching the PIN/number steps: no PIN -> NeedsPinSetup interstitial; an
+        // active fresh-2FA cooldown -> Cooldown interstitial; otherwise proceed to the PIN step-up.
+        fun checkPinStatusAndProceed() {
+            coroutineScope.launch {
+                val accessToken = accessToken()
+                if (accessToken == null) {
+                    errorMessage = CommonStrings.error_unknown
+                    return@launch
+                }
+                phase = ChangePhoneNumberPhase.Submitting
+                identityServiceClient.pinStatus(
+                    accessToken = accessToken,
+                    userId = matrixClient.sessionId.value,
+                )
+                    .onSuccess { status ->
+                        errorMessage = null
+                        when {
+                            !status.hasPin -> {
+                                phase = ChangePhoneNumberPhase.NeedsPinSetup
+                            }
+                            status.changePhoneCooldownRemainingSeconds > 0 -> {
+                                cooldownRemainingSeconds = status.changePhoneCooldownRemainingSeconds
+                                phase = ChangePhoneNumberPhase.Cooldown
+                            }
+                            else -> {
+                                code = ""
+                                phase = ChangePhoneNumberPhase.EnteringPin
+                            }
+                        }
+                    }
+                    .onFailure { error ->
+                        when (error) {
+                            is ResolverError.PinSetupRequired -> {
+                                errorMessage = null
+                                phase = ChangePhoneNumberPhase.NeedsPinSetup
+                            }
+                            is ResolverError.TwoFactorCooldown -> {
+                                errorMessage = null
+                                cooldownRemainingSeconds = error.retryAfterSeconds ?: 0L
+                                phase = ChangePhoneNumberPhase.Cooldown
+                            }
+                            else -> {
+                                errorMessage = CommonStrings.error_unknown
+                                phase = ChangePhoneNumberPhase.Intro
+                            }
+                        }
+                    }
+            }
         }
 
         fun verifyPin(enteredPin: String) {
@@ -162,6 +220,12 @@ class ChangePhoneNumberPresenter(
                             is ResolverError.PhoneAlreadyLinked -> {
                                 errorMessage = R.string.screen_change_phone_already_linked
                                 phase = ChangePhoneNumberPhase.EnteringNewPhone
+                            }
+                            is ResolverError.TwoFactorCooldown -> {
+                                // Defense-in-depth: the cooldown started after the client pre-check.
+                                cooldownRemainingSeconds = error.retryAfterSeconds ?: 0L
+                                errorMessage = null
+                                phase = ChangePhoneNumberPhase.Cooldown
                             }
                             is ResolverError.RateLimited -> {
                                 errorMessage = R.string.screen_two_step_verification_rate_limited
@@ -269,12 +333,14 @@ class ChangePhoneNumberPresenter(
                     if (errorMessage != null) errorMessage = null
                 }
                 ChangePhoneNumberEvents.SelectCountry -> navigateToCountryPicker()
+                ChangePhoneNumberEvents.SetUpPin -> navigateToPinSetup()
                 ChangePhoneNumberEvents.Continue -> {
                     when (phase) {
                         ChangePhoneNumberPhase.Intro -> {
+                            // Gate FIRST on PIN status; do not enter the PIN/number steps here.
                             errorMessage = null
                             code = ""
-                            phase = ChangePhoneNumberPhase.EnteringPin
+                            checkPinStatusAndProceed()
                         }
                         ChangePhoneNumberPhase.EnteringNewPhone -> {
                             val digits = localPhoneNumber.filter { it.isDigit() }
@@ -310,6 +376,7 @@ class ChangePhoneNumberPresenter(
             selectedCountry = selectedCountry,
             localPhoneNumber = localPhoneNumber,
             errorMessage = errorMessage,
+            cooldownRemainingSeconds = cooldownRemainingSeconds,
             eventSink = ::handleEvent,
         )
     }

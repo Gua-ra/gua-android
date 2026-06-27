@@ -8,7 +8,6 @@
 package io.element.android.features.preferences.impl.changephonenumber
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,16 +25,19 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.preferences.impl.R
+import io.element.android.features.preferences.impl.components.PinBubbleField
 import io.element.android.libraries.designsystem.components.async.AsyncLoading
 import io.element.android.libraries.designsystem.components.preferences.PreferencePage
 import io.element.android.libraries.designsystem.preview.ElementPreview
@@ -48,6 +50,9 @@ import io.element.android.libraries.ui.strings.CommonStrings
 
 private val FieldShape = RoundedCornerShape(12.dp)
 private val FieldHeight = 56.dp
+private val CardShape = RoundedCornerShape(16.dp)
+private val BadgeShape = RoundedCornerShape(16.dp)
+private val BadgeSize = 56.dp
 
 @Composable
 fun ChangePhoneNumberView(
@@ -71,6 +76,8 @@ fun ChangePhoneNumberView(
     ) {
         when (state.phase) {
             ChangePhoneNumberPhase.Intro -> IntroSection(eventSink = eventSink)
+            ChangePhoneNumberPhase.NeedsPinSetup -> NeedsPinSetupSection(eventSink = eventSink)
+            ChangePhoneNumberPhase.Cooldown -> CooldownSection(state = state)
             ChangePhoneNumberPhase.EnteringNewPhone -> PhoneEntrySection(state = state, eventSink = eventSink)
             ChangePhoneNumberPhase.EnteringPin,
             ChangePhoneNumberPhase.EnteringOtp -> CodeEntrySection(state = state, eventSink = eventSink)
@@ -80,33 +87,70 @@ fun ChangePhoneNumberView(
     }
 }
 
+/**
+ * GUA FORK: a first-class "hero" message card mirroring the iOS `ChangePhoneScreen` ListRow look — an
+ * icon inside a rounded tinted badge above a clear heading + body, wrapped in a `bgSubtleSecondary`
+ * card. Reused by the Intro, Done, no-PIN and cooldown screens so they all read as one design.
+ */
+@Composable
+private fun MessageCard(
+    icon: ImageVector,
+    iconTint: Color,
+    badgeColor: Color,
+    heading: String,
+    body: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(CardShape)
+            .background(ElementTheme.colors.bgSubtleSecondary)
+            .padding(horizontal = 20.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(BadgeSize)
+                .clip(BadgeShape)
+                .background(badgeColor),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(28.dp),
+            )
+        }
+        Text(
+            text = heading,
+            style = ElementTheme.typography.fontHeadingSmMedium,
+            color = ElementTheme.colors.textPrimary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 16.dp),
+        )
+        Text(
+            text = body,
+            style = ElementTheme.typography.fontBodyMdRegular,
+            color = ElementTheme.colors.textSecondary,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+    }
+}
+
 @Composable
 private fun IntroSection(
     eventSink: (ChangePhoneNumberEvents) -> Unit,
 ) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        // Leading icon row, mirroring iOS (userProfile glyph beside the header).
-        Row(
-            modifier = Modifier.padding(top = 24.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = CompoundIcons.UserProfileSolid(),
-                contentDescription = null,
-                tint = ElementTheme.colors.iconPrimary,
-            )
-            Text(
-                text = stringResource(id = R.string.screen_change_phone_intro_header),
-                style = ElementTheme.typography.fontHeadingSmMedium,
-                color = ElementTheme.colors.textPrimary,
-                modifier = Modifier.padding(start = 12.dp),
-            )
-        }
-        Text(
-            text = stringResource(id = R.string.screen_change_phone_intro_message),
-            style = ElementTheme.typography.fontBodyMdRegular,
-            color = ElementTheme.colors.textSecondary,
-            modifier = Modifier.padding(top = 8.dp),
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
+        MessageCard(
+            icon = CompoundIcons.UserProfileSolid(),
+            iconTint = ElementTheme.colors.iconPrimary,
+            badgeColor = ElementTheme.colors.bgSubtlePrimary,
+            heading = stringResource(id = R.string.screen_change_phone_intro_header),
+            body = stringResource(id = R.string.screen_change_phone_intro_message),
         )
         Button(
             text = stringResource(id = CommonStrings.action_continue),
@@ -114,6 +158,46 @@ private fun IntroSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 24.dp),
+        )
+    }
+}
+
+@Composable
+private fun NeedsPinSetupSection(
+    eventSink: (ChangePhoneNumberEvents) -> Unit,
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
+        MessageCard(
+            icon = CompoundIcons.LockSolid(),
+            iconTint = ElementTheme.colors.iconPrimary,
+            badgeColor = ElementTheme.colors.bgSubtlePrimary,
+            heading = stringResource(id = R.string.screen_change_phone_needs_pin_header),
+            body = stringResource(id = R.string.screen_change_phone_needs_pin_message),
+        )
+        Button(
+            text = stringResource(id = R.string.screen_change_phone_needs_pin_action),
+            onClick = { eventSink(ChangePhoneNumberEvents.SetUpPin) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 24.dp),
+        )
+    }
+}
+
+@Composable
+private fun CooldownSection(
+    state: ChangePhoneNumberState,
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
+        MessageCard(
+            icon = CompoundIcons.Time(),
+            iconTint = ElementTheme.colors.iconCriticalPrimary,
+            badgeColor = ElementTheme.colors.bgSubtlePrimary,
+            heading = stringResource(id = R.string.screen_change_phone_cooldown_header),
+            body = stringResource(
+                id = R.string.screen_change_phone_cooldown_message,
+                humanizeDuration(state.cooldownRemainingSeconds),
+            ),
         )
     }
 }
@@ -261,26 +345,13 @@ private fun DoneSection(
     eventSink: (ChangePhoneNumberEvents) -> Unit,
     onFinished: () -> Unit,
 ) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        Icon(
-            imageVector = CompoundIcons.CheckCircleSolid(),
-            contentDescription = null,
-            tint = ElementTheme.colors.iconSuccessPrimary,
-            modifier = Modifier
-                .padding(top = 24.dp)
-                .size(40.dp),
-        )
-        Text(
-            text = stringResource(id = R.string.screen_change_phone_done_header),
-            style = ElementTheme.typography.fontHeadingSmMedium,
-            color = ElementTheme.colors.textPrimary,
-            modifier = Modifier.padding(top = 16.dp),
-        )
-        Text(
-            text = stringResource(id = R.string.screen_change_phone_done_message),
-            style = ElementTheme.typography.fontBodyMdRegular,
-            color = ElementTheme.colors.textSecondary,
-            modifier = Modifier.padding(top = 8.dp),
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
+        MessageCard(
+            icon = CompoundIcons.CheckCircleSolid(),
+            iconTint = ElementTheme.colors.iconSuccessPrimary,
+            badgeColor = ElementTheme.colors.bgSubtlePrimary,
+            heading = stringResource(id = R.string.screen_change_phone_done_header),
+            body = stringResource(id = R.string.screen_change_phone_done_message),
         )
         Button(
             text = stringResource(id = CommonStrings.action_done),
@@ -337,64 +408,28 @@ private fun ContinueButton(
 }
 
 /**
- * GUA FORK: 6-bubble code field backed by a single hidden [BasicTextField]. Tapping any bubble focuses
- * the field; each typed digit fills the next bubble. Mirrors the two-step-verification `PinBubbleField`.
+ * GUA FORK: turns a remaining-cooldown second count into a short human phrase for the Cooldown
+ * interstitial, e.g. "6 days, 3 hours", "5 hours", "1 minute". Keeps the largest two non-zero units
+ * and never renders "0 minutes" (falls back to "a moment"). English copy lives here since these are
+ * temporary fork strings; humanisation mirrors the iOS view model.
  */
-@Composable
-private fun PinBubbleField(
-    code: String,
-    length: Int,
-    hasError: Boolean,
-    enabled: Boolean,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Box(modifier = modifier) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            repeat(length) { index ->
-                val digit = code.getOrNull(index)?.toString().orEmpty()
-                val borderColor = when {
-                    hasError -> ElementTheme.colors.textCriticalPrimary
-                    digit.isNotEmpty() -> ElementTheme.colors.iconPrimary
-                    else -> ElementTheme.colors.borderInteractivePrimary
-                }
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .background(
-                            color = ElementTheme.colors.bgSubtleSecondary,
-                            shape = RoundedCornerShape(12.dp),
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = borderColor,
-                            shape = RoundedCornerShape(12.dp),
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = digit,
-                        style = ElementTheme.typography.fontHeadingMdBold,
-                        color = ElementTheme.colors.textPrimary,
-                    )
-                }
-            }
-        }
-        // Invisible input layered over the bubbles to capture the keyboard.
-        BasicTextField(
-            value = code,
-            onValueChange = { onValueChange(it) },
-            enabled = enabled,
-            singleLine = true,
-            cursorBrush = SolidColor(ElementTheme.colors.textPrimary),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-            modifier = Modifier
-                .matchParentSize()
-                .alpha(0f),
-        )
+internal fun humanizeDuration(totalSeconds: Long): String {
+    if (totalSeconds <= 0) return "a moment"
+    val days = totalSeconds / 86_400
+    val hours = (totalSeconds % 86_400) / 3_600
+    val minutes = (totalSeconds % 3_600) / 60
+
+    fun unit(value: Long, singular: String) = "$value $singular${if (value == 1L) "" else "s"}"
+
+    val parts = buildList {
+        if (days > 0) add(unit(days, "day"))
+        if (hours > 0) add(unit(hours, "hour"))
+        // Only show minutes when they add precision and we are not already showing days.
+        if (minutes > 0 && days == 0L) add(unit(minutes, "minute"))
+    }
+    return when {
+        parts.isEmpty() -> "a moment"
+        else -> parts.take(2).joinToString(", ")
     }
 }
 
@@ -408,6 +443,8 @@ private fun ChangePhoneNumberPhase.isEnteringFlow(): Boolean = when (this) {
 
 private fun ChangePhoneNumberPhase.titleRes(): Int = when (this) {
     ChangePhoneNumberPhase.Intro,
+    ChangePhoneNumberPhase.NeedsPinSetup,
+    ChangePhoneNumberPhase.Cooldown,
     ChangePhoneNumberPhase.Submitting -> R.string.screen_change_phone_title
     ChangePhoneNumberPhase.EnteringNewPhone -> R.string.screen_change_phone_new_header
     ChangePhoneNumberPhase.EnteringPin -> R.string.screen_change_phone_pin_header

@@ -59,4 +59,19 @@ sealed class ResolverError(message: String, cause: Throwable? = null) : Exceptio
      * flow from the PIN step.
      */
     data object InvalidReauthToken : ResolverError("Your confirmation expired. Please re-enter your PIN.")
+
+    /**
+     * The change-phone flow requires an account PIN to be set up first
+     * (identity-service `code: "pin_setup_required"`, HTTP 400). Distinct from [InvalidPin]: the user
+     * has no PIN at all. The caller should route into the 2SV PIN-setup flow.
+     */
+    data object PinSetupRequired : ResolverError("You need to set up a PIN before changing your number.")
+
+    /**
+     * The fresh-2FA cooldown is still active, so the phone number cannot be changed yet
+     * (identity-service `code: "twofa_cooldown_active"`, HTTP 400). [retryAfterSeconds] is how long
+     * the caller must wait before the change is allowed.
+     */
+    data class TwoFactorCooldown(val retryAfterSeconds: Long? = null) :
+        ResolverError("For your security, you can change your number again later.")
 }

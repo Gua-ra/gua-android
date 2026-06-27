@@ -32,11 +32,13 @@ interface IdentityServiceClient {
     // `IdentityServiceClientProtocol.pinStatus / setInitialPin / startPinChange / completePinChange`.
 
     /**
-     * Whether the account already has a two-step-verification PIN set.
+     * The account two-step-verification (PIN) status, including the change-phone fresh-2FA cooldown.
      *
-     * @return [Result.success] with `true` when a PIN is set, or [Result.failure] with a [ResolverError].
+     * @param userId the caller's Matrix id (mirrors iOS, which scopes the status to the user).
+     * @return [Result.success] with the [PinStatus] (whether a PIN is set and any remaining
+     * change-phone cooldown), or [Result.failure] with a [ResolverError].
      */
-    suspend fun pinStatus(accessToken: String): Result<Boolean>
+    suspend fun pinStatus(accessToken: String, userId: String): Result<PinStatus>
 
     /**
      * Set the initial account PIN (no existing PIN). Mirrors iOS `setInitialPin`.

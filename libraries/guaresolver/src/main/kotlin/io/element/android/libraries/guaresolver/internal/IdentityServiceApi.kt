@@ -101,6 +101,12 @@ internal data class LookupResponse(
 @Serializable
 internal data class PinStatusResponse(
     val hasPin: Boolean,
+    /**
+     * Remaining seconds of the WhatsApp-style fresh-2FA cooldown before the phone number can be
+     * changed again (0 = no active cooldown). Defaults to 0 for older identity-service builds that
+     * do not yet return the field.
+     */
+    val changePhoneCooldownRemainingSeconds: Long = 0,
 )
 
 @Serializable
@@ -165,4 +171,6 @@ internal data class IdentityServiceErrorBody(
     val code: String? = null,
     val message: String? = null,
     val error: String? = null,
+    /** Present on `twofa_cooldown_active`: seconds the caller must wait before retrying. */
+    val retryAfterSeconds: Long? = null,
 )

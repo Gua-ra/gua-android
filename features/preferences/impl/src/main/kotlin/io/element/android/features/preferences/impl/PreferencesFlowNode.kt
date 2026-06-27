@@ -334,6 +334,10 @@ class PreferencesFlowNode(
                     override fun navigateToCountryPicker() {
                         backstack.push(NavTarget.CountryPicker)
                     }
+
+                    override fun navigateToPinSetup() {
+                        backstack.push(NavTarget.TwoStepVerification)
+                    }
                 }
                 createNode<ChangePhoneNumberNode>(buildContext, listOf(changePhoneCallback))
             }
