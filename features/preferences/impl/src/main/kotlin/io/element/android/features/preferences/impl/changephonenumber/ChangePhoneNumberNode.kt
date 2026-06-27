@@ -28,11 +28,15 @@ class ChangePhoneNumberNode(
     interface Callback : Plugin {
         /** Open the shared country picker for the new-number field. */
         fun navigateToCountryPicker()
+
+        /** Open the existing 2SV PIN-setup flow (no PIN is set, so the change cannot proceed). */
+        fun navigateToPinSetup()
     }
 
     private val callback: Callback = callback()
     private val presenter = presenterFactory.create(
         navigateToCountryPicker = callback::navigateToCountryPicker,
+        navigateToPinSetup = callback::navigateToPinSetup,
     )
 
     @Composable

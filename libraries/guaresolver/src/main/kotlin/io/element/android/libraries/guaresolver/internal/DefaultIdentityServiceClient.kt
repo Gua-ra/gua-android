@@ -16,6 +16,7 @@ import io.element.android.libraries.guaresolver.ContactMatch
 import io.element.android.libraries.guaresolver.GuaDeployment
 import io.element.android.libraries.guaresolver.GuaResolverConfig
 import io.element.android.libraries.guaresolver.IdentityServiceClient
+import io.element.android.libraries.guaresolver.PinStatus
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.network.RetrofitFactory
 import kotlinx.serialization.json.Json
@@ -91,8 +92,14 @@ class DefaultIdentityServiceClient(
 
     // GUA FORK: Two-step verification (account PIN). Mirrors iOS `IdentityServiceClient` PIN methods.
 
-    override suspend fun pinStatus(accessToken: String): Result<Boolean> =
-        runPinCall { api -> api.pinStatus(authorization = "Bearer $accessToken").hasPin }
+    override suspend fun pinStatus(accessToken: String, userId: String): Result<PinStatus> =
+        runPinCall { api ->
+            val response = api.pinStatus(authorization = "Bearer $accessToken")
+            PinStatus(
+                hasPin = response.hasPin,
+                changePhoneCooldownRemainingSeconds = response.changePhoneCooldownRemainingSeconds.coerceAtLeast(0),
+            )
+        }
 
     override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> =
         runPinCall { api ->
@@ -200,10 +207,13 @@ class DefaultIdentityServiceClient(
      */
     private fun HttpException.toPinError(): ResolverError {
         val rawBody = response()?.errorBody()?.string()
-        val code = rawBody?.let {
-            tryOrNull { errorBodyJson.decodeFromString<IdentityServiceErrorBody>(it).code }
+        val errorBody = rawBody?.let {
+            runCatching { errorBodyJson.decodeFromString<IdentityServiceErrorBody>(it) }.getOrNull()
         }
+        val code = errorBody?.code
         val retryAfter = response()?.headers()?.get("Retry-After")?.toIntOrNull()
+        // The cooldown retry window is carried in the JSON body, falling back to the Retry-After header.
+        val cooldownRetryAfter = errorBody?.retryAfterSeconds ?: retryAfter?.toLong()
         return when (code) {
             "invalid_pin" -> ResolverError.InvalidPin
             "invalid_otp" -> ResolverError.InvalidOtp
@@ -212,6 +222,8 @@ class DefaultIdentityServiceClient(
             "pin_change_challenge_invalid" -> ResolverError.PinChangeChallengeInvalid
             "phone_already_linked" -> ResolverError.PhoneAlreadyLinked
             "invalid_reauth_token" -> ResolverError.InvalidReauthToken
+            "pin_setup_required" -> ResolverError.PinSetupRequired
+            "twofa_cooldown_active" -> ResolverError.TwoFactorCooldown(retryAfterSeconds = cooldownRetryAfter)
             "rate_limited" -> ResolverError.RateLimited
             else -> when (code()) {
                 409 -> ResolverError.PhoneAlreadyLinked

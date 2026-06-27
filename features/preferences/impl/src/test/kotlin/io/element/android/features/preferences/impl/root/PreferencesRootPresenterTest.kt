@@ -26,6 +26,7 @@ import io.element.android.libraries.featureflag.test.FakeFeature
 import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
 import io.element.android.libraries.guaresolver.ContactMatch
 import io.element.android.libraries.guaresolver.IdentityServiceClient
+import io.element.android.libraries.guaresolver.PinStatus
 import io.element.android.libraries.indicator.api.IndicatorService
 import io.element.android.libraries.indicator.test.FakeIndicatorService
 import io.element.android.libraries.matrix.api.oauth.AccountManagementAction
@@ -361,11 +362,30 @@ private class NoopIdentityServiceClient : IdentityServiceClient {
     override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> =
         Result.success(emptyList())
 
-    override suspend fun pinStatus(accessToken: String): Result<Boolean> = Result.success(false)
+    override suspend fun pinStatus(accessToken: String, userId: String): Result<PinStatus> =
+        Result.success(PinStatus(hasPin = false, changePhoneCooldownRemainingSeconds = 0))
 
     override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> = Result.success(Unit)
 
     override suspend fun startPinChange(accessToken: String, phone: String, currentPin: String): Result<String> = Result.success("challenge-id")
 
     override suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit> = Result.success(Unit)
+
+    override suspend fun verifyPinReauth(accessToken: String, userId: String, pin: String): Result<String> = Result.success("reauth-token")
+
+    override suspend fun requestPhoneChangeOtp(
+        accessToken: String,
+        userId: String,
+        newPhone: String,
+        reauthToken: String,
+        language: String?,
+    ): Result<Unit> = Result.success(Unit)
+
+    override suspend fun changePhoneNumber(
+        accessToken: String,
+        userId: String,
+        newPhone: String,
+        code: String,
+        reauthToken: String,
+    ): Result<Unit> = Result.success(Unit)
 }

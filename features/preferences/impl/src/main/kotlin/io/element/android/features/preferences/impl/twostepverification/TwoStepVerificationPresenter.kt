@@ -63,10 +63,10 @@ class TwoStepVerificationPresenter(
                 phase = TwoStepVerificationPhase.OverviewNoPin
                 return@LaunchedEffect
             }
-            identityServiceClient.pinStatus(accessToken)
-                .onSuccess { hasPin ->
-                    userHasPin = hasPin
-                    phase = if (hasPin) TwoStepVerificationPhase.OverviewHasPin else TwoStepVerificationPhase.OverviewNoPin
+            identityServiceClient.pinStatus(accessToken, matrixClient.sessionId.value)
+                .onSuccess { status ->
+                    userHasPin = status.hasPin
+                    phase = if (status.hasPin) TwoStepVerificationPhase.OverviewHasPin else TwoStepVerificationPhase.OverviewNoPin
                 }
                 .onFailure {
                     userHasPin = false
