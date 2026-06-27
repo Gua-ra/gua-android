@@ -35,7 +35,7 @@
     <string name="screen_two_step_verification_updated">Two-step verification updated</string>
     <string name="screen_change_phone_title">Change phone number</string>
     <string name="screen_change_phone_intro_header">Change your number</string>
-    <string name="screen_change_phone_intro_message">We\'ll send a code to your new number. Your account, chats, and messages stay the same.</string>
+    <string name="screen_change_phone_intro_message">We\'ll confirm your PIN, then text a code to your new number. Your account, chats, and messages stay the same.</string>
     <string name="screen_change_phone_new_header">New phone number</string>
     <string name="screen_change_phone_new_footer">Enter the number you\'d like to use from now on.</string>
     <string name="screen_change_phone_new_invalid">Please enter a valid phone number.</string>

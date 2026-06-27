@@ -52,4 +52,11 @@ sealed class ResolverError(message: String, cause: Throwable? = null) : Exceptio
      * (identity-service `code: "phone_already_linked"`, HTTP 409).
      */
     data object PhoneAlreadyLinked : ResolverError("That phone number is already linked to another account.")
+
+    /**
+     * The PIN step-up reauth token is missing, invalid, or expired
+     * (identity-service `code: "invalid_reauth_token"`, HTTP 401). The caller should restart the
+     * flow from the PIN step.
+     */
+    data object InvalidReauthToken : ResolverError("Your confirmation expired. Please re-enter your PIN.")
 }

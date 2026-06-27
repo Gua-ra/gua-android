@@ -63,26 +63,36 @@ interface IdentityServiceClient {
      */
     suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit>
 
-    // GUA FORK: Change phone number. Android counterpart of iOS
-    // `IdentityServiceClientProtocol.requestPhoneChangeOtp / changePhoneNumber`.
+    // GUA FORK: Change phone number (PIN-first). Android counterpart of iOS
+    // `IdentityServiceClientProtocol.verifyPinReauth / requestPhoneChangeOtp / changePhoneNumber`.
+    // The PIN step-up runs FIRST and yields a short-lived reauth token; the SMS is only sent from
+    // [requestPhoneChangeOtp] and the token gates both the request and the completion.
 
     /**
-     * Request an OTP to be sent to the [newPhone] the user wants to switch to. Mirrors iOS
-     * `requestPhoneChangeOtp`.
+     * Verify the account PIN as an up-front step-up and obtain a short-lived reauth token. Mirrors
+     * iOS `verifyPinReauth`. No SMS is sent here.
+     *
+     * @return [Result.success] with the opaque reauth token, or [Result.failure] with a
+     * [ResolverError] (notably [ResolverError.InvalidPin], [ResolverError.PinLocked]).
+     */
+    suspend fun verifyPinReauth(accessToken: String, userId: String, pin: String): Result<String>
+
+    /**
+     * Request an OTP to be sent to the [newPhone] the user wants to switch to, gated by the
+     * previously-obtained [reauthToken]. Mirrors iOS `requestPhoneChangeOtp`. The SMS fires here.
      *
      * @param language optional BCP-47 language tag (e.g. "en-US") so the code message is localised.
      * @return [Result.success] on success, or [Result.failure] with a [ResolverError] (notably
-     * [ResolverError.RateLimited]).
+     * [ResolverError.InvalidReauthToken], [ResolverError.PhoneAlreadyLinked], [ResolverError.RateLimited]).
      */
-    suspend fun requestPhoneChangeOtp(accessToken: String, newPhone: String, language: String?): Result<Unit>
+    suspend fun requestPhoneChangeOtp(accessToken: String, userId: String, newPhone: String, reauthToken: String, language: String?): Result<Unit>
 
     /**
-     * Complete the phone-number change: verifies the OTP [code] sent to the new number and the
-     * account [pin] as a second factor, then re-points the account to [newPhone]. Mirrors iOS
-     * `changePhoneNumber`.
+     * Complete the phone-number change: verifies the OTP [code] sent to the new number, consumes the
+     * [reauthToken], then re-points the account to [newPhone]. Mirrors iOS `changePhoneNumber`.
      *
      * @return [Result.success] on success, or [Result.failure] with a [ResolverError] (e.g.
-     * [ResolverError.InvalidOtp], [ResolverError.InvalidPin], [ResolverError.PhoneAlreadyLinked]).
+     * [ResolverError.InvalidOtp], [ResolverError.InvalidReauthToken], [ResolverError.PhoneAlreadyLinked]).
      */
-    suspend fun changePhoneNumber(accessToken: String, userId: String, newPhone: String, code: String, pin: String): Result<Unit>
+    suspend fun changePhoneNumber(accessToken: String, userId: String, newPhone: String, code: String, reauthToken: String): Result<Unit>
 }
