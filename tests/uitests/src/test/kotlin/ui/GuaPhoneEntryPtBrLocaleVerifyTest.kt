@@ -12,7 +12,7 @@ import base.BaseDeviceConfig
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.login.impl.screens.phoneentry.PhoneEntryState
 import io.element.android.features.login.impl.screens.phoneentry.PhoneEntryView
-import io.element.android.features.login.impl.screens.phoneentry.country.Country
+import io.element.android.libraries.phonenumberentry.Country
 import io.element.android.libraries.architecture.AsyncData
 import org.junit.Rule
 import org.junit.Test
@@ -45,12 +45,10 @@ class GuaPhoneEntryPtBrLocaleVerifyTest {
                     state = PhoneEntryState(
                         selectedCountry = Country(isoCode = "BR", dialCode = "55"),
                         localPhoneNumber = "(11) 91234-5678",
-                        isLegacyAuthEnabled = true,
                         loginMode = AsyncData.Uninitialized,
                         eventSink = {},
                     ),
                     onOAuthDetails = {},
-                    onUseLegacyAuth = {},
                     onSelectCountry = {},
                     onLearnMoreClick = {},
                 )

@@ -39,7 +39,7 @@ import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.login.LoginModeView
-import io.element.android.features.login.impl.screens.phoneentry.country.Country
+import io.element.android.libraries.phonenumberentry.Country
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.designsystem.atomic.atoms.GuaWelcomeLogo
 import io.element.android.libraries.designsystem.atomic.molecules.ButtonColumnMolecule

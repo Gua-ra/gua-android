@@ -8,17 +8,23 @@
 package io.element.android.features.preferences.impl.changephonenumber
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
 import io.element.android.features.preferences.impl.R
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.matrix.api.MatrixClient
+import io.element.android.libraries.phonenumberentry.Country
+import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.coroutines.launch
@@ -32,20 +38,39 @@ import java.util.Locale
  * so the SMS never fires until a valid PIN step-up exists. Translates typed [ResolverError]s into
  * per-error phase transitions, mirroring the iOS change-number view model.
  */
-@Inject
+@AssistedInject
 class ChangePhoneNumberPresenter(
+    @Assisted private val navigateToCountryPicker: () -> Unit,
     private val matrixClient: MatrixClient,
     private val sessionStore: SessionStore,
     private val identityServiceClient: IdentityServiceClient,
+    private val selectedCountryStore: SelectedCountryStore,
 ) : Presenter<ChangePhoneNumberState> {
+    @AssistedFactory
+    interface Factory {
+        fun create(navigateToCountryPicker: () -> Unit): ChangePhoneNumberPresenter
+    }
+
     @Composable
     override fun present(): ChangePhoneNumberState {
         val coroutineScope = rememberCoroutineScope()
 
         var phase by remember { mutableStateOf(ChangePhoneNumberPhase.Intro) }
         var code by remember { mutableStateOf("") }
-        var phone by remember { mutableStateOf("") }
+        // The NEW number, held as (country, national digits) like the welcome PhoneEntry screen.
+        var selectedCountry by remember { mutableStateOf(Country.deviceDefault) }
+        var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
+
+        // Apply any country picked in the shared CountryPicker child screen, then clear it.
+        val pickedCountry by selectedCountryStore.flow.collectAsState()
+        LaunchedEffect(pickedCountry) {
+            pickedCountry?.let { country ->
+                selectedCountry = country
+                localPhoneNumber = country.formatNational(localPhoneNumber.filter { it.isDigit() })
+                selectedCountryStore.consume()
+            }
+        }
 
         // Flow scratch state.
         var newPhone by remember { mutableStateOf("") }
@@ -56,7 +81,7 @@ class ChangePhoneNumberPresenter(
         fun resetFlowState() {
             errorMessage = null
             code = ""
-            phone = ""
+            localPhoneNumber = ""
             newPhone = ""
             reauthToken = ""
         }
@@ -188,7 +213,6 @@ class ChangePhoneNumberPresenter(
                             }
                             is ResolverError.PhoneAlreadyLinked -> {
                                 errorMessage = R.string.screen_change_phone_already_linked
-                                phone = newPhone
                                 code = ""
                                 phase = ChangePhoneNumberPhase.EnteringNewPhone
                             }
@@ -226,9 +250,25 @@ class ChangePhoneNumberPresenter(
                     }
                 }
                 is ChangePhoneNumberEvents.PhoneChanged -> {
-                    phone = event.phone
+                    // Mirror the welcome PhoneEntry pipeline: normalise (strip a redundant country
+                    // code from a paste/autofill and switch country if unambiguously international),
+                    // then auto-detect the country and reformat with its national mask. No-op for
+                    // ordinary local typing.
+                    val (normalizedCountry, normalizedDigits) = Country.normalize(
+                        rawInput = event.value,
+                        current = selectedCountry,
+                    )
+                    val country = Country.detect(localDigits = normalizedDigits, current = normalizedCountry) ?: normalizedCountry
+                    selectedCountry = country
+                    localPhoneNumber = country.formatNational(normalizedDigits)
                     if (errorMessage != null) errorMessage = null
                 }
+                is ChangePhoneNumberEvents.CountrySelected -> {
+                    selectedCountry = event.country
+                    localPhoneNumber = event.country.formatNational(localPhoneNumber.filter { it.isDigit() })
+                    if (errorMessage != null) errorMessage = null
+                }
+                ChangePhoneNumberEvents.SelectCountry -> navigateToCountryPicker()
                 ChangePhoneNumberEvents.Continue -> {
                     when (phase) {
                         ChangePhoneNumberPhase.Intro -> {
@@ -237,15 +277,15 @@ class ChangePhoneNumberPresenter(
                             phase = ChangePhoneNumberPhase.EnteringPin
                         }
                         ChangePhoneNumberPhase.EnteringNewPhone -> {
-                            val trimmed = phone.trim()
-                            if (!ChangePhoneNumberState.isValidPhone(trimmed)) {
+                            val digits = localPhoneNumber.filter { it.isDigit() }
+                            if (!ChangePhoneNumberState.isValidNumber(localDigits = digits, dialCode = selectedCountry.dialCode)) {
                                 errorMessage = R.string.screen_change_phone_new_invalid
                                 return
                             }
-                            newPhone = trimmed
-                            phone = trimmed
+                            val e164 = "+" + selectedCountry.dialCode + digits
+                            newPhone = e164
                             errorMessage = null
-                            requestOtp(trimmed)
+                            requestOtp(e164)
                         }
                         ChangePhoneNumberPhase.EnteringPin,
                         ChangePhoneNumberPhase.EnteringOtp -> {
@@ -267,7 +307,8 @@ class ChangePhoneNumberPresenter(
         return ChangePhoneNumberState(
             phase = phase,
             code = code,
-            phone = phone,
+            selectedCountry = selectedCountry,
+            localPhoneNumber = localPhoneNumber,
             errorMessage = errorMessage,
             eventSink = ::handleEvent,
         )

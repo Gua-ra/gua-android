@@ -11,7 +11,7 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.features.login.impl.login.FakeResolverClient
 import io.element.android.features.login.impl.login.LoginMode
 import io.element.android.features.login.impl.screens.onboarding.createLoginHelper
-import io.element.android.features.login.impl.screens.phoneentry.country.SelectedCountryStore
+import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.guaresolver.HomeserverResolution
 import io.element.android.libraries.guaresolver.ResolvedHomeserver

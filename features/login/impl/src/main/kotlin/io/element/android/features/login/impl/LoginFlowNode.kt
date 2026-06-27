@@ -41,7 +41,7 @@ import io.element.android.features.login.impl.screens.createaccount.CreateAccoun
 import io.element.android.features.login.impl.screens.loginpassword.LoginPasswordNode
 import io.element.android.features.login.impl.screens.onboarding.OnBoardingNode
 import io.element.android.features.login.impl.screens.phoneentry.PhoneEntryNode
-import io.element.android.features.login.impl.screens.phoneentry.country.CountryPickerNode
+import io.element.android.libraries.phonenumberentry.CountryPickerNode
 import io.element.android.features.login.impl.screens.searchaccountprovider.SearchAccountProviderNode
 import io.element.android.features.preferences.api.PreferencesEntryPoint
 import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab

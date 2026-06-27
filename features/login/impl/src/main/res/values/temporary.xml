@@ -20,9 +20,4 @@
     <string name="screen_phone_entry_footer">We\'ll text a verification code to this number.</string>
     <string name="screen_phone_entry_phone_number_label">Phone number</string>
     <string name="screen_phone_entry_country_picker_a11y">Select country</string>
-
-    <!-- Gua country picker (Stage 3). -->
-    <string name="screen_country_picker_title">Select country</string>
-    <string name="screen_country_picker_search_placeholder">Search country</string>
-    <string name="screen_country_picker_empty">No matching countries</string>
 </resources>

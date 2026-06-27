@@ -7,7 +7,7 @@
 
 package io.element.android.features.login.impl.screens.phoneentry
 
-import io.element.android.features.login.impl.screens.phoneentry.country.Country
+import io.element.android.libraries.phonenumberentry.Country
 
 /**
  * GUA FORK: UI actions for the phone-first entry screen. Mirrors iOS `PhoneEntryScreenViewAction`.
