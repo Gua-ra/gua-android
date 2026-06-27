@@ -10,18 +10,20 @@ package io.element.android.features.preferences.impl.changephonenumber
 import androidx.annotation.StringRes
 
 /**
- * GUA FORK: drives the change-phone-number screen. This is the real backend flow, a single-step
- * change-number where the OTP goes to the NEW number and the account PIN is the second factor.
+ * GUA FORK: drives the change-phone-number screen. This is the real backend flow, PIN-first: the
+ * user confirms their account PIN up front (yielding a short-lived reauth token), then enters the
+ * NEW number (which triggers the OTP), then enters that OTP to complete the change. The SMS does NOT
+ * fire until a valid reauth token exists.
  *
- * [Intro] -> [EnteringNewPhone] -> [EnteringPin] (sends the OTP) ->
+ * [Intro] -> [EnteringPin] (step-up, no SMS) -> [EnteringNewPhone] (sends the OTP) ->
  * [EnteringOtp] (submits the change) -> [Done].
  *
- * [Submitting] is shown while the two async identity-service calls are in flight.
+ * [Submitting] is shown while the async identity-service calls are in flight.
  */
 enum class ChangePhoneNumberPhase {
     Intro,
-    EnteringNewPhone,
     EnteringPin,
+    EnteringNewPhone,
     EnteringOtp,
     Submitting,
     Done,

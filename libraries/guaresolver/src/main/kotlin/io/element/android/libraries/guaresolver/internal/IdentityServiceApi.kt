@@ -54,12 +54,20 @@ internal interface IdentityServiceApi {
         @Body body: CompletePinChangeRequest,
     )
 
-    // GUA FORK: change phone number. Mirrors iOS' `otp/send` + `otp/change-number` endpoints.
+    // GUA FORK: change phone number (PIN-first). Mirrors iOS' `security/pin/reauth` +
+    // `otp/change-number/request` + `otp/change-number` endpoints. The PIN step-up runs FIRST and
+    // yields a reauth token; the SMS only fires from `otp/change-number/request`.
 
-    @POST("otp/send")
-    suspend fun sendChangeNumberOtp(
+    @POST("security/pin/reauth")
+    suspend fun verifyPinReauth(
         @Header("Authorization") authorization: String,
-        @Body body: OtpSendRequest,
+        @Body body: PinReauthRequest,
+    ): ReauthTokenResponse
+
+    @POST("otp/change-number/request")
+    suspend fun requestChangeNumberOtp(
+        @Header("Authorization") authorization: String,
+        @Body body: OtpChangeNumberStartRequest,
     )
 
     @POST("otp/change-number")
@@ -121,8 +129,22 @@ internal data class CompletePinChangeRequest(
 )
 
 @Serializable
-internal data class OtpSendRequest(
-    val phone: String,
+internal data class PinReauthRequest(
+    val userId: String,
+    val pin: String,
+)
+
+@Serializable
+internal data class ReauthTokenResponse(
+    val reauthToken: String,
+    val expiresInSeconds: Int? = null,
+)
+
+@Serializable
+internal data class OtpChangeNumberStartRequest(
+    val userId: String,
+    val newPhone: String,
+    val reauthToken: String,
     val language: String? = null,
 )
 
@@ -131,7 +153,7 @@ internal data class OtpChangeNumberRequest(
     val userId: String,
     val newPhone: String,
     val code: String,
-    val pin: String,
+    val reauthToken: String,
 )
 
 /**

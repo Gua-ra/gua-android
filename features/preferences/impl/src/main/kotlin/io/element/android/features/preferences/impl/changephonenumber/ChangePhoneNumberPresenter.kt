@@ -25,10 +25,12 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 
 /**
- * GUA FORK: presenter for the change-phone-number screen. Drives the real backend single-step
- * change-number flow: the user enters their new number, confirms their account PIN (which triggers an
- * OTP to the NEW number), then enters that OTP to complete the change. Translates typed
- * [ResolverError]s into per-error phase transitions, mirroring the iOS change-number view model.
+ * GUA FORK: presenter for the change-phone-number screen. Drives the real backend PIN-first
+ * change-number flow: the user confirms their account PIN up front (yielding a short-lived reauth
+ * token, no SMS), then enters their new number (which triggers an OTP to that number), then enters
+ * that OTP to complete the change. The reauth token gates both the OTP request and the completion,
+ * so the SMS never fires until a valid PIN step-up exists. Translates typed [ResolverError]s into
+ * per-error phase transitions, mirroring the iOS change-number view model.
  */
 @Inject
 class ChangePhoneNumberPresenter(
@@ -47,17 +49,62 @@ class ChangePhoneNumberPresenter(
 
         // Flow scratch state.
         var newPhone by remember { mutableStateOf("") }
-        var storedPin by remember { mutableStateOf("") }
+        // Short-lived PIN step-up token from /security/pin/reauth. Gates the OTP request + completion;
+        // the SMS never fires until this is set. We deliberately do NOT keep the PIN around.
+        var reauthToken by remember { mutableStateOf("") }
 
         fun resetFlowState() {
             errorMessage = null
             code = ""
             phone = ""
             newPhone = ""
-            storedPin = ""
+            reauthToken = ""
         }
 
-        fun requestOtp(enteredPin: String) {
+        fun verifyPin(enteredPin: String) {
+            coroutineScope.launch {
+                val accessToken = accessToken()
+                if (accessToken == null) {
+                    errorMessage = CommonStrings.error_unknown
+                    return@launch
+                }
+                phase = ChangePhoneNumberPhase.Submitting
+                identityServiceClient.verifyPinReauth(
+                    accessToken = accessToken,
+                    userId = matrixClient.sessionId.value,
+                    pin = enteredPin,
+                )
+                    .onSuccess { token ->
+                        reauthToken = token
+                        code = ""
+                        errorMessage = null
+                        // No SMS yet — the user picks the new number first.
+                        phase = ChangePhoneNumberPhase.EnteringNewPhone
+                    }
+                    .onFailure { error ->
+                        when (error) {
+                            is ResolverError.PinLocked -> {
+                                errorMessage = R.string.screen_two_step_verification_rate_limited
+                                code = ""
+                                phase = ChangePhoneNumberPhase.EnteringPin
+                            }
+                            is ResolverError.RateLimited -> {
+                                errorMessage = R.string.screen_two_step_verification_rate_limited
+                                code = ""
+                                phase = ChangePhoneNumberPhase.EnteringPin
+                            }
+                            else -> {
+                                // invalid_pin and anything else: stay on the PIN step, no SMS.
+                                errorMessage = R.string.screen_change_phone_pin_incorrect
+                                code = ""
+                                phase = ChangePhoneNumberPhase.EnteringPin
+                            }
+                        }
+                    }
+            }
+        }
+
+        fun requestOtp(enteredPhone: String) {
             coroutineScope.launch {
                 val accessToken = accessToken()
                 if (accessToken == null) {
@@ -67,34 +114,37 @@ class ChangePhoneNumberPresenter(
                 phase = ChangePhoneNumberPhase.Submitting
                 identityServiceClient.requestPhoneChangeOtp(
                     accessToken = accessToken,
-                    newPhone = newPhone,
+                    userId = matrixClient.sessionId.value,
+                    newPhone = enteredPhone,
+                    reauthToken = reauthToken,
                     language = Locale.getDefault().toLanguageTag(),
                 )
                     .onSuccess {
-                        storedPin = enteredPin
+                        // SMS fired here.
                         code = ""
                         errorMessage = null
                         phase = ChangePhoneNumberPhase.EnteringOtp
                     }
                     .onFailure { error ->
                         when (error) {
+                            is ResolverError.InvalidReauthToken -> {
+                                // The step-up expired: restart from the PIN.
+                                errorMessage = R.string.screen_change_phone_pin_incorrect
+                                reauthToken = ""
+                                code = ""
+                                phase = ChangePhoneNumberPhase.EnteringPin
+                            }
+                            is ResolverError.PhoneAlreadyLinked -> {
+                                errorMessage = R.string.screen_change_phone_already_linked
+                                phase = ChangePhoneNumberPhase.EnteringNewPhone
+                            }
                             is ResolverError.RateLimited -> {
                                 errorMessage = R.string.screen_two_step_verification_rate_limited
-                                code = ""
-                                phase = ChangePhoneNumberPhase.EnteringPin
-                            }
-                            is ResolverError.InvalidPin -> {
-                                errorMessage = R.string.screen_change_phone_pin_incorrect
-                                code = ""
-                                phase = ChangePhoneNumberPhase.EnteringPin
+                                phase = ChangePhoneNumberPhase.EnteringNewPhone
                             }
                             else -> {
-                                // 400 / invalid-phone and anything else: send the user back to the
-                                // number step with the phone cleared.
+                                // 400 / invalid-phone and anything else: stay on the number step.
                                 errorMessage = R.string.screen_change_phone_new_invalid
-                                newPhone = ""
-                                phone = ""
-                                code = ""
                                 phase = ChangePhoneNumberPhase.EnteringNewPhone
                             }
                         }
@@ -115,7 +165,7 @@ class ChangePhoneNumberPresenter(
                     userId = matrixClient.sessionId.value,
                     newPhone = newPhone,
                     code = enteredOtp,
-                    pin = storedPin,
+                    reauthToken = reauthToken,
                 )
                     .onSuccess {
                         errorMessage = null
@@ -129,17 +179,16 @@ class ChangePhoneNumberPresenter(
                                 code = ""
                                 phase = ChangePhoneNumberPhase.EnteringOtp
                             }
-                            is ResolverError.InvalidPin -> {
-                                // Re-submitting the PIN re-sends a fresh OTP, so clear the stored pin.
+                            is ResolverError.InvalidReauthToken -> {
+                                // The step-up expired: restart from the PIN.
                                 errorMessage = R.string.screen_change_phone_pin_incorrect
-                                storedPin = ""
+                                reauthToken = ""
                                 code = ""
                                 phase = ChangePhoneNumberPhase.EnteringPin
                             }
                             is ResolverError.PhoneAlreadyLinked -> {
                                 errorMessage = R.string.screen_change_phone_already_linked
-                                newPhone = ""
-                                phone = ""
+                                phone = newPhone
                                 code = ""
                                 phase = ChangePhoneNumberPhase.EnteringNewPhone
                             }
@@ -160,7 +209,7 @@ class ChangePhoneNumberPresenter(
 
         fun handleSubmittedCode(submitted: String) {
             when (phase) {
-                ChangePhoneNumberPhase.EnteringPin -> requestOtp(submitted)
+                ChangePhoneNumberPhase.EnteringPin -> verifyPin(submitted)
                 ChangePhoneNumberPhase.EnteringOtp -> submitOtp(submitted)
                 else -> Unit
             }
@@ -184,7 +233,8 @@ class ChangePhoneNumberPresenter(
                     when (phase) {
                         ChangePhoneNumberPhase.Intro -> {
                             errorMessage = null
-                            phase = ChangePhoneNumberPhase.EnteringNewPhone
+                            code = ""
+                            phase = ChangePhoneNumberPhase.EnteringPin
                         }
                         ChangePhoneNumberPhase.EnteringNewPhone -> {
                             val trimmed = phone.trim()
@@ -194,9 +244,8 @@ class ChangePhoneNumberPresenter(
                             }
                             newPhone = trimmed
                             phone = trimmed
-                            code = ""
                             errorMessage = null
-                            phase = ChangePhoneNumberPhase.EnteringPin
+                            requestOtp(trimmed)
                         }
                         ChangePhoneNumberPhase.EnteringPin,
                         ChangePhoneNumberPhase.EnteringOtp -> {

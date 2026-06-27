@@ -14,17 +14,17 @@ open class ChangePhoneNumberStateProvider : PreviewParameterProvider<ChangePhone
     override val values: Sequence<ChangePhoneNumberState>
         get() = sequenceOf(
             aChangePhoneNumberState(phase = ChangePhoneNumberPhase.Intro),
-            aChangePhoneNumberState(phase = ChangePhoneNumberPhase.EnteringNewPhone, phone = "+1"),
-            aChangePhoneNumberState(
-                phase = ChangePhoneNumberPhase.EnteringNewPhone,
-                phone = "+1abc",
-                errorMessage = R.string.screen_change_phone_new_invalid,
-            ),
             aChangePhoneNumberState(phase = ChangePhoneNumberPhase.EnteringPin, code = "123"),
             aChangePhoneNumberState(
                 phase = ChangePhoneNumberPhase.EnteringPin,
                 code = "12",
                 errorMessage = R.string.screen_change_phone_pin_incorrect,
+            ),
+            aChangePhoneNumberState(phase = ChangePhoneNumberPhase.EnteringNewPhone, phone = "+1"),
+            aChangePhoneNumberState(
+                phase = ChangePhoneNumberPhase.EnteringNewPhone,
+                phone = "+1abc",
+                errorMessage = R.string.screen_change_phone_new_invalid,
             ),
             aChangePhoneNumberState(phase = ChangePhoneNumberPhase.EnteringOtp, code = "1234"),
             aChangePhoneNumberState(

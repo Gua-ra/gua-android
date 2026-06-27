@@ -124,15 +124,34 @@ class DefaultIdentityServiceClient(
             )
         }
 
-    // GUA FORK: Change phone number. Mirrors iOS `IdentityServiceClient` phone-change methods.
+    // GUA FORK: Change phone number (PIN-first). Mirrors iOS `IdentityServiceClient` phone-change
+    // methods. The PIN step-up runs FIRST and yields a reauth token; the SMS only fires from
+    // [requestPhoneChangeOtp].
 
-    override suspend fun requestPhoneChangeOtp(accessToken: String, newPhone: String, language: String?): Result<Unit> =
+    override suspend fun verifyPinReauth(accessToken: String, userId: String, pin: String): Result<String> =
         runPinCall { api ->
-            api.sendChangeNumberOtp(
-                // The endpoint is unauthenticated server-side, but we still pass the Authorization
-                // header to match how the other identity-service calls build "Bearer $accessToken".
+            api.verifyPinReauth(
                 authorization = "Bearer $accessToken",
-                body = OtpSendRequest(phone = newPhone, language = language),
+                body = PinReauthRequest(userId = userId, pin = pin),
+            ).reauthToken
+        }
+
+    override suspend fun requestPhoneChangeOtp(
+        accessToken: String,
+        userId: String,
+        newPhone: String,
+        reauthToken: String,
+        language: String?,
+    ): Result<Unit> =
+        runPinCall { api ->
+            api.requestChangeNumberOtp(
+                authorization = "Bearer $accessToken",
+                body = OtpChangeNumberStartRequest(
+                    userId = userId,
+                    newPhone = newPhone,
+                    reauthToken = reauthToken,
+                    language = language,
+                ),
             )
         }
 
@@ -141,12 +160,12 @@ class DefaultIdentityServiceClient(
         userId: String,
         newPhone: String,
         code: String,
-        pin: String,
+        reauthToken: String,
     ): Result<Unit> =
         runPinCall { api ->
             api.changeNumber(
                 authorization = "Bearer $accessToken",
-                body = OtpChangeNumberRequest(userId = userId, newPhone = newPhone, code = code, pin = pin),
+                body = OtpChangeNumberRequest(userId = userId, newPhone = newPhone, code = code, reauthToken = reauthToken),
             )
         }
 
@@ -193,6 +212,7 @@ class DefaultIdentityServiceClient(
             "pin_change_cooldown" -> ResolverError.PinChangeCooldown(retryAfterSeconds = retryAfter)
             "pin_change_challenge_invalid" -> ResolverError.PinChangeChallengeInvalid
             "phone_already_linked" -> ResolverError.PhoneAlreadyLinked
+            "invalid_reauth_token" -> ResolverError.InvalidReauthToken
             "rate_limited" -> ResolverError.RateLimited
             else -> when (code()) {
                 409 -> ResolverError.PhoneAlreadyLinked
