@@ -23,8 +23,4 @@
     <string name="screen_phone_entry_phone_number_label">"Número de telefone"</string>
     <string name="screen_phone_entry_country_picker_a11y">"Selecionar país"</string>
 
-    <!-- Country picker. -->
-    <string name="screen_country_picker_title">"Selecionar país"</string>
-    <string name="screen_country_picker_search_placeholder">"Pesquisar país"</string>
-    <string name="screen_country_picker_empty">"Nenhum país correspondente"</string>
 </resources>

@@ -20,8 +20,8 @@ import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.features.login.impl.login.LoginHelper
-import io.element.android.features.login.impl.screens.phoneentry.country.Country
-import io.element.android.features.login.impl.screens.phoneentry.country.SelectedCountryStore
+import io.element.android.libraries.phonenumberentry.Country
+import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import io.element.android.libraries.architecture.Presenter
 import kotlinx.coroutines.launch
 

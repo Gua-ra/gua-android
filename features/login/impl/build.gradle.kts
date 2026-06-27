@@ -72,6 +72,7 @@ dependencies {
     implementation(projects.libraries.uiUtils)
     implementation(projects.libraries.wellknown.api)
     implementation(projects.libraries.guaresolver)
+    implementation(projects.libraries.phonenumberentry)
     implementation(libs.androidx.browser)
     implementation(libs.androidx.webkit)
     implementation(libs.libphonenumber)

@@ -9,6 +9,10 @@ package io.element.android.features.preferences.impl.changephonenumber
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import io.element.android.features.preferences.impl.R
+import io.element.android.libraries.phonenumberentry.Country
+
+private val US = Country(isoCode = "US", dialCode = "1")
+private val BR = Country(isoCode = "BR", dialCode = "55")
 
 open class ChangePhoneNumberStateProvider : PreviewParameterProvider<ChangePhoneNumberState> {
     override val values: Sequence<ChangePhoneNumberState>
@@ -20,10 +24,23 @@ open class ChangePhoneNumberStateProvider : PreviewParameterProvider<ChangePhone
                 code = "12",
                 errorMessage = R.string.screen_change_phone_pin_incorrect,
             ),
-            aChangePhoneNumberState(phase = ChangePhoneNumberPhase.EnteringNewPhone, phone = "+1"),
+            // New-number step: empty (shows the placeholder) and a filled US number.
+            aChangePhoneNumberState(phase = ChangePhoneNumberPhase.EnteringNewPhone),
             aChangePhoneNumberState(
                 phase = ChangePhoneNumberPhase.EnteringNewPhone,
-                phone = "+1abc",
+                selectedCountry = US,
+                localPhoneNumber = US.formatNational("5551234567"),
+            ),
+            // New-number step with a different country selected (flag + dial code change).
+            aChangePhoneNumberState(
+                phase = ChangePhoneNumberPhase.EnteringNewPhone,
+                selectedCountry = BR,
+                localPhoneNumber = BR.formatNational("11912345678"),
+            ),
+            aChangePhoneNumberState(
+                phase = ChangePhoneNumberPhase.EnteringNewPhone,
+                selectedCountry = US,
+                localPhoneNumber = "5",
                 errorMessage = R.string.screen_change_phone_new_invalid,
             ),
             aChangePhoneNumberState(phase = ChangePhoneNumberPhase.EnteringOtp, code = "1234"),
@@ -40,13 +57,15 @@ open class ChangePhoneNumberStateProvider : PreviewParameterProvider<ChangePhone
 fun aChangePhoneNumberState(
     phase: ChangePhoneNumberPhase = ChangePhoneNumberPhase.Intro,
     code: String = "",
-    phone: String = "",
+    selectedCountry: Country = US,
+    localPhoneNumber: String = "",
     errorMessage: Int? = null,
     eventSink: (ChangePhoneNumberEvents) -> Unit = {},
 ) = ChangePhoneNumberState(
     phase = phase,
     code = code,
-    phone = phone,
+    selectedCountry = selectedCountry,
+    localPhoneNumber = localPhoneNumber,
     errorMessage = errorMessage,
     eventSink = eventSink,
 )

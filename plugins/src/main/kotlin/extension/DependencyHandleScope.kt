@@ -127,6 +127,10 @@ fun DependencyHandlerScope.allLibrariesImpl() {
     // GUA FORK: the Gua federation resolver client (phone -> homeserver routing). Its
     // @ContributesBinding(AppScope) DefaultResolverClient is aggregated into the app Metro graph here.
     implementation(project(":libraries:guaresolver"))
+    // GUA FORK: the shared phone-number/country-picker module (welcome + change-phone). Its
+    // @SingleIn(AppScope) SelectedCountryStore and @ContributesNode CountryPickerNode are aggregated
+    // into the app Metro graph here.
+    implementation(project(":libraries:phonenumberentry"))
 }
 
 fun DependencyHandlerScope.allServicesImpl() {

@@ -10,7 +10,7 @@ package io.element.android.features.login.impl.screens.phoneentry
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import io.element.android.features.login.impl.error.ChangeServerError
 import io.element.android.features.login.impl.login.LoginMode
-import io.element.android.features.login.impl.screens.phoneentry.country.Country
+import io.element.android.libraries.phonenumberentry.Country
 import io.element.android.libraries.architecture.AsyncData
 
 open class PhoneEntryStateProvider : PreviewParameterProvider<PhoneEntryState> {

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2026 Element Creations Ltd.
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <!-- Gua country picker. Shared by the welcome phone-entry flow and the change-phone-number
+         flow. English source of truth lives here (temporary.xml). -->
+    <string name="screen_country_picker_title">Select country</string>
+    <string name="screen_country_picker_search_placeholder">Search country</string>
+    <string name="screen_country_picker_empty">No matching countries</string>
+</resources>

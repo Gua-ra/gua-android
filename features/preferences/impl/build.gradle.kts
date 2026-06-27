@@ -54,6 +54,7 @@ dependencies {
     implementation(projects.libraries.cachestore.api)
     implementation(projects.libraries.matrix.api)
     implementation(projects.libraries.guaresolver)
+    implementation(projects.libraries.phonenumberentry)
     implementation(projects.libraries.designsystem)
     implementation(projects.libraries.featureflag.api)
     implementation(projects.libraries.featureflag.ui)
