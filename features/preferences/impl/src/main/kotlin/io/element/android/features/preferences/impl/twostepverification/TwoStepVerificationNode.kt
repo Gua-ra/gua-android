@@ -7,6 +7,7 @@
 
 package io.element.android.features.preferences.impl.twostepverification
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.bumble.appyx.core.modality.BuildContext
@@ -15,6 +16,8 @@ import com.bumble.appyx.core.plugin.Plugin
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
+import io.element.android.compound.theme.ElementTheme
+import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.di.SessionScope
 
@@ -37,10 +40,17 @@ class TwoStepVerificationNode(
 
     @Composable
     override fun View(modifier: Modifier) {
+        val activity = requireNotNull(LocalActivity.current)
+        val isDark = ElementTheme.isLightTheme.not()
         val state = presenter.present()
         TwoStepVerificationView(
             state = state,
             onBackClick = ::navigateUp,
+            // GUA FORK: the enrollUrl is self-authenticating (like iOS' ASWebAuthenticationSession),
+            // so we open it in a Chrome Custom Tab for the user to complete WebAuthn registration.
+            onOpenPasskeyEnrollUrl = { url ->
+                activity.openUrlInChromeCustomTab(session = null, darkTheme = isDark, url = url)
+            },
             modifier = modifier,
         )
     }

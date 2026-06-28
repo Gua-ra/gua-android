@@ -45,6 +45,7 @@ class FakeIdentityServiceClient(
     private val verifyPinReauthResult: (String, String, String) -> Result<String> = { _, _, _ -> Result.success("reauth-token") },
     private val requestPhoneChangeOtpResult: (String, String, String, String, String?) -> Result<Unit> = { _, _, _, _, _ -> Result.success(Unit) },
     private val changePhoneNumberResult: (String, String, String, String, String) -> Result<Unit> = { _, _, _, _, _ -> Result.success(Unit) },
+    private val startPasskeyEnrollmentResult: (String) -> Result<String> = { _ -> Result.success("https://idp.gua.global/passkey/enroll?token=fake") },
 ) : IdentityServiceClient {
     override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> =
         lookupResult(accessToken, hashedPhones)
@@ -75,6 +76,9 @@ class FakeIdentityServiceClient(
 
     override suspend fun changePhoneNumber(accessToken: String, userId: String, newPhone: String, code: String, reauthToken: String): Result<Unit> =
         changePhoneNumberResult(accessToken, userId, newPhone, code, reauthToken)
+
+    override suspend fun startPasskeyEnrollment(accessToken: String): Result<String> =
+        startPasskeyEnrollmentResult(accessToken)
 }
 
 fun aContactMatch(

@@ -64,6 +64,7 @@ fun aTwoStepVerificationState(
     localPhoneNumber: String = "",
     errorMessage: Int? = null,
     showSuccess: Boolean = false,
+    passkeyEnrollUrl: String? = null,
     eventSink: (TwoStepVerificationEvent) -> Unit = {},
 ) = TwoStepVerificationState(
     phase = phase,
@@ -72,5 +73,6 @@ fun aTwoStepVerificationState(
     localPhoneNumber = localPhoneNumber,
     errorMessage = errorMessage,
     showSuccess = showSuccess,
+    passkeyEnrollUrl = passkeyEnrollUrl,
     eventSink = eventSink,
 )

@@ -75,6 +75,14 @@ internal interface IdentityServiceApi {
         @Header("Authorization") authorization: String,
         @Body body: OtpChangeNumberRequest,
     )
+
+    // GUA FORK: passkey enrollment. Mirrors iOS' `GET security/passkey/enroll/start`, returning the
+    // authenticated web-ceremony URL the client opens to complete WebAuthn registration at the IdP.
+
+    @GET("security/passkey/enroll/start")
+    suspend fun startPasskeyEnrollment(
+        @Header("Authorization") authorization: String,
+    ): PasskeyEnrollStartResponse
 }
 
 @Serializable
@@ -160,6 +168,12 @@ internal data class OtpChangeNumberRequest(
     val newPhone: String,
     val code: String,
     val reauthToken: String,
+)
+
+@Serializable
+internal data class PasskeyEnrollStartResponse(
+    /** Authenticated web-ceremony URL to open at the IdP to complete passkey registration. */
+    val enrollUrl: String,
 )
 
 /**

@@ -68,6 +68,8 @@ class TwoStepVerificationPresenter(
         var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
         var showSuccess by remember { mutableStateOf(false) }
+        // The authenticated passkey-enrollment URL to hand to the View for the web ceremony.
+        var passkeyEnrollUrl by remember { mutableStateOf<String?>(null) }
 
         // Apply any country picked in the shared CountryPicker child screen, then clear it.
         val pickedCountry by selectedCountryStore.flow.collectAsState()
@@ -243,6 +245,28 @@ class TwoStepVerificationPresenter(
             }
         }
 
+        // GUA FORK: passkey enrollment. Mirrors iOS' coordinator action: fetch the authenticated
+        // web-ceremony URL from the identity-service and hand it to the View to open in a Chrome
+        // Custom Tab (the Android counterpart of iOS' ASWebAuthenticationSession). The URL is
+        // self-authenticating, so the user completes WebAuthn registration in-browser at the IdP.
+        fun startPasskeyEnrollment() {
+            coroutineScope.launch {
+                val accessToken = accessToken()
+                if (accessToken == null) {
+                    errorMessage = CommonStrings.error_unknown
+                    return@launch
+                }
+                identityServiceClient.startPasskeyEnrollment(accessToken)
+                    .onSuccess { enrollUrl ->
+                        errorMessage = null
+                        passkeyEnrollUrl = enrollUrl
+                    }
+                    .onFailure {
+                        errorMessage = CommonStrings.error_unknown
+                    }
+            }
+        }
+
         fun handleSubmittedCode(submitted: String) {
             when (phase) {
                 TwoStepVerificationPhase.EnteringCurrent -> {
@@ -349,6 +373,10 @@ class TwoStepVerificationPresenter(
                 TwoStepVerificationEvent.ClearSuccess -> {
                     showSuccess = false
                 }
+                TwoStepVerificationEvent.SetUpPasskey -> startPasskeyEnrollment()
+                TwoStepVerificationEvent.ClearPasskeyEnrollUrl -> {
+                    passkeyEnrollUrl = null
+                }
             }
         }
 
@@ -359,6 +387,7 @@ class TwoStepVerificationPresenter(
             localPhoneNumber = localPhoneNumber,
             errorMessage = errorMessage,
             showSuccess = showSuccess,
+            passkeyEnrollUrl = passkeyEnrollUrl,
             eventSink = ::handleEvent,
         )
     }
