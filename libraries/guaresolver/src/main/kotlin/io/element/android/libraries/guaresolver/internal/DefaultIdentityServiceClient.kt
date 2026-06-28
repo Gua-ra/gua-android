@@ -176,6 +176,13 @@ class DefaultIdentityServiceClient(
             )
         }
 
+    // GUA FORK: Passkey enrollment. Mirrors iOS `IdentityServiceClient.startPasskeyEnrollment`.
+
+    override suspend fun startPasskeyEnrollment(accessToken: String): Result<String> =
+        runPinCall { api ->
+            api.startPasskeyEnrollment(authorization = "Bearer $accessToken").enrollUrl
+        }
+
     /**
      * Runs an identity-service PIN call against a freshly-built [IdentityServiceApi], mapping HTTP
      * failures onto the typed [ResolverError] PIN cases (mirroring iOS' status-code + `code`-field

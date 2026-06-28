@@ -45,6 +45,13 @@ data class TwoStepVerificationState(
     @StringRes val errorMessage: Int?,
     /** Set after a PIN was successfully set or changed, so the View can show a confirmation. */
     val showSuccess: Boolean,
+    /**
+     * Set to the authenticated passkey-enrollment URL once [TwoStepVerificationEvent.SetUpPasskey]
+     * resolves, so the View can open it in a Chrome Custom Tab (the authenticated web ceremony,
+     * mirroring iOS' ASWebAuthenticationSession). Cleared via
+     * [TwoStepVerificationEvent.ClearPasskeyEnrollUrl] once opened.
+     */
+    val passkeyEnrollUrl: String?,
     val eventSink: (TwoStepVerificationEvent) -> Unit,
 ) {
     val isWorking: Boolean = phase == TwoStepVerificationPhase.Submitting

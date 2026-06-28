@@ -42,6 +42,7 @@ fun TwoStepVerificationView(
     state: TwoStepVerificationState,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenPasskeyEnrollUrl: (String) -> Unit = {},
 ) {
     val eventSink = state.eventSink
     val snackbarHostState = remember { SnackbarHostState() }
@@ -50,6 +51,14 @@ fun TwoStepVerificationView(
         if (state.showSuccess) {
             snackbarHostState.showSnackbar(successMessage)
             eventSink(TwoStepVerificationEvent.ClearSuccess)
+        }
+    }
+    // GUA FORK: once the presenter resolves the authenticated passkey-enrollment URL, open it in a
+    // Chrome Custom Tab (the web ceremony), then clear it so re-entering the screen doesn't reopen it.
+    LaunchedEffect(state.passkeyEnrollUrl) {
+        state.passkeyEnrollUrl?.let { url ->
+            onOpenPasskeyEnrollUrl(url)
+            eventSink(TwoStepVerificationEvent.ClearPasskeyEnrollUrl)
         }
     }
 
@@ -130,6 +139,22 @@ private fun OverviewSection(
         style = ListItemStyle.Primary,
         onClick = {
             eventSink(if (hasPin) TwoStepVerificationEvent.StartChange else TwoStepVerificationEvent.StartSetup)
+        },
+    )
+    // GUA FORK: passkey setup row, mirroring iOS' "Set up a passkey" row. Opens the authenticated
+    // web ceremony (Chrome Custom Tab) where the user registers a passkey at the IdP.
+    HorizontalDivider()
+    ListItem(
+        headlineContent = {
+            Text(stringResource(id = R.string.screen_two_step_verification_passkey_button))
+        },
+        supportingContent = {
+            Text(stringResource(id = R.string.screen_two_step_verification_passkey_footer))
+        },
+        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Key())),
+        style = ListItemStyle.Primary,
+        onClick = {
+            eventSink(TwoStepVerificationEvent.SetUpPasskey)
         },
     )
 }

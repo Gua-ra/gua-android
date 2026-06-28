@@ -35,4 +35,10 @@ sealed interface TwoStepVerificationEvent {
 
     /** The success message has been shown; clear it. */
     data object ClearSuccess : TwoStepVerificationEvent
+
+    /** Start passkey enrollment: fetches the authenticated web-ceremony URL to open at the IdP. */
+    data object SetUpPasskey : TwoStepVerificationEvent
+
+    /** The passkey enrollment URL has been opened (in a Chrome Custom Tab); clear it. */
+    data object ClearPasskeyEnrollUrl : TwoStepVerificationEvent
 }

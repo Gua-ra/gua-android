@@ -11,6 +11,8 @@
     <string name="screen_two_step_verification_overview_footer_off">Add a 6-digit PIN for an extra layer of security to your account.</string>
     <string name="screen_two_step_verification_set_button">Set up PIN</string>
     <string name="screen_two_step_verification_change_button">Change PIN</string>
+    <string name="screen_two_step_verification_passkey_button">Set up a passkey</string>
+    <string name="screen_two_step_verification_passkey_footer">Use a passkey to sign in faster with your fingerprint, face or device PIN.</string>
     <string name="screen_two_step_verification_phone_header">Confirm your phone number</string>
     <string name="screen_two_step_verification_phone_footer">We will send a code to this number to confirm the change.</string>
     <string name="screen_two_step_verification_current_header">Enter your current PIN</string>

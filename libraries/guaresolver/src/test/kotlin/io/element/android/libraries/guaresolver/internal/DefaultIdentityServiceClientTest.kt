@@ -104,6 +104,24 @@ class DefaultIdentityServiceClientTest {
         assertThat(result.exceptionOrNull()).isInstanceOf(ResolverError.NotConfigured::class.java)
     }
 
+    @Test
+    fun `startPasskeyEnrollment GETs the start endpoint with a bearer token and parses enrollUrl`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setBody("""{ "enrollUrl": "https://idp.gua.global/passkey/enroll?token=abc" }""")
+        )
+        val client = createClient(server)
+
+        val enrollUrl = client.startPasskeyEnrollment("secret-token").getOrThrow()
+
+        assertThat(enrollUrl).isEqualTo("https://idp.gua.global/passkey/enroll?token=abc")
+        val request = server.takeRequest()
+        assertThat(request.method).isEqualTo("GET")
+        assertThat(request.path).isEqualTo("/security/passkey/enroll/start")
+        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer secret-token")
+        server.shutdown()
+    }
+
     private fun createClient(server: MockWebServer) = DefaultIdentityServiceClient(
         retrofitFactory = retrofitFactory(),
         deployment = FakeGuaDeployment(identityServiceBaseUrl = server.url("/").toString()),
