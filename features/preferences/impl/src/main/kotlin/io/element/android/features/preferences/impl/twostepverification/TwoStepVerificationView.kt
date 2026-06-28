@@ -10,7 +10,6 @@ package io.element.android.features.preferences.impl.twostepverification
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -18,7 +17,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
@@ -36,7 +34,7 @@ import io.element.android.libraries.designsystem.theme.components.IconSource
 import io.element.android.libraries.designsystem.theme.components.ListItem
 import io.element.android.libraries.designsystem.theme.components.ListItemStyle
 import io.element.android.libraries.designsystem.theme.components.Text
-import io.element.android.libraries.designsystem.theme.components.TextField
+import io.element.android.libraries.phonenumberentry.PhoneNumberEntryField
 import io.element.android.libraries.ui.strings.CommonStrings
 
 @Composable
@@ -142,16 +140,20 @@ private fun PhoneEntrySection(
     eventSink: (TwoStepVerificationEvent) -> Unit,
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        TextField(
-            value = state.phone,
+        // Label above the whole row, reading over both the country selector and the field.
+        Text(
+            text = stringResource(id = R.string.screen_two_step_verification_phone_label),
+            style = ElementTheme.typography.fontBodyMdMedium,
+            color = ElementTheme.colors.textSecondary,
+            modifier = Modifier.padding(start = 4.dp, top = 16.dp, bottom = 8.dp),
+        )
+        PhoneNumberEntryField(
+            country = state.selectedCountry,
+            localPhoneNumber = state.localPhoneNumber,
             onValueChange = { eventSink(TwoStepVerificationEvent.PhoneChanged(it)) },
-            label = stringResource(id = R.string.screen_two_step_verification_phone_label),
-            placeholder = "+1",
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
+            onSelectCountry = { eventSink(TwoStepVerificationEvent.SelectCountry) },
+            enabled = !state.isWorking,
+            modifier = Modifier.fillMaxWidth(),
         )
         FooterOrError(
             state = state,

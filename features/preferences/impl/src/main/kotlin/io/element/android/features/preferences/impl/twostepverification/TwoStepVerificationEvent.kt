@@ -21,8 +21,11 @@ sealed interface TwoStepVerificationEvent {
     /** The user edited the 6-digit code field. */
     data class CodeChanged(val code: String) : TwoStepVerificationEvent
 
-    /** The user edited the phone field (change flow). */
-    data class PhoneChanged(val phone: String) : TwoStepVerificationEvent
+    /** The local digits in the confirm-number field changed; triggers auto-detect + national masking. */
+    data class PhoneChanged(val value: String) : TwoStepVerificationEvent
+
+    /** The user tapped the country-selector pill; the Node opens the shared country picker. */
+    data object SelectCountry : TwoStepVerificationEvent
 
     /** The user tapped the primary "Continue" button. */
     data object Continue : TwoStepVerificationEvent
