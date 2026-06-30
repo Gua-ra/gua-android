@@ -13,6 +13,8 @@ import app.cash.molecule.moleculeFlow
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.logout.impl.oidc.FakeIdpSessionCleaner
+import io.element.android.features.logout.impl.oidc.IdpSessionCleaner
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.SessionId
@@ -23,6 +25,8 @@ import io.element.android.libraries.matrix.api.encryption.RecoveryState
 import io.element.android.libraries.matrix.test.AN_EXCEPTION
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.encryption.FakeEncryptionService
+import io.element.android.libraries.sessionstorage.api.SessionStore
+import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.workmanager.api.WorkManagerRequestType
 import io.element.android.libraries.workmanager.test.FakeWorkManagerScheduler
 import io.element.android.tests.testutils.WarmUpRule
@@ -240,8 +244,12 @@ internal fun createLogoutPresenter(
     matrixClient: MatrixClient = FakeMatrixClient(),
     encryptionService: EncryptionService = FakeEncryptionService(),
     workManagerScheduler: FakeWorkManagerScheduler = FakeWorkManagerScheduler(cancelLambda = { _, _ -> }),
+    sessionStore: SessionStore = InMemorySessionStore(),
+    idpSessionCleaner: IdpSessionCleaner = FakeIdpSessionCleaner(),
 ): LogoutPresenter = LogoutPresenter(
     matrixClient = matrixClient,
     encryptionService = encryptionService,
     workManagerScheduler = workManagerScheduler,
+    sessionStore = sessionStore,
+    idpSessionCleaner = idpSessionCleaner,
 )

@@ -200,6 +200,8 @@ private fun CodeEntrySection(
             hasError = state.errorMessage != null,
             enabled = !state.isWorking,
             onValueChange = { eventSink(TwoStepVerificationEvent.CodeChanged(it)) },
+            // GUA FORK: mask every secret PIN step (current / new / confirm), but keep the OTP readable.
+            masked = state.phase != TwoStepVerificationPhase.EnteringOtp,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 24.dp),

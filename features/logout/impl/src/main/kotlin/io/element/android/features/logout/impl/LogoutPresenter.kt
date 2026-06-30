@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import dev.zacsweers.metro.Inject
+import io.element.android.features.logout.impl.oidc.IdpSessionCleaner
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
@@ -27,6 +28,7 @@ import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.encryption.BackupState
 import io.element.android.libraries.matrix.api.encryption.BackupUploadState
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
+import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.workmanager.api.WorkManagerScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -37,6 +39,8 @@ class LogoutPresenter(
     private val matrixClient: MatrixClient,
     private val encryptionService: EncryptionService,
     private val workManagerScheduler: WorkManagerScheduler,
+    private val sessionStore: SessionStore,
+    private val idpSessionCleaner: IdpSessionCleaner,
 ) : Presenter<LogoutState> {
     @Composable
     override fun present(): LogoutState {
@@ -115,7 +119,17 @@ class LogoutPresenter(
             // Cancel any pending work (e.g. notification sync)
             workManagerScheduler.cancel(matrixClient.sessionId)
 
+            // GUA FORK: capture the homeserver before logout, since the session is removed from the
+            // store once logout completes and we need it to clear the IdP browser session.
+            val homeserverUrl = sessionStore.getSession(matrixClient.sessionId.value)?.homeserverUrl
+
             matrixClient.logout(userInitiated = true, ignoreSdkError)
+
+            // GUA FORK: end the IdP (MAS) browser session so a subsequent login with a different
+            // phone can't silently reuse this account. Best-effort.
+            if (homeserverUrl != null) {
+                idpSessionCleaner.clear(homeserverUrl)
+            }
         }.runCatchingUpdatingState(logoutAction)
     }
 }

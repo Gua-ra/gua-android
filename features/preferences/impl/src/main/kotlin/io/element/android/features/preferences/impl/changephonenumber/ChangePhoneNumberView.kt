@@ -232,6 +232,8 @@ private fun CodeEntrySection(
             hasError = state.errorMessage != null,
             enabled = !state.isWorking,
             onValueChange = { eventSink(ChangePhoneNumberEvents.CodeChanged(it)) },
+            // GUA FORK: mask the secret account PIN, but keep the OTP readable.
+            masked = state.phase == ChangePhoneNumberPhase.EnteringPin,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 24.dp),

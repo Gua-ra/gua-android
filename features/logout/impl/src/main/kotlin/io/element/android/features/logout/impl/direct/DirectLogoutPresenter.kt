@@ -18,6 +18,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import dev.zacsweers.metro.Inject
 import io.element.android.features.logout.api.direct.DirectLogoutEvents
 import io.element.android.features.logout.api.direct.DirectLogoutState
+import io.element.android.features.logout.impl.oidc.IdpSessionCleaner
 import io.element.android.features.logout.impl.tools.isBackingUp
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.Presenter
@@ -25,6 +26,7 @@ import io.element.android.libraries.architecture.runCatchingUpdatingState
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.encryption.BackupUploadState
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
+import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -32,6 +34,8 @@ import kotlinx.coroutines.launch
 class DirectLogoutPresenter(
     private val matrixClient: MatrixClient,
     private val encryptionService: EncryptionService,
+    private val sessionStore: SessionStore,
+    private val idpSessionCleaner: IdpSessionCleaner,
 ) : Presenter<DirectLogoutState> {
     @Composable
     override fun present(): DirectLogoutState {
@@ -76,7 +80,17 @@ class DirectLogoutPresenter(
         ignoreSdkError: Boolean,
     ) = launch {
         suspend {
+            // GUA FORK: capture the homeserver before logout removes the session from the store; we
+            // need it to end the IdP browser session afterwards.
+            val homeserverUrl = sessionStore.getSession(matrixClient.sessionId.value)?.homeserverUrl
+
             matrixClient.logout(userInitiated = true, ignoreSdkError)
+
+            // GUA FORK: end the IdP (MAS) browser session so a subsequent login with a different
+            // phone can't silently reuse this account. Best-effort.
+            if (homeserverUrl != null) {
+                idpSessionCleaner.clear(homeserverUrl)
+            }
         }.runCatchingUpdatingState(logoutAction)
     }
 }
