@@ -13,7 +13,7 @@ import org.matrix.rustcomponents.sdk.OAuthPrompt as RustOAuthPrompt
 
 internal fun OAuthPrompt.toRustPrompt(): RustOAuthPrompt {
     return when (this) {
-        OAuthPrompt.Login -> RustOAuthPrompt.Unknown("consent")
+        OAuthPrompt.Login -> RustOAuthPrompt.Login
         OAuthPrompt.Create -> RustOAuthPrompt.Create
         is OAuthPrompt.Unknown -> RustOAuthPrompt.Unknown(value)
     }
