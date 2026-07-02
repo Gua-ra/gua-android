@@ -9,8 +9,6 @@
 package ui
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.runtime.Composable
-import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
 import base.BaseDeviceConfig
 import io.element.android.compound.theme.ElementTheme
