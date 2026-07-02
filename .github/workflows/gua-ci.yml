@@ -34,6 +34,15 @@ jobs:
           persist-credentials: false
       - name: Run forbidden-content / secret guard
         run: ./tools/scripts/check-constraints.sh
+        env:
+          # On pull requests, scan commit messages only in base..HEAD. The fork's
+          # branches descend from upstream element-x-android history, whose recent
+          # commits carry Co-Authored-By trailers that the fork cannot rewrite, so a
+          # full-history scan can never pass. check-constraints.sh documents
+          # GUA_CONSTRAINTS_BASE_REF for exactly this. The tracked-file and keystore
+          # scans are unaffected and still cover the whole tree. Push/dispatch runs
+          # keep the full-history scan (empty value means unset to the script).
+          GUA_CONSTRAINTS_BASE_REF: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
 
   # --- 2. Build the primary fork artifact. ----------------------------------
   build:
