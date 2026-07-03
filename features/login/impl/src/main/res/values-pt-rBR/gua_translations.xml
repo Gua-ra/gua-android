@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2026 Element Creations Ltd.
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: Brazilian Portuguese (pt-BR) translations for Gua-custom login/onboarding strings.
+     English source of truth lives in values/temporary.xml. This file is the fork analogue of
+     Localazy translations.xml for Gua-only keys (which Localazy cannot regenerate for a fork).
+     Welcome strings ported from Element X iOS pt-BR.lproj; phone-entry ported from iOS
+     screen_phone_login_* keys; country picker translated to match iOS tone. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Onboarding / welcome (ported from iOS screen_onboarding_welcome_title + the end-to-end
+         encrypted trust pill shown below it). -->
+    <string name="screen_onboarding_welcome_title">"Bem-vindo ao Gua"</string>
+    <string name="screen_onboarding_trust_encrypted">"Criptografia de ponta a ponta"</string>
+
+    <!-- Phone-first entry (ported from iOS screen_phone_login_* / screen_phone_entry_*). -->
+    <string name="screen_phone_entry_welcome_title">"Bem-vindo ao Gua"</string>
+    <string name="screen_phone_entry_title">"Qual é o seu número?"</string>
+    <string name="screen_phone_entry_message">"Digite seu número de telefone"</string>
+    <string name="screen_phone_entry_footer">"Vamos enviar um código de verificação por mensagem para este número."</string>
+    <string name="screen_phone_entry_phone_number_label">"Número de telefone"</string>
+    <string name="screen_phone_entry_country_picker_a11y">"Selecionar país"</string>
+
+    <!-- Country picker. -->
+    <string name="screen_country_picker_title">"Selecionar país"</string>
+    <string name="screen_country_picker_search_placeholder">"Pesquisar país"</string>
+    <string name="screen_country_picker_empty">"Nenhum país correspondente"</string>
+</resources>

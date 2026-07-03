@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) 2026 Element Creations Ltd.
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: Brazilian Portuguese (pt-BR) translations for the Gua "Find friends" (contact
+     discovery) screen. English source of truth lives in values/temporary.xml. iOS ships these as
+     hardcoded English literals (FindFriendsScreen.swift), so these are translated fresh. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">"Encontrar amigos"</string>
+
+    <string name="screen_find_friends_action">"Encontrar amigos"</string>
+    <string name="screen_find_friends_action_description">"Veja quais dos seus contatos estão no Gua"</string>
+
+    <string name="screen_find_friends_loading">"Procurando seus contatos no Gua…"</string>
+
+    <string name="screen_find_friends_permission_title">"Permitir acesso aos contatos"</string>
+    <string name="screen_find_friends_permission_message">"O Gua verifica seus contatos de forma privada para descobrir quais já estão aqui. Seus contatos nunca são armazenados."</string>
+    <string name="screen_find_friends_permission_action">"Permitir acesso"</string>
+    <string name="screen_find_friends_permission_denied_action">"Abrir configurações"</string>
+
+    <string name="screen_find_friends_empty_title">"Nenhum contato no Gua ainda"</string>
+    <string name="screen_find_friends_empty_message">"Nenhum dos seus contatos está no Gua ainda. Convide-os e eles aparecerão aqui."</string>
+    <string name="screen_find_friends_empty_action">"Verificar de novo"</string>
+
+    <string name="screen_find_friends_error_title">"Algo deu errado"</string>
+    <string name="screen_find_friends_error_message">"Não conseguimos verificar seus contatos agora. Tente novamente."</string>
+    <string name="screen_find_friends_error_action">"Tentar novamente"</string>
+
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">"%1$d contato está no Gua"</item>
+        <item quantity="other">"%1$d contatos estão no Gua"</item>
+    </plurals>
+
+    <string name="a11y_find_friends_view_profile">"Ver o perfil de %1$s"</string>
+    <string name="a11y_find_friends_start_chat">"Iniciar uma conversa com %1$s"</string>
+</resources>

@@ -1,3 +1,102 @@
+![Gua for Android](./docs/images/readme-hero.png)
+
+<div align="center">
+
+  <img src="./docs/images/gua-logo.png" width="140" alt="Gua logo" />
+
+  <h1>Gua for Android</h1>
+
+</div>
+
+**Gua** is a private messenger with end-to-end encryption by default, built on top of [Matrix](https://matrix.org/).
+
+This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://github.com/element-hq/element-x-android) (Element X Android). On top of the upstream client, it adds the Gua product layer:
+
+- **Routing across a trusted federation.** A dedicated resolver ([`gua-resolver`](https://github.com/Gua-ra/gua-resolver)) locates each account inside the Gua federation, so conversations work across providers while homeserver details stay fully abstracted from the user. People see usernames, never server addresses.
+- **Simplified onboarding with two-step verification.** Sign-in is simplified and currently phone-based by default: enter your number, confirm a verification code, and protect the account with a 6-digit PIN as a second step. The flow is designed to stay flexible, including institutional SSO providers.
+- **Private contact discovery.** Find Friends matches your contacts through hashed phone lookups and is wired straight into Start Chat, so finding people feels instant without exposing your address book.
+- **Phone number management.** Accounts stay tied to a current number, with guarded flows for changing it safely.
+- **A reworked welcome experience.** A native welcome screen with the Gua aurora, phone entry and country picker as the entry point into the app.
+
+---
+
+## What's different from upstream Element X
+
+| Area | Upstream (Element X) | Gua |
+|---|---|---|
+| Brand | Element / New Vector | Gua (`global.gua` application id) |
+| Login flow | Matrix password / SSO with manual homeserver selection | Simplified sign-in (phone number and verification code by default, flexible by design including institutional SSO), no homeserver picking |
+| Welcome screen | Element onboarding | Gua aurora welcome with native phone entry and country picker |
+| Account home | user selects a homeserver | resolved automatically behind the scenes (`libraries/guaresolver`) |
+| Contact discovery | user directory search | private Find Friends (hashed phone lookups) wired into Start Chat (`features/findfriends`) |
+| Two-step verification | device verification | 6-digit account PIN: set, change, reset (`features/preferences` two-step verification) |
+| Settings identity | full user id with server suffix | username only, server abstracted |
+| Chat list | all rooms, including Spaces and empty rooms | chats-first: Spaces and state-only rooms are hidden |
+| 1:1 conversations | state events visible in the timeline | configuration noise suppressed for clean 1:1 chats |
+| Sign-in session handling | may silently resume a previous web session | fresh authentication forced on every sign-in (`prompt=login`) |
+| Languages | upstream translations | adds Gua pt-BR and fr strings |
+
+---
+
+## Architecture
+
+```
+Gua Android app
+    |  OIDC authorization-code + PKCE (Custom Tab)
+    v
+Matrix Authentication Service (Gua fork: gua-auth-service)
+    |  upstream OIDC (simplified sign-in, phone-based by default)
+    v
+Gua Identity Service
+    |  provisioning
+    v
+Synapse homeserver   <-- account + contact resolution -->   gua-resolver
+```
+
+- The app registers as a public OIDC client (PKCE required) and opens the sign-in flow in a Custom Tab, backed by the [Gua fork of MAS](https://github.com/Gua-ra/gua-auth-service) and the [Gua Identity Service](https://github.com/Gua-ra/identity-service).
+- Account location and contact discovery go through [`gua-resolver`](https://github.com/Gua-ra/gua-resolver), keeping the federation topology out of the client UI.
+- End-to-end encryption stays on with safe defaults, including key storage and recovery.
+
+---
+
+## Building
+
+Requirements: **Android Studio** (or the Android command line tools) with **JDK 21**.
+
+```bash
+git clone git@github.com:Gua-ra/gua-android.git
+cd gua-android
+./gradlew :app:assembleGplayDebug
+```
+
+Or open the project in Android Studio and run the `app` configuration (the debug application id is `global.gua.debug`).
+
+To point the app at your own Gua stack, set the `gua.*` properties in `local.properties`:
+
+```properties
+gua.resolverBaseUrl=...
+gua.identityServiceBaseUrl=...
+gua.defaultAccountProvider=...
+```
+
+See the upstream [contribution guide](CONTRIBUTING.md) for full environment setup, code generation and testing instructions.
+
+---
+
+## Upstream relationship
+
+This repository tracks [`element-hq/element-x-android`](https://github.com/element-hq/element-x-android). To pull upstream changes:
+
+```bash
+git fetch upstream
+git merge upstream/develop   # or the relevant release tag
+# Resolve conflicts, then push
+```
+
+The original Element X Android documentation follows below.
+
+---
+
 [![Latest build](https://github.com/element-hq/element-x-android/actions/workflows/build.yml/badge.svg?query=branch%3Adevelop)](https://github.com/element-hq/element-x-android/actions/workflows/build.yml?query=branch%3Adevelop)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=element-x-android&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=element-x-android)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=element-x-android&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=element-x-android)

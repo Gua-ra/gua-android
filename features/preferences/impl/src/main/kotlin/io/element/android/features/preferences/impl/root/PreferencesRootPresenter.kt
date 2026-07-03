@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import dev.zacsweers.metro.Inject
 import io.element.android.features.enterprise.api.SessionEnterpriseService
+import io.element.android.features.lockscreen.api.LockScreenService
 import io.element.android.features.logout.api.direct.DirectLogoutState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
@@ -28,6 +29,7 @@ import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatch
 import io.element.android.libraries.designsystem.utils.snackbar.collectSnackbarMessageAsState
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
+import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.indicator.api.IndicatorService
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.UserId
@@ -57,6 +59,8 @@ class PreferencesRootPresenter(
     private val featureFlagService: FeatureFlagService,
     private val sessionStore: SessionStore,
     private val sessionEnterpriseService: SessionEnterpriseService,
+    private val lockScreenService: LockScreenService,
+    private val identityServiceClient: IdentityServiceClient,
 ) : Presenter<PreferencesRootState> {
     @Composable
     override fun present(): PreferencesRootState {
@@ -115,6 +119,17 @@ class PreferencesRootPresenter(
         }
 
         val showLabsItem = remember { featureFlagService.getAvailableFeatures(isInLabs = true).isNotEmpty() }
+        val isLockScreenPinSetup by remember {
+            lockScreenService.isPinSetup()
+        }.collectAsState(initial = true)
+
+        // GUA FORK: the nudge banner advertises the account (2SV) PIN, so gate it on the account PIN
+        // status from the identity service (mirrors TwoStepVerificationPresenter), not the local app-lock.
+        val isAccountPinSetup by produceState(initialValue = false) {
+            val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken ?: return@produceState
+            identityServiceClient.pinStatus(accessToken)
+                .onSuccess { value = it }
+        }
 
         val directLogoutState = directLogoutPresenter.present()
 
@@ -151,6 +166,8 @@ class PreferencesRootPresenter(
             canDeactivateAccount = canDeactivateAccount,
             nbOfBlockedUsers = nbOfBlockedUsers,
             showLabsItem = showLabsItem,
+            isLockScreenPinSetup = isLockScreenPinSetup,
+            isAccountPinSetup = isAccountPinSetup,
             directLogoutState = directLogoutState,
             snackbarMessage = snackbarMessage,
             eventSink = ::handleEvent,

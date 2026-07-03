@@ -94,7 +94,8 @@ fun UserProfileHeaderSection(
         }
         Text(
             modifier = Modifier.niceClickable { onUserIdClick() },
-            text = userId.value,
+            // GUA FORK: hide the homeserver suffix in the user handle.
+            text = userId.displayHandle,
             style = ElementTheme.typography.fontBodyLgRegular,
             color = ElementTheme.colors.textSecondary,
             textAlign = TextAlign.Center,
@@ -116,7 +117,7 @@ fun UserProfileHeaderSection(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = stringResource(CommonStrings.crypto_identity_change_profile_pin_violation, userName ?: userId.value),
+                    text = stringResource(CommonStrings.crypto_identity_change_profile_pin_violation, userName ?: userId.displayHandle),
                     color = ElementTheme.colors.textCriticalPrimary,
                     style = ElementTheme.typography.fontBodyMdMedium,
                 )

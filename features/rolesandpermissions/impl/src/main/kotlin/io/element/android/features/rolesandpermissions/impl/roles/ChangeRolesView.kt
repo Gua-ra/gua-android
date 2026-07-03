@@ -323,7 +323,8 @@ private fun ListMemberItem(
             modifier = Modifier.clickable(enabled = canToggle, onClick = { onToggleSelection(roomMember) }),
             avatarData = roomMember.getAvatarData(size = AvatarSize.UserListItem),
             name = roomMember.getBestName(),
-            userId = roomMember.userId.value.takeIf { roomMember.displayName?.isNotBlank() == true },
+            // GUA FORK: hide the homeserver suffix in the user handle.
+            userId = roomMember.userId.displayHandle.takeIf { roomMember.displayName?.isNotBlank() == true },
             isPending = roomMember.membership == RoomMembershipState.INVITE,
             trailingContent = trailingContent,
         )

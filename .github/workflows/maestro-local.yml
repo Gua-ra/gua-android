@@ -1,9 +1,8 @@
 name: Maestro (local)
 
-# Run this flow only when APK Build workflow completes
+# GUA FORK: auto-trigger disabled — Maestro E2E needs an emulator + secrets not wired for the fork. Manual only.
 on:
   workflow_dispatch:
-  pull_request:
 
 permissions: {}
 

@@ -98,52 +98,54 @@ private fun OverviewSection(
     hasPin: Boolean,
     eventSink: (TwoStepVerificationEvent) -> Unit,
 ) {
-    ListItem(
-        headlineContent = {
-            Text(
-                stringResource(
-                    id = if (hasPin) {
-                        R.string.screen_two_step_verification_status_on
-                    } else {
-                        R.string.screen_two_step_verification_status_off
-                    }
+    Column {
+        ListItem(
+            headlineContent = {
+                Text(
+                    stringResource(
+                        id = if (hasPin) {
+                            R.string.screen_two_step_verification_status_on
+                        } else {
+                            R.string.screen_two_step_verification_status_off
+                        }
+                    )
                 )
-            )
-        },
-        supportingContent = {
-            Text(
-                stringResource(
-                    id = if (hasPin) {
-                        R.string.screen_two_step_verification_overview_footer_on
-                    } else {
-                        R.string.screen_two_step_verification_overview_footer_off
-                    }
+            },
+            supportingContent = {
+                Text(
+                    stringResource(
+                        id = if (hasPin) {
+                            R.string.screen_two_step_verification_overview_footer_on
+                        } else {
+                            R.string.screen_two_step_verification_overview_footer_off
+                        }
+                    )
                 )
-            )
-        },
-        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Lock())),
-    )
-    HorizontalDivider()
-    ListItem(
-        headlineContent = {
-            Text(
-                stringResource(
-                    id = if (hasPin) {
-                        R.string.screen_two_step_verification_change_button
-                    } else {
-                        R.string.screen_two_step_verification_set_button
-                    }
+            },
+            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Lock())),
+        )
+        HorizontalDivider()
+        ListItem(
+            headlineContent = {
+                Text(
+                    stringResource(
+                        id = if (hasPin) {
+                            R.string.screen_two_step_verification_change_button
+                        } else {
+                            R.string.screen_two_step_verification_set_button
+                        }
+                    )
                 )
-            )
-        },
-        leadingContent = ListItemContent.Icon(
-            IconSource.Vector(if (hasPin) CompoundIcons.Edit() else CompoundIcons.Lock())
-        ),
-        style = ListItemStyle.Primary,
-        onClick = {
-            eventSink(if (hasPin) TwoStepVerificationEvent.StartChange else TwoStepVerificationEvent.StartSetup)
-        },
-    )
+            },
+            leadingContent = ListItemContent.Icon(
+                IconSource.Vector(if (hasPin) CompoundIcons.Edit() else CompoundIcons.Lock())
+            ),
+            style = ListItemStyle.Primary,
+            onClick = {
+                eventSink(if (hasPin) TwoStepVerificationEvent.StartChange else TwoStepVerificationEvent.StartSetup)
+            },
+        )
+    }
 }
 
 @Composable

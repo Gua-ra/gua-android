@@ -150,7 +150,8 @@ fun LoginWithClassicView(
                 }
                 // UserId
                 Text(
-                    text = state.userId.value,
+                    // GUA FORK: hide the homeserver suffix in the user handle.
+                    text = state.userId.displayHandle,
                     style = if (state.displayName == null) ElementTheme.typography.fontHeadingLgBold else ElementTheme.typography.fontBodyLgRegular,
                     color = ElementTheme.colors.textPrimary,
                     textAlign = TextAlign.Center,

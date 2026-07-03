@@ -26,6 +26,21 @@ import extension.setupDependencyInjection
 import extension.testCommonDependencies
 import org.sonarqube.gradle.SonarResolverTask
 import java.util.Locale
+import java.util.Properties
+
+// GUA FORK: release signing material is supplied by CI/the environment and is NEVER committed.
+// Resolution order for each value: environment variable -> gitignored `app/keystore.properties`.
+// When nothing is configured (e.g. local debug builds, CI unit tests) the release build falls
+// back to the shared debug keystore so the pipeline stays green without any secrets present.
+val guaKeystoreProperties = Properties().apply {
+    val propsFile = rootProject.file("app/keystore.properties")
+    if (propsFile.exists()) {
+        propsFile.inputStream().use { load(it) }
+    }
+}
+
+fun guaSigningValue(envName: String, propName: String): String? =
+    System.getenv(envName) ?: guaKeystoreProperties.getProperty(propName)
 
 plugins {
     id("io.element.android-compose-application")
@@ -96,6 +111,20 @@ android {
             storePassword = System.getenv("ELEMENT_ANDROID_NIGHTLY_STOREPASSWORD")
                 ?: project.property("signing.element.nightly.storePassword") as? String?
         }
+
+        // GUA FORK: production release signing. All material comes from the environment (CI) or a
+        // gitignored `app/keystore.properties`; nothing is ever committed to the repo. The config is
+        // only registered when a keystore path is actually provided, so debug/test pipelines that have
+        // no secrets simply skip it and the release type falls back to debug signing below.
+        val guaReleaseStoreFile = guaSigningValue("GUA_RELEASE_KEYSTORE", "storeFile")
+        if (guaReleaseStoreFile != null) {
+            register("release") {
+                storeFile = file(guaReleaseStoreFile)
+                storePassword = guaSigningValue("GUA_RELEASE_KEYSTORE_PASSWORD", "storePassword")
+                keyAlias = guaSigningValue("GUA_RELEASE_KEY_ALIAS", "keyAlias")
+                keyPassword = guaSigningValue("GUA_RELEASE_KEY_PASSWORD", "keyPassword")
+            }
+        }
     }
 
     val baseAppName = BuildTimeConfig.APPLICATION_NAME
@@ -122,7 +151,9 @@ android {
                 "login_redirect_scheme",
                 oAuthRedirectSchemeBase,
             )
-            signingConfig = signingConfigs.getByName("debug")
+            // GUA FORK: sign with the env/CI-provided release key when available, otherwise fall back
+            // to the shared debug keystore so secret-less builds (local dev, CI tests) still succeed.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
 
             optimization {
                 enable = true

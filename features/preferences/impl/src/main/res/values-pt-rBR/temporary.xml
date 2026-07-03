@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_preferences_set_up_pin_title">Configurar PIN</string>
+    <string name="screen_preferences_pin_nudge_message">Adicione um PIN para proteger o Gua se outra pessoa estiver com seu celular.</string>
+    <string name="screen_preferences_pin_nudge_action">Configurar agora</string>
+</resources>

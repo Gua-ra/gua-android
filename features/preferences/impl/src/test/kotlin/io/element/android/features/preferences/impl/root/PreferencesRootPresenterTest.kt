@@ -14,6 +14,7 @@ import app.cash.turbine.ReceiveTurbine
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.enterprise.api.SessionEnterpriseService
 import io.element.android.features.enterprise.test.FakeSessionEnterpriseService
+import io.element.android.features.lockscreen.test.FakeLockScreenService
 import io.element.android.features.logout.api.direct.aDirectLogoutState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
@@ -23,6 +24,8 @@ import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.featureflag.test.FakeFeature
 import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
+import io.element.android.libraries.guaresolver.ContactMatch
+import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.indicator.api.IndicatorService
 import io.element.android.libraries.indicator.test.FakeIndicatorService
 import io.element.android.libraries.matrix.api.oauth.AccountManagementAction
@@ -333,6 +336,8 @@ class PreferencesRootPresenterTest {
         featureFlagService: FeatureFlagService = FakeFeatureFlagService(),
         sessionStore: SessionStore = InMemorySessionStore(),
         sessionEnterpriseService: SessionEnterpriseService = FakeSessionEnterpriseService(),
+        lockScreenService: FakeLockScreenService = FakeLockScreenService().apply { setIsPinSetup(true) },
+        identityServiceClient: IdentityServiceClient = NoopIdentityServiceClient(),
     ) = PreferencesRootPresenter(
         matrixClient = matrixClient,
         sessionVerificationService = sessionVerificationService,
@@ -346,5 +351,21 @@ class PreferencesRootPresenterTest {
         featureFlagService = featureFlagService,
         sessionStore = sessionStore,
         sessionEnterpriseService = sessionEnterpriseService,
+        lockScreenService = lockScreenService,
+        identityServiceClient = identityServiceClient,
     )
+}
+
+/** Minimal no-op [IdentityServiceClient] for tests that don't exercise the account-PIN status. */
+private class NoopIdentityServiceClient : IdentityServiceClient {
+    override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> =
+        Result.success(emptyList())
+
+    override suspend fun pinStatus(accessToken: String): Result<Boolean> = Result.success(false)
+
+    override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> = Result.success(Unit)
+
+    override suspend fun startPinChange(accessToken: String, phone: String, currentPin: String): Result<String> = Result.success("challenge-id")
+
+    override suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit> = Result.success(Unit)
 }

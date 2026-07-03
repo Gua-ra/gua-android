@@ -15,12 +15,14 @@ import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.features.enterprise.test.FakeEnterpriseService
 import io.element.android.features.login.impl.accesscontrol.DefaultAccountProviderAccessControl
 import io.element.android.features.login.impl.accountprovider.AccountProviderDataSource
+import io.element.android.features.login.impl.login.FakeResolverClient
 import io.element.android.features.login.impl.login.LoginHelper
 import io.element.android.features.login.impl.web.FakeWebClientUrlForAuthenticationRetriever
 import io.element.android.features.login.impl.web.WebClientUrlForAuthenticationRetriever
 import io.element.android.features.wellknown.test.FakeWellknownRetriever
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.guaresolver.ResolverClient
 import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
 import io.element.android.libraries.matrix.test.AN_ACCOUNT_PROVIDER
 import io.element.android.libraries.matrix.test.AN_ACCOUNT_PROVIDER_2
@@ -315,8 +317,10 @@ fun createLoginHelper(
     oAuthActionFlow: OAuthActionFlow = FakeOAuthActionFlow(),
     authenticationService: MatrixAuthenticationService = FakeMatrixAuthenticationService(),
     webClientUrlForAuthenticationRetriever: WebClientUrlForAuthenticationRetriever = FakeWebClientUrlForAuthenticationRetriever(),
+    resolverClient: ResolverClient = FakeResolverClient(),
 ): LoginHelper = LoginHelper(
     oAuthActionFlow = oAuthActionFlow,
     authenticationService = authenticationService,
     webClientUrlForAuthenticationRetriever = webClientUrlForAuthenticationRetriever,
+    resolverClient = resolverClient,
 )
