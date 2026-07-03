@@ -52,6 +52,6 @@ object PhoneHasher {
         val trimmed = e164Phone.trim()
         val digits = trimmed.filter { it.isDigit() }
         if (digits.isEmpty()) return null
-        return ("+$digits").lowercase(Locale.ROOT)
+        return "+$digits".lowercase(Locale.ROOT)
     }
 }

@@ -8,7 +8,6 @@
 package io.element.android.features.findfriends.impl
 
 import dev.zacsweers.metro.ContributesBinding
-import dev.zacsweers.metro.Inject
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.guaresolver.IdentityServiceClient
@@ -39,7 +38,6 @@ interface ContactDiscoveryService {
 }
 
 @ContributesBinding(SessionScope::class)
-@Inject
 class DefaultContactDiscoveryService(
     private val contactsReader: ContactsReader,
     private val identityServiceClient: IdentityServiceClient,

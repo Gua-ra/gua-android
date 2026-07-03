@@ -9,8 +9,8 @@ package io.element.android.libraries.guaresolver.internal
 
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
-import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import io.element.android.libraries.core.data.tryOrNull
 import io.element.android.libraries.core.uri.ensureProtocol
 import io.element.android.libraries.guaresolver.ContactMatch
 import io.element.android.libraries.guaresolver.GuaDeployment
@@ -33,7 +33,6 @@ import timber.log.Timber
  */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
-@Inject
 class DefaultIdentityServiceClient(
     private val retrofitFactory: RetrofitFactory,
     private val deployment: GuaDeployment = GuaResolverConfig.current,
@@ -157,7 +156,7 @@ class DefaultIdentityServiceClient(
     private fun HttpException.toPinError(): ResolverError {
         val rawBody = response()?.errorBody()?.string()
         val code = rawBody?.let {
-            runCatching { errorBodyJson.decodeFromString<IdentityServiceErrorBody>(it).code }.getOrNull()
+            tryOrNull { errorBodyJson.decodeFromString<IdentityServiceErrorBody>(it).code }
         }
         val retryAfter = response()?.headers()?.get("Retry-After")?.toIntOrNull()
         return when (code) {

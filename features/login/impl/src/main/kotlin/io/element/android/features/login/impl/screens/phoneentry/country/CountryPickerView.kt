@@ -12,8 +12,8 @@ package io.element.android.features.login.impl.screens.phoneentry.country
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,7 +38,7 @@ import io.element.android.libraries.designsystem.theme.components.TopAppBar
 @Composable
 fun CountryPickerView(
     state: CountryPickerState,
-    onCountrySelected: (Country) -> Unit,
+    onSelectCountry: (Country) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -78,7 +78,7 @@ fun CountryPickerView(
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(state.countries, key = { it.isoCode }) { country ->
-                        CountryRow(country = country, onClick = { onCountrySelected(country) })
+                        CountryRow(country = country, onClick = { onSelectCountry(country) })
                     }
                 }
             }
@@ -126,6 +126,6 @@ internal fun CountryPickerViewPreview(
 ) = ElementPreview {
     CountryPickerView(
         state = state,
-        onCountrySelected = {},
+        onSelectCountry = {},
     )
 }

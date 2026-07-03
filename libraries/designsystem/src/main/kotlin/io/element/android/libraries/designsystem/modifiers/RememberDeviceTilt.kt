@@ -94,7 +94,7 @@ fun rememberDeviceTilt(): State<Offset> {
                     Sensor.TYPE_ACCELEROMETER -> {
                         // Map the gravity vector to roll/pitch. x left/right, y up/down, gravity ~9.81.
                         targetRoll = (-event.values[0] / SensorManager.GRAVITY_EARTH).coerceIn(-1f, 1f)
-                        targetPitch = ((event.values[1] / SensorManager.GRAVITY_EARTH) - 1f).coerceIn(-1f, 1f)
+                        targetPitch = (event.values[1] / SensorManager.GRAVITY_EARTH - 1f).coerceIn(-1f, 1f)
                     }
                     else -> return
                 }

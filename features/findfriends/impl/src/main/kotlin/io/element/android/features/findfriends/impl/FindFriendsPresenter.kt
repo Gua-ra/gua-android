@@ -10,6 +10,7 @@ package io.element.android.features.findfriends.impl
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -61,7 +62,7 @@ class FindFriendsPresenter(
         var contacts by remember { mutableStateOf(persistentListOf<DiscoveredContact>().toImmutableList()) }
         var startingChatUserId by remember { mutableStateOf<UserId?>(null) }
         // Bumped to force a re-run of discovery on Retry.
-        var discoverNonce by remember { mutableStateOf(0) }
+        var discoverNonce by remember { mutableIntStateOf(0) }
 
         // Once permission flips to granted, (re)run discovery; otherwise reflect the permission gate.
         LaunchedEffect(permissionsState.permissionGranted, discoverNonce) {

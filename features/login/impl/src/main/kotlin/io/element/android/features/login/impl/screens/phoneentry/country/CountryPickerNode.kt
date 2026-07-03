@@ -38,7 +38,7 @@ class CountryPickerNode(
         val state = presenter.present()
         CountryPickerView(
             state = state,
-            onCountrySelected = { country ->
+            onSelectCountry = { country ->
                 selectedCountryStore.select(country)
                 callback.onDone()
             },

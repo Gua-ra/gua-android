@@ -145,7 +145,7 @@ private fun AddFirstAccountScaffold(
                         onBoardingLogoResId = state.onBoardingLogoResId,
                     )
                 } else {
-                    OnBoardingContent(state = state)
+                    OnBoardingContent()
                 }
                 if (state.showDeveloperSettings) {
                     IconButton(
@@ -204,7 +204,7 @@ private fun AddOtherAccountScaffold(
  * light, brand-fixed colours (the aurora is dark green in both light and dark themes).
  */
 @Composable
-private fun OnBoardingContent(state: OnBoardingState) {
+private fun OnBoardingContent() {
     // The aurora canvas is dark in both themes, so we use light text rather than theme tokens
     // (which would be near-black in light mode and disappear).
     val titleColor = Color.White

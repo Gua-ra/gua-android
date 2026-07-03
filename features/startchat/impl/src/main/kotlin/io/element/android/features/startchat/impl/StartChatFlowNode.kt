@@ -25,9 +25,9 @@ import io.element.android.features.createroom.api.CreateRoomEntryPoint
 import io.element.android.features.findfriends.api.FindFriendsEntryPoint
 import io.element.android.features.startchat.DefaultStartChatNavigator
 import io.element.android.features.startchat.api.StartChatEntryPoint
-import io.element.android.features.userprofile.api.UserProfileEntryPoint
 import io.element.android.features.startchat.impl.joinbyaddress.JoinRoomByAddressNode
 import io.element.android.features.startchat.impl.root.StartChatNode
+import io.element.android.features.userprofile.api.UserProfileEntryPoint
 import io.element.android.libraries.architecture.BackstackView
 import io.element.android.libraries.architecture.BaseFlowNode
 import io.element.android.libraries.architecture.OverlayView

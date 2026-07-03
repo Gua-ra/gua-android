@@ -11,7 +11,6 @@ import android.content.Context
 import android.provider.ContactsContract
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
-import dev.zacsweers.metro.Inject
 import io.element.android.libraries.di.annotations.ApplicationContext
 import timber.log.Timber
 
@@ -28,7 +27,6 @@ interface ContactsReader {
 }
 
 @ContributesBinding(AppScope::class)
-@Inject
 class AndroidContactsReader(
     @ApplicationContext private val context: Context,
 ) : ContactsReader {
@@ -53,12 +51,11 @@ class AndroidContactsReader(
                 val nameIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME_PRIMARY)
                 if (numberIndex < 0) return emptyMap()
                 while (cursor.moveToNext()) {
-                    val rawNumber = cursor.getString(numberIndex) ?: continue
-                    val e164 = PhoneNumberNormalizer.normalize(rawNumber, defaultDialCode) ?: continue
-                    val name = (if (nameIndex >= 0) cursor.getString(nameIndex) else null).orEmpty()
+                    val rawNumber = cursor.getString(numberIndex)
+                    val e164 = rawNumber?.let { PhoneNumberNormalizer.normalize(it, defaultDialCode) }
                     // First non-empty name wins; never overwrite a real name with a blank.
-                    val existing = nameByNumber[e164]
-                    if (existing.isNullOrEmpty()) {
+                    if (e164 != null && nameByNumber[e164].isNullOrEmpty()) {
+                        val name = (if (nameIndex >= 0) cursor.getString(nameIndex) else null).orEmpty()
                         nameByNumber[e164] = name.ifEmpty { e164 }
                     }
                 }

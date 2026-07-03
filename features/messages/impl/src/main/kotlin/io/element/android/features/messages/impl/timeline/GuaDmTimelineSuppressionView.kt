@@ -90,6 +90,11 @@ private fun guaGroupedTimeline(grouper: TimelineItemGrouper, isDirectOneToOneRoo
 @PreviewsDayNight
 @Composable
 internal fun GuaDmTimelineSuppressionPreview() = ElementPreview {
+    ContentToPreview()
+}
+
+@Composable
+private fun ContentToPreview() {
     CompositionLocalProvider(
         LocalTimelineItemPresenterFactories provides aFakeTimelineItemPresenterFactories(),
     ) {

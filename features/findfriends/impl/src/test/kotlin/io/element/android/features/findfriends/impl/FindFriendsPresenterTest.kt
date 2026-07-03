@@ -97,7 +97,10 @@ class FindFriendsPresenterTest {
     fun `selecting a contact starts a chat and notifies the callback`() = runTest {
         var startedRoom: RoomId? = null
         val callback = object : FindFriendsEntryPoint.Callback {
-            override fun onStartChat(roomId: RoomId) { startedRoom = roomId }
+            override fun onStartChat(roomId: RoomId) {
+                startedRoom = roomId
+            }
+
             override fun onOpenProfile(userId: UserId) = Unit
         }
         val presenter = createPresenter(
@@ -119,7 +122,10 @@ class FindFriendsPresenterTest {
         var openedProfile: UserId? = null
         val callback = object : FindFriendsEntryPoint.Callback {
             override fun onStartChat(roomId: RoomId) = Unit
-            override fun onOpenProfile(userId: UserId) { openedProfile = userId }
+
+            override fun onOpenProfile(userId: UserId) {
+                openedProfile = userId
+            }
         }
         val presenter = createPresenter(
             permissionGranted = true,
