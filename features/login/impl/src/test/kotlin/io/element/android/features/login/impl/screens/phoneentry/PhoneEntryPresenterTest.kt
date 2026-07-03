@@ -45,13 +45,28 @@ class PhoneEntryPresenterTest {
         val presenter = createPhoneEntryPresenter()
         presenter.test {
             val initialState = awaitItem()
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("2015550123"))
+            val state = awaitItem()
+            // US mask: (201) 555-0123
+            assertThat(state.localPhoneNumber).isEqualTo("(201) 555-0123")
+            assertThat(state.localDigits).isEqualTo("2015550123")
+            assertThat(state.e164PhoneNumber).isEqualTo("+12015550123")
+            assertThat(state.canContinue).isTrue()
+        }
+    }
+
+    @Test
+    fun `present - a length-plausible but invalid number keeps continue disabled`() = runTest {
+        val presenter = createPhoneEntryPresenter()
+        presenter.test {
+            val initialState = awaitItem()
+            // 10 digits, so the old length-only heuristic would have accepted it — but the exchange
+            // code "123" is not diallable in the NANP, so libphonenumber (and the backend, which
+            // runs the same isValidNumber check) rejects it.
             initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("5551234567"))
             val state = awaitItem()
-            // US mask: (555) 123-4567
-            assertThat(state.localPhoneNumber).isEqualTo("(555) 123-4567")
             assertThat(state.localDigits).isEqualTo("5551234567")
-            assertThat(state.e164PhoneNumber).isEqualTo("+15551234567")
-            assertThat(state.canContinue).isTrue()
+            assertThat(state.canContinue).isFalse()
         }
     }
 
@@ -74,12 +89,12 @@ class PhoneEntryPresenterTest {
         presenter.test {
             val initialState = awaitItem()
             assertThat(initialState.selectedCountry.isoCode).isEqualTo("US")
-            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("+15551234567"))
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("+12015550123"))
             val state = awaitItem()
             assertThat(state.selectedCountry.isoCode).isEqualTo("US")
-            assertThat(state.localPhoneNumber).isEqualTo("(555) 123-4567")
-            assertThat(state.localDigits).isEqualTo("5551234567")
-            assertThat(state.e164PhoneNumber).isEqualTo("+15551234567")
+            assertThat(state.localPhoneNumber).isEqualTo("(201) 555-0123")
+            assertThat(state.localDigits).isEqualTo("2015550123")
+            assertThat(state.e164PhoneNumber).isEqualTo("+12015550123")
             assertThat(state.canContinue).isTrue()
             cancelAndIgnoreRemainingEvents()
         }
@@ -90,11 +105,11 @@ class PhoneEntryPresenterTest {
         val presenter = createPhoneEntryPresenter()
         presenter.test {
             val initialState = awaitItem()
-            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("15551234567"))
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("12015550123"))
             val state = awaitItem()
             assertThat(state.selectedCountry.isoCode).isEqualTo("US")
-            assertThat(state.localPhoneNumber).isEqualTo("(555) 123-4567")
-            assertThat(state.localDigits).isEqualTo("5551234567")
+            assertThat(state.localPhoneNumber).isEqualTo("(201) 555-0123")
+            assertThat(state.localDigits).isEqualTo("2015550123")
             assertThat(state.canContinue).isTrue()
             cancelAndIgnoreRemainingEvents()
         }
@@ -148,7 +163,7 @@ class PhoneEntryPresenterTest {
     @Test
     fun `present - continue resolves homeserver then produces an OIDC login mode`() = runTest {
         val resolveRecorder = lambdaRecorder<String, Result<HomeserverResolution>> { phone ->
-            assertThat(phone).isEqualTo("+15551234567")
+            assertThat(phone).isEqualTo("+12015550123")
             Result.success(
                 HomeserverResolution(
                     exists = true,
@@ -176,7 +191,7 @@ class PhoneEntryPresenterTest {
         )
         presenter.test {
             val initialState = awaitItem()
-            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("5551234567"))
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("2015550123"))
             val typedState = awaitItem()
             assertThat(typedState.canContinue).isTrue()
             typedState.eventSink(PhoneEntryEvents.Continue)
@@ -198,7 +213,7 @@ class PhoneEntryPresenterTest {
         )
         presenter.test {
             val initialState = awaitItem()
-            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("5551234567"))
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("2015550123"))
             val typedState = awaitItem()
             typedState.eventSink(PhoneEntryEvents.Continue)
             val failureState = awaitTerminalLoginMode()
