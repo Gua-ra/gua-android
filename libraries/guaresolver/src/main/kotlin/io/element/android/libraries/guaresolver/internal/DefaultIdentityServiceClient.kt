@@ -123,6 +123,51 @@ class DefaultIdentityServiceClient(
             )
         }
 
+    // GUA FORK: Change phone number (PIN-first). Mirrors iOS `IdentityServiceClient` phone-change
+    // methods. The PIN step-up runs FIRST and yields a reauth token; the SMS only fires from
+    // [requestPhoneChangeOtp].
+
+    override suspend fun verifyPinReauth(accessToken: String, userId: String, pin: String): Result<String> =
+        runPinCall { api ->
+            api.verifyPinReauth(
+                authorization = "Bearer $accessToken",
+                body = PinReauthRequest(userId = userId, pin = pin),
+            ).reauthToken
+        }
+
+    override suspend fun requestPhoneChangeOtp(
+        accessToken: String,
+        userId: String,
+        newPhone: String,
+        reauthToken: String,
+        language: String?,
+    ): Result<Unit> =
+        runPinCall { api ->
+            api.requestChangeNumberOtp(
+                authorization = "Bearer $accessToken",
+                body = OtpChangeNumberStartRequest(
+                    userId = userId,
+                    newPhone = newPhone,
+                    reauthToken = reauthToken,
+                    language = language,
+                ),
+            )
+        }
+
+    override suspend fun changePhoneNumber(
+        accessToken: String,
+        userId: String,
+        newPhone: String,
+        code: String,
+        reauthToken: String,
+    ): Result<Unit> =
+        runPinCall { api ->
+            api.changeNumber(
+                authorization = "Bearer $accessToken",
+                body = OtpChangeNumberRequest(userId = userId, newPhone = newPhone, code = code, reauthToken = reauthToken),
+            )
+        }
+
     /**
      * Runs an identity-service PIN call against a freshly-built [IdentityServiceApi], mapping HTTP
      * failures onto the typed [ResolverError] PIN cases (mirroring iOS' status-code + `code`-field
@@ -165,8 +210,11 @@ class DefaultIdentityServiceClient(
             "pin_locked" -> ResolverError.PinLocked(retryAfterSeconds = retryAfter)
             "pin_change_cooldown" -> ResolverError.PinChangeCooldown(retryAfterSeconds = retryAfter)
             "pin_change_challenge_invalid" -> ResolverError.PinChangeChallengeInvalid
+            "phone_already_linked" -> ResolverError.PhoneAlreadyLinked
+            "invalid_reauth_token" -> ResolverError.InvalidReauthToken
             "rate_limited" -> ResolverError.RateLimited
             else -> when (code()) {
+                409 -> ResolverError.PhoneAlreadyLinked
                 425 -> ResolverError.PinChangeCooldown(retryAfterSeconds = retryAfter)
                 429 -> ResolverError.RateLimited
                 else -> ResolverError.Server(code())

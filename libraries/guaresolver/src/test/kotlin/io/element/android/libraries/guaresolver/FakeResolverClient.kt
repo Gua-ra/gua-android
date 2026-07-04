@@ -40,6 +40,9 @@ class FakeIdentityServiceClient(
     private val setInitialPinResult: (String, String, String) -> Result<Unit> = { _, _, _ -> Result.success(Unit) },
     private val startPinChangeResult: (String, String, String) -> Result<String> = { _, _, _ -> Result.success("challenge-id") },
     private val completePinChangeResult: (String, String, String, String) -> Result<Unit> = { _, _, _, _ -> Result.success(Unit) },
+    private val verifyPinReauthResult: (String, String, String) -> Result<String> = { _, _, _ -> Result.success("reauth-token") },
+    private val requestPhoneChangeOtpResult: (String, String, String, String, String?) -> Result<Unit> = { _, _, _, _, _ -> Result.success(Unit) },
+    private val changePhoneNumberResult: (String, String, String, String, String) -> Result<Unit> = { _, _, _, _, _ -> Result.success(Unit) },
 ) : IdentityServiceClient {
     override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> =
         lookupResult(accessToken, hashedPhones)
@@ -55,6 +58,21 @@ class FakeIdentityServiceClient(
 
     override suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit> =
         completePinChangeResult(accessToken, challengeId, otpCode, newPin)
+
+    override suspend fun verifyPinReauth(accessToken: String, userId: String, pin: String): Result<String> =
+        verifyPinReauthResult(accessToken, userId, pin)
+
+    override suspend fun requestPhoneChangeOtp(
+        accessToken: String,
+        userId: String,
+        newPhone: String,
+        reauthToken: String,
+        language: String?,
+    ): Result<Unit> =
+        requestPhoneChangeOtpResult(accessToken, userId, newPhone, reauthToken, language)
+
+    override suspend fun changePhoneNumber(accessToken: String, userId: String, newPhone: String, code: String, reauthToken: String): Result<Unit> =
+        changePhoneNumberResult(accessToken, userId, newPhone, code, reauthToken)
 }
 
 fun aContactMatch(

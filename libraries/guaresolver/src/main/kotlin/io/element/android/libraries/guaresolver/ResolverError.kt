@@ -46,4 +46,17 @@ sealed class ResolverError(message: String, cause: Throwable? = null) : Exceptio
 
     /** Too many attempts; the caller should back off (identity-service `code: "rate_limited"`). */
     data object RateLimited : ResolverError("Too many attempts. Please wait a moment and try again.")
+
+    /**
+     * The requested phone number is already linked to another account
+     * (identity-service `code: "phone_already_linked"`, HTTP 409).
+     */
+    data object PhoneAlreadyLinked : ResolverError("That phone number is already linked to another account.")
+
+    /**
+     * The PIN step-up reauth token is missing, invalid, or expired
+     * (identity-service `code: "invalid_reauth_token"`, HTTP 401). The caller should restart the
+     * flow from the PIN step.
+     */
+    data object InvalidReauthToken : ResolverError("Your confirmation expired. Please re-enter your PIN.")
 }

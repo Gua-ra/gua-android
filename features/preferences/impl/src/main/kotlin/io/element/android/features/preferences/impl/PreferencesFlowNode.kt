@@ -33,6 +33,7 @@ import io.element.android.features.preferences.impl.developer.DeveloperSettingsN
 import io.element.android.features.preferences.impl.labs.LabsNode
 import io.element.android.features.preferences.impl.notifications.NotificationSettingsNode
 import io.element.android.features.preferences.impl.notifications.edit.EditDefaultNotificationSettingNode
+import io.element.android.features.preferences.impl.changephonenumber.ChangePhoneNumberNode
 import io.element.android.features.preferences.impl.root.PreferencesRootNode
 import io.element.android.features.preferences.impl.twostepverification.TwoStepVerificationNode
 import io.element.android.features.preferences.impl.user.editprofile.EditUserProfileNode
@@ -43,6 +44,7 @@ import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.architecture.createNode
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.matrix.api.core.EventId
+import io.element.android.libraries.phonenumberentry.CountryPickerNode
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.troubleshoot.api.NotificationTroubleShootEntryPoint
@@ -103,6 +105,14 @@ class PreferencesFlowNode(
         @Parcelize
         data object TwoStepVerification : NavTarget
 
+        // GUA FORK: Change phone number (OTP to the new number, account PIN as the second factor).
+        @Parcelize
+        data object ChangePhoneNumber : NavTarget
+
+        // GUA FORK: shared country picker for the change-phone new-number field.
+        @Parcelize
+        data object CountryPicker : NavTarget
+
         @Parcelize
         data class EditDefaultNotificationSetting(val isOneToOne: Boolean) : NavTarget
 
@@ -162,6 +172,10 @@ class PreferencesFlowNode(
 
                     override fun navigateToTwoStepVerification() {
                         backstack.push(NavTarget.TwoStepVerification)
+                    }
+
+                    override fun navigateToChangePhoneNumber() {
+                        backstack.push(NavTarget.ChangePhoneNumber)
                     }
 
                     override fun navigateToAdvancedSettings() {
@@ -314,6 +328,22 @@ class PreferencesFlowNode(
             }
             NavTarget.TwoStepVerification -> {
                 createNode<TwoStepVerificationNode>(buildContext)
+            }
+            NavTarget.ChangePhoneNumber -> {
+                val changePhoneCallback = object : ChangePhoneNumberNode.Callback {
+                    override fun navigateToCountryPicker() {
+                        backstack.push(NavTarget.CountryPicker)
+                    }
+                }
+                createNode<ChangePhoneNumberNode>(buildContext, listOf(changePhoneCallback))
+            }
+            NavTarget.CountryPicker -> {
+                val countryPickerCallback = object : CountryPickerNode.Callback {
+                    override fun onDone() {
+                        backstack.pop()
+                    }
+                }
+                createNode<CountryPickerNode>(buildContext, listOf(countryPickerCallback))
             }
             NavTarget.BlockedUsers -> {
                 createNode<BlockedUsersNode>(buildContext)

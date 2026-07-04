@@ -44,6 +44,7 @@ class PreferencesRootNode(
         fun navigateToNotificationSettings()
         fun navigateToLockScreenSettings()
         fun navigateToTwoStepVerification()
+        fun navigateToChangePhoneNumber()
         fun navigateToAdvancedSettings()
         fun navigateToLabs()
         fun navigateToLinkNewDevice()
@@ -91,6 +92,7 @@ class PreferencesRootNode(
             onOpenNotificationSettings = callback::navigateToNotificationSettings,
             onOpenLockScreenSettings = callback::navigateToLockScreenSettings,
             onSetupTwoStepVerification = callback::navigateToTwoStepVerification,
+            onChangePhoneNumber = callback::navigateToChangePhoneNumber,
             onOpenUserProfile = callback::navigateToUserProfile,
             onOpenBlockedUsers = callback::navigateToBlockedUsers,
             onSignOutClick = {
