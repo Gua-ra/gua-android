@@ -3,4 +3,20 @@
     <string name="screen_preferences_set_up_pin_title">Configurar PIN</string>
     <string name="screen_preferences_pin_nudge_message">Añade un PIN para proteger Gua si otra persona tiene tu teléfono.</string>
     <string name="screen_preferences_pin_nudge_action">Configurar ahora</string>
+    <string name="screen_change_phone_title">Cambiar número de teléfono</string>
+    <string name="screen_change_phone_intro_header">Cambia tu número</string>
+    <string name="screen_change_phone_intro_message">Confirmaremos tu PIN y enviaremos un código por mensaje a tu nuevo número. Tu cuenta, chats y mensajes se mantienen igual.</string>
+    <string name="screen_change_phone_new_header">Nuevo número de teléfono</string>
+    <string name="screen_change_phone_new_footer">Ingresa el número que quieres usar a partir de ahora.</string>
+    <string name="screen_change_phone_new_invalid">Ingresa un número de teléfono válido.</string>
+    <string name="screen_change_phone_pin_header">Ingresa tu PIN</string>
+    <string name="screen_change_phone_pin_footer">Confirma tu PIN de 6 dígitos para autorizar este cambio.</string>
+    <string name="screen_change_phone_pin_incorrect">Ese PIN es incorrecto. Inténtalo de nuevo.</string>
+    <string name="screen_change_phone_otp_header">Verifica tu nuevo número</string>
+    <string name="screen_change_phone_otp_footer">Ingresa el código de 6 dígitos que enviamos a tu nuevo número.</string>
+    <string name="screen_change_phone_otp_invalid">Ese código es inválido o ha expirado. Inténtalo de nuevo.</string>
+    <string name="screen_change_phone_already_linked">Ese número de teléfono ya está vinculado a otra cuenta.</string>
+    <string name="screen_change_phone_updated">Tu número de teléfono se ha actualizado.</string>
+    <string name="screen_change_phone_done_header">Todo listo</string>
+    <string name="screen_change_phone_done_message">Tu número de teléfono se ha actualizado. A partir de ahora, usa tu nuevo número para iniciar sesión.</string>
 </resources>
