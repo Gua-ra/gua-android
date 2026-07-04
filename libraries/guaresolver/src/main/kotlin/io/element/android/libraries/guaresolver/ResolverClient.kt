@@ -7,6 +7,8 @@
 
 package io.element.android.libraries.guaresolver
 
+import kotlinx.serialization.Serializable
+
 /**
  * GUA FORK: talks to the Gua resolver (`POST /resolve`) — the federation front door that maps a
  * phone number to a homeserver, so the client never hardcodes one. Android counterpart of iOS
@@ -22,4 +24,42 @@ interface ResolverClient {
      * [ResolverError] (notably [ResolverError.NotConfigured] when no resolver URL is configured).
      */
     suspend fun resolve(e164Phone: String): Result<HomeserverResolution>
+
+    /**
+     * Resolve with additive v1 contract fields. Existing callers should keep using
+     * [resolve] until they have verified identity/OIDC claims to transport.
+     */
+    suspend fun resolve(e164Phone: String, options: ResolverResolveOptions): Result<HomeserverResolution> =
+        resolve(e164Phone)
 }
+
+@Serializable
+data class ResolverResolveOptions(
+    val country: String? = null,
+    val mccmnc: String? = null,
+    val carrier: String? = null,
+    val regionHint: String? = null,
+    val affiliations: List<String>? = null,
+    val attributes: Map<String, String>? = null,
+    val routingClaims: ResolverRoutingClaimsEnvelope? = null,
+    val trace: Boolean? = null,
+)
+
+@Serializable
+data class ResolverRoutingClaimsEnvelope(
+    val schemaVersion: String,
+    val issuer: String,
+    val audience: String,
+    val issuedAt: String,
+    val expiresAt: String,
+    val nonce: String,
+    val affiliations: List<String>? = null,
+    val attributes: Map<String, String>? = null,
+    val signatures: List<ResolverClaimSignature>,
+)
+
+@Serializable
+data class ResolverClaimSignature(
+    val keyId: String,
+    val signatureB64: String,
+)

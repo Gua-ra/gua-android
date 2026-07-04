@@ -17,6 +17,7 @@ import io.element.android.libraries.guaresolver.HomeserverResolution
 import io.element.android.libraries.guaresolver.ResolvedHomeserver
 import io.element.android.libraries.guaresolver.ResolverClient
 import io.element.android.libraries.guaresolver.ResolverError
+import io.element.android.libraries.guaresolver.ResolverResolveOptions
 import io.element.android.libraries.network.RetrofitFactory
 import retrofit2.HttpException
 import timber.log.Timber
@@ -35,6 +36,10 @@ class DefaultResolverClient(
     private val deployment: GuaDeployment = GuaResolverConfig.current,
 ) : ResolverClient {
     override suspend fun resolve(e164Phone: String): Result<HomeserverResolution> {
+        return resolve(e164Phone, ResolverResolveOptions())
+    }
+
+    override suspend fun resolve(e164Phone: String, options: ResolverResolveOptions): Result<HomeserverResolution> {
         val baseUrl = deployment.resolverBaseUrl
             ?: return Result.failure(ResolverError.NotConfigured)
 
@@ -46,7 +51,19 @@ class DefaultResolverClient(
         }
 
         val response = try {
-            api.resolve(ResolveRequest(phone = e164Phone))
+            api.resolve(
+                ResolveRequest(
+                    phone = e164Phone,
+                    country = options.country,
+                    mccmnc = options.mccmnc,
+                    carrier = options.carrier,
+                    regionHint = options.regionHint,
+                    affiliations = options.affiliations,
+                    attributes = options.attributes,
+                    routingClaims = options.routingClaims,
+                    trace = options.trace,
+                )
+            )
         } catch (e: HttpException) {
             return Result.failure(ResolverError.Server(e.code()))
         } catch (e: Exception) {

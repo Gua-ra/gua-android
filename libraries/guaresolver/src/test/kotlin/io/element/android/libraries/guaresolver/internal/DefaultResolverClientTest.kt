@@ -10,7 +10,10 @@ package io.element.android.libraries.guaresolver.internal
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.androidutils.json.DefaultJsonProvider
 import io.element.android.libraries.guaresolver.FakeGuaDeployment
+import io.element.android.libraries.guaresolver.ResolverClaimSignature
 import io.element.android.libraries.guaresolver.ResolverError
+import io.element.android.libraries.guaresolver.ResolverResolveOptions
+import io.element.android.libraries.guaresolver.ResolverRoutingClaimsEnvelope
 import io.element.android.libraries.network.RetrofitFactory
 import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
@@ -41,6 +44,7 @@ class DefaultResolverClientTest {
         assertThat(resolution.exists).isTrue()
         assertThat(resolution.homeserver.baseUrl).isEqualTo("https://matrix.gua.global")
         assertThat(resolution.homeserver.masIssuer).isEqualTo("https://mas.gua.global")
+        assertThat(server.takeRequest().body.readUtf8()).isEqualTo("""{"phone":"+5511999999999"}""")
         server.shutdown()
     }
 
@@ -103,6 +107,54 @@ class DefaultResolverClientTest {
         val result = client.resolve("+15551234567")
 
         assertThat(result.exceptionOrNull()).isInstanceOf(ResolverError.NotConfigured::class.java)
+    }
+
+    @Test
+    fun `optional v1 routing fields are sent when provided`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "exists": false,
+                  "registerAt": { "serverName": "institution.gua.global", "baseUrl": "https://institution.gua.global" },
+                  "trace": { "source": "placement", "rule": "institution_domain", "homeserverId": "institution-br" }
+                }
+                """.trimIndent()
+            )
+        )
+        val client = createClient(server)
+
+        val result = client.resolve(
+            "+5511999999999",
+            ResolverResolveOptions(
+                regionHint = "br-sp",
+                affiliations = listOf("example.edu"),
+                attributes = mapOf("oidc_issuer" to "https://sso.example.edu"),
+                trace = true,
+                routingClaims = ResolverRoutingClaimsEnvelope(
+                    schemaVersion = "gua-routing-claims.v1",
+                    issuer = "https://sso.example.edu",
+                    audience = "gua-resolver",
+                    issuedAt = "2026-07-04T12:00:00Z",
+                    expiresAt = "2026-07-04T12:05:00Z",
+                    nonce = "nonce-123",
+                    affiliations = listOf("example.edu"),
+                    attributes = mapOf("institution_domain" to "example.edu"),
+                    signatures = listOf(ResolverClaimSignature(keyId = "sso-key-1", signatureB64 = "abc123")),
+                ),
+            )
+        )
+
+        assertThat(result.isSuccess).isTrue()
+        val body = server.takeRequest().body.readUtf8()
+        assertThat(body).contains(""""phone":"+5511999999999"""")
+        assertThat(body).contains(""""regionHint":"br-sp"""")
+        assertThat(body).contains(""""trace":true""")
+        assertThat(body).contains(""""routingClaims"""")
+        assertThat(body).contains(""""nonce":"nonce-123"""")
+        assertThat(body).contains(""""signatureB64":"abc123"""")
+        server.shutdown()
     }
 
     private fun createClient(server: MockWebServer) = DefaultResolverClient(
