@@ -1,0 +1,9 @@
+Welcome to the first Gua beta.
+
+ • Private, end-to-end encrypted messaging
+ • Sign in with your phone number
+ • Find friends who are already on Gua
+ • Groups, replies, reactions, edits and voice messages
+ • Photo, video and file sharing
+
+Thanks for helping us test Gua. Please send us your feedback.
