@@ -145,12 +145,28 @@ android {
         }
 
         getByName("release") {
-            resValue("string", "app_name", baseAppName)
-            resValue(
-                "string",
-                "login_redirect_scheme",
-                oAuthRedirectSchemeBase,
-            )
+            // GUA FORK: `-Pgua.deployment=dev` builds the QA app — the Android mirror of the iOS
+            // dev variant (Variants/Dev/dev.yml): applicationId global.gua.dev, display name
+            // "Gua QA", OIDC redirect scheme global.gua.dev (which MAS pairs with client_uri
+            // https://gua.global, same as iOS), talking to the dev deployment (see the
+            // guaresolver module). Without the property this stays the production app.
+            val useDevDeployment = (project.findProperty("gua.deployment") as? String) == "dev"
+            if (useDevDeployment) {
+                applicationIdSuffix = ".dev"
+                resValue("string", "app_name", "Gua QA")
+                resValue(
+                    "string",
+                    "login_redirect_scheme",
+                    "$oAuthRedirectSchemeBase.dev",
+                )
+            } else {
+                resValue("string", "app_name", baseAppName)
+                resValue(
+                    "string",
+                    "login_redirect_scheme",
+                    oAuthRedirectSchemeBase,
+                )
+            }
             // GUA FORK: sign with the env/CI-provided release key when available, otherwise fall back
             // to the shared debug keystore so secret-less builds (local dev, CI tests) still succeed.
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
