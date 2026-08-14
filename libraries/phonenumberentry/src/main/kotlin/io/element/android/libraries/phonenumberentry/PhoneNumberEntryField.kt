@@ -21,13 +21,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
@@ -175,9 +180,24 @@ private fun PhoneInput(
     modifier: Modifier = Modifier,
 ) {
     val textStyle: TextStyle = ElementTheme.typography.fontBodyLgRegular.copy(color = style.textColor)
+    // GUA FORK: the caret lives here rather than in the presenter. The String overload of
+    // BasicTextField carries no selection, so it puts the caret back at the end every time the value
+    // it is handed differs from what it last emitted. The presenter is a Molecule presenter, so that
+    // value arrives a frame or more later; typing quickly means keystroke N+1 lands while the field
+    // is still showing N-1, and the caret jumps mid-number. Editing locally keeps every keystroke
+    // immediate, and the presenter still sees each change.
+    var fieldValue by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
+    if (fieldValue.text != value) {
+        // The presenter changed the digits behind our back (a pasted number was normalised, or the
+        // country switched), so adopt its version and put the caret at the end.
+        fieldValue = TextFieldValue(value, TextRange(value.length))
+    }
     BasicTextField(
-        value = value,
-        onValueChange = onValueChange,
+        value = fieldValue,
+        onValueChange = {
+            fieldValue = it
+            onValueChange(it.text)
+        },
         enabled = enabled,
         singleLine = true,
         textStyle = textStyle,

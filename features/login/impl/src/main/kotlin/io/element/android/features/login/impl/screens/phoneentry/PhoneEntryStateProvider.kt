@@ -10,15 +10,15 @@ package io.element.android.features.login.impl.screens.phoneentry
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import io.element.android.features.login.impl.error.ChangeServerError
 import io.element.android.features.login.impl.login.LoginMode
-import io.element.android.libraries.phonenumberentry.Country
 import io.element.android.libraries.architecture.AsyncData
+import io.element.android.libraries.phonenumberentry.Country
 
 open class PhoneEntryStateProvider : PreviewParameterProvider<PhoneEntryState> {
     override val values: Sequence<PhoneEntryState>
         get() = sequenceOf(
             // Empty US number.
             aPhoneEntryState(),
-            // Typed + valid US number (raw digits (the field masks visually); valid per libphonenumber, which gates Continue).
+            // Typed US number, as raw digits since the field masks visually. Valid per libphonenumber, which gates Continue.
             aPhoneEntryState(localPhoneNumber = "2015550123"),
             // A non-default-country flag (Brazil), masked.
             aPhoneEntryState(

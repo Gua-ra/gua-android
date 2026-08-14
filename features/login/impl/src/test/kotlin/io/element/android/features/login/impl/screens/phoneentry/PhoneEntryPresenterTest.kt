@@ -47,8 +47,8 @@ class PhoneEntryPresenterTest {
             val initialState = awaitItem()
             initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("2015550123"))
             val state = awaitItem()
-            // US mask: (201) 555-0123
-            assertThat(state.localPhoneNumber).isEqualTo("(201) 555-0123")
+            // Raw digits only; the US mask "(201) 555-0123" is applied visually in the field.
+            assertThat(state.localPhoneNumber).isEqualTo("2015550123")
             assertThat(state.localDigits).isEqualTo("2015550123")
             assertThat(state.e164PhoneNumber).isEqualTo("+12015550123")
             assertThat(state.canContinue).isTrue()
@@ -60,13 +60,13 @@ class PhoneEntryPresenterTest {
         val presenter = createPhoneEntryPresenter()
         presenter.test {
             val initialState = awaitItem()
-            // 10 digits, so the old length-only heuristic would have accepted it — but the exchange
-            // code "123" is not diallable in the NANP, so libphonenumber (and the backend, which
-            // runs the same isValidNumber check) rejects it.
+            // 10 digits, so the old length-only heuristic would have accepted it, but 555 is not a
+            // diallable NANP area code, so libphonenumber (and the backend, which runs the same
+            // isValidNumber check) rejects it.
             initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("5551234567"))
             val state = awaitItem()
             // Raw digits only; the US mask "(555) 123-4567" is applied visually in the field.
-            assertThat(state.localPhoneNumber).isEqualTo("2015550123")
+            assertThat(state.localPhoneNumber).isEqualTo("5551234567")
             assertThat(state.localDigits).isEqualTo("5551234567")
             assertThat(state.canContinue).isFalse()
         }
@@ -96,7 +96,7 @@ class PhoneEntryPresenterTest {
             assertThat(state.selectedCountry.isoCode).isEqualTo("US")
             assertThat(state.localPhoneNumber).isEqualTo("2015550123")
             assertThat(state.localDigits).isEqualTo("2015550123")
-            assertThat(state.e164PhoneNumber).isEqualTo("+15551234567")
+            assertThat(state.e164PhoneNumber).isEqualTo("+12015550123")
             assertThat(state.canContinue).isTrue()
             cancelAndIgnoreRemainingEvents()
         }
@@ -153,11 +153,11 @@ class PhoneEntryPresenterTest {
         val presenter = createPhoneEntryPresenter()
         presenter.test {
             val initialState = awaitItem()
-            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("5551234567"))
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("2015550123"))
             val state = awaitItem()
             assertThat(state.selectedCountry.isoCode).isEqualTo("US")
-            assertThat(state.localDigits).isEqualTo("5551234567")
-            assertThat(state.localPhoneNumber).isEqualTo("5551234567")
+            assertThat(state.localDigits).isEqualTo("2015550123")
+            assertThat(state.localPhoneNumber).isEqualTo("2015550123")
             cancelAndIgnoreRemainingEvents()
         }
     }
