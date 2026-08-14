@@ -19,6 +19,22 @@ class FakeResolverClient(
 }
 
 /**
+ * GUA FORK: lambda-overridable fake [FederationRosterFetcher] that also counts fetches, for
+ * roster cache tests.
+ */
+class FakeFederationRosterFetcher(
+    var fetchRosterResult: () -> Result<FederationRoster> = { Result.success(aFederationRoster()) },
+) : FederationRosterFetcher {
+    var fetchCount: Int = 0
+        private set
+
+    override suspend fun fetchRoster(): Result<FederationRoster> {
+        fetchCount++
+        return fetchRosterResult()
+    }
+}
+
+/**
  * GUA FORK: test-only [GuaDeployment] with explicit values, so tests can exercise the
  * configured / unconfigured resolver / identity-service paths without the build-time
  * [GuaResolverConfig] selection.
@@ -107,4 +123,27 @@ fun aHomeserverResolution(
 ) = HomeserverResolution(
     exists = exists,
     homeserver = homeserver,
+)
+
+fun aFederationRosterEntry(
+    serverName: String = "gua.global",
+    status: String = "ACTIVE",
+    searchVisibility: String? = null,
+    searchGroups: List<String>? = null,
+) = FederationRosterEntry(
+    homeserver = FederationRosterServer(
+        serverName = serverName,
+        searchVisibility = searchVisibility,
+        searchGroups = searchGroups,
+    ),
+    status = status,
+)
+
+fun aFederationRoster(
+    entries: List<FederationRosterEntry> = listOf(
+        aFederationRosterEntry(serverName = "gua.global"),
+        aFederationRosterEntry(serverName = "gua.ca"),
+    ),
+) = FederationRoster(
+    entries = entries,
 )
