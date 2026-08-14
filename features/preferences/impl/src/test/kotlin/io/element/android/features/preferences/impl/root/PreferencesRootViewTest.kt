@@ -12,6 +12,10 @@ package io.element.android.features.preferences.impl.root
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.annotation.StringRes
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
@@ -296,7 +300,7 @@ class PreferencesRootViewTest : RobolectricTest() {
                 ),
                 onOpenDeveloperSettings = callback,
             )
-            clickOn(CommonStrings.common_developer_options)
+            scrollAndClickOn(CommonStrings.common_developer_options)
         }
     }
 
@@ -419,7 +423,7 @@ class PreferencesRootViewTest : RobolectricTest() {
                 ),
                 onDeactivateClick = callback,
             )
-            clickOn(CommonStrings.action_delete_account)
+            scrollAndClickOn(CommonStrings.action_delete_account)
         }
     }
 
@@ -445,7 +449,7 @@ class PreferencesRootViewTest : RobolectricTest() {
                 eventSink = eventsRecorder,
             ),
         )
-        onNodeWithText(version).performClick()
+        onNodeWithText(version).performScrollTo().performClick()
         eventsRecorder.assertSingle(PreferencesRootEvent.OnVersionInfoClick)
     }
 }
@@ -496,4 +500,13 @@ private fun AndroidComposeUiTest<ComponentActivity>.setView(
             onDeactivateClick = onDeactivateClick,
         )
     }
+}
+
+/**
+ * The settings page scrolls, and the rows near the bottom sit outside the viewport at test window
+ * size, where a plain click never reaches them. Scroll the row into view first.
+ */
+private fun AndroidComposeUiTest<ComponentActivity>.scrollAndClickOn(@StringRes res: Int) {
+    val text = activity!!.getString(res)
+    onNode(hasText(text) and hasClickAction()).performScrollTo().performClick()
 }

@@ -381,6 +381,8 @@ private class NoopIdentityServiceClient : IdentityServiceClient {
         language: String?,
     ): Result<Unit> = Result.success(Unit)
 
+    override suspend fun startPasskeyEnrollment(accessToken: String): Result<String> = Result.success("enrollment-challenge")
+
     override suspend fun changePhoneNumber(
         accessToken: String,
         userId: String,
