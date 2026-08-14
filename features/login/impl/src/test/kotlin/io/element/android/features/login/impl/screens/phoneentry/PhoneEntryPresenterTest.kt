@@ -11,13 +11,13 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.features.login.impl.login.FakeResolverClient
 import io.element.android.features.login.impl.login.LoginMode
 import io.element.android.features.login.impl.screens.onboarding.createLoginHelper
-import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.guaresolver.HomeserverResolution
 import io.element.android.libraries.guaresolver.ResolvedHomeserver
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.matrix.test.auth.FakeMatrixAuthenticationService
 import io.element.android.libraries.matrix.test.auth.aMatrixHomeServerDetails
+import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.lambda.lambdaRecorder
 import io.element.android.tests.testutils.test
@@ -41,7 +41,7 @@ class PhoneEntryPresenterTest {
     }
 
     @Test
-    fun `present - typing applies national-format masking and validation`() = runTest {
+    fun `present - typing stores raw digits and validates`() = runTest {
         val presenter = createPhoneEntryPresenter()
         presenter.test {
             val initialState = awaitItem()
@@ -65,6 +65,8 @@ class PhoneEntryPresenterTest {
             // runs the same isValidNumber check) rejects it.
             initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("5551234567"))
             val state = awaitItem()
+            // Raw digits only; the US mask "(555) 123-4567" is applied visually in the field.
+            assertThat(state.localPhoneNumber).isEqualTo("2015550123")
             assertThat(state.localDigits).isEqualTo("5551234567")
             assertThat(state.canContinue).isFalse()
         }
@@ -92,9 +94,9 @@ class PhoneEntryPresenterTest {
             initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("+12015550123"))
             val state = awaitItem()
             assertThat(state.selectedCountry.isoCode).isEqualTo("US")
-            assertThat(state.localPhoneNumber).isEqualTo("(201) 555-0123")
+            assertThat(state.localPhoneNumber).isEqualTo("2015550123")
             assertThat(state.localDigits).isEqualTo("2015550123")
-            assertThat(state.e164PhoneNumber).isEqualTo("+12015550123")
+            assertThat(state.e164PhoneNumber).isEqualTo("+15551234567")
             assertThat(state.canContinue).isTrue()
             cancelAndIgnoreRemainingEvents()
         }
@@ -108,7 +110,7 @@ class PhoneEntryPresenterTest {
             initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("12015550123"))
             val state = awaitItem()
             assertThat(state.selectedCountry.isoCode).isEqualTo("US")
-            assertThat(state.localPhoneNumber).isEqualTo("(201) 555-0123")
+            assertThat(state.localPhoneNumber).isEqualTo("2015550123")
             assertThat(state.localDigits).isEqualTo("2015550123")
             assertThat(state.canContinue).isTrue()
             cancelAndIgnoreRemainingEvents()
@@ -125,7 +127,7 @@ class PhoneEntryPresenterTest {
             val state = awaitSettledNonEmpty()
             assertThat(state.selectedCountry.isoCode).isEqualTo("BR")
             assertThat(state.localDigits).isEqualTo("11912345678")
-            assertThat(state.localPhoneNumber).isEqualTo("(11) 91234-5678")
+            assertThat(state.localPhoneNumber).isEqualTo("11912345678")
             assertThat(state.canContinue).isTrue()
             cancelAndIgnoreRemainingEvents()
         }
@@ -155,7 +157,7 @@ class PhoneEntryPresenterTest {
             val state = awaitItem()
             assertThat(state.selectedCountry.isoCode).isEqualTo("US")
             assertThat(state.localDigits).isEqualTo("5551234567")
-            assertThat(state.localPhoneNumber).isEqualTo("(555) 123-4567")
+            assertThat(state.localPhoneNumber).isEqualTo("5551234567")
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -239,7 +241,7 @@ private suspend fun app.cash.turbine.ReceiveTurbine<PhoneEntryState>.awaitTermin
 /**
  * Drains intermediate recomposition frames after a country switch until the local number has settled
  * (non-empty). A country change updates two pieces of `rememberSaveable` state, so Molecule may emit a
- * frame with the new country before the formatted number lands; the settled frame is the contract.
+ * frame with the new country before the normalised digits land; the settled frame is the contract.
  */
 private suspend fun app.cash.turbine.ReceiveTurbine<PhoneEntryState>.awaitSettledNonEmpty(): PhoneEntryState {
     while (true) {
