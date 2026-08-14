@@ -62,8 +62,8 @@ class TwoStepVerificationPresenter(
 
         var phase by remember { mutableStateOf(TwoStepVerificationPhase.Loading) }
         var code by remember { mutableStateOf("") }
-        // The on-file number being confirmed, held as (country, national digits) like the welcome
-        // PhoneEntry screen and the change-phone screen.
+        // The on-file number being confirmed, held as (country, RAW national digits) like the welcome
+        // PhoneEntry screen and the change-phone screen. The national mask is visual-only.
         var selectedCountry by remember { mutableStateOf(Country.deviceDefault) }
         var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
@@ -76,7 +76,6 @@ class TwoStepVerificationPresenter(
         LaunchedEffect(pickedCountry) {
             pickedCountry?.let { country ->
                 selectedCountry = country
-                localPhoneNumber = country.formatNational(localPhoneNumber.filter { it.isDigit() })
                 selectedCountryStore.consume()
             }
         }
@@ -332,14 +331,14 @@ class TwoStepVerificationPresenter(
                 is TwoStepVerificationEvent.PhoneChanged -> {
                     // Mirror the welcome/change-phone pipeline: normalise (strip a redundant country
                     // code from a paste/autofill and switch country if unambiguously international),
-                    // then auto-detect the country and reformat with its national mask.
+                    // then auto-detect the country. Only raw digits are stored; the mask is visual-only.
                     val (normalizedCountry, normalizedDigits) = Country.normalize(
                         rawInput = event.value,
                         current = selectedCountry,
                     )
                     val country = Country.detect(localDigits = normalizedDigits, current = normalizedCountry) ?: normalizedCountry
                     selectedCountry = country
-                    localPhoneNumber = country.formatNational(normalizedDigits)
+                    localPhoneNumber = normalizedDigits
                     if (errorMessage != null) errorMessage = null
                 }
                 TwoStepVerificationEvent.SelectCountry -> navigateToCountryPicker()

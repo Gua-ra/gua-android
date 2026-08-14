@@ -40,6 +40,7 @@ import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.login.LoginModeView
 import io.element.android.libraries.phonenumberentry.Country
+import io.element.android.libraries.phonenumberentry.PhoneNumberVisualTransformation
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.designsystem.atomic.atoms.GuaWelcomeLogo
 import io.element.android.libraries.designsystem.atomic.molecules.ButtonColumnMolecule
@@ -179,6 +180,7 @@ private fun PhoneNumberField(
                 value = state.localPhoneNumber,
                 onValueChange = onValueChange,
                 placeholder = state.selectedCountry.nationalExample,
+                country = state.selectedCountry,
                 enabled = enabled,
                 modifier = Modifier
                     .weight(1f)
@@ -201,6 +203,7 @@ private fun PhoneInput(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
+    country: Country,
     enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -212,6 +215,7 @@ private fun PhoneInput(
         textStyle = ElementTheme.typography.fontBodyLgRegular.copy(color = OnAuroraPrimary),
         cursorBrush = SolidColor(OnAuroraPrimary),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+        visualTransformation = remember(country) { PhoneNumberVisualTransformation(country) },
         modifier = modifier
             .height(FieldHeight)
             .clip(FieldShape)

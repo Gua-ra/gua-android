@@ -35,13 +35,13 @@ open class ChangePhoneNumberStateProvider : PreviewParameterProvider<ChangePhone
             aChangePhoneNumberState(
                 phase = ChangePhoneNumberPhase.EnteringNewPhone,
                 selectedCountry = US,
-                localPhoneNumber = US.formatNational("5551234567"),
+                localPhoneNumber = "5551234567",
             ),
             // New-number step with a different country selected (flag + dial code change).
             aChangePhoneNumberState(
                 phase = ChangePhoneNumberPhase.EnteringNewPhone,
                 selectedCountry = BR,
-                localPhoneNumber = BR.formatNational("11912345678"),
+                localPhoneNumber = "11912345678",
             ),
             aChangePhoneNumberState(
                 phase = ChangePhoneNumberPhase.EnteringNewPhone,

@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,7 +76,8 @@ data class PhoneNumberEntryStyle(
  * field works on the settings surface (ElementTheme tokens) without disturbing the welcome screen.
  *
  * The country is selected by the caller (typically by opening [CountryPickerNode] from [onSelectCountry]).
- * National-format masking is applied by the caller before passing [localPhoneNumber].
+ * [localPhoneNumber] is the raw national digits; the national-format mask is applied purely visually
+ * via [PhoneNumberVisualTransformation], so typing never rewrites the buffer and the cursor stays put.
  */
 @Composable
 fun PhoneNumberEntryField(
@@ -102,6 +104,7 @@ fun PhoneNumberEntryField(
             value = localPhoneNumber,
             onValueChange = onValueChange,
             placeholder = country.nationalExample,
+            country = country,
             enabled = enabled,
             style = style,
             modifier = Modifier.weight(1f),
@@ -166,6 +169,7 @@ private fun PhoneInput(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
+    country: Country,
     enabled: Boolean,
     style: PhoneNumberEntryStyle,
     modifier: Modifier = Modifier,
@@ -179,6 +183,7 @@ private fun PhoneInput(
         textStyle = textStyle,
         cursorBrush = SolidColor(style.textColor),
         keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone),
+        visualTransformation = remember(country) { PhoneNumberVisualTransformation(country) },
         modifier = modifier
             .height(style.fieldHeight)
             .clip(style.fieldShape)

@@ -41,11 +41,11 @@ class PhoneEntryPresenter(
         val coroutineScope = rememberCoroutineScope()
 
         // Seed country + local number from any pre-populated E.164 number (else device locale).
+        // The local number is held as RAW DIGITS; the national mask is applied purely visually by
+        // the field's PhoneNumberVisualTransformation, so the cursor never needs correcting.
         val initial = remember { Country.parse(params.initialPhoneNumber.orEmpty()) }
         var selectedCountry by rememberSaveable { mutableStateOf(initial.first) }
-        var localPhoneNumber by rememberSaveable {
-            mutableStateOf(initial.first.formatNational(initial.second))
-        }
+        var localPhoneNumber by rememberSaveable { mutableStateOf(initial.second) }
 
         val loginMode by loginHelper.collectLoginMode()
 
@@ -54,7 +54,6 @@ class PhoneEntryPresenter(
         LaunchedEffect(pickedCountry) {
             pickedCountry?.let { country ->
                 selectedCountry = country
-                localPhoneNumber = country.formatNational(localPhoneNumber.filter { it.isDigit() })
                 selectedCountryStore.consume()
             }
         }
@@ -70,14 +69,13 @@ class PhoneEntryPresenter(
                         current = selectedCountry,
                     )
                     // Then auto-detect (longest-prefix dial code / NANP US<->CA area code) on the
-                    // stripped digits, and reformat with the resulting country's national mask.
+                    // stripped digits. Only raw digits are stored; the national mask is visual-only.
                     val country = Country.detect(localDigits = normalizedDigits, current = normalizedCountry) ?: normalizedCountry
                     selectedCountry = country
-                    localPhoneNumber = country.formatNational(normalizedDigits)
+                    localPhoneNumber = normalizedDigits
                 }
                 is PhoneEntryEvents.CountrySelected -> {
                     selectedCountry = event.country
-                    localPhoneNumber = event.country.formatNational(localPhoneNumber.filter { it.isDigit() })
                 }
                 PhoneEntryEvents.Continue -> {
                     val e164 = "+" + selectedCountry.dialCode + localPhoneNumber.filter { it.isDigit() }
