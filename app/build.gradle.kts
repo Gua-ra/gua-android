@@ -42,6 +42,14 @@ val guaKeystoreProperties = Properties().apply {
 fun guaSigningValue(envName: String, propName: String): String? =
     System.getenv(envName) ?: guaKeystoreProperties.getProperty(propName)
 
+// GUA FORK: Play permanently refuses a versionCode it has already accepted for a package, while
+// Versions.VERSION_CODE is CalVer and only moves when the release script bumps it. Without this,
+// shipping the same branch to the QA app twice would be rejected by Play after a ~35 minute R8
+// build. CI passes the workflow run number here (see .github/workflows/publish-play.yml), so QA
+// uploads are unique and still ordered. Production builds leave it unset: a production release is
+// exactly the CalVer code, and a rejection there correctly means "bump the release number".
+val guaVersionCodeOffset = (project.findProperty("gua.versionCodeOffset") as? String)?.toInt() ?: 0
+
 plugins {
     id("io.element.android-compose-application")
     // When using precompiled plugins, we need to apply the firebase plugin like this
@@ -59,7 +67,7 @@ android {
     defaultConfig {
         applicationId = BuildTimeConfig.APPLICATION_ID
         targetSdk = Versions.TARGET_SDK
-        versionCode = Versions.VERSION_CODE
+        versionCode = Versions.VERSION_CODE + guaVersionCodeOffset
         versionName = Versions.VERSION_NAME
 
         // Keep abiFilter for the universalApk
