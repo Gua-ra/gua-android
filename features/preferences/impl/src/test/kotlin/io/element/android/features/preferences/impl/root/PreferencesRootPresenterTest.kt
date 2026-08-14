@@ -368,4 +368,22 @@ private class NoopIdentityServiceClient : IdentityServiceClient {
     override suspend fun startPinChange(accessToken: String, phone: String, currentPin: String): Result<String> = Result.success("challenge-id")
 
     override suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit> = Result.success(Unit)
+
+    override suspend fun verifyPinReauth(accessToken: String, userId: String, pin: String): Result<String> = Result.success("reauth-token")
+
+    override suspend fun requestPhoneChangeOtp(
+        accessToken: String,
+        userId: String,
+        newPhone: String,
+        reauthToken: String,
+        language: String?,
+    ): Result<Unit> = Result.success(Unit)
+
+    override suspend fun changePhoneNumber(
+        accessToken: String,
+        userId: String,
+        newPhone: String,
+        code: String,
+        reauthToken: String,
+    ): Result<Unit> = Result.success(Unit)
 }
