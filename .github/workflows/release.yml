@@ -88,7 +88,10 @@ jobs:
   enterprise:
     name: Create App Bundle Enterprise
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == 'element-hq/element-x-android' }}
+    # GUA FORK: the enterprise bundle needs the upstream private submodule and its deploy key, which
+    # this fork does not have, so the job can only ever fail here. Restrict it to the upstream repo
+    # instead of failing every dispatched release run.
+    if: ${{ github.repository == 'element-hq/element-x-android' }}
     concurrency:
       group: ${{ format('build-release-main-enterprise-{0}', github.sha) }}
       cancel-in-progress: true
