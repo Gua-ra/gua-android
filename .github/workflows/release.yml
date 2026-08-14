@@ -1,31 +1,11 @@
 name: Create release App Bundle and APKs
 
-# GUA FORK: manual dispatch only. The gplay/enterprise/fdroid jobs build unsigned artifacts for
-# inspection. The publish-play job (opt-in via the `publish` input) builds a RELEASE-SIGNED AAB
-# from the GUA_RELEASE_* secrets and uploads it to a Google Play testing track. Release signing
-# reads from env (see app/build.gradle.kts).
+# GUA FORK: manual dispatch only. These jobs build UNSIGNED artifacts for inspection and nothing
+# else. Anything that reaches Google Play lives in publish-play.yml instead, so that every path
+# to the store passes the same gates: the `deploy:qa` label for the QA app, and the approval-gated
+# `production` environment for the real one. A publish path in here would sit outside both.
 on:
   workflow_dispatch:
-    inputs:
-      publish:
-        description: "Build a release-signed AAB and upload it to Google Play"
-        type: boolean
-        default: false
-      app:
-        description: "Which app to publish: qa (global.gua.dev, dev backend) or prod (global.gua, gua.global backend)"
-        type: choice
-        default: qa
-        options: [qa, prod]
-      track:
-        description: "Play track to publish to"
-        type: choice
-        default: internal
-        options: [internal, alpha, beta, production]
-      status:
-        description: "Release status on the track"
-        type: choice
-        default: draft
-        options: [draft, inProgress, completed]
 
 permissions: {}
 
@@ -169,112 +149,3 @@ jobs:
           name: elementx-app-fdroid-apks-unsigned
           path: |
             app/build/outputs/apk/fdroid/release/*.apk
-
-  # GUA FORK: build a RELEASE-SIGNED gplay AAB and upload it to Google Play.
-  # Runs only when dispatched with publish=true. app=qa publishes the QA app (global.gua.dev,
-  # "Gua QA", dev backend baked from the GUA_DEV_LOCAL_PROPERTIES secret); app=prod publishes the
-  # production app (global.gua, gua.global backend). Requires these repository secrets:
-  #   GUA_RELEASE_KEYSTORE_BASE64  - base64 of the upload keystore (base64 -i gua-upload.jks | pbcopy)
-  #   GUA_RELEASE_KEYSTORE_PASSWORD, GUA_RELEASE_KEY_ALIAS, GUA_RELEASE_KEY_PASSWORD
-  #   PLAY_SERVICE_ACCOUNT_JSON    - a Play Console service-account JSON with "Release to testing tracks"
-  #   GUA_DEV_LOCAL_PROPERTIES     - the gua.* dev-host lines normally kept in local.properties
-  publish-play:
-    name: Publish ${{ inputs.app }} to Google Play (${{ inputs.track }})
-    if: ${{ inputs.publish }}
-    runs-on: ubuntu-latest
-    steps:
-      # Newly granted Play Console permissions take a while to propagate, and until they do the API
-      # answers "The caller does not have permission". Check first so a dispatch fails in a minute
-      # instead of after a ~35 minute build. Opening an edit is the call an upload begins with.
-      - name: Check Play API access
-        env:
-          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          PACKAGE: ${{ inputs.app == 'qa' && 'global.gua.dev' || 'global.gua' }}
-        run: |
-          python3 -m pip install --quiet --disable-pip-version-check cryptography
-          python3 - <<'PY'
-          import base64, json, os, sys, time, urllib.error, urllib.parse, urllib.request
-          from cryptography.hazmat.primitives import hashes, serialization
-          from cryptography.hazmat.primitives.asymmetric import padding
-
-          sa = json.loads(os.environ["PLAY_SERVICE_ACCOUNT_JSON"])
-          pkg = os.environ["PACKAGE"]
-          b64 = lambda d: base64.urlsafe_b64encode(d).rstrip(b"=")
-
-          now = int(time.time())
-          claim = {"iss": sa["client_email"], "scope": "https://www.googleapis.com/auth/androidpublisher",
-                   "aud": sa["token_uri"], "iat": now, "exp": now + 3600}
-          signing_input = b64(json.dumps({"alg": "RS256", "typ": "JWT"}).encode()) + b"." + b64(json.dumps(claim).encode())
-          key = serialization.load_pem_private_key(sa["private_key"].encode(), password=None)
-          assertion = (signing_input + b"." + b64(key.sign(signing_input, padding.PKCS1v15(), hashes.SHA256()))).decode()
-
-          body = urllib.parse.urlencode({"grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
-                                         "assertion": assertion}).encode()
-          with urllib.request.urlopen(urllib.request.Request(sa["token_uri"], data=body)) as r:
-              token = json.load(r)["access_token"]
-          print("authenticated as", sa["client_email"])
-
-          url = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{pkg}/edits"
-          try:
-              with urllib.request.urlopen(urllib.request.Request(
-                      url, data=b"{}", method="POST",
-                      headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})) as r:
-                  edit = json.load(r)
-          except urllib.error.HTTPError as e:
-              print(f"::error::Play API rejected the call for {pkg}: HTTP {e.code}")
-              print(e.read().decode())
-              if e.code in (401, 403):
-                  print("::notice::Permissions are most likely still propagating. Retry later; do not widen the service account's access.")
-              sys.exit(1)
-
-          urllib.request.urlopen(urllib.request.Request(
-              f"{url}/{edit['id']}:delete", method="POST", headers={"Authorization": f"Bearer {token}"}))
-          print(f"::notice::Play API access to {pkg} confirmed; continuing to the build.")
-          PY
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
-        with:
-          tool-cache: true
-          android: false
-          dotnet: true
-          haskell: true
-          large-packages: false
-          docker-images: true
-          swap-storage: false
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          persist-credentials: false
-      - name: Use JDK 21
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-      - name: Configure gradle
-        uses: gradle/actions/setup-gradle@5e2ebd065dc2488b7a6ad670704656cbbe1e8f60 # v6.1.1
-      - name: Decode upload keystore
-        env:
-          GUA_RELEASE_KEYSTORE_BASE64: ${{ secrets.GUA_RELEASE_KEYSTORE_BASE64 }}
-        run: echo "$GUA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/gua-upload.jks"
-      # The QA app bakes the dev-deployment hosts, which live outside the public repo. Write the
-      # same local.properties lines a dev machine has; harmless for prod builds, which ignore them.
-      - name: Inject dev deployment hosts
-        if: ${{ inputs.app == 'qa' }}
-        env:
-          GUA_DEV_LOCAL_PROPERTIES: ${{ secrets.GUA_DEV_LOCAL_PROPERTIES }}
-        run: printf '%s\n' "$GUA_DEV_LOCAL_PROPERTIES" >> local.properties
-      - name: Build release-signed App Bundle (Gplay)
-        env:
-          GUA_RELEASE_KEYSTORE: ${{ runner.temp }}/gua-upload.jks
-          GUA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.GUA_RELEASE_KEYSTORE_PASSWORD }}
-          GUA_RELEASE_KEY_ALIAS: ${{ secrets.GUA_RELEASE_KEY_ALIAS }}
-          GUA_RELEASE_KEY_PASSWORD: ${{ secrets.GUA_RELEASE_KEY_PASSWORD }}
-        run: ./gradlew bundleGplayRelease ${{ inputs.app == 'qa' && '-Pgua.deployment=dev' || '' }} $CI_GRADLE_ARG_PROPERTIES
-      # Pin to a commit SHA before relying on this in production.
-      - name: Upload to Google Play
-        uses: r0adkll/upload-google-play@935ef9c68bb393a8e6116b1575626a7f5be3a7fb # v1.1.3
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: ${{ inputs.app == 'qa' && 'global.gua.dev' || 'global.gua' }}
-          releaseFiles: app/build/outputs/bundle/gplayRelease/app-gplay-release.aab
-          track: ${{ inputs.track }}
-          status: ${{ inputs.status }}
