@@ -14,6 +14,8 @@ import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.logout.api.direct.DirectLogoutEvents
+import io.element.android.features.logout.impl.oidc.FakeIdpSessionCleaner
+import io.element.android.features.logout.impl.oidc.IdpSessionCleaner
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.encryption.BackupUploadState
@@ -21,6 +23,8 @@ import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.test.AN_EXCEPTION
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.encryption.FakeEncryptionService
+import io.element.android.libraries.sessionstorage.api.SessionStore
+import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.tests.testutils.WarmUpRule
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
@@ -181,8 +185,12 @@ class DirectLogoutPresenterTest {
     private fun createDirectLogoutPresenter(
         matrixClient: MatrixClient = FakeMatrixClient(),
         encryptionService: EncryptionService = FakeEncryptionService(),
+        sessionStore: SessionStore = InMemorySessionStore(),
+        idpSessionCleaner: IdpSessionCleaner = FakeIdpSessionCleaner(),
     ): DirectLogoutPresenter = DirectLogoutPresenter(
         matrixClient = matrixClient,
         encryptionService = encryptionService,
+        sessionStore = sessionStore,
+        idpSessionCleaner = idpSessionCleaner,
     )
 }

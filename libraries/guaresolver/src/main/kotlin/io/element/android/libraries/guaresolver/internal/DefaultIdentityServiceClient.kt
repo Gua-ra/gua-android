@@ -215,7 +215,7 @@ class DefaultIdentityServiceClient(
     private fun HttpException.toPinError(): ResolverError {
         val rawBody = response()?.errorBody()?.string()
         val errorBody = rawBody?.let {
-            runCatching { errorBodyJson.decodeFromString<IdentityServiceErrorBody>(it) }.getOrNull()
+            tryOrNull { errorBodyJson.decodeFromString<IdentityServiceErrorBody>(it) }
         }
         val code = errorBody?.code
         val retryAfter = response()?.headers()?.get("Retry-After")?.toIntOrNull()

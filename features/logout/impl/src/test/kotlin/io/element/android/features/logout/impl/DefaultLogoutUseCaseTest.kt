@@ -10,6 +10,7 @@
 
 package io.element.android.features.logout.impl
 
+import io.element.android.features.logout.impl.oidc.FakeIdpSessionCleaner
 import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.matrix.test.A_USER_ID_2
 import io.element.android.libraries.matrix.test.FakeMatrixClient
@@ -43,6 +44,7 @@ class DefaultLogoutUseCaseTest {
                     }
                 }
             ),
+            idpSessionCleaner = FakeIdpSessionCleaner(),
         )
         sut.logoutAll(ignoreSdkError = true)
         logoutLambda1.assertions().isCalledOnce().with(value(true), value(true))
@@ -74,6 +76,7 @@ class DefaultLogoutUseCaseTest {
                     }
                 }
             ),
+            idpSessionCleaner = FakeIdpSessionCleaner(),
         )
         sut.logoutAll(ignoreSdkError = true)
         logoutLambda1.assertions().isCalledOnce().with(value(true), value(true))
@@ -96,6 +99,7 @@ class DefaultLogoutUseCaseTest {
                     }
                 }
             ),
+            idpSessionCleaner = FakeIdpSessionCleaner(),
         )
         sut.logoutAll(ignoreSdkError = true)
         // No error
@@ -114,6 +118,7 @@ class DefaultLogoutUseCaseTest {
                     }
                 }
             ),
+            idpSessionCleaner = FakeIdpSessionCleaner(),
         )
         sut.logoutAll(ignoreSdkError = true)
         // No error
