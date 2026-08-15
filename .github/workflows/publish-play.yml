@@ -210,8 +210,15 @@ jobs:
                   print("::notice::Permissions are most likely still propagating. Retry later; do not widen the service account's access.")
               sys.exit(1)
 
-          urllib.request.urlopen(urllib.request.Request(
-              f"{url}/{edit['id']}:delete", method="POST", headers={"Authorization": f"Bearer {token}"}))
+          # Creating the edit is the actual permission check, so access is already proven by here.
+          # Tidying the throwaway edit away is best-effort: v3 deletes an edit with DELETE on the
+          # edit itself, and an edit that outlives this step expires by itself, so a failure to
+          # clean up must never fail the publish.
+          try:
+              urllib.request.urlopen(urllib.request.Request(
+                  f"{url}/{edit['id']}", method="DELETE", headers={"Authorization": f"Bearer {token}"}))
+          except urllib.error.HTTPError as e:
+              print(f"::warning::Could not discard the preflight edit ({e.code}); it will expire on its own.")
           print(f"::notice::Play API access to {pkg} confirmed; continuing to the build.")
           PY
       - name: Free Disk Space (Ubuntu)
@@ -348,8 +355,15 @@ jobs:
                   print("::notice::Permissions are most likely still propagating. Retry later; do not widen the service account's access.")
               sys.exit(1)
 
-          urllib.request.urlopen(urllib.request.Request(
-              f"{url}/{edit['id']}:delete", method="POST", headers={"Authorization": f"Bearer {token}"}))
+          # Creating the edit is the actual permission check, so access is already proven by here.
+          # Tidying the throwaway edit away is best-effort: v3 deletes an edit with DELETE on the
+          # edit itself, and an edit that outlives this step expires by itself, so a failure to
+          # clean up must never fail the publish.
+          try:
+              urllib.request.urlopen(urllib.request.Request(
+                  f"{url}/{edit['id']}", method="DELETE", headers={"Authorization": f"Bearer {token}"}))
+          except urllib.error.HTTPError as e:
+              print(f"::warning::Could not discard the preflight edit ({e.code}); it will expire on its own.")
           print(f"::notice::Play API access to {pkg} confirmed; continuing to the build.")
           PY
       - name: Free Disk Space (Ubuntu)
