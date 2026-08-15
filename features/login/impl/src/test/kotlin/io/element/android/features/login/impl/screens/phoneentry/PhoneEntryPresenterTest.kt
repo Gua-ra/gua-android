@@ -11,13 +11,13 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.features.login.impl.login.FakeResolverClient
 import io.element.android.features.login.impl.login.LoginMode
 import io.element.android.features.login.impl.screens.onboarding.createLoginHelper
-import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.guaresolver.HomeserverResolution
 import io.element.android.libraries.guaresolver.ResolvedHomeserver
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.matrix.test.auth.FakeMatrixAuthenticationService
 import io.element.android.libraries.matrix.test.auth.aMatrixHomeServerDetails
+import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.lambda.lambdaRecorder
 import io.element.android.tests.testutils.test

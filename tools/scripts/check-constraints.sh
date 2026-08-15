@@ -78,20 +78,28 @@ done
 #    style attributions are allowed in commit history.
 # ---------------------------------------------------------------------------
 echo "→ Scanning commit messages for AI attribution..."
-if [ -n "${GUA_CONSTRAINTS_BASE_REF:-}" ]; then
+if [ -n "${GUA_CONSTRAINTS_SKIP_HISTORY:-}" ]; then
+    # Set when the caller has no meaningful range to scan (a new branch, a force push, a manual
+    # run). Scanning the whole history instead would fail on commits that are already merged.
+    LOG_RANGE=""
+elif [ -n "${GUA_CONSTRAINTS_BASE_REF:-}" ]; then
     LOG_RANGE="${GUA_CONSTRAINTS_BASE_REF}..HEAD"
 else
     LOG_RANGE="HEAD"
 fi
 
-# -i case-insensitive, -E extended regex over the full commit message bodies.
-ai_attr="$(git log "$LOG_RANGE" --format='%H%n%B' 2>/dev/null \
-    | grep -i -E 'Co-Authored-By:[[:space:]]*Claude|Generated with .*(Claude|AI|Anthropic)|🤖 Generated with' || true)"
-if [ -n "$ai_attr" ]; then
-    fail "AI authorship attribution found in commit messages (range: ${LOG_RANGE}):"
-    echo "$ai_attr" | sed 's/^/    /'
+if [ -z "$LOG_RANGE" ]; then
+    echo "${YELLOW}-${RESET} commit-message scan skipped (no range to scan)"
 else
-    ok "no AI attribution in commit messages (range: ${LOG_RANGE})"
+    # -i case-insensitive, -E extended regex over the full commit message bodies.
+    ai_attr="$(git log "$LOG_RANGE" --format='%H%n%B' 2>/dev/null \
+        | grep -i -E 'Co-Authored-By:[[:space:]]*Claude|Generated with .*(Claude|AI|Anthropic)|🤖 Generated with' || true)"
+    if [ -n "$ai_attr" ]; then
+        fail "AI authorship attribution found in commit messages (range: ${LOG_RANGE}):"
+        echo "$ai_attr" | sed 's/^/    /'
+    else
+        ok "no AI attribution in commit messages (range: ${LOG_RANGE})"
+    fi
 fi
 
 # ---------------------------------------------------------------------------

@@ -32,17 +32,43 @@ jobs:
           # Need full history so the guard can scan commit messages for AI attribution.
           fetch-depth: 0
           persist-credentials: false
+      # The guard exists to stop NEW violations landing, so it only ever scans the commits an
+      # event actually adds. A full-history scan can never pass: the fork descends from upstream
+      # element-x-android, and the fork's own early history carries Co-Authored-By trailers that
+      # cannot be rewritten now that branches are published. Scanning everything meant every push
+      # to develop failed on commits that are already merged, which is what kept develop red.
+      # The tracked-file and keystore scans are unaffected and still cover the whole tree.
+      - name: Work out which commits this event adds
+        id: scan_range
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -uo pipefail
+          base=""
+          if [ "$EVENT" = "pull_request" ]; then
+            base="origin/${BASE_REF}"
+          elif [ -n "${BEFORE:-}" ] && ! printf '%s' "$BEFORE" | grep -qE '^0+$'; then
+            # A brand new branch reports an all-zero "before", and a force push can leave it
+            # pointing at a commit that is no longer reachable, so only trust it if git can
+            # actually resolve it.
+            if git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+              base="$BEFORE"
+            fi
+          fi
+          if [ -z "$base" ]; then
+            # Nothing sensible to diff against (new branch, force push, manual dispatch). The
+            # commit-message scan is skipped rather than falling back to the whole history,
+            # which would fail on commits the pull request gate already cleared.
+            echo "::notice::No usable base for this event; skipping the commit-message scan."
+          fi
+          echo "base=$base" >> "$GITHUB_OUTPUT"
       - name: Run forbidden-content / secret guard
         run: ./tools/scripts/check-constraints.sh
         env:
-          # On pull requests, scan commit messages only in base..HEAD. The fork's
-          # branches descend from upstream element-x-android history, whose recent
-          # commits carry Co-Authored-By trailers that the fork cannot rewrite, so a
-          # full-history scan can never pass. check-constraints.sh documents
-          # GUA_CONSTRAINTS_BASE_REF for exactly this. The tracked-file and keystore
-          # scans are unaffected and still cover the whole tree. Push/dispatch runs
-          # keep the full-history scan (empty value means unset to the script).
-          GUA_CONSTRAINTS_BASE_REF: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
+          GUA_CONSTRAINTS_BASE_REF: ${{ steps.scan_range.outputs.base }}
+          GUA_CONSTRAINTS_SKIP_HISTORY: ${{ steps.scan_range.outputs.base == '' && '1' || '' }}
 
   # --- 2. Build the primary fork artifact. ----------------------------------
   build:
@@ -71,13 +97,15 @@ jobs:
           name: gua-gplay-debug
           path: app/build/outputs/apk/gplay/debug/*-universal-debug.apk
 
-  # --- 3. Unit tests + Paparazzi screenshot verification. -------------------
+  # --- 3. Unit tests + screenshot verification. -----------------------------
   #
-  # Note: upstream goldens are stored in Git LFS and are NOT pulled here, so only the
-  # Gua record-tests with real committed PNGs are meaningfully verified. verifyPaparazziDebug
-  # still runs the whole suite; LFS-pointer goldens simply compare against their pointer files.
+  # Two different screenshot tools run here. :tests:uitests uses Paparazzi against ~3100 plain
+  # committed PNGs. :libraries:compound uses Roborazzi against 22 goldens that ARE in Git LFS,
+  # which is why this job checks out with lfs: true. An earlier note here claimed pointer files
+  # "simply compare against their pointer files" and are therefore harmless. They are not:
+  # Roborazzi cannot decode a pointer and crashes on it.
   tests:
-    name: Unit tests + Paparazzi
+    name: Unit tests + screenshots
     runs-on: ubuntu-latest
     needs: constraints
     steps:
@@ -85,6 +113,12 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
+          # :libraries:compound's screenshot goldens are LFS-tracked (.gitattributes). Without this
+          # they arrive as 130-byte pointer stubs, Roborazzi hands the pointer text to ImageIO,
+          # gets null back, and throws NullPointerException while LOADING the golden, before any
+          # pixel is compared. That is what the ten "screenshots FAILED" results in this job were:
+          # not a rendering regression, just an unreadable file.
+          lfs: true
       - name: Use JDK 21
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
@@ -125,7 +159,10 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
       - name: ktlint
-        run: ./gradlew ktlintCheck $CI_GRADLE_ARG_PROPERTIES
+        # --continue so every offending module is reported in one run. Without it Gradle stops at
+        # the first failing ktlint task, which made the job look like a single-file problem when
+        # several modules were affected, and turned fixing lint into one round trip per module.
+        run: ./gradlew ktlintCheck $CI_GRADLE_ARG_PROPERTIES --continue
       - name: Android lint (gplay debug)
         run: ./gradlew :app:lintGplayDebug $CI_GRADLE_ARG_PROPERTIES --continue
       - name: detekt
