@@ -105,7 +105,7 @@ class DefaultIdentityServiceClientTest {
     }
 
     @Test
-    fun `startPasskeyEnrollment GETs the start endpoint with a bearer token and parses enrollUrl`() = runTest {
+    fun `startPasskeyEnrollment POSTs the start endpoint with a bearer token and parses enrollUrl`() = runTest {
         val server = MockWebServer()
         server.enqueue(
             MockResponse().setBody("""{ "enrollUrl": "https://idp.gua.global/passkey/enroll?token=abc" }""")
@@ -116,7 +116,9 @@ class DefaultIdentityServiceClientTest {
 
         assertThat(enrollUrl).isEqualTo("https://idp.gua.global/passkey/enroll?token=abc")
         val request = server.takeRequest()
-        assertThat(request.method).isEqualTo("GET")
+        // POST is the contract the identity service actually serves; asserting GET here is what
+        // let the 405 ship.
+        assertThat(request.method).isEqualTo("POST")
         assertThat(request.path).isEqualTo("/security/passkey/enroll/start")
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer secret-token")
         server.shutdown()

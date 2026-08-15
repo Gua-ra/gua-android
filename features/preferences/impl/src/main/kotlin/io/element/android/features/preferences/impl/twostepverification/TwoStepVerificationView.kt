@@ -78,8 +78,10 @@ fun TwoStepVerificationView(
             TwoStepVerificationPhase.Loading -> {
                 AsyncLoading()
             }
-            TwoStepVerificationPhase.OverviewNoPin -> OverviewSection(hasPin = false, eventSink = eventSink)
-            TwoStepVerificationPhase.OverviewHasPin -> OverviewSection(hasPin = true, eventSink = eventSink)
+            TwoStepVerificationPhase.OverviewNoPin ->
+                OverviewSection(hasPin = false, errorMessage = state.errorMessage, eventSink = eventSink)
+            TwoStepVerificationPhase.OverviewHasPin ->
+                OverviewSection(hasPin = true, errorMessage = state.errorMessage, eventSink = eventSink)
             TwoStepVerificationPhase.EnteringPhone -> PhoneEntrySection(state = state, eventSink = eventSink)
             TwoStepVerificationPhase.EnteringCurrent,
             TwoStepVerificationPhase.EnteringOtp,
@@ -93,6 +95,7 @@ fun TwoStepVerificationView(
 @Composable
 private fun OverviewSection(
     hasPin: Boolean,
+    errorMessage: Int?,
     eventSink: (TwoStepVerificationEvent) -> Unit,
 ) {
     ListItem(
@@ -157,6 +160,17 @@ private fun OverviewSection(
             eventSink(TwoStepVerificationEvent.SetUpPasskey)
         },
     )
+    // Anything that fails from this screen surfaces here. Without it a failed passkey start wrote
+    // an error into the state that no phase on screen rendered, so tapping the row looked like the
+    // row did nothing at all.
+    if (errorMessage != null) {
+        Text(
+            text = stringResource(id = errorMessage),
+            style = ElementTheme.typography.fontBodySmRegular,
+            color = ElementTheme.colors.textCriticalPrimary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+    }
 }
 
 @Composable

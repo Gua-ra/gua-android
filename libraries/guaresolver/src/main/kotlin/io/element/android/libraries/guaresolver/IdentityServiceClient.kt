@@ -103,7 +103,7 @@ interface IdentityServiceClient {
 
     /**
      * Start passkey enrollment and obtain the authenticated web-ceremony URL to open at the IdP.
-     * Mirrors iOS `startPasskeyEnrollment(accessToken:)` (`GET /security/passkey/enroll/start`,
+     * Mirrors iOS `startPasskeyEnrollment(accessToken:)` (`POST /security/passkey/enroll/start`,
      * returning `{ "enrollUrl": ... }`).
      *
      * The returned URL is self-authenticating (it carries a short-lived enrollment token), so the
