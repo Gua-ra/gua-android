@@ -10,14 +10,14 @@
 package io.element.android.features.preferences.impl.root
 
 import androidx.activity.ComponentActivity
+import androidx.annotation.StringRes
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.annotation.StringRes
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.features.preferences.impl.R
 import io.element.android.libraries.matrix.api.user.MatrixUser
