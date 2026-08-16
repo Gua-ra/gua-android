@@ -16,13 +16,18 @@ import io.element.android.libraries.phonenumberentry.Country
  * NEW number (which triggers the OTP), then enters that OTP to complete the change. The SMS does NOT
  * fire until a valid reauth token exists.
  *
- * [Intro] -> [EnteringPin] (step-up, no SMS) -> [EnteringNewPhone] (sends the OTP) ->
- * [EnteringOtp] (submits the change) -> [Done].
+ * On [Intro] Continue we FIRST fetch the PIN status (a WhatsApp belt-and-suspenders gate):
+ *  - no PIN set -> [NeedsPinSetup] interstitial (route to the 2SV PIN-setup flow), never proceed.
+ *  - a fresh-2FA cooldown is active -> [Cooldown] interstitial, never proceed.
+ *  - otherwise -> [EnteringPin] (step-up, no SMS) -> [EnteringNewPhone] (sends the OTP) ->
+ *    [EnteringOtp] (submits the change) -> [Done].
  *
  * [Submitting] is shown while the async identity-service calls are in flight.
  */
 enum class ChangePhoneNumberPhase {
     Intro,
+    NeedsPinSetup,
+    Cooldown,
     EnteringPin,
     EnteringNewPhone,
     EnteringOtp,
@@ -40,6 +45,11 @@ data class ChangePhoneNumberState(
     val localPhoneNumber: String,
     /** Resource id of the error to surface under the field, or null. */
     @StringRes val errorMessage: Int?,
+    /**
+     * Remaining seconds of the fresh-2FA cooldown, surfaced (humanised) on the [ChangePhoneNumberPhase.Cooldown]
+     * interstitial. 0 outside that phase.
+     */
+    val cooldownRemainingSeconds: Long,
     val eventSink: (ChangePhoneNumberEvents) -> Unit,
 ) {
     val isWorking: Boolean = phase == ChangePhoneNumberPhase.Submitting

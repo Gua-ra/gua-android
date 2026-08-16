@@ -32,11 +32,13 @@ interface IdentityServiceClient {
     // `IdentityServiceClientProtocol.pinStatus / setInitialPin / startPinChange / completePinChange`.
 
     /**
-     * Whether the account already has a two-step-verification PIN set.
+     * The account two-step-verification (PIN) status, including the change-phone fresh-2FA cooldown.
      *
-     * @return [Result.success] with `true` when a PIN is set, or [Result.failure] with a [ResolverError].
+     * @param userId the caller's Matrix id (mirrors iOS, which scopes the status to the user).
+     * @return [Result.success] with the [PinStatus] (whether a PIN is set and any remaining
+     * change-phone cooldown), or [Result.failure] with a [ResolverError].
      */
-    suspend fun pinStatus(accessToken: String): Result<Boolean>
+    suspend fun pinStatus(accessToken: String, userId: String): Result<PinStatus>
 
     /**
      * Set the initial account PIN (no existing PIN). Mirrors iOS `setInitialPin`.
@@ -95,4 +97,20 @@ interface IdentityServiceClient {
      * [ResolverError.InvalidOtp], [ResolverError.InvalidReauthToken], [ResolverError.PhoneAlreadyLinked]).
      */
     suspend fun changePhoneNumber(accessToken: String, userId: String, newPhone: String, code: String, reauthToken: String): Result<Unit>
+
+    // GUA FORK: Passkey enrollment. Android counterpart of iOS
+    // `IdentityServiceClientProtocol.startPasskeyEnrollment`.
+
+    /**
+     * Start passkey enrollment and obtain the authenticated web-ceremony URL to open at the IdP.
+     * Mirrors iOS `startPasskeyEnrollment(accessToken:)` (`POST /security/passkey/enroll/start`,
+     * returning `{ "enrollUrl": ... }`).
+     *
+     * The returned URL is self-authenticating (it carries a short-lived enrollment token), so the
+     * client just opens it in an authenticated web ceremony — on Android a Chrome Custom Tab — and
+     * the user completes the WebAuthn registration in-browser at the IdP.
+     *
+     * @return [Result.success] with the enrollment URL, or [Result.failure] with a [ResolverError].
+     */
+    suspend fun startPasskeyEnrollment(accessToken: String): Result<String>
 }

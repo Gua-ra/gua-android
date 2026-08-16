@@ -11,6 +11,7 @@ import extension.testCommonDependencies
 
 plugins {
     id("io.element.android-compose-library")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -29,14 +30,19 @@ dependencies {
     implementation(projects.libraries.androidutils)
     implementation(projects.libraries.core)
     implementation(projects.libraries.architecture)
+    implementation(projects.libraries.di)
     implementation(projects.libraries.featureflag.api)
     implementation(projects.libraries.matrix.api)
+    implementation(projects.libraries.network)
     implementation(projects.libraries.designsystem)
     implementation(projects.libraries.testtags)
     implementation(projects.libraries.uiStrings)
     implementation(projects.libraries.dateformatter.api)
     implementation(projects.libraries.sessionStorage.api)
     implementation(projects.libraries.workmanager.api)
+    // GUA FORK: OIDC end-session discovery for clearing the IdP browser session on logout.
+    implementation(platform(libs.network.retrofit.bom))
+    implementation(libs.network.retrofit)
     api(projects.features.logout.api)
 
     testCommonDependencies(libs, true)
@@ -44,4 +50,8 @@ dependencies {
     testImplementation(projects.libraries.featureflag.test)
     testImplementation(projects.libraries.sessionStorage.test)
     testImplementation(projects.libraries.workmanager.test)
+    // GUA FORK: exercise OIDC end-session discovery against a stubbed homeserver/issuer.
+    testImplementation(platform(libs.network.okhttp.bom))
+    testImplementation(libs.network.okhttp)
+    testImplementation(libs.network.mockwebserver)
 }

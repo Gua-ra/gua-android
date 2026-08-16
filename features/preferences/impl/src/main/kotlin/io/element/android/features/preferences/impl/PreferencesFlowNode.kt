@@ -327,12 +327,21 @@ class PreferencesFlowNode(
                 )
             }
             NavTarget.TwoStepVerification -> {
-                createNode<TwoStepVerificationNode>(buildContext)
+                val twoStepVerificationCallback = object : TwoStepVerificationNode.Callback {
+                    override fun navigateToCountryPicker() {
+                        backstack.push(NavTarget.CountryPicker)
+                    }
+                }
+                createNode<TwoStepVerificationNode>(buildContext, listOf(twoStepVerificationCallback))
             }
             NavTarget.ChangePhoneNumber -> {
                 val changePhoneCallback = object : ChangePhoneNumberNode.Callback {
                     override fun navigateToCountryPicker() {
                         backstack.push(NavTarget.CountryPicker)
+                    }
+
+                    override fun navigateToPinSetup() {
+                        backstack.push(NavTarget.TwoStepVerification)
                     }
                 }
                 createNode<ChangePhoneNumberNode>(buildContext, listOf(changePhoneCallback))
