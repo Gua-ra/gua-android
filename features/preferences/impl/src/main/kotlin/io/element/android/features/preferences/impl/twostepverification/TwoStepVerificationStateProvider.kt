@@ -32,13 +32,13 @@ open class TwoStepVerificationStateProvider : PreviewParameterProvider<TwoStepVe
             aTwoStepVerificationState(
                 phase = TwoStepVerificationPhase.EnteringPhone,
                 selectedCountry = US,
-                localPhoneNumber = US.formatNational("5551234567"),
+                localPhoneNumber = "5551234567",
             ),
             // Confirm-number step with a different country selected (flag + dial code change).
             aTwoStepVerificationState(
                 phase = TwoStepVerificationPhase.EnteringPhone,
                 selectedCountry = BR,
-                localPhoneNumber = BR.formatNational("11912345678"),
+                localPhoneNumber = "11912345678",
             ),
             aTwoStepVerificationState(
                 phase = TwoStepVerificationPhase.EnteringPhone,
