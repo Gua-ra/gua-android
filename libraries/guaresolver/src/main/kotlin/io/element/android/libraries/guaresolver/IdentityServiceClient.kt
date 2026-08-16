@@ -82,8 +82,8 @@ interface IdentityServiceClient {
     /**
      * Request an OTP to be sent to the [newPhone] the user wants to switch to, gated by the
      * previously-obtained [reauthToken]. Mirrors iOS `requestPhoneChangeOtp`. The SMS fires here.
+     * The optional BCP-47 [language] tag (e.g. "en-US") localises the code message.
      *
-     * @param language optional BCP-47 language tag (e.g. "en-US") so the code message is localised.
      * @return [Result.success] on success, or [Result.failure] with a [ResolverError] (notably
      * [ResolverError.InvalidReauthToken], [ResolverError.PhoneAlreadyLinked], [ResolverError.RateLimited]).
      */
