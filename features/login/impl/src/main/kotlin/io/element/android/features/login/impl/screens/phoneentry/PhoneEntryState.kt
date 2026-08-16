@@ -10,8 +10,8 @@ package io.element.android.features.login.impl.screens.phoneentry
 import com.google.i18n.phonenumbers.NumberParseException
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import io.element.android.features.login.impl.login.LoginMode
-import io.element.android.libraries.phonenumberentry.Country
 import io.element.android.libraries.architecture.AsyncData
+import io.element.android.libraries.phonenumberentry.Country
 
 /**
  * GUA FORK: state for the phone-first entry screen. Mirrors iOS `PhoneEntryScreenViewState`.
