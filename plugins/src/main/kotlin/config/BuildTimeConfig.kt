@@ -11,9 +11,15 @@ package config
 object BuildTimeConfig {
     const val APPLICATION_ID = "global.gua"
     const val APPLICATION_NAME = "Gua"
-    const val GOOGLE_APP_ID_RELEASE = "1:912726360885:android:d097de99a4c23d2700427c"
-    const val GOOGLE_APP_ID_DEBUG = "1:912726360885:android:def0a4e454042e9b00427c"
-    const val GOOGLE_APP_ID_NIGHTLY = "1:912726360885:android:e17435e0beb0303000427c"
+
+    // GUA FORK: these were Element's Firebase (vector-alpha, project 912726360885) app IDs and must
+    // not ship in the Gua binary. They feed the "google_app_id" string resource in the firebase push
+    // provider. Empty = FirebaseApp skips init (no push, no crash). To enable push, set each to the
+    // mobilesdk_app_id ("1:<sender>:android:<hash>") of the matching Gua Firebase Android app from
+    // its google-services.json, and fill libraries/pushproviders/firebase/.../values/firebase.xml.
+    const val GOOGLE_APP_ID_RELEASE = ""
+    const val GOOGLE_APP_ID_DEBUG = ""
+    const val GOOGLE_APP_ID_NIGHTLY = ""
 
     // Reverse-DNS of the brand host gua.global. Drives the OIDC custom-scheme redirect
     // (login_redirect_scheme = "global.gua", i.e. global.gua:/oidc) — mirrors iOS.

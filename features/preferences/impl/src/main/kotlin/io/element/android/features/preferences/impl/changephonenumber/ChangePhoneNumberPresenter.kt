@@ -61,7 +61,8 @@ class ChangePhoneNumberPresenter(
 
         var phase by remember { mutableStateOf(ChangePhoneNumberPhase.Intro) }
         var code by remember { mutableStateOf("") }
-        // The NEW number, held as (country, national digits) like the welcome PhoneEntry screen.
+        // The NEW number, held as (country, RAW national digits) like the welcome PhoneEntry screen.
+        // The national mask is applied purely visually by PhoneNumberEntryField.
         var selectedCountry by remember { mutableStateOf(Country.deviceDefault) }
         var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
@@ -73,7 +74,6 @@ class ChangePhoneNumberPresenter(
         LaunchedEffect(pickedCountry) {
             pickedCountry?.let { country ->
                 selectedCountry = country
-                localPhoneNumber = country.formatNational(localPhoneNumber.filter { it.isDigit() })
                 selectedCountryStore.consume()
             }
         }
@@ -316,20 +316,19 @@ class ChangePhoneNumberPresenter(
                 is ChangePhoneNumberEvents.PhoneChanged -> {
                     // Mirror the welcome PhoneEntry pipeline: normalise (strip a redundant country
                     // code from a paste/autofill and switch country if unambiguously international),
-                    // then auto-detect the country and reformat with its national mask. No-op for
-                    // ordinary local typing.
+                    // then auto-detect the country. Only raw digits are stored; the national mask is
+                    // visual-only. No-op for ordinary local typing.
                     val (normalizedCountry, normalizedDigits) = Country.normalize(
                         rawInput = event.value,
                         current = selectedCountry,
                     )
                     val country = Country.detect(localDigits = normalizedDigits, current = normalizedCountry) ?: normalizedCountry
                     selectedCountry = country
-                    localPhoneNumber = country.formatNational(normalizedDigits)
+                    localPhoneNumber = normalizedDigits
                     if (errorMessage != null) errorMessage = null
                 }
                 is ChangePhoneNumberEvents.CountrySelected -> {
                     selectedCountry = event.country
-                    localPhoneNumber = event.country.formatNational(localPhoneNumber.filter { it.isDigit() })
                     if (errorMessage != null) errorMessage = null
                 }
                 ChangePhoneNumberEvents.SelectCountry -> navigateToCountryPicker()
