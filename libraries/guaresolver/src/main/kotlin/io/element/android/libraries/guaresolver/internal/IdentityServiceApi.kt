@@ -76,10 +76,15 @@ internal interface IdentityServiceApi {
         @Body body: OtpChangeNumberRequest,
     )
 
-    // GUA FORK: passkey enrollment. Mirrors iOS' `GET security/passkey/enroll/start`, returning the
-    // authenticated web-ceremony URL the client opens to complete WebAuthn registration at the IdP.
-
-    @GET("security/passkey/enroll/start")
+    // GUA FORK: passkey enrollment. Returns the authenticated web-ceremony URL the client opens to
+    // complete WebAuthn registration at the IdP.
+    //
+    // POST, not GET: the identity service maps this as @PostMapping("/passkey/enroll/start"), and
+    // iOS reaches it through a helper that always sends POST. An earlier comment here described it
+    // as a GET, which is what the declaration was written to match, so every tap was answered with
+    // 405 before any ceremony could start. The request carries no body; the access token in the
+    // Authorization header is the whole input.
+    @POST("security/passkey/enroll/start")
     suspend fun startPasskeyEnrollment(
         @Header("Authorization") authorization: String,
     ): PasskeyEnrollStartResponse
