@@ -166,7 +166,11 @@ jobs:
       - name: Android lint (gplay debug)
         run: ./gradlew :app:lintGplayDebug $CI_GRADLE_ARG_PROPERTIES --continue
       - name: detekt
-        run: ./gradlew detekt $CI_GRADLE_ARG_PROPERTIES
+        # --continue for the same reason ktlint has it: without it Gradle stops at the
+        # first failing module, so a fix just moves the failure to the next one. The
+        # ktlint findings were fixed once already and detekt's were still hidden behind
+        # two modules that happened to fail first.
+        run: ./gradlew detekt $CI_GRADLE_ARG_PROPERTIES --continue
       - name: Upload quality reports
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

@@ -14,7 +14,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -55,9 +57,10 @@ fun TwoStepVerificationView(
     }
     // GUA FORK: once the presenter resolves the authenticated passkey-enrollment URL, open it in a
     // Chrome Custom Tab (the web ceremony), then clear it so re-entering the screen doesn't reopen it.
+    val currentOnOpenPasskeyEnrollUrl by rememberUpdatedState(onOpenPasskeyEnrollUrl)
     LaunchedEffect(state.passkeyEnrollUrl) {
         state.passkeyEnrollUrl?.let { url ->
-            onOpenPasskeyEnrollUrl(url)
+            currentOnOpenPasskeyEnrollUrl(url)
             eventSink(TwoStepVerificationEvent.ClearPasskeyEnrollUrl)
         }
     }
@@ -98,78 +101,82 @@ private fun OverviewSection(
     errorMessage: Int?,
     eventSink: (TwoStepVerificationEvent) -> Unit,
 ) {
-    ListItem(
-        headlineContent = {
-            Text(
-                stringResource(
-                    id = if (hasPin) {
-                        R.string.screen_two_step_verification_status_on
-                    } else {
-                        R.string.screen_two_step_verification_status_off
-                    }
+    // GUA FORK: one top-level emitter, matching PhoneEntrySection and CodeEntrySection.
+    // No modifier: these list rows are deliberately full width.
+    Column {
+        ListItem(
+            headlineContent = {
+                Text(
+                    stringResource(
+                        id = if (hasPin) {
+                            R.string.screen_two_step_verification_status_on
+                        } else {
+                            R.string.screen_two_step_verification_status_off
+                        }
+                    )
                 )
-            )
-        },
-        supportingContent = {
-            Text(
-                stringResource(
-                    id = if (hasPin) {
-                        R.string.screen_two_step_verification_overview_footer_on
-                    } else {
-                        R.string.screen_two_step_verification_overview_footer_off
-                    }
+            },
+            supportingContent = {
+                Text(
+                    stringResource(
+                        id = if (hasPin) {
+                            R.string.screen_two_step_verification_overview_footer_on
+                        } else {
+                            R.string.screen_two_step_verification_overview_footer_off
+                        }
+                    )
                 )
-            )
-        },
-        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Lock())),
-    )
-    HorizontalDivider()
-    ListItem(
-        headlineContent = {
-            Text(
-                stringResource(
-                    id = if (hasPin) {
-                        R.string.screen_two_step_verification_change_button
-                    } else {
-                        R.string.screen_two_step_verification_set_button
-                    }
-                )
-            )
-        },
-        leadingContent = ListItemContent.Icon(
-            IconSource.Vector(if (hasPin) CompoundIcons.Edit() else CompoundIcons.Lock())
-        ),
-        style = ListItemStyle.Primary,
-        onClick = {
-            eventSink(if (hasPin) TwoStepVerificationEvent.StartChange else TwoStepVerificationEvent.StartSetup)
-        },
-    )
-    // GUA FORK: passkey setup row, mirroring iOS' "Set up a passkey" row. Opens the authenticated
-    // web ceremony (Chrome Custom Tab) where the user registers a passkey at the IdP.
-    HorizontalDivider()
-    ListItem(
-        headlineContent = {
-            Text(stringResource(id = R.string.screen_two_step_verification_passkey_button))
-        },
-        supportingContent = {
-            Text(stringResource(id = R.string.screen_two_step_verification_passkey_footer))
-        },
-        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Key())),
-        style = ListItemStyle.Primary,
-        onClick = {
-            eventSink(TwoStepVerificationEvent.SetUpPasskey)
-        },
-    )
-    // Anything that fails from this screen surfaces here. Without it a failed passkey start wrote
-    // an error into the state that no phase on screen rendered, so tapping the row looked like the
-    // row did nothing at all.
-    if (errorMessage != null) {
-        Text(
-            text = stringResource(id = errorMessage),
-            style = ElementTheme.typography.fontBodySmRegular,
-            color = ElementTheme.colors.textCriticalPrimary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            },
+            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Lock())),
         )
+        HorizontalDivider()
+        ListItem(
+            headlineContent = {
+                Text(
+                    stringResource(
+                        id = if (hasPin) {
+                            R.string.screen_two_step_verification_change_button
+                        } else {
+                            R.string.screen_two_step_verification_set_button
+                        }
+                    )
+                )
+            },
+            leadingContent = ListItemContent.Icon(
+                IconSource.Vector(if (hasPin) CompoundIcons.Edit() else CompoundIcons.Lock())
+            ),
+            style = ListItemStyle.Primary,
+            onClick = {
+                eventSink(if (hasPin) TwoStepVerificationEvent.StartChange else TwoStepVerificationEvent.StartSetup)
+            },
+        )
+        // GUA FORK: passkey setup row, mirroring iOS' "Set up a passkey" row. Opens the authenticated
+        // web ceremony (Chrome Custom Tab) where the user registers a passkey at the IdP.
+        HorizontalDivider()
+        ListItem(
+            headlineContent = {
+                Text(stringResource(id = R.string.screen_two_step_verification_passkey_button))
+            },
+            supportingContent = {
+                Text(stringResource(id = R.string.screen_two_step_verification_passkey_footer))
+            },
+            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Key())),
+            style = ListItemStyle.Primary,
+            onClick = {
+                eventSink(TwoStepVerificationEvent.SetUpPasskey)
+            },
+        )
+        // Anything that fails from this screen surfaces here. Without it a failed passkey start wrote
+        // an error into the state that no phase on screen rendered, so tapping the row looked like the
+        // row did nothing at all.
+        if (errorMessage != null) {
+            Text(
+                text = stringResource(id = errorMessage),
+                style = ElementTheme.typography.fontBodySmRegular,
+                color = ElementTheme.colors.textCriticalPrimary,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
     }
 }
 

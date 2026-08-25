@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -67,7 +68,7 @@ class ChangePhoneNumberPresenter(
         var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
         // Remaining fresh-2FA cooldown surfaced on the Cooldown interstitial (0 otherwise).
-        var cooldownRemainingSeconds by remember { mutableStateOf(0L) }
+        var cooldownRemainingSeconds by remember { mutableLongStateOf(0L) }
 
         // Apply any country picked in the shared CountryPicker child screen, then clear it.
         val pickedCountry by selectedCountryStore.flow.collectAsState()
