@@ -10,8 +10,8 @@ package io.element.android.features.logout.impl.oidc
 import android.content.Context
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
-import dev.zacsweers.metro.Inject
 import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
+import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.di.annotations.ApplicationContext
 import timber.log.Timber
 
@@ -34,7 +34,6 @@ interface IdpSessionCleaner {
 }
 
 @ContributesBinding(AppScope::class)
-@Inject
 class DefaultIdpSessionCleaner(
     @ApplicationContext private val context: Context,
     private val endSessionUrlProvider: OidcEndSessionUrlProvider,
@@ -45,7 +44,7 @@ class DefaultIdpSessionCleaner(
             Timber.d("No OIDC end_session_endpoint resolved; IdP session not cleared")
             return
         }
-        runCatching {
+        runCatchingExceptions {
             context.openUrlInChromeCustomTab(darkTheme = false, url = endSessionUrl)
         }.onFailure {
             Timber.w(it, "Failed to open IdP end_session_endpoint to clear the session")

@@ -34,6 +34,7 @@ interface IdentityServiceClient {
     /**
      * The account two-step-verification (PIN) status, including the change-phone fresh-2FA cooldown.
      *
+     * @param accessToken the caller's access token, sent as the bearer credential.
      * @param userId the caller's Matrix id (mirrors iOS, which scopes the status to the user).
      * @return [Result.success] with the [PinStatus] (whether a PIN is set and any remaining
      * change-phone cooldown), or [Result.failure] with a [ResolverError].

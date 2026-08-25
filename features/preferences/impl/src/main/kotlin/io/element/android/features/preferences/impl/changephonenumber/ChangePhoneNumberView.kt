@@ -46,7 +46,7 @@ private val BadgeSize = 56.dp
 fun ChangePhoneNumberView(
     state: ChangePhoneNumberState,
     onBackClick: () -> Unit,
-    onFinished: () -> Unit,
+    onFinish: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val eventSink = state.eventSink
@@ -70,7 +70,7 @@ fun ChangePhoneNumberView(
             ChangePhoneNumberPhase.EnteringPin,
             ChangePhoneNumberPhase.EnteringOtp -> CodeEntrySection(state = state, eventSink = eventSink)
             ChangePhoneNumberPhase.Submitting -> AsyncLoading()
-            ChangePhoneNumberPhase.Done -> DoneSection(eventSink = eventSink, onFinished = onFinished)
+            ChangePhoneNumberPhase.Done -> DoneSection(eventSink = eventSink, onFinish = onFinish)
         }
     }
 }
@@ -248,7 +248,7 @@ private fun CodeEntrySection(
 @Composable
 private fun DoneSection(
     eventSink: (ChangePhoneNumberEvents) -> Unit,
-    onFinished: () -> Unit,
+    onFinish: () -> Unit,
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
         MessageCard(
@@ -262,7 +262,7 @@ private fun DoneSection(
             text = stringResource(id = CommonStrings.action_done),
             onClick = {
                 eventSink(ChangePhoneNumberEvents.Done)
-                onFinished()
+                onFinish()
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -321,8 +321,8 @@ private fun ContinueButton(
 internal fun humanizeDuration(totalSeconds: Long): String {
     if (totalSeconds <= 0) return "a moment"
     val days = totalSeconds / 86_400
-    val hours = (totalSeconds % 86_400) / 3_600
-    val minutes = (totalSeconds % 3_600) / 60
+    val hours = totalSeconds % 86_400 / 3_600
+    val minutes = totalSeconds % 3_600 / 60
 
     fun unit(value: Long, singular: String) = "$value $singular${if (value == 1L) "" else "s"}"
 
@@ -372,6 +372,6 @@ internal fun ChangePhoneNumberViewPreview(
     ChangePhoneNumberView(
         state = state,
         onBackClick = {},
-        onFinished = {},
+        onFinish = {},
     )
 }

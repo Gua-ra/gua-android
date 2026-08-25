@@ -18,21 +18,21 @@ open class PhoneEntryStateProvider : PreviewParameterProvider<PhoneEntryState> {
         get() = sequenceOf(
             // Empty US number.
             aPhoneEntryState(),
-            // Typed + valid US number (valid per libphonenumber, which gates Continue).
-            aPhoneEntryState(localPhoneNumber = "(201) 555-0123"),
+            // Typed US number, as raw digits since the field masks visually. Valid per libphonenumber, which gates Continue.
+            aPhoneEntryState(localPhoneNumber = "2015550123"),
             // A non-default-country flag (Brazil), masked.
             aPhoneEntryState(
                 selectedCountry = Country(isoCode = "BR", dialCode = "55"),
-                localPhoneNumber = "(11) 91234-5678",
+                localPhoneNumber = "11912345678",
             ),
             // Submitting (resolving + building OIDC url).
             aPhoneEntryState(
-                localPhoneNumber = "(201) 555-0123",
+                localPhoneNumber = "2015550123",
                 loginMode = AsyncData.Loading(),
             ),
             // Error.
             aPhoneEntryState(
-                localPhoneNumber = "(201) 555-0123",
+                localPhoneNumber = "2015550123",
                 loginMode = AsyncData.Failure(ChangeServerError.InvalidServer),
             ),
         )

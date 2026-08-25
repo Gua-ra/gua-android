@@ -45,7 +45,7 @@ class ChangePhoneNumberNode(
         ChangePhoneNumberView(
             state = state,
             onBackClick = ::navigateUp,
-            onFinished = ::navigateUp,
+            onFinish = ::navigateUp,
             modifier = modifier,
         )
     }

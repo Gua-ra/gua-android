@@ -21,9 +21,11 @@ object GuaResolverConfig {
     const val DEV_IDENTITY_SERVICE_BASE_URL: String = BuildConfig.GUA_DEV_IDENTITY_SERVICE_BASE_URL
 
     /**
-     * The active deployment for this build: [GuaDeployment.Development] for debug builds,
-     * [GuaDeployment.Production] otherwise. Mirrors iOS `GuaDeployment.current`.
+     * The active deployment for this build: [GuaDeployment.Development] for debug builds and for
+     * release builds produced with `-Pgua.deployment=dev` (the Play internal-testing / QA build,
+     * mirroring the iOS dev TestFlight app), [GuaDeployment.Production] otherwise. Mirrors iOS
+     * `GuaDeployment.current`.
      */
     val current: GuaDeployment
-        get() = if (BuildConfig.DEBUG) GuaDeployment.Development else GuaDeployment.Production
+        get() = if (BuildConfig.DEBUG || BuildConfig.GUA_USE_DEV_DEPLOYMENT) GuaDeployment.Development else GuaDeployment.Production
 }

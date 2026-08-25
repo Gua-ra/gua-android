@@ -9,7 +9,7 @@ package io.element.android.features.logout.impl.oidc
 
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
-import dev.zacsweers.metro.Inject
+import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.core.uri.ensureProtocol
 import io.element.android.libraries.network.RetrofitFactory
 import timber.log.Timber
@@ -37,12 +37,11 @@ interface OidcEndSessionUrlProvider {
 }
 
 @ContributesBinding(AppScope::class)
-@Inject
 class DefaultOidcEndSessionUrlProvider(
     private val retrofitFactory: RetrofitFactory,
 ) : OidcEndSessionUrlProvider {
     override suspend fun getEndSessionUrl(homeserverUrl: String): String? {
-        return runCatching {
+        return runCatchingExceptions {
             val api = retrofitFactory
                 .create(homeserverUrl.ensureProtocol())
                 .create(OidcDiscoveryApi::class.java)
@@ -52,7 +51,7 @@ class DefaultOidcEndSessionUrlProvider(
                 .authentication
                 ?.issuer
                 ?.takeIf { it.isNotBlank() }
-                ?: return@runCatching null
+                ?: return@runCatchingExceptions null
 
             api
                 .getOpenIdConfiguration(openIdConfigurationUrl(issuer))
