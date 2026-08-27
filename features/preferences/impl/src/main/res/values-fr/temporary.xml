@@ -3,4 +3,20 @@
     <string name="screen_preferences_set_up_pin_title">Configurer un PIN</string>
     <string name="screen_preferences_pin_nudge_message">Ajoutez un PIN pour protéger Gua si quelqu’un d’autre a votre téléphone.</string>
     <string name="screen_preferences_pin_nudge_action">Configurer maintenant</string>
+    <string name="screen_change_phone_title">Changer de numéro de téléphone</string>
+    <string name="screen_change_phone_intro_header">Changez votre numéro</string>
+    <string name="screen_change_phone_intro_message">Nous confirmerons votre PIN, puis nous texterons un code à votre nouveau numéro. Votre compte, vos conversations et vos messages restent les mêmes.</string>
+    <string name="screen_change_phone_new_header">Nouveau numéro de téléphone</string>
+    <string name="screen_change_phone_new_footer">Entrez le numéro que vous souhaitez utiliser à partir de maintenant.</string>
+    <string name="screen_change_phone_new_invalid">Veuillez entrer un numéro de téléphone valide.</string>
+    <string name="screen_change_phone_pin_header">Entrez votre PIN</string>
+    <string name="screen_change_phone_pin_footer">Confirmez votre PIN à 6 chiffres pour autoriser ce changement.</string>
+    <string name="screen_change_phone_pin_incorrect">Ce PIN est incorrect. Veuillez réessayer.</string>
+    <string name="screen_change_phone_otp_header">Vérifiez votre nouveau numéro</string>
+    <string name="screen_change_phone_otp_footer">Entrez le code à 6 chiffres que nous avons envoyé à votre nouveau numéro.</string>
+    <string name="screen_change_phone_otp_invalid">Ce code est invalide ou a expiré. Veuillez réessayer.</string>
+    <string name="screen_change_phone_already_linked">Ce numéro de téléphone est déjà associé à un autre compte.</string>
+    <string name="screen_change_phone_updated">Votre numéro de téléphone a été mis à jour.</string>
+    <string name="screen_change_phone_done_header">Tout est prêt</string>
+    <string name="screen_change_phone_done_message">Votre numéro de téléphone a été mis à jour. À partir de maintenant, utilisez votre nouveau numéro pour vous connecter.</string>
 </resources>

@@ -18,6 +18,12 @@ open class ChangePhoneNumberStateProvider : PreviewParameterProvider<ChangePhone
     override val values: Sequence<ChangePhoneNumberState>
         get() = sequenceOf(
             aChangePhoneNumberState(phase = ChangePhoneNumberPhase.Intro),
+            aChangePhoneNumberState(phase = ChangePhoneNumberPhase.NeedsPinSetup),
+            aChangePhoneNumberState(
+                phase = ChangePhoneNumberPhase.Cooldown,
+                // 6 days, 3 hours -> exercises the multi-unit humaniser.
+                cooldownRemainingSeconds = 6L * 24 * 3600 + 3 * 3600,
+            ),
             aChangePhoneNumberState(phase = ChangePhoneNumberPhase.EnteringPin, code = "123"),
             aChangePhoneNumberState(
                 phase = ChangePhoneNumberPhase.EnteringPin,
@@ -29,13 +35,13 @@ open class ChangePhoneNumberStateProvider : PreviewParameterProvider<ChangePhone
             aChangePhoneNumberState(
                 phase = ChangePhoneNumberPhase.EnteringNewPhone,
                 selectedCountry = US,
-                localPhoneNumber = US.formatNational("5551234567"),
+                localPhoneNumber = "5551234567",
             ),
             // New-number step with a different country selected (flag + dial code change).
             aChangePhoneNumberState(
                 phase = ChangePhoneNumberPhase.EnteringNewPhone,
                 selectedCountry = BR,
-                localPhoneNumber = BR.formatNational("11912345678"),
+                localPhoneNumber = "11912345678",
             ),
             aChangePhoneNumberState(
                 phase = ChangePhoneNumberPhase.EnteringNewPhone,
@@ -60,6 +66,7 @@ fun aChangePhoneNumberState(
     selectedCountry: Country = US,
     localPhoneNumber: String = "",
     errorMessage: Int? = null,
+    cooldownRemainingSeconds: Long = 0,
     eventSink: (ChangePhoneNumberEvents) -> Unit = {},
 ) = ChangePhoneNumberState(
     phase = phase,
@@ -67,5 +74,6 @@ fun aChangePhoneNumberState(
     selectedCountry = selectedCountry,
     localPhoneNumber = localPhoneNumber,
     errorMessage = errorMessage,
+    cooldownRemainingSeconds = cooldownRemainingSeconds,
     eventSink = eventSink,
 )

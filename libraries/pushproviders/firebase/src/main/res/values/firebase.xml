@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  GUA FORK: the upstream file committed Element's live Firebase project (vector-alpha) and a real
+  Google API key. Those third-party credentials must never ship in the Gua binary, so they are
+  removed here. Empty api-key/app-id values make FirebaseApp skip auto-initialization (no crash,
+  no push) until Gua's own Firebase project is wired in.
+
+  TO ENABLE PUSH: create the Gua Firebase project (Android app id "global.gua"), then paste the
+  matching values from its google-services.json below AND set BuildTimeConfig.GOOGLE_APP_ID_*
+  (which feeds the "google_app_id" resource) to the Gua mobilesdk_app_id values.
+-->
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="default_web_client_id" translatable="false">912726360885-e87n3jva9uoj4vbidvijq78ebg02asv2.apps.googleusercontent.com</string>
-    <string name="firebase_database_url" translatable="false">https://vector-alpha.firebaseio.com</string>
-    <string name="gcm_defaultSenderId" translatable="false">912726360885</string>
-    <string name="google_api_key" translatable="false">AIzaSyAFZX8IhIfgzdOZvxDP_ISO5WYoU7jmQ5c</string>
-    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyAFZX8IhIfgzdOZvxDP_ISO5WYoU7jmQ5c</string>
-    <string name="google_storage_bucket" translatable="false">vector-alpha.appspot.com</string>
-    <string name="project_id" translatable="false" tools:ignore="UnusedResources">vector-alpha</string>
+    <string name="default_web_client_id" translatable="false"></string>
+    <string name="firebase_database_url" translatable="false"></string>
+    <string name="gcm_defaultSenderId" translatable="false"></string>
+    <string name="google_api_key" translatable="false"></string>
+    <string name="google_crash_reporting_api_key" translatable="false"></string>
+    <string name="google_storage_bucket" translatable="false"></string>
+    <string name="project_id" translatable="false" tools:ignore="UnusedResources"></string>
 </resources>

@@ -28,7 +28,7 @@ internal class MatrixUserRepositoryTest {
     @Test
     fun `search - emits nothing if the search query is too short`() = runTest {
         val dataSource = FakeUserListDataSource()
-        val repository = MatrixUserRepository(FakeMatrixClient(SESSION_ID), dataSource)
+        val repository = createRepository(dataSource)
 
         val result = repository.search("x")
 
@@ -40,7 +40,7 @@ internal class MatrixUserRepositoryTest {
     @Test
     fun `search - returns empty list if no results are found`() = runTest {
         val dataSource = FakeUserListDataSource()
-        val repository = MatrixUserRepository(FakeMatrixClient(SESSION_ID), dataSource)
+        val repository = createRepository(dataSource)
 
         val result = repository.search("some query")
 
@@ -61,7 +61,7 @@ internal class MatrixUserRepositoryTest {
     fun `search - returns users if results are found`() = runTest {
         val dataSource = FakeUserListDataSource()
         dataSource.givenSearchResult(aMatrixUserList())
-        val repository = MatrixUserRepository(FakeMatrixClient(SESSION_ID), dataSource)
+        val repository = createRepository(dataSource)
 
         val result = repository.search("some query")
 
@@ -81,7 +81,7 @@ internal class MatrixUserRepositoryTest {
     @Test
     fun `search - immediately returns placeholder if search is mxid`() = runTest {
         val dataSource = FakeUserListDataSource()
-        val repository = MatrixUserRepository(FakeMatrixClient(SESSION_ID), dataSource)
+        val repository = createRepository(dataSource)
 
         val result = repository.search(A_USER_ID.value)
 
@@ -97,7 +97,7 @@ internal class MatrixUserRepositoryTest {
     @Test
     fun `search - doesn't return placeholder if search is the local user's mxid`() = runTest {
         val dataSource = FakeUserListDataSource()
-        val repository = MatrixUserRepository(FakeMatrixClient(SESSION_ID), dataSource)
+        val repository = createRepository(dataSource)
 
         val result = repository.search(SESSION_ID.value)
 
@@ -115,7 +115,7 @@ internal class MatrixUserRepositoryTest {
         val searchResults = aMatrixUserList() + MatrixUser(userId = SESSION_ID, displayName = A_USER_NAME)
         val dataSource = FakeUserListDataSource()
         dataSource.givenSearchResult(searchResults)
-        val repository = MatrixUserRepository(FakeMatrixClient(SESSION_ID), dataSource)
+        val repository = createRepository(dataSource)
 
         val result = repository.search("some text")
 
@@ -131,7 +131,7 @@ internal class MatrixUserRepositoryTest {
         val searchResults = aMatrixUserListWithoutUserId(A_USER_ID) + MatrixUser(userId = A_USER_ID, displayName = A_USER_NAME)
         val dataSource = FakeUserListDataSource()
         dataSource.givenSearchResult(searchResults)
-        val repository = MatrixUserRepository(FakeMatrixClient(SESSION_ID), dataSource)
+        val repository = createRepository(dataSource)
 
         val result = repository.search(A_USER_ID.value)
 
@@ -150,7 +150,7 @@ internal class MatrixUserRepositoryTest {
         val dataSource = FakeUserListDataSource()
         dataSource.givenSearchResult(searchResults)
         dataSource.givenUserProfile(userProfile)
-        val repository = MatrixUserRepository(FakeMatrixClient(SESSION_ID), dataSource)
+        val repository = createRepository(dataSource)
 
         val result = repository.search(A_USER_ID.value)
 
@@ -169,7 +169,7 @@ internal class MatrixUserRepositoryTest {
         val dataSource = FakeUserListDataSource()
         dataSource.givenSearchResult(searchResults)
         dataSource.givenUserProfile(userProfile)
-        val repository = MatrixUserRepository(FakeMatrixClient(SESSION_ID), dataSource)
+        val repository = createRepository(dataSource)
 
         val result = repository.search(SESSION_ID.value)
 
@@ -187,7 +187,7 @@ internal class MatrixUserRepositoryTest {
         val dataSource = FakeUserListDataSource()
         dataSource.givenSearchResult(searchResults)
         dataSource.givenUserProfile(null)
-        val repository = MatrixUserRepository(FakeMatrixClient(SESSION_ID), dataSource)
+        val repository = createRepository(dataSource)
 
         val result = repository.search(A_USER_ID.value)
 
@@ -197,6 +197,76 @@ internal class MatrixUserRepositoryTest {
             awaitComplete()
         }
     }
+
+    @Test
+    fun `search - bare handle appends federated matches after local results`() = runTest {
+        val federatedUser = MatrixUser(userId = UserId("@ana:ca.gua.example"), displayName = "Ana")
+        val dataSource = FakeUserListDataSource()
+        dataSource.givenSearchResult(aMatrixUserList())
+        dataSource.givenProfileLookup { userId -> federatedUser.takeIf { userId == federatedUser.userId } }
+        val repository = createRepository(dataSource, rosterProvider = aRosterProvider())
+
+        val result = repository.search("ana")
+
+        result.test {
+            skipItems(1)
+            assertThat(awaitItem().results).isEqualTo((aMatrixUserList() + federatedUser).toUserSearchResults())
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun `search - federated matches already in the local results are not duplicated`() = runTest {
+        val federatedUser = MatrixUser(userId = UserId("@ana:ca.gua.example"), displayName = "Ana")
+        val searchResults = aMatrixUserList() + federatedUser
+        val dataSource = FakeUserListDataSource()
+        dataSource.givenSearchResult(searchResults)
+        dataSource.givenProfileLookup { userId -> federatedUser.takeIf { userId == federatedUser.userId } }
+        val repository = createRepository(dataSource, rosterProvider = aRosterProvider())
+
+        val result = repository.search("ana")
+
+        result.test {
+            skipItems(1)
+            assertThat(awaitItem().results).isEqualTo(searchResults.toUserSearchResults())
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun `search - non handle query returns only local results`() = runTest {
+        val rosterProvider = aRosterProvider()
+        val dataSource = FakeUserListDataSource()
+        dataSource.givenSearchResult(aMatrixUserList())
+        val repository = createRepository(dataSource, rosterProvider = rosterProvider)
+
+        val result = repository.search("some query")
+
+        result.test {
+            skipItems(1)
+            assertThat(awaitItem().results).isEqualTo(aMatrixUserList().toUserSearchResults())
+            awaitComplete()
+        }
+        assertThat(rosterProvider.callCount).isEqualTo(0)
+    }
+
+    private fun createRepository(
+        dataSource: FakeUserListDataSource,
+        rosterProvider: FakeFederationRosterProvider = FakeFederationRosterProvider(roster = null),
+    ): MatrixUserRepository {
+        val client = FakeMatrixClient(SESSION_ID)
+        return MatrixUserRepository(
+            client = client,
+            dataSource = dataSource,
+            federatedDataSource = FederatedUserSearchDataSource(
+                client = client,
+                dataSource = dataSource,
+                rosterProvider = rosterProvider,
+            ),
+        )
+    }
+
+    private fun aRosterProvider() = FakeFederationRosterProvider(aFederationRoster("example.com", "ca.gua.example"))
 
     private fun aMatrixUserListWithoutUserId(userId: UserId) = aMatrixUserList().filterNot { it.userId == userId }
 

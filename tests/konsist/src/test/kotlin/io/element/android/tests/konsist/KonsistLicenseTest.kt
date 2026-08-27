@@ -23,6 +23,19 @@ class KonsistLicenseTest {
          \*/
         """.trimIndent().toRegex()
 
+    // GUA FORK: files written for this fork carry the fork's own copyright rather than
+    // Element's, per the project's header policy. Upstream files keep their Element notice,
+    // and a file modified rather than authored here keeps it too. The SPDX terms are
+    // unchanged either way, so the licence itself is identical.
+    private val guaLicense = """
+        /\*
+         \* Copyright 20\d\d((, |-)20\d\d)? Gua
+        (?:.*\n)* \*
+         \* SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial\.
+         \* Please see LICENSE files in the repository root for full details\.
+         \*/
+        """.trimIndent().toRegex()
+
     private val enterpriseLicense = """
         /\*
          \* © 20\d\d((, |-)20\d\d)? Element Creations Ltd\.
@@ -56,7 +69,7 @@ class KonsistLicenseTest {
                 assertThat(it).isNotEmpty()
             }
             .assertTrue {
-                publicLicense.containsMatchIn(it.text)
+                publicLicense.containsMatchIn(it.text) || guaLicense.containsMatchIn(it.text)
             }
     }
 
@@ -85,7 +98,10 @@ class KonsistLicenseTest {
                     it.name.startsWith("Template ").not()
             }
             .assertTrue {
-                it.text.count("Element Creations Ltd.") == 1
+                // <= 1 rather than == 1: a Gua-authored file carries no Element notice at
+                // all, and zero is not a double header. This test exists to catch a file
+                // that ended up with two, which is still caught.
+                it.text.count("Element Creations Ltd.") <= 1
             }
     }
 }

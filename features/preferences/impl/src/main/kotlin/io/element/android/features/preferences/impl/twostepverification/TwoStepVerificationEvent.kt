@@ -21,8 +21,11 @@ sealed interface TwoStepVerificationEvent {
     /** The user edited the 6-digit code field. */
     data class CodeChanged(val code: String) : TwoStepVerificationEvent
 
-    /** The user edited the phone field (change flow). */
-    data class PhoneChanged(val phone: String) : TwoStepVerificationEvent
+    /** The local digits in the confirm-number field changed; triggers auto-detect + national masking. */
+    data class PhoneChanged(val value: String) : TwoStepVerificationEvent
+
+    /** The user tapped the country-selector pill; the Node opens the shared country picker. */
+    data object SelectCountry : TwoStepVerificationEvent
 
     /** The user tapped the primary "Continue" button. */
     data object Continue : TwoStepVerificationEvent
@@ -32,4 +35,10 @@ sealed interface TwoStepVerificationEvent {
 
     /** The success message has been shown; clear it. */
     data object ClearSuccess : TwoStepVerificationEvent
+
+    /** Start passkey enrollment: fetches the authenticated web-ceremony URL to open at the IdP. */
+    data object SetUpPasskey : TwoStepVerificationEvent
+
+    /** The passkey enrollment URL has been opened (in a Chrome Custom Tab); clear it. */
+    data object ClearPasskeyEnrollUrl : TwoStepVerificationEvent
 }

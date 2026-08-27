@@ -10,15 +10,16 @@ package io.element.android.features.login.impl.screens.phoneentry
 import com.google.i18n.phonenumbers.NumberParseException
 import com.google.i18n.phonenumbers.PhoneNumberUtil
 import io.element.android.features.login.impl.login.LoginMode
-import io.element.android.libraries.phonenumberentry.Country
 import io.element.android.libraries.architecture.AsyncData
+import io.element.android.libraries.phonenumberentry.Country
 
 /**
  * GUA FORK: state for the phone-first entry screen. Mirrors iOS `PhoneEntryScreenViewState`.
  * The homeserver is never surfaced here — only the user's number and country.
  *
  * @param selectedCountry the country whose dial code and national-format mask apply to the input.
- * @param localPhoneNumber the user-typed national number, in the country's display mask.
+ * @param localPhoneNumber the user-typed national number as raw digits. The country's display mask
+ * is applied visually by the field, so the buffer never carries formatting characters.
  * @param loginMode reflects the resolve -> configure -> OIDC pipeline run by `LoginHelper`. It is
  * [AsyncData.Loading] while resolving/building the OIDC url, [AsyncData.Success] once the OIDC url is
  * ready (the View hands it to the navigator), and [AsyncData.Failure] on error.

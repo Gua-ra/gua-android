@@ -29,11 +29,11 @@ import io.element.android.features.preferences.impl.about.AboutNode
 import io.element.android.features.preferences.impl.advanced.AdvancedSettingsNode
 import io.element.android.features.preferences.impl.analytics.AnalyticsSettingsNode
 import io.element.android.features.preferences.impl.blockedusers.BlockedUsersNode
+import io.element.android.features.preferences.impl.changephonenumber.ChangePhoneNumberNode
 import io.element.android.features.preferences.impl.developer.DeveloperSettingsNode
 import io.element.android.features.preferences.impl.labs.LabsNode
 import io.element.android.features.preferences.impl.notifications.NotificationSettingsNode
 import io.element.android.features.preferences.impl.notifications.edit.EditDefaultNotificationSettingNode
-import io.element.android.features.preferences.impl.changephonenumber.ChangePhoneNumberNode
 import io.element.android.features.preferences.impl.root.PreferencesRootNode
 import io.element.android.features.preferences.impl.twostepverification.TwoStepVerificationNode
 import io.element.android.features.preferences.impl.user.editprofile.EditUserProfileNode
@@ -44,9 +44,9 @@ import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.architecture.createNode
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.matrix.api.core.EventId
-import io.element.android.libraries.phonenumberentry.CountryPickerNode
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.user.MatrixUser
+import io.element.android.libraries.phonenumberentry.CountryPickerNode
 import io.element.android.libraries.troubleshoot.api.NotificationTroubleShootEntryPoint
 import io.element.android.libraries.troubleshoot.api.PushHistoryEntryPoint
 import kotlinx.parcelize.Parcelize
@@ -327,12 +327,21 @@ class PreferencesFlowNode(
                 )
             }
             NavTarget.TwoStepVerification -> {
-                createNode<TwoStepVerificationNode>(buildContext)
+                val twoStepVerificationCallback = object : TwoStepVerificationNode.Callback {
+                    override fun navigateToCountryPicker() {
+                        backstack.push(NavTarget.CountryPicker)
+                    }
+                }
+                createNode<TwoStepVerificationNode>(buildContext, listOf(twoStepVerificationCallback))
             }
             NavTarget.ChangePhoneNumber -> {
                 val changePhoneCallback = object : ChangePhoneNumberNode.Callback {
                     override fun navigateToCountryPicker() {
                         backstack.push(NavTarget.CountryPicker)
+                    }
+
+                    override fun navigateToPinSetup() {
+                        backstack.push(NavTarget.TwoStepVerification)
                     }
                 }
                 createNode<ChangePhoneNumberNode>(buildContext, listOf(changePhoneCallback))
