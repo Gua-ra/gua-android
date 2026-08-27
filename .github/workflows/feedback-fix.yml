@@ -1,7 +1,6 @@
 name: Feedback fix
 
-# GUA FORK: the "approve it and it gets worked on" half of the feedback pipeline.
-#
+
 # feedback-bot (in gua-deploy) files crashes and tester feedback as issues here.
 # A human reads one, and if it is worth acting on adds the `feedback:approved`
 # label. That is what this workflow waits for.
@@ -12,7 +11,6 @@ name: Feedback fix
 # it to QA is still the `deploy:qa` label, and production is still gated on the
 # `production` environment. Nothing here bypasses either.
 #
-# Claude runs on a Claude subscription token, not API credits.
 #
 # WHERE THIS RUNS: FIX_RUNNER selects the runner. A hosted ubuntu runner can
 # build and run the unit and screenshot tests, which is enough to verify most
