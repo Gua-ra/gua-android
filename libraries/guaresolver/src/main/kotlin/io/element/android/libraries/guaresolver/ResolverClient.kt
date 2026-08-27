@@ -53,6 +53,12 @@ data class ResolverRoutingClaimsEnvelope(
     val issuedAt: String,
     val expiresAt: String,
     val nonce: String,
+    /**
+     * The E.164 phone this envelope was issued for. The resolver rejects an envelope whose subject
+     * does not match the resolved phone, and the subject is part of the signed canonical bytes, so
+     * a captured envelope cannot be replayed against another number.
+     */
+    val subject: String,
     val affiliations: List<String>? = null,
     val attributes: Map<String, String>? = null,
     val signatures: List<ResolverClaimSignature>,

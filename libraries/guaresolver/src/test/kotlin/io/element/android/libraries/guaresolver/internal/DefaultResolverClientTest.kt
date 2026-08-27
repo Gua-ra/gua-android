@@ -118,7 +118,7 @@ class DefaultResolverClientTest {
                 {
                   "exists": false,
                   "registerAt": { "serverName": "institution.gua.global", "baseUrl": "https://institution.gua.global" },
-                  "trace": { "source": "placement", "rule": "institution_domain", "homeserverId": "institution-br" }
+                  "trace": { "source": "placement", "rule": "institution_domain", "homeserverId": "institution-br", "rosterVersion": 42 }
                 }
                 """.trimIndent()
             )
@@ -139,6 +139,7 @@ class DefaultResolverClientTest {
                     issuedAt = "2026-07-04T12:00:00Z",
                     expiresAt = "2026-07-04T12:05:00Z",
                     nonce = "nonce-123",
+                    subject = "+5511999999999",
                     affiliations = listOf("example.edu"),
                     attributes = mapOf("institution_domain" to "example.edu"),
                     signatures = listOf(ResolverClaimSignature(keyId = "sso-key-1", signatureB64 = "abc123")),
@@ -153,6 +154,7 @@ class DefaultResolverClientTest {
         assertThat(body).contains(""""trace":true""")
         assertThat(body).contains(""""routingClaims"""")
         assertThat(body).contains(""""nonce":"nonce-123"""")
+        assertThat(body).contains(""""subject":"+5511999999999"""")
         assertThat(body).contains(""""signatureB64":"abc123"""")
         server.shutdown()
     }

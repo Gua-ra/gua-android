@@ -67,4 +67,6 @@ internal data class DecisionTrace(
     val delegatedZoneId: String? = null,
     val assignmentPolicy: String? = null,
     val homeserverId: String? = null,
+    /** The roster version the decision was made against; what a verifying client pins. */
+    val rosterVersion: Long? = null,
 )
