@@ -31,6 +31,11 @@ android {
     val devDefaultAccountProvider = readLocalProperty("gua.defaultAccountProvider").orEmpty()
     val devIdentityServiceBaseUrl = readLocalProperty("gua.identityServiceBaseUrl").orEmpty()
 
+    // `-Pgua.deployment=dev` makes RELEASE builds target the development deployment: the QA build
+    // distributed through the Play internal-testing track, mirroring the iOS dev TestFlight app.
+    // Without the property the release build targets production, exactly as before.
+    val useDevDeployment = (project.findProperty("gua.deployment") as? String) == "dev"
+
     defaultConfig {
         buildConfigFieldStr("GUA_PROD_RESOLVER_BASE_URL", "https://resolver.gua.global")
         buildConfigFieldStr("GUA_PROD_DEFAULT_ACCOUNT_PROVIDER", "gua.global")
@@ -38,6 +43,7 @@ android {
         buildConfigFieldStr("GUA_DEV_RESOLVER_BASE_URL", devResolverBaseUrl)
         buildConfigFieldStr("GUA_DEV_DEFAULT_ACCOUNT_PROVIDER", devDefaultAccountProvider)
         buildConfigFieldStr("GUA_DEV_IDENTITY_SERVICE_BASE_URL", devIdentityServiceBaseUrl)
+        buildConfigField("boolean", "GUA_USE_DEV_DEPLOYMENT", useDevDeployment.toString())
     }
 }
 

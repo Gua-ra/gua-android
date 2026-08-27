@@ -7,17 +7,23 @@
 
 package io.element.android.libraries.guaresolver.internal
 
+import io.element.android.libraries.guaresolver.FederationRoster
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 
 /**
- * GUA FORK: Retrofit surface for the Gua resolver `POST /resolve` endpoint. Internal to the module;
- * the public API only ever exposes [io.element.android.libraries.guaresolver.HomeserverResolution].
+ * GUA FORK: Retrofit surface for the Gua resolver endpoints. Internal to the module; the public
+ * API only ever exposes [io.element.android.libraries.guaresolver.HomeserverResolution] and
+ * [FederationRoster].
  */
 internal interface ResolverApi {
     @POST("resolve")
     suspend fun resolve(@Body body: ResolveRequest): ResolveResponse
+
+    @GET("roster")
+    suspend fun roster(): FederationRoster
 }
 
 @Serializable

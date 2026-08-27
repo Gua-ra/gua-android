@@ -127,8 +127,8 @@ class PreferencesRootPresenter(
         // status from the identity service (mirrors TwoStepVerificationPresenter), not the local app-lock.
         val isAccountPinSetup by produceState(initialValue = false) {
             val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken ?: return@produceState
-            identityServiceClient.pinStatus(accessToken)
-                .onSuccess { value = it }
+            identityServiceClient.pinStatus(accessToken, matrixClient.sessionId.value)
+                .onSuccess { value = it.hasPin }
         }
 
         val directLogoutState = directLogoutPresenter.present()

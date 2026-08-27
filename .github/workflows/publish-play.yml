@@ -1,0 +1,411 @@
+name: Publish to Google Play
+
+# GUA FORK: the app repo's version of the org-wide ci-cd.yml deploy paths, in order of how
+# often they are used:
+#   - label a PR `deploy:qa` -> builds that PR's branch and ships it to the QA app
+#                               (global.gua.dev, "Gua QA") on the internal track, so a change can
+#                               be installed from Play before it is merged. Remove the label and
+#                               re-add it to ship again after new commits.
+#   - merge to main          -> stages a production publish that waits for an approver on the
+#                               `production` environment. Nothing reaches Play until someone
+#                               approves; `develop` merges never touch Play at all.
+#   - workflow_dispatch      -> either path by hand from the Actions tab, with the app, track and
+#                               status pickable, so nobody needs the gh CLI to cut a build.
+#
+# This is a separate file from release.yml because release.yml is upstream's "give me unsigned
+# artifacts on demand" workflow: it is dispatch-only by design, and adding PR/push triggers there
+# would start ~35 minute gplay and fdroid builds on every pull request unless every job grew an
+# `if:` guard. Keeping the fork's publishing here leaves release.yml diffable against element-hq
+# and gives the deploy paths one file to review, the same way every service repo has one ci-cd.yml.
+
+on:
+  # main is the release branch; day-to-day work merges to develop, which is deliberately not a
+  # trigger here.
+  push:
+    branches: ["main"]
+  # `labeled` is what makes the deploy:qa label work: adding it re-runs this workflow.
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "Which app: qa (global.gua.dev, dev backend) or prod (global.gua, gua.global backend)"
+        type: choice
+        default: qa
+        options: [qa, prod]
+      track:
+        description: "Play track to publish to"
+        type: choice
+        default: internal
+        options: [internal, alpha, beta, production]
+      status:
+        description: "Release status on the track (draft uploads without rolling out)"
+        type: choice
+        default: draft
+        options: [draft, inProgress, completed]
+
+permissions:
+  contents: read
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx8g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8 -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC -Dkotlin.daemon.jvm.options=-Xmx4g
+  CI_GRADLE_ARG_PROPERTIES: --stacktrace --no-daemon -Dsonar.gradle.skipCompile=true --no-configuration-cache
+  # Put this label on a PR to ship that PR's branch to the QA app. Only people with write access
+  # can label, which is what keeps this from being an open door on a public repo.
+  DEPLOY_LABEL: deploy:qa
+
+jobs:
+  # Cheap, secret-less job that decides what the event asked for. An unlabelled PR gets no further
+  # than this: no release build, no keystore, no Play call. The PR's actual build and tests are
+  # gua-ci.yml's job, so stopping here costs a pull request nothing.
+  gate:
+    name: Decide what this event asks for
+    runs-on: ubuntu-latest
+    outputs:
+      qa: ${{ steps.gate.outputs.qa }}
+      prod: ${{ steps.gate.outputs.prod }}
+      track: ${{ steps.gate.outputs.track }}
+      status: ${{ steps.gate.outputs.status }}
+    steps:
+      - id: gate
+        # Everything the decision reads comes in through env rather than being interpolated into
+        # the script, so a branch or fork name can never be evaluated as shell.
+        env:
+          EVENT: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          THIS_REPO: ${{ github.repository }}
+          IS_LABELLED: ${{ contains(github.event.pull_request.labels.*.name, env.DEPLOY_LABEL) }}
+          INPUT_APP: ${{ inputs.app }}
+          INPUT_TRACK: ${{ inputs.track }}
+          INPUT_STATUS: ${{ inputs.status }}
+        run: |
+          set -euo pipefail
+          qa=false
+          prod=false
+          track=internal
+          status=draft
+
+          case "$EVENT" in
+            pull_request)
+              # Same-repo check: this is a public repo, so anyone can open a PR, and a fork PR must
+              # never be able to reach the upload keystore or the Play service account. GitHub
+              # already withholds secrets from fork PRs; asserting it here means the rule still
+              # holds if someone later widens the trigger, and a labelled fork PR fails closed
+              # instead of failing halfway through a signed build.
+              if [ "$HEAD_REPO" = "$THIS_REPO" ] && [ "$IS_LABELLED" = "true" ]; then
+                qa=true
+                # A QA ship exists to be installed, so it goes out completed rather than sitting as
+                # a draft that someone has to promote in the console before a tester sees it.
+                track=internal
+                status=completed
+              fi
+              ;;
+            push)
+              # Merge to main. This stages prod; the `production` environment is what holds it.
+              prod=true
+              track=production
+              # Uploaded but not rolled out: approval says "this build is the release", the roll-out
+              # percentage is still a decision someone makes in Play Console. Dispatch with
+              # status=completed when you want the workflow itself to roll it out.
+              status=draft
+              ;;
+            workflow_dispatch)
+              if [ "$INPUT_APP" = "qa" ]; then
+                qa=true
+                # The QA job runs under the unprotected `dev` environment on purpose: shipping
+                # a branch to internal testers should not need an approver. That only holds
+                # while a QA ship stays a testing artefact. `production` is a public Play
+                # track, so app=qa + track=production would put global.gua.dev in front of the
+                # store with no approval gate at all — precisely the hole this file was split
+                # out of release.yml to close. Anything aimed at a production track goes
+                # through publish-prod and its `production` environment.
+                if [ "$INPUT_TRACK" = "production" ]; then
+                  echo "::error::app=qa cannot publish to the production track: the QA job has no approval gate. Dispatch app=prod (which waits on the production environment), or pick internal/alpha/beta."
+                  exit 1
+                fi
+              else
+                prod=true
+              fi
+              track="$INPUT_TRACK"
+              status="$INPUT_STATUS"
+              ;;
+          esac
+
+          {
+            echo "qa=$qa"
+            echo "prod=$prod"
+            echo "track=$track"
+            echo "status=$status"
+          } >> "$GITHUB_OUTPUT"
+          echo "qa=$qa prod=$prod track=$track status=$status"
+
+  # QA app (global.gua.dev, "Gua QA", dev backend). Fires for a PR labelled `deploy:qa` and for a
+  # dispatch with app=qa. Requires these repository secrets:
+  #   GUA_RELEASE_KEYSTORE_BASE64  - base64 of the upload keystore (base64 -i gua-upload.jks | pbcopy)
+  #   GUA_RELEASE_KEYSTORE_PASSWORD, GUA_RELEASE_KEY_ALIAS, GUA_RELEASE_KEY_PASSWORD
+  #   PLAY_SERVICE_ACCOUNT_JSON    - a Play Console service-account JSON with "Release to testing tracks"
+  #   GUA_DEV_LOCAL_PROPERTIES     - the gua.* dev-host lines normally kept in local.properties
+  publish-qa:
+    name: Publish QA to Google Play (${{ needs.gate.outputs.track }})
+    needs: gate
+    if: needs.gate.outputs.qa == 'true'
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      contents: read
+      # So a labelled PR can be told where it landed.
+      pull-requests: write
+    # A newer push to the same PR should supersede the build in flight; a 35 minute R8 build that
+    # ships a superseded commit helps nobody.
+    concurrency:
+      group: publish-play-qa-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    steps:
+      # Newly granted Play Console permissions take a while to propagate, and until they do the API
+      # answers "The caller does not have permission". Check first so a run fails in a minute
+      # instead of after a ~35 minute build. Opening an edit is the call an upload begins with.
+      - name: Check Play API access
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PACKAGE: global.gua.dev
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check "cryptography==46.0.3"
+          python3 - <<'PY'
+          import base64, json, os, sys, time, urllib.error, urllib.parse, urllib.request
+          from cryptography.hazmat.primitives import hashes, serialization
+          from cryptography.hazmat.primitives.asymmetric import padding
+
+          sa = json.loads(os.environ["PLAY_SERVICE_ACCOUNT_JSON"])
+          pkg = os.environ["PACKAGE"]
+          b64 = lambda d: base64.urlsafe_b64encode(d).rstrip(b"=")
+
+          now = int(time.time())
+          claim = {"iss": sa["client_email"], "scope": "https://www.googleapis.com/auth/androidpublisher",
+                   "aud": sa["token_uri"], "iat": now, "exp": now + 3600}
+          signing_input = b64(json.dumps({"alg": "RS256", "typ": "JWT"}).encode()) + b"." + b64(json.dumps(claim).encode())
+          key = serialization.load_pem_private_key(sa["private_key"].encode(), password=None)
+          assertion = (signing_input + b"." + b64(key.sign(signing_input, padding.PKCS1v15(), hashes.SHA256()))).decode()
+
+          body = urllib.parse.urlencode({"grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                                         "assertion": assertion}).encode()
+          with urllib.request.urlopen(urllib.request.Request(sa["token_uri"], data=body)) as r:
+              token = json.load(r)["access_token"]
+          # This repo is PUBLIC, so run logs are world-readable and the service-account
+          # address carries the GCP project id. Register it as a mask before anything else
+          # prints (the Play API error body below quotes it back), while still naming which
+          # account authenticated.
+          print(f"::add-mask::{sa['client_email']}")
+          print("authenticated as", sa["client_email"].split("@")[0], "(domain masked: public repo logs)")
+
+          url = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{pkg}/edits"
+          try:
+              with urllib.request.urlopen(urllib.request.Request(
+                      url, data=b"{}", method="POST",
+                      headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})) as r:
+                  edit = json.load(r)
+          except urllib.error.HTTPError as e:
+              print(f"::error::Play API rejected the call for {pkg}: HTTP {e.code}")
+              print(e.read().decode())
+              if e.code in (401, 403):
+                  print("::notice::Permissions are most likely still propagating. Retry later; do not widen the service account's access.")
+              sys.exit(1)
+
+          # Creating the edit is the actual permission check, so access is already proven by here.
+          # Tidying the throwaway edit away is best-effort: v3 deletes an edit with DELETE on the
+          # edit itself, and an edit that outlives this step expires by itself, so a failure to
+          # clean up must never fail the publish.
+          try:
+              urllib.request.urlopen(urllib.request.Request(
+                  f"{url}/{edit['id']}", method="DELETE", headers={"Authorization": f"Bearer {token}"}))
+          except urllib.error.HTTPError as e:
+              print(f"::warning::Could not discard the preflight edit ({e.code}); it will expire on its own.")
+          print(f"::notice::Play API access to {pkg} confirmed; continuing to the build.")
+          PY
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+        with:
+          tool-cache: true
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: true
+          swap-storage: false
+      # Build the PR's head commit, not the merge preview: what a tester installs should be the
+      # branch as written, so a bug they hit is reproducible from that commit.
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Use JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Configure gradle
+        uses: gradle/actions/setup-gradle@5e2ebd065dc2488b7a6ad670704656cbbe1e8f60 # v6.1.1
+      - name: Decode upload keystore
+        env:
+          GUA_RELEASE_KEYSTORE_BASE64: ${{ secrets.GUA_RELEASE_KEYSTORE_BASE64 }}
+        run: echo "$GUA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/gua-upload.jks"
+      # The QA app bakes the dev-deployment hosts, which live outside the public repo. Write the
+      # same local.properties lines a dev machine has.
+      - name: Inject dev deployment hosts
+        env:
+          GUA_DEV_LOCAL_PROPERTIES: ${{ secrets.GUA_DEV_LOCAL_PROPERTIES }}
+        run: printf '%s\n' "$GUA_DEV_LOCAL_PROPERTIES" >> local.properties
+      # gua.versionCodeOffset is what makes a label usable more than once: Play rejects a
+      # versionCode it has already accepted, and the CalVer code in Versions.kt only moves when the
+      # release script bumps it. The run number is unique and always increasing, so every QA upload
+      # is accepted and they sort in the order they were built.
+      - name: Build release-signed App Bundle (QA)
+        env:
+          GUA_RELEASE_KEYSTORE: ${{ runner.temp }}/gua-upload.jks
+          GUA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.GUA_RELEASE_KEYSTORE_PASSWORD }}
+          GUA_RELEASE_KEY_ALIAS: ${{ secrets.GUA_RELEASE_KEY_ALIAS }}
+          GUA_RELEASE_KEY_PASSWORD: ${{ secrets.GUA_RELEASE_KEY_PASSWORD }}
+        run: >-
+          ./gradlew bundleGplayRelease
+          -Pgua.deployment=dev
+          -Pgua.versionCodeOffset=${{ github.run_number }}
+          $CI_GRADLE_ARG_PROPERTIES
+      # Pin to a commit SHA before relying on this in production.
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@935ef9c68bb393a8e6116b1575626a7f5be3a7fb # v1.1.3
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: global.gua.dev
+          releaseFiles: app/build/outputs/bundle/gplayRelease/app-gplay-release.aab
+          track: ${{ needs.gate.outputs.track }}
+          status: ${{ needs.gate.outputs.status }}
+      - name: Tell the PR where it went
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `Shipped to **Gua QA** (\`global.gua.dev\`), track \`${{ needs.gate.outputs.track }}\`, status \`${{ needs.gate.outputs.status }}\`, from commit \`${{ github.event.pull_request.head.sha }}\`.\n\nInternal testers get it once Play finishes processing. The QA app keeps this build until something else is shipped to it. Remove and re-add the \`${{ env.DEPLOY_LABEL }}\` label to ship again after new commits.`
+            })
+
+  # Production app (global.gua, gua.global backend). APPROVAL GATE: fires on every merge to main
+  # and on a dispatch with app=prod, then pauses until a maintainer approves the `production`
+  # GitHub Environment (required reviewer: the deploy-approvers org team). This workflow only
+  # references the environment; the reviewer rule is configured on the environment itself, so
+  # nothing here can loosen it. Merging to main therefore cannot publish on its own.
+  publish-prod:
+    name: Publish Gua to Google Play (${{ needs.gate.outputs.track }})
+    needs: gate
+    if: needs.gate.outputs.prod == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    # Never cancel a prod publish that an approver has already waved through, and never let two
+    # of them race for the same Play edit.
+    concurrency:
+      group: publish-play-prod
+      cancel-in-progress: false
+    steps:
+      # Same fail-fast reason as the QA job: a permissions problem should surface in a minute, not
+      # after an approver has waited out a ~35 minute build.
+      - name: Check Play API access
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PACKAGE: global.gua
+        run: |
+          python3 -m pip install --quiet --disable-pip-version-check "cryptography==46.0.3"
+          python3 - <<'PY'
+          import base64, json, os, sys, time, urllib.error, urllib.parse, urllib.request
+          from cryptography.hazmat.primitives import hashes, serialization
+          from cryptography.hazmat.primitives.asymmetric import padding
+
+          sa = json.loads(os.environ["PLAY_SERVICE_ACCOUNT_JSON"])
+          pkg = os.environ["PACKAGE"]
+          b64 = lambda d: base64.urlsafe_b64encode(d).rstrip(b"=")
+
+          now = int(time.time())
+          claim = {"iss": sa["client_email"], "scope": "https://www.googleapis.com/auth/androidpublisher",
+                   "aud": sa["token_uri"], "iat": now, "exp": now + 3600}
+          signing_input = b64(json.dumps({"alg": "RS256", "typ": "JWT"}).encode()) + b"." + b64(json.dumps(claim).encode())
+          key = serialization.load_pem_private_key(sa["private_key"].encode(), password=None)
+          assertion = (signing_input + b"." + b64(key.sign(signing_input, padding.PKCS1v15(), hashes.SHA256()))).decode()
+
+          body = urllib.parse.urlencode({"grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                                         "assertion": assertion}).encode()
+          with urllib.request.urlopen(urllib.request.Request(sa["token_uri"], data=body)) as r:
+              token = json.load(r)["access_token"]
+          # This repo is PUBLIC, so run logs are world-readable and the service-account
+          # address carries the GCP project id. Register it as a mask before anything else
+          # prints (the Play API error body below quotes it back), while still naming which
+          # account authenticated.
+          print(f"::add-mask::{sa['client_email']}")
+          print("authenticated as", sa["client_email"].split("@")[0], "(domain masked: public repo logs)")
+
+          url = f"https://androidpublisher.googleapis.com/androidpublisher/v3/applications/{pkg}/edits"
+          try:
+              with urllib.request.urlopen(urllib.request.Request(
+                      url, data=b"{}", method="POST",
+                      headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})) as r:
+                  edit = json.load(r)
+          except urllib.error.HTTPError as e:
+              print(f"::error::Play API rejected the call for {pkg}: HTTP {e.code}")
+              print(e.read().decode())
+              if e.code in (401, 403):
+                  print("::notice::Permissions are most likely still propagating. Retry later; do not widen the service account's access.")
+              sys.exit(1)
+
+          # Creating the edit is the actual permission check, so access is already proven by here.
+          # Tidying the throwaway edit away is best-effort: v3 deletes an edit with DELETE on the
+          # edit itself, and an edit that outlives this step expires by itself, so a failure to
+          # clean up must never fail the publish.
+          try:
+              urllib.request.urlopen(urllib.request.Request(
+                  f"{url}/{edit['id']}", method="DELETE", headers={"Authorization": f"Bearer {token}"}))
+          except urllib.error.HTTPError as e:
+              print(f"::warning::Could not discard the preflight edit ({e.code}); it will expire on its own.")
+          print(f"::notice::Play API access to {pkg} confirmed; continuing to the build.")
+          PY
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+        with:
+          tool-cache: true
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: true
+          swap-storage: false
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Use JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Configure gradle
+        uses: gradle/actions/setup-gradle@5e2ebd065dc2488b7a6ad670704656cbbe1e8f60 # v6.1.1
+      - name: Decode upload keystore
+        env:
+          GUA_RELEASE_KEYSTORE_BASE64: ${{ secrets.GUA_RELEASE_KEYSTORE_BASE64 }}
+        run: echo "$GUA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/gua-upload.jks"
+      # No versionCode offset and no dev hosts: a production build is exactly the CalVer version in
+      # Versions.kt, pointing at gua.global. If Play rejects the versionCode as already used, the
+      # release number in Versions.kt needs bumping — that is the intended signal, not a CI bug.
+      - name: Build release-signed App Bundle (prod)
+        env:
+          GUA_RELEASE_KEYSTORE: ${{ runner.temp }}/gua-upload.jks
+          GUA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.GUA_RELEASE_KEYSTORE_PASSWORD }}
+          GUA_RELEASE_KEY_ALIAS: ${{ secrets.GUA_RELEASE_KEY_ALIAS }}
+          GUA_RELEASE_KEY_PASSWORD: ${{ secrets.GUA_RELEASE_KEY_PASSWORD }}
+        run: ./gradlew bundleGplayRelease $CI_GRADLE_ARG_PROPERTIES
+      # Pin to a commit SHA before relying on this in production.
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@935ef9c68bb393a8e6116b1575626a7f5be3a7fb # v1.1.3
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: global.gua
+          releaseFiles: app/build/outputs/bundle/gplayRelease/app-gplay-release.aab
+          track: ${{ needs.gate.outputs.track }}
+          status: ${{ needs.gate.outputs.status }}

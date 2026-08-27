@@ -10,6 +10,8 @@ package io.element.android.libraries.androidutils.browser
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.provider.Browser
 import androidx.browser.customtabs.CustomTabColorSchemeParams
@@ -55,6 +57,41 @@ fun Activity.openUrlInChromeCustomTab(
                 intent.putExtra("org.chromium.chrome.browser.customtabs.EXTRA_DISABLE_DOWNLOAD_BUTTON", true)
                 // Disable bookmark button
                 intent.putExtra("org.chromium.chrome.browser.customtabs.EXTRA_DISABLE_STAR_BUTTON", true)
+                intent.putExtra(Browser.EXTRA_HEADERS, Bundle().apply {
+                    putString("Accept-Language", Locale.getDefault().toLanguageTag())
+                })
+            }
+            .launchUrl(this, url.toUri())
+    } catch (_: ActivityNotFoundException) {
+        openUrlInExternalApp(url)
+    }
+}
+
+/**
+ * GUA FORK: open [url] in a Chrome Custom Tab from a non-Activity [Context] (e.g. the application
+ * context during logout). Launches a new task because there is no Activity to host the tab.
+ *
+ * Used to load the MAS `end_session_endpoint` so the IdP browser session cookie is cleared after
+ * sign-out — see `OidcEndSessionUrlProvider`. Falls back to the default browser if no Custom Tab
+ * provider is available.
+ */
+fun Context.openUrlInChromeCustomTab(
+    darkTheme: Boolean,
+    url: String,
+) {
+    try {
+        CustomTabsIntent.Builder()
+            .setColorScheme(
+                when (darkTheme) {
+                    false -> CustomTabsIntent.COLOR_SCHEME_LIGHT
+                    true -> CustomTabsIntent.COLOR_SCHEME_DARK
+                }
+            )
+            .setShareIdentityEnabled(false)
+            .build()
+            .apply {
+                // Required when starting from a non-Activity context.
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 intent.putExtra(Browser.EXTRA_HEADERS, Bundle().apply {
                     putString("Accept-Language", Locale.getDefault().toLanguageTag())
                 })

@@ -51,6 +51,7 @@ import io.element.android.libraries.matrix.api.sync.SyncState
 import io.element.android.libraries.matrix.api.user.MatrixSearchUserResults
 import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.matrix.impl.encryption.RustEncryptionService
+import io.element.android.libraries.matrix.impl.encryption.SilentSessionEncryptionBootstrapper
 import io.element.android.libraries.matrix.impl.exception.mapClientException
 import io.element.android.libraries.matrix.impl.linknewdevice.RustLinkDesktopHandler
 import io.element.android.libraries.matrix.impl.linknewdevice.RustLinkMobileHandler
@@ -305,6 +306,15 @@ class RustMatrixClient(
 
         // Schedule regular database vacuuming to ensure DB performance remains optimal
         scheduleDatabaseVacuum()
+
+        // Gua: silently bootstrap / restore key storage so returning users never see the session
+        // verification ceremony. Mirrors iOS UserSessionStore.bootstrapKeyStorageIfNeeded /
+        // restoreKeyStorageIfNeeded. Runs detached and fail-safe; never blocks landing in the app.
+        SilentSessionEncryptionBootstrapper(
+            sessionId = sessionId,
+            encryptionService = encryptionService,
+            sessionCoroutineScope = sessionCoroutineScope,
+        ).start()
     }
 
     override fun userIdServerName(): String {

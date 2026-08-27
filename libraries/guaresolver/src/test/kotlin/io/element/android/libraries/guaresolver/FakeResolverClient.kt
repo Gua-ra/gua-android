@@ -19,6 +19,22 @@ class FakeResolverClient(
 }
 
 /**
+ * GUA FORK: lambda-overridable fake [FederationRosterFetcher] that also counts fetches, for
+ * roster cache tests.
+ */
+class FakeFederationRosterFetcher(
+    var fetchRosterResult: () -> Result<FederationRoster> = { Result.success(aFederationRoster()) },
+) : FederationRosterFetcher {
+    var fetchCount: Int = 0
+        private set
+
+    override suspend fun fetchRoster(): Result<FederationRoster> {
+        fetchCount++
+        return fetchRosterResult()
+    }
+}
+
+/**
  * GUA FORK: test-only [GuaDeployment] with explicit values, so tests can exercise the
  * configured / unconfigured resolver / identity-service paths without the build-time
  * [GuaResolverConfig] selection.
@@ -36,19 +52,22 @@ class FakeIdentityServiceClient(
     private val lookupResult: (String, List<String>) -> Result<List<ContactMatch>> = { _, _ ->
         Result.success(emptyList())
     },
-    private val pinStatusResult: (String) -> Result<Boolean> = { Result.success(false) },
+    private val pinStatusResult: (String, String) -> Result<PinStatus> = { _, _ ->
+        Result.success(PinStatus(hasPin = false, changePhoneCooldownRemainingSeconds = 0))
+    },
     private val setInitialPinResult: (String, String, String) -> Result<Unit> = { _, _, _ -> Result.success(Unit) },
     private val startPinChangeResult: (String, String, String) -> Result<String> = { _, _, _ -> Result.success("challenge-id") },
     private val completePinChangeResult: (String, String, String, String) -> Result<Unit> = { _, _, _, _ -> Result.success(Unit) },
     private val verifyPinReauthResult: (String, String, String) -> Result<String> = { _, _, _ -> Result.success("reauth-token") },
     private val requestPhoneChangeOtpResult: (String, String, String, String, String?) -> Result<Unit> = { _, _, _, _, _ -> Result.success(Unit) },
     private val changePhoneNumberResult: (String, String, String, String, String) -> Result<Unit> = { _, _, _, _, _ -> Result.success(Unit) },
+    private val startPasskeyEnrollmentResult: (String) -> Result<String> = { _ -> Result.success("https://idp.gua.global/passkey/enroll?token=fake") },
 ) : IdentityServiceClient {
     override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> =
         lookupResult(accessToken, hashedPhones)
 
-    override suspend fun pinStatus(accessToken: String): Result<Boolean> =
-        pinStatusResult(accessToken)
+    override suspend fun pinStatus(accessToken: String, userId: String): Result<PinStatus> =
+        pinStatusResult(accessToken, userId)
 
     override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> =
         setInitialPinResult(accessToken, userId, newPin)
@@ -73,6 +92,9 @@ class FakeIdentityServiceClient(
 
     override suspend fun changePhoneNumber(accessToken: String, userId: String, newPhone: String, code: String, reauthToken: String): Result<Unit> =
         changePhoneNumberResult(accessToken, userId, newPhone, code, reauthToken)
+
+    override suspend fun startPasskeyEnrollment(accessToken: String): Result<String> =
+        startPasskeyEnrollmentResult(accessToken)
 }
 
 fun aContactMatch(
@@ -107,4 +129,27 @@ fun aHomeserverResolution(
 ) = HomeserverResolution(
     exists = exists,
     homeserver = homeserver,
+)
+
+fun aFederationRosterEntry(
+    serverName: String = "gua.global",
+    status: String = "ACTIVE",
+    searchVisibility: String? = null,
+    searchGroups: List<String>? = null,
+) = FederationRosterEntry(
+    homeserver = FederationRosterServer(
+        serverName = serverName,
+        searchVisibility = searchVisibility,
+        searchGroups = searchGroups,
+    ),
+    status = status,
+)
+
+fun aFederationRoster(
+    entries: List<FederationRosterEntry> = listOf(
+        aFederationRosterEntry(serverName = "gua.global"),
+        aFederationRosterEntry(serverName = "gua.ca"),
+    ),
+) = FederationRoster(
+    entries = entries,
 )

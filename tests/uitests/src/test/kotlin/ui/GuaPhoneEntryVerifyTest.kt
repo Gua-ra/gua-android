@@ -12,8 +12,8 @@ import base.BaseDeviceConfig
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.login.impl.screens.phoneentry.PhoneEntryState
 import io.element.android.features.login.impl.screens.phoneentry.PhoneEntryView
-import io.element.android.libraries.phonenumberentry.Country
 import io.element.android.libraries.architecture.AsyncData
+import io.element.android.libraries.phonenumberentry.Country
 import org.junit.Rule
 import org.junit.Test
 

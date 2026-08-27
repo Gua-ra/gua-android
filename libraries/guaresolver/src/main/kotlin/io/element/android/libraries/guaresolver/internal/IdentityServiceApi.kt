@@ -75,6 +75,19 @@ internal interface IdentityServiceApi {
         @Header("Authorization") authorization: String,
         @Body body: OtpChangeNumberRequest,
     )
+
+    // GUA FORK: passkey enrollment. Returns the authenticated web-ceremony URL the client opens to
+    // complete WebAuthn registration at the IdP.
+    //
+    // POST, not GET: the identity service maps this as @PostMapping("/passkey/enroll/start"), and
+    // iOS reaches it through a helper that always sends POST. An earlier comment here described it
+    // as a GET, which is what the declaration was written to match, so every tap was answered with
+    // 405 before any ceremony could start. The request carries no body; the access token in the
+    // Authorization header is the whole input.
+    @POST("security/passkey/enroll/start")
+    suspend fun startPasskeyEnrollment(
+        @Header("Authorization") authorization: String,
+    ): PasskeyEnrollStartResponse
 }
 
 @Serializable
@@ -101,6 +114,12 @@ internal data class LookupResponse(
 @Serializable
 internal data class PinStatusResponse(
     val hasPin: Boolean,
+    /**
+     * Remaining seconds of the WhatsApp-style fresh-2FA cooldown before the phone number can be
+     * changed again (0 = no active cooldown). Defaults to 0 for older identity-service builds that
+     * do not yet return the field.
+     */
+    val changePhoneCooldownRemainingSeconds: Long = 0,
 )
 
 @Serializable
@@ -156,6 +175,12 @@ internal data class OtpChangeNumberRequest(
     val reauthToken: String,
 )
 
+@Serializable
+internal data class PasskeyEnrollStartResponse(
+    /** Authenticated web-ceremony URL to open at the IdP to complete passkey registration. */
+    val enrollUrl: String,
+)
+
 /**
  * Identity-service error envelope. The typed [io.element.android.libraries.guaresolver.ResolverError]
  * PIN cases are derived from the `code` field, mirroring iOS' `ErrorBody.code` handling.
@@ -165,4 +190,6 @@ internal data class IdentityServiceErrorBody(
     val code: String? = null,
     val message: String? = null,
     val error: String? = null,
+    /** Present on `twofa_cooldown_active`: seconds the caller must wait before retrying. */
+    val retryAfterSeconds: Long? = null,
 )
