@@ -117,8 +117,10 @@ fun UserProfileHeaderSection(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = stringResource(CommonStrings.crypto_identity_change_profile_pin_violation, userName ?: userId.displayHandle),
-                    color = ElementTheme.colors.textCriticalPrimary,
+                    // GUA FORK: plain wording, and no longer styled as critical. A contact
+                    // reinstalling Gua is information, not an error.
+                    text = stringResource(R.string.gua_identity_change_profile, userName ?: userId.displayHandle),
+                    color = ElementTheme.colors.textSecondary,
                     style = ElementTheme.typography.fontBodyMdMedium,
                 )
 

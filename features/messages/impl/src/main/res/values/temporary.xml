@@ -5,4 +5,7 @@
        information rather than an alarm. %1$s is the contact's display name, %2$s the
        learn more link. -->
   <string name="gua_identity_change_banner">"%1$s’s security details changed. This can happen when they reinstall Gua or get a new phone. %2$s"</string>
+  <!-- GUA FORK: replaces upstream's "Sender's verified digital identity was reset".
+       Says what the reader can and cannot do, in plain language. -->
+  <string name="gua_identity_change_undecryptable">This message can’t be opened because the sender’s security details changed.</string>
 </resources>

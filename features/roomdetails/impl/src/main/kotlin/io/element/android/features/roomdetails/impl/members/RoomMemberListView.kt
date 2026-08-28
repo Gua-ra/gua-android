@@ -307,12 +307,13 @@ private fun RoomMemberListItem(
                     IdentityState.VerificationViolation -> {
                         Icon(
                             modifier = Modifier.size(20.dp),
-                            imageVector = CompoundIcons.ErrorSolid(),
+                            // GUA FORK: an informational marker, not an error badge.
+                            imageVector = CompoundIcons.InfoSolid(),
                             contentDescription = stringResource(
-                                CommonStrings.crypto_identity_change_profile_pin_violation,
+                                R.string.gua_identity_change_member_list,
                                 roomMemberWithIdentity.roomMember.getBestName()
                             ),
-                            tint = ElementTheme.colors.iconCriticalPrimary
+                            tint = ElementTheme.colors.iconSecondary
                         )
                     }
                     else -> Unit
