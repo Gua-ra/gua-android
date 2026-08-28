@@ -155,11 +155,17 @@ class RustMatrixClientFactory(
             .addRootCertificates(userCertificatesProvider.provides())
             .autoEnableBackups(true)
             .autoEnableCrossSigning(true)
+            // GUA FORK: upstream uses ERROR_ON_VERIFIED_USER_PROBLEM here, which makes sending
+            // fail whenever a verified contact reinstalls or gets a new phone, until the user
+            // resolves the identity change. Gua follows the WhatsApp model: an identity change
+            // informs (banner and message shields) but never obstructs sending, so keys go to
+            // all of the recipient's devices. The strict behaviour stays available through the
+            // OnlySignedDeviceIsolationMode flag above. Matches gua-ios ClientBuilder.swift.
             .roomKeyRecipientStrategy(
                 strategy = if (featureFlagService.isFeatureEnabled(FeatureFlags.OnlySignedDeviceIsolationMode)) {
                     CollectStrategy.IDENTITY_BASED_STRATEGY
                 } else {
-                    CollectStrategy.ERROR_ON_VERIFIED_USER_PROBLEM
+                    CollectStrategy.ALL_DEVICES
                 }
             )
             .decryptionSettings(

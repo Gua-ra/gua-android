@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="gua_identity_change_banner">"Les informations de sécurité de %1$s ont changé. Cela arrive lorsqu’une personne réinstalle Gua ou change de téléphone. %2$s"</string>
+</resources>

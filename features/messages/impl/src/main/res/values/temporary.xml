@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+  <!-- GUA FORK: replaces upstream's "digital identity was reset" wording. Plain language,
+       no jargon, and it names the ordinary reasons this happens so the notice reads as
+       information rather than an alarm. %1$s is the contact's display name, %2$s the
+       learn more link. -->
+  <string name="gua_identity_change_banner">"%1$s’s security details changed. This can happen when they reinstall Gua or get a new phone. %2$s"</string>
+</resources>
