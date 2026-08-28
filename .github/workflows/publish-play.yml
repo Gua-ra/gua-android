@@ -2,10 +2,10 @@ name: Publish to Google Play
 
 # GUA FORK: the app repo's version of the org-wide ci-cd.yml deploy paths, in order of how
 # often they are used:
-#   - label a PR `deploy:qa` -> builds that PR's branch and ships it to the QA app
+#   - label a PR `release-qa` -> builds that PR's branch and ships it to the QA app
 #                               (global.gua.dev, "Gua QA") on the internal track, so a change can
-#                               be installed from Play before it is merged. Remove the label and
-#                               re-add it to ship again after new commits.
+#                               be installed from Play before it is merged. Pushing more commits
+#                               with the label on re-ships it automatically.
 #   - merge to main          -> stages a production publish that waits for an approver on the
 #                               `production` environment. Nothing reaches Play until someone
 #                               approves; `develop` merges never touch Play at all.
@@ -23,7 +23,7 @@ on:
   # trigger here.
   push:
     branches: ["main"]
-  # `labeled` is what makes the deploy:qa label work: adding it re-runs this workflow.
+  # `labeled` is what makes the release-qa label work: adding it re-runs this workflow.
   pull_request:
     types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
@@ -52,7 +52,7 @@ env:
   CI_GRADLE_ARG_PROPERTIES: --stacktrace --no-daemon -Dsonar.gradle.skipCompile=true --no-configuration-cache
   # Put this label on a PR to ship that PR's branch to the QA app. Only people with write access
   # can label, which is what keeps this from being an open door on a public repo.
-  DEPLOY_LABEL: deploy:qa
+  DEPLOY_LABEL: release-qa
 
 jobs:
   # Cheap, secret-less job that decides what the event asked for. An unlabelled PR gets no further
@@ -139,7 +139,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "qa=$qa prod=$prod track=$track status=$status"
 
-  # QA app (global.gua.dev, "Gua QA", dev backend). Fires for a PR labelled `deploy:qa` and for a
+  # QA app (global.gua.dev, "Gua QA", dev backend). Fires for a PR labelled `release-qa` and for a
   # dispatch with app=qa. Requires these repository secrets:
   #   GUA_RELEASE_KEYSTORE_BASE64  - base64 of the upload keystore (base64 -i gua-upload.jks | pbcopy)
   #   GUA_RELEASE_KEYSTORE_PASSWORD, GUA_RELEASE_KEY_ALIAS, GUA_RELEASE_KEY_PASSWORD
@@ -287,7 +287,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `Shipped to **Gua QA** (\`global.gua.dev\`), track \`${{ needs.gate.outputs.track }}\`, status \`${{ needs.gate.outputs.status }}\`, from commit \`${{ github.event.pull_request.head.sha }}\`.\n\nInternal testers get it once Play finishes processing. The QA app keeps this build until something else is shipped to it. Remove and re-add the \`${{ env.DEPLOY_LABEL }}\` label to ship again after new commits.`
+              body: `Shipped to **Gua QA** (\`global.gua.dev\`), track \`${{ needs.gate.outputs.track }}\`, status \`${{ needs.gate.outputs.status }}\`, from commit \`${{ github.event.pull_request.head.sha }}\`.\n\nInternal testers get it once Play finishes processing. The QA app keeps this build until something else is shipped to it. Pushing more commits while the \`${{ env.DEPLOY_LABEL }}\` label is on rebuilds and supersedes this build.`
             })
 
   # Production app (global.gua, gua.global backend). APPROVAL GATE: fires on every merge to main
