@@ -62,9 +62,16 @@ object FederatedUserSearch {
     }
 
     /**
-     * The full user IDs to look up for a bare handle: one per ACTIVE roster server that allows
-     * discovery from the searcher's own homeserver, in roster order. The searcher's own server
-     * is skipped — local search already covers it.
+     * The full user IDs to look up for a bare handle: the searcher's own server first, then one
+     * per ACTIVE roster server that allows discovery from it, in roster order.
+     *
+     * The searcher's own server used to be skipped here, on the assumption that the local
+     * directory already covered it. It does not. Synapse's user directory only returns people you
+     * already share a room with unless `search_all_users` is on, so a bare handle found nobody on
+     * your own server while the full `@handle:server` worked, because that path is an exact
+     * profile lookup instead. Looking our own server up by the same exact-match route makes a bare
+     * handle behave the same way everywhere. Duplicates are dropped downstream, so a local hit
+     * costs nothing.
      */
     fun candidates(handle: String, roster: FederationRoster, ownServerName: String): List<String> {
         val ownGroups = roster.entries
@@ -74,7 +81,7 @@ object FederatedUserSearch {
             .orEmpty()
             .toSet()
 
-        return roster.entries
+        val federated = roster.entries
             .filter { entry ->
                 entry.isActive &&
                     entry.homeserver.serverName != ownServerName &&
@@ -86,5 +93,8 @@ object FederatedUserSearch {
                     }
             }
             .map { "@$handle:${it.homeserver.serverName}" }
+
+        // Own server first: it is the likeliest match and the one a person expects to be instant.
+        return listOf("@$handle:$ownServerName") + federated
     }
 }

@@ -8,4 +8,9 @@
     <!-- GUA FORK: "Find friends" entry in the new-chat / "+" screen. Mirrors Element X iOS
          StartChatScreen's top-of-list Find friends row. -->
     <string name="screen_find_friends_action">Find friends</string>
+
+    <!-- GUA FORK: hint under the "Join room by address" field. Replaces upstream's
+         "e.g. #room-name:matrix.org", which named another network's homeserver and taught
+         the server-qualified form Gua keeps out of sight. -->
+    <string name="gua_join_room_by_address_hint">Paste the room address you were given.</string>
 </resources>
