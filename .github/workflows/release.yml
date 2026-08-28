@@ -2,7 +2,7 @@ name: Create release App Bundle and APKs
 
 # GUA FORK: manual dispatch only. These jobs build UNSIGNED artifacts for inspection and nothing
 # else. Anything that reaches Google Play lives in publish-play.yml instead, so that every path
-# to the store passes the same gates: the `deploy:qa` label for the QA app, and the approval-gated
+# to the store passes the same gates: the `release-qa` label for the QA app, and the approval-gated
 # `production` environment for the real one. A publish path in here would sit outside both.
 on:
   workflow_dispatch:
