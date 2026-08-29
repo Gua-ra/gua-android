@@ -101,9 +101,7 @@ class PreferencesRootPresenterTest {
             assertThat(loadedState.showSecureBackupBadge).isFalse()
             assertThat(loadedState.accountManagementUrl).isNull()
             assertThat(loadedState.showAnalyticsSettings).isFalse()
-            // GUA FORK: QrCodeLogin now defaults on, so Link new device is available. That is
-            // the existing-device side of the device-to-device secrets transfer.
-            assertThat(loadedState.showLinkNewDevice).isTrue()
+            assertThat(loadedState.showLinkNewDevice).isFalse()
             assertThat(loadedState.showDeveloperSettings).isTrue()
             assertThat(loadedState.canDeactivateAccount).isTrue()
             assertThat(loadedState.canReportBug).isTrue()
