@@ -90,7 +90,12 @@ enum class FeatureFlags(
         key = "feature.qr_code_login",
         title = "QR Code Login",
         description = "Allow logging in on other devices using a QR code.",
-        defaultValue = { false },
+        // GUA FORK: on by default. This is the device-to-device secrets transfer (MSC4108) that
+        // lets a new phone pick up message history by scanning the old one, with nothing typed
+        // and nothing the server can read. Both halves are implemented here already and the
+        // server side is live, so the flag was the only thing keeping it off. It also gives
+        // Settings > Link new device, which is the existing-device side that shows the QR.
+        defaultValue = { true },
         isFinished = false,
     ),
     AllowBlackTheme(
