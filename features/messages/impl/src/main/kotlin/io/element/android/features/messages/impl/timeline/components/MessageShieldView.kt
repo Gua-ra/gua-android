@@ -31,6 +31,7 @@ import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.timeline.item.event.MessageShield
+import io.element.android.libraries.matrix.api.timeline.item.event.isAlarming
 import io.element.android.libraries.matrix.api.timeline.item.event.ProfileDetails
 import io.element.android.libraries.matrix.api.timeline.item.event.getDisplayName
 import io.element.android.libraries.matrix.api.timeline.item.event.isCritical
@@ -78,7 +79,10 @@ val MessageShieldData.isCritical: Boolean
 
 @Composable
 internal fun MessageShieldData.toIconColor(): Color {
-    return when (isCritical) {
+    // GUA FORK: the SDK marks plenty of states critical that are not alarming to a reader, and
+    // this icon sits beside the send-failure icon, so red here reads as "did not send". Only the
+    // states that genuinely mean this may not be who you think keep the critical colour.
+    return when (isCritical && shield.isAlarming) {
         true -> ElementTheme.colors.iconCriticalPrimary
         false -> ElementTheme.colors.iconSecondary
     }
@@ -86,7 +90,8 @@ internal fun MessageShieldData.toIconColor(): Color {
 
 @Composable
 private fun MessageShieldData.toTextColor(): Color {
-    return when (isCritical) {
+    // GUA FORK: same reasoning as toIconColor.
+    return when (isCritical && shield.isAlarming) {
         true -> ElementTheme.colors.textCriticalPrimary
         false -> ElementTheme.colors.textSecondary
     }
