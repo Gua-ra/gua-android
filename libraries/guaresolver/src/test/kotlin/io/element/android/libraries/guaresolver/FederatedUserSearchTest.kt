@@ -89,7 +89,7 @@ class FederatedUserSearchTest {
     // region Candidate construction
 
     @Test
-    fun `candidates skip the own server and follow roster order`() {
+    fun `candidates lead with the own server and follow roster order`() {
         val roster = aFederationRoster(
             entries = listOf(
                 aFederationRosterEntry(serverName = "br.gua.example"),
@@ -99,7 +99,7 @@ class FederatedUserSearchTest {
 
         val candidates = FederatedUserSearch.candidates(handle = "ana-souza", roster = roster, ownServerName = "br.gua.example")
 
-        assertThat(candidates).containsExactly("@ana-souza:ca.gua.example")
+        assertThat(candidates).containsExactly("@ana-souza:br.gua.example", "@ana-souza:ca.gua.example")
     }
 
     @Test
@@ -114,7 +114,7 @@ class FederatedUserSearchTest {
 
         val candidates = FederatedUserSearch.candidates(handle = "ana-souza", roster = roster, ownServerName = "br.gua.example")
 
-        assertThat(candidates).containsExactly("@ana-souza:ca.gua.example")
+        assertThat(candidates).containsExactly("@ana-souza:br.gua.example", "@ana-souza:ca.gua.example")
     }
 
     @Test
@@ -128,7 +128,7 @@ class FederatedUserSearchTest {
 
         val candidates = FederatedUserSearch.candidates(handle = "ana-souza", roster = roster, ownServerName = "br.gua.example")
 
-        assertThat(candidates).containsExactly("@ana-souza:ca.gua.example")
+        assertThat(candidates).containsExactly("@ana-souza:br.gua.example", "@ana-souza:ca.gua.example")
     }
 
     @Test
@@ -141,7 +141,7 @@ class FederatedUserSearchTest {
 
         val candidates = FederatedUserSearch.candidates(handle = "ana-souza", roster = roster, ownServerName = "br.gua.example")
 
-        assertThat(candidates).isEmpty()
+        assertThat(candidates).containsExactly("@ana-souza:br.gua.example")
     }
 
     @Test
@@ -157,7 +157,7 @@ class FederatedUserSearchTest {
 
         val candidates = FederatedUserSearch.candidates(handle = "ana-souza", roster = roster, ownServerName = "br.gua.example")
 
-        assertThat(candidates).containsExactly("@ana-souza:edu.gua.example")
+        assertThat(candidates).containsExactly("@ana-souza:br.gua.example", "@ana-souza:edu.gua.example")
     }
 
     @Test
@@ -171,7 +171,7 @@ class FederatedUserSearchTest {
 
         val candidates = FederatedUserSearch.candidates(handle = "ana-souza", roster = roster, ownServerName = "br.gua.example")
 
-        assertThat(candidates).isEmpty()
+        assertThat(candidates).containsExactly("@ana-souza:br.gua.example")
     }
 
     @Test
@@ -185,7 +185,7 @@ class FederatedUserSearchTest {
 
         val candidates = FederatedUserSearch.candidates(handle = "ana-souza", roster = roster, ownServerName = "nowhere.example")
 
-        assertThat(candidates).containsExactly("@ana-souza:ca.gua.example")
+        assertThat(candidates).containsExactly("@ana-souza:nowhere.example", "@ana-souza:ca.gua.example")
     }
 
     // endregion

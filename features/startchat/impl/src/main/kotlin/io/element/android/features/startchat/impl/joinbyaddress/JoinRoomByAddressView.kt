@@ -109,7 +109,9 @@ private fun RoomAddressField(
             RoomAddressState.Invalid -> stringResource(R.string.screen_start_chat_join_room_by_address_invalid_address)
             is RoomAddressState.RoomFound -> stringResource(R.string.screen_start_chat_join_room_by_address_room_found)
             RoomAddressState.RoomNotFound -> stringResource(R.string.screen_start_chat_join_room_by_address_room_not_found)
-            RoomAddressState.Unknown, RoomAddressState.Resolving -> stringResource(R.string.screen_start_chat_join_room_by_address_supporting_text)
+            // GUA FORK: upstream's hint is "e.g. #room-name:matrix.org", which names another
+            // network's homeserver and teaches the server-qualified form Gua keeps out of sight.
+            RoomAddressState.Unknown, RoomAddressState.Resolving -> stringResource(R.string.gua_join_room_by_address_hint)
         },
         validity = when (addressState) {
             RoomAddressState.Unknown, RoomAddressState.Resolving -> TextFieldValidity.None

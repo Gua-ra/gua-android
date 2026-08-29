@@ -22,7 +22,7 @@ private val SESSION_ID = SessionId("@current-user:br.gua.example")
 
 class FederatedUserSearchDataSourceTest {
     @Test
-    fun `bare handle fans out across the federation skipping the own server`() = runTest {
+    fun `bare handle fans out across the federation including the own server`() = runTest {
         val dataSource = FakeUserListDataSource()
         dataSource.givenProfileLookup { userId -> MatrixUser(userId = userId, displayName = "Ana") }
         val federatedDataSource = createDataSource(
@@ -33,10 +33,11 @@ class FederatedUserSearchDataSourceTest {
         val results = federatedDataSource.search("@Ana-Souza")
 
         assertThat(results.map { it.userId.value }).containsExactly(
+            "@ana-souza:br.gua.example",
             "@ana-souza:ca.gua.example",
             "@ana-souza:pt.gua.example",
         ).inOrder()
-        assertThat(dataSource.getProfileCalls).doesNotContain(UserId("@ana-souza:br.gua.example"))
+        assertThat(dataSource.getProfileCalls).contains(UserId("@ana-souza:br.gua.example"))
     }
 
     @Test
@@ -69,7 +70,8 @@ class FederatedUserSearchDataSourceTest {
 
         val results = federatedDataSource.search("ana-souza")
 
-        assertThat(results.map { it.userId.value }).containsExactly("@ana-souza:pt.gua.example")
+        assertThat(results.map { it.userId.value })
+            .containsExactly("@ana-souza:br.gua.example", "@ana-souza:pt.gua.example")
     }
 
     @Test
@@ -88,7 +90,8 @@ class FederatedUserSearchDataSourceTest {
 
         val results = federatedDataSource.search("ana-souza")
 
-        assertThat(results.map { it.userId.value }).containsExactly("@ana-souza:pt.gua.example")
+        assertThat(results.map { it.userId.value })
+            .containsExactly("@ana-souza:br.gua.example", "@ana-souza:pt.gua.example")
     }
 
     @Test
