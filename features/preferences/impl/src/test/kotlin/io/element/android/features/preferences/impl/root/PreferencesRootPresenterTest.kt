@@ -39,7 +39,6 @@ import io.element.android.libraries.matrix.test.A_USER_ID_2
 import io.element.android.libraries.matrix.test.A_USER_NAME
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.core.aBuildMeta
-import io.element.android.libraries.matrix.test.verification.FakeSessionVerificationService
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
@@ -335,7 +334,6 @@ class PreferencesRootPresenterTest {
 
     private fun createPresenter(
         matrixClient: FakeMatrixClient = FakeMatrixClient(),
-        sessionVerificationService: FakeSessionVerificationService = FakeSessionVerificationService(),
         showDeveloperSettingsProvider: ShowDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.DEBUG)),
         rageshakeFeatureAvailability: RageshakeFeatureAvailability = RageshakeFeatureAvailability { flowOf(true) },
         indicatorService: IndicatorService = FakeIndicatorService(),
@@ -346,7 +344,6 @@ class PreferencesRootPresenterTest {
         identityServiceClient: IdentityServiceClient = NoopIdentityServiceClient(),
     ) = PreferencesRootPresenter(
         matrixClient = matrixClient,
-        sessionVerificationService = sessionVerificationService,
         analyticsService = FakeAnalyticsService(),
         versionFormatter = FakeVersionFormatter(),
         snackbarDispatcher = SnackbarDispatcher(),

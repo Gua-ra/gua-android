@@ -34,7 +34,6 @@ import io.element.android.libraries.indicator.api.IndicatorService
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.user.MatrixUser
-import io.element.android.libraries.matrix.api.verification.SessionVerificationService
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.services.analytics.api.AnalyticsService
 import kotlinx.collections.immutable.persistentListOf
@@ -48,7 +47,6 @@ import kotlinx.coroutines.launch
 @Inject
 class PreferencesRootPresenter(
     private val matrixClient: MatrixClient,
-    private val sessionVerificationService: SessionVerificationService,
     private val analyticsService: AnalyticsService,
     private val versionFormatter: VersionFormatter,
     private val snackbarDispatcher: SnackbarDispatcher,
