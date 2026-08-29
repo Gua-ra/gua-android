@@ -71,16 +71,20 @@ internal class SilentSessionEncryptionBootstrapper(
                     return@launch
                 }
 
-                // Bootstrap path: provision recovery silently. Equivalent to iOS enable() +
-                // generateRecoveryKey() + confirmRecoveryKey(). We do not surface the generated key:
-                // on a fresh device the user can always reset / re-provision it from Settings.
+                // Bootstrap path: provision recovery silently.
                 Timber.tag(TAG).i("Bootstrapping key storage silently for %s (recoveryState=%s).", sessionId.value, recoveryState)
                 encryptionService.enableRecovery(waitForBackupsToUpload = false)
                     .onSuccess {
                         Timber.tag(TAG).i("Finished bootstrapping key storage for %s.", sessionId.value)
                     }
                     .onFailure { error ->
-                        Timber.tag(TAG).e(error, "Failed bootstrapping key storage for %s.", sessionId.value)
+                        // GUA FORK: enableRecovery refuses to run when a key backup already
+                        // exists on the server, which is exactly the state accounts damaged by
+                        // the earlier version of this bootstrapper are in. It fails, and without
+                        // the branch below the account stays stuck at INCOMPLETE forever, so an
+                        // app update repairs nobody.
+                        Timber.tag(TAG).w(error, "Could not enable recovery for %s; checking whether a backup blocks it.", sessionId.value)
+                        repairBlockedByExistingBackup()
                     }
             } catch (cancellation: kotlinx.coroutines.CancellationException) {
                 throw cancellation
@@ -89,6 +93,34 @@ internal class SilentSessionEncryptionBootstrapper(
                 Timber.tag(TAG).e(error, "Unexpected error while bootstrapping key storage for %s.", sessionId.value)
             }
         }
+    }
+
+    // / Repairs an account whose key storage cannot be enabled because a backup already exists.
+    private suspend fun repairBlockedByExistingBackup() {
+        if (encryptionService.doesBackupExistOnServer().getOrDefault(false).not()) {
+            Timber.tag(TAG).w("No server backup, so the failure was not a blocked backup; leaving it alone.")
+            return
+        }
+
+        // If another signed-in device exists it can hand over the secrets, which repairs this
+        // for free and keeps the backup. Never destroy anything while that is possible.
+        if (encryptionService.hasDevicesToVerifyAgainst().getOrDefault(true)) {
+            Timber.tag(TAG).w("Another device can supply the secrets; leaving key storage alone.")
+            return
+        }
+
+        // No key is stored anywhere on Android and no other device exists, so nothing can ever
+        // decrypt that backup again. Keeping it preserves only a permanently broken account.
+        // This does not touch the cross-signing identity, so no contact is warned.
+        Timber.tag(TAG).w("Backup is unreachable by any key or device; replacing key storage.")
+        encryptionService.disableRecovery()
+            .onFailure { error ->
+                Timber.tag(TAG).e(error, "Failed disabling unreachable key storage.")
+                return
+            }
+        encryptionService.enableRecovery(waitForBackupsToUpload = false)
+            .onSuccess { Timber.tag(TAG).i("Replaced key storage for %s.", sessionId.value) }
+            .onFailure { error -> Timber.tag(TAG).e(error, "Failed replacing key storage.") }
     }
 
     private companion object {

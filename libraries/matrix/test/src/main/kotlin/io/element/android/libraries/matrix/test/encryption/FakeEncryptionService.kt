@@ -77,6 +77,12 @@ class FakeEncryptionService(
         return doesBackupExistOnServerResult
     }
 
+    var hasDevicesToVerifyAgainstResult: Result<Boolean> = Result.success(false)
+
+    override suspend fun hasDevicesToVerifyAgainst(): Result<Boolean> = simulateLongTask {
+        return hasDevicesToVerifyAgainstResult
+    }
+
     override suspend fun recover(recoveryKey: String): Result<Unit> = simulateLongTask {
         recoverFailure?.let { return Result.failure(it) }
         return Result.success(Unit)
