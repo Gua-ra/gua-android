@@ -29,7 +29,7 @@ object BuildTimeConfig {
     // to share a single host, which must be the redirect scheme's reverse-DNS — so every URL
     // below lives on gua.global. MAS only validates the hosts; it never fetches these URLs.
     val URL_WEBSITE: String? = "https://gua.global"
-    val URL_LOGO: String? = "https://gua.global/icon.png"
+    val URL_LOGO: String? = "https://gua.global/gua-icon.png"
     val URL_COPYRIGHT: String? = "https://gua.global/copyright"
     val URL_ACCEPTABLE_USE: String? = "https://gua.global/terms"
     val URL_PRIVACY: String? = "https://gua.global/privacy"

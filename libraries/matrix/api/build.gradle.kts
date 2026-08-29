@@ -32,7 +32,7 @@ android {
         )
         buildConfigFieldStr(
             name = "LOGO_URI",
-            value = BuildTimeConfig.URL_LOGO ?: "https://gua.global/icon.png"
+            value = BuildTimeConfig.URL_LOGO ?: "https://gua.global/gua-icon.png"
         )
         buildConfigFieldStr(
             name = "TOS_URI",
