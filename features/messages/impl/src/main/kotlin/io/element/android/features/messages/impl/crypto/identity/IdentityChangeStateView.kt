@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import io.element.android.appconfig.LearnMoreConfig
 import io.element.android.compound.theme.ElementTheme
+import io.element.android.features.messages.impl.R
 import io.element.android.libraries.designsystem.atomic.molecules.ComposerAlertLevel
 import io.element.android.libraries.designsystem.atomic.molecules.ComposerAlertMolecule
 import io.element.android.libraries.designsystem.preview.ElementPreview
@@ -40,21 +41,26 @@ fun IdentityChangeStateView(
         it.identityState.isAViolation()
     }
     when (identityChangeViolation?.identityState) {
+        // GUA FORK: both violations read as one calm, informational notice with a single
+        // acknowledging action. The action still differs underneath (pin the new identity, or
+        // withdraw a stale verification) so sending works immediately after the tap, but a
+        // contact reinstalling Gua is not an alarm and is never styled as critical.
+        // Matches gua-ios RoomScreenFooterView.
         IdentityState.PinViolation -> ViolationAlert(
             identityChangeViolation = identityChangeViolation,
             onLinkClick = onLinkClick,
-            textId = CommonStrings.crypto_identity_change_pin_violation_new,
+            textId = R.string.gua_identity_change_banner,
             isCritical = false,
-            submitTextId = CommonStrings.action_dismiss,
+            submitTextId = CommonStrings.action_ok,
             onSubmitClick = { state.eventSink(IdentityChangeEvent.PinIdentity(identityChangeViolation.identityRoomMember.userId)) },
             modifier = modifier,
         )
         IdentityState.VerificationViolation -> ViolationAlert(
             identityChangeViolation = identityChangeViolation,
             onLinkClick = onLinkClick,
-            textId = CommonStrings.crypto_identity_change_verification_violation_new,
-            isCritical = true,
-            submitTextId = CommonStrings.crypto_identity_change_withdraw_verification_action,
+            textId = R.string.gua_identity_change_banner,
+            isCritical = false,
+            submitTextId = CommonStrings.action_ok,
             onSubmitClick = { state.eventSink(IdentityChangeEvent.WithdrawVerification(identityChangeViolation.identityRoomMember.userId)) },
             modifier = modifier,
         )
@@ -76,22 +82,23 @@ private fun ViolationAlert(
         modifier = modifier,
         avatar = identityChangeViolation.identityRoomMember.avatarData,
         content = buildAnnotatedString {
+            // GUA FORK: the handle is deliberately absent. Upstream printed the full user id
+            // in bold next to the name; Gua never surfaces one in conversation copy, and the
+            // display name is what identifies the contact to the reader.
             val learnMoreStr = stringResource(CommonStrings.action_learn_more)
             val displayName = identityChangeViolation.identityRoomMember.displayNameOrDefault
-            val userIdStr = stringResource(
-                CommonStrings.crypto_identity_change_pin_violation_new_user_id,
-                identityChangeViolation.identityRoomMember.userId,
-            )
-            val fullText = stringResource(textId, displayName, userIdStr, learnMoreStr)
+            val fullText = stringResource(textId, displayName, learnMoreStr)
             append(fullText)
-            val userIdStartIndex = fullText.indexOf(userIdStr)
-            addStyle(
-                style = SpanStyle(
-                    fontWeight = FontWeight.Bold,
-                ),
-                start = userIdStartIndex,
-                end = userIdStartIndex + userIdStr.length,
-            )
+            val displayNameStartIndex = fullText.indexOf(displayName)
+            if (displayNameStartIndex >= 0) {
+                addStyle(
+                    style = SpanStyle(
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    start = displayNameStartIndex,
+                    end = displayNameStartIndex + displayName.length,
+                )
+            }
             val learnMoreStartIndex = fullText.lastIndexOf(learnMoreStr)
             addStyle(
                 style = SpanStyle(
