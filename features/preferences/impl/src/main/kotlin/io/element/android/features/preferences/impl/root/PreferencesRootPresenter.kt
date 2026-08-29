@@ -97,7 +97,6 @@ class PreferencesRootPresenter(
         val hasAnalyticsProviders = remember { analyticsService.getAvailableAnalyticsProviders().isNotEmpty() }
 
         // We should display the 'complete verification' option if the current session can be verified
-        val canVerifyUserSession by sessionVerificationService.needsSessionVerification.collectAsState(false)
 
         val showSecureBackupIndicator by indicatorService.showSettingChatBackupIndicator()
 
@@ -156,7 +155,12 @@ class PreferencesRootPresenter(
             deviceId = matrixClient.deviceId,
             isMultiAccountEnabled = isMultiAccountEnabled,
             otherSessions = otherSessions,
-            showSecureBackup = !canVerifyUserSession,
+            // GUA FORK: upstream hides Encryption whenever the session still needs verifying,
+            // on the assumption that you would be sent to the verification ceremony instead.
+            // Gua never presents that ceremony, so the assumption is always false here and the
+            // row disappeared permanently, taking recovery-key entry with it. Always show it:
+            // it is the only way back in for someone whose key storage cannot self-heal.
+            showSecureBackup = true,
             showSecureBackupBadge = showSecureBackupIndicator,
             accountManagementUrl = accountManagementUrl.value,
             showAnalyticsSettings = hasAnalyticsProviders,

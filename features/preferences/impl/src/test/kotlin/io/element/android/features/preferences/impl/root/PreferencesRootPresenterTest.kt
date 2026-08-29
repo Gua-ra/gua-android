@@ -95,11 +95,16 @@ class PreferencesRootPresenterTest {
                     avatarUrl = AN_AVATAR_URL
                 )
             )
-            assertThat(loadedState.showSecureBackup).isFalse()
+            // GUA FORK: Encryption is always reachable now. Upstream hid it whenever the session
+            // still needed verifying, but Gua never presents that ceremony, so the row would have
+            // been hidden forever, taking recovery-key entry with it.
+            assertThat(loadedState.showSecureBackup).isTrue()
             assertThat(loadedState.showSecureBackupBadge).isFalse()
             assertThat(loadedState.accountManagementUrl).isNull()
             assertThat(loadedState.showAnalyticsSettings).isFalse()
-            assertThat(loadedState.showLinkNewDevice).isFalse()
+            // GUA FORK: QrCodeLogin now defaults on, so Link new device is available. That is
+            // the existing-device side of the device-to-device secrets transfer.
+            assertThat(loadedState.showLinkNewDevice).isTrue()
             assertThat(loadedState.showDeveloperSettings).isTrue()
             assertThat(loadedState.canDeactivateAccount).isTrue()
             assertThat(loadedState.canReportBug).isTrue()

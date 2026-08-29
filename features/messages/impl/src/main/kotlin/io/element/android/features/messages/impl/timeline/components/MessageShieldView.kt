@@ -125,12 +125,15 @@ internal fun MessageShieldData.toText(): String {
 @Composable
 internal fun MessageShieldData.toIcon(): ImageVector {
     return when (shield) {
-        is MessageShield.AuthenticityNotGuaranteed -> CompoundIcons.Info()
-        is MessageShield.UnknownDevice,
-        is MessageShield.UnsignedDevice,
-        is MessageShield.UnverifiedIdentity,
+        // GUA FORK: only the two states that mean "this may not be who you think" keep the solid
+        // alarm glyph. The rest describe how a message was encrypted, which is context rather
+        // than a warning, and a solid mark in the delivery-status slot reads as a failed send.
         is MessageShield.VerificationViolation,
         is MessageShield.MismatchedSender -> CompoundIcons.HelpSolid()
+        is MessageShield.AuthenticityNotGuaranteed,
+        is MessageShield.UnknownDevice,
+        is MessageShield.UnsignedDevice,
+        is MessageShield.UnverifiedIdentity -> CompoundIcons.Info()
         is MessageShield.SentInClear -> CompoundIcons.LockOff()
     }
 }
