@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gua_encryption_repair_title">Voltooi de installatie van dit apparaat</string>
+    <string name="gua_encryption_repair_message">Voltooi de installatie om je versleutelde chatgeschiedenis te herstellen en je eerdere berichten op dit apparaat te bekijken.</string>
+    <string name="gua_encryption_repair_action">Installatie voltooien</string>
+</resources>

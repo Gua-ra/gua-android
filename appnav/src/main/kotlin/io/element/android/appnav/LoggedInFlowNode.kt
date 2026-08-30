@@ -357,7 +357,10 @@ class LoggedInFlowNode(
                     }
 
                     override fun navigateToEnterRecoveryKey() {
-                        backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.EnterRecoveryKey))
+                        // GUA FORK: straight to the reset, not to a recovery-key prompt. Gua never
+                        // shows anyone a recovery key, so asking them to enter one is a dead end,
+                        // and the reset is the only thing that can actually repair this device.
+                        backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.ResetIdentity))
                     }
 
                     override fun navigateToRoomSettings(roomId: RoomId) {

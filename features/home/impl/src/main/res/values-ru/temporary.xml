@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gua_encryption_repair_title">Завершите настройку этого устройства</string>
+    <string name="gua_encryption_repair_message">Завершите настройку, чтобы восстановить историю зашифрованных чатов и получить доступ к предыдущим сообщениям на этом устройстве.</string>
+    <string name="gua_encryption_repair_action">Завершить настройку</string>
+</resources>

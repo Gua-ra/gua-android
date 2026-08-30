@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gua_encryption_repair_title">Dokončete nastavení tohoto zařízení</string>
+    <string name="gua_encryption_repair_message">Dokončete nastavení, abyste obnovili historii šifrovaných konverzací a získali přístup k předchozím zprávám na tomto zařízení.</string>
+    <string name="gua_encryption_repair_action">Dokončit nastavení</string>
+</resources>

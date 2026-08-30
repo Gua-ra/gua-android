@@ -26,10 +26,12 @@ internal fun ConfirmRecoveryKeyBanner(
 ) {
     Announcement(
         modifier = modifier.roomListBannerPadding(),
-        title = stringResource(R.string.confirm_recovery_key_banner_title),
-        description = stringResource(R.string.confirm_recovery_key_banner_message),
+        // GUA FORK: upstream asks the user to confirm a recovery key. Gua never shows one, so
+        // this says what is actually wrong and what the button will do.
+        title = stringResource(R.string.gua_encryption_repair_title),
+        description = stringResource(R.string.gua_encryption_repair_message),
         type = AnnouncementType.Actionable(
-            actionText = stringResource(CommonStrings.action_continue),
+            actionText = stringResource(R.string.gua_encryption_repair_action),
             onActionClick = onContinueClick,
             onDismissClick = onDismissClick,
         ),

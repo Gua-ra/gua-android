@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gua_encryption_repair_title">Dokończ konfigurację tego urządzenia</string>
+    <string name="gua_encryption_repair_message">Dokończ konfigurację, aby przywrócić historię zaszyfrowanych czatów i uzyskać dostęp do wcześniejszych wiadomości na tym urządzeniu.</string>
+    <string name="gua_encryption_repair_action">Zakończ konfigurację</string>
+</resources>
