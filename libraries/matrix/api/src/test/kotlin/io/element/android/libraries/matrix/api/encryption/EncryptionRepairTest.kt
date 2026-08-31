@@ -9,6 +9,8 @@ package io.element.android.libraries.matrix.api.encryption
 
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.matrix.test.encryption.FakeEncryptionService
+import io.element.android.libraries.matrix.test.verification.FakeSessionVerificationService
+import io.element.android.libraries.matrix.api.verification.SessionVerifiedStatus
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
@@ -78,15 +80,80 @@ class EncryptionRepairTest {
     }
 
     @Test
-    fun `a server failure while enabling backups is retryable, never a reset`() = runTest {
-        // Enabling backups needs no cross-signing keys, so a throw here is the network or the
-        // server, not a broken account. Reporting it as needing a reset would let a user destroy
-        // their backup over a connection blip.
+    fun `a failing enableBackups still reaches a verdict, it does not swallow the tap`() = runTest {
+        // enableBackups fails on exactly the accounts this repairs, because a backup version
+        // already exists on the server. Treating that as "try again later" returned NotYet, which
+        // navigates nowhere and says nothing, so the button appeared to do nothing at all.
         val service = FakeEncryptionService()
-        service.givenEnableBackupsFailure(IllegalStateException("offline"))
+        service.givenEnableBackupsFailure(IllegalStateException("BackupExistsOnServer"))
         service.recoveryStateStateFlow.value = RecoveryState.INCOMPLETE
 
-        assertThat(service.repairWithoutReset()).isEqualTo(EncryptionRepairOutcome.NotYet)
+        assertThat(service.repairWithoutReset()).isEqualTo(EncryptionRepairOutcome.ResetRequired)
+    }
+
+    @Test
+    fun `a failed call is answered immediately, it does not sit out the confirmation wait`() = runTest {
+        // Recovery only reaches ENABLED off the back of a call that worked, so waiting after one
+        // that failed is dead time: the user watches a spinner and gets the same answer. This is
+        // the difference between a tap that feels instant and one that feels broken.
+        val service = FakeEncryptionService()
+        service.givenEnableBackupsFailure(IllegalStateException("BackupExistsOnServer"))
+        service.recoveryStateStateFlow.value = RecoveryState.INCOMPLETE
+
+        val before = testScheduler.currentTime
+        assertThat(service.repairWithoutReset()).isEqualTo(EncryptionRepairOutcome.ResetRequired)
+
+        // The confirmation wait is two seconds. Anything near it means the failure path is sitting
+        // it out; the only time that should pass here is the call itself.
+        assertThat(testScheduler.currentTime - before).isLessThan(100)
+    }
+
+    @Test
+    fun `a failure still honours a state something else already repaired`() = runTest {
+        // Not waiting is not the same as not looking. If a concurrent path enabled recovery, the
+        // current value says so and the user should not be sent to a reset they do not need.
+        val service = FakeEncryptionService()
+        service.givenEnableBackupsFailure(IllegalStateException("BackupExistsOnServer"))
+        service.recoveryStateStateFlow.value = RecoveryState.INCOMPLETE
+
+        // Flipped while the call is in flight, so the branch under test is genuinely the one that
+        // runs: the repair has already read INCOMPLETE and is on the failure path.
+        service.givenEnableBackupsSideEffect {
+            service.recoveryStateStateFlow.value = RecoveryState.ENABLED
+        }
+
+        assertThat(service.repairWithoutReset()).isEqualTo(EncryptionRepairOutcome.Repaired)
+    }
+
+    @Test
+    fun `after a reset, a store that exported nothing is not reported as repaired`() = runTest {
+        // enableRecovery succeeds for a secret store it populated with nothing, because the private
+        // cross-signing keys were not exportable when it ran. Trusting that Result is what put the
+        // setup banner back in front of a user who had just finished a reset, where the only thing
+        // it could offer them was another reset.
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ -> Result.success("key") }
+        )
+        service.recoveryStateStateFlow.value = RecoveryState.INCOMPLETE
+        val verification = FakeSessionVerificationService().apply {
+            emitVerifiedStatus(SessionVerifiedStatus.Verified)
+        }
+
+        assertThat(service.provisionAfterReset(verification)).isEqualTo(EncryptionRepairOutcome.ResetRequired)
+    }
+
+    @Test
+    fun `after a reset, provisioning is repaired once the state agrees`() = runTest {
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ -> Result.success("key") }
+        )
+        service.recoveryStateStateFlow.value = RecoveryState.DISABLED
+        val verification = FakeSessionVerificationService().apply {
+            emitVerifiedStatus(SessionVerifiedStatus.Verified)
+        }
+        service.recoveryStateStateFlow.value = RecoveryState.ENABLED
+
+        assertThat(service.provisionAfterReset(verification)).isEqualTo(EncryptionRepairOutcome.Repaired)
     }
 
     @Test

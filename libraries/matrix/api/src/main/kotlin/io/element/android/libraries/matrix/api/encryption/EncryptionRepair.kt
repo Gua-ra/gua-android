@@ -7,6 +7,8 @@
 
 package io.element.android.libraries.matrix.api.encryption
 
+import io.element.android.libraries.matrix.api.verification.SessionVerificationService
+import io.element.android.libraries.matrix.api.verification.SessionVerifiedStatus
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
@@ -71,10 +73,16 @@ sealed interface EncryptionRepairOutcome {
  * private cross-signing keys and forcing a reset on that account forever after.
  */
 private suspend fun EncryptionService.provisionKeyStorage(): EncryptionRepairOutcome {
-    enableRecovery(waitForBackupsToUpload = false)
+    val enabled = enableRecovery(waitForBackupsToUpload = false)
 
-    // Only the state can say whether that finished the job.
-    return if (awaitRecoveryEnabled()) EncryptionRepairOutcome.Repaired else EncryptionRepairOutcome.ResetRequired
+    // Only the state can say whether that finished the job. Whether it is worth waiting for,
+    // though, is settled by the call: recovery cannot flip to ENABLED off a call that failed, so
+    // waiting after a failure is dead time the user spends on a spinner before the same answer.
+    return if (awaitRecoveryEnabled(wait = enabled.isSuccess)) {
+        EncryptionRepairOutcome.Repaired
+    } else {
+        EncryptionRepairOutcome.ResetRequired
+    }
 }
 
 /**
@@ -90,19 +98,88 @@ private suspend fun EncryptionService.provisionKeyStorage(): EncryptionRepairOut
  * Turning backups on is the one non-rotating thing worth trying: it costs nothing when it fails.
  */
 private suspend fun EncryptionService.repairIncomplete(): EncryptionRepairOutcome {
-    // Enabling backups needs no cross-signing keys, so on a device that genuinely lacks them this
-    // still succeeds and only the state check below says otherwise. A THROW here therefore means
-    // the server or the network, not a broken account, and must not be reported as needing a
-    // destructive reset: a user who taps through that on a bad connection loses their backup to a
-    // blip. Retry next time instead.
-    enableBackups().onFailure { return EncryptionRepairOutcome.NotYet }
+    // Best effort, and its Result is deliberately ignored. enableBackups fails on exactly the
+    // accounts this exists to repair, because a backup version already exists on the server, and an
+    // earlier version of this treated that failure as "try again later" and returned NotYet, which
+    // does nothing at all: no navigation, no message, banner unchanged. That is what a user sees as
+    // a button that does nothing.
+    //
+    // The state is the only honest verdict either way, so ask it.
+    //
+    // What the failure does settle is how long to wait for that state. Recovery only flips to
+    // ENABLED off the back of a call that worked, so waiting after one that threw just holds the
+    // user on a spinner before giving the same answer. Only wait when there is something to wait for.
+    val enabled = enableBackups()
 
-    return if (awaitRecoveryEnabled()) EncryptionRepairOutcome.Repaired else EncryptionRepairOutcome.ResetRequired
+    return if (awaitRecoveryEnabled(wait = enabled.isSuccess)) {
+        EncryptionRepairOutcome.Repaired
+    } else {
+        EncryptionRepairOutcome.ResetRequired
+    }
 }
 
-/** Gives the recovery state a moment to reflect a change we just made. */
-private suspend fun EncryptionService.awaitRecoveryEnabled(): Boolean {
+/**
+ * GUA FORK: provisions key storage straight after a reset, and does NOT go through
+ * [repairWithoutReset].
+ *
+ * That path deliberately refuses [EncryptionService.enableRecovery] on an INCOMPLETE account,
+ * because enabling rotates the secret store and would invalidate a recovery key saved elsewhere.
+ * Immediately after a reset there is no such key left to protect and no cross-signing identity
+ * either, so the conservative path can never succeed here.
+ *
+ * Two things have to be true for this to actually finish the device, and getting either wrong puts
+ * the setup banner straight back in front of the user who has just completed a reset, where the
+ * only thing it can offer them is another reset. That is the loop.
+ *
+ * First, wait for the identity. `Recovery::enable` exports whatever private cross-signing keys the
+ * crypto store can hand over at the moment it runs, and the reset has only just uploaded them. Run
+ * too early it exports nothing, writes a secret store holding only the backup key, and the account
+ * drops straight back to INCOMPLETE.
+ *
+ * Second, judge by the state. enableRecovery reports success for a store it populated with nothing,
+ * so its Result cannot be the verdict.
+ */
+suspend fun EncryptionService.provisionAfterReset(
+    sessionVerificationService: SessionVerificationService,
+): EncryptionRepairOutcome {
+    sessionVerificationService.awaitVerifiedIdentity()
+
+    // Rotating the secret store is normally the one thing to avoid, since it invalidates any
+    // recovery key saved elsewhere for this account. Immediately after a reset there is no such key
+    // and no earlier store left to strand, so a second attempt costs nothing.
+    repeat(PROVISION_ATTEMPTS) {
+        val enabled = enableRecovery(waitForBackupsToUpload = false)
+        if (awaitRecoveryEnabled(wait = enabled.isSuccess)) return EncryptionRepairOutcome.Repaired
+    }
+
+    return EncryptionRepairOutcome.ResetRequired
+}
+
+/**
+ * Waits until the session trusts its own cross-signing identity.
+ *
+ * This is the signal that the private keys the reset just minted have reached the crypto store and
+ * can be exported into a secret store. Gives up quietly on the timeout: the caller checks the
+ * resulting state either way, so a slow identity costs an attempt, not the whole provision.
+ */
+private suspend fun SessionVerificationService.awaitVerifiedIdentity(): Boolean {
+    if (sessionVerifiedStatus.value == SessionVerifiedStatus.Verified) return true
+    return withTimeoutOrNull(IDENTITY_TIMEOUT) {
+        sessionVerifiedStatus.first { it == SessionVerifiedStatus.Verified }
+        true
+    } ?: false
+}
+
+/**
+ * Gives the recovery state a moment to reflect a change we just made.
+ *
+ * [wait] is false when the call that would have caused the change failed. The current value is
+ * still worth reading, because something else may have repaired the account concurrently, but
+ * there is nothing on the way and holding the spinner open would only delay the same verdict.
+ */
+private suspend fun EncryptionService.awaitRecoveryEnabled(wait: Boolean): Boolean {
     if (recoveryStateStateFlow.value == RecoveryState.ENABLED) return true
+    if (!wait) return false
     return withTimeoutOrNull(CONFIRM_TIMEOUT) {
         recoveryStateStateFlow.first { it == RecoveryState.ENABLED }
         true
@@ -126,3 +203,9 @@ private val CONFIRM_TIMEOUT = 2.seconds
 
 // Hard ceiling on the whole operation, so the banner's spinner always resolves.
 private val REPAIR_CEILING = 12.seconds
+
+// How long to let the reset's new cross-signing identity reach the crypto store before exporting it.
+private val IDENTITY_TIMEOUT = 5.seconds
+
+// One retry only. If a settled identity still will not export, retrying forever cannot help.
+private const val PROVISION_ATTEMPTS = 2

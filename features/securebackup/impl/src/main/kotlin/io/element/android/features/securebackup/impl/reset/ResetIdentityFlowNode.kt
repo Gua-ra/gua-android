@@ -42,7 +42,9 @@ import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.IdentityOAuthResetHandle
 import io.element.android.libraries.matrix.api.encryption.IdentityPasswordResetHandle
-import io.element.android.libraries.matrix.api.encryption.repairWithoutReset
+import io.element.android.libraries.matrix.api.encryption.EncryptionRepairOutcome
+import io.element.android.libraries.matrix.api.encryption.provisionAfterReset
+import io.element.android.libraries.matrix.api.verification.SessionVerificationService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
@@ -60,6 +62,7 @@ class ResetIdentityFlowNode(
     @SessionCoroutineScope
     private val sessionCoroutineScope: CoroutineScope,
     private val sessionEnterpriseService: SessionEnterpriseService,
+    private val sessionVerificationService: SessionVerificationService,
 ) : BaseFlowNode<ResetIdentityFlowNode.NavTarget>(
     backstack = BackStack(initialElement = NavTarget.Root, savedStateMap = buildContext.savedStateMap),
     buildContext = buildContext,
@@ -189,9 +192,14 @@ class ResetIdentityFlowNode(
      * the setup banner straight back in front of the user who just completed a reset.
      */
     private suspend fun provisionKeyStorageSilently() {
-        encryptionService.enableRecovery(waitForBackupsToUpload = false)
-            .onSuccess { Timber.d("Provisioned key storage after the reset.") }
-            .onFailure { Timber.e(it, "Could not provision key storage after the reset.") }
+        // The verdict is the recovery state, not enableRecovery's Result: it reports success for a
+        // secret store it populated with nothing, which is what put the setup banner back in front
+        // of a user who had just finished a reset. See provisionAfterReset.
+        when (encryptionService.provisionAfterReset(sessionVerificationService)) {
+            EncryptionRepairOutcome.Repaired -> Timber.d("Provisioned key storage after the reset.")
+            EncryptionRepairOutcome.NotYet,
+            EncryptionRepairOutcome.ResetRequired -> Timber.e("Could not provision key storage after the reset.")
+        }
     }
 
     /**
