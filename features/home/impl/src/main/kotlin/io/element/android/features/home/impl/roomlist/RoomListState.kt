@@ -65,10 +65,18 @@ sealed interface RoomListContentState {
     data class Skeleton(val count: Int) : RoomListContentState
     data class Empty(
         val securityBannerState: SecurityBannerState,
+        /** GUA FORK: true while the encryption setup banner's repair is running. */
+        val isFinishingEncryptionSetup: Boolean = false,
+        /** GUA FORK: set once the repair has established only a reset can finish this device. */
+        val encryptionSetupNeedsReset: Boolean = false,
     ) : RoomListContentState
 
     data class Rooms(
         val securityBannerState: SecurityBannerState,
+        /** GUA FORK: true while the encryption setup banner's repair is running. */
+        val isFinishingEncryptionSetup: Boolean = false,
+        /** GUA FORK: set once the repair has established only a reset can finish this device. */
+        val encryptionSetupNeedsReset: Boolean = false,
         val fullScreenIntentPermissionsState: FullScreenIntentPermissionsState,
         val batteryOptimizationState: BatteryOptimizationState,
         val showNewNotificationSoundBanner: Boolean,

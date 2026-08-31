@@ -85,8 +85,6 @@ import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.RoomIdOrAlias
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.core.toRoomIdOrAlias
-import io.element.android.libraries.matrix.api.encryption.EncryptionRepairOutcome
-import io.element.android.libraries.matrix.api.encryption.repairWithoutReset
 import io.element.android.libraries.matrix.api.permalink.PermalinkData
 import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.sync.SyncService
@@ -358,24 +356,10 @@ class LoggedInFlowNode(
                     }
 
                     override fun navigateToEnterRecoveryKey() {
-                        // GUA FORK: never a recovery-key prompt. Gua shows nobody a recovery key, so
-                        // asking for one is a dead end. Try every repair that keeps the backup intact
-                        // first, and only fall through to the reset screen when this device genuinely
-                        // cannot be finished without discarding it.
-                        lifecycleScope.launch {
-                            when (matrixClient.encryptionService.repairWithoutReset()) {
-                                EncryptionRepairOutcome.Repaired ->
-                                    Timber.d("Finished encryption setup without a reset.")
-                                EncryptionRepairOutcome.NotYet ->
-                                    // The client cannot read its own state yet, so there is nothing
-                                    // to repair and nothing to warn about. Leave the banner up.
-                                    Timber.d("Encryption state not readable yet, leaving the banner.")
-                                EncryptionRepairOutcome.ResetRequired -> {
-                                    Timber.d("Encryption setup needs a reset, asking first.")
-                                    backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.ResetIdentity))
-                                }
-                            }
-                        }
+                        // GUA FORK: never a recovery-key prompt. The repair itself now runs in the
+                        // room list presenter, which owns the banner's progress state, and only
+                        // calls this once it has established that a reset is genuinely required.
+                        backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.ResetIdentity))
                     }
 
                     override fun navigateToRoomSettings(roomId: RoomId) {

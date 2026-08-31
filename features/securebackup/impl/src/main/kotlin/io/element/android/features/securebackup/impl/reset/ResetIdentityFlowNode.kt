@@ -39,9 +39,11 @@ import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.designsystem.components.ProgressDialog
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
+import io.element.android.libraries.matrix.api.encryption.EncryptionRepairOutcome
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.IdentityOAuthResetHandle
 import io.element.android.libraries.matrix.api.encryption.IdentityPasswordResetHandle
+import io.element.android.libraries.matrix.api.encryption.repairWithoutReset
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
@@ -184,27 +186,11 @@ class ResetIdentityFlowNode(
      * discarded: nothing in Gua asks for it, and the device holds the secrets it needs.
      */
     private suspend fun provisionKeyStorageSilently() {
-        encryptionService.enableRecovery(waitForBackupsToUpload = false)
-            .onSuccess {
-                Timber.d("Provisioned key storage after the reset.")
-                return
-            }
-            .onFailure { Timber.w(it, "Could not provision key storage after the reset; checking for a stale backup.") }
-
-        // enableRecovery refuses while a key backup still exists on the server. After a reset that
-        // backup is unreachable by any key or device, so keeping it preserves nothing; replace it.
-        if (encryptionService.doesBackupExistOnServer().getOrDefault(false).not()) {
-            Timber.e("No server backup, so provisioning failed for another reason.")
-            return
+        when (encryptionService.repairWithoutReset()) {
+            EncryptionRepairOutcome.Repaired -> Timber.d("Provisioned key storage after the reset.")
+            EncryptionRepairOutcome.NotYet,
+            EncryptionRepairOutcome.ResetRequired -> Timber.e("Could not provision key storage after the reset.")
         }
-        encryptionService.disableRecovery()
-            .onFailure {
-                Timber.e(it, "Could not clear the stale backup after the reset.")
-                return
-            }
-        encryptionService.enableRecovery(waitForBackupsToUpload = false)
-            .onSuccess { Timber.d("Replaced key storage after the reset.") }
-            .onFailure { Timber.e(it, "Could not replace key storage after the reset.") }
     }
 
     /**

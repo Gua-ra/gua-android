@@ -49,7 +49,9 @@ import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.fullscreenintent.api.FullScreenIntentPermissionsState
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.matrix.api.encryption.EncryptionRepairOutcome
 import io.element.android.libraries.matrix.api.encryption.RecoveryState
+import io.element.android.libraries.matrix.api.encryption.repairWithoutReset
 import io.element.android.libraries.matrix.api.roomlist.RoomList
 import io.element.android.libraries.matrix.api.roomlist.RoomListFilter
 import io.element.android.libraries.matrix.api.timeline.ReceiptType
@@ -73,6 +75,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @Inject
 class RoomListPresenter(
@@ -110,6 +113,11 @@ class RoomListPresenter(
         }
 
         var securityBannerDismissed by rememberSaveable { mutableStateOf(false) }
+
+        // GUA FORK: the encryption setup repair lives here so the banner's spinner has an owner
+        // that can clear it. As view-local state it latched on the first tap and never reset.
+        var isFinishingEncryptionSetup by remember { mutableStateOf(false) }
+        var encryptionSetupNeedsReset by remember { mutableStateOf(false) }
         val showNewNotificationSoundBanner by remember {
             announcementService.announcementsToShowFlow().map { announcements ->
                 announcements.contains(Announcement.NewNotificationSound)
@@ -129,6 +137,25 @@ class RoomListPresenter(
                 }
                 RoomListEvent.DismissRequestVerificationPrompt -> securityBannerDismissed = true
                 RoomListEvent.DismissBanner -> securityBannerDismissed = true
+                RoomListEvent.FinishEncryptionSetup -> if (!isFinishingEncryptionSetup) {
+                    isFinishingEncryptionSetup = true
+                    coroutineScope.launch {
+                        try {
+                            when (encryptionService.repairWithoutReset()) {
+                                EncryptionRepairOutcome.Repaired ->
+                                    Timber.d("Finished encryption setup without a reset.")
+                                EncryptionRepairOutcome.NotYet ->
+                                    // The client cannot read its own state yet, so there is nothing
+                                    // to repair and nothing to warn about. Leave the banner up.
+                                    Timber.d("Encryption state not readable yet, leaving the banner.")
+                                EncryptionRepairOutcome.ResetRequired -> encryptionSetupNeedsReset = true
+                            }
+                        } finally {
+                            // Clears on every path out, so the button can never latch.
+                            isFinishingEncryptionSetup = false
+                        }
+                    }
+                }
                 RoomListEvent.DismissNewNotificationSoundBanner -> coroutineScope.launch {
                     announcementService.onAnnouncementDismissed(Announcement.NewNotificationSound)
                 }
@@ -175,6 +202,8 @@ class RoomListPresenter(
 
         val contentState = roomListContentState(
             securityBannerDismissed,
+            isFinishingEncryptionSetup,
+            encryptionSetupNeedsReset,
             showNewNotificationSoundBanner,
             showUnreadCount,
         )
@@ -237,6 +266,8 @@ class RoomListPresenter(
     @Composable
     private fun roomListContentState(
         securityBannerDismissed: Boolean,
+        isFinishingEncryptionSetup: Boolean,
+        encryptionSetupNeedsReset: Boolean,
         showNewNotificationSoundBanner: Boolean,
         showUnreadCount: Boolean,
     ): RoomListContentState {
@@ -259,6 +290,8 @@ class RoomListPresenter(
         return when {
             showEmpty -> RoomListContentState.Empty(
                 securityBannerState = securityBannerState,
+                isFinishingEncryptionSetup = isFinishingEncryptionSetup,
+                encryptionSetupNeedsReset = encryptionSetupNeedsReset,
             )
             showSkeleton -> RoomListContentState.Skeleton(count = 16)
             else -> {
@@ -266,6 +299,8 @@ class RoomListPresenter(
 
                 RoomListContentState.Rooms(
                     securityBannerState = securityBannerState,
+                    isFinishingEncryptionSetup = isFinishingEncryptionSetup,
+                    encryptionSetupNeedsReset = encryptionSetupNeedsReset,
                     showNewNotificationSoundBanner = showNewNotificationSoundBanner,
                     showUnreadCount = showUnreadCount,
                     fullScreenIntentPermissionsState = fullScreenIntentPermissionsPresenter.present(),

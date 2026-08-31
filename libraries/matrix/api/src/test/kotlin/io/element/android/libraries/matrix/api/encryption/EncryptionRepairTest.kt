@@ -41,12 +41,13 @@ class EncryptionRepairTest {
     }
 
     @Test
-    fun `enableRecovery succeeding is not enough on its own`() = runTest {
-        // THE BUG THIS EXISTS TO CATCH. On a device holding no private cross-signing keys,
-        // enableRecovery SUCCEEDS: it mints a new secret store, exports nothing useful into it,
-        // and the account drops straight back to INCOMPLETE. Trusting the return value reported
-        // success, the caller navigated nowhere, and the banner never cleared, which is precisely
-        // what "the finish setup button does nothing" looked like.
+    fun `incomplete never calls enableRecovery, because that rotates the secret store`() = runTest {
+        // Recovery::enable always runs create_secret_store, minting a new SSSS key and a new
+        // m.secret_storage.default_key. That strands the previous store's cross-signing copies and
+        // permanently invalidates any recovery key already saved for this account, including one
+        // in the same user's iOS keychain. On a device with no private cross-signing keys it
+        // cannot help anyway, so the tap would spend the last silent way back and still end at a
+        // reset. Turning backups on is the one non-rotating thing worth trying.
         var enableCalls = 0
         val service = FakeEncryptionService(
             enableRecoveryLambda = { _, _ ->
@@ -57,7 +58,7 @@ class EncryptionRepairTest {
         service.recoveryStateStateFlow.value = RecoveryState.INCOMPLETE
 
         assertThat(service.repairWithoutReset()).isEqualTo(EncryptionRepairOutcome.ResetRequired)
-        assertThat(enableCalls).isEqualTo(1)
+        assertThat(enableCalls).isEqualTo(0)
     }
 
     @Test

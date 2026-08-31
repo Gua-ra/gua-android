@@ -9,10 +9,6 @@
 package io.element.android.features.home.impl.components
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.element.android.features.home.impl.R
@@ -25,13 +21,12 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 internal fun ConfirmRecoveryKeyBanner(
     onContinueClick: () -> Unit,
     onDismissClick: () -> Unit,
+    // GUA FORK: owned by the presenter, not by this composable. As local state it was set on tap
+    // and never cleared, so the NotYet outcome left the button reading "Setting up…" for good, and
+    // on an empty room list nothing ever disposes this banner to reset it.
+    isWorking: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    // GUA FORK: the repair runs off-screen and can take a moment, so the button has to change the
-    // instant it is pressed. Without this the product owner tapped it, saw nothing happen for
-    // several seconds, and reasonably concluded the button was dead.
-    var isWorking by remember { mutableStateOf(false) }
-
     Announcement(
         modifier = modifier.roomListBannerPadding(),
         // GUA FORK: upstream asks the user to confirm a recovery key. Gua never shows one, so
@@ -42,12 +37,7 @@ internal fun ConfirmRecoveryKeyBanner(
             actionText = stringResource(
                 if (isWorking) R.string.gua_encryption_repair_action_in_progress else R.string.gua_encryption_repair_action
             ),
-            onActionClick = {
-                if (!isWorking) {
-                    isWorking = true
-                    onContinueClick()
-                }
-            },
+            onActionClick = onContinueClick,
             onDismissClick = onDismissClick,
         ),
     )
@@ -59,5 +49,16 @@ internal fun ConfirmRecoveryKeyBannerPreview() = ElementPreview {
     ConfirmRecoveryKeyBanner(
         onContinueClick = {},
         onDismissClick = {},
+        isWorking = false,
+    )
+}
+
+@PreviewsDayNight
+@Composable
+internal fun ConfirmRecoveryKeyBannerWorkingPreview() = ElementPreview {
+    ConfirmRecoveryKeyBanner(
+        onContinueClick = {},
+        onDismissClick = {},
+        isWorking = true,
     )
 }

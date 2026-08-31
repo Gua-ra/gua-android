@@ -23,7 +23,9 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -147,6 +149,12 @@ private fun EmptyView(
             },
             modifier = Modifier.align(Alignment.Center),
         )
+        // GUA FORK: navigation is driven by the repair's verdict, not by the tap. The tap runs the
+        // silent repair; only if that establishes a reset is genuinely required do we leave here.
+        val onNeedsReset by rememberUpdatedState(onConfirmRecoveryKeyClick)
+        LaunchedEffect(state.encryptionSetupNeedsReset) {
+            if (state.encryptionSetupNeedsReset) onNeedsReset()
+        }
         Box {
             when (state.securityBannerState) {
                 SecurityBannerState.SetUpRecovery,
@@ -155,8 +163,9 @@ private fun EmptyView(
                 // the flow that hands a user a recovery key to write down.
                 SecurityBannerState.RecoveryKeyConfirmation -> {
                     ConfirmRecoveryKeyBanner(
-                        onContinueClick = onConfirmRecoveryKeyClick,
+                        onContinueClick = { eventSink(RoomListEvent.FinishEncryptionSetup) },
                         onDismissClick = { eventSink(RoomListEvent.DismissBanner) },
+                        isWorking = state.isFinishingEncryptionSetup,
                     )
                 }
                 SecurityBannerState.None -> Unit
@@ -180,6 +189,11 @@ private fun RoomsView(
 ) {
     val isSpaceFilterSelected = spaceFiltersState is SpaceFiltersState.Selected
     val hasAnyFilterSelected = filtersState.hasAnyFilterSelected || isSpaceFilterSelected
+    // GUA FORK: navigation is driven by the repair's verdict, not by the tap.
+    val onNeedsReset by rememberUpdatedState(onConfirmRecoveryKeyClick)
+    LaunchedEffect(state.encryptionSetupNeedsReset) {
+        if (state.encryptionSetupNeedsReset) onNeedsReset()
+    }
     if (state.summaries.isEmpty() && hasAnyFilterSelected) {
         EmptyViewForFilterStates(
             selectedFilters = filtersState.selectedFilters(),
@@ -191,7 +205,6 @@ private fun RoomsView(
             state = state,
             hideInvitesAvatars = hideInvitesAvatars,
             eventSink = eventSink,
-            onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
             onRoomClick = onRoomClick,
             contentPadding = contentPadding,
             lazyListState = lazyListState,
@@ -205,7 +218,6 @@ private fun RoomsViewList(
     state: RoomListContentState.Rooms,
     hideInvitesAvatars: Boolean,
     eventSink: (RoomListEvent) -> Unit,
-    onConfirmRecoveryKeyClick: () -> Unit,
     onRoomClick: (RoomListRoomSummary) -> Unit,
     contentPadding: PaddingValues,
     lazyListState: LazyListState,
@@ -227,8 +239,9 @@ private fun RoomsViewList(
             SecurityBannerState.RecoveryKeyConfirmation -> {
                 item {
                     ConfirmRecoveryKeyBanner(
-                        onContinueClick = onConfirmRecoveryKeyClick,
+                        onContinueClick = { eventSink(RoomListEvent.FinishEncryptionSetup) },
                         onDismissClick = { eventSink(RoomListEvent.DismissBanner) },
+                        isWorking = state.isFinishingEncryptionSetup,
                     )
                 }
             }

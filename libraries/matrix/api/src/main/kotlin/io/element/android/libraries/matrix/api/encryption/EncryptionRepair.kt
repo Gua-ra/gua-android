@@ -21,8 +21,8 @@ import kotlin.time.Duration.Companion.seconds
  * a reset only do so after this has failed, so the destructive step is disclosed at the point it
  * genuinely becomes necessary rather than up front.
  */
-suspend fun EncryptionService.repairWithoutReset(): EncryptionRepairOutcome {
-    return when (settledRecoveryState()) {
+suspend fun EncryptionService.repairWithoutReset(): EncryptionRepairOutcome = withTimeoutOrNull(REPAIR_CEILING) {
+    when (settledRecoveryState()) {
         RecoveryState.ENABLED -> EncryptionRepairOutcome.Repaired
         // Not a broken account, just a client that cannot see its own state yet: on Android the
         // recovery flow is pinned to WAITING_FOR_SYNC the whole time sync is not Running, so this
@@ -36,9 +36,12 @@ suspend fun EncryptionService.repairWithoutReset(): EncryptionRepairOutcome {
         // looks broken, to buy a rescue that never arrives for the accounts this exists to fix:
         // their other device entries are stale reinstalls that answer nothing. Provision instead,
         // and escalate past a backup nobody can decrypt any more.
-        RecoveryState.DISABLED, RecoveryState.INCOMPLETE -> provisionKeyStorage()
+        // Nothing provisioned yet, so there is no secret store to damage.
+        RecoveryState.DISABLED -> provisionKeyStorage()
+        RecoveryState.INCOMPLETE -> repairIncomplete()
     }
-}
+    // A hung network call must not leave the button spinning forever.
+} ?: EncryptionRepairOutcome.NotYet
 
 /** What [repairWithoutReset] managed to do, so callers only offer a reset when one is warranted. */
 sealed interface EncryptionRepairOutcome {
@@ -74,6 +77,23 @@ private suspend fun EncryptionService.provisionKeyStorage(): EncryptionRepairOut
     return if (awaitRecoveryEnabled()) EncryptionRepairOutcome.Repaired else EncryptionRepairOutcome.ResetRequired
 }
 
+/**
+ * Repairs an account whose secret storage exists but whose secrets this device cannot use.
+ *
+ * Deliberately does NOT call [enableRecovery]. `Recovery::enable` always runs `create_secret_store`,
+ * which mints a new SSSS key and PUTs a new `m.secret_storage.default_key`. That leaves the previous
+ * store's `m.cross_signing.*` copies stranded and permanently invalidates any recovery key already
+ * saved for this account, including one sitting in the same user's iOS keychain. On a device with no
+ * private cross-signing keys it cannot help anyway, because there is nothing to export into the new
+ * store. So the tap would spend the account's last silent way back and still end at a reset.
+ *
+ * Turning backups on is the one non-rotating thing worth trying: it costs nothing when it fails.
+ */
+private suspend fun EncryptionService.repairIncomplete(): EncryptionRepairOutcome {
+    enableBackups()
+    return if (awaitRecoveryEnabled()) EncryptionRepairOutcome.Repaired else EncryptionRepairOutcome.ResetRequired
+}
+
 /** Gives the recovery state a moment to reflect a change we just made. */
 private suspend fun EncryptionService.awaitRecoveryEnabled(): Boolean {
     if (recoveryStateStateFlow.value == RecoveryState.ENABLED) return true
@@ -96,4 +116,7 @@ suspend fun EncryptionService.settledRecoveryState(timeout: Duration = SETTLE_TI
 private val SETTLE_TIMEOUT = 2.seconds
 
 // enableRecovery has already returned by this point; this only covers the flow catching up.
-private val CONFIRM_TIMEOUT = 3.seconds
+private val CONFIRM_TIMEOUT = 2.seconds
+
+// Hard ceiling on the whole operation, so the banner's spinner always resolves.
+private val REPAIR_CEILING = 12.seconds
