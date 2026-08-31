@@ -57,7 +57,7 @@ class ResetIdentityRootViewTest : RobolectricTest() {
             ResetIdentityRootState(displayConfirmationDialog = false, eventSink = eventsRecorder),
         )
 
-        clickOn(R.string.screen_encryption_reset_action_continue_reset)
+        clickOn(R.string.gua_encryption_reset_required_action)
 
         eventsRecorder.assertSingle(ResetIdentityRootEvent.Continue)
     }

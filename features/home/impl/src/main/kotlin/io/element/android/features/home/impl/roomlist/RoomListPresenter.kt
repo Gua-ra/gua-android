@@ -219,7 +219,12 @@ class RoomListPresenter(
         }
 
         when (recoveryState) {
-            RecoveryState.DISABLED -> return SecurityBannerState.SetUpRecovery
+            // GUA FORK: both broken states get the SAME banner, the one that finishes setup
+            // silently. Upstream sends DISABLED to SetUpRecovery, whose flow hands the user a
+            // recovery key and asks them to write it down. Gua shows nobody a recovery key, and
+            // DISABLED is exactly the state an identity reset leaves behind, so that banner was
+            // the second half of the reset dead end: reset, then get told to save a key.
+            RecoveryState.DISABLED,
             RecoveryState.INCOMPLETE -> return SecurityBannerState.RecoveryKeyConfirmation
             RecoveryState.UNKNOWN,
             RecoveryState.WAITING_FOR_SYNC,

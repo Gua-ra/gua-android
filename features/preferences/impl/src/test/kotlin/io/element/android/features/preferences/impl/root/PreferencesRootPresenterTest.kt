@@ -97,6 +97,9 @@ class PreferencesRootPresenterTest {
             // GUA FORK: Encryption is always reachable now. Upstream hid it whenever the session
             // still needed verifying, but Gua never presents that ceremony, so the row would have
             // been hidden forever, taking recovery-key entry with it.
+            // GUA FORK: the Encryption screen is upstream's recovery-key console, so it now
+            // tracks developer settings, which this default (debug) fixture has on. The
+            // user-facing case is covered by `the encryption screen is hidden from users`.
             assertThat(loadedState.showSecureBackup).isTrue()
             assertThat(loadedState.showSecureBackupBadge).isFalse()
             assertThat(loadedState.accountManagementUrl).isNull()
@@ -178,6 +181,24 @@ class PreferencesRootPresenterTest {
         ).test {
             val loadedState = awaitFirstItem()
             assertThat(loadedState.canDeactivateAccount).isFalse()
+        }
+    }
+
+    @Test
+    fun `present - the encryption screen is hidden from users and shown to developers`() = runTest {
+        createPresenter(
+            matrixClient = FakeMatrixClient(
+                canDeactivateAccountResult = { true },
+                accountManagementUrlResult = { Result.success(null) },
+            ),
+            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.RELEASE))
+        ).test {
+            val loadedState = awaitFirstItem()
+            assertThat(loadedState.showSecureBackup).isFalse()
+            repeat(times = ShowDeveloperSettingsProvider.DEVELOPER_SETTINGS_COUNTER) {
+                loadedState.eventSink(PreferencesRootEvent.OnVersionInfoClick)
+            }
+            assertThat(awaitItem().showSecureBackup).isTrue()
         }
     }
 

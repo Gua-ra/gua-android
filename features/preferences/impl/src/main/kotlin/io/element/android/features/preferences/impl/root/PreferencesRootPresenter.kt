@@ -153,12 +153,15 @@ class PreferencesRootPresenter(
             deviceId = matrixClient.deviceId,
             isMultiAccountEnabled = isMultiAccountEnabled,
             otherSessions = otherSessions,
-            // GUA FORK: upstream hides Encryption whenever the session still needs verifying,
-            // on the assumption that you would be sent to the verification ceremony instead.
-            // Gua never presents that ceremony, so the assumption is always false here and the
-            // row disappeared permanently, taking recovery-key entry with it. Always show it:
-            // it is the only way back in for someone whose key storage cannot self-heal.
-            showSecureBackup = true,
+            // GUA FORK: hidden from users, developer-only.
+            //
+            // This screen is upstream's recovery-key console: a key-storage toggle, "set up
+            // recovery", "change recovery key", "confirm recovery key". Every one of those is a
+            // thing Gua promises never to put in front of anyone. An earlier version of this fork
+            // forced it visible on the grounds that it was the only way back from broken key
+            // storage; that is no longer true, because the setup banner now repairs the account
+            // silently and escalates to a reset on its own when it has to.
+            showSecureBackup = showDeveloperSettings,
             showSecureBackupBadge = showSecureBackupIndicator,
             accountManagementUrl = accountManagementUrl.value,
             showAnalyticsSettings = hasAnalyticsProviders,

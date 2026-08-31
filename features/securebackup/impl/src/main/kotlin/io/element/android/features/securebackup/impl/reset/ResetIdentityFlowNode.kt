@@ -9,6 +9,7 @@
 package io.element.android.features.securebackup.impl.reset
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Parcelable
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
@@ -34,9 +35,11 @@ import io.element.android.libraries.architecture.BackstackView
 import io.element.android.libraries.architecture.BaseFlowNode
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.architecture.createNode
+import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.designsystem.components.ProgressDialog
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
+import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.IdentityOAuthResetHandle
 import io.element.android.libraries.matrix.api.encryption.IdentityPasswordResetHandle
 import kotlinx.coroutines.CoroutineScope
@@ -52,6 +55,7 @@ class ResetIdentityFlowNode(
     @Assisted buildContext: BuildContext,
     @Assisted plugins: List<Plugin>,
     private val resetIdentityFlowManager: ResetIdentityFlowManager,
+    private val encryptionService: EncryptionService,
     @SessionCoroutineScope
     private val sessionCoroutineScope: CoroutineScope,
     private val sessionEnterpriseService: SessionEnterpriseService,
@@ -77,12 +81,13 @@ class ResetIdentityFlowNode(
     private lateinit var activity: Activity
     private var darkTheme: Boolean = false
     private var resetJob: Job? = null
+    private var hasFinished = false
 
     override fun onBuilt() {
         super.onBuilt()
 
         resetIdentityFlowManager.whenResetIsDone {
-            callback.onDone()
+            finishOnce()
         }
     }
 
@@ -130,7 +135,12 @@ class ResetIdentityFlowNode(
                         val url = sessionEnterpriseService.tweakMasUrl(handle.url)
                         activity.openUrlInChromeCustomTab(null, darkTheme, url)
                         Timber.d("Starting resetOAuth")
-                        resetJob = launch { handle.resetOAuth() }
+                        resetJob = launch {
+                            handle.resetOAuth()
+                            provisionKeyStorageSilently()
+                            returnFromCustomTab()
+                            finishOnce()
+                        }
                         resetJob?.invokeOnCompletion { Timber.d("resetOAuth ended") }
                     }
                     is IdentityPasswordResetHandle -> backstack.push(NavTarget.ResetPassword)
@@ -138,6 +148,58 @@ class ResetIdentityFlowNode(
             }
             else -> Unit
         }
+    }
+
+    /**
+     * GUA FORK: finishes the job the reset started, without ever involving the user.
+     *
+     * A reset destroys the key backup, which leaves the account with recovery DISABLED. Upstream
+     * expects the user to walk the "set up recovery" flow from there, be handed a recovery key,
+     * and write it down; only when that finishes does the backup become ENABLED. Two things hang
+     * off that: Gua shows nobody a recovery key, and [ResetIdentityFlowManager.whenResetIsDone]
+     * waits for exactly BackupState.ENABLED before it will call back, so without this the reset
+     * screen never dismisses and the user is left staring at the button that sent them to MAS.
+     *
+     * Provisioning here re-enables the backup ourselves. The generated key is deliberately
+     * discarded: nothing in Gua asks for it, and the device holds the secrets it needs.
+     */
+    private suspend fun provisionKeyStorageSilently() {
+        encryptionService.enableRecovery(waitForBackupsToUpload = false)
+            .onSuccess { Timber.d("Provisioned key storage after the reset.") }
+            .onFailure { Timber.e(it, "Could not provision key storage after the reset.") }
+    }
+
+    /**
+     * GUA FORK: brings the app back to the front once MAS is done with us.
+     *
+     * MAS ends its side of the reset with a page telling the user to go back to the app, and the
+     * Chrome Custom Tab it is rendered in will happily sit there until someone taps the close
+     * button. Reordering our own task to the front dismisses it for them. This only runs after
+     * resetOAuth() has returned, so the approval has already happened and nobody is interrupted
+     * mid-flow.
+     */
+    private fun returnFromCustomTab() {
+        runCatchingExceptions {
+            activity.startActivity(
+                Intent(activity, activity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            )
+        }.onFailure { Timber.w(it, "Could not bring the app back to the front after the reset.") }
+    }
+
+    /**
+     * GUA FORK: leaves this flow as soon as the reset is over, whatever happened next.
+     *
+     * [ResetIdentityFlowManager.whenResetIsDone] only calls back once the backup reaches
+     * ENABLED, so if provisioning above fails the user is stranded on the screen holding the
+     * button that sent them to MAS, and pressing it again walks them straight back into MAS. The
+     * reset itself has already succeeded by this point, so leave regardless; a device whose key
+     * storage is still unprovisioned gets the setup banner on the room list and repairs from there.
+     */
+    private fun finishOnce() {
+        if (hasFinished) return
+        hasFinished = true
+        callback.onDone()
     }
 
     override fun performUpNavigation(): Boolean {
