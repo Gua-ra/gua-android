@@ -65,7 +65,6 @@ fun RoomListContentView(
     lazyListState: LazyListState,
     hideInvitesAvatars: Boolean,
     eventSink: (RoomListEvent) -> Unit,
-    onSetUpRecoveryClick: () -> Unit,
     onConfirmRecoveryKeyClick: () -> Unit,
     onRoomClick: (RoomListRoomSummary) -> Unit,
     onCreateRoomClick: () -> Unit,
@@ -85,7 +84,6 @@ fun RoomListContentView(
                 modifier = modifier.padding(contentPadding),
                 state = contentState,
                 eventSink = eventSink,
-                onSetUpRecoveryClick = onSetUpRecoveryClick,
                 onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
                 onCreateRoomClick = onCreateRoomClick,
             )
@@ -98,7 +96,6 @@ fun RoomListContentView(
                 filtersState = filtersState,
                 spaceFiltersState = spaceFiltersState,
                 eventSink = eventSink,
-                onSetUpRecoveryClick = onSetUpRecoveryClick,
                 onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
                 onRoomClick = onRoomClick,
                 lazyListState = lazyListState,
@@ -133,7 +130,6 @@ private fun SkeletonView(
 private fun EmptyView(
     state: RoomListContentState.Empty,
     eventSink: (RoomListEvent) -> Unit,
-    onSetUpRecoveryClick: () -> Unit,
     onConfirmRecoveryKeyClick: () -> Unit,
     onCreateRoomClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -153,12 +149,10 @@ private fun EmptyView(
         )
         Box {
             when (state.securityBannerState) {
-                SecurityBannerState.SetUpRecovery -> {
-                    SetUpRecoveryKeyBanner(
-                        onContinueClick = onSetUpRecoveryClick,
-                        onDismissClick = { eventSink(RoomListEvent.DismissBanner) },
-                    )
-                }
+                SecurityBannerState.SetUpRecovery,
+                // GUA FORK: the presenter no longer produces SetUpRecovery, but render the same
+                // silent-repair banner here rather than upstream's, so no future path can reach
+                // the flow that hands a user a recovery key to write down.
                 SecurityBannerState.RecoveryKeyConfirmation -> {
                     ConfirmRecoveryKeyBanner(
                         onContinueClick = onConfirmRecoveryKeyClick,
@@ -178,7 +172,6 @@ private fun RoomsView(
     filtersState: RoomListFiltersState,
     spaceFiltersState: SpaceFiltersState,
     eventSink: (RoomListEvent) -> Unit,
-    onSetUpRecoveryClick: () -> Unit,
     onConfirmRecoveryKeyClick: () -> Unit,
     onRoomClick: (RoomListRoomSummary) -> Unit,
     contentPadding: PaddingValues,
@@ -198,7 +191,6 @@ private fun RoomsView(
             state = state,
             hideInvitesAvatars = hideInvitesAvatars,
             eventSink = eventSink,
-            onSetUpRecoveryClick = onSetUpRecoveryClick,
             onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
             onRoomClick = onRoomClick,
             contentPadding = contentPadding,
@@ -213,7 +205,6 @@ private fun RoomsViewList(
     state: RoomListContentState.Rooms,
     hideInvitesAvatars: Boolean,
     eventSink: (RoomListEvent) -> Unit,
-    onSetUpRecoveryClick: () -> Unit,
     onConfirmRecoveryKeyClick: () -> Unit,
     onRoomClick: (RoomListRoomSummary) -> Unit,
     contentPadding: PaddingValues,
@@ -229,14 +220,10 @@ private fun RoomsViewList(
         contentPadding = contentPadding,
     ) {
         when (state.securityBannerState) {
-            SecurityBannerState.SetUpRecovery -> {
-                item {
-                    SetUpRecoveryKeyBanner(
-                        onContinueClick = onSetUpRecoveryClick,
-                        onDismissClick = { eventSink(RoomListEvent.DismissBanner) },
-                    )
-                }
-            }
+            SecurityBannerState.SetUpRecovery,
+            // GUA FORK: the presenter no longer produces SetUpRecovery, but render the same
+            // silent-repair banner here rather than upstream's, so no future path can reach
+            // the flow that hands a user a recovery key to write down.
             SecurityBannerState.RecoveryKeyConfirmation -> {
                 item {
                     ConfirmRecoveryKeyBanner(
@@ -350,7 +337,6 @@ internal fun RoomListContentViewPreview(@PreviewParameter(RoomListContentStatePr
         spaceFiltersState = anUnselectedSpaceFiltersState(),
         hideInvitesAvatars = false,
         eventSink = {},
-        onSetUpRecoveryClick = {},
         onConfirmRecoveryKeyClick = {},
         onRoomClick = {},
         onCreateRoomClick = {},

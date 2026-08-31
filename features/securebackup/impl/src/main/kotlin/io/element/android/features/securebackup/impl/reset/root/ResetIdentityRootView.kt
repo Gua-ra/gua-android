@@ -22,7 +22,6 @@ import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.securebackup.impl.R
 import io.element.android.libraries.designsystem.atomic.pages.FlowStepPage
 import io.element.android.libraries.designsystem.components.BigIcon
-import io.element.android.libraries.designsystem.components.dialogs.ConfirmationDialog
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Button
@@ -30,7 +29,9 @@ import io.element.android.libraries.designsystem.theme.components.Text
 
 @Composable
 fun ResetIdentityRootView(
-    state: ResetIdentityRootState,
+    // GUA FORK: kept so the node and preview signatures do not churn. Nothing on this screen
+    // depends on state any more: the confirmation dialog it drove has gone.
+    @Suppress("UNUSED_PARAMETER") state: ResetIdentityRootState,
     onContinue: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -45,26 +46,16 @@ fun ResetIdentityRootView(
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 text = stringResource(id = R.string.gua_encryption_reset_required_action),
-                onClick = { state.eventSink(ResetIdentityRootEvent.Continue) },
+                // GUA FORK: straight through. This screen already names what is lost and its
+                // button is destructive; the dialog that used to sit here asked "are you sure you
+                // want to reset your digital identity?", which is both jargon and a second
+                // confirmation of the thing the user just read and agreed to.
+                onClick = onContinue,
                 destructive = true,
             )
         },
         onBackClick = onBack,
     )
-
-    if (state.displayConfirmationDialog) {
-        ConfirmationDialog(
-            title = stringResource(R.string.screen_reset_encryption_confirmation_alert_title),
-            content = stringResource(R.string.screen_reset_encryption_confirmation_alert_subtitle),
-            submitText = stringResource(R.string.screen_reset_encryption_confirmation_alert_action),
-            onSubmitClick = {
-                state.eventSink(ResetIdentityRootEvent.DismissDialog)
-                onContinue()
-            },
-            destructiveSubmit = true,
-            onDismiss = { state.eventSink(ResetIdentityRootEvent.DismissDialog) }
-        )
-    }
 }
 
 @Composable

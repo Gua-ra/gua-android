@@ -76,7 +76,6 @@ fun HomeView(
     homeState: HomeState,
     onRoomClick: (RoomId) -> Unit,
     onSettingsClick: () -> Unit,
-    onSetUpRecoveryClick: () -> Unit,
     onConfirmRecoveryKeyClick: () -> Unit,
     onStartChatClick: () -> Unit,
     onCreateSpaceClick: () -> Unit,
@@ -114,7 +113,6 @@ fun HomeView(
 
         HomeScaffold(
             state = homeState,
-            onSetUpRecoveryClick = onSetUpRecoveryClick,
             onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
             onRoomClick = { if (firstThrottler.canHandle()) onRoomClick(it) },
             onOpenSettings = { if (firstThrottler.canHandle()) onSettingsClick() },
@@ -140,7 +138,6 @@ fun HomeView(
 @Composable
 private fun HomeScaffold(
     state: HomeState,
-    onSetUpRecoveryClick: () -> Unit,
     onConfirmRecoveryKeyClick: () -> Unit,
     onRoomClick: (RoomId) -> Unit,
     onOpenSettings: () -> Unit,
@@ -247,7 +244,6 @@ private fun HomeScaffold(
                         lazyListState = roomsLazyListState,
                         hideInvitesAvatars = roomListState.hideInvitesAvatars,
                         eventSink = roomListState.eventSink,
-                        onSetUpRecoveryClick = onSetUpRecoveryClick,
                         onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
                         onRoomClick = ::onRoomClick,
                         onCreateRoomClick = onStartChatClick,
@@ -342,7 +338,6 @@ internal fun HomeViewPreview(@PreviewParameter(HomeStateProvider::class) state: 
         homeState = state,
         onRoomClick = {},
         onSettingsClick = {},
-        onSetUpRecoveryClick = {},
         onConfirmRecoveryKeyClick = {},
         onStartChatClick = {},
         onCreateSpaceClick = {},
@@ -362,7 +357,6 @@ internal fun HomeViewA11yPreview() = ElementPreview {
         homeState = aHomeState(),
         onRoomClick = {},
         onSettingsClick = {},
-        onSetUpRecoveryClick = {},
         onConfirmRecoveryKeyClick = {},
         onStartChatClick = {},
         onCreateSpaceClick = {},

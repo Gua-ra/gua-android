@@ -16,13 +16,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.features.login.impl.login.LoginHelper
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.phonenumberentry.Country
+import io.element.android.libraries.phonenumberentry.DeviceCountryProvider
 import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import kotlinx.coroutines.launch
 
@@ -31,6 +31,7 @@ class PhoneEntryPresenter(
     @Assisted private val params: PhoneEntryNode.Params,
     private val loginHelper: LoginHelper,
     private val selectedCountryStore: SelectedCountryStore,
+    private val deviceCountryProvider: DeviceCountryProvider,
 ) : Presenter<PhoneEntryState> {
     @AssistedFactory
     interface Factory {
@@ -44,8 +45,7 @@ class PhoneEntryPresenter(
         // Seed country + local number from any pre-populated E.164 number (else device locale).
         // The local number is held as RAW DIGITS; the national mask is applied purely visually by
         // the field's PhoneNumberVisualTransformation, so the cursor never needs correcting.
-        val context = LocalContext.current
-        val initial = remember { Country.parse(params.initialPhoneNumber.orEmpty(), context) }
+        val initial = remember { deviceCountryProvider.parse(params.initialPhoneNumber) }
         var selectedCountry by rememberSaveable { mutableStateOf(initial.first) }
         var localPhoneNumber by rememberSaveable { mutableStateOf(initial.second) }
 

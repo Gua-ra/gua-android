@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: vi translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_signout_last_device_title">Đăng xuất sẽ xóa tin nhắn của bạn khỏi thiết bị này</string>
+    <string name="gua_signout_last_device_subtitle">Đây là thiết bị duy nhất của bạn. Những tin nhắn chỉ lưu ở đây sẽ không còn khi bạn đăng nhập lại.</string>
+</resources>

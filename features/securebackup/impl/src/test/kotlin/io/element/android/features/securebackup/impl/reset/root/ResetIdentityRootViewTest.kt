@@ -15,9 +15,7 @@ import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.features.securebackup.impl.R
-import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureNeverCalled
-import io.element.android.tests.testutils.EventsRecorder
 import io.element.android.tests.testutils.clickOn
 import io.element.android.tests.testutils.ensureCalledOnce
 import io.element.android.tests.testutils.pressBack
@@ -51,37 +49,17 @@ class ResetIdentityRootViewTest : RobolectricTest() {
 
     @Test
     @Config(qualifiers = "h720dp")
-    fun `clicking Continue displays the confirmation dialog`() = runAndroidComposeUiTest {
-        val eventsRecorder = EventsRecorder<ResetIdentityRootEvent>()
-        setResetRootView(
-            ResetIdentityRootState(displayConfirmationDialog = false, eventSink = eventsRecorder),
-        )
-
-        clickOn(R.string.screen_encryption_reset_action_continue_reset)
-
-        eventsRecorder.assertSingle(ResetIdentityRootEvent.Continue)
-    }
-
-    @Test
-    fun `clicking 'Yes, reset now' confirms the reset`() = runAndroidComposeUiTest {
+    fun `clicking the reset button goes straight through`() = runAndroidComposeUiTest {
+        // GUA FORK: no second confirmation. This screen already names what is lost and its button
+        // is destructive, so the "are you sure you want to reset your digital identity?" dialog
+        // that used to sit in between was jargon on top of a confirmation the user had just given.
         ensureCalledOnce {
             setResetRootView(
-                ResetIdentityRootState(displayConfirmationDialog = true, eventSink = {}),
+                ResetIdentityRootState(displayConfirmationDialog = false, eventSink = {}),
                 onContinue = it,
             )
-            clickOn(R.string.screen_reset_encryption_confirmation_alert_action)
+            clickOn(R.string.gua_encryption_reset_required_action)
         }
-    }
-
-    @Test
-    fun `clicking Cancel dismisses the dialog`() = runAndroidComposeUiTest {
-        val eventsRecorder = EventsRecorder<ResetIdentityRootEvent>()
-        setResetRootView(
-            ResetIdentityRootState(displayConfirmationDialog = true, eventSink = eventsRecorder),
-        )
-
-        clickOn(CommonStrings.action_cancel)
-        eventsRecorder.assertSingle(ResetIdentityRootEvent.DismissDialog)
     }
 }
 

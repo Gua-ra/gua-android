@@ -299,7 +299,10 @@ class LoggedInFlowNode(
 
         @Parcelize
         data class SecureBackup(
-            val initialElement: SecureBackupEntryPoint.InitialTarget = SecureBackupEntryPoint.InitialTarget.Root
+            // GUA FORK: no default. When Root was the default, `NavTarget.SecureBackup()` read as
+            // "open secure backup" while silently meaning "open the recovery-key console", and a
+            // grep for InitialTarget.Root never surfaced the sign-out route that used it.
+            val initialElement: SecureBackupEntryPoint.InitialTarget
         ) : NavTarget
 
         @Parcelize
@@ -351,10 +354,6 @@ class LoggedInFlowNode(
 
                     override fun navigateToCreateSpace() {
                         backstack.push(NavTarget.CreateSpace)
-                    }
-
-                    override fun navigateToSetUpRecovery() {
-                        backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.Root))
                     }
 
                     override fun navigateToEnterRecoveryKey() {
@@ -486,7 +485,7 @@ class LoggedInFlowNode(
                     }
 
                     override fun navigateToSecureBackup() {
-                        backstack.push(NavTarget.SecureBackup())
+                        backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.Root))
                     }
 
                     override fun navigateToRoomNotificationSettings(roomId: RoomId) {

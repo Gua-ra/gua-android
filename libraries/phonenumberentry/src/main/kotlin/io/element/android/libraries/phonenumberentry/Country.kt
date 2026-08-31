@@ -125,8 +125,11 @@ data class Country(
          * device's locale when the input is empty or unparseable. Longest-prefix dial-code match
          * (some dial codes are 4 digits, e.g. +1876 for Jamaica).
          */
-        fun parse(initialPhoneNumber: String, context: Context? = null): Pair<Country, String> {
-            val default = deviceDefault(context)
+        fun parse(initialPhoneNumber: String, context: Context? = null): Pair<Country, String> =
+            parse(initialPhoneNumber, deviceDefault(context))
+
+        /** Same split, but with the fallback country supplied rather than read off the device. */
+        fun parse(initialPhoneNumber: String, default: Country): Pair<Country, String> {
             val trimmed = initialPhoneNumber.trim()
             if (!trimmed.startsWith("+")) return default to ""
             val digits = trimmed.drop(1).filter { it.isDigit() }

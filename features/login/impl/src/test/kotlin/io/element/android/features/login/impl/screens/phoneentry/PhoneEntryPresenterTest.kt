@@ -17,6 +17,8 @@ import io.element.android.libraries.guaresolver.ResolvedHomeserver
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.matrix.test.auth.FakeMatrixAuthenticationService
 import io.element.android.libraries.matrix.test.auth.aMatrixHomeServerDetails
+import io.element.android.libraries.phonenumberentry.DeviceCountryProvider
+import io.element.android.libraries.phonenumberentry.FakeDeviceCountryProvider
 import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.lambda.lambdaRecorder
@@ -258,8 +260,10 @@ private fun createPhoneEntryPresenter(
         resolverClient = FakeResolverClient(),
     ),
     selectedCountryStore: SelectedCountryStore = SelectedCountryStore(),
+    deviceCountryProvider: DeviceCountryProvider = FakeDeviceCountryProvider(),
 ) = PhoneEntryPresenter(
     params = params,
     loginHelper = loginHelper,
     selectedCountryStore = selectedCountryStore,
+    deviceCountryProvider = deviceCountryProvider,
 )
