@@ -137,6 +137,11 @@ class RoomListPresenter(
                 }
                 RoomListEvent.DismissRequestVerificationPrompt -> securityBannerDismissed = true
                 RoomListEvent.DismissBanner -> securityBannerDismissed = true
+                // GUA FORK: consumed once. The presenter outlives the view (the flow node keeps
+                // its child alive), so as a plain latch this flag stayed true after navigating,
+                // and backing out of the reset screen recomposed the effect and pushed the user
+                // straight back in, for the rest of the session.
+                RoomListEvent.EncryptionResetNavigated -> encryptionSetupNeedsReset = false
                 RoomListEvent.FinishEncryptionSetup -> if (!isFinishingEncryptionSetup) {
                     isFinishingEncryptionSetup = true
                     coroutineScope.launch {
@@ -148,7 +153,10 @@ class RoomListPresenter(
                                     // The client cannot read its own state yet, so there is nothing
                                     // to repair and nothing to warn about. Leave the banner up.
                                     Timber.d("Encryption state not readable yet, leaving the banner.")
-                                EncryptionRepairOutcome.ResetRequired -> encryptionSetupNeedsReset = true
+                                EncryptionRepairOutcome.ResetRequired -> {
+                                    Timber.w("Encryption setup cannot finish without a reset.")
+                                    encryptionSetupNeedsReset = true
+                                }
                             }
                         } finally {
                             // Clears on every path out, so the button can never latch.

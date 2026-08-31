@@ -18,6 +18,9 @@ sealed interface RoomListEvent {
 
     /** GUA FORK: the encryption setup banner's button. Runs the silent repair. */
     data object FinishEncryptionSetup : RoomListEvent
+
+    /** GUA FORK: the view has acted on the reset verdict, so it must not fire again. */
+    data object EncryptionResetNavigated : RoomListEvent
     data object DismissNewNotificationSoundBanner : RoomListEvent
     data object ToggleSearchResults : RoomListEvent
     data class ShowContextMenu(val roomSummary: RoomListRoomSummary) : RoomListEvent

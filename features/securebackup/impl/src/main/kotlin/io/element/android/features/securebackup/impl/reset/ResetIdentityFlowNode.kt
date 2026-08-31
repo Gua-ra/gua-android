@@ -39,7 +39,6 @@ import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.designsystem.components.ProgressDialog
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
-import io.element.android.libraries.matrix.api.encryption.EncryptionRepairOutcome
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.IdentityOAuthResetHandle
 import io.element.android.libraries.matrix.api.encryption.IdentityPasswordResetHandle
@@ -149,9 +148,11 @@ class ResetIdentityFlowNode(
                         Timber.d("Starting resetOAuth")
                         resetJob = launch {
                             resetInFlight = true
+                            var succeeded = false
                             handle.resetOAuth()
                                 .onFailure { Timber.e(it, "The identity reset failed.") }
                                 .onSuccess {
+                                    succeeded = true
                                     // Front the app BEFORE provisioning. Sync stops a few seconds
                                     // after backgrounding and the recovery/backup flows pin to
                                     // WAITING_FOR_SYNC while it is stopped, so provisioning behind
@@ -161,7 +162,12 @@ class ResetIdentityFlowNode(
                                 }
                             resetInFlight = false
                             returnFromCustomTab()
-                            finishOnce()
+                            // Only leave on success. A failed reset used to pop exactly like a
+                            // successful one, returning the user to the room list with the backup
+                            // already destroyed, cross-signing still broken, the same banner back,
+                            // and nothing on screen saying anything had gone wrong. In FTUE it
+                            // also let them out of onboarding unverified.
+                            if (succeeded) finishOnce()
                         }
                         resetJob?.invokeOnCompletion { Timber.d("resetOAuth ended") }
                     }
@@ -173,24 +179,19 @@ class ResetIdentityFlowNode(
     }
 
     /**
-     * GUA FORK: finishes the job the reset started, without ever involving the user.
+     * GUA FORK: provisions key storage straight after a reset, and does NOT go through
+     * [repairWithoutReset].
      *
-     * A reset destroys the key backup, which leaves the account with recovery DISABLED. Upstream
-     * expects the user to walk the "set up recovery" flow from there, be handed a recovery key,
-     * and write it down; only when that finishes does the backup become ENABLED. Two things hang
-     * off that: Gua shows nobody a recovery key, and [ResetIdentityFlowManager.whenResetIsDone]
-     * waits for exactly BackupState.ENABLED before it will call back, so without this the reset
-     * screen never dismisses and the user is left staring at the button that sent them to MAS.
-     *
-     * Provisioning here re-enables the backup ourselves. The generated key is deliberately
-     * discarded: nothing in Gua asks for it, and the device holds the secrets it needs.
+     * That path deliberately refuses enableRecovery on an INCOMPLETE account, because enabling
+     * rotates the secret store and would invalidate a recovery key saved elsewhere. Immediately
+     * after a reset there is no such key left to protect and no cross-signing identity either, so
+     * the conservative path can never succeed here: it would return ResetRequired forever and put
+     * the setup banner straight back in front of the user who just completed a reset.
      */
     private suspend fun provisionKeyStorageSilently() {
-        when (encryptionService.repairWithoutReset()) {
-            EncryptionRepairOutcome.Repaired -> Timber.d("Provisioned key storage after the reset.")
-            EncryptionRepairOutcome.NotYet,
-            EncryptionRepairOutcome.ResetRequired -> Timber.e("Could not provision key storage after the reset.")
-        }
+        encryptionService.enableRecovery(waitForBackupsToUpload = false)
+            .onSuccess { Timber.d("Provisioned key storage after the reset.") }
+            .onFailure { Timber.e(it, "Could not provision key storage after the reset.") }
     }
 
     /**
@@ -252,9 +253,13 @@ class ResetIdentityFlowNode(
         darkTheme = !ElementTheme.isLightTheme
         val startResetState by resetIdentityFlowManager.currentHandleFlow.collectAsState()
         if (startResetState.isLoading()) {
+            // GUA FORK: honest about not being cancellable. Both dismiss flags were true, but the
+            // handler called cancelResetJob() while resetJob was still null (it is assigned only
+            // once the handle arrives), so back was swallowed and nothing was cancelled. Nor should
+            // it be: reset_identity() deletes the key backup before it returns, so abandoning it
+            // mid-call leaves the account worse off with no way to tell.
             ProgressDialog(
-                properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true),
-                onDismissRequest = { sessionCoroutineScope.launch { cancelResetJob() } }
+                properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
             )
         }
 

@@ -152,8 +152,12 @@ private fun EmptyView(
         // GUA FORK: navigation is driven by the repair's verdict, not by the tap. The tap runs the
         // silent repair; only if that establishes a reset is genuinely required do we leave here.
         val onNeedsReset by rememberUpdatedState(onConfirmRecoveryKeyClick)
+        val onNavigated by rememberUpdatedState(eventSink)
         LaunchedEffect(state.encryptionSetupNeedsReset) {
-            if (state.encryptionSetupNeedsReset) onNeedsReset()
+            if (state.encryptionSetupNeedsReset) {
+                onNavigated(RoomListEvent.EncryptionResetNavigated)
+                onNeedsReset()
+            }
         }
         Box {
             when (state.securityBannerState) {
