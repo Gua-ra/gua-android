@@ -39,10 +39,10 @@ import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.designsystem.components.ProgressDialog
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
+import io.element.android.libraries.matrix.api.encryption.EncryptionRepairOutcome
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.IdentityOAuthResetHandle
 import io.element.android.libraries.matrix.api.encryption.IdentityPasswordResetHandle
-import io.element.android.libraries.matrix.api.encryption.EncryptionRepairOutcome
 import io.element.android.libraries.matrix.api.encryption.provisionAfterReset
 import io.element.android.libraries.matrix.api.verification.SessionVerificationService
 import kotlinx.coroutines.CoroutineScope
