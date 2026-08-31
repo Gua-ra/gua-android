@@ -11,4 +11,6 @@
     <string name="gua_encryption_repair_title">Finish setting up this device</string>
     <string name="gua_encryption_repair_message">Complete setup to access encrypted chats and message history available on this device.</string>
     <string name="gua_encryption_repair_action">Finish setup</string>
+    <!-- Shown on the same button while the repair is running, so a tap is never silent. -->
+    <string name="gua_encryption_repair_action_in_progress">Setting up…</string>
 </resources>

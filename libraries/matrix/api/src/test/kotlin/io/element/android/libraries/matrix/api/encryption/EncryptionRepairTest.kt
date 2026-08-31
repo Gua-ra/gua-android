@@ -24,27 +24,29 @@ class EncryptionRepairTest {
         )
         service.recoveryStateStateFlow.value = RecoveryState.ENABLED
 
-        assertThat(service.repairWithoutReset().isSuccess).isTrue()
+        assertThat(service.repairWithoutReset()).isEqualTo(EncryptionRepairOutcome.Repaired)
         assertThat(enableCalls).isEqualTo(0)
     }
 
     @Test
-    fun `disabled provisions key storage`() = runTest {
-        var enableCalls = 0
+    fun `provisioning counts as repaired only once the state agrees`() = runTest {
         val service = FakeEncryptionService(
-            enableRecoveryLambda = { _, _ ->
-                enableCalls++
-                Result.success("key")
-            }
+            enableRecoveryLambda = { _, _ -> Result.success("key") }
         )
         service.recoveryStateStateFlow.value = RecoveryState.DISABLED
+        // What a real, healthy provision looks like: the SDK reports the new state.
+        service.recoveryStateStateFlow.value = RecoveryState.ENABLED
 
-        assertThat(service.repairWithoutReset().isSuccess).isTrue()
-        assertThat(enableCalls).isEqualTo(1)
+        assertThat(service.repairWithoutReset()).isEqualTo(EncryptionRepairOutcome.Repaired)
     }
 
     @Test
-    fun `incomplete finishes provisioning when nothing hands the secrets over`() = runTest {
+    fun `enableRecovery succeeding is not enough on its own`() = runTest {
+        // THE BUG THIS EXISTS TO CATCH. On a device holding no private cross-signing keys,
+        // enableRecovery SUCCEEDS: it mints a new secret store, exports nothing useful into it,
+        // and the account drops straight back to INCOMPLETE. Trusting the return value reported
+        // success, the caller navigated nowhere, and the banner never cleared, which is precisely
+        // what "the finish setup button does nothing" looked like.
         var enableCalls = 0
         val service = FakeEncryptionService(
             enableRecoveryLambda = { _, _ ->
@@ -54,24 +56,31 @@ class EncryptionRepairTest {
         )
         service.recoveryStateStateFlow.value = RecoveryState.INCOMPLETE
 
-        assertThat(service.repairWithoutReset().isSuccess).isTrue()
+        assertThat(service.repairWithoutReset()).isEqualTo(EncryptionRepairOutcome.ResetRequired)
         assertThat(enableCalls).isEqualTo(1)
     }
 
     @Test
-    fun `incomplete fails rather than resetting when a backup blocks provisioning`() = runTest {
-        // enableRecovery is what refuses when a key backup already exists on the server. The repair
-        // must surface that instead of destroying anything, so the caller can disclose the reset.
+    fun `a blocked provision needs a reset, and nothing destructive is attempted`() = runTest {
+        // enableRecovery refuses while a backup exists on the server. There is deliberately no
+        // disableRecovery escalation: it throws BackupNotEnabled in exactly this situation, and
+        // where it would succeed it destroys the last server copy of the cross-signing keys.
+        var disableCalls = 0
         val service = FakeEncryptionService(
             enableRecoveryLambda = { _, _ -> Result.failure(IllegalStateException("BackupExistsOnServer")) }
         )
+        service.givenDisableRecoveryFailure(IllegalStateException("disableRecovery must not be called"))
         service.recoveryStateStateFlow.value = RecoveryState.INCOMPLETE
 
-        assertThat(service.repairWithoutReset().isFailure).isTrue()
+        assertThat(service.repairWithoutReset()).isEqualTo(EncryptionRepairOutcome.ResetRequired)
+        assertThat(disableCalls).isEqualTo(0)
     }
 
     @Test
-    fun `refuses to act while the state is still unknown`() = runTest {
+    fun `reports not-yet, never a reset, while the state is unreadable`() = runTest {
+        // Android pins the recovery flow to WAITING_FOR_SYNC the whole time sync is not Running,
+        // so this is what a tap during a network blip looks like. Offering a reset here would
+        // march the user through MAS to fix nothing.
         var enableCalls = 0
         val service = FakeEncryptionService(
             enableRecoveryLambda = { _, _ ->
@@ -79,9 +88,9 @@ class EncryptionRepairTest {
                 Result.success("key")
             }
         )
-        service.recoveryStateStateFlow.value = RecoveryState.UNKNOWN
+        service.recoveryStateStateFlow.value = RecoveryState.WAITING_FOR_SYNC
 
-        assertThat(service.repairWithoutReset().isFailure).isTrue()
+        assertThat(service.repairWithoutReset()).isEqualTo(EncryptionRepairOutcome.NotYet)
         assertThat(enableCalls).isEqualTo(0)
     }
 }

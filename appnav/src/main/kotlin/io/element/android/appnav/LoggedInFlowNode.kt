@@ -85,6 +85,7 @@ import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.RoomIdOrAlias
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.core.toRoomIdOrAlias
+import io.element.android.libraries.matrix.api.encryption.EncryptionRepairOutcome
 import io.element.android.libraries.matrix.api.encryption.repairWithoutReset
 import io.element.android.libraries.matrix.api.permalink.PermalinkData
 import io.element.android.libraries.matrix.api.room.JoinedRoom
@@ -362,12 +363,18 @@ class LoggedInFlowNode(
                         // first, and only fall through to the reset screen when this device genuinely
                         // cannot be finished without discarding it.
                         lifecycleScope.launch {
-                            if (matrixClient.encryptionService.repairWithoutReset().isSuccess) {
-                                Timber.d("Finished encryption setup without a reset.")
-                                return@launch
+                            when (matrixClient.encryptionService.repairWithoutReset()) {
+                                EncryptionRepairOutcome.Repaired ->
+                                    Timber.d("Finished encryption setup without a reset.")
+                                EncryptionRepairOutcome.NotYet ->
+                                    // The client cannot read its own state yet, so there is nothing
+                                    // to repair and nothing to warn about. Leave the banner up.
+                                    Timber.d("Encryption state not readable yet, leaving the banner.")
+                                EncryptionRepairOutcome.ResetRequired -> {
+                                    Timber.d("Encryption setup needs a reset, asking first.")
+                                    backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.ResetIdentity))
+                                }
                             }
-                            Timber.d("Encryption setup needs a reset, asking first.")
-                            backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.ResetIdentity))
                         }
                     }
 

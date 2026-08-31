@@ -9,6 +9,10 @@
 package io.element.android.features.home.impl.components
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.element.android.features.home.impl.R
@@ -23,6 +27,11 @@ internal fun ConfirmRecoveryKeyBanner(
     onDismissClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // GUA FORK: the repair runs off-screen and can take a moment, so the button has to change the
+    // instant it is pressed. Without this the product owner tapped it, saw nothing happen for
+    // several seconds, and reasonably concluded the button was dead.
+    var isWorking by remember { mutableStateOf(false) }
+
     Announcement(
         modifier = modifier.roomListBannerPadding(),
         // GUA FORK: upstream asks the user to confirm a recovery key. Gua never shows one, so
@@ -30,8 +39,15 @@ internal fun ConfirmRecoveryKeyBanner(
         title = stringResource(R.string.gua_encryption_repair_title),
         description = stringResource(R.string.gua_encryption_repair_message),
         type = AnnouncementType.Actionable(
-            actionText = stringResource(R.string.gua_encryption_repair_action),
-            onActionClick = onContinueClick,
+            actionText = stringResource(
+                if (isWorking) R.string.gua_encryption_repair_action_in_progress else R.string.gua_encryption_repair_action
+            ),
+            onActionClick = {
+                if (!isWorking) {
+                    isWorking = true
+                    onContinueClick()
+                }
+            },
             onDismissClick = onDismissClick,
         ),
     )
