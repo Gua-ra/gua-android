@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="gua_encryption_repair_title">Terminez la configuration de cet appareil</string>
-    <string name="gua_encryption_repair_message">Terminez la configuration pour restaurer votre historique de conversations chiffrées et accéder à vos anciens messages sur cet appareil.</string>
+    <string name="gua_encryption_repair_message">Terminez la configuration pour accéder aux conversations chiffrées et à l\'historique des messages disponibles sur cet appareil.</string>
     <string name="gua_encryption_repair_action">Terminer la configuration</string>
 </resources>

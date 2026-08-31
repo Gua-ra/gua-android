@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="gua_encryption_repair_title">Completa la configurazione di questo dispositivo</string>
-    <string name="gua_encryption_repair_message">Completa la configurazione per ripristinare la cronologia delle chat cifrate e accedere ai messaggi precedenti su questo dispositivo.</string>
-    <string name="gua_encryption_repair_action">Completa la configurazione</string>
+    <string name="gua_encryption_repair_message">Completa la configurazione per accedere alle chat cifrate e alla cronologia dei messaggi disponibili su questo dispositivo.</string>
+    <string name="gua_encryption_repair_action">Completa configurazione</string>
 </resources>

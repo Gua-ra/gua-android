@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -64,7 +65,8 @@ class TwoStepVerificationPresenter(
         var code by remember { mutableStateOf("") }
         // The on-file number being confirmed, held as (country, RAW national digits) like the welcome
         // PhoneEntry screen and the change-phone screen. The national mask is visual-only.
-        var selectedCountry by remember { mutableStateOf(Country.deviceDefault) }
+        val context = LocalContext.current
+        var selectedCountry by remember { mutableStateOf(Country.deviceDefault(context)) }
         var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
         var showSuccess by remember { mutableStateOf(false) }
@@ -114,7 +116,7 @@ class TwoStepVerificationPresenter(
             stagedNewPin = ""
             challengeId = null
             otpCode = ""
-            selectedCountry = Country.deviceDefault
+            selectedCountry = Country.deviceDefault(context)
             localPhoneNumber = ""
             code = ""
         }

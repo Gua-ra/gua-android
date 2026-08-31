@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_encryption_reset_required_title">Beberapa pesan sebelumnya tidak dapat dipulihkan</string>
+    <string name="gua_encryption_reset_required_message">Untuk menyelesaikan penyiapan obrolan terenkripsi di perangkat ini, cadangan terenkripsi Anda perlu disetel ulang. Pesan yang hanya tersimpan di cadangan itu akan hilang. Pesan yang sudah ada di perangkat Anda tidak akan terpengaruh.</string>
+    <string name="gua_encryption_reset_required_action">Setel ulang dan selesaikan</string>
+</resources>

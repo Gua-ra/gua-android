@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="gua_encryption_repair_title">Viimeistele tämän laitteen määritys</string>
-    <string name="gua_encryption_repair_message">Viimeistele määritys palauttaaksesi salatun keskusteluhistoriasi ja päästäksesi aiempiin viesteihisi tällä laitteella.</string>
+    <string name="gua_encryption_repair_message">Viimeistele määritys päästäksesi salattuihin keskusteluihin ja tällä laitteella saatavilla olevaan viestihistoriaan.</string>
     <string name="gua_encryption_repair_action">Viimeistele määritys</string>
 </resources>

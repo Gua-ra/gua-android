@@ -9,6 +9,6 @@
     <!-- GUA FORK: the encryption repair banner. Replaces upstream's "confirm your recovery key"
          copy, which asks for a key Gua never shows anyone. -->
     <string name="gua_encryption_repair_title">Finish setting up this device</string>
-    <string name="gua_encryption_repair_message">Complete setup to restore your encrypted chat history and access your previous messages on this device.</string>
+    <string name="gua_encryption_repair_message">Complete setup to access encrypted chats and message history available on this device.</string>
     <string name="gua_encryption_repair_action">Finish setup</string>
 </resources>

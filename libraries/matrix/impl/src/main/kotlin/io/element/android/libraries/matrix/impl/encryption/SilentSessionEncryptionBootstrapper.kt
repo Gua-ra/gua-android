@@ -14,7 +14,9 @@ import io.element.android.libraries.matrix.api.encryption.RecoveryState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Gua: sets up key storage (key backup + recovery / secret-storage) entirely in the background so
@@ -102,10 +104,15 @@ internal class SilentSessionEncryptionBootstrapper(
             return
         }
 
-        // If another signed-in device exists it can hand over the secrets, which repairs this
-        // for free and keeps the backup. Never destroy anything while that is possible.
-        if (encryptionService.hasDevicesToVerifyAgainst().getOrDefault(true)) {
-            Timber.tag(TAG).w("Another device can supply the secrets; leaving key storage alone.")
+        // Another signed-in device may still hand the secrets over, which repairs this for free
+        // and keeps the backup. Wait for that to actually happen rather than asking whether such
+        // a device exists: the device list keeps stale entries that will never respond, so the
+        // existence check answers "yes" forever and no account is ever repaired.
+        if (withTimeoutOrNull(HANDOVER_TIMEOUT) {
+                encryptionService.recoveryStateStateFlow.first { it == RecoveryState.ENABLED }
+                true
+            } == true) {
+            Timber.tag(TAG).i("Another device supplied the secrets; key storage is healthy.")
             return
         }
 
@@ -125,5 +132,6 @@ internal class SilentSessionEncryptionBootstrapper(
 
     private companion object {
         const val TAG = "SilentEncryptionBootstrap"
+        val HANDOVER_TIMEOUT = 15.seconds
     }
 }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_encryption_reset_required_title">Ορισμένα προηγούμενα μηνύματα δεν μπορούν να ανακτηθούν</string>
+    <string name="gua_encryption_reset_required_message">Για να ολοκληρωθεί η ρύθμιση των κρυπτογραφημένων συνομιλιών σε αυτή τη συσκευή, πρέπει να γίνει επαναφορά του κρυπτογραφημένου αντιγράφου ασφαλείας. Τα μηνύματα που είναι αποθηκευμένα μόνο εκεί θα χαθούν. Τα μηνύματα που βρίσκονται ήδη στις συσκευές σας δεν θα επηρεαστούν.</string>
+    <string name="gua_encryption_reset_required_action">Επαναφορά και ολοκλήρωση</string>
+</resources>

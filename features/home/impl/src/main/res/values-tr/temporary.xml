@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="gua_encryption_repair_title">Bu cihazın kurulumunu tamamlayın</string>
-    <string name="gua_encryption_repair_message">Şifreli sohbet geçmişinizi geri yüklemek ve önceki mesajlarınıza bu cihazdan erişmek için kurulumu tamamlayın.</string>
+    <string name="gua_encryption_repair_message">Şifreli sohbetlere ve bu cihazda bulunan mesaj geçmişine erişmek için kurulumu tamamlayın.</string>
     <string name="gua_encryption_repair_action">Kurulumu tamamla</string>
 </resources>

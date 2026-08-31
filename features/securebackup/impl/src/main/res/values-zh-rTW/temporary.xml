@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_encryption_reset_required_title">部分先前的訊息無法復原</string>
+    <string name="gua_encryption_reset_required_message">若要在這台裝置上完成加密聊天的設定，必須重設你的加密備份。僅儲存在該備份中的訊息將會遺失。已在你裝置上的訊息不受影響。</string>
+    <string name="gua_encryption_reset_required_action">重設並完成</string>
+</resources>

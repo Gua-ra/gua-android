@@ -85,6 +85,7 @@ import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.RoomIdOrAlias
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.core.toRoomIdOrAlias
+import io.element.android.libraries.matrix.api.encryption.repairWithoutReset
 import io.element.android.libraries.matrix.api.permalink.PermalinkData
 import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.sync.SyncService
@@ -357,10 +358,18 @@ class LoggedInFlowNode(
                     }
 
                     override fun navigateToEnterRecoveryKey() {
-                        // GUA FORK: straight to the reset, not to a recovery-key prompt. Gua never
-                        // shows anyone a recovery key, so asking them to enter one is a dead end,
-                        // and the reset is the only thing that can actually repair this device.
-                        backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.ResetIdentity))
+                        // GUA FORK: never a recovery-key prompt. Gua shows nobody a recovery key, so
+                        // asking for one is a dead end. Try every repair that keeps the backup intact
+                        // first, and only fall through to the reset screen when this device genuinely
+                        // cannot be finished without discarding it.
+                        lifecycleScope.launch {
+                            if (matrixClient.encryptionService.repairWithoutReset().isSuccess) {
+                                Timber.d("Finished encryption setup without a reset.")
+                                return@launch
+                            }
+                            Timber.d("Encryption setup needs a reset, asking first.")
+                            backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.ResetIdentity))
+                        }
                     }
 
                     override fun navigateToRoomSettings(roomId: RoomId) {

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_encryption_reset_required_title">Kai kurių ankstesnių žinučių atkurti nepavyks</string>
+    <string name="gua_encryption_reset_required_message">Kad šiame įrenginyje būtų baigta šifruotų pokalbių sąranka, reikia atstatyti jūsų šifruotą atsarginę kopiją. Žinutės, saugomos tik toje kopijoje, bus prarastos. Žinutėms, jau esančioms jūsų įrenginiuose, tai neturės įtakos.</string>
+    <string name="gua_encryption_reset_required_action">Atstatyti ir užbaigti</string>
+</resources>

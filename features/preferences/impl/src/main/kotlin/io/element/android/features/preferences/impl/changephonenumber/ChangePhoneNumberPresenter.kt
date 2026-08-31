@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -64,7 +65,8 @@ class ChangePhoneNumberPresenter(
         var code by remember { mutableStateOf("") }
         // The NEW number, held as (country, RAW national digits) like the welcome PhoneEntry screen.
         // The national mask is applied purely visually by PhoneNumberEntryField.
-        var selectedCountry by remember { mutableStateOf(Country.deviceDefault) }
+        val context = LocalContext.current
+        var selectedCountry by remember { mutableStateOf(Country.deviceDefault(context)) }
         var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
         // Remaining fresh-2FA cooldown surfaced on the Cooldown interstitial (0 otherwise).

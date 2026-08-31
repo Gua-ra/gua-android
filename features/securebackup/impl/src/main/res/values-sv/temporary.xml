@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_encryption_reset_required_title">Vissa tidigare meddelanden kan inte återställas</string>
+    <string name="gua_encryption_reset_required_message">För att slutföra konfigurationen av krypterade chattar på den här enheten måste din krypterade säkerhetskopia återställas. Meddelanden som bara finns i den säkerhetskopian går förlorade. Meddelanden som redan finns på dina enheter påverkas inte.</string>
+    <string name="gua_encryption_reset_required_action">Återställ och slutför</string>
+</resources>

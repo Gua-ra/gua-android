@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_encryption_reset_required_title">Nogle tidligere beskeder kan ikke gendannes</string>
+    <string name="gua_encryption_reset_required_message">For at færdiggøre opsætningen af krypterede chats på denne enhed skal din krypterede sikkerhedskopi nulstilles. Beskeder, der kun er gemt i den sikkerhedskopi, går tabt. Beskeder, der allerede findes på dine enheder, påvirkes ikke.</string>
+    <string name="gua_encryption_reset_required_action">Nulstil og færdiggør</string>
+</resources>

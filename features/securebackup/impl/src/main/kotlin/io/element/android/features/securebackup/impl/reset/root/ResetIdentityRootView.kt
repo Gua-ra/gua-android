@@ -20,19 +20,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
-import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.securebackup.impl.R
-import io.element.android.libraries.designsystem.atomic.organisms.InfoListItem
-import io.element.android.libraries.designsystem.atomic.organisms.InfoListOrganism
 import io.element.android.libraries.designsystem.atomic.pages.FlowStepPage
 import io.element.android.libraries.designsystem.components.BigIcon
 import io.element.android.libraries.designsystem.components.dialogs.ConfirmationDialog
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Button
-import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.Text
-import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 fun ResetIdentityRootView(
@@ -44,13 +39,13 @@ fun ResetIdentityRootView(
     FlowStepPage(
         modifier = modifier,
         iconStyle = BigIcon.Style.AlertSolid,
-        title = stringResource(R.string.screen_encryption_reset_title),
+        title = stringResource(R.string.gua_encryption_reset_required_title),
         isScrollable = true,
         content = { Content() },
         buttons = {
             Button(
                 modifier = Modifier.fillMaxWidth(),
-                text = stringResource(id = R.string.screen_encryption_reset_action_continue_reset),
+                text = stringResource(id = R.string.gua_encryption_reset_required_action),
                 onClick = { state.eventSink(ResetIdentityRootEvent.Continue) },
                 destructive = true,
             )
@@ -79,50 +74,13 @@ private fun Content() {
         modifier = Modifier.padding(top = 8.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        InfoListOrganism(
-            modifier = Modifier.fillMaxWidth(),
-            items = persistentListOf(
-                InfoListItem(
-                    message = stringResource(R.string.screen_encryption_reset_bullet_1),
-                    iconComposable = {
-                        Icon(
-                            modifier = Modifier.size(20.dp),
-                            imageVector = CompoundIcons.Check(),
-                            contentDescription = null,
-                            tint = ElementTheme.colors.iconSuccessPrimary,
-                        )
-                    },
-                ),
-                InfoListItem(
-                    message = stringResource(R.string.screen_encryption_reset_bullet_2),
-                    iconComposable = {
-                        Icon(
-                            modifier = Modifier.size(20.dp),
-                            imageVector = CompoundIcons.Info(),
-                            contentDescription = null,
-                            tint = ElementTheme.colors.iconSecondary,
-                        )
-                    },
-                ),
-                InfoListItem(
-                    message = stringResource(R.string.screen_encryption_reset_bullet_3),
-                    iconComposable = {
-                        Icon(
-                            modifier = Modifier.size(20.dp),
-                            imageVector = CompoundIcons.Info(),
-                            contentDescription = null,
-                            tint = ElementTheme.colors.iconSecondary,
-                        )
-                    },
-                ),
-            ),
-        )
-
+        // GUA FORK: one plain sentence about what is lost, instead of three bullets of
+        // upstream jargon about identities and recovery keys the user has never seen.
         Text(
             modifier = Modifier.fillMaxWidth(),
-            text = stringResource(R.string.screen_encryption_reset_footer),
-            style = ElementTheme.typography.fontBodyMdMedium,
-            color = ElementTheme.colors.textActionPrimary,
+            text = stringResource(R.string.gua_encryption_reset_required_message),
+            style = ElementTheme.typography.fontBodyMdRegular,
+            color = ElementTheme.colors.textSecondary,
             textAlign = TextAlign.Center,
         )
     }

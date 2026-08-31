@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_encryption_reset_required_title">برخی پیام‌های پیشین قابل بازیابی نیستند</string>
+    <string name="gua_encryption_reset_required_message">برای تکمیل راه‌اندازی گفت‌وگوهای رمزگذاری‌شده روی این دستگاه، پشتیبان رمزگذاری‌شدهٔ شما باید بازنشانی شود. پیام‌هایی که فقط در آن پشتیبان ذخیره شده‌اند از دست می‌روند. پیام‌هایی که همین حالا روی دستگاه‌های شما هستند تحت تأثیر قرار نمی‌گیرند.</string>
+    <string name="gua_encryption_reset_required_action">بازنشانی و تکمیل</string>
+</resources>

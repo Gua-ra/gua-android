@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_encryption_reset_required_title">Aurreko mezu batzuk ezin dira berreskuratu</string>
+    <string name="gua_encryption_reset_required_message">Gailu honetan zifratutako txatak konfiguratzen amaitzeko, zure zifratutako babeskopia berrezarri behar da. Babeskopia horretan bakarrik gordetako mezuak galdu egingo dira. Zure gailuetan dagoeneko dauden mezuei ez die eragingo.</string>
+    <string name="gua_encryption_reset_required_action">Berrezarri eta amaitu</string>
+</resources>

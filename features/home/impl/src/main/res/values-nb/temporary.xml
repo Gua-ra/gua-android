@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="gua_encryption_repair_title">Fullfør oppsettet av denne enheten</string>
-    <string name="gua_encryption_repair_message">Fullfør oppsettet for å gjenopprette den krypterte chatthistorikken din og få tilgang til tidligere meldinger på denne enheten.</string>
+    <string name="gua_encryption_repair_message">Fullfør oppsettet for å få tilgang til de krypterte chattene og meldingsloggen som finnes på denne enheten.</string>
     <string name="gua_encryption_repair_action">Fullfør oppsett</string>
 </resources>
