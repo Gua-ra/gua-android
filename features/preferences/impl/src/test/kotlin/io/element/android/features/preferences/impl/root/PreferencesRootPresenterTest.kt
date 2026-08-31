@@ -18,6 +18,7 @@ import io.element.android.features.lockscreen.test.FakeLockScreenService
 import io.element.android.features.logout.api.direct.aDirectLogoutState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
+import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.featureflag.api.FeatureFlagService
@@ -191,14 +192,13 @@ class PreferencesRootPresenterTest {
                 canDeactivateAccountResult = { true },
                 accountManagementUrlResult = { Result.success(null) },
             ),
-            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.RELEASE))
+            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.RELEASE)),
+            buildMeta = aBuildMeta(BuildType.RELEASE),
         ).test {
-            val loadedState = awaitFirstItem()
-            assertThat(loadedState.showSecureBackup).isFalse()
-            repeat(times = ShowDeveloperSettingsProvider.DEVELOPER_SETTINGS_COUNTER) {
-                loadedState.eventSink(PreferencesRootEvent.OnVersionInfoClick)
-            }
-            assertThat(awaitItem().showSecureBackup).isTrue()
+            // GUA FORK: gated on build TYPE, not the seven-tap developer unlock. That unlock
+            // works in any build, so gating on it would still let a release user reach the
+            // recovery-key console.
+            assertThat(awaitFirstItem().showSecureBackup).isFalse()
         }
     }
 
@@ -361,6 +361,7 @@ class PreferencesRootPresenterTest {
         sessionEnterpriseService: SessionEnterpriseService = FakeSessionEnterpriseService(),
         lockScreenService: FakeLockScreenService = FakeLockScreenService().apply { setIsPinSetup(true) },
         identityServiceClient: IdentityServiceClient = NoopIdentityServiceClient(),
+        buildMeta: BuildMeta = aBuildMeta(),
     ) = PreferencesRootPresenter(
         matrixClient = matrixClient,
         analyticsService = FakeAnalyticsService(),
@@ -375,6 +376,7 @@ class PreferencesRootPresenterTest {
         sessionEnterpriseService = sessionEnterpriseService,
         lockScreenService = lockScreenService,
         identityServiceClient = identityServiceClient,
+        buildMeta = buildMeta,
     )
 }
 

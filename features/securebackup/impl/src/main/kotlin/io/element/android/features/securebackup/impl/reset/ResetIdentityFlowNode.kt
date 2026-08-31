@@ -83,6 +83,9 @@ class ResetIdentityFlowNode(
     private var resetJob: Job? = null
     private var hasFinished = false
 
+    /** True from the moment MAS approval starts committing until the reset has settled. */
+    private var resetInFlight = false
+
     override fun onBuilt() {
         super.onBuilt()
 
@@ -112,6 +115,13 @@ class ResetIdentityFlowNode(
     }
 
     private fun CoroutineScope.startReset() = launch {
+        // GUA FORK: never abort a reset that is already committing. A second tap used to cancel
+        // the in-flight approval and start again, which is exactly what a confused user does when
+        // the MAS tab leaves them looking at this screen.
+        if (resetInFlight) {
+            Timber.d("A reset is already in flight, ignoring the request.")
+            return@launch
+        }
         // Instead of cancelling the reset job on every ON_START, we can do it before starting a new attempt
         cancelResetJob()
 
@@ -136,8 +146,18 @@ class ResetIdentityFlowNode(
                         activity.openUrlInChromeCustomTab(null, darkTheme, url)
                         Timber.d("Starting resetOAuth")
                         resetJob = launch {
+                            resetInFlight = true
                             handle.resetOAuth()
-                            provisionKeyStorageSilently()
+                                .onFailure { Timber.e(it, "The identity reset failed.") }
+                                .onSuccess {
+                                    // Front the app BEFORE provisioning. Sync stops a few seconds
+                                    // after backgrounding and the recovery/backup flows pin to
+                                    // WAITING_FOR_SYNC while it is stopped, so provisioning behind
+                                    // the Custom Tab fires into a client that cannot observe it.
+                                    returnFromCustomTab()
+                                    provisionKeyStorageSilently()
+                                }
+                            resetInFlight = false
                             returnFromCustomTab()
                             finishOnce()
                         }
@@ -165,8 +185,26 @@ class ResetIdentityFlowNode(
      */
     private suspend fun provisionKeyStorageSilently() {
         encryptionService.enableRecovery(waitForBackupsToUpload = false)
-            .onSuccess { Timber.d("Provisioned key storage after the reset.") }
-            .onFailure { Timber.e(it, "Could not provision key storage after the reset.") }
+            .onSuccess {
+                Timber.d("Provisioned key storage after the reset.")
+                return
+            }
+            .onFailure { Timber.w(it, "Could not provision key storage after the reset; checking for a stale backup.") }
+
+        // enableRecovery refuses while a key backup still exists on the server. After a reset that
+        // backup is unreachable by any key or device, so keeping it preserves nothing; replace it.
+        if (encryptionService.doesBackupExistOnServer().getOrDefault(false).not()) {
+            Timber.e("No server backup, so provisioning failed for another reason.")
+            return
+        }
+        encryptionService.disableRecovery()
+            .onFailure {
+                Timber.e(it, "Could not clear the stale backup after the reset.")
+                return
+            }
+        encryptionService.enableRecovery(waitForBackupsToUpload = false)
+            .onSuccess { Timber.d("Replaced key storage after the reset.") }
+            .onFailure { Timber.e(it, "Could not replace key storage after the reset.") }
     }
 
     /**
@@ -206,7 +244,7 @@ class ResetIdentityFlowNode(
         val navigatesUp = super.performUpNavigation()
 
         // This intercepts the back navigation so we only cancel this job when the user actually navigates up
-        if (navigatesUp) {
+        if (navigatesUp && !resetInFlight) {
             sessionCoroutineScope.launch { resetIdentityFlowManager.cancel() }
             cancelResetJob()
         }

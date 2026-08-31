@@ -10,7 +10,6 @@ package io.element.android.libraries.phonenumberentry
 import android.content.Context
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
-import dev.zacsweers.metro.Inject
 import io.element.android.libraries.di.annotations.ApplicationContext
 
 /**
@@ -28,7 +27,6 @@ interface DeviceCountryProvider {
 }
 
 @ContributesBinding(AppScope::class)
-@Inject
 class DefaultDeviceCountryProvider(
     @ApplicationContext private val context: Context,
 ) : DeviceCountryProvider {

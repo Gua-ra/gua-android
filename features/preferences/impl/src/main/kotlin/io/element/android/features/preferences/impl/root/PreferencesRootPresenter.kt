@@ -25,6 +25,8 @@ import io.element.android.features.logout.api.direct.DirectLogoutState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.designsystem.utils.snackbar.collectSnackbarMessageAsState
 import io.element.android.libraries.featureflag.api.FeatureFlagService
@@ -59,6 +61,7 @@ class PreferencesRootPresenter(
     private val sessionEnterpriseService: SessionEnterpriseService,
     private val lockScreenService: LockScreenService,
     private val identityServiceClient: IdentityServiceClient,
+    private val buildMeta: BuildMeta,
 ) : Presenter<PreferencesRootState> {
     @Composable
     override fun present(): PreferencesRootState {
@@ -161,7 +164,7 @@ class PreferencesRootPresenter(
             // forced it visible on the grounds that it was the only way back from broken key
             // storage; that is no longer true, because the setup banner now repairs the account
             // silently and escalates to a reset on its own when it has to.
-            showSecureBackup = showDeveloperSettings,
+            showSecureBackup = buildMeta.buildType != BuildType.RELEASE,
             showSecureBackupBadge = showSecureBackupIndicator,
             accountManagementUrl = accountManagementUrl.value,
             showAnalyticsSettings = hasAnalyticsProviders,

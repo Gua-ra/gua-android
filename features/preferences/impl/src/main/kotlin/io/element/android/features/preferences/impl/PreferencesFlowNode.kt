@@ -358,11 +358,7 @@ class PreferencesFlowNode(
                 createNode<BlockedUsersNode>(buildContext)
             }
             NavTarget.SignOut -> {
-                val callBack: LogoutEntryPoint.Callback = object : LogoutEntryPoint.Callback {
-                    override fun navigateToSecureBackup() {
-                        callback.navigateToSecureBackup()
-                    }
-                }
+                val callBack: LogoutEntryPoint.Callback = object : LogoutEntryPoint.Callback {}
                 logoutEntryPoint.createNode(
                     parentNode = this,
                     buildContext = buildContext,
