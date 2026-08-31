@@ -52,13 +52,3 @@ internal fun ConfirmRecoveryKeyBannerPreview() = ElementPreview {
         isWorking = false,
     )
 }
-
-@PreviewsDayNight
-@Composable
-internal fun ConfirmRecoveryKeyBannerWorkingPreview() = ElementPreview {
-    ConfirmRecoveryKeyBanner(
-        onContinueClick = {},
-        onDismissClick = {},
-        isWorking = true,
-    )
-}

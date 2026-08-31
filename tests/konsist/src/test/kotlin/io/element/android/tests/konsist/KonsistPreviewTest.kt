@@ -87,8 +87,6 @@ class KonsistPreviewTest {
         "BackgroundVerticalGradientDisabledPreview",
         "BackgroundVerticalGradientPreview",
         "ColorAliasesPreview",
-        // GUA FORK: second preview of the encryption setup banner, showing the in-progress button.
-        "ConfirmRecoveryKeyBannerWorkingPreview",
         "FocusedEventPreview",
         "GradientFloatingActionButtonCircleShapePreview",
         "HeaderFooterPageScrollablePreview",
