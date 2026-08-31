@@ -16,7 +16,12 @@ class EncryptionRepairTest {
     @Test
     fun `already enabled is a no-op`() = runTest {
         var enableCalls = 0
-        val service = FakeEncryptionService(enableRecoveryLambda = { _, _ -> enableCalls++; Result.success("key") })
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                Result.success("key")
+            }
+        )
         service.recoveryStateStateFlow.value = RecoveryState.ENABLED
 
         assertThat(service.repairWithoutReset().isSuccess).isTrue()
@@ -26,7 +31,12 @@ class EncryptionRepairTest {
     @Test
     fun `disabled provisions key storage`() = runTest {
         var enableCalls = 0
-        val service = FakeEncryptionService(enableRecoveryLambda = { _, _ -> enableCalls++; Result.success("key") })
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                Result.success("key")
+            }
+        )
         service.recoveryStateStateFlow.value = RecoveryState.DISABLED
 
         assertThat(service.repairWithoutReset().isSuccess).isTrue()
@@ -36,7 +46,12 @@ class EncryptionRepairTest {
     @Test
     fun `incomplete finishes provisioning when nothing hands the secrets over`() = runTest {
         var enableCalls = 0
-        val service = FakeEncryptionService(enableRecoveryLambda = { _, _ -> enableCalls++; Result.success("key") })
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                Result.success("key")
+            }
+        )
         service.recoveryStateStateFlow.value = RecoveryState.INCOMPLETE
 
         assertThat(service.repairWithoutReset().isSuccess).isTrue()
@@ -58,7 +73,12 @@ class EncryptionRepairTest {
     @Test
     fun `refuses to act while the state is still unknown`() = runTest {
         var enableCalls = 0
-        val service = FakeEncryptionService(enableRecoveryLambda = { _, _ -> enableCalls++; Result.success("key") })
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                Result.success("key")
+            }
+        )
         service.recoveryStateStateFlow.value = RecoveryState.UNKNOWN
 
         assertThat(service.repairWithoutReset().isFailure).isTrue()
