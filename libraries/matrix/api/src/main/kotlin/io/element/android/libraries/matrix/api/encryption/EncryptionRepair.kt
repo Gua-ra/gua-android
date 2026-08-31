@@ -90,7 +90,13 @@ private suspend fun EncryptionService.provisionKeyStorage(): EncryptionRepairOut
  * Turning backups on is the one non-rotating thing worth trying: it costs nothing when it fails.
  */
 private suspend fun EncryptionService.repairIncomplete(): EncryptionRepairOutcome {
-    enableBackups()
+    // Enabling backups needs no cross-signing keys, so on a device that genuinely lacks them this
+    // still succeeds and only the state check below says otherwise. A THROW here therefore means
+    // the server or the network, not a broken account, and must not be reported as needing a
+    // destructive reset: a user who taps through that on a bad connection loses their backup to a
+    // blip. Retry next time instead.
+    enableBackups().onFailure { return EncryptionRepairOutcome.NotYet }
+
     return if (awaitRecoveryEnabled()) EncryptionRepairOutcome.Repaired else EncryptionRepairOutcome.ResetRequired
 }
 

@@ -78,6 +78,18 @@ class EncryptionRepairTest {
     }
 
     @Test
+    fun `a server failure while enabling backups is retryable, never a reset`() = runTest {
+        // Enabling backups needs no cross-signing keys, so a throw here is the network or the
+        // server, not a broken account. Reporting it as needing a reset would let a user destroy
+        // their backup over a connection blip.
+        val service = FakeEncryptionService()
+        service.givenEnableBackupsFailure(IllegalStateException("offline"))
+        service.recoveryStateStateFlow.value = RecoveryState.INCOMPLETE
+
+        assertThat(service.repairWithoutReset()).isEqualTo(EncryptionRepairOutcome.NotYet)
+    }
+
+    @Test
     fun `reports not-yet, never a reset, while the state is unreadable`() = runTest {
         // Android pins the recovery flow to WAITING_FOR_SYNC the whole time sync is not Running,
         // so this is what a tap during a network blip looks like. Offering a reset here would
