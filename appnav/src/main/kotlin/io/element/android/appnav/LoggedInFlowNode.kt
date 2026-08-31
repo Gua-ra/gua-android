@@ -353,10 +353,6 @@ class LoggedInFlowNode(
                         backstack.push(NavTarget.CreateSpace)
                     }
 
-                    override fun navigateToSetUpRecovery() {
-                        backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.Root))
-                    }
-
                     override fun navigateToEnterRecoveryKey() {
                         // GUA FORK: never a recovery-key prompt. Gua shows nobody a recovery key, so
                         // asking for one is a dead end. Try every repair that keeps the backup intact
