@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: fr translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_signout_last_device_title">Se déconnecter supprimera vos messages de cet appareil</string>
+    <string name="gua_signout_last_device_subtitle">C\'est votre seul appareil. Les messages conservés uniquement ici ne seront pas disponibles à votre prochaine connexion.</string>
+</resources>

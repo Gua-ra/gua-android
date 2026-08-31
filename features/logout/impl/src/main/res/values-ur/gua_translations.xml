@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ur translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_signout_last_device_title">سائن آؤٹ کرنے سے آپ کے پیغامات اس ڈیوائس سے ہٹ جائیں گے</string>
+    <string name="gua_signout_last_device_subtitle">یہ آپ کی واحد ڈیوائس ہے۔ صرف یہاں محفوظ پیغامات دوبارہ سائن ان کرنے پر دستیاب نہیں ہوں گے۔</string>
+</resources>
