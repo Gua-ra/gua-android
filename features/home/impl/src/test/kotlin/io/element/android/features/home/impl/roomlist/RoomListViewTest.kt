@@ -108,7 +108,9 @@ class RoomListViewTest : RobolectricTest() {
             // Remove automatic initial events
             eventsRecorder.clear()
 
-            clickOn(CommonStrings.action_continue)
+            // GUA FORK: the banner asks people to finish setting the device up, it no longer
+            // offers a bare "Continue" into a recovery-key prompt.
+            clickOn(R.string.gua_encryption_repair_action)
 
             eventsRecorder.assertEmpty()
         }
