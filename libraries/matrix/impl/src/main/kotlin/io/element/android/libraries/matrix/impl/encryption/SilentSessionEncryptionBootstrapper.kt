@@ -71,6 +71,21 @@ internal class SilentSessionEncryptionBootstrapper(
                     return@launch
                 }
 
+                // GUA FORK: only DISABLED gets provisioned here, never INCOMPLETE.
+                //
+                // Recovery::enable always runs create_secret_store, minting a new SSSS key and
+                // PUTting a new m.secret_storage.default_key. On an INCOMPLETE account it exports
+                // nothing useful (the private cross-signing keys are not there to export) so the
+                // state falls straight back to INCOMPLETE, and this runs unconditionally from the
+                // client's init block on EVERY cold start. That rotated the account's secret
+                // storage every single launch, permanently invalidating any recovery key saved for
+                // it, including one held by the same user on iOS, and repaired nothing. Only a
+                // reset can finish an INCOMPLETE device, and that needs the user in front of it.
+                if (recoveryState != RecoveryState.DISABLED) {
+                    Timber.tag(TAG).i("Recovery is %s for %s; leaving it to the setup banner.", recoveryState, sessionId.value)
+                    return@launch
+                }
+
                 // Bootstrap path: provision recovery silently.
                 Timber.tag(TAG).i("Bootstrapping key storage silently for %s (recoveryState=%s).", sessionId.value, recoveryState)
                 encryptionService.enableRecovery(waitForBackupsToUpload = false)

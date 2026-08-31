@@ -34,11 +34,14 @@ internal fun ConfirmRecoveryKeyBanner(
         title = stringResource(R.string.gua_encryption_repair_title),
         description = stringResource(R.string.gua_encryption_repair_message),
         type = AnnouncementType.Actionable(
-            actionText = stringResource(
-                if (isWorking) R.string.gua_encryption_repair_action_in_progress else R.string.gua_encryption_repair_action
-            ),
+            // GUA FORK: the label stays put and the button itself shows the work. Swapping the
+            // label alone left the button live and rippling under every further press, and the
+            // replacement word shipped in one locale out of forty, so a Brazilian tester watched
+            // Portuguese flip to English mid-tap.
+            actionText = stringResource(R.string.gua_encryption_repair_action),
             onActionClick = onContinueClick,
             onDismissClick = onDismissClick,
+            actionInProgress = isWorking,
         ),
     )
 }
