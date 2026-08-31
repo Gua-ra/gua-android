@@ -7,5 +7,6 @@
 <!-- GUA FORK: Brazilian Portuguese (pt-BR) translation for the "Find friends" entry in the
      new-chat / "+" screen. English source of truth lives in values/temporary.xml. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="screen_find_friends_action">"Encontrar amigos"</string>
+    <string name="screen_find_friends_action">Encontrar amigos</string>
+    <string name="gua_join_room_by_address_hint">Cole o endereço da sala que você recebeu.</string>
 </resources>

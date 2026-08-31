@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ja translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">2 段階認証を設定</string>
+    <string name="screen_preferences_pin_nudge_message">6 桁の PIN を追加して、アカウントをより安全に保ちましょう。</string>
+    <string name="screen_preferences_pin_nudge_action">今すぐ設定</string>
+    <string name="screen_two_step_verification_title">2 段階認証</string>
+    <string name="screen_two_step_verification_overview_header">アカウント PIN</string>
+    <string name="screen_two_step_verification_status_on">2 段階認証はオンです</string>
+    <string name="screen_two_step_verification_status_off">2 段階認証はオフです</string>
+    <string name="screen_two_step_verification_overview_footer_on">6 桁の PIN でアカウントの安全性がさらに高まります。</string>
+    <string name="screen_two_step_verification_overview_footer_off">6 桁の PIN を追加して、アカウントの安全性を高めましょう。</string>
+    <string name="screen_two_step_verification_set_button">PIN を設定</string>
+    <string name="screen_two_step_verification_change_button">PIN を変更</string>
+    <string name="screen_two_step_verification_passkey_button">パスキーを設定</string>
+    <string name="screen_two_step_verification_passkey_footer">パスキーを使うと、指紋・顔・端末の PIN でより早くサインインできます。</string>
+    <string name="screen_two_step_verification_phone_header">電話番号を確認してください</string>
+    <string name="screen_two_step_verification_phone_footer">変更を確認するため、この番号にコードを送信します。</string>
+    <string name="screen_two_step_verification_current_header">現在の PIN を入力</string>
+    <string name="screen_two_step_verification_current_footer">以前に設定した 6 桁の PIN を入力してください。</string>
+    <string name="screen_two_step_verification_otp_header">送信されたコードを入力</string>
+    <string name="screen_two_step_verification_otp_footer">お使いの端末に送信された 6 桁のコードを入力してください。</string>
+    <string name="screen_two_step_verification_new_header">新しい PIN を選択</string>
+    <string name="screen_two_step_verification_new_footer">6 桁の PIN を選んでください。推測されやすい並びは避けましょう。</string>
+    <string name="screen_two_step_verification_confirm_header">新しい PIN を確認</string>
+    <string name="screen_two_step_verification_confirm_footer">確認のため、6 桁の PIN をもう一度入力してください。</string>
+    <string name="screen_two_step_verification_phone_label">電話番号</string>
+    <string name="screen_two_step_verification_phone_invalid">有効な電話番号を入力してください。</string>
+    <string name="screen_two_step_verification_current_incorrect">この PIN は正しくありません。もう一度お試しください。</string>
+    <string name="screen_two_step_verification_otp_invalid">入力されたコードは無効か、有効期限が切れています。</string>
+    <string name="screen_two_step_verification_locked">誤入力が多かったため PIN がロックされました。しばらくしてからお試しください。</string>
+    <string name="screen_two_step_verification_cooldown">安全のため、PIN の変更は 1 日 1 回までです。</string>
+    <string name="screen_two_step_verification_challenge_invalid">PIN 変更のセッションが期限切れになりました。最初からやり直してください。</string>
+    <string name="screen_two_step_verification_weak_error">この PIN は推測されやすすぎます。別の PIN を選んでください。</string>
+    <string name="screen_two_step_verification_mismatch_error">PIN が一致しません。もう一度お試しください。</string>
+    <string name="screen_two_step_verification_same_as_current">新しい PIN は現在の PIN と異なる必要があります。</string>
+    <string name="screen_two_step_verification_rate_limited">試行回数が多すぎます。しばらく待ってからお試しください。</string>
+    <string name="screen_two_step_verification_updated">2 段階認証を更新しました</string>
+    <string name="screen_change_phone_title">電話番号を変更</string>
+    <string name="screen_change_phone_intro_header">電話番号を変更する</string>
+    <string name="screen_change_phone_intro_message">PIN を確認したうえで、新しい番号にコードを SMS で送信します。アカウント、チャット、メッセージはそのままです。</string>
+    <string name="screen_change_phone_new_header">新しい電話番号</string>
+    <string name="screen_change_phone_new_footer">これから使用する番号を入力してください。</string>
+    <string name="screen_change_phone_new_invalid">有効な電話番号を入力してください。</string>
+    <string name="screen_change_phone_pin_header">PIN を入力</string>
+    <string name="screen_change_phone_pin_footer">この変更を承認するため、6 桁の PIN を確認してください。</string>
+    <string name="screen_change_phone_pin_incorrect">この PIN は正しくありません。もう一度お試しください。</string>
+    <string name="screen_change_phone_otp_header">新しい番号を確認</string>
+    <string name="screen_change_phone_otp_footer">新しい番号に送信した 6 桁のコードを入力してください。</string>
+    <string name="screen_change_phone_otp_invalid">このコードは無効か、有効期限が切れています。もう一度お試しください。</string>
+    <string name="screen_change_phone_already_linked">その電話番号はすでに別のアカウントに登録されています。</string>
+    <string name="screen_change_phone_updated">電話番号を更新しました。</string>
+    <string name="screen_change_phone_done_header">完了しました</string>
+    <string name="screen_change_phone_done_message">電話番号を更新しました。これからは新しい番号でサインインします。</string>
+    <string name="screen_change_phone_needs_pin_header">番号の変更には PIN が必要です</string>
+    <string name="screen_change_phone_needs_pin_message">安全のため、6 桁のアカウント PIN を設定してください。番号を変更する前に確認します。</string>
+    <string name="screen_change_phone_needs_pin_action">PIN を設定</string>
+    <string name="screen_change_phone_cooldown_header">まだ変更できません</string>
+    <string name="screen_change_phone_cooldown_message">安全のため、番号の変更は %1$s 後に可能になります。</string>
+</resources>

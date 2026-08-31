@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: fi translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Ota kaksivaiheinen vahvistus käyttöön</string>
+    <string name="screen_preferences_pin_nudge_message">Lisää 6-numeroinen PIN-koodi suojataksesi tiliäsi paremmin.</string>
+    <string name="screen_preferences_pin_nudge_action">Ota käyttöön nyt</string>
+    <string name="screen_two_step_verification_title">Kaksivaiheinen vahvistus</string>
+    <string name="screen_two_step_verification_overview_header">Tilin PIN-koodi</string>
+    <string name="screen_two_step_verification_status_on">Kaksivaiheinen vahvistus on käytössä</string>
+    <string name="screen_two_step_verification_status_off">Kaksivaiheinen vahvistus ei ole käytössä</string>
+    <string name="screen_two_step_verification_overview_footer_on">6-numeroinen PIN-koodi tuo tilillesi ylimääräisen suojakerroksen.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Lisää 6-numeroinen PIN-koodi tuodaksesi tilillesi ylimääräisen suojakerroksen.</string>
+    <string name="screen_two_step_verification_set_button">Aseta PIN-koodi</string>
+    <string name="screen_two_step_verification_change_button">Vaihda PIN-koodi</string>
+    <string name="screen_two_step_verification_passkey_button">Ota avainkoodi käyttöön</string>
+    <string name="screen_two_step_verification_passkey_footer">Käytä avainkoodia kirjautuaksesi nopeammin sormenjäljellä, kasvoilla tai laitteen PIN-koodilla.</string>
+    <string name="screen_two_step_verification_phone_header">Vahvista puhelinnumerosi</string>
+    <string name="screen_two_step_verification_phone_footer">Lähetämme koodin tähän numeroon muutoksen vahvistamiseksi.</string>
+    <string name="screen_two_step_verification_current_header">Anna nykyinen PIN-koodisi</string>
+    <string name="screen_two_step_verification_current_footer">Anna aiemmin asettamasi 6-numeroinen PIN-koodi.</string>
+    <string name="screen_two_step_verification_otp_header">Anna lähettämämme koodi</string>
+    <string name="screen_two_step_verification_otp_footer">Anna puhelimeesi lähetetty 6-numeroinen koodi.</string>
+    <string name="screen_two_step_verification_new_header">Valitse uusi PIN-koodi</string>
+    <string name="screen_two_step_verification_new_footer">Valitse 6-numeroinen PIN-koodi. Vältä helposti arvattavia sarjoja.</string>
+    <string name="screen_two_step_verification_confirm_header">Vahvista uusi PIN-koodisi</string>
+    <string name="screen_two_step_verification_confirm_footer">Anna 6-numeroinen PIN-koodi uudelleen vahvistaaksesi.</string>
+    <string name="screen_two_step_verification_phone_label">Puhelinnumero</string>
+    <string name="screen_two_step_verification_phone_invalid">Anna kelvollinen puhelinnumero.</string>
+    <string name="screen_two_step_verification_current_incorrect">PIN-koodi on väärin. Yritä uudelleen.</string>
+    <string name="screen_two_step_verification_otp_invalid">Antamasi koodi on virheellinen tai vanhentunut.</string>
+    <string name="screen_two_step_verification_locked">PIN-koodi lukittiin liian monen väärän yrityksen vuoksi. Yritä myöhemmin uudelleen.</string>
+    <string name="screen_two_step_verification_cooldown">Turvallisuussyistä voit vaihtaa PIN-koodin vain kerran vuorokaudessa.</string>
+    <string name="screen_two_step_verification_challenge_invalid">PIN-koodin vaihtoistunto vanhentui. Aloita alusta.</string>
+    <string name="screen_two_step_verification_weak_error">Tämä PIN-koodi on liian helppo arvata. Valitse toinen.</string>
+    <string name="screen_two_step_verification_mismatch_error">PIN-koodit eivät täsmää. Yritä uudelleen.</string>
+    <string name="screen_two_step_verification_same_as_current">Uuden PIN-koodin on erottava nykyisestä.</string>
+    <string name="screen_two_step_verification_rate_limited">Liian monta yritystä. Odota hetki ja yritä uudelleen.</string>
+    <string name="screen_two_step_verification_updated">Kaksivaiheinen vahvistus päivitetty</string>
+    <string name="screen_change_phone_title">Vaihda puhelinnumero</string>
+    <string name="screen_change_phone_intro_header">Vaihda numerosi</string>
+    <string name="screen_change_phone_intro_message">Vahvistamme PIN-koodisi ja lähetämme sitten koodin tekstiviestillä uuteen numeroosi. Tilisi, keskustelusi ja viestisi pysyvät samoina.</string>
+    <string name="screen_change_phone_new_header">Uusi puhelinnumero</string>
+    <string name="screen_change_phone_new_footer">Anna numero, jota haluat käyttää tästä eteenpäin.</string>
+    <string name="screen_change_phone_new_invalid">Anna kelvollinen puhelinnumero.</string>
+    <string name="screen_change_phone_pin_header">Anna PIN-koodisi</string>
+    <string name="screen_change_phone_pin_footer">Vahvista 6-numeroinen PIN-koodisi hyväksyäksesi tämän muutoksen.</string>
+    <string name="screen_change_phone_pin_incorrect">PIN-koodi on väärin. Yritä uudelleen.</string>
+    <string name="screen_change_phone_otp_header">Vahvista uusi numerosi</string>
+    <string name="screen_change_phone_otp_footer">Anna 6-numeroinen koodi, jonka lähetimme uuteen numeroosi.</string>
+    <string name="screen_change_phone_otp_invalid">Koodi on virheellinen tai vanhentunut. Yritä uudelleen.</string>
+    <string name="screen_change_phone_already_linked">Tämä puhelinnumero on jo liitetty toiseen tiliin.</string>
+    <string name="screen_change_phone_updated">Puhelinnumerosi on päivitetty.</string>
+    <string name="screen_change_phone_done_header">Valmista</string>
+    <string name="screen_change_phone_done_message">Puhelinnumerosi on päivitetty. Tästä eteenpäin kirjaudut sisään uudella numerollasi.</string>
+    <string name="screen_change_phone_needs_pin_header">Tarvitset PIN-koodin numeron vaihtamiseen</string>
+    <string name="screen_change_phone_needs_pin_message">Turvallisuutesi vuoksi aseta 6-numeroinen tilin PIN-koodi. Vahvistat sen ennen numeron vaihtamista.</string>
+    <string name="screen_change_phone_needs_pin_action">Aseta PIN-koodi</string>
+    <string name="screen_change_phone_cooldown_header">Ei vielä</string>
+    <string name="screen_change_phone_cooldown_message">Turvallisuutesi vuoksi voit vaihtaa numerosi %1$s kuluttua.</string>
+</resources>

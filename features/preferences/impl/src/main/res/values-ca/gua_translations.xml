@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ca translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Configura la verificació en dos passos</string>
+    <string name="screen_preferences_pin_nudge_message">Afegeix un PIN de 6 xifres per protegir millor el teu compte.</string>
+    <string name="screen_preferences_pin_nudge_action">Configura-ho ara</string>
+    <string name="screen_two_step_verification_title">Verificació en dos passos</string>
+    <string name="screen_two_step_verification_overview_header">PIN del compte</string>
+    <string name="screen_two_step_verification_status_on">La verificació en dos passos està activada</string>
+    <string name="screen_two_step_verification_status_off">La verificació en dos passos està desactivada</string>
+    <string name="screen_two_step_verification_overview_footer_on">El teu PIN de 6 xifres afegeix una capa extra de seguretat al compte.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Afegeix un PIN de 6 xifres per donar una capa extra de seguretat al compte.</string>
+    <string name="screen_two_step_verification_set_button">Configura el PIN</string>
+    <string name="screen_two_step_verification_change_button">Canvia el PIN</string>
+    <string name="screen_two_step_verification_passkey_button">Configura una clau d\'accés</string>
+    <string name="screen_two_step_verification_passkey_footer">Utilitza una clau d\'accés per iniciar la sessió més ràpid amb l\'empremta, la cara o el PIN del dispositiu.</string>
+    <string name="screen_two_step_verification_phone_header">Confirma el teu número de telèfon</string>
+    <string name="screen_two_step_verification_phone_footer">Enviarem un codi a aquest número per confirmar el canvi.</string>
+    <string name="screen_two_step_verification_current_header">Introdueix el PIN actual</string>
+    <string name="screen_two_step_verification_current_footer">Introdueix el PIN de 6 xifres que vas definir abans.</string>
+    <string name="screen_two_step_verification_otp_header">Introdueix el codi que t\'hem enviat</string>
+    <string name="screen_two_step_verification_otp_footer">Introdueix el codi de 6 xifres enviat al teu telèfon.</string>
+    <string name="screen_two_step_verification_new_header">Tria un PIN nou</string>
+    <string name="screen_two_step_verification_new_footer">Tria un PIN de 6 xifres. Evita seqüències fàcils d\'endevinar.</string>
+    <string name="screen_two_step_verification_confirm_header">Confirma el PIN nou</string>
+    <string name="screen_two_step_verification_confirm_footer">Torna a introduir el PIN de 6 xifres per confirmar.</string>
+    <string name="screen_two_step_verification_phone_label">Número de telèfon</string>
+    <string name="screen_two_step_verification_phone_invalid">Introdueix un número de telèfon vàlid.</string>
+    <string name="screen_two_step_verification_current_incorrect">Aquest PIN no és correcte. Torna-ho a provar.</string>
+    <string name="screen_two_step_verification_otp_invalid">El codi que has introduït no és vàlid o ha caducat.</string>
+    <string name="screen_two_step_verification_locked">PIN bloquejat per massa intents incorrectes. Torna-ho a provar més tard.</string>
+    <string name="screen_two_step_verification_cooldown">Per seguretat, només pots canviar el PIN un cop al dia.</string>
+    <string name="screen_two_step_verification_challenge_invalid">La sessió de canvi de PIN ha caducat. Comença de nou.</string>
+    <string name="screen_two_step_verification_weak_error">Aquest PIN és massa fàcil d\'endevinar. Tria\'n un altre.</string>
+    <string name="screen_two_step_verification_mismatch_error">Els PIN no coincideixen. Torna-ho a provar.</string>
+    <string name="screen_two_step_verification_same_as_current">El PIN nou ha de ser diferent de l\'actual.</string>
+    <string name="screen_two_step_verification_rate_limited">Massa intents. Espera un moment i torna-ho a provar.</string>
+    <string name="screen_two_step_verification_updated">Verificació en dos passos actualitzada</string>
+    <string name="screen_change_phone_title">Canvia el número de telèfon</string>
+    <string name="screen_change_phone_intro_header">Canvia el teu número</string>
+    <string name="screen_change_phone_intro_message">Confirmarem el teu PIN i després enviarem un codi per SMS al número nou. El compte, els xats i els missatges no canvien.</string>
+    <string name="screen_change_phone_new_header">Número de telèfon nou</string>
+    <string name="screen_change_phone_new_footer">Introdueix el número que vols fer servir a partir d\'ara.</string>
+    <string name="screen_change_phone_new_invalid">Introdueix un número de telèfon vàlid.</string>
+    <string name="screen_change_phone_pin_header">Introdueix el teu PIN</string>
+    <string name="screen_change_phone_pin_footer">Confirma el PIN de 6 xifres per autoritzar aquest canvi.</string>
+    <string name="screen_change_phone_pin_incorrect">Aquest PIN no és correcte. Torna-ho a provar.</string>
+    <string name="screen_change_phone_otp_header">Verifica el teu número nou</string>
+    <string name="screen_change_phone_otp_footer">Introdueix el codi de 6 xifres que hem enviat al teu número nou.</string>
+    <string name="screen_change_phone_otp_invalid">Aquest codi no és vàlid o ha caducat. Torna-ho a provar.</string>
+    <string name="screen_change_phone_already_linked">Aquest número de telèfon ja està vinculat a un altre compte.</string>
+    <string name="screen_change_phone_updated">El teu número de telèfon s\'ha actualitzat.</string>
+    <string name="screen_change_phone_done_header">Tot a punt</string>
+    <string name="screen_change_phone_done_message">El teu número de telèfon s\'ha actualitzat. A partir d\'ara iniciaràs la sessió amb el número nou.</string>
+    <string name="screen_change_phone_needs_pin_header">Necessites un PIN per canviar de número</string>
+    <string name="screen_change_phone_needs_pin_message">Per seguretat, configura un PIN de 6 xifres. El confirmaràs abans de canviar de número.</string>
+    <string name="screen_change_phone_needs_pin_action">Configura el PIN</string>
+    <string name="screen_change_phone_cooldown_header">Encara no</string>
+    <string name="screen_change_phone_cooldown_message">Per seguretat, podràs canviar de número d\'aquí a %1$s.</string>
+</resources>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: cy translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Sefydlu dilysu dau gam</string>
+    <string name="screen_preferences_pin_nudge_message">Ychwanegwch PIN 6 digid i ddiogelu eich cyfrif yn well.</string>
+    <string name="screen_preferences_pin_nudge_action">Sefydlu nawr</string>
+    <string name="screen_two_step_verification_title">Dilysu dau gam</string>
+    <string name="screen_two_step_verification_overview_header">PIN y cyfrif</string>
+    <string name="screen_two_step_verification_status_on">Mae dilysu dau gam ymlaen</string>
+    <string name="screen_two_step_verification_status_off">Mae dilysu dau gam i ffwrdd</string>
+    <string name="screen_two_step_verification_overview_footer_on">Mae eich PIN 6 digid yn rhoi haen ychwanegol o ddiogelwch i\'ch cyfrif.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Ychwanegwch PIN 6 digid i roi haen ychwanegol o ddiogelwch i\'ch cyfrif.</string>
+    <string name="screen_two_step_verification_set_button">Sefydlu PIN</string>
+    <string name="screen_two_step_verification_change_button">Newid PIN</string>
+    <string name="screen_two_step_verification_passkey_button">Sefydlu allwedd mynediad</string>
+    <string name="screen_two_step_verification_passkey_footer">Defnyddiwch allwedd mynediad i fewngofnodi\'n gyflymach gyda\'ch olion bysedd, eich wyneb neu PIN y ddyfais.</string>
+    <string name="screen_two_step_verification_phone_header">Cadarnhewch eich rhif ffôn</string>
+    <string name="screen_two_step_verification_phone_footer">Byddwn yn anfon cod at y rhif hwn i gadarnhau\'r newid.</string>
+    <string name="screen_two_step_verification_current_header">Rhowch eich PIN presennol</string>
+    <string name="screen_two_step_verification_current_footer">Rhowch y PIN 6 digid a osodwyd gennych o\'r blaen.</string>
+    <string name="screen_two_step_verification_otp_header">Rhowch y cod a anfonwyd</string>
+    <string name="screen_two_step_verification_otp_footer">Rhowch y cod 6 digid a anfonwyd at eich ffôn.</string>
+    <string name="screen_two_step_verification_new_header">Dewiswch PIN newydd</string>
+    <string name="screen_two_step_verification_new_footer">Dewiswch PIN 6 digid. Osgowch ddilyniannau hawdd eu dyfalu.</string>
+    <string name="screen_two_step_verification_confirm_header">Cadarnhewch eich PIN newydd</string>
+    <string name="screen_two_step_verification_confirm_footer">Rhowch y PIN 6 digid eto i gadarnhau.</string>
+    <string name="screen_two_step_verification_phone_label">Rhif ffôn</string>
+    <string name="screen_two_step_verification_phone_invalid">Rhowch rif ffôn dilys.</string>
+    <string name="screen_two_step_verification_current_incorrect">Mae\'r PIN hwnnw\'n anghywir. Rhowch gynnig arall arni.</string>
+    <string name="screen_two_step_verification_otp_invalid">Mae\'r cod a roesoch yn annilys neu wedi dod i ben.</string>
+    <string name="screen_two_step_verification_locked">Cafodd y PIN ei gloi ar ôl gormod o ymgeisiadau anghywir. Ceisiwch eto\'n hwyrach.</string>
+    <string name="screen_two_step_verification_cooldown">Er diogelwch, dim ond unwaith y dydd y gallwch newid eich PIN.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Daeth eich sesiwn newid PIN i ben. Dechreuwch eto.</string>
+    <string name="screen_two_step_verification_weak_error">Mae\'r PIN hwnnw\'n rhy hawdd ei ddyfalu. Dewiswch un arall.</string>
+    <string name="screen_two_step_verification_mismatch_error">Nid yw\'r PINau\'n cyfateb. Rhowch gynnig arall arni.</string>
+    <string name="screen_two_step_verification_same_as_current">Rhaid i\'ch PIN newydd fod yn wahanol i\'ch PIN presennol.</string>
+    <string name="screen_two_step_verification_rate_limited">Gormod o ymgeisiadau. Arhoswch eiliad a rhowch gynnig arall arni.</string>
+    <string name="screen_two_step_verification_updated">Diweddarwyd dilysu dau gam</string>
+    <string name="screen_change_phone_title">Newid rhif ffôn</string>
+    <string name="screen_change_phone_intro_header">Newidiwch eich rhif</string>
+    <string name="screen_change_phone_intro_message">Byddwn yn cadarnhau eich PIN, yna\'n anfon cod drwy neges destun at eich rhif newydd. Mae eich cyfrif, eich sgyrsiau a\'ch negeseuon yn aros yr un fath.</string>
+    <string name="screen_change_phone_new_header">Rhif ffôn newydd</string>
+    <string name="screen_change_phone_new_footer">Rhowch y rhif yr hoffech ei ddefnyddio o hyn ymlaen.</string>
+    <string name="screen_change_phone_new_invalid">Rhowch rif ffôn dilys.</string>
+    <string name="screen_change_phone_pin_header">Rhowch eich PIN</string>
+    <string name="screen_change_phone_pin_footer">Cadarnhewch eich PIN 6 digid i awdurdodi\'r newid hwn.</string>
+    <string name="screen_change_phone_pin_incorrect">Mae\'r PIN hwnnw\'n anghywir. Rhowch gynnig arall arni.</string>
+    <string name="screen_change_phone_otp_header">Dilyswch eich rhif newydd</string>
+    <string name="screen_change_phone_otp_footer">Rhowch y cod 6 digid a anfonwyd gennym at eich rhif newydd.</string>
+    <string name="screen_change_phone_otp_invalid">Mae\'r cod hwnnw\'n annilys neu wedi dod i ben. Rhowch gynnig arall arni.</string>
+    <string name="screen_change_phone_already_linked">Mae\'r rhif ffôn hwnnw eisoes wedi\'i gysylltu â chyfrif arall.</string>
+    <string name="screen_change_phone_updated">Mae eich rhif ffôn wedi\'i ddiweddaru.</string>
+    <string name="screen_change_phone_done_header">Popeth yn barod</string>
+    <string name="screen_change_phone_done_message">Mae eich rhif ffôn wedi\'i ddiweddaru. O hyn ymlaen byddwch yn defnyddio\'ch rhif newydd i fewngofnodi.</string>
+    <string name="screen_change_phone_needs_pin_header">Bydd angen PIN arnoch i newid eich rhif</string>
+    <string name="screen_change_phone_needs_pin_message">Er eich diogelwch, sefydlwch PIN cyfrif 6 digid. Byddwch yn ei gadarnhau cyn newid eich rhif.</string>
+    <string name="screen_change_phone_needs_pin_action">Sefydlu PIN</string>
+    <string name="screen_change_phone_cooldown_header">Ddim eto</string>
+    <string name="screen_change_phone_cooldown_message">Er eich diogelwch, gallwch newid eich rhif ymhen %1$s.</string>
+</resources>

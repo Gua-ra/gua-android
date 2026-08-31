@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: eu translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Bilatu lagunak</string>
+    <string name="screen_find_friends_action">Bilatu lagunak</string>
+    <string name="screen_find_friends_action_description">Ikusi zure kontaktuetako zeintzuk dauden Gua-n</string>
+    <string name="screen_find_friends_loading">Zure kontaktuak Gua-n bilatzen…</string>
+    <string name="screen_find_friends_permission_title">Baimendu kontaktuetarako sarbidea</string>
+    <string name="screen_find_friends_permission_message">Gua-k zure kontaktuak modu pribatuan egiaztatzen ditu, nor dagoen jada hemen jakiteko. Zure kontaktuak ez dira inoiz gordetzen.</string>
+    <string name="screen_find_friends_permission_action">Baimendu sarbidea</string>
+    <string name="screen_find_friends_permission_denied_action">Ireki ezarpenak</string>
+    <string name="screen_find_friends_empty_title">Oraindik ez dago kontakturik Gua-n</string>
+    <string name="screen_find_friends_empty_message">Zure kontaktuetako inor ez dago oraindik Gua-n. Gonbidatu itzazu eta hemen agertuko dira.</string>
+    <string name="screen_find_friends_empty_action">Egiaztatu berriro</string>
+    <string name="screen_find_friends_error_title">Zerbait gaizki joan da</string>
+    <string name="screen_find_friends_error_message">Ezin izan ditugu zure kontaktuak orain egiaztatu. Saiatu berriro.</string>
+    <string name="screen_find_friends_error_action">Saiatu berriro</string>
+    <string name="a11y_find_friends_view_profile">Ikusi %1$s(r)en profila</string>
+    <string name="a11y_find_friends_start_chat">Hasi txat bat %1$s(r)ekin</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">Kontaktu %1$d dago Gua-n</item>
+        <item quantity="other">%1$d kontaktu daude Gua-n</item>
+    </plurals>
+</resources>

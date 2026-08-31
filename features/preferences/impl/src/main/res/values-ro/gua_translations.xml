@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ro translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Configurează verificarea în doi pași</string>
+    <string name="screen_preferences_pin_nudge_message">Adaugă un PIN din 6 cifre pentru a-ți proteja mai bine contul.</string>
+    <string name="screen_preferences_pin_nudge_action">Configurează acum</string>
+    <string name="screen_two_step_verification_title">Verificare în doi pași</string>
+    <string name="screen_two_step_verification_overview_header">PIN-ul contului</string>
+    <string name="screen_two_step_verification_status_on">Verificarea în doi pași este activată</string>
+    <string name="screen_two_step_verification_status_off">Verificarea în doi pași este dezactivată</string>
+    <string name="screen_two_step_verification_overview_footer_on">PIN-ul din 6 cifre adaugă contului tău un nivel suplimentar de securitate.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Adaugă un PIN din 6 cifre pentru un nivel suplimentar de securitate.</string>
+    <string name="screen_two_step_verification_set_button">Configurează PIN</string>
+    <string name="screen_two_step_verification_change_button">Schimbă PIN-ul</string>
+    <string name="screen_two_step_verification_passkey_button">Configurează o cheie de acces</string>
+    <string name="screen_two_step_verification_passkey_footer">Folosește o cheie de acces pentru a te conecta mai repede cu amprenta, fața sau PIN-ul dispozitivului.</string>
+    <string name="screen_two_step_verification_phone_header">Confirmă numărul tău de telefon</string>
+    <string name="screen_two_step_verification_phone_footer">Vom trimite un cod la acest număr pentru a confirma schimbarea.</string>
+    <string name="screen_two_step_verification_current_header">Introdu PIN-ul actual</string>
+    <string name="screen_two_step_verification_current_footer">Introdu PIN-ul din 6 cifre setat anterior.</string>
+    <string name="screen_two_step_verification_otp_header">Introdu codul trimis</string>
+    <string name="screen_two_step_verification_otp_footer">Introdu codul din 6 cifre trimis pe telefonul tău.</string>
+    <string name="screen_two_step_verification_new_header">Alege un PIN nou</string>
+    <string name="screen_two_step_verification_new_footer">Alege un PIN din 6 cifre. Evită secvențele ușor de ghicit.</string>
+    <string name="screen_two_step_verification_confirm_header">Confirmă noul PIN</string>
+    <string name="screen_two_step_verification_confirm_footer">Introdu din nou PIN-ul din 6 cifre pentru confirmare.</string>
+    <string name="screen_two_step_verification_phone_label">Număr de telefon</string>
+    <string name="screen_two_step_verification_phone_invalid">Introdu un număr de telefon valid.</string>
+    <string name="screen_two_step_verification_current_incorrect">PIN-ul este incorect. Încearcă din nou.</string>
+    <string name="screen_two_step_verification_otp_invalid">Codul introdus este invalid sau a expirat.</string>
+    <string name="screen_two_step_verification_locked">PIN blocat după prea multe încercări greșite. Încearcă mai târziu.</string>
+    <string name="screen_two_step_verification_cooldown">Din motive de securitate, poți schimba PIN-ul o singură dată pe zi.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Sesiunea de schimbare a PIN-ului a expirat. Ia-o de la capăt.</string>
+    <string name="screen_two_step_verification_weak_error">Acest PIN este prea ușor de ghicit. Alege altul.</string>
+    <string name="screen_two_step_verification_mismatch_error">PIN-urile nu se potrivesc. Încearcă din nou.</string>
+    <string name="screen_two_step_verification_same_as_current">Noul PIN trebuie să fie diferit de cel actual.</string>
+    <string name="screen_two_step_verification_rate_limited">Prea multe încercări. Așteaptă un moment și încearcă din nou.</string>
+    <string name="screen_two_step_verification_updated">Verificare în doi pași actualizată</string>
+    <string name="screen_change_phone_title">Schimbă numărul de telefon</string>
+    <string name="screen_change_phone_intro_header">Schimbă-ți numărul</string>
+    <string name="screen_change_phone_intro_message">Îți vom confirma PIN-ul, apoi vom trimite un cod prin SMS la noul număr. Contul, conversațiile și mesajele rămân neschimbate.</string>
+    <string name="screen_change_phone_new_header">Număr de telefon nou</string>
+    <string name="screen_change_phone_new_footer">Introdu numărul pe care vrei să-l folosești de acum înainte.</string>
+    <string name="screen_change_phone_new_invalid">Introdu un număr de telefon valid.</string>
+    <string name="screen_change_phone_pin_header">Introdu PIN-ul</string>
+    <string name="screen_change_phone_pin_footer">Confirmă PIN-ul din 6 cifre pentru a autoriza această schimbare.</string>
+    <string name="screen_change_phone_pin_incorrect">PIN-ul este incorect. Încearcă din nou.</string>
+    <string name="screen_change_phone_otp_header">Verifică-ți noul număr</string>
+    <string name="screen_change_phone_otp_footer">Introdu codul din 6 cifre trimis la noul tău număr.</string>
+    <string name="screen_change_phone_otp_invalid">Codul este invalid sau a expirat. Încearcă din nou.</string>
+    <string name="screen_change_phone_already_linked">Acest număr de telefon este deja asociat altui cont.</string>
+    <string name="screen_change_phone_updated">Numărul tău de telefon a fost actualizat.</string>
+    <string name="screen_change_phone_done_header">Gata</string>
+    <string name="screen_change_phone_done_message">Numărul tău de telefon a fost actualizat. De acum înainte te vei conecta cu noul număr.</string>
+    <string name="screen_change_phone_needs_pin_header">Ai nevoie de un PIN pentru a-ți schimba numărul</string>
+    <string name="screen_change_phone_needs_pin_message">Pentru siguranța ta, setează un PIN din 6 cifre. Îl vei confirma înainte de a-ți schimba numărul.</string>
+    <string name="screen_change_phone_needs_pin_action">Configurează PIN</string>
+    <string name="screen_change_phone_cooldown_header">Nu chiar acum</string>
+    <string name="screen_change_phone_cooldown_message">Pentru siguranța ta, îți vei putea schimba numărul peste %1$s.</string>
+</resources>

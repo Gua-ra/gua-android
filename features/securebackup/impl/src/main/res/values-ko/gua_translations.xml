@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ko translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_encryption_reset_required_title">일부 이전 메시지는 복구할 수 없습니다</string>
+    <string name="gua_encryption_reset_required_message">이 기기에서 암호화된 대화 설정을 마치려면 암호화된 백업을 재설정해야 합니다. 해당 백업에만 저장된 메시지는 사라집니다. 이미 기기에 있는 메시지는 영향을 받지 않습니다.</string>
+    <string name="gua_encryption_reset_required_action">재설정하고 완료</string>
+</resources>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: vi translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Thiết lập xác minh hai bước</string>
+    <string name="screen_preferences_pin_nudge_message">Thêm mã PIN 6 chữ số để bảo vệ tài khoản tốt hơn.</string>
+    <string name="screen_preferences_pin_nudge_action">Thiết lập ngay</string>
+    <string name="screen_two_step_verification_title">Xác minh hai bước</string>
+    <string name="screen_two_step_verification_overview_header">Mã PIN tài khoản</string>
+    <string name="screen_two_step_verification_status_on">Xác minh hai bước đang bật</string>
+    <string name="screen_two_step_verification_status_off">Xác minh hai bước đang tắt</string>
+    <string name="screen_two_step_verification_overview_footer_on">Mã PIN 6 chữ số bổ sung thêm một lớp bảo mật cho tài khoản của bạn.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Thêm mã PIN 6 chữ số để có thêm một lớp bảo mật cho tài khoản.</string>
+    <string name="screen_two_step_verification_set_button">Thiết lập mã PIN</string>
+    <string name="screen_two_step_verification_change_button">Đổi mã PIN</string>
+    <string name="screen_two_step_verification_passkey_button">Thiết lập khóa truy cập</string>
+    <string name="screen_two_step_verification_passkey_footer">Dùng khóa truy cập để đăng nhập nhanh hơn bằng vân tay, khuôn mặt hoặc mã PIN thiết bị.</string>
+    <string name="screen_two_step_verification_phone_header">Xác nhận số điện thoại của bạn</string>
+    <string name="screen_two_step_verification_phone_footer">Chúng tôi sẽ gửi mã đến số này để xác nhận thay đổi.</string>
+    <string name="screen_two_step_verification_current_header">Nhập mã PIN hiện tại</string>
+    <string name="screen_two_step_verification_current_footer">Nhập mã PIN 6 chữ số bạn đã đặt trước đó.</string>
+    <string name="screen_two_step_verification_otp_header">Nhập mã chúng tôi đã gửi</string>
+    <string name="screen_two_step_verification_otp_footer">Nhập mã 6 chữ số đã gửi đến điện thoại của bạn.</string>
+    <string name="screen_two_step_verification_new_header">Chọn mã PIN mới</string>
+    <string name="screen_two_step_verification_new_footer">Chọn mã PIN 6 chữ số. Tránh các dãy số dễ đoán.</string>
+    <string name="screen_two_step_verification_confirm_header">Xác nhận mã PIN mới</string>
+    <string name="screen_two_step_verification_confirm_footer">Nhập lại mã PIN 6 chữ số để xác nhận.</string>
+    <string name="screen_two_step_verification_phone_label">Số điện thoại</string>
+    <string name="screen_two_step_verification_phone_invalid">Vui lòng nhập số điện thoại hợp lệ.</string>
+    <string name="screen_two_step_verification_current_incorrect">Mã PIN không đúng. Vui lòng thử lại.</string>
+    <string name="screen_two_step_verification_otp_invalid">Mã bạn nhập không hợp lệ hoặc đã hết hạn.</string>
+    <string name="screen_two_step_verification_locked">Mã PIN bị khóa do nhập sai quá nhiều lần. Vui lòng thử lại sau.</string>
+    <string name="screen_two_step_verification_cooldown">Vì lý do bảo mật, bạn chỉ có thể đổi mã PIN một lần mỗi ngày.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Phiên đổi mã PIN đã hết hạn. Vui lòng bắt đầu lại.</string>
+    <string name="screen_two_step_verification_weak_error">Mã PIN này quá dễ đoán. Vui lòng chọn mã khác.</string>
+    <string name="screen_two_step_verification_mismatch_error">Các mã PIN không khớp. Vui lòng thử lại.</string>
+    <string name="screen_two_step_verification_same_as_current">Mã PIN mới phải khác mã PIN hiện tại.</string>
+    <string name="screen_two_step_verification_rate_limited">Quá nhiều lần thử. Vui lòng đợi một lát rồi thử lại.</string>
+    <string name="screen_two_step_verification_updated">Đã cập nhật xác minh hai bước</string>
+    <string name="screen_change_phone_title">Đổi số điện thoại</string>
+    <string name="screen_change_phone_intro_header">Đổi số của bạn</string>
+    <string name="screen_change_phone_intro_message">Chúng tôi sẽ xác nhận mã PIN của bạn, sau đó gửi mã qua SMS đến số mới. Tài khoản, cuộc trò chuyện và tin nhắn của bạn vẫn giữ nguyên.</string>
+    <string name="screen_change_phone_new_header">Số điện thoại mới</string>
+    <string name="screen_change_phone_new_footer">Nhập số bạn muốn dùng từ nay trở đi.</string>
+    <string name="screen_change_phone_new_invalid">Vui lòng nhập số điện thoại hợp lệ.</string>
+    <string name="screen_change_phone_pin_header">Nhập mã PIN của bạn</string>
+    <string name="screen_change_phone_pin_footer">Xác nhận mã PIN 6 chữ số để cho phép thay đổi này.</string>
+    <string name="screen_change_phone_pin_incorrect">Mã PIN không đúng. Vui lòng thử lại.</string>
+    <string name="screen_change_phone_otp_header">Xác minh số mới của bạn</string>
+    <string name="screen_change_phone_otp_footer">Nhập mã 6 chữ số chúng tôi đã gửi đến số mới của bạn.</string>
+    <string name="screen_change_phone_otp_invalid">Mã này không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.</string>
+    <string name="screen_change_phone_already_linked">Số điện thoại đó đã được liên kết với tài khoản khác.</string>
+    <string name="screen_change_phone_updated">Số điện thoại của bạn đã được cập nhật.</string>
+    <string name="screen_change_phone_done_header">Xong</string>
+    <string name="screen_change_phone_done_message">Số điện thoại của bạn đã được cập nhật. Từ nay bạn sẽ dùng số mới để đăng nhập.</string>
+    <string name="screen_change_phone_needs_pin_header">Bạn cần mã PIN để đổi số</string>
+    <string name="screen_change_phone_needs_pin_message">Vì sự an toàn của bạn, hãy thiết lập mã PIN tài khoản 6 chữ số. Bạn sẽ xác nhận mã này trước khi đổi số.</string>
+    <string name="screen_change_phone_needs_pin_action">Thiết lập mã PIN</string>
+    <string name="screen_change_phone_cooldown_header">Chưa được</string>
+    <string name="screen_change_phone_cooldown_message">Vì sự an toàn của bạn, bạn có thể đổi số sau %1$s.</string>
+</resources>

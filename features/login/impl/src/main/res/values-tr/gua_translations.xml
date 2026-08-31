@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: tr translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_onboarding_welcome_title">Gua\'ya hoş geldiniz</string>
+    <string name="gua_onboarding_welcome_message">Gizli mesajlaşma, sade haliyle.</string>
+    <string name="screen_onboarding_trust_encrypted">Uçtan uca şifreli</string>
+    <string name="screen_phone_entry_welcome_title">Gua\'ya hoş geldiniz</string>
+    <string name="screen_phone_entry_title">Numaranız nedir?</string>
+    <string name="screen_phone_entry_message">Telefon numaranızı girin</string>
+    <string name="screen_phone_entry_footer">Bu numaraya SMS ile bir doğrulama kodu göndereceğiz.</string>
+    <string name="screen_phone_entry_phone_number_label">Telefon numarası</string>
+    <string name="screen_phone_entry_country_picker_a11y">Ülke seçin</string>
+</resources>

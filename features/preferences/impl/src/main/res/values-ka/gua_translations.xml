@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ka translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">ორსაფეხურიანი დადასტურების დაყენება</string>
+    <string name="screen_preferences_pin_nudge_message">დაამატეთ 6-ნიშნა PIN, რომ თქვენი ანგარიში უკეთ დაიცვათ.</string>
+    <string name="screen_preferences_pin_nudge_action">ახლავე დაყენება</string>
+    <string name="screen_two_step_verification_title">ორსაფეხურიანი დადასტურება</string>
+    <string name="screen_two_step_verification_overview_header">ანგარიშის PIN</string>
+    <string name="screen_two_step_verification_status_on">ორსაფეხურიანი დადასტურება ჩართულია</string>
+    <string name="screen_two_step_verification_status_off">ორსაფეხურიანი დადასტურება გამორთულია</string>
+    <string name="screen_two_step_verification_overview_footer_on">6-ნიშნა PIN თქვენს ანგარიშს დაცვის დამატებით ფენას მატებს.</string>
+    <string name="screen_two_step_verification_overview_footer_off">დაამატეთ 6-ნიშნა PIN ანგარიშის დაცვის დამატებითი ფენისთვის.</string>
+    <string name="screen_two_step_verification_set_button">PIN-ის დაყენება</string>
+    <string name="screen_two_step_verification_change_button">PIN-ის შეცვლა</string>
+    <string name="screen_two_step_verification_passkey_button">წვდომის გასაღების დაყენება</string>
+    <string name="screen_two_step_verification_passkey_footer">გამოიყენეთ წვდომის გასაღები, რომ უფრო სწრაფად შეხვიდეთ თითის ანაბეჭდით, სახით ან მოწყობილობის PIN-ით.</string>
+    <string name="screen_two_step_verification_phone_header">დაადასტურეთ თქვენი ტელეფონის ნომერი</string>
+    <string name="screen_two_step_verification_phone_footer">ცვლილების დასადასტურებლად ამ ნომერზე კოდს გამოგიგზავნით.</string>
+    <string name="screen_two_step_verification_current_header">შეიყვანეთ მიმდინარე PIN</string>
+    <string name="screen_two_step_verification_current_footer">შეიყვანეთ 6-ნიშნა PIN, რომელიც ადრე დააყენეთ.</string>
+    <string name="screen_two_step_verification_otp_header">შეიყვანეთ გამოგზავნილი კოდი</string>
+    <string name="screen_two_step_verification_otp_footer">შეიყვანეთ თქვენს ტელეფონზე გამოგზავნილი 6-ნიშნა კოდი.</string>
+    <string name="screen_two_step_verification_new_header">აირჩიეთ ახალი PIN</string>
+    <string name="screen_two_step_verification_new_footer">აირჩიეთ 6-ნიშნა PIN. მოერიდეთ ადვილად გამოსაცნობ თანმიმდევრობებს.</string>
+    <string name="screen_two_step_verification_confirm_header">დაადასტურეთ ახალი PIN</string>
+    <string name="screen_two_step_verification_confirm_footer">დასადასტურებლად ხელახლა შეიყვანეთ 6-ნიშნა PIN.</string>
+    <string name="screen_two_step_verification_phone_label">ტელეფონის ნომერი</string>
+    <string name="screen_two_step_verification_phone_invalid">შეიყვანეთ სწორი ტელეფონის ნომერი.</string>
+    <string name="screen_two_step_verification_current_incorrect">ეს PIN არასწორია. სცადეთ ხელახლა.</string>
+    <string name="screen_two_step_verification_otp_invalid">შეყვანილი კოდი არასწორია ან ვადაგასულია.</string>
+    <string name="screen_two_step_verification_locked">PIN დაიბლოკა ძალიან ბევრი არასწორი მცდელობის გამო. სცადეთ მოგვიანებით.</string>
+    <string name="screen_two_step_verification_cooldown">უსაფრთხოებისთვის PIN-ის შეცვლა დღეში მხოლოდ ერთხელ შეგიძლიათ.</string>
+    <string name="screen_two_step_verification_challenge_invalid">PIN-ის შეცვლის სესიას ვადა გაუვიდა. დაიწყეთ თავიდან.</string>
+    <string name="screen_two_step_verification_weak_error">ეს PIN ძალიან ადვილად გამოსაცნობია. აირჩიეთ სხვა.</string>
+    <string name="screen_two_step_verification_mismatch_error">PIN-ები არ ემთხვევა. სცადეთ ხელახლა.</string>
+    <string name="screen_two_step_verification_same_as_current">ახალი PIN მიმდინარისგან განსხვავებული უნდა იყოს.</string>
+    <string name="screen_two_step_verification_rate_limited">ძალიან ბევრი მცდელობა. დაელოდეთ ცოტა ხანს და სცადეთ ხელახლა.</string>
+    <string name="screen_two_step_verification_updated">ორსაფეხურიანი დადასტურება განახლდა</string>
+    <string name="screen_change_phone_title">ტელეფონის ნომრის შეცვლა</string>
+    <string name="screen_change_phone_intro_header">შეცვალეთ თქვენი ნომერი</string>
+    <string name="screen_change_phone_intro_message">დავადასტურებთ თქვენს PIN-ს, შემდეგ კი SMS-ით გამოგიგზავნით კოდს ახალ ნომერზე. თქვენი ანგარიში, ჩატები და შეტყობინებები უცვლელი დარჩება.</string>
+    <string name="screen_change_phone_new_header">ახალი ტელეფონის ნომერი</string>
+    <string name="screen_change_phone_new_footer">შეიყვანეთ ნომერი, რომლის გამოყენებაც ამიერიდან გსურთ.</string>
+    <string name="screen_change_phone_new_invalid">შეიყვანეთ სწორი ტელეფონის ნომერი.</string>
+    <string name="screen_change_phone_pin_header">შეიყვანეთ თქვენი PIN</string>
+    <string name="screen_change_phone_pin_footer">ამ ცვლილების ავტორიზაციისთვის დაადასტურეთ 6-ნიშნა PIN.</string>
+    <string name="screen_change_phone_pin_incorrect">ეს PIN არასწორია. სცადეთ ხელახლა.</string>
+    <string name="screen_change_phone_otp_header">დაადასტურეთ ახალი ნომერი</string>
+    <string name="screen_change_phone_otp_footer">შეიყვანეთ 6-ნიშნა კოდი, რომელიც ახალ ნომერზე გამოგიგზავნეთ.</string>
+    <string name="screen_change_phone_otp_invalid">ეს კოდი არასწორია ან ვადაგასულია. სცადეთ ხელახლა.</string>
+    <string name="screen_change_phone_already_linked">ეს ტელეფონის ნომერი უკვე სხვა ანგარიშზეა მიბმული.</string>
+    <string name="screen_change_phone_updated">თქვენი ტელეფონის ნომერი განახლდა.</string>
+    <string name="screen_change_phone_done_header">მზადაა</string>
+    <string name="screen_change_phone_done_message">თქვენი ტელეფონის ნომერი განახლდა. ამიერიდან შესასვლელად ახალ ნომერს გამოიყენებთ.</string>
+    <string name="screen_change_phone_needs_pin_header">ნომრის შესაცვლელად PIN გჭირდებათ</string>
+    <string name="screen_change_phone_needs_pin_message">თქვენი უსაფრთხოებისთვის დააყენეთ 6-ნიშნა ანგარიშის PIN. ნომრის შეცვლამდე დაადასტურებთ.</string>
+    <string name="screen_change_phone_needs_pin_action">PIN-ის დაყენება</string>
+    <string name="screen_change_phone_cooldown_header">ჯერ არა</string>
+    <string name="screen_change_phone_cooldown_message">თქვენი უსაფრთხოებისთვის ნომრის შეცვლა %1$s-ში შეგეძლებათ.</string>
+</resources>

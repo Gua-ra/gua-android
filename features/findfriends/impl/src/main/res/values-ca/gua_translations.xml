@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ca translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Troba amics</string>
+    <string name="screen_find_friends_action">Troba amics</string>
+    <string name="screen_find_friends_action_description">Mira quins dels teus contactes són a Gua</string>
+    <string name="screen_find_friends_loading">Cercant els teus contactes a Gua…</string>
+    <string name="screen_find_friends_permission_title">Permet l\'accés als contactes</string>
+    <string name="screen_find_friends_permission_message">Gua comprova els teus contactes de manera privada per saber qui ja hi és. Els teus contactes no es desen mai.</string>
+    <string name="screen_find_friends_permission_action">Permet l\'accés</string>
+    <string name="screen_find_friends_permission_denied_action">Obre la configuració</string>
+    <string name="screen_find_friends_empty_title">Encara no hi ha contactes a Gua</string>
+    <string name="screen_find_friends_empty_message">Cap dels teus contactes és encara a Gua. Convida\'ls i apareixeran aquí.</string>
+    <string name="screen_find_friends_empty_action">Torna-ho a comprovar</string>
+    <string name="screen_find_friends_error_title">Alguna cosa ha anat malament</string>
+    <string name="screen_find_friends_error_message">Ara mateix no hem pogut comprovar els teus contactes. Torna-ho a provar.</string>
+    <string name="screen_find_friends_error_action">Torna-ho a provar</string>
+    <string name="a11y_find_friends_view_profile">Mostra el perfil de %1$s</string>
+    <string name="a11y_find_friends_start_chat">Inicia un xat amb %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d contacte és a Gua</item>
+        <item quantity="other">%1$d contactes són a Gua</item>
+    </plurals>
+</resources>

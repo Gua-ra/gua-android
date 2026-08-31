@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: fi translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Etsi ystäviä</string>
+    <string name="screen_find_friends_action">Etsi ystäviä</string>
+    <string name="screen_find_friends_action_description">Katso, ketkä yhteystiedoistasi ovat Guassa</string>
+    <string name="screen_find_friends_loading">Etsitään yhteystietojasi Guasta…</string>
+    <string name="screen_find_friends_permission_title">Salli pääsy yhteystietoihin</string>
+    <string name="screen_find_friends_permission_message">Gua tarkistaa yhteystietosi yksityisesti nähdäkseen, ketkä ovat jo täällä. Yhteystietojasi ei koskaan tallenneta.</string>
+    <string name="screen_find_friends_permission_action">Salli pääsy</string>
+    <string name="screen_find_friends_permission_denied_action">Avaa asetukset</string>
+    <string name="screen_find_friends_empty_title">Guassa ei vielä ole yhteystietoja</string>
+    <string name="screen_find_friends_empty_message">Yksikään yhteystiedoistasi ei ole vielä Guassa. Kutsu heidät, niin he näkyvät täällä.</string>
+    <string name="screen_find_friends_empty_action">Tarkista uudelleen</string>
+    <string name="screen_find_friends_error_title">Jokin meni pieleen</string>
+    <string name="screen_find_friends_error_message">Yhteystietojasi ei voitu tarkistaa juuri nyt. Yritä uudelleen.</string>
+    <string name="screen_find_friends_error_action">Yritä uudelleen</string>
+    <string name="a11y_find_friends_view_profile">Näytä käyttäjän %1$s profiili</string>
+    <string name="a11y_find_friends_start_chat">Aloita keskustelu käyttäjän %1$s kanssa</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d yhteystieto on Guassa</item>
+        <item quantity="other">%1$d yhteystietoa on Guassa</item>
+    </plurals>
+</resources>

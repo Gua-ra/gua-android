@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: de translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_encryption_reset_required_title">Einige frühere Nachrichten können nicht wiederhergestellt werden</string>
+    <string name="gua_encryption_reset_required_message">Um die Einrichtung verschlüsselter Chats auf diesem Gerät abzuschließen, muss dein verschlüsseltes Backup zurückgesetzt werden. Nachrichten, die nur in diesem Backup liegen, gehen verloren. Nachrichten, die bereits auf deinen Geräten sind, bleiben unberührt.</string>
+    <string name="gua_encryption_reset_required_action">Zurücksetzen und abschließen</string>
+</resources>

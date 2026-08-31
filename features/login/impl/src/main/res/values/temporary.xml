@@ -9,8 +9,8 @@
          the obsolete Element values were removed from localazy.xml to avoid a duplicate-resource
          collision. Mirrors Element X iOS (screen_onboarding_welcome_title + the end-to-end
          encrypted trust pill shown below it). -->
-    <string name="screen_onboarding_welcome_title">Welcome to Gua</string>
-    <string name="screen_onboarding_welcome_message">Private messaging, made simple.</string>
+    <string name="gua_onboarding_welcome_title">Welcome to Gua</string>
+    <string name="gua_onboarding_welcome_message">Private messaging, made simple.</string>
     <string name="screen_onboarding_trust_encrypted">End-to-end encrypted</string>
 
     <!-- Gua phone-first entry (Stage 3). Mirrors Element X iOS PhoneEntryScreen. -->

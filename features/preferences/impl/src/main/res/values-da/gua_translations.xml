@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: da translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Konfigurer totrinsbekræftelse</string>
+    <string name="screen_preferences_pin_nudge_message">Tilføj en 6-cifret pinkode for at beskytte din konto bedre.</string>
+    <string name="screen_preferences_pin_nudge_action">Konfigurer nu</string>
+    <string name="screen_two_step_verification_title">Totrinsbekræftelse</string>
+    <string name="screen_two_step_verification_overview_header">Kontopinkode</string>
+    <string name="screen_two_step_verification_status_on">Totrinsbekræftelse er slået til</string>
+    <string name="screen_two_step_verification_status_off">Totrinsbekræftelse er slået fra</string>
+    <string name="screen_two_step_verification_overview_footer_on">Din 6-cifrede pinkode giver din konto et ekstra lag sikkerhed.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Tilføj en 6-cifret pinkode for et ekstra lag sikkerhed på din konto.</string>
+    <string name="screen_two_step_verification_set_button">Opret pinkode</string>
+    <string name="screen_two_step_verification_change_button">Skift pinkode</string>
+    <string name="screen_two_step_verification_passkey_button">Konfigurer en adgangsnøgle</string>
+    <string name="screen_two_step_verification_passkey_footer">Brug en adgangsnøgle til at logge ind hurtigere med fingeraftryk, ansigt eller enhedens pinkode.</string>
+    <string name="screen_two_step_verification_phone_header">Bekræft dit telefonnummer</string>
+    <string name="screen_two_step_verification_phone_footer">Vi sender en kode til dette nummer for at bekræfte ændringen.</string>
+    <string name="screen_two_step_verification_current_header">Indtast din nuværende pinkode</string>
+    <string name="screen_two_step_verification_current_footer">Indtast den 6-cifrede pinkode, du tidligere har valgt.</string>
+    <string name="screen_two_step_verification_otp_header">Indtast koden, vi sendte</string>
+    <string name="screen_two_step_verification_otp_footer">Indtast den 6-cifrede kode, der blev sendt til din telefon.</string>
+    <string name="screen_two_step_verification_new_header">Vælg en ny pinkode</string>
+    <string name="screen_two_step_verification_new_footer">Vælg en 6-cifret pinkode. Undgå rækker, der er nemme at gætte.</string>
+    <string name="screen_two_step_verification_confirm_header">Bekræft din nye pinkode</string>
+    <string name="screen_two_step_verification_confirm_footer">Indtast den 6-cifrede pinkode igen for at bekræfte.</string>
+    <string name="screen_two_step_verification_phone_label">Telefonnummer</string>
+    <string name="screen_two_step_verification_phone_invalid">Indtast et gyldigt telefonnummer.</string>
+    <string name="screen_two_step_verification_current_incorrect">Pinkoden er forkert. Prøv igen.</string>
+    <string name="screen_two_step_verification_otp_invalid">Koden, du indtastede, er ugyldig eller udløbet.</string>
+    <string name="screen_two_step_verification_locked">Pinkoden er låst efter for mange forkerte forsøg. Prøv igen senere.</string>
+    <string name="screen_two_step_verification_cooldown">Af sikkerhedshensyn kan du kun skifte pinkode én gang om dagen.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Din session til at skifte pinkode er udløbet. Start forfra.</string>
+    <string name="screen_two_step_verification_weak_error">Pinkoden er for nem at gætte. Vælg en anden.</string>
+    <string name="screen_two_step_verification_mismatch_error">Pinkoderne er ikke ens. Prøv igen.</string>
+    <string name="screen_two_step_verification_same_as_current">Din nye pinkode skal være forskellig fra den nuværende.</string>
+    <string name="screen_two_step_verification_rate_limited">For mange forsøg. Vent et øjeblik, og prøv igen.</string>
+    <string name="screen_two_step_verification_updated">Totrinsbekræftelse opdateret</string>
+    <string name="screen_change_phone_title">Skift telefonnummer</string>
+    <string name="screen_change_phone_intro_header">Skift dit nummer</string>
+    <string name="screen_change_phone_intro_message">Vi bekræfter din pinkode og sender derefter en kode via sms til dit nye nummer. Din konto, dine chats og dine beskeder er uændrede.</string>
+    <string name="screen_change_phone_new_header">Nyt telefonnummer</string>
+    <string name="screen_change_phone_new_footer">Indtast det nummer, du vil bruge fremover.</string>
+    <string name="screen_change_phone_new_invalid">Indtast et gyldigt telefonnummer.</string>
+    <string name="screen_change_phone_pin_header">Indtast din pinkode</string>
+    <string name="screen_change_phone_pin_footer">Bekræft din 6-cifrede pinkode for at godkende denne ændring.</string>
+    <string name="screen_change_phone_pin_incorrect">Pinkoden er forkert. Prøv igen.</string>
+    <string name="screen_change_phone_otp_header">Bekræft dit nye nummer</string>
+    <string name="screen_change_phone_otp_footer">Indtast den 6-cifrede kode, vi sendte til dit nye nummer.</string>
+    <string name="screen_change_phone_otp_invalid">Koden er ugyldig eller udløbet. Prøv igen.</string>
+    <string name="screen_change_phone_already_linked">Det telefonnummer er allerede knyttet til en anden konto.</string>
+    <string name="screen_change_phone_updated">Dit telefonnummer er opdateret.</string>
+    <string name="screen_change_phone_done_header">Så er det klaret</string>
+    <string name="screen_change_phone_done_message">Dit telefonnummer er opdateret. Fremover logger du ind med dit nye nummer.</string>
+    <string name="screen_change_phone_needs_pin_header">Du skal bruge en pinkode for at skifte nummer</string>
+    <string name="screen_change_phone_needs_pin_message">Af hensyn til din sikkerhed skal du oprette en 6-cifret kontopinkode. Du bekræfter den, før du skifter nummer.</string>
+    <string name="screen_change_phone_needs_pin_action">Opret pinkode</string>
+    <string name="screen_change_phone_cooldown_header">Ikke lige nu</string>
+    <string name="screen_change_phone_cooldown_message">Af hensyn til din sikkerhed kan du skifte nummer om %1$s.</string>
+</resources>

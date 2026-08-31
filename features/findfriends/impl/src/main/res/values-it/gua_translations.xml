@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: it translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Trova amici</string>
+    <string name="screen_find_friends_action">Trova amici</string>
+    <string name="screen_find_friends_action_description">Scopri quali dei tuoi contatti sono su Gua</string>
+    <string name="screen_find_friends_loading">Ricerca dei tuoi contatti su Gua…</string>
+    <string name="screen_find_friends_permission_title">Consenti l\'accesso ai contatti</string>
+    <string name="screen_find_friends_permission_message">Gua controlla i tuoi contatti in modo privato per capire chi è già qui. I tuoi contatti non vengono mai memorizzati.</string>
+    <string name="screen_find_friends_permission_action">Consenti l\'accesso</string>
+    <string name="screen_find_friends_permission_denied_action">Apri impostazioni</string>
+    <string name="screen_find_friends_empty_title">Ancora nessun contatto su Gua</string>
+    <string name="screen_find_friends_empty_message">Nessuno dei tuoi contatti è ancora su Gua. Invitali e compariranno qui.</string>
+    <string name="screen_find_friends_empty_action">Controlla di nuovo</string>
+    <string name="screen_find_friends_error_title">Qualcosa è andato storto</string>
+    <string name="screen_find_friends_error_message">Non siamo riusciti a controllare i tuoi contatti adesso. Riprova.</string>
+    <string name="screen_find_friends_error_action">Riprova</string>
+    <string name="a11y_find_friends_view_profile">Vedi il profilo di %1$s</string>
+    <string name="a11y_find_friends_start_chat">Inizia una chat con %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d contatto è su Gua</item>
+        <item quantity="other">%1$d contatti sono su Gua</item>
+    </plurals>
+</resources>

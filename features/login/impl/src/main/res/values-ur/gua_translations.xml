@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ur translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_onboarding_welcome_title">Gua میں خوش آمدید</string>
+    <string name="gua_onboarding_welcome_message">نجی پیغام رسانی، آسان انداز میں۔</string>
+    <string name="screen_onboarding_trust_encrypted">سرے سے سرے تک خفیہ کاری</string>
+    <string name="screen_phone_entry_welcome_title">Gua میں خوش آمدید</string>
+    <string name="screen_phone_entry_title">آپ کا نمبر کیا ہے؟</string>
+    <string name="screen_phone_entry_message">اپنا فون نمبر درج کریں</string>
+    <string name="screen_phone_entry_footer">ہم اس نمبر پر پیغام کے ذریعے تصدیقی کوڈ بھیجیں گے۔</string>
+    <string name="screen_phone_entry_phone_number_label">فون نمبر</string>
+    <string name="screen_phone_entry_country_picker_a11y">ملک منتخب کریں</string>
+</resources>

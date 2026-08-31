@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: nl translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Verificatie in twee stappen instellen</string>
+    <string name="screen_preferences_pin_nudge_message">Voeg een pincode van 6 cijfers toe om je account beter te beschermen.</string>
+    <string name="screen_preferences_pin_nudge_action">Nu instellen</string>
+    <string name="screen_two_step_verification_title">Verificatie in twee stappen</string>
+    <string name="screen_two_step_verification_overview_header">Accountpincode</string>
+    <string name="screen_two_step_verification_status_on">Verificatie in twee stappen staat aan</string>
+    <string name="screen_two_step_verification_status_off">Verificatie in twee stappen staat uit</string>
+    <string name="screen_two_step_verification_overview_footer_on">Je pincode van 6 cijfers geeft je account een extra beveiligingslaag.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Voeg een pincode van 6 cijfers toe voor een extra beveiligingslaag.</string>
+    <string name="screen_two_step_verification_set_button">Pincode instellen</string>
+    <string name="screen_two_step_verification_change_button">Pincode wijzigen</string>
+    <string name="screen_two_step_verification_passkey_button">Een passkey instellen</string>
+    <string name="screen_two_step_verification_passkey_footer">Gebruik een passkey om sneller in te loggen met je vingerafdruk, gezicht of apparaatpincode.</string>
+    <string name="screen_two_step_verification_phone_header">Bevestig je telefoonnummer</string>
+    <string name="screen_two_step_verification_phone_footer">We sturen een code naar dit nummer om de wijziging te bevestigen.</string>
+    <string name="screen_two_step_verification_current_header">Voer je huidige pincode in</string>
+    <string name="screen_two_step_verification_current_footer">Voer de pincode van 6 cijfers in die je eerder hebt ingesteld.</string>
+    <string name="screen_two_step_verification_otp_header">Voer de code in die we hebben gestuurd</string>
+    <string name="screen_two_step_verification_otp_footer">Voer de code van 6 cijfers in die naar je telefoon is gestuurd.</string>
+    <string name="screen_two_step_verification_new_header">Kies een nieuwe pincode</string>
+    <string name="screen_two_step_verification_new_footer">Kies een pincode van 6 cijfers. Vermijd makkelijk te raden reeksen.</string>
+    <string name="screen_two_step_verification_confirm_header">Bevestig je nieuwe pincode</string>
+    <string name="screen_two_step_verification_confirm_footer">Voer de pincode van 6 cijfers nogmaals in ter bevestiging.</string>
+    <string name="screen_two_step_verification_phone_label">Telefoonnummer</string>
+    <string name="screen_two_step_verification_phone_invalid">Voer een geldig telefoonnummer in.</string>
+    <string name="screen_two_step_verification_current_incorrect">Die pincode klopt niet. Probeer het opnieuw.</string>
+    <string name="screen_two_step_verification_otp_invalid">De ingevoerde code is ongeldig of verlopen.</string>
+    <string name="screen_two_step_verification_locked">Pincode geblokkeerd na te veel onjuiste pogingen. Probeer het later opnieuw.</string>
+    <string name="screen_two_step_verification_cooldown">Uit veiligheidsoverwegingen kun je je pincode maar één keer per dag wijzigen.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Je sessie om de pincode te wijzigen is verlopen. Begin opnieuw.</string>
+    <string name="screen_two_step_verification_weak_error">Die pincode is te makkelijk te raden. Kies een andere.</string>
+    <string name="screen_two_step_verification_mismatch_error">De pincodes komen niet overeen. Probeer het opnieuw.</string>
+    <string name="screen_two_step_verification_same_as_current">Je nieuwe pincode moet anders zijn dan je huidige.</string>
+    <string name="screen_two_step_verification_rate_limited">Te veel pogingen. Wacht even en probeer het opnieuw.</string>
+    <string name="screen_two_step_verification_updated">Verificatie in twee stappen bijgewerkt</string>
+    <string name="screen_change_phone_title">Telefoonnummer wijzigen</string>
+    <string name="screen_change_phone_intro_header">Wijzig je nummer</string>
+    <string name="screen_change_phone_intro_message">We bevestigen je pincode en sturen daarna een code per sms naar je nieuwe nummer. Je account, chats en berichten blijven hetzelfde.</string>
+    <string name="screen_change_phone_new_header">Nieuw telefoonnummer</string>
+    <string name="screen_change_phone_new_footer">Voer het nummer in dat je voortaan wilt gebruiken.</string>
+    <string name="screen_change_phone_new_invalid">Voer een geldig telefoonnummer in.</string>
+    <string name="screen_change_phone_pin_header">Voer je pincode in</string>
+    <string name="screen_change_phone_pin_footer">Bevestig je pincode van 6 cijfers om deze wijziging goed te keuren.</string>
+    <string name="screen_change_phone_pin_incorrect">Die pincode klopt niet. Probeer het opnieuw.</string>
+    <string name="screen_change_phone_otp_header">Verifieer je nieuwe nummer</string>
+    <string name="screen_change_phone_otp_footer">Voer de code van 6 cijfers in die we naar je nieuwe nummer hebben gestuurd.</string>
+    <string name="screen_change_phone_otp_invalid">Die code is ongeldig of verlopen. Probeer het opnieuw.</string>
+    <string name="screen_change_phone_already_linked">Dat telefoonnummer is al gekoppeld aan een ander account.</string>
+    <string name="screen_change_phone_updated">Je telefoonnummer is bijgewerkt.</string>
+    <string name="screen_change_phone_done_header">Alles klaar</string>
+    <string name="screen_change_phone_done_message">Je telefoonnummer is bijgewerkt. Vanaf nu log je in met je nieuwe nummer.</string>
+    <string name="screen_change_phone_needs_pin_header">Je hebt een pincode nodig om je nummer te wijzigen</string>
+    <string name="screen_change_phone_needs_pin_message">Stel voor je veiligheid een pincode van 6 cijfers in. Je bevestigt die voordat je je nummer wijzigt.</string>
+    <string name="screen_change_phone_needs_pin_action">Pincode instellen</string>
+    <string name="screen_change_phone_cooldown_header">Nog even niet</string>
+    <string name="screen_change_phone_cooldown_message">Uit veiligheidsoverwegingen kun je je nummer over %1$s wijzigen.</string>
+</resources>

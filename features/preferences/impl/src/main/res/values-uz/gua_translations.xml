@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: uz translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Ikki bosqichli tasdiqlashni sozlash</string>
+    <string name="screen_preferences_pin_nudge_message">Hisobingizni yaxshiroq himoyalash uchun 6 raqamli PIN qo\'shing.</string>
+    <string name="screen_preferences_pin_nudge_action">Hozir sozlash</string>
+    <string name="screen_two_step_verification_title">Ikki bosqichli tasdiqlash</string>
+    <string name="screen_two_step_verification_overview_header">Hisob PIN kodi</string>
+    <string name="screen_two_step_verification_status_on">Ikki bosqichli tasdiqlash yoqilgan</string>
+    <string name="screen_two_step_verification_status_off">Ikki bosqichli tasdiqlash o\'chirilgan</string>
+    <string name="screen_two_step_verification_overview_footer_on">6 raqamli PIN hisobingizga qo\'shimcha himoya qatlamini qo\'shadi.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Hisobingizga qo\'shimcha himoya qatlami uchun 6 raqamli PIN qo\'shing.</string>
+    <string name="screen_two_step_verification_set_button">PIN o\'rnatish</string>
+    <string name="screen_two_step_verification_change_button">PIN\'ni o\'zgartirish</string>
+    <string name="screen_two_step_verification_passkey_button">Kirish kalitini sozlash</string>
+    <string name="screen_two_step_verification_passkey_footer">Barmoq izi, yuz yoki qurilma PIN kodi bilan tezroq kirish uchun kirish kalitidan foydalaning.</string>
+    <string name="screen_two_step_verification_phone_header">Telefon raqamingizni tasdiqlang</string>
+    <string name="screen_two_step_verification_phone_footer">O\'zgarishni tasdiqlash uchun bu raqamga kod yuboramiz.</string>
+    <string name="screen_two_step_verification_current_header">Joriy PIN kodingizni kiriting</string>
+    <string name="screen_two_step_verification_current_footer">Ilgari o\'rnatgan 6 raqamli PIN kodni kiriting.</string>
+    <string name="screen_two_step_verification_otp_header">Yuborgan kodimizni kiriting</string>
+    <string name="screen_two_step_verification_otp_footer">Telefoningizga yuborilgan 6 raqamli kodni kiriting.</string>
+    <string name="screen_two_step_verification_new_header">Yangi PIN tanlang</string>
+    <string name="screen_two_step_verification_new_footer">6 raqamli PIN tanlang. Oson topiladigan ketma-ketliklardan saqlaning.</string>
+    <string name="screen_two_step_verification_confirm_header">Yangi PIN kodingizni tasdiqlang</string>
+    <string name="screen_two_step_verification_confirm_footer">Tasdiqlash uchun 6 raqamli PIN kodni qayta kiriting.</string>
+    <string name="screen_two_step_verification_phone_label">Telefon raqami</string>
+    <string name="screen_two_step_verification_phone_invalid">To\'g\'ri telefon raqamini kiriting.</string>
+    <string name="screen_two_step_verification_current_incorrect">Bu PIN noto\'g\'ri. Qayta urinib ko\'ring.</string>
+    <string name="screen_two_step_verification_otp_invalid">Siz kiritgan kod yaroqsiz yoki muddati o\'tgan.</string>
+    <string name="screen_two_step_verification_locked">Juda ko\'p noto\'g\'ri urinish tufayli PIN bloklandi. Keyinroq urinib ko\'ring.</string>
+    <string name="screen_two_step_verification_cooldown">Xavfsizlik uchun PIN kodni kuniga faqat bir marta o\'zgartirishingiz mumkin.</string>
+    <string name="screen_two_step_verification_challenge_invalid">PIN o\'zgartirish seansi muddati tugadi. Boshidan boshlang.</string>
+    <string name="screen_two_step_verification_weak_error">Bu PIN kodni topish juda oson. Boshqasini tanlang.</string>
+    <string name="screen_two_step_verification_mismatch_error">PIN kodlar mos kelmadi. Qayta urinib ko\'ring.</string>
+    <string name="screen_two_step_verification_same_as_current">Yangi PIN joriy PIN\'dan farq qilishi kerak.</string>
+    <string name="screen_two_step_verification_rate_limited">Juda ko\'p urinish. Biroz kuting va qayta urinib ko\'ring.</string>
+    <string name="screen_two_step_verification_updated">Ikki bosqichli tasdiqlash yangilandi</string>
+    <string name="screen_change_phone_title">Telefon raqamini o\'zgartirish</string>
+    <string name="screen_change_phone_intro_header">Raqamingizni o\'zgartiring</string>
+    <string name="screen_change_phone_intro_message">PIN kodingizni tasdiqlaymiz, so\'ng yangi raqamingizga SMS orqali kod yuboramiz. Hisobingiz, suhbatlaringiz va xabarlaringiz o\'zgarmaydi.</string>
+    <string name="screen_change_phone_new_header">Yangi telefon raqami</string>
+    <string name="screen_change_phone_new_footer">Bundan buyon ishlatmoqchi bo\'lgan raqamni kiriting.</string>
+    <string name="screen_change_phone_new_invalid">To\'g\'ri telefon raqamini kiriting.</string>
+    <string name="screen_change_phone_pin_header">PIN kodingizni kiriting</string>
+    <string name="screen_change_phone_pin_footer">Bu o\'zgarishga ruxsat berish uchun 6 raqamli PIN kodingizni tasdiqlang.</string>
+    <string name="screen_change_phone_pin_incorrect">Bu PIN noto\'g\'ri. Qayta urinib ko\'ring.</string>
+    <string name="screen_change_phone_otp_header">Yangi raqamingizni tasdiqlang</string>
+    <string name="screen_change_phone_otp_footer">Yangi raqamingizga yuborgan 6 raqamli kodni kiriting.</string>
+    <string name="screen_change_phone_otp_invalid">Bu kod yaroqsiz yoki muddati o\'tgan. Qayta urinib ko\'ring.</string>
+    <string name="screen_change_phone_already_linked">Bu telefon raqami allaqachon boshqa hisobga bog\'langan.</string>
+    <string name="screen_change_phone_updated">Telefon raqamingiz yangilandi.</string>
+    <string name="screen_change_phone_done_header">Tayyor</string>
+    <string name="screen_change_phone_done_message">Telefon raqamingiz yangilandi. Bundan buyon kirish uchun yangi raqamingizdan foydalanasiz.</string>
+    <string name="screen_change_phone_needs_pin_header">Raqamni o\'zgartirish uchun PIN kerak</string>
+    <string name="screen_change_phone_needs_pin_message">Xavfsizligingiz uchun 6 raqamli hisob PIN kodini o\'rnating. Raqamni o\'zgartirishdan oldin uni tasdiqlaysiz.</string>
+    <string name="screen_change_phone_needs_pin_action">PIN o\'rnatish</string>
+    <string name="screen_change_phone_cooldown_header">Hali emas</string>
+    <string name="screen_change_phone_cooldown_message">Xavfsizligingiz uchun raqamingizni %1$s dan keyin o\'zgartira olasiz.</string>
+</resources>

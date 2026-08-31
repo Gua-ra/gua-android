@@ -105,7 +105,7 @@ fun LoginWithClassicView(
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = stringResource(id = R.string.screen_onboarding_welcome_title),
+                    text = stringResource(id = R.string.gua_onboarding_welcome_title),
                     color = ElementTheme.colors.textPrimary,
                     style = ElementTheme.typography.fontHeadingMdBold,
                     textAlign = TextAlign.Center,

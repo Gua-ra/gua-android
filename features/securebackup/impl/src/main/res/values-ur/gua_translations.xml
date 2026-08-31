@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ur translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_encryption_reset_required_title">کچھ پچھلے پیغامات بازیافت نہیں کیے جا سکتے</string>
+    <string name="gua_encryption_reset_required_message">اس ڈیوائس پر خفیہ کردہ چیٹس کا سیٹ اپ مکمل کرنے کے لیے آپ کے خفیہ کردہ بیک اپ کو ری سیٹ کرنا ہوگا۔ صرف اسی بیک اپ میں محفوظ پیغامات ضائع ہو جائیں گے۔ جو پیغامات پہلے سے آپ کی ڈیوائسز پر ہیں وہ متاثر نہیں ہوں گے۔</string>
+    <string name="gua_encryption_reset_required_action">ری سیٹ کریں اور مکمل کریں</string>
+</resources>

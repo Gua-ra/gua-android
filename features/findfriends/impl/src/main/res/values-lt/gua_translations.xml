@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: lt translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Rasti draugų</string>
+    <string name="screen_find_friends_action">Rasti draugų</string>
+    <string name="screen_find_friends_action_description">Pažiūrėkite, kurie jūsų kontaktai yra Gua</string>
+    <string name="screen_find_friends_loading">Ieškome jūsų kontaktų Gua…</string>
+    <string name="screen_find_friends_permission_title">Leisti prieigą prie kontaktų</string>
+    <string name="screen_find_friends_permission_message">Gua privačiai patikrina jūsų kontaktus, kad sužinotų, kas jau čia. Jūsų kontaktai niekada nesaugomi.</string>
+    <string name="screen_find_friends_permission_action">Leisti prieigą</string>
+    <string name="screen_find_friends_permission_denied_action">Atidaryti nustatymus</string>
+    <string name="screen_find_friends_empty_title">Gua kol kas nėra kontaktų</string>
+    <string name="screen_find_friends_empty_message">Nė vienas jūsų kontaktas dar nėra Gua. Pakvieskite juos ir jie pasirodys čia.</string>
+    <string name="screen_find_friends_empty_action">Tikrinti dar kartą</string>
+    <string name="screen_find_friends_error_title">Kažkas nepavyko</string>
+    <string name="screen_find_friends_error_message">Šiuo metu nepavyko patikrinti jūsų kontaktų. Bandykite dar kartą.</string>
+    <string name="screen_find_friends_error_action">Bandyti dar kartą</string>
+    <string name="a11y_find_friends_view_profile">Peržiūrėti %1$s profilį</string>
+    <string name="a11y_find_friends_start_chat">Pradėti pokalbį su %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d kontaktas yra Gua</item>
+        <item quantity="other">%1$d kontaktų yra Gua</item>
+    </plurals>
+</resources>

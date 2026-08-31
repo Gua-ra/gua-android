@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: pt translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_encryption_reset_required_title">Algumas mensagens anteriores não podem ser recuperadas</string>
+    <string name="gua_encryption_reset_required_message">Para terminar de configurar as conversas encriptadas neste dispositivo, a sua cópia de segurança encriptada tem de ser reposta. As mensagens guardadas apenas nessa cópia serão perdidas. As mensagens já presentes nos seus dispositivos não serão afetadas.</string>
+    <string name="gua_encryption_reset_required_action">Repor e concluir</string>
+</resources>

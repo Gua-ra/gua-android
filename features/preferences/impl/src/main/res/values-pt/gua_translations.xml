@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: pt translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Configurar verificação em dois passos</string>
+    <string name="screen_preferences_pin_nudge_message">Adicione um PIN de 6 dígitos para proteger melhor a sua conta.</string>
+    <string name="screen_preferences_pin_nudge_action">Configurar agora</string>
+    <string name="screen_two_step_verification_title">Verificação em dois passos</string>
+    <string name="screen_two_step_verification_overview_header">PIN da conta</string>
+    <string name="screen_two_step_verification_status_on">A verificação em dois passos está ativada</string>
+    <string name="screen_two_step_verification_status_off">A verificação em dois passos está desativada</string>
+    <string name="screen_two_step_verification_overview_footer_on">O seu PIN de 6 dígitos acrescenta uma camada extra de segurança à sua conta.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Adicione um PIN de 6 dígitos para uma camada extra de segurança na sua conta.</string>
+    <string name="screen_two_step_verification_set_button">Configurar PIN</string>
+    <string name="screen_two_step_verification_change_button">Alterar PIN</string>
+    <string name="screen_two_step_verification_passkey_button">Configurar uma chave de acesso</string>
+    <string name="screen_two_step_verification_passkey_footer">Use uma chave de acesso para entrar mais depressa com a impressão digital, o rosto ou o PIN do dispositivo.</string>
+    <string name="screen_two_step_verification_phone_header">Confirme o seu número de telemóvel</string>
+    <string name="screen_two_step_verification_phone_footer">Enviaremos um código para este número para confirmar a alteração.</string>
+    <string name="screen_two_step_verification_current_header">Introduza o seu PIN atual</string>
+    <string name="screen_two_step_verification_current_footer">Introduza o PIN de 6 dígitos que definiu anteriormente.</string>
+    <string name="screen_two_step_verification_otp_header">Introduza o código que enviámos</string>
+    <string name="screen_two_step_verification_otp_footer">Introduza o código de 6 dígitos enviado para o seu telemóvel.</string>
+    <string name="screen_two_step_verification_new_header">Escolha um novo PIN</string>
+    <string name="screen_two_step_verification_new_footer">Escolha um PIN de 6 dígitos. Evite sequências fáceis de adivinhar.</string>
+    <string name="screen_two_step_verification_confirm_header">Confirme o seu novo PIN</string>
+    <string name="screen_two_step_verification_confirm_footer">Introduza novamente o PIN de 6 dígitos para confirmar.</string>
+    <string name="screen_two_step_verification_phone_label">Número de telemóvel</string>
+    <string name="screen_two_step_verification_phone_invalid">Introduza um número de telemóvel válido.</string>
+    <string name="screen_two_step_verification_current_incorrect">Esse PIN está incorreto. Tente novamente.</string>
+    <string name="screen_two_step_verification_otp_invalid">O código introduzido é inválido ou expirou.</string>
+    <string name="screen_two_step_verification_locked">PIN bloqueado por demasiadas tentativas incorretas. Tente novamente mais tarde.</string>
+    <string name="screen_two_step_verification_cooldown">Por segurança, só pode alterar o seu PIN uma vez por dia.</string>
+    <string name="screen_two_step_verification_challenge_invalid">A sua sessão de alteração de PIN expirou. Comece de novo.</string>
+    <string name="screen_two_step_verification_weak_error">Esse PIN é demasiado fácil de adivinhar. Escolha outro.</string>
+    <string name="screen_two_step_verification_mismatch_error">Os PIN não coincidem. Tente novamente.</string>
+    <string name="screen_two_step_verification_same_as_current">O seu novo PIN tem de ser diferente do atual.</string>
+    <string name="screen_two_step_verification_rate_limited">Demasiadas tentativas. Aguarde um momento e tente novamente.</string>
+    <string name="screen_two_step_verification_updated">Verificação em dois passos atualizada</string>
+    <string name="screen_change_phone_title">Alterar número de telemóvel</string>
+    <string name="screen_change_phone_intro_header">Altere o seu número</string>
+    <string name="screen_change_phone_intro_message">Vamos confirmar o seu PIN e depois enviar um código por SMS para o seu novo número. A sua conta, conversas e mensagens mantêm-se.</string>
+    <string name="screen_change_phone_new_header">Novo número de telemóvel</string>
+    <string name="screen_change_phone_new_footer">Introduza o número que quer usar a partir de agora.</string>
+    <string name="screen_change_phone_new_invalid">Introduza um número de telemóvel válido.</string>
+    <string name="screen_change_phone_pin_header">Introduza o seu PIN</string>
+    <string name="screen_change_phone_pin_footer">Confirme o seu PIN de 6 dígitos para autorizar esta alteração.</string>
+    <string name="screen_change_phone_pin_incorrect">Esse PIN está incorreto. Tente novamente.</string>
+    <string name="screen_change_phone_otp_header">Verifique o seu novo número</string>
+    <string name="screen_change_phone_otp_footer">Introduza o código de 6 dígitos que enviámos para o seu novo número.</string>
+    <string name="screen_change_phone_otp_invalid">Esse código é inválido ou expirou. Tente novamente.</string>
+    <string name="screen_change_phone_already_linked">Esse número de telemóvel já está associado a outra conta.</string>
+    <string name="screen_change_phone_updated">O seu número de telemóvel foi atualizado.</string>
+    <string name="screen_change_phone_done_header">Tudo pronto</string>
+    <string name="screen_change_phone_done_message">O seu número de telemóvel foi atualizado. A partir de agora, usará o novo número para entrar.</string>
+    <string name="screen_change_phone_needs_pin_header">Precisa de um PIN para alterar o seu número</string>
+    <string name="screen_change_phone_needs_pin_message">Para sua segurança, configure um PIN de 6 dígitos. Vai confirmá-lo antes de alterar o seu número.</string>
+    <string name="screen_change_phone_needs_pin_action">Configurar PIN</string>
+    <string name="screen_change_phone_cooldown_header">Ainda não</string>
+    <string name="screen_change_phone_cooldown_message">Por segurança, poderá alterar o seu número dentro de %1$s.</string>
+</resources>

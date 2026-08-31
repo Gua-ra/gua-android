@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: hr translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Pronađi prijatelje</string>
+    <string name="screen_find_friends_action">Pronađi prijatelje</string>
+    <string name="screen_find_friends_action_description">Pogledajte tko je od vaših kontakata na Gua</string>
+    <string name="screen_find_friends_loading">Tražimo vaše kontakte na Gua…</string>
+    <string name="screen_find_friends_permission_title">Dopusti pristup kontaktima</string>
+    <string name="screen_find_friends_permission_message">Gua privatno provjerava vaše kontakte kako bi saznala tko je već ovdje. Vaši se kontakti nikada ne pohranjuju.</string>
+    <string name="screen_find_friends_permission_action">Dopusti pristup</string>
+    <string name="screen_find_friends_permission_denied_action">Otvori postavke</string>
+    <string name="screen_find_friends_empty_title">Još nema kontakata na Gua</string>
+    <string name="screen_find_friends_empty_message">Nitko od vaših kontakata još nije na Gua. Pozovite ih i pojavit će se ovdje.</string>
+    <string name="screen_find_friends_empty_action">Provjeri ponovno</string>
+    <string name="screen_find_friends_error_title">Nešto je pošlo po zlu</string>
+    <string name="screen_find_friends_error_message">Trenutačno nismo mogli provjeriti vaše kontakte. Pokušajte ponovno.</string>
+    <string name="screen_find_friends_error_action">Pokušaj ponovno</string>
+    <string name="a11y_find_friends_view_profile">Prikaži profil korisnika %1$s</string>
+    <string name="a11y_find_friends_start_chat">Započni razgovor s %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d kontakt je na Gua</item>
+        <item quantity="other">%1$d kontakata je na Gua</item>
+    </plurals>
+</resources>

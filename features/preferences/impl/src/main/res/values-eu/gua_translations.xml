@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: eu translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Konfiguratu bi urratseko egiaztapena</string>
+    <string name="screen_preferences_pin_nudge_message">Gehitu 6 digituko PIN bat zure kontua hobeto babesteko.</string>
+    <string name="screen_preferences_pin_nudge_action">Konfiguratu orain</string>
+    <string name="screen_two_step_verification_title">Bi urratseko egiaztapena</string>
+    <string name="screen_two_step_verification_overview_header">Kontuaren PINa</string>
+    <string name="screen_two_step_verification_status_on">Bi urratseko egiaztapena aktibatuta dago</string>
+    <string name="screen_two_step_verification_status_off">Bi urratseko egiaztapena desaktibatuta dago</string>
+    <string name="screen_two_step_verification_overview_footer_on">Zure 6 digituko PINak segurtasun geruza gehigarri bat ematen dio zure kontuari.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Gehitu 6 digituko PIN bat zure kontuari segurtasun geruza gehigarri bat emateko.</string>
+    <string name="screen_two_step_verification_set_button">Konfiguratu PINa</string>
+    <string name="screen_two_step_verification_change_button">Aldatu PINa</string>
+    <string name="screen_two_step_verification_passkey_button">Konfiguratu sarbide gako bat</string>
+    <string name="screen_two_step_verification_passkey_footer">Erabili sarbide gako bat azkarrago saioa hasteko hatz markarekin, aurpegiarekin edo gailuaren PINarekin.</string>
+    <string name="screen_two_step_verification_phone_header">Berretsi zure telefono zenbakia</string>
+    <string name="screen_two_step_verification_phone_footer">Kode bat bidaliko dugu zenbaki honetara aldaketa berresteko.</string>
+    <string name="screen_two_step_verification_current_header">Sartu zure oraingo PINa</string>
+    <string name="screen_two_step_verification_current_footer">Sartu lehen ezarri zenuen 6 digituko PINa.</string>
+    <string name="screen_two_step_verification_otp_header">Sartu bidali dizugun kodea</string>
+    <string name="screen_two_step_verification_otp_footer">Sartu zure telefonora bidalitako 6 digituko kodea.</string>
+    <string name="screen_two_step_verification_new_header">Aukeratu PIN berri bat</string>
+    <string name="screen_two_step_verification_new_footer">Aukeratu 6 digituko PIN bat. Saihestu asmatzen errazak diren sekuentziak.</string>
+    <string name="screen_two_step_verification_confirm_header">Berretsi zure PIN berria</string>
+    <string name="screen_two_step_verification_confirm_footer">Sartu berriro 6 digituko PINa berresteko.</string>
+    <string name="screen_two_step_verification_phone_label">Telefono zenbakia</string>
+    <string name="screen_two_step_verification_phone_invalid">Sartu baliozko telefono zenbaki bat.</string>
+    <string name="screen_two_step_verification_current_incorrect">PIN hori ez da zuzena. Saiatu berriro.</string>
+    <string name="screen_two_step_verification_otp_invalid">Sartu duzun kodea baliogabea da edo iraungi da.</string>
+    <string name="screen_two_step_verification_locked">PINa blokeatu da saiakera oker gehiegiren ondoren. Saiatu geroago.</string>
+    <string name="screen_two_step_verification_cooldown">Segurtasunagatik, egunean behin bakarrik alda dezakezu PINa.</string>
+    <string name="screen_two_step_verification_challenge_invalid">PINa aldatzeko saioa iraungi da. Hasi berriro.</string>
+    <string name="screen_two_step_verification_weak_error">PIN hori asmatzeko errazegia da. Aukeratu beste bat.</string>
+    <string name="screen_two_step_verification_mismatch_error">PINak ez datoz bat. Saiatu berriro.</string>
+    <string name="screen_two_step_verification_same_as_current">Zure PIN berriak oraingoaren desberdina izan behar du.</string>
+    <string name="screen_two_step_verification_rate_limited">Saiakera gehiegi. Itxaron pixka bat eta saiatu berriro.</string>
+    <string name="screen_two_step_verification_updated">Bi urratseko egiaztapena eguneratu da</string>
+    <string name="screen_change_phone_title">Aldatu telefono zenbakia</string>
+    <string name="screen_change_phone_intro_header">Aldatu zure zenbakia</string>
+    <string name="screen_change_phone_intro_message">Zure PINa berretsiko dugu eta ondoren kode bat bidaliko dugu SMS bidez zure zenbaki berrira. Zure kontua, txatak eta mezuak berdin mantenduko dira.</string>
+    <string name="screen_change_phone_new_header">Telefono zenbaki berria</string>
+    <string name="screen_change_phone_new_footer">Sartu hemendik aurrera erabili nahi duzun zenbakia.</string>
+    <string name="screen_change_phone_new_invalid">Sartu baliozko telefono zenbaki bat.</string>
+    <string name="screen_change_phone_pin_header">Sartu zure PINa</string>
+    <string name="screen_change_phone_pin_footer">Berretsi zure 6 digituko PINa aldaketa hau baimentzeko.</string>
+    <string name="screen_change_phone_pin_incorrect">PIN hori ez da zuzena. Saiatu berriro.</string>
+    <string name="screen_change_phone_otp_header">Egiaztatu zure zenbaki berria</string>
+    <string name="screen_change_phone_otp_footer">Sartu zure zenbaki berrira bidali dugun 6 digituko kodea.</string>
+    <string name="screen_change_phone_otp_invalid">Kode hori baliogabea da edo iraungi da. Saiatu berriro.</string>
+    <string name="screen_change_phone_already_linked">Telefono zenbaki hori jada beste kontu bati lotuta dago.</string>
+    <string name="screen_change_phone_updated">Zure telefono zenbakia eguneratu da.</string>
+    <string name="screen_change_phone_done_header">Dena prest</string>
+    <string name="screen_change_phone_done_message">Zure telefono zenbakia eguneratu da. Hemendik aurrera zenbaki berriarekin hasiko duzu saioa.</string>
+    <string name="screen_change_phone_needs_pin_header">PIN bat behar duzu zenbakia aldatzeko</string>
+    <string name="screen_change_phone_needs_pin_message">Zure segurtasunerako, ezarri 6 digituko kontu PIN bat. Zenbakia aldatu aurretik berretsiko duzu.</string>
+    <string name="screen_change_phone_needs_pin_action">Konfiguratu PINa</string>
+    <string name="screen_change_phone_cooldown_header">Oraindik ez</string>
+    <string name="screen_change_phone_cooldown_message">Zure segurtasunerako, %1$s barru alda dezakezu zenbakia.</string>
+</resources>

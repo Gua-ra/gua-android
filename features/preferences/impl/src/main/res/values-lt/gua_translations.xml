@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: lt translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Nustatyti dviejų veiksmų patvirtinimą</string>
+    <string name="screen_preferences_pin_nudge_message">Pridėkite 6 skaitmenų PIN kodą, kad geriau apsaugotumėte paskyrą.</string>
+    <string name="screen_preferences_pin_nudge_action">Nustatyti dabar</string>
+    <string name="screen_two_step_verification_title">Dviejų veiksmų patvirtinimas</string>
+    <string name="screen_two_step_verification_overview_header">Paskyros PIN kodas</string>
+    <string name="screen_two_step_verification_status_on">Dviejų veiksmų patvirtinimas įjungtas</string>
+    <string name="screen_two_step_verification_status_off">Dviejų veiksmų patvirtinimas išjungtas</string>
+    <string name="screen_two_step_verification_overview_footer_on">6 skaitmenų PIN kodas suteikia paskyrai papildomą apsaugos sluoksnį.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Pridėkite 6 skaitmenų PIN kodą papildomam paskyros apsaugos sluoksniui.</string>
+    <string name="screen_two_step_verification_set_button">Nustatyti PIN kodą</string>
+    <string name="screen_two_step_verification_change_button">Keisti PIN kodą</string>
+    <string name="screen_two_step_verification_passkey_button">Nustatyti prieigos raktą</string>
+    <string name="screen_two_step_verification_passkey_footer">Naudokite prieigos raktą, kad prisijungtumėte greičiau piršto atspaudu, veidu ar įrenginio PIN kodu.</string>
+    <string name="screen_two_step_verification_phone_header">Patvirtinkite savo telefono numerį</string>
+    <string name="screen_two_step_verification_phone_footer">Į šį numerį išsiųsime kodą pakeitimui patvirtinti.</string>
+    <string name="screen_two_step_verification_current_header">Įveskite dabartinį PIN kodą</string>
+    <string name="screen_two_step_verification_current_footer">Įveskite anksčiau nustatytą 6 skaitmenų PIN kodą.</string>
+    <string name="screen_two_step_verification_otp_header">Įveskite išsiųstą kodą</string>
+    <string name="screen_two_step_verification_otp_footer">Įveskite 6 skaitmenų kodą, išsiųstą į jūsų telefoną.</string>
+    <string name="screen_two_step_verification_new_header">Pasirinkite naują PIN kodą</string>
+    <string name="screen_two_step_verification_new_footer">Pasirinkite 6 skaitmenų PIN kodą. Venkite lengvai atspėjamų sekų.</string>
+    <string name="screen_two_step_verification_confirm_header">Patvirtinkite naują PIN kodą</string>
+    <string name="screen_two_step_verification_confirm_footer">Norėdami patvirtinti, dar kartą įveskite 6 skaitmenų PIN kodą.</string>
+    <string name="screen_two_step_verification_phone_label">Telefono numeris</string>
+    <string name="screen_two_step_verification_phone_invalid">Įveskite galiojantį telefono numerį.</string>
+    <string name="screen_two_step_verification_current_incorrect">Šis PIN kodas neteisingas. Bandykite dar kartą.</string>
+    <string name="screen_two_step_verification_otp_invalid">Įvestas kodas negalioja arba nebegalioja.</string>
+    <string name="screen_two_step_verification_locked">PIN kodas užrakintas dėl per daug neteisingų bandymų. Bandykite vėliau.</string>
+    <string name="screen_two_step_verification_cooldown">Saugumo sumetimais PIN kodą galite keisti tik kartą per parą.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Jūsų PIN kodo keitimo sesija baigėsi. Pradėkite iš naujo.</string>
+    <string name="screen_two_step_verification_weak_error">Šį PIN kodą per lengva atspėti. Pasirinkite kitą.</string>
+    <string name="screen_two_step_verification_mismatch_error">PIN kodai nesutampa. Bandykite dar kartą.</string>
+    <string name="screen_two_step_verification_same_as_current">Naujas PIN kodas turi skirtis nuo dabartinio.</string>
+    <string name="screen_two_step_verification_rate_limited">Per daug bandymų. Truputį palaukite ir bandykite dar kartą.</string>
+    <string name="screen_two_step_verification_updated">Dviejų veiksmų patvirtinimas atnaujintas</string>
+    <string name="screen_change_phone_title">Keisti telefono numerį</string>
+    <string name="screen_change_phone_intro_header">Pakeiskite savo numerį</string>
+    <string name="screen_change_phone_intro_message">Patvirtinsime jūsų PIN kodą, tada SMS žinute išsiųsime kodą į naują numerį. Jūsų paskyra, pokalbiai ir pranešimai išliks tie patys.</string>
+    <string name="screen_change_phone_new_header">Naujas telefono numeris</string>
+    <string name="screen_change_phone_new_footer">Įveskite numerį, kurį nuo šiol norite naudoti.</string>
+    <string name="screen_change_phone_new_invalid">Įveskite galiojantį telefono numerį.</string>
+    <string name="screen_change_phone_pin_header">Įveskite savo PIN kodą</string>
+    <string name="screen_change_phone_pin_footer">Patvirtinkite 6 skaitmenų PIN kodą, kad autorizuotumėte šį pakeitimą.</string>
+    <string name="screen_change_phone_pin_incorrect">Šis PIN kodas neteisingas. Bandykite dar kartą.</string>
+    <string name="screen_change_phone_otp_header">Patvirtinkite naują numerį</string>
+    <string name="screen_change_phone_otp_footer">Įveskite 6 skaitmenų kodą, kurį išsiuntėme į jūsų naują numerį.</string>
+    <string name="screen_change_phone_otp_invalid">Šis kodas negalioja arba nebegalioja. Bandykite dar kartą.</string>
+    <string name="screen_change_phone_already_linked">Šis telefono numeris jau susietas su kita paskyra.</string>
+    <string name="screen_change_phone_updated">Jūsų telefono numeris atnaujintas.</string>
+    <string name="screen_change_phone_done_header">Viskas</string>
+    <string name="screen_change_phone_done_message">Jūsų telefono numeris atnaujintas. Nuo šiol prisijungsite naudodami naują numerį.</string>
+    <string name="screen_change_phone_needs_pin_header">Norint pakeisti numerį, reikia PIN kodo</string>
+    <string name="screen_change_phone_needs_pin_message">Saugumo sumetimais nustatykite 6 skaitmenų paskyros PIN kodą. Patvirtinsite jį prieš keisdami numerį.</string>
+    <string name="screen_change_phone_needs_pin_action">Nustatyti PIN kodą</string>
+    <string name="screen_change_phone_cooldown_header">Kol kas ne</string>
+    <string name="screen_change_phone_cooldown_message">Saugumo sumetimais numerį galėsite pakeisti po %1$s.</string>
+</resources>

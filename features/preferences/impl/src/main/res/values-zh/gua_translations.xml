@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: zh translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">设置两步验证</string>
+    <string name="screen_preferences_pin_nudge_message">添加 6 位数 PIN 码，更好地保护你的账号。</string>
+    <string name="screen_preferences_pin_nudge_action">立即设置</string>
+    <string name="screen_two_step_verification_title">两步验证</string>
+    <string name="screen_two_step_verification_overview_header">账号 PIN 码</string>
+    <string name="screen_two_step_verification_status_on">两步验证已开启</string>
+    <string name="screen_two_step_verification_status_off">两步验证已关闭</string>
+    <string name="screen_two_step_verification_overview_footer_on">6 位数 PIN 码为你的账号增加一层额外保护。</string>
+    <string name="screen_two_step_verification_overview_footer_off">添加 6 位数 PIN 码，为账号增加一层额外保护。</string>
+    <string name="screen_two_step_verification_set_button">设置 PIN 码</string>
+    <string name="screen_two_step_verification_change_button">更改 PIN 码</string>
+    <string name="screen_two_step_verification_passkey_button">设置通行密钥</string>
+    <string name="screen_two_step_verification_passkey_footer">使用通行密钥，通过指纹、面容或设备 PIN 码更快登录。</string>
+    <string name="screen_two_step_verification_phone_header">确认你的手机号码</string>
+    <string name="screen_two_step_verification_phone_footer">我们会向该号码发送验证码以确认此更改。</string>
+    <string name="screen_two_step_verification_current_header">输入当前 PIN 码</string>
+    <string name="screen_two_step_verification_current_footer">请输入你之前设置的 6 位数 PIN 码。</string>
+    <string name="screen_two_step_verification_otp_header">输入我们发送的验证码</string>
+    <string name="screen_two_step_verification_otp_footer">请输入发送到你手机上的 6 位数验证码。</string>
+    <string name="screen_two_step_verification_new_header">选择新的 PIN 码</string>
+    <string name="screen_two_step_verification_new_footer">选择一个 6 位数 PIN 码，避免容易被猜到的数字序列。</string>
+    <string name="screen_two_step_verification_confirm_header">确认新的 PIN 码</string>
+    <string name="screen_two_step_verification_confirm_footer">请再次输入 6 位数 PIN 码以确认。</string>
+    <string name="screen_two_step_verification_phone_label">手机号码</string>
+    <string name="screen_two_step_verification_phone_invalid">请输入有效的手机号码。</string>
+    <string name="screen_two_step_verification_current_incorrect">PIN 码不正确，请重试。</string>
+    <string name="screen_two_step_verification_otp_invalid">你输入的验证码无效或已过期。</string>
+    <string name="screen_two_step_verification_locked">错误尝试次数过多，PIN 码已锁定。请稍后再试。</string>
+    <string name="screen_two_step_verification_cooldown">出于安全考虑，每天只能更改一次 PIN 码。</string>
+    <string name="screen_two_step_verification_challenge_invalid">更改 PIN 码的会话已过期，请重新开始。</string>
+    <string name="screen_two_step_verification_weak_error">这个 PIN 码太容易被猜到，请换一个。</string>
+    <string name="screen_two_step_verification_mismatch_error">两次输入的 PIN 码不一致，请重试。</string>
+    <string name="screen_two_step_verification_same_as_current">新 PIN 码必须与当前 PIN 码不同。</string>
+    <string name="screen_two_step_verification_rate_limited">尝试次数过多，请稍候再试。</string>
+    <string name="screen_two_step_verification_updated">已更新两步验证</string>
+    <string name="screen_change_phone_title">更改手机号码</string>
+    <string name="screen_change_phone_intro_header">更改你的号码</string>
+    <string name="screen_change_phone_intro_message">我们会先确认你的 PIN 码，然后向新号码发送验证码短信。你的账号、聊天和消息保持不变。</string>
+    <string name="screen_change_phone_new_header">新手机号码</string>
+    <string name="screen_change_phone_new_footer">请输入你今后想使用的号码。</string>
+    <string name="screen_change_phone_new_invalid">请输入有效的手机号码。</string>
+    <string name="screen_change_phone_pin_header">输入你的 PIN 码</string>
+    <string name="screen_change_phone_pin_footer">确认 6 位数 PIN 码以授权此更改。</string>
+    <string name="screen_change_phone_pin_incorrect">PIN 码不正确，请重试。</string>
+    <string name="screen_change_phone_otp_header">验证你的新号码</string>
+    <string name="screen_change_phone_otp_footer">请输入我们发送到你新号码的 6 位数验证码。</string>
+    <string name="screen_change_phone_otp_invalid">该验证码无效或已过期，请重试。</string>
+    <string name="screen_change_phone_already_linked">该手机号码已绑定到另一个账号。</string>
+    <string name="screen_change_phone_updated">你的手机号码已更新。</string>
+    <string name="screen_change_phone_done_header">全部完成</string>
+    <string name="screen_change_phone_done_message">你的手机号码已更新。今后请使用新号码登录。</string>
+    <string name="screen_change_phone_needs_pin_header">更改号码需要 PIN 码</string>
+    <string name="screen_change_phone_needs_pin_message">为了你的安全，请设置 6 位数账号 PIN 码。更改号码前需要确认。</string>
+    <string name="screen_change_phone_needs_pin_action">设置 PIN 码</string>
+    <string name="screen_change_phone_cooldown_header">还不能更改</string>
+    <string name="screen_change_phone_cooldown_message">出于安全考虑，你可以在 %1$s 后更改号码。</string>
+</resources>

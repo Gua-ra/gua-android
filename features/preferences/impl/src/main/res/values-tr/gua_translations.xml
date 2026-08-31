@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: tr translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">İki adımlı doğrulamayı kur</string>
+    <string name="screen_preferences_pin_nudge_message">Hesabınızı daha iyi korumak için 6 haneli bir PIN ekleyin.</string>
+    <string name="screen_preferences_pin_nudge_action">Şimdi kur</string>
+    <string name="screen_two_step_verification_title">İki adımlı doğrulama</string>
+    <string name="screen_two_step_verification_overview_header">Hesap PIN\'i</string>
+    <string name="screen_two_step_verification_status_on">İki adımlı doğrulama açık</string>
+    <string name="screen_two_step_verification_status_off">İki adımlı doğrulama kapalı</string>
+    <string name="screen_two_step_verification_overview_footer_on">6 haneli PIN\'iniz hesabınıza ek bir güvenlik katmanı ekler.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Hesabınıza ek bir güvenlik katmanı için 6 haneli bir PIN ekleyin.</string>
+    <string name="screen_two_step_verification_set_button">PIN kur</string>
+    <string name="screen_two_step_verification_change_button">PIN\'i değiştir</string>
+    <string name="screen_two_step_verification_passkey_button">Geçiş anahtarı kur</string>
+    <string name="screen_two_step_verification_passkey_footer">Parmak iziniz, yüzünüz veya cihaz PIN\'inizle daha hızlı giriş yapmak için geçiş anahtarı kullanın.</string>
+    <string name="screen_two_step_verification_phone_header">Telefon numaranızı onaylayın</string>
+    <string name="screen_two_step_verification_phone_footer">Değişikliği onaylamak için bu numaraya bir kod göndereceğiz.</string>
+    <string name="screen_two_step_verification_current_header">Mevcut PIN\'inizi girin</string>
+    <string name="screen_two_step_verification_current_footer">Daha önce belirlediğiniz 6 haneli PIN\'i girin.</string>
+    <string name="screen_two_step_verification_otp_header">Gönderdiğimiz kodu girin</string>
+    <string name="screen_two_step_verification_otp_footer">Telefonunuza gönderilen 6 haneli kodu girin.</string>
+    <string name="screen_two_step_verification_new_header">Yeni bir PIN seçin</string>
+    <string name="screen_two_step_verification_new_footer">6 haneli bir PIN seçin. Kolay tahmin edilen dizilerden kaçının.</string>
+    <string name="screen_two_step_verification_confirm_header">Yeni PIN\'inizi onaylayın</string>
+    <string name="screen_two_step_verification_confirm_footer">Onaylamak için 6 haneli PIN\'i tekrar girin.</string>
+    <string name="screen_two_step_verification_phone_label">Telefon numarası</string>
+    <string name="screen_two_step_verification_phone_invalid">Lütfen geçerli bir telefon numarası girin.</string>
+    <string name="screen_two_step_verification_current_incorrect">Bu PIN yanlış. Lütfen tekrar deneyin.</string>
+    <string name="screen_two_step_verification_otp_invalid">Girdiğiniz kod geçersiz veya süresi dolmuş.</string>
+    <string name="screen_two_step_verification_locked">Çok fazla hatalı deneme nedeniyle PIN kilitlendi. Daha sonra tekrar deneyin.</string>
+    <string name="screen_two_step_verification_cooldown">Güvenlik için PIN\'inizi günde yalnızca bir kez değiştirebilirsiniz.</string>
+    <string name="screen_two_step_verification_challenge_invalid">PIN değiştirme oturumunuzun süresi doldu. Baştan başlayın.</string>
+    <string name="screen_two_step_verification_weak_error">Bu PIN\'in tahmin edilmesi çok kolay. Lütfen başka bir tane seçin.</string>
+    <string name="screen_two_step_verification_mismatch_error">PIN\'ler eşleşmiyor. Lütfen tekrar deneyin.</string>
+    <string name="screen_two_step_verification_same_as_current">Yeni PIN\'iniz mevcut PIN\'inizden farklı olmalı.</string>
+    <string name="screen_two_step_verification_rate_limited">Çok fazla deneme. Lütfen biraz bekleyip tekrar deneyin.</string>
+    <string name="screen_two_step_verification_updated">İki adımlı doğrulama güncellendi</string>
+    <string name="screen_change_phone_title">Telefon numarasını değiştir</string>
+    <string name="screen_change_phone_intro_header">Numaranızı değiştirin</string>
+    <string name="screen_change_phone_intro_message">PIN\'inizi onaylayacak, ardından yeni numaranıza SMS ile bir kod göndereceğiz. Hesabınız, sohbetleriniz ve mesajlarınız aynı kalır.</string>
+    <string name="screen_change_phone_new_header">Yeni telefon numarası</string>
+    <string name="screen_change_phone_new_footer">Bundan sonra kullanmak istediğiniz numarayı girin.</string>
+    <string name="screen_change_phone_new_invalid">Lütfen geçerli bir telefon numarası girin.</string>
+    <string name="screen_change_phone_pin_header">PIN\'inizi girin</string>
+    <string name="screen_change_phone_pin_footer">Bu değişikliği yetkilendirmek için 6 haneli PIN\'inizi onaylayın.</string>
+    <string name="screen_change_phone_pin_incorrect">Bu PIN yanlış. Lütfen tekrar deneyin.</string>
+    <string name="screen_change_phone_otp_header">Yeni numaranızı doğrulayın</string>
+    <string name="screen_change_phone_otp_footer">Yeni numaranıza gönderdiğimiz 6 haneli kodu girin.</string>
+    <string name="screen_change_phone_otp_invalid">Bu kod geçersiz veya süresi dolmuş. Lütfen tekrar deneyin.</string>
+    <string name="screen_change_phone_already_linked">Bu telefon numarası zaten başka bir hesaba bağlı.</string>
+    <string name="screen_change_phone_updated">Telefon numaranız güncellendi.</string>
+    <string name="screen_change_phone_done_header">Hazır</string>
+    <string name="screen_change_phone_done_message">Telefon numaranız güncellendi. Bundan sonra giriş için yeni numaranızı kullanacaksınız.</string>
+    <string name="screen_change_phone_needs_pin_header">Numaranızı değiştirmek için bir PIN gerekir</string>
+    <string name="screen_change_phone_needs_pin_message">Güvenliğiniz için 6 haneli bir hesap PIN\'i belirleyin. Numaranızı değiştirmeden önce onaylayacaksınız.</string>
+    <string name="screen_change_phone_needs_pin_action">PIN kur</string>
+    <string name="screen_change_phone_cooldown_header">Henüz değil</string>
+    <string name="screen_change_phone_cooldown_message">Güvenliğiniz için numaranızı %1$s sonra değiştirebilirsiniz.</string>
+</resources>
