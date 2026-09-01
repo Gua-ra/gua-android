@@ -42,8 +42,11 @@ suspend fun EncryptionService.repairWithoutReset(): EncryptionRepairOutcome = wi
         RecoveryState.DISABLED -> provisionKeyStorage()
         RecoveryState.INCOMPLETE -> repairIncomplete()
     }
-    // A hung network call must not leave the button spinning forever.
-} ?: EncryptionRepairOutcome.NotYet
+    // A hung network call must not leave the button spinning forever. This is deliberately NOT
+    // NotYet: NotYet means "the client cannot read its own state", which is a quiet, expected
+    // condition, whereas running past the ceiling means the repair actually failed. Collapsing the
+    // two hid a real failure behind a branch whose whole contract is that nothing is wrong.
+} ?: EncryptionRepairOutcome.Failed
 
 /** What [repairWithoutReset] managed to do, so callers only offer a reset when one is warranted. */
 sealed interface EncryptionRepairOutcome {
@@ -55,6 +58,15 @@ sealed interface EncryptionRepairOutcome {
 
     /** Everything non-destructive has been tried. Only a reset can finish this device. */
     data object ResetRequired : EncryptionRepairOutcome
+
+    /**
+     * The repair ran past its ceiling, or failed outright.
+     *
+     * Deliberately distinct from [NotYet] and from [ResetRequired]. It is not NotYet, because
+     * something did go wrong and the user is owed a message. It is not ResetRequired, because
+     * nothing here established that a reset is needed, and a reset destroys the backup.
+     */
+    data object Failed : EncryptionRepairOutcome
 }
 
 /**

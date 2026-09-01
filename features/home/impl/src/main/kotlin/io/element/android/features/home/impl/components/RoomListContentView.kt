@@ -73,6 +73,23 @@ fun RoomListContentView(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
+    // GUA FORK: navigation is driven by the repair's verdict, not by the tap, and it lives HERE --
+    // once, above the branch -- rather than inside each state's own composable.
+    //
+    // It used to be written twice. EmptyView consumed the flag by sending EncryptionResetNavigated;
+    // RoomsView, the branch every account with any chats takes, navigated and never sent it. The
+    // flag stayed true, so its LaunchedEffect key never changed again, and every later tap of
+    // Finish setup set an already-true flag and did nothing. That is the dead button.
+    val onNeedsReset by rememberUpdatedState(onConfirmRecoveryKeyClick)
+    val onNavigated by rememberUpdatedState(eventSink)
+    LaunchedEffect(contentState.encryptionSetupNeedsReset) {
+        if (contentState.encryptionSetupNeedsReset) {
+            // Consume first: the flag is one-shot, and leaving it set is what wedged the button.
+            onNavigated(RoomListEvent.EncryptionResetNavigated)
+            onNeedsReset()
+        }
+    }
+
     when (contentState) {
         is RoomListContentState.Skeleton -> {
             SkeletonView(
@@ -86,7 +103,6 @@ fun RoomListContentView(
                 modifier = modifier.padding(contentPadding),
                 state = contentState,
                 eventSink = eventSink,
-                onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
                 onCreateRoomClick = onCreateRoomClick,
             )
         }
@@ -98,7 +114,6 @@ fun RoomListContentView(
                 filtersState = filtersState,
                 spaceFiltersState = spaceFiltersState,
                 eventSink = eventSink,
-                onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
                 onRoomClick = onRoomClick,
                 lazyListState = lazyListState,
                 contentPadding = contentPadding,
@@ -132,7 +147,6 @@ private fun SkeletonView(
 private fun EmptyView(
     state: RoomListContentState.Empty,
     eventSink: (RoomListEvent) -> Unit,
-    onConfirmRecoveryKeyClick: () -> Unit,
     onCreateRoomClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -149,16 +163,6 @@ private fun EmptyView(
             },
             modifier = Modifier.align(Alignment.Center),
         )
-        // GUA FORK: navigation is driven by the repair's verdict, not by the tap. The tap runs the
-        // silent repair; only if that establishes a reset is genuinely required do we leave here.
-        val onNeedsReset by rememberUpdatedState(onConfirmRecoveryKeyClick)
-        val onNavigated by rememberUpdatedState(eventSink)
-        LaunchedEffect(state.encryptionSetupNeedsReset) {
-            if (state.encryptionSetupNeedsReset) {
-                onNavigated(RoomListEvent.EncryptionResetNavigated)
-                onNeedsReset()
-            }
-        }
         Box {
             when (state.securityBannerState) {
                 SecurityBannerState.SetUpRecovery,
@@ -185,7 +189,6 @@ private fun RoomsView(
     filtersState: RoomListFiltersState,
     spaceFiltersState: SpaceFiltersState,
     eventSink: (RoomListEvent) -> Unit,
-    onConfirmRecoveryKeyClick: () -> Unit,
     onRoomClick: (RoomListRoomSummary) -> Unit,
     contentPadding: PaddingValues,
     lazyListState: LazyListState,
@@ -193,11 +196,6 @@ private fun RoomsView(
 ) {
     val isSpaceFilterSelected = spaceFiltersState is SpaceFiltersState.Selected
     val hasAnyFilterSelected = filtersState.hasAnyFilterSelected || isSpaceFilterSelected
-    // GUA FORK: navigation is driven by the repair's verdict, not by the tap.
-    val onNeedsReset by rememberUpdatedState(onConfirmRecoveryKeyClick)
-    LaunchedEffect(state.encryptionSetupNeedsReset) {
-        if (state.encryptionSetupNeedsReset) onNeedsReset()
-    }
     if (state.summaries.isEmpty() && hasAnyFilterSelected) {
         EmptyViewForFilterStates(
             selectedFilters = filtersState.selectedFilters(),

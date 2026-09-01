@@ -198,6 +198,7 @@ class ResetIdentityFlowNode(
         when (encryptionService.provisionAfterReset(sessionVerificationService)) {
             EncryptionRepairOutcome.Repaired -> Timber.d("Provisioned key storage after the reset.")
             EncryptionRepairOutcome.NotYet,
+            EncryptionRepairOutcome.Failed,
             EncryptionRepairOutcome.ResetRequired -> Timber.e("Could not provision key storage after the reset.")
         }
     }

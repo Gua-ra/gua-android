@@ -44,6 +44,8 @@ import io.element.android.features.leaveroom.api.LeaveRoomEvent
 import io.element.android.features.leaveroom.api.LeaveRoomState
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.fullscreenintent.api.FullScreenIntentPermissionsState
@@ -60,6 +62,7 @@ import io.element.android.libraries.preferences.api.store.AppPreferencesStore
 import io.element.android.libraries.preferences.api.store.SessionPreferencesStore
 import io.element.android.libraries.push.api.battery.BatteryOptimizationState
 import io.element.android.libraries.push.api.notifications.NotificationCleaner
+import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.analytics.api.watchers.AnalyticsColdStartWatcher
 import io.element.android.services.analyticsproviders.api.trackers.captureInteraction
@@ -96,6 +99,7 @@ class RoomListPresenter(
     private val coldStartWatcher: AnalyticsColdStartWatcher,
     private val spaceFiltersPresenter: Presenter<SpaceFiltersState>,
     private val featureFlagService: FeatureFlagService,
+    private val snackbarDispatcher: SnackbarDispatcher,
 ) : Presenter<RoomListState> {
     private val encryptionService = client.encryptionService
 
@@ -149,10 +153,28 @@ class RoomListPresenter(
                             when (encryptionService.repairWithoutReset()) {
                                 EncryptionRepairOutcome.Repaired ->
                                     Timber.d("Finished encryption setup without a reset.")
-                                EncryptionRepairOutcome.NotYet ->
+                                EncryptionRepairOutcome.NotYet -> {
                                     // The client cannot read its own state yet, so there is nothing
-                                    // to repair and nothing to warn about. Leave the banner up.
+                                    // to repair. There IS something to say, though: this branch used
+                                    // to log and return, which is a button that visibly does nothing.
+                                    // Android pins the recovery state to WAITING_FOR_SYNC the whole
+                                    // time sync is not Running, so this is what a tap on a patchy
+                                    // connection looks like, and the user has to be told that rather
+                                    // than left guessing.
                                     Timber.d("Encryption state not readable yet, leaving the banner.")
+                                    snackbarDispatcher.post(
+                                        SnackbarMessage(CommonStrings.common_please_check_internet_connection)
+                                    )
+                                }
+                                EncryptionRepairOutcome.Failed -> {
+                                    // The repair ran past its ceiling or threw. Same rule: never
+                                    // silent, and never a reset -- a reset is destructive and this
+                                    // outcome does not establish that one is needed.
+                                    Timber.w("Encryption setup did not finish; leaving the banner.")
+                                    snackbarDispatcher.post(
+                                        SnackbarMessage(CommonStrings.common_something_went_wrong)
+                                    )
+                                }
                                 EncryptionRepairOutcome.ResetRequired -> {
                                     Timber.w("Encryption setup cannot finish without a reset.")
                                     encryptionSetupNeedsReset = true
