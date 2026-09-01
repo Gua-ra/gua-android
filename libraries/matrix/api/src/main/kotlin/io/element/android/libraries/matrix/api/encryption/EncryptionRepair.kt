@@ -7,10 +7,9 @@
 
 package io.element.android.libraries.matrix.api.encryption
 
-import io.element.android.libraries.matrix.api.verification.SessionVerificationService
-import io.element.android.libraries.matrix.api.verification.SessionVerifiedStatus
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
+import timber.log.Timber
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -139,47 +138,34 @@ private suspend fun EncryptionService.repairIncomplete(): EncryptionRepairOutcom
  * Immediately after a reset there is no such key left to protect and no cross-signing identity
  * either, so the conservative path can never succeed here.
  *
- * Two things have to be true for this to actually finish the device, and getting either wrong puts
- * the setup banner straight back in front of the user who has just completed a reset, where the
- * only thing it can offer them is another reset. That is the loop.
+ * `Recovery::enable` exports whatever private cross-signing keys the crypto store can hand over at
+ * the moment it runs, and reports success even when it exported nothing. The reset has only just
+ * minted those keys, so an export that runs too early writes a secret store holding only the backup
+ * key and the account lands straight back on INCOMPLETE -- which is the setup banner, back in front
+ * of someone who has just finished a reset, offering them another reset.
  *
- * First, wait for the identity. `Recovery::enable` exports whatever private cross-signing keys the
- * crypto store can hand over at the moment it runs, and the reset has only just uploaded them. Run
- * too early it exports nothing, writes a secret store holding only the backup key, and the account
- * drops straight back to INCOMPLETE.
- *
- * Second, judge by the state. enableRecovery reports success for a store it populated with nothing,
- * so its Result cannot be the verdict.
+ * An earlier version gated this on the session reporting itself verified. That is not a sound
+ * signal: it reports the identity the session currently trusts, which right after a reset is often
+ * still the OLD one, so the gate passed instantly and bought nothing. The outcome is the only sound
+ * signal, so this asks for it and, while the account is still incomplete, waits and asks again.
+ * Nothing here is on a user's critical path, so it can afford to be patient.
  */
-suspend fun EncryptionService.provisionAfterReset(
-    sessionVerificationService: SessionVerificationService,
-): EncryptionRepairOutcome {
-    sessionVerificationService.awaitVerifiedIdentity()
-
+suspend fun EncryptionService.provisionAfterReset(): EncryptionRepairOutcome {
     // Rotating the secret store is normally the one thing to avoid, since it invalidates any
     // recovery key saved elsewhere for this account. Immediately after a reset there is no such key
-    // and no earlier store left to strand, so a second attempt costs nothing.
-    repeat(PROVISION_ATTEMPTS) {
-        val enabled = enableRecovery(waitForBackupsToUpload = false)
-        if (awaitRecoveryEnabled(wait = enabled.isSuccess)) return EncryptionRepairOutcome.Repaired
+    // and no earlier store left to strand, so re-running it costs nothing but a round trip.
+    PROVISION_BACKOFF.forEachIndexed { attempt, wait ->
+        // Re-read before spending another rotation: an earlier attempt may have landed while this
+        // one was waiting, and rotating over a store that already works would undo it.
+        if (recoveryStateStateFlow.value == RecoveryState.ENABLED) return EncryptionRepairOutcome.Repaired
+
+        enableRecovery(waitForBackupsToUpload = false)
+            .onFailure { Timber.w(it, "Post-reset provision attempt ${attempt + 1} failed.") }
+
+        if (awaitRecoveryEnabled(wait)) return EncryptionRepairOutcome.Repaired
     }
 
     return EncryptionRepairOutcome.ResetRequired
-}
-
-/**
- * Waits until the session trusts its own cross-signing identity.
- *
- * This is the signal that the private keys the reset just minted have reached the crypto store and
- * can be exported into a secret store. Gives up quietly on the timeout: the caller checks the
- * resulting state either way, so a slow identity costs an attempt, not the whole provision.
- */
-private suspend fun SessionVerificationService.awaitVerifiedIdentity(): Boolean {
-    if (sessionVerifiedStatus.value == SessionVerifiedStatus.Verified) return true
-    return withTimeoutOrNull(IDENTITY_TIMEOUT) {
-        sessionVerifiedStatus.first { it == SessionVerifiedStatus.Verified }
-        true
-    } ?: false
 }
 
 /**
@@ -192,7 +178,13 @@ private suspend fun SessionVerificationService.awaitVerifiedIdentity(): Boolean 
 private suspend fun EncryptionService.awaitRecoveryEnabled(wait: Boolean): Boolean {
     if (recoveryStateStateFlow.value == RecoveryState.ENABLED) return true
     if (!wait) return false
-    return withTimeoutOrNull(CONFIRM_TIMEOUT) {
+    return awaitRecoveryEnabled(CONFIRM_TIMEOUT)
+}
+
+/** Waits up to [timeout] for the recovery state to reach ENABLED. */
+private suspend fun EncryptionService.awaitRecoveryEnabled(timeout: Duration): Boolean {
+    if (recoveryStateStateFlow.value == RecoveryState.ENABLED) return true
+    return withTimeoutOrNull(timeout) {
         recoveryStateStateFlow.first { it == RecoveryState.ENABLED }
         true
     } ?: false
@@ -216,8 +208,7 @@ private val CONFIRM_TIMEOUT = 2.seconds
 // Hard ceiling on the whole operation, so the banner's spinner always resolves.
 private val REPAIR_CEILING = 12.seconds
 
-// How long to let the reset's new cross-signing identity reach the crypto store before exporting it.
-private val IDENTITY_TIMEOUT = 5.seconds
-
-// One retry only. If a settled identity still will not export, retrying forever cannot help.
-private const val PROVISION_ATTEMPTS = 2
+// How long to wait for the state to agree after each post-reset attempt, growing as the identity
+// settles. Doubles as the retry schedule: the whole sequence spans about a minute, generous enough
+// for a slow device and still bounded, and the user is not waiting on any of it.
+private val PROVISION_BACKOFF = listOf(3.seconds, 5.seconds, 10.seconds, 20.seconds, 20.seconds)

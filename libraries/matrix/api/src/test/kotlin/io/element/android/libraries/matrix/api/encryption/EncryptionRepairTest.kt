@@ -8,9 +8,7 @@
 package io.element.android.libraries.matrix.api.encryption
 
 import com.google.common.truth.Truth.assertThat
-import io.element.android.libraries.matrix.api.verification.SessionVerifiedStatus
 import io.element.android.libraries.matrix.test.encryption.FakeEncryptionService
-import io.element.android.libraries.matrix.test.verification.FakeSessionVerificationService
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
@@ -127,6 +125,8 @@ class EncryptionRepairTest {
 
     @Test
     fun `after a reset, a store that exported nothing is not reported as repaired`() = runTest {
+        // enableRecovery succeeds for a store it populated with nothing. Trusting that Result is
+        // what put the setup banner back in front of someone who had just finished a reset.
         // enableRecovery succeeds for a secret store it populated with nothing, because the private
         // cross-signing keys were not exportable when it ran. Trusting that Result is what put the
         // setup banner back in front of a user who had just finished a reset, where the only thing
@@ -135,11 +135,8 @@ class EncryptionRepairTest {
             enableRecoveryLambda = { _, _ -> Result.success("key") }
         )
         service.recoveryStateStateFlow.value = RecoveryState.INCOMPLETE
-        val verification = FakeSessionVerificationService().apply {
-            emitVerifiedStatus(SessionVerifiedStatus.Verified)
-        }
 
-        assertThat(service.provisionAfterReset(verification)).isEqualTo(EncryptionRepairOutcome.ResetRequired)
+        assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.ResetRequired)
     }
 
     @Test
@@ -148,12 +145,9 @@ class EncryptionRepairTest {
             enableRecoveryLambda = { _, _ -> Result.success("key") }
         )
         service.recoveryStateStateFlow.value = RecoveryState.DISABLED
-        val verification = FakeSessionVerificationService().apply {
-            emitVerifiedStatus(SessionVerifiedStatus.Verified)
-        }
         service.recoveryStateStateFlow.value = RecoveryState.ENABLED
 
-        assertThat(service.provisionAfterReset(verification)).isEqualTo(EncryptionRepairOutcome.Repaired)
+        assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.Repaired)
     }
 
     @Test

@@ -703,5 +703,6 @@ class RoomListPresenterTest {
         coldStartWatcher = FakeAnalyticsColdStartWatcher(),
         featureFlagService = featureFlagService,
         snackbarDispatcher = SnackbarDispatcher(),
+        keyStorageProvisioner = FakeKeyStorageProvisioner(),
     )
 }

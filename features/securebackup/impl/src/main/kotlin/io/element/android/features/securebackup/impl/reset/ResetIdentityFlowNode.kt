@@ -27,6 +27,7 @@ import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.enterprise.api.SessionEnterpriseService
+import io.element.android.features.securebackup.api.KeyStorageProvisioner
 import io.element.android.features.securebackup.impl.reset.password.ResetIdentityPasswordNode
 import io.element.android.features.securebackup.impl.reset.root.ResetIdentityRootNode
 import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
@@ -39,12 +40,8 @@ import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.designsystem.components.ProgressDialog
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
-import io.element.android.libraries.matrix.api.encryption.EncryptionRepairOutcome
-import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.IdentityOAuthResetHandle
 import io.element.android.libraries.matrix.api.encryption.IdentityPasswordResetHandle
-import io.element.android.libraries.matrix.api.encryption.provisionAfterReset
-import io.element.android.libraries.matrix.api.verification.SessionVerificationService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
@@ -58,11 +55,10 @@ class ResetIdentityFlowNode(
     @Assisted buildContext: BuildContext,
     @Assisted plugins: List<Plugin>,
     private val resetIdentityFlowManager: ResetIdentityFlowManager,
-    private val encryptionService: EncryptionService,
     @SessionCoroutineScope
     private val sessionCoroutineScope: CoroutineScope,
     private val sessionEnterpriseService: SessionEnterpriseService,
-    private val sessionVerificationService: SessionVerificationService,
+    private val keyStorageProvisioner: KeyStorageProvisioner,
 ) : BaseFlowNode<ResetIdentityFlowNode.NavTarget>(
     backstack = BackStack(initialElement = NavTarget.Root, savedStateMap = buildContext.savedStateMap),
     buildContext = buildContext,
@@ -161,7 +157,14 @@ class ResetIdentityFlowNode(
                                     // WAITING_FOR_SYNC while it is stopped, so provisioning behind
                                     // the Custom Tab fires into a client that cannot observe it.
                                     returnFromCustomTab()
-                                    provisionKeyStorageSilently()
+                                    // Start it, do not wait for it. The reset has landed; holding
+                                    // the user on the destructive confirmation screen while key
+                                    // storage provisions is a wait with nothing to justify it, and
+                                    // it leaves a live "Reset and finish setup" button in front of
+                                    // someone with nothing else to do. It runs on the session
+                                    // scope, so finishing this flow does not cancel it, and the
+                                    // setup banner watches it and says it is working.
+                                    keyStorageProvisioner.start()
                                 }
                             resetInFlight = false
                             returnFromCustomTab()
@@ -178,28 +181,6 @@ class ResetIdentityFlowNode(
                 }
             }
             else -> Unit
-        }
-    }
-
-    /**
-     * GUA FORK: provisions key storage straight after a reset, and does NOT go through
-     * [repairWithoutReset].
-     *
-     * That path deliberately refuses enableRecovery on an INCOMPLETE account, because enabling
-     * rotates the secret store and would invalidate a recovery key saved elsewhere. Immediately
-     * after a reset there is no such key left to protect and no cross-signing identity either, so
-     * the conservative path can never succeed here: it would return ResetRequired forever and put
-     * the setup banner straight back in front of the user who just completed a reset.
-     */
-    private suspend fun provisionKeyStorageSilently() {
-        // The verdict is the recovery state, not enableRecovery's Result: it reports success for a
-        // secret store it populated with nothing, which is what put the setup banner back in front
-        // of a user who had just finished a reset. See provisionAfterReset.
-        when (encryptionService.provisionAfterReset(sessionVerificationService)) {
-            EncryptionRepairOutcome.Repaired -> Timber.d("Provisioned key storage after the reset.")
-            EncryptionRepairOutcome.NotYet,
-            EncryptionRepairOutcome.Failed,
-            EncryptionRepairOutcome.ResetRequired -> Timber.e("Could not provision key storage after the reset.")
         }
     }
 

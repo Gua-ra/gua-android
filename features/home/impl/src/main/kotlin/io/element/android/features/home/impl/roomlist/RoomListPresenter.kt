@@ -42,6 +42,7 @@ import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteE
 import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteState
 import io.element.android.features.leaveroom.api.LeaveRoomEvent
 import io.element.android.features.leaveroom.api.LeaveRoomState
+import io.element.android.features.securebackup.api.KeyStorageProvisioner
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
@@ -100,6 +101,7 @@ class RoomListPresenter(
     private val spaceFiltersPresenter: Presenter<SpaceFiltersState>,
     private val featureFlagService: FeatureFlagService,
     private val snackbarDispatcher: SnackbarDispatcher,
+    private val keyStorageProvisioner: KeyStorageProvisioner,
 ) : Presenter<RoomListState> {
     private val encryptionService = client.encryptionService
 
@@ -317,10 +319,15 @@ class RoomListPresenter(
         }
         val seenRoomInvites by remember { seenInvitesStore.seenRoomIds() }.collectAsState(emptySet())
         val securityBannerState by rememberSecurityBannerState(securityBannerDismissed)
+        // GUA FORK: provisioning after a reset runs behind this screen, and until it lands the
+        // recovery state is legitimately still unhealthy, so the banner is still up. Without showing
+        // the work it reads as an untouched call to action: people press it, it finishes around
+        // then, and the press looks like what fixed the account.
+        val isProvisioningAfterReset by keyStorageProvisioner.isProvisioning.collectAsState()
         return when {
             showEmpty -> RoomListContentState.Empty(
                 securityBannerState = securityBannerState,
-                isFinishingEncryptionSetup = isFinishingEncryptionSetup,
+                isFinishingEncryptionSetup = isFinishingEncryptionSetup || isProvisioningAfterReset,
                 encryptionSetupNeedsReset = encryptionSetupNeedsReset,
             )
             showSkeleton -> RoomListContentState.Skeleton(count = 16)
@@ -329,7 +336,7 @@ class RoomListPresenter(
 
                 RoomListContentState.Rooms(
                     securityBannerState = securityBannerState,
-                    isFinishingEncryptionSetup = isFinishingEncryptionSetup,
+                    isFinishingEncryptionSetup = isFinishingEncryptionSetup || isProvisioningAfterReset,
                     encryptionSetupNeedsReset = encryptionSetupNeedsReset,
                     showNewNotificationSoundBanner = showNewNotificationSoundBanner,
                     showUnreadCount = showUnreadCount,
