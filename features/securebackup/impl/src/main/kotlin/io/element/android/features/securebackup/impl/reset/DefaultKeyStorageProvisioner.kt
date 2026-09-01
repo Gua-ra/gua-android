@@ -8,7 +8,6 @@
 package io.element.android.features.securebackup.impl.reset
 
 import dev.zacsweers.metro.ContributesBinding
-import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.element.android.features.securebackup.api.KeyStorageProvisioner
 import io.element.android.libraries.di.SessionScope
@@ -22,7 +21,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-@Inject
 @SingleIn(SessionScope::class)
 @ContributesBinding(SessionScope::class)
 class DefaultKeyStorageProvisioner(
