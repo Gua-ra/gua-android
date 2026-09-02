@@ -11,4 +11,9 @@
     <string name="gua_encryption_reset_required_title">Some previous messages can\'t be recovered</string>
     <string name="gua_encryption_reset_required_message">To finish setting up encrypted chats on this device, your encrypted backup needs to be reset. Messages stored only in that backup will be lost. Messages already on your devices won\'t be affected.</string>
     <string name="gua_encryption_reset_required_action">Reset and finish setup</string>
+
+    <!-- GUA FORK: the wait between the approval page handing control back and the setup being
+         confirmed, and the honest outcome when it could not be. -->
+    <string name="gua_encryption_reset_finishing">Finishing setup…</string>
+    <string name="gua_encryption_reset_failed">Couldn\'t finish setup. Tap Reset and finish setup to try again.</string>
 </resources>

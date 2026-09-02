@@ -35,7 +35,14 @@ class DefaultOAuthUrlParser(
      * `io.element.android:/?state=IFF1UETGye2ZA8pO&code=y6X1GZeqA3xxOWcTeShgv8nkgFJXyzWB`
      */
     override fun parse(url: String): OAuthAction? {
-        if (url.startsWith(oAuthRedirectUrlProvider.provide()).not()) return null
+        val redirectUrl = oAuthRedirectUrlProvider.provide()
+        if (url.startsWith(redirectUrl).not()) return null
+        // GUA FORK: the identity-reset approval page returns here once the user has approved. It
+        // used to be logged as an unsupported OAuth url and dropped, so the app had to guess from
+        // a bare resume whether an approval had happened.
+        if (url.removePrefix(redirectUrl).substringBefore('?').trimEnd('/') == IDENTITY_RESET_DONE_PATH) {
+            return OAuthAction.IdentityResetApproved
+        }
         if (url.contains("error=access_denied")) return OAuthAction.GoBack()
         if (url.contains("code=")) return OAuthAction.Success(url)
 
@@ -44,3 +51,6 @@ class DefaultOAuthUrlParser(
         return null
     }
 }
+
+/** The path the approval page navigates to on the app's own scheme once the reset is approved. */
+const val IDENTITY_RESET_DONE_PATH = "reset-cross-signing-done"

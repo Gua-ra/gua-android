@@ -704,5 +704,6 @@ class RoomListPresenterTest {
         featureFlagService = featureFlagService,
         snackbarDispatcher = SnackbarDispatcher(),
         keyStorageProvisioner = FakeKeyStorageProvisioner(),
+        identityResetPendingStore = FakeIdentityResetPendingStore(),
     )
 }

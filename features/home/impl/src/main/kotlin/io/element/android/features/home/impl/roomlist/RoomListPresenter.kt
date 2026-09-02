@@ -42,6 +42,7 @@ import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteE
 import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteState
 import io.element.android.features.leaveroom.api.LeaveRoomEvent
 import io.element.android.features.leaveroom.api.LeaveRoomState
+import io.element.android.features.securebackup.api.IdentityResetPendingStore
 import io.element.android.features.securebackup.api.KeyStorageProvisioner
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
@@ -102,6 +103,7 @@ class RoomListPresenter(
     private val featureFlagService: FeatureFlagService,
     private val snackbarDispatcher: SnackbarDispatcher,
     private val keyStorageProvisioner: KeyStorageProvisioner,
+    private val identityResetPendingStore: IdentityResetPendingStore,
 ) : Presenter<RoomListState> {
     private val encryptionService = client.encryptionService
 
@@ -152,7 +154,17 @@ class RoomListPresenter(
                     isFinishingEncryptionSetup = true
                     coroutineScope.launch {
                         try {
-                            when (encryptionService.repairWithoutReset()) {
+                            // GUA FORK: a reset that was started but never approved leaves an identity in the
+                            // local store that the server has never seen. Every repair below would export it
+                            // into new key storage and call the account healthy. Only finishing the reset can
+                            // put it right.
+                            val outcome = if (identityResetPendingStore.isPending()) {
+                                Timber.w("An identity reset is still pending; refusing to repair around it.")
+                                EncryptionRepairOutcome.ResetRequired
+                            } else {
+                                encryptionService.repairWithoutReset()
+                            }
+                            when (outcome) {
                                 EncryptionRepairOutcome.Repaired ->
                                     Timber.d("Finished encryption setup without a reset.")
                                 EncryptionRepairOutcome.NotYet -> {

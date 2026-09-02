@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
 import com.bumble.appyx.core.lifecycle.subscribe
 import com.bumble.appyx.core.modality.BuildContext
@@ -28,7 +29,9 @@ import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.enterprise.api.SessionEnterpriseService
+import io.element.android.features.securebackup.api.IdentityResetPendingStore
 import io.element.android.features.securebackup.api.KeyStorageProvisioner
+import io.element.android.features.securebackup.impl.R
 import io.element.android.features.securebackup.impl.reset.password.ResetIdentityPasswordNode
 import io.element.android.features.securebackup.impl.reset.root.ResetIdentityRootNode
 import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
@@ -37,18 +40,28 @@ import io.element.android.libraries.architecture.BackstackView
 import io.element.android.libraries.architecture.BaseFlowNode
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.architecture.createNode
+import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.designsystem.components.ProgressDialog
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
+import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.auth.OAuthRedirectUrlProvider
 import io.element.android.libraries.matrix.api.encryption.IdentityOAuthResetHandle
 import io.element.android.libraries.matrix.api.encryption.IdentityPasswordResetHandle
+import io.element.android.libraries.oauth.api.OAuthAction
+import io.element.android.libraries.oauth.api.OAuthActionFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.parcelize.Parcelize
 import timber.log.Timber
+import kotlin.time.Duration.Companion.seconds
 
 @ContributesNode(SessionScope::class)
 @AssistedInject
@@ -61,6 +74,11 @@ class ResetIdentityFlowNode(
     private val sessionEnterpriseService: SessionEnterpriseService,
     private val keyStorageProvisioner: KeyStorageProvisioner,
     private val oAuthRedirectUrlProvider: OAuthRedirectUrlProvider,
+    private val matrixClient: MatrixClient,
+    private val oAuthActionFlow: OAuthActionFlow,
+    private val identityResetPendingStore: IdentityResetPendingStore,
+    private val snackbarDispatcher: SnackbarDispatcher,
+    private val dispatchers: CoroutineDispatchers,
 ) : BaseFlowNode<ResetIdentityFlowNode.NavTarget>(
     backstack = BackStack(initialElement = NavTarget.Root, savedStateMap = buildContext.savedStateMap),
     buildContext = buildContext,
@@ -83,12 +101,16 @@ class ResetIdentityFlowNode(
     private lateinit var activity: Activity
     private var darkTheme: Boolean = false
     private var resetJob: Job? = null
+    private var approvalJob: Job? = null
     private var hasFinished = false
 
-    /** True from the moment MAS approval starts committing until the reset has settled. */
+    /** True from the moment the approved upload starts until it has settled one way or the other. */
     private var resetInFlight = false
 
-    /** Set once MAS is on screen, taken by the attempt that runs when we come back. */
+    /** True while the approved upload runs, so the screen can say so. */
+    private val finishing = MutableStateFlow(false)
+
+    /** Set once MAS is on screen, taken by the attempt that runs when the approval comes back. */
     private var pendingResetHandle: IdentityOAuthResetHandle? = null
 
     override fun onBuilt() {
@@ -98,10 +120,22 @@ class ResetIdentityFlowNode(
             finishOnce()
         }
 
-        // GUA FORK: returning to the foreground is the only signal we get that the user is finished
-        // at MAS. Its hand-off brings us forward when they approve, and backing out of the Custom
-        // Tab brings us forward when they do not; either way the wait is over.
-        lifecycle.subscribe(onResume = { finishResetIfReturningFromMas() })
+        // GUA FORK: the approval page hands control back on the app's own scheme once the user
+        // has approved, and that arrives here as an OAuth action. It is the only signal worth
+        // acting on: a bare return to the foreground also happens when the user backs out of the
+        // tab, and uploading then just polls a refusal until the SDK gives up.
+        approvalJob = sessionCoroutineScope.launch {
+            oAuthActionFlow.collect { action ->
+                if (action is OAuthAction.IdentityResetApproved) {
+                    oAuthActionFlow.reset()
+                    finishApprovedReset()
+                }
+            }
+        }
+        lifecycle.subscribe(onDestroy = {
+            approvalJob?.cancel()
+            approvalJob = null
+        })
     }
 
     override fun resolve(navTarget: NavTarget, buildContext: BuildContext): Node {
@@ -151,28 +185,20 @@ class ResetIdentityFlowNode(
                         Timber.d("No reset handle return, the reset is done.")
                     }
                     is IdentityOAuthResetHandle -> {
+                        // GUA FORK: from here on this account carries a freshly minted identity
+                        // that the server has never seen. Until an approval lands it, the setup
+                        // banner must not try to repair around it. See IdentityResetPendingStore.
+                        identityResetPendingStore.markPending()
+
                         Timber.d("Launching reset confirmation in MAS")
-                        // GUA FORK: name our scheme so MAS can hand control back on approval. Its
-                        // success page is otherwise a dead end and the Custom Tab sits there until
-                        // the user dismisses it themselves.
-                        val url = sessionEnterpriseService.tweakMasUrl(handle.url).withReturnScheme()
-                        Uri.parse(url).let { parsed ->
-                            Timber.d(
-                                "MAS approval url: host=${parsed.host} path=${parsed.path} " +
-                                    "hasReturnScheme=${parsed.getQueryParameter("gua_return") != null} " +
-                                    "params=${parsed.queryParameterNames}"
-                            )
-                        }
+                        val url = sessionEnterpriseService.tweakMasUrl(handle.url).withAppIdentity()
                         activity.openUrlInChromeCustomTab(null, darkTheme, url)
 
-                        // GUA FORK: do not start the reset yet. resetOAuth's approval budget is
-                        // about two minutes and it starts when it is called, so calling it here
-                        // spends all of it on the time the user takes to read the page; anyone
-                        // slower approves into a call that has already given up. Wait until we are
-                        // back in the foreground, by which point the approval is in force and one
-                        // call settles in about a second.
+                        // GUA FORK: nothing runs while the tab is open. The approval page hands
+                        // control back once the user has approved, and that is the moment to
+                        // upload; the handle waits here until then.
                         pendingResetHandle = handle
-                        Timber.d("Waiting to return to the foreground before resetOAuth")
+                        Timber.d("Waiting for the approval to come back before resetOAuth")
                     }
                     is IdentityPasswordResetHandle -> backstack.push(NavTarget.ResetPassword)
                 }
@@ -182,61 +208,92 @@ class ResetIdentityFlowNode(
     }
 
     /**
-     * Runs the reset once, on the way back from MAS.
+     * Uploads the new identity now that the approval page has handed control back.
      *
-     * Guarded twice: the handle is taken before anything suspends, so two resumes cannot both
-     * consume it, and [resetInFlight] stops a slow attempt being joined by another. Each reset
-     * deletes the key backup and secret storage again, so a second concurrent one is destructive
-     * rather than merely wasteful.
+     * The SDK call is the verdict. It returns normally only after the server has accepted the
+     * uploads, and `cancel()` is never called on a handle whose result is still being trusted: a
+     * cancelled call returns success without uploading anything, which is exactly the false
+     * success this flow must never produce.
+     *
+     * The wait is bounded. Cancelling the coroutine drops the SDK's future, so a refused upload
+     * cannot turn into minutes of spinner: the attempt is given up on, the user is told plainly,
+     * and the destructive button comes back. Once approved, a good network settles in a second or
+     * two.
      */
-    private fun finishResetIfReturningFromMas() {
+    private fun finishApprovedReset() {
         val handle = pendingResetHandle ?: return
         if (resetInFlight) return
         pendingResetHandle = null
 
-        Timber.d("Back in the foreground, starting resetOAuth")
+        Timber.d("Approval came back, starting resetOAuth")
         // On the SESSION scope, not this node's. whenResetIsDone finishes the node the moment the
-        // backup transitions to ENABLED, which happens partway through resetOAuth -- and finishing
-        // the node cancels its lifecycleScope, which cancelled this job before its callbacks ran:
-        // no success, no failure, no provisioning, banner left standing.
+        // backup transitions to ENABLED, which happens partway through resetOAuth, and finishing
+        // the node cancels its lifecycleScope.
         resetJob = sessionCoroutineScope.launch {
             resetInFlight = true
-            var succeeded = false
-            handle.resetOAuth()
-                .onFailure { Timber.e(it, "The identity reset failed.") }
-                .onSuccess {
-                    succeeded = true
-                    // Start it, do not wait for it. The reset has landed; holding the user on the
-                    // destructive confirmation screen while key storage provisions is a wait with
-                    // nothing to justify it, and it leaves a live "Reset and finish setup" button
-                    // in front of someone with nothing else to do. It runs on the session scope,
-                    // so finishing this flow does not cancel it, and the setup banner watches it
-                    // and says it is working.
-                    keyStorageProvisioner.start()
-                }
+            finishing.value = true
+            val result = withTimeoutOrNull(RESET_CALL_CEILING) {
+                // Off the main thread: the bindings poll the SDK's future on the calling thread.
+                withContext(dispatchers.io) { handle.resetOAuth() }
+            }
+            finishing.value = false
             resetInFlight = false
-            // Only leave on success. A failed reset used to pop exactly like a successful one,
-            // returning the user to the room list with the backup already destroyed,
-            // cross-signing still broken, the same banner back, and nothing on screen saying
-            // anything had gone wrong. In FTUE it also let them out of onboarding unverified.
-            if (succeeded) finishOnce()
+
+            when {
+                result == null -> {
+                    Timber.w("resetOAuth did not settle within $RESET_CALL_CEILING; giving up on this attempt.")
+                    abandonAttempt()
+                }
+                result.isSuccess -> {
+                    // The new identity is on the server. Only now may the pending marker go and
+                    // key storage be provisioned. Provisioning runs on the session scope and the
+                    // setup banner watches it and says it is working.
+                    identityResetPendingStore.clear()
+                    keyStorageProvisioner.start()
+                    finishOnce()
+                }
+                else -> {
+                    Timber.e(result.exceptionOrNull(), "The identity reset failed after the approval came back.")
+                    abandonAttempt()
+                }
+            }
         }
         resetJob?.invokeOnCompletion { Timber.d("resetOAuth ended") }
     }
 
     /**
-     * GUA FORK: names this app's URL scheme on the MAS approval URL.
+     * Stops trusting the current handle and returns the screen to a retryable state.
      *
-     * MAS compares it against a fixed allow-list and builds the return URL itself, so this names an
-     * app rather than supplying a destination. Its success page uses it to hand control back, which
-     * is what closes the Custom Tab instead of leaving the user to dismiss it.
+     * The manager's cancel is only ever called here, after the attempt's result has been
+     * discarded, so the SDK's habit of turning a cancelled call into a success can no longer
+     * mislead anyone. The next tap prepares a fresh reset, which is safe: the server side is
+     * idempotent and the approval window is long. The pending marker stays until one lands.
      */
-    private fun String.withReturnScheme(): String {
+    private suspend fun abandonAttempt() {
+        resetIdentityFlowManager.cancel()
+        snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_reset_failed))
+    }
+
+    /**
+     * GUA FORK: names this app's URL scheme and account on the MAS approval URL.
+     *
+     * The scheme is what lets the approval page hand control back, which is what closes the tab
+     * instead of leaving the user to dismiss it. The account is what lets the page refuse a
+     * browser session for someone else: the tab shares cookies with the system browser, so the
+     * page can otherwise open under another account's session and approve the reset for that
+     * account while ours keeps being refused. MAS compares and, on a mismatch, signs that session
+     * out and asks for a login as this account first. Only ever used to refuse, never to grant.
+     */
+    private fun String.withAppIdentity(): String {
         // The provider hands back "<scheme>:/", the same value the OAuth intent parser matches on.
         val scheme = oAuthRedirectUrlProvider.provide().removeSuffix(":/")
+        val userId = matrixClient.sessionId.value
+        val localpart = userId.removePrefix("@").substringBefore(':')
         return Uri.parse(this)
             .buildUpon()
             .appendQueryParameter("gua_return", scheme)
+            .appendQueryParameter("gua_user", localpart)
+            .appendQueryParameter("org.matrix.msc4198.login_hint", "mxid:$userId")
             .build()
             .toString()
     }
@@ -281,7 +338,15 @@ class ResetIdentityFlowNode(
         }
         darkTheme = !ElementTheme.isLightTheme
         val startResetState by resetIdentityFlowManager.currentHandleFlow.collectAsState()
-        if (startResetState.isLoading()) {
+        val isFinishing by finishing.collectAsState()
+        if (isFinishing) {
+            // GUA FORK: the wait between the approval coming back and the setup being confirmed
+            // is short, but it must be visible, and it must not be interruptible.
+            ProgressDialog(
+                text = stringResource(R.string.gua_encryption_reset_finishing),
+                properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
+            )
+        } else if (startResetState.isLoading()) {
             // GUA FORK: honest about not being cancellable. Both dismiss flags were true, but the
             // handler called cancelResetJob() while resetJob was still null (it is assigned only
             // once the handle arrives), so back was swallowed and nothing was cancelled. Nor should
@@ -293,5 +358,14 @@ class ResetIdentityFlowNode(
         }
 
         BackstackView(modifier)
+    }
+
+    private companion object {
+        /**
+         * How long the upload may take once the approval page has handed control back. Generous
+         * for the happy path, which settles in a second or two, and short enough that a refused
+         * upload cannot turn into minutes of spinner.
+         */
+        val RESET_CALL_CEILING = 20.seconds
     }
 }
