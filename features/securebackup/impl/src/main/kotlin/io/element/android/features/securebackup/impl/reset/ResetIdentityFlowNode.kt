@@ -52,6 +52,7 @@ import io.element.android.libraries.matrix.api.encryption.IdentityOAuthResetHand
 import io.element.android.libraries.matrix.api.encryption.IdentityPasswordResetHandle
 import io.element.android.libraries.oauth.api.OAuthAction
 import io.element.android.libraries.oauth.api.OAuthActionFlow
+import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,6 +61,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.parcelize.Parcelize
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import timber.log.Timber
 import kotlin.time.Duration.Companion.seconds
 
@@ -79,6 +82,8 @@ class ResetIdentityFlowNode(
     private val identityResetPendingStore: IdentityResetPendingStore,
     private val snackbarDispatcher: SnackbarDispatcher,
     private val dispatchers: CoroutineDispatchers,
+    private val sessionStore: SessionStore,
+    private val okHttpClient: () -> OkHttpClient,
 ) : BaseFlowNode<ResetIdentityFlowNode.NavTarget>(
     backstack = BackStack(initialElement = NavTarget.Root, savedStateMap = buildContext.savedStateMap),
     buildContext = buildContext,
@@ -190,13 +195,29 @@ class ResetIdentityFlowNode(
                         // banner must not try to repair around it. See IdentityResetPendingStore.
                         identityResetPendingStore.markPending()
 
+                        // GUA FORK: approve from the app's own session first. The Custom Tab
+                        // shares Chrome's cookies, which on most phones hold no session at all,
+                        // so the page would demand a whole new phone-number login; on a phone
+                        // whose browser holds another account it would approve the reset for
+                        // that account. The server now accepts the access token the app already
+                        // uses, for this user only, and the upload can follow at once.
+                        finishing.value = true
+                        val approved = approveFromApp(handle.url)
+                        if (approved) {
+                            pendingResetHandle = handle
+                            finishApprovedReset()
+                            return@launch
+                        }
+                        finishing.value = false
+
+                        // Older servers: fall back to the approval page in a Custom Tab.
                         Timber.d("Launching reset confirmation in MAS")
                         val url = sessionEnterpriseService.tweakMasUrl(handle.url).withAppIdentity()
                         activity.openUrlInChromeCustomTab(null, darkTheme, url)
 
-                        // GUA FORK: nothing runs while the tab is open. The approval page hands
-                        // control back once the user has approved, and that is the moment to
-                        // upload; the handle waits here until then.
+                        // Nothing runs while the tab is open. The approval page hands control
+                        // back once the user has approved, and that is the moment to upload;
+                        // the handle waits here until then.
                         pendingResetHandle = handle
                         Timber.d("Waiting for the approval to come back before resetOAuth")
                     }
@@ -205,6 +226,36 @@ class ResetIdentityFlowNode(
             }
             else -> Unit
         }
+    }
+
+    /**
+     * Asks the server to open the reset window for this account, authenticated with the
+     * session's own access token. False when the server does not offer this (an older
+     * deployment) or refuses, in which case the approval page is the fallback.
+     */
+    private suspend fun approveFromApp(approvalUrl: String): Boolean = withContext(dispatchers.io) {
+        val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
+        if (accessToken.isNullOrEmpty()) return@withContext false
+        val endpoint = runCatching {
+            Uri.parse(approvalUrl).buildUpon().path(APP_APPROVAL_PATH).clearQuery().fragment(null).build().toString()
+        }.getOrNull() ?: return@withContext false
+        val request = Request.Builder()
+            .url(endpoint)
+            .header("Authorization", "Bearer $accessToken")
+            .post(okhttp3.RequestBody.create(null, ByteArray(0)))
+            .build()
+        runCatching { okHttpClient().newCall(request).execute().use { it.code } }
+            .onFailure { Timber.w(it, "App-side approval failed; falling back to the approval page.") }
+            .map { code ->
+                if (code in 200..299) {
+                    Timber.d("Reset approved from the app's own session")
+                    true
+                } else {
+                    Timber.w("App-side approval answered $code; falling back to the approval page.")
+                    false
+                }
+            }
+            .getOrDefault(false)
     }
 
     /**
@@ -367,5 +418,8 @@ class ResetIdentityFlowNode(
          * upload cannot turn into minutes of spinner.
          */
         val RESET_CALL_CEILING = 20.seconds
+
+        /** The server endpoint that opens the reset window for the caller's own account. */
+        const val APP_APPROVAL_PATH = "/api/gua/identity-reset/allow"
     }
 }
