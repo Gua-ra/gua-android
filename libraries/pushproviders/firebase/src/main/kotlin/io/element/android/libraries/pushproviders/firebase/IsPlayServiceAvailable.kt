@@ -11,6 +11,7 @@ package io.element.android.libraries.pushproviders.firebase
 import android.content.Context
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailabilityLight
+import com.google.firebase.FirebaseApp
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import io.element.android.libraries.di.annotations.ApplicationContext
@@ -31,6 +32,14 @@ class DefaultIsPlayServiceAvailable(
     @ApplicationContext private val context: Context,
 ) : IsPlayServiceAvailable {
     override fun isAvailable(): Boolean {
+        // GUA FORK: Play Services alone is not enough. Without a Firebase configuration for this
+        // build there is no app to fetch a token from, and offering Firebase anyway ended in
+        // "Unable to register pusher, Firebase token is not known" on every sign-in. A build
+        // without the configuration simply has no push provider, which is handled quietly.
+        if (FirebaseApp.getApps(context).isEmpty()) {
+            Timber.w("Firebase is not configured for this build, push is unavailable")
+            return false
+        }
         val apiAvailability = GoogleApiAvailabilityLight.getInstance()
         val resultCode = apiAvailability.isGooglePlayServicesAvailable(context)
         return if (resultCode == ConnectionResult.SUCCESS) {
