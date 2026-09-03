@@ -34,6 +34,7 @@ import io.element.android.features.rageshake.test.logs.FakeAnnouncementService
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.dateformatter.api.DateFormatter
 import io.element.android.libraries.dateformatter.test.FakeDateFormatter
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.eventformatter.api.RoomLatestEventFormatter
 import io.element.android.libraries.eventformatter.test.FakeRoomLatestEventFormatter
 import io.element.android.libraries.featureflag.api.FeatureFlagService
@@ -701,5 +702,8 @@ class RoomListPresenterTest {
         announcementService = announcementService,
         coldStartWatcher = FakeAnalyticsColdStartWatcher(),
         featureFlagService = featureFlagService,
+        snackbarDispatcher = SnackbarDispatcher(),
+        keyStorageProvisioner = FakeKeyStorageProvisioner(),
+        identityResetPendingStore = FakeIdentityResetPendingStore(),
     )
 }

@@ -10,4 +10,10 @@
     <string name="gua_encryption_reset_required_title">Beberapa pesan sebelumnya tidak dapat dipulihkan</string>
     <string name="gua_encryption_reset_required_message">Untuk menyelesaikan penyiapan obrolan terenkripsi di perangkat ini, cadangan terenkripsi Anda perlu disetel ulang. Pesan yang hanya tersimpan di cadangan itu akan hilang. Pesan yang sudah ada di perangkat Anda tidak akan terpengaruh.</string>
     <string name="gua_encryption_reset_required_action">Setel ulang dan selesaikan</string>
+    <string name="gua_encryption_reset_finishing">Menyelesaikan penyiapan…</string>
+    <string name="gua_encryption_reset_failed">Tidak dapat menyelesaikan penyiapan. Ketuk Setel ulang dan selesaikan untuk mencoba lagi.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Pulihkan pesan lama Anda</string>
+    <string name="gua_encryption_recover_from_other_device_message">Gunakan perangkat Anda yang lain untuk memulihkan pesan yang belum tersedia di perangkat ini.\n\nJika Anda tidak memiliki akses ke perangkat itu, Anda dapat menyetel ulang dan menyelesaikan penyiapan, tetapi pesan yang hanya tersimpan di cadangan Anda akan hilang selamanya.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Gunakan perangkat lain</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Tidak dapat mengambil pesan Anda dari perangkat lain. Pastikan Gua terbuka di perangkat itu, lalu coba lagi atau setel ulang.</string>
 </resources>

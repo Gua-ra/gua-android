@@ -94,26 +94,24 @@ class RoomListViewTest : RobolectricTest() {
     }
 
     @Test
-    fun `clicking on continue recovery key banner invokes the expected callback`() = runAndroidComposeUiTest {
+    fun `clicking the finish setup banner asks the presenter to repair`() = runAndroidComposeUiTest {
+        // GUA FORK: the tap no longer navigates. It asks the presenter to run the silent repair,
+        // which owns the button's progress state and only navigates if a reset turns out to be
+        // genuinely required.
         val eventsRecorder = EventsRecorder<RoomListEvent>()
-        ensureCalledOnce { callback ->
-            setRoomListView(
-                state = aRoomListState(
-                    contentState = aRoomsContentState(securityBannerState = SecurityBannerState.RecoveryKeyConfirmation),
-                    eventSink = eventsRecorder,
-                ),
-                onConfirmRecoveryKeyClick = callback,
-            )
+        setRoomListView(
+            state = aRoomListState(
+                contentState = aRoomsContentState(securityBannerState = SecurityBannerState.RecoveryKeyConfirmation),
+                eventSink = eventsRecorder,
+            ),
+        )
 
-            // Remove automatic initial events
-            eventsRecorder.clear()
+        // Remove automatic initial events
+        eventsRecorder.clear()
 
-            // GUA FORK: the banner asks people to finish setting the device up, it no longer
-            // offers a bare "Continue" into a recovery-key prompt.
-            clickOn(R.string.gua_encryption_repair_action)
+        clickOn(R.string.gua_encryption_repair_action)
 
-            eventsRecorder.assertEmpty()
-        }
+        eventsRecorder.assertSingle(RoomListEvent.FinishEncryptionSetup)
     }
 
     @Test
@@ -122,19 +120,19 @@ class RoomListViewTest : RobolectricTest() {
         // user must still get the banner that finishes setup silently rather than upstream's,
         // which walks them into a screen that hands out a recovery key.
         val eventsRecorder = EventsRecorder<RoomListEvent>()
-        ensureCalledOnce { callback ->
-            setRoomListView(
-                state = aRoomListState(
-                    contentState = aRoomsContentState(securityBannerState = SecurityBannerState.SetUpRecovery),
-                    eventSink = eventsRecorder,
-                ),
-                onConfirmRecoveryKeyClick = callback,
-            )
-            // Remove automatic initial events
-            eventsRecorder.clear()
-            clickOn(R.string.gua_encryption_repair_action)
-            eventsRecorder.assertEmpty()
-        }
+        setRoomListView(
+            state = aRoomListState(
+                contentState = aRoomsContentState(securityBannerState = SecurityBannerState.SetUpRecovery),
+                eventSink = eventsRecorder,
+            ),
+        )
+
+        // Remove automatic initial events
+        eventsRecorder.clear()
+
+        clickOn(R.string.gua_encryption_repair_action)
+
+        eventsRecorder.assertSingle(RoomListEvent.FinishEncryptionSetup)
     }
 
     @Test

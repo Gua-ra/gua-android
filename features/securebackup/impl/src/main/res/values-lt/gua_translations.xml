@@ -10,4 +10,10 @@
     <string name="gua_encryption_reset_required_title">Kai kurių ankstesnių žinučių atkurti nepavyks</string>
     <string name="gua_encryption_reset_required_message">Kad šiame įrenginyje būtų baigta šifruotų pokalbių sąranka, reikia atstatyti jūsų šifruotą atsarginę kopiją. Žinutės, saugomos tik toje kopijoje, bus prarastos. Žinutėms, jau esančioms jūsų įrenginiuose, tai neturės įtakos.</string>
     <string name="gua_encryption_reset_required_action">Atstatyti ir užbaigti</string>
+    <string name="gua_encryption_reset_finishing">Baigiama sąranka…</string>
+    <string name="gua_encryption_reset_failed">Nepavyko užbaigti sąrankos. Palieskite „Atstatyti ir užbaigti“ ir bandykite dar kartą.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Atkurkite ankstesnes žinutes</string>
+    <string name="gua_encryption_recover_from_other_device_message">Naudokite kitą savo įrenginį, kad atkurtumėte žinutes, kurių šiame įrenginyje dar nėra.\n\nJei negalite jo pasiekti, galite atstatyti ir užbaigti sąranką, bet žinutės, saugomos tik jūsų atsarginėje kopijoje, bus visam laikui prarastos.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Naudoti kitą įrenginį</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Nepavyko gauti jūsų žinučių iš kito įrenginio. Įsitikinkite, kad jame atidaryta Gua, ir bandykite dar kartą arba atstatykite.</string>
 </resources>

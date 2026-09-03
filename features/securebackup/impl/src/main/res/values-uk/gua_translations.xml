@@ -10,4 +10,10 @@
     <string name="gua_encryption_reset_required_title">Деякі попередні повідомлення неможливо відновити</string>
     <string name="gua_encryption_reset_required_message">Щоб завершити налаштування зашифрованих чатів на цьому пристрої, потрібно скинути зашифровану резервну копію. Повідомлення, збережені лише в цій копії, буде втрачено. Повідомлення, які вже є на ваших пристроях, не постраждають.</string>
     <string name="gua_encryption_reset_required_action">Скинути й завершити</string>
+    <string name="gua_encryption_reset_finishing">Завершуємо налаштування…</string>
+    <string name="gua_encryption_reset_failed">Не вдалося завершити налаштування. Натисніть «Скинути й завершити», щоб спробувати ще раз.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Відновіть свої попередні повідомлення</string>
+    <string name="gua_encryption_recover_from_other_device_message">Скористайтеся іншим пристроєм, щоб відновити повідомлення, яких поки що немає на цьому пристрої.\n\nЯкщо у вас немає до нього доступу, ви можете скинути й завершити налаштування, але повідомлення, збережені лише у вашій резервній копії, буде втрачено назавжди.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Використати інший пристрій</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Не вдалося отримати ваші повідомлення з іншого пристрою. Переконайтеся, що на ньому відкрито Gua, і спробуйте ще раз або скиньте й завершіть налаштування.</string>
 </resources>

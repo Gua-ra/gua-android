@@ -43,6 +43,7 @@ class FakeEncryptionService(
     private var doesBackupExistOnServerResult: Result<Boolean> = Result.success(true)
 
     private var enableBackupsFailure: Exception? = null
+    private var onEnableBackups: (() -> Unit)? = null
 
     private var curve25519: String? = null
     private var ed25519: String? = null
@@ -51,7 +52,13 @@ class FakeEncryptionService(
         enableBackupsFailure = exception
     }
 
+    /** Runs while enableBackups is in flight, so a test can model state changing under the call. */
+    fun givenEnableBackupsSideEffect(sideEffect: () -> Unit) {
+        onEnableBackups = sideEffect
+    }
+
     override suspend fun enableBackups(): Result<Unit> = simulateLongTask {
+        onEnableBackups?.invoke()
         enableBackupsFailure?.let { return Result.failure(it) }
         return Result.success(Unit)
     }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_verification_other_device_title">Otvorte Gua na svojom druhom zariadení</string>
+    <string name="gua_verification_other_device_subtitle">Nechajte aplikáciu otvorenú. Na oboch zariadeniach porovnáte niekoľko emotikonov a potvrdíte tak, že ste to vy.</string>
+    <string name="gua_verification_waiting_other_device_title">Čaká sa na vaše druhé zariadenie</string>
+    <string name="gua_verification_compare_emojis_subtitle">Skontrolujte, či sa emotikony uvedené nižšie zhodujú s tými na vašom druhom zariadení.</string>
+</resources>

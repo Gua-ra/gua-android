@@ -10,4 +10,10 @@
     <string name="gua_encryption_reset_required_title">Unele mesaje anterioare nu pot fi recuperate</string>
     <string name="gua_encryption_reset_required_message">Pentru a finaliza configurarea conversațiilor criptate pe acest dispozitiv, copia ta de rezervă criptată trebuie resetată. Mesajele stocate doar în acea copie vor fi pierdute. Mesajele aflate deja pe dispozitivele tale nu vor fi afectate.</string>
     <string name="gua_encryption_reset_required_action">Resetează și finalizează</string>
+    <string name="gua_encryption_reset_finishing">Se finalizează configurarea…</string>
+    <string name="gua_encryption_reset_failed">Configurarea nu a putut fi finalizată. Apasă „Resetează și finalizează” pentru a încerca din nou.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Recuperează-ți mesajele anterioare</string>
+    <string name="gua_encryption_recover_from_other_device_message">Folosește celălalt dispozitiv pentru a recupera mesajele care nu sunt încă disponibile pe acest dispozitiv.\n\nDacă nu ai acces la el, poți să resetezi și să finalizezi configurarea, dar mesajele păstrate doar în copia ta de rezervă vor fi pierdute definitiv.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Folosește alt dispozitiv</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Mesajele nu au putut fi preluate de pe celălalt dispozitiv. Asigură-te că este deschis și încearcă din nou sau resetează.</string>
 </resources>

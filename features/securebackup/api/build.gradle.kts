@@ -17,4 +17,5 @@ android {
 
 dependencies {
     implementation(projects.libraries.architecture)
+    implementation(libs.coroutines.core)
 }

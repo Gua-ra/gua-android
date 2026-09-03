@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_verification_other_device_title">他の端末でGuaを開いてください</string>
+    <string name="gua_verification_other_device_subtitle">開いたままにしてください。両方の端末に表示されるいくつかの絵文字を見比べて、ご本人であることを確認します。</string>
+    <string name="gua_verification_waiting_other_device_title">他の端末を待っています</string>
+    <string name="gua_verification_compare_emojis_subtitle">以下の絵文字が、他の端末に表示されているものと一致することを確認してください。</string>
+</resources>

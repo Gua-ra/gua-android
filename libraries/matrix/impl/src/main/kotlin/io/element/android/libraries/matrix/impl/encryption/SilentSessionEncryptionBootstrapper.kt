@@ -14,9 +14,7 @@ import io.element.android.libraries.matrix.api.encryption.RecoveryState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Gua: sets up key storage (key backup + recovery / secret-storage) entirely in the background so
@@ -73,6 +71,21 @@ internal class SilentSessionEncryptionBootstrapper(
                     return@launch
                 }
 
+                // GUA FORK: only DISABLED gets provisioned here, never INCOMPLETE.
+                //
+                // Recovery::enable always runs create_secret_store, minting a new SSSS key and
+                // PUTting a new m.secret_storage.default_key. On an INCOMPLETE account it exports
+                // nothing useful (the private cross-signing keys are not there to export) so the
+                // state falls straight back to INCOMPLETE, and this runs unconditionally from the
+                // client's init block on EVERY cold start. That rotated the account's secret
+                // storage every single launch, permanently invalidating any recovery key saved for
+                // it, including one held by the same user on iOS, and repaired nothing. Only a
+                // reset can finish an INCOMPLETE device, and that needs the user in front of it.
+                if (recoveryState != RecoveryState.DISABLED) {
+                    Timber.tag(TAG).i("Recovery is %s for %s; leaving it to the setup banner.", recoveryState, sessionId.value)
+                    return@launch
+                }
+
                 // Bootstrap path: provision recovery silently.
                 Timber.tag(TAG).i("Bootstrapping key storage silently for %s (recoveryState=%s).", sessionId.value, recoveryState)
                 encryptionService.enableRecovery(waitForBackupsToUpload = false)
@@ -80,13 +93,14 @@ internal class SilentSessionEncryptionBootstrapper(
                         Timber.tag(TAG).i("Finished bootstrapping key storage for %s.", sessionId.value)
                     }
                     .onFailure { error ->
-                        // GUA FORK: enableRecovery refuses to run when a key backup already
-                        // exists on the server, which is exactly the state accounts damaged by
-                        // the earlier version of this bootstrapper are in. It fails, and without
-                        // the branch below the account stays stuck at INCOMPLETE forever, so an
-                        // app update repairs nobody.
-                        Timber.tag(TAG).w(error, "Could not enable recovery for %s; checking whether a backup blocks it.", sessionId.value)
-                        repairBlockedByExistingBackup()
+                        // GUA FORK: no escalation here. disableRecovery() throws BackupNotEnabled
+                        // in exactly the condition that makes enableRecovery return
+                        // BackupExistsOnServer, so the two are exact complements and the branch
+                        // that used to live here could never fire. Where it would have fired it
+                        // blanks the m.cross_signing.* account data, destroying the last
+                        // server-side copy of the private cross-signing keys, unattended, at
+                        // every launch. The banner handles what this cannot.
+                        Timber.tag(TAG).w(error, "Could not enable recovery for %s.", sessionId.value)
                     }
             } catch (cancellation: kotlinx.coroutines.CancellationException) {
                 throw cancellation
@@ -97,41 +111,7 @@ internal class SilentSessionEncryptionBootstrapper(
         }
     }
 
-    // / Repairs an account whose key storage cannot be enabled because a backup already exists.
-    private suspend fun repairBlockedByExistingBackup() {
-        if (encryptionService.doesBackupExistOnServer().getOrDefault(false).not()) {
-            Timber.tag(TAG).w("No server backup, so the failure was not a blocked backup; leaving it alone.")
-            return
-        }
-
-        // Another signed-in device may still hand the secrets over, which repairs this for free
-        // and keeps the backup. Wait for that to actually happen rather than asking whether such
-        // a device exists: the device list keeps stale entries that will never respond, so the
-        // existence check answers "yes" forever and no account is ever repaired.
-        if (withTimeoutOrNull(HANDOVER_TIMEOUT) {
-                encryptionService.recoveryStateStateFlow.first { it == RecoveryState.ENABLED }
-                true
-            } == true) {
-            Timber.tag(TAG).i("Another device supplied the secrets; key storage is healthy.")
-            return
-        }
-
-        // No key is stored anywhere on Android and no other device exists, so nothing can ever
-        // decrypt that backup again. Keeping it preserves only a permanently broken account.
-        // This does not touch the cross-signing identity, so no contact is warned.
-        Timber.tag(TAG).w("Backup is unreachable by any key or device; replacing key storage.")
-        encryptionService.disableRecovery()
-            .onFailure { error ->
-                Timber.tag(TAG).e(error, "Failed disabling unreachable key storage.")
-                return
-            }
-        encryptionService.enableRecovery(waitForBackupsToUpload = false)
-            .onSuccess { Timber.tag(TAG).i("Replaced key storage for %s.", sessionId.value) }
-            .onFailure { error -> Timber.tag(TAG).e(error, "Failed replacing key storage.") }
-    }
-
     private companion object {
         const val TAG = "SilentEncryptionBootstrap"
-        val HANDOVER_TIMEOUT = 15.seconds
     }
 }

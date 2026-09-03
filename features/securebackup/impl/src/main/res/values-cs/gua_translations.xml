@@ -10,4 +10,10 @@
     <string name="gua_encryption_reset_required_title">Některé předchozí zprávy nelze obnovit</string>
     <string name="gua_encryption_reset_required_message">Abyste dokončili nastavení šifrovaných konverzací v tomto zařízení, je nutné resetovat vaši šifrovanou zálohu. Zprávy uložené pouze v této záloze budou ztraceny. Zprávy, které už máte ve svých zařízeních, zůstanou beze změny.</string>
     <string name="gua_encryption_reset_required_action">Resetovat a dokončit</string>
+    <string name="gua_encryption_reset_finishing">Dokončování nastavení…</string>
+    <string name="gua_encryption_reset_failed">Nastavení se nepodařilo dokončit. Zkuste to znovu klepnutím na „Resetovat a dokončit“.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Obnovte své předchozí zprávy</string>
+    <string name="gua_encryption_recover_from_other_device_message">Pomocí svého druhého zařízení obnovte zprávy, které v tomto zařízení zatím nejsou dostupné.\n\nPokud k němu nemáte přístup, můžete provést reset a dokončit nastavení, ale zprávy uložené pouze ve vaší záloze budou nenávratně ztraceny.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Použít druhé zařízení</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Zprávy se nepodařilo získat z druhého zařízení. Ujistěte se, že na něm máte aplikaci otevřenou, a zkuste to znovu, nebo proveďte reset.</string>
 </resources>

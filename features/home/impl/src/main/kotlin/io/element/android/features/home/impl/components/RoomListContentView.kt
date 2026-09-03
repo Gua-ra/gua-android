@@ -23,7 +23,9 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -71,6 +73,23 @@ fun RoomListContentView(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
+    // GUA FORK: navigation is driven by the repair's verdict, not by the tap, and it lives HERE --
+    // once, above the branch -- rather than inside each state's own composable.
+    //
+    // It used to be written twice. EmptyView consumed the flag by sending EncryptionResetNavigated;
+    // RoomsView, the branch every account with any chats takes, navigated and never sent it. The
+    // flag stayed true, so its LaunchedEffect key never changed again, and every later tap of
+    // Finish setup set an already-true flag and did nothing. That is the dead button.
+    val onNeedsReset by rememberUpdatedState(onConfirmRecoveryKeyClick)
+    val onNavigated by rememberUpdatedState(eventSink)
+    LaunchedEffect(contentState.encryptionSetupNeedsReset) {
+        if (contentState.encryptionSetupNeedsReset) {
+            // Consume first: the flag is one-shot, and leaving it set is what wedged the button.
+            onNavigated(RoomListEvent.EncryptionResetNavigated)
+            onNeedsReset()
+        }
+    }
+
     when (contentState) {
         is RoomListContentState.Skeleton -> {
             SkeletonView(
@@ -84,7 +103,6 @@ fun RoomListContentView(
                 modifier = modifier.padding(contentPadding),
                 state = contentState,
                 eventSink = eventSink,
-                onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
                 onCreateRoomClick = onCreateRoomClick,
             )
         }
@@ -96,7 +114,6 @@ fun RoomListContentView(
                 filtersState = filtersState,
                 spaceFiltersState = spaceFiltersState,
                 eventSink = eventSink,
-                onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
                 onRoomClick = onRoomClick,
                 lazyListState = lazyListState,
                 contentPadding = contentPadding,
@@ -130,7 +147,6 @@ private fun SkeletonView(
 private fun EmptyView(
     state: RoomListContentState.Empty,
     eventSink: (RoomListEvent) -> Unit,
-    onConfirmRecoveryKeyClick: () -> Unit,
     onCreateRoomClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -155,8 +171,9 @@ private fun EmptyView(
                 // the flow that hands a user a recovery key to write down.
                 SecurityBannerState.RecoveryKeyConfirmation -> {
                     ConfirmRecoveryKeyBanner(
-                        onContinueClick = onConfirmRecoveryKeyClick,
+                        onContinueClick = { eventSink(RoomListEvent.FinishEncryptionSetup) },
                         onDismissClick = { eventSink(RoomListEvent.DismissBanner) },
+                        isWorking = state.isFinishingEncryptionSetup,
                     )
                 }
                 SecurityBannerState.None -> Unit
@@ -172,7 +189,6 @@ private fun RoomsView(
     filtersState: RoomListFiltersState,
     spaceFiltersState: SpaceFiltersState,
     eventSink: (RoomListEvent) -> Unit,
-    onConfirmRecoveryKeyClick: () -> Unit,
     onRoomClick: (RoomListRoomSummary) -> Unit,
     contentPadding: PaddingValues,
     lazyListState: LazyListState,
@@ -191,7 +207,6 @@ private fun RoomsView(
             state = state,
             hideInvitesAvatars = hideInvitesAvatars,
             eventSink = eventSink,
-            onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
             onRoomClick = onRoomClick,
             contentPadding = contentPadding,
             lazyListState = lazyListState,
@@ -205,7 +220,6 @@ private fun RoomsViewList(
     state: RoomListContentState.Rooms,
     hideInvitesAvatars: Boolean,
     eventSink: (RoomListEvent) -> Unit,
-    onConfirmRecoveryKeyClick: () -> Unit,
     onRoomClick: (RoomListRoomSummary) -> Unit,
     contentPadding: PaddingValues,
     lazyListState: LazyListState,
@@ -227,8 +241,9 @@ private fun RoomsViewList(
             SecurityBannerState.RecoveryKeyConfirmation -> {
                 item {
                     ConfirmRecoveryKeyBanner(
-                        onContinueClick = onConfirmRecoveryKeyClick,
+                        onContinueClick = { eventSink(RoomListEvent.FinishEncryptionSetup) },
                         onDismissClick = { eventSink(RoomListEvent.DismissBanner) },
+                        isWorking = state.isFinishingEncryptionSetup,
                     )
                 }
             }

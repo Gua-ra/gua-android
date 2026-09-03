@@ -19,7 +19,6 @@ import io.element.android.libraries.core.coroutine.mapState
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.verification.SessionVerificationService
-import io.element.android.libraries.matrix.api.verification.SessionVerifiedStatus
 import io.element.android.libraries.permissions.api.PermissionStateProvider
 import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.toolbox.api.sdk.BuildVersionSdkIntProvider
@@ -81,11 +80,12 @@ class DefaultFtueService(
 
     private suspend fun getNextStep(completedStep: FtueStep? = null): FtueStep? =
         when (completedStep) {
-            null -> if (!isSessionVerificationStateReady()) {
-                FtueStep.WaitingForInitialState
-            } else {
-                getNextStep(FtueStep.WaitingForInitialState)
-            }
+            // GUA FORK: never wait for the verification state. The only step that needed it is
+            // the session-verification ceremony below, which this fork does not present, and the
+            // wait held a device whose identity was reset from ANOTHER device on a blank screen
+            // for good (the SDK's encryption set-up never reports ready there). The room list
+            // handles an unverified or incomplete device with its setup banner instead.
+            null -> getNextStep(FtueStep.WaitingForInitialState)
             // Gua: never gate onboarding on session verification. Encryption is bootstrapped /
             // restored silently in the background, mirroring iOS requiresVerification == false, so
             // the ChooseSelfVerificationMode ceremony is never presented. Device verification /
@@ -108,10 +108,6 @@ class DefaultFtueService(
             }
             FtueStep.AnalyticsOptIn -> null
         }
-
-    private fun isSessionVerificationStateReady(): Boolean {
-        return sessionVerificationService.sessionVerifiedStatus.value != SessionVerifiedStatus.Unknown
-    }
 
     private suspend fun needsAnalyticsOptIn(): Boolean {
         return analyticsService.didAskUserConsentFlow.first().not()
