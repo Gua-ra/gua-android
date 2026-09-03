@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_encryption_reset_required_title">Niektoré predchádzajúce správy sa nedajú obnoviť</string>
+    <string name="gua_encryption_reset_required_message">Ak chcete dokončiť nastavenie šifrovaných konverzácií v tomto zariadení, vaša šifrovaná záloha sa musí resetovať. Správy uložené iba v tejto zálohe budú stratené. Správy, ktoré už máte vo svojich zariadeniach, zostanú nedotknuté.</string>
+    <string name="gua_encryption_reset_required_action">Resetovať a dokončiť</string>
+    <string name="gua_encryption_reset_finishing">Dokončuje sa nastavenie…</string>
+    <string name="gua_encryption_reset_failed">Nastavenie sa nepodarilo dokončiť. Ak to chcete skúsiť znova, ťuknite na „Resetovať a dokončiť“.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Obnovte svoje predchádzajúce správy</string>
+    <string name="gua_encryption_recover_from_other_device_message">Pomocou svojho druhého zariadenia obnovte správy, ktoré ešte nie sú dostupné v tomto zariadení.\n\nAk k nemu nemáte prístup, môžete resetovať a dokončiť nastavenie, ale správy uložené iba vo vašej zálohe budú natrvalo stratené.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Použiť druhé zariadenie</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Nepodarilo sa získať vaše správy z druhého zariadenia. Uistite sa, že je na ňom aplikácia otvorená, a skúste to znova alebo resetujte.</string>
+</resources>

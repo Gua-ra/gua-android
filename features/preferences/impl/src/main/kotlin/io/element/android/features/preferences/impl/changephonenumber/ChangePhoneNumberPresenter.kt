@@ -25,6 +25,7 @@ import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.phonenumberentry.Country
+import io.element.android.libraries.phonenumberentry.DeviceCountryProvider
 import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.ui.strings.CommonStrings
@@ -47,6 +48,7 @@ class ChangePhoneNumberPresenter(
     private val sessionStore: SessionStore,
     private val identityServiceClient: IdentityServiceClient,
     private val selectedCountryStore: SelectedCountryStore,
+    private val deviceCountryProvider: DeviceCountryProvider,
 ) : Presenter<ChangePhoneNumberState> {
     @AssistedFactory
     interface Factory {
@@ -64,7 +66,7 @@ class ChangePhoneNumberPresenter(
         var code by remember { mutableStateOf("") }
         // The NEW number, held as (country, RAW national digits) like the welcome PhoneEntry screen.
         // The national mask is applied purely visually by PhoneNumberEntryField.
-        var selectedCountry by remember { mutableStateOf(Country.deviceDefault) }
+        var selectedCountry by remember { mutableStateOf(deviceCountryProvider.current()) }
         var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
         // Remaining fresh-2FA cooldown surfaced on the Cooldown interstitial (0 otherwise).

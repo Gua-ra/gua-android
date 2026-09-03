@@ -18,6 +18,7 @@ import io.element.android.features.lockscreen.test.FakeLockScreenService
 import io.element.android.features.logout.api.direct.aDirectLogoutState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
+import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.featureflag.api.FeatureFlagService
@@ -39,7 +40,6 @@ import io.element.android.libraries.matrix.test.A_USER_ID_2
 import io.element.android.libraries.matrix.test.A_USER_NAME
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.core.aBuildMeta
-import io.element.android.libraries.matrix.test.verification.FakeSessionVerificationService
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
@@ -95,7 +95,13 @@ class PreferencesRootPresenterTest {
                     avatarUrl = AN_AVATAR_URL
                 )
             )
-            assertThat(loadedState.showSecureBackup).isFalse()
+            // GUA FORK: Encryption is always reachable now. Upstream hid it whenever the session
+            // still needed verifying, but Gua never presents that ceremony, so the row would have
+            // been hidden forever, taking recovery-key entry with it.
+            // GUA FORK: the Encryption screen is upstream's recovery-key console, so it now
+            // tracks developer settings, which this default (debug) fixture has on. The
+            // user-facing case is covered by `the encryption screen is hidden from users`.
+            assertThat(loadedState.showSecureBackup).isTrue()
             assertThat(loadedState.showSecureBackupBadge).isFalse()
             assertThat(loadedState.accountManagementUrl).isNull()
             assertThat(loadedState.showAnalyticsSettings).isFalse()
@@ -176,6 +182,23 @@ class PreferencesRootPresenterTest {
         ).test {
             val loadedState = awaitFirstItem()
             assertThat(loadedState.canDeactivateAccount).isFalse()
+        }
+    }
+
+    @Test
+    fun `present - the encryption screen is hidden from users and shown to developers`() = runTest {
+        createPresenter(
+            matrixClient = FakeMatrixClient(
+                canDeactivateAccountResult = { true },
+                accountManagementUrlResult = { Result.success(null) },
+            ),
+            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.RELEASE)),
+            buildMeta = aBuildMeta(BuildType.RELEASE),
+        ).test {
+            // GUA FORK: gated on build TYPE, not the seven-tap developer unlock. That unlock
+            // works in any build, so gating on it would still let a release user reach the
+            // recovery-key console.
+            assertThat(awaitFirstItem().showSecureBackup).isFalse()
         }
     }
 
@@ -330,7 +353,6 @@ class PreferencesRootPresenterTest {
 
     private fun createPresenter(
         matrixClient: FakeMatrixClient = FakeMatrixClient(),
-        sessionVerificationService: FakeSessionVerificationService = FakeSessionVerificationService(),
         showDeveloperSettingsProvider: ShowDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.DEBUG)),
         rageshakeFeatureAvailability: RageshakeFeatureAvailability = RageshakeFeatureAvailability { flowOf(true) },
         indicatorService: IndicatorService = FakeIndicatorService(),
@@ -339,9 +361,9 @@ class PreferencesRootPresenterTest {
         sessionEnterpriseService: SessionEnterpriseService = FakeSessionEnterpriseService(),
         lockScreenService: FakeLockScreenService = FakeLockScreenService().apply { setIsPinSetup(true) },
         identityServiceClient: IdentityServiceClient = NoopIdentityServiceClient(),
+        buildMeta: BuildMeta = aBuildMeta(),
     ) = PreferencesRootPresenter(
         matrixClient = matrixClient,
-        sessionVerificationService = sessionVerificationService,
         analyticsService = FakeAnalyticsService(),
         versionFormatter = FakeVersionFormatter(),
         snackbarDispatcher = SnackbarDispatcher(),
@@ -354,6 +376,7 @@ class PreferencesRootPresenterTest {
         sessionEnterpriseService = sessionEnterpriseService,
         lockScreenService = lockScreenService,
         identityServiceClient = identityServiceClient,
+        buildMeta = buildMeta,
     )
 }
 

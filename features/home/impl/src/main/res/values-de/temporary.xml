@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gua_encryption_repair_title">Einrichtung dieses Geräts abschließen</string>
+    <string name="gua_encryption_repair_message">Schließe die Einrichtung ab, um auf die verschlüsselten Chats und den auf diesem Gerät verfügbaren Nachrichtenverlauf zuzugreifen.</string>
+    <string name="gua_encryption_repair_action">Einrichtung abschließen</string>
+</resources>

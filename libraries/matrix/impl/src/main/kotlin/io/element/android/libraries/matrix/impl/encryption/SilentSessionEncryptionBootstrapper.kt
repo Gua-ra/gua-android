@@ -71,16 +71,36 @@ internal class SilentSessionEncryptionBootstrapper(
                     return@launch
                 }
 
-                // Bootstrap path: provision recovery silently. Equivalent to iOS enable() +
-                // generateRecoveryKey() + confirmRecoveryKey(). We do not surface the generated key:
-                // on a fresh device the user can always reset / re-provision it from Settings.
+                // GUA FORK: only DISABLED gets provisioned here, never INCOMPLETE.
+                //
+                // Recovery::enable always runs create_secret_store, minting a new SSSS key and
+                // PUTting a new m.secret_storage.default_key. On an INCOMPLETE account it exports
+                // nothing useful (the private cross-signing keys are not there to export) so the
+                // state falls straight back to INCOMPLETE, and this runs unconditionally from the
+                // client's init block on EVERY cold start. That rotated the account's secret
+                // storage every single launch, permanently invalidating any recovery key saved for
+                // it, including one held by the same user on iOS, and repaired nothing. Only a
+                // reset can finish an INCOMPLETE device, and that needs the user in front of it.
+                if (recoveryState != RecoveryState.DISABLED) {
+                    Timber.tag(TAG).i("Recovery is %s for %s; leaving it to the setup banner.", recoveryState, sessionId.value)
+                    return@launch
+                }
+
+                // Bootstrap path: provision recovery silently.
                 Timber.tag(TAG).i("Bootstrapping key storage silently for %s (recoveryState=%s).", sessionId.value, recoveryState)
                 encryptionService.enableRecovery(waitForBackupsToUpload = false)
                     .onSuccess {
                         Timber.tag(TAG).i("Finished bootstrapping key storage for %s.", sessionId.value)
                     }
                     .onFailure { error ->
-                        Timber.tag(TAG).e(error, "Failed bootstrapping key storage for %s.", sessionId.value)
+                        // GUA FORK: no escalation here. disableRecovery() throws BackupNotEnabled
+                        // in exactly the condition that makes enableRecovery return
+                        // BackupExistsOnServer, so the two are exact complements and the branch
+                        // that used to live here could never fire. Where it would have fired it
+                        // blanks the m.cross_signing.* account data, destroying the last
+                        // server-side copy of the private cross-signing keys, unattended, at
+                        // every launch. The banner handles what this cannot.
+                        Timber.tag(TAG).w(error, "Could not enable recovery for %s.", sessionId.value)
                     }
             } catch (cancellation: kotlinx.coroutines.CancellationException) {
                 throw cancellation

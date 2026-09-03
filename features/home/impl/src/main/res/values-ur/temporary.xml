@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_encryption_repair_title">اس ڈیوائس کا سیٹ اپ مکمل کریں</string>
+    <string name="gua_encryption_repair_message">اس ڈیوائس پر دستیاب خفیہ کردہ چیٹس اور پیغامات کی تاریخ تک رسائی کے لیے سیٹ اپ مکمل کریں۔</string>
+    <string name="gua_encryption_repair_action">سیٹ اپ مکمل کریں</string>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gua_encryption_repair_title">Slutför konfigurationen av den här enheten</string>
+    <string name="gua_encryption_repair_message">Slutför konfigurationen för att komma åt de krypterade chattarna och den meddelandehistorik som finns på den här enheten.</string>
+    <string name="gua_encryption_repair_action">Slutför konfiguration</string>
+</resources>

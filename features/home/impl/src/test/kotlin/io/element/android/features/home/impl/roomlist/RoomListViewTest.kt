@@ -94,42 +94,45 @@ class RoomListViewTest : RobolectricTest() {
     }
 
     @Test
-    fun `clicking on continue recovery key banner invokes the expected callback`() = runAndroidComposeUiTest {
+    fun `clicking the finish setup banner asks the presenter to repair`() = runAndroidComposeUiTest {
+        // GUA FORK: the tap no longer navigates. It asks the presenter to run the silent repair,
+        // which owns the button's progress state and only navigates if a reset turns out to be
+        // genuinely required.
         val eventsRecorder = EventsRecorder<RoomListEvent>()
-        ensureCalledOnce { callback ->
-            setRoomListView(
-                state = aRoomListState(
-                    contentState = aRoomsContentState(securityBannerState = SecurityBannerState.RecoveryKeyConfirmation),
-                    eventSink = eventsRecorder,
-                ),
-                onConfirmRecoveryKeyClick = callback,
-            )
+        setRoomListView(
+            state = aRoomListState(
+                contentState = aRoomsContentState(securityBannerState = SecurityBannerState.RecoveryKeyConfirmation),
+                eventSink = eventsRecorder,
+            ),
+        )
 
-            // Remove automatic initial events
-            eventsRecorder.clear()
+        // Remove automatic initial events
+        eventsRecorder.clear()
 
-            clickOn(CommonStrings.action_continue)
+        clickOn(R.string.gua_encryption_repair_action)
 
-            eventsRecorder.assertEmpty()
-        }
+        eventsRecorder.assertSingle(RoomListEvent.FinishEncryptionSetup)
     }
 
     @Test
-    fun `clicking on continue setup key banner invokes the expected callback`() = runAndroidComposeUiTest {
+    fun `the set up recovery state shows the silent repair banner, never the key one`() = runAndroidComposeUiTest {
+        // GUA FORK: the presenter no longer produces SetUpRecovery, but if anything ever did, the
+        // user must still get the banner that finishes setup silently rather than upstream's,
+        // which walks them into a screen that hands out a recovery key.
         val eventsRecorder = EventsRecorder<RoomListEvent>()
-        ensureCalledOnce { callback ->
-            setRoomListView(
-                state = aRoomListState(
-                    contentState = aRoomsContentState(securityBannerState = SecurityBannerState.SetUpRecovery),
-                    eventSink = eventsRecorder,
-                ),
-                onSetUpRecoveryClick = callback,
-            )
-            // Remove automatic initial events
-            eventsRecorder.clear()
-            clickOn(R.string.banner_set_up_recovery_submit)
-            eventsRecorder.assertEmpty()
-        }
+        setRoomListView(
+            state = aRoomListState(
+                contentState = aRoomsContentState(securityBannerState = SecurityBannerState.SetUpRecovery),
+                eventSink = eventsRecorder,
+            ),
+        )
+
+        // Remove automatic initial events
+        eventsRecorder.clear()
+
+        clickOn(R.string.gua_encryption_repair_action)
+
+        eventsRecorder.assertSingle(RoomListEvent.FinishEncryptionSetup)
     }
 
     @Test
@@ -265,7 +268,6 @@ private fun AndroidComposeUiTest<ComponentActivity>.setRoomListView(
     state: RoomListState,
     onRoomClick: (RoomId) -> Unit = EnsureNeverCalledWithParam(),
     onSettingsClick: () -> Unit = EnsureNeverCalled(),
-    onSetUpRecoveryClick: () -> Unit = EnsureNeverCalled(),
     onConfirmRecoveryKeyClick: () -> Unit = EnsureNeverCalled(),
     onCreateRoomClick: () -> Unit = EnsureNeverCalled(),
     onCreateSpaceClick: () -> Unit = EnsureNeverCalled(),
@@ -279,7 +281,6 @@ private fun AndroidComposeUiTest<ComponentActivity>.setRoomListView(
             homeState = aHomeState(roomListState = state),
             onRoomClick = onRoomClick,
             onSettingsClick = onSettingsClick,
-            onSetUpRecoveryClick = onSetUpRecoveryClick,
             onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
             onStartChatClick = onCreateRoomClick,
             onCreateSpaceClick = onCreateSpaceClick,

@@ -24,13 +24,16 @@ import io.element.android.libraries.di.SessionScope
 class ResetIdentityRootNode(
     @Assisted buildContext: BuildContext,
     @Assisted plugins: List<Plugin>,
+    private val presenter: ResetIdentityRootPresenter,
 ) : Node(buildContext, plugins = plugins) {
     interface Callback : Plugin {
         fun onContinue()
+
+        /** GUA FORK: get the keys from another device of this account instead of resetting. */
+        fun onRecoverFromOtherDevice()
     }
 
     private val callback: Callback = callback()
-    private val presenter = ResetIdentityRootPresenter()
 
     @Composable
     override fun View(modifier: Modifier) {
@@ -39,6 +42,7 @@ class ResetIdentityRootNode(
             modifier = modifier,
             state = state,
             onContinue = callback::onContinue,
+            onRecoverFromOtherDevice = callback::onRecoverFromOtherDevice,
             onBack = ::navigateUp,
         )
     }

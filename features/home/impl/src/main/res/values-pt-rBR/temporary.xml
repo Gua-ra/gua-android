@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gua_encryption_repair_title">Conclua a configuração deste dispositivo</string>
+    <string name="gua_encryption_repair_message">Conclua a configuração para acessar as conversas criptografadas e o histórico de mensagens disponíveis neste dispositivo.</string>
+    <string name="gua_encryption_repair_action">Concluir configuração</string>
+</resources>

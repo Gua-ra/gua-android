@@ -7,7 +7,9 @@
 
 package io.element.android.libraries.phonenumberentry
 
+import android.content.Context
 import android.os.Parcelable
+import android.telephony.TelephonyManager
 import kotlinx.parcelize.Parcelize
 import java.util.Locale
 
@@ -84,12 +86,36 @@ data class Country(
     companion object {
         val fallback = Country(isoCode = "US", dialCode = "1")
 
-        /** Resolves the user's country from the device locale, falling back to [fallback]. */
+        /**
+         * Resolves the user's country from the device locale, falling back to [fallback].
+         *
+         * Prefer [deviceDefault] with a context: the locale is a language preference, not a location,
+         * so someone in Brazil running their phone in English lands on the wrong dial code here.
+         */
         val deviceDefault: Country
-            get() {
-                val region = Locale.getDefault().country.uppercase()
-                return all.firstOrNull { it.isoCode == region } ?: fallback
-            }
+            get() = fromRegion(Locale.getDefault().country)
+
+        /**
+         * GUA FORK: resolves the user's country from the SIM first, then the network they are
+         * camped on, and only then the locale.
+         *
+         * The SIM is the one signal that actually tracks where the number comes from. Locale is a
+         * language choice: a Brazilian phone set to English reports US, and the login screen then
+         * offers +1 for a +55 number. Network is the middle ground, correct while roaming is not
+         * involved and still better than a language setting.
+         */
+        fun deviceDefault(context: Context?): Country {
+            val telephony = context?.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+            val region = telephony?.simCountryIso?.takeIf { it.isNotBlank() }
+                ?: telephony?.networkCountryIso?.takeIf { it.isNotBlank() }
+                ?: Locale.getDefault().country
+            return fromRegion(region)
+        }
+
+        private fun fromRegion(region: String): Country {
+            val normalised = region.uppercase(Locale.ROOT)
+            return all.firstOrNull { it.isoCode == normalised } ?: fallback
+        }
 
         /** Looks up a country by its ISO code (case-insensitive). */
         fun find(isoCode: String): Country? = all.firstOrNull { it.isoCode == isoCode.uppercase() }
@@ -99,9 +125,13 @@ data class Country(
          * device's locale when the input is empty or unparseable. Longest-prefix dial-code match
          * (some dial codes are 4 digits, e.g. +1876 for Jamaica).
          */
-        fun parse(initialPhoneNumber: String): Pair<Country, String> {
+        fun parse(initialPhoneNumber: String, context: Context? = null): Pair<Country, String> =
+            parse(initialPhoneNumber, deviceDefault(context))
+
+        /** Same split, but with the fallback country supplied rather than read off the device. */
+        fun parse(initialPhoneNumber: String, default: Country): Pair<Country, String> {
             val trimmed = initialPhoneNumber.trim()
-            if (!trimmed.startsWith("+")) return deviceDefault to ""
+            if (!trimmed.startsWith("+")) return default to ""
             val digits = trimmed.drop(1).filter { it.isDigit() }
             for (length in minOf(4, digits.length) downTo 1) {
                 val prefix = digits.take(length)
@@ -110,7 +140,7 @@ data class Country(
                     return country to digits.drop(length)
                 }
             }
-            return deviceDefault to digits
+            return default to digits
         }
 
         /**

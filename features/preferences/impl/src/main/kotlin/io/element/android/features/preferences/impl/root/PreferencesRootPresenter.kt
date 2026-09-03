@@ -25,6 +25,8 @@ import io.element.android.features.logout.api.direct.DirectLogoutState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.designsystem.utils.snackbar.collectSnackbarMessageAsState
 import io.element.android.libraries.featureflag.api.FeatureFlagService
@@ -34,7 +36,6 @@ import io.element.android.libraries.indicator.api.IndicatorService
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.user.MatrixUser
-import io.element.android.libraries.matrix.api.verification.SessionVerificationService
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.services.analytics.api.AnalyticsService
 import kotlinx.collections.immutable.persistentListOf
@@ -48,7 +49,6 @@ import kotlinx.coroutines.launch
 @Inject
 class PreferencesRootPresenter(
     private val matrixClient: MatrixClient,
-    private val sessionVerificationService: SessionVerificationService,
     private val analyticsService: AnalyticsService,
     private val versionFormatter: VersionFormatter,
     private val snackbarDispatcher: SnackbarDispatcher,
@@ -61,6 +61,7 @@ class PreferencesRootPresenter(
     private val sessionEnterpriseService: SessionEnterpriseService,
     private val lockScreenService: LockScreenService,
     private val identityServiceClient: IdentityServiceClient,
+    private val buildMeta: BuildMeta,
 ) : Presenter<PreferencesRootState> {
     @Composable
     override fun present(): PreferencesRootState {
@@ -97,7 +98,6 @@ class PreferencesRootPresenter(
         val hasAnalyticsProviders = remember { analyticsService.getAvailableAnalyticsProviders().isNotEmpty() }
 
         // We should display the 'complete verification' option if the current session can be verified
-        val canVerifyUserSession by sessionVerificationService.needsSessionVerification.collectAsState(false)
 
         val showSecureBackupIndicator by indicatorService.showSettingChatBackupIndicator()
 
@@ -156,7 +156,15 @@ class PreferencesRootPresenter(
             deviceId = matrixClient.deviceId,
             isMultiAccountEnabled = isMultiAccountEnabled,
             otherSessions = otherSessions,
-            showSecureBackup = !canVerifyUserSession,
+            // GUA FORK: hidden from users, developer-only.
+            //
+            // This screen is upstream's recovery-key console: a key-storage toggle, "set up
+            // recovery", "change recovery key", "confirm recovery key". Every one of those is a
+            // thing Gua promises never to put in front of anyone. An earlier version of this fork
+            // forced it visible on the grounds that it was the only way back from broken key
+            // storage; that is no longer true, because the setup banner now repairs the account
+            // silently and escalates to a reset on its own when it has to.
+            showSecureBackup = buildMeta.buildType != BuildType.RELEASE,
             showSecureBackupBadge = showSecureBackupIndicator,
             accountManagementUrl = accountManagementUrl.value,
             showAnalyticsSettings = hasAnalyticsProviders,

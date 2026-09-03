@@ -136,6 +136,8 @@ class LoginHelper(
     }
 
     private suspend fun onOAuthAction(oAuthAction: OAuthAction) {
+        // GUA FORK: the identity-reset return is for the reset flow, not for login.
+        if (oAuthAction is OAuthAction.IdentityResetApproved) return
         if (oAuthAction is OAuthAction.GoBack && oAuthAction.toUnblock && loginModeState.value !is AsyncData.Loading) {
             // Ignore GoBack action if the current state is not Loading. This GoBack action is coming from LoginFlowNode.
             // This can happen if there is an error, for instance attempt to login again on the same account.
@@ -158,6 +160,7 @@ class LoginHelper(
                         loginModeState.value = AsyncData.Failure(failure)
                     }
             }
+            is OAuthAction.IdentityResetApproved -> Unit
         }
         oAuthActionFlow.reset()
     }

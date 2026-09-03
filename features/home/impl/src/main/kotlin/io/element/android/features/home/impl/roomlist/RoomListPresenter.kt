@@ -42,14 +42,20 @@ import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteE
 import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteState
 import io.element.android.features.leaveroom.api.LeaveRoomEvent
 import io.element.android.features.leaveroom.api.LeaveRoomState
+import io.element.android.features.securebackup.api.IdentityResetPendingStore
+import io.element.android.features.securebackup.api.KeyStorageProvisioner
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.fullscreenintent.api.FullScreenIntentPermissionsState
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.matrix.api.encryption.EncryptionRepairOutcome
 import io.element.android.libraries.matrix.api.encryption.RecoveryState
+import io.element.android.libraries.matrix.api.encryption.repairWithoutReset
 import io.element.android.libraries.matrix.api.roomlist.RoomList
 import io.element.android.libraries.matrix.api.roomlist.RoomListFilter
 import io.element.android.libraries.matrix.api.timeline.ReceiptType
@@ -58,6 +64,7 @@ import io.element.android.libraries.preferences.api.store.AppPreferencesStore
 import io.element.android.libraries.preferences.api.store.SessionPreferencesStore
 import io.element.android.libraries.push.api.battery.BatteryOptimizationState
 import io.element.android.libraries.push.api.notifications.NotificationCleaner
+import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.analytics.api.watchers.AnalyticsColdStartWatcher
 import io.element.android.services.analyticsproviders.api.trackers.captureInteraction
@@ -73,6 +80,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @Inject
 class RoomListPresenter(
@@ -93,6 +101,9 @@ class RoomListPresenter(
     private val coldStartWatcher: AnalyticsColdStartWatcher,
     private val spaceFiltersPresenter: Presenter<SpaceFiltersState>,
     private val featureFlagService: FeatureFlagService,
+    private val snackbarDispatcher: SnackbarDispatcher,
+    private val keyStorageProvisioner: KeyStorageProvisioner,
+    private val identityResetPendingStore: IdentityResetPendingStore,
 ) : Presenter<RoomListState> {
     private val encryptionService = client.encryptionService
 
@@ -110,6 +121,11 @@ class RoomListPresenter(
         }
 
         var securityBannerDismissed by rememberSaveable { mutableStateOf(false) }
+
+        // GUA FORK: the encryption setup repair lives here so the banner's spinner has an owner
+        // that can clear it. As view-local state it latched on the first tap and never reset.
+        var isFinishingEncryptionSetup by remember { mutableStateOf(false) }
+        var encryptionSetupNeedsReset by remember { mutableStateOf(false) }
         val showNewNotificationSoundBanner by remember {
             announcementService.announcementsToShowFlow().map { announcements ->
                 announcements.contains(Announcement.NewNotificationSound)
@@ -129,6 +145,61 @@ class RoomListPresenter(
                 }
                 RoomListEvent.DismissRequestVerificationPrompt -> securityBannerDismissed = true
                 RoomListEvent.DismissBanner -> securityBannerDismissed = true
+                // GUA FORK: consumed once. The presenter outlives the view (the flow node keeps
+                // its child alive), so as a plain latch this flag stayed true after navigating,
+                // and backing out of the reset screen recomposed the effect and pushed the user
+                // straight back in, for the rest of the session.
+                RoomListEvent.EncryptionResetNavigated -> encryptionSetupNeedsReset = false
+                RoomListEvent.FinishEncryptionSetup -> if (!isFinishingEncryptionSetup) {
+                    isFinishingEncryptionSetup = true
+                    coroutineScope.launch {
+                        try {
+                            // GUA FORK: a reset that was started but never approved leaves an identity in the
+                            // local store that the server has never seen. Every repair below would export it
+                            // into new key storage and call the account healthy. Only finishing the reset can
+                            // put it right.
+                            val outcome = if (identityResetPendingStore.isPending()) {
+                                Timber.w("An identity reset is still pending; refusing to repair around it.")
+                                EncryptionRepairOutcome.ResetRequired
+                            } else {
+                                encryptionService.repairWithoutReset()
+                            }
+                            when (outcome) {
+                                EncryptionRepairOutcome.Repaired ->
+                                    Timber.d("Finished encryption setup without a reset.")
+                                EncryptionRepairOutcome.NotYet -> {
+                                    // The client cannot read its own state yet, so there is nothing
+                                    // to repair. There IS something to say, though: this branch used
+                                    // to log and return, which is a button that visibly does nothing.
+                                    // Android pins the recovery state to WAITING_FOR_SYNC the whole
+                                    // time sync is not Running, so this is what a tap on a patchy
+                                    // connection looks like, and the user has to be told that rather
+                                    // than left guessing.
+                                    Timber.d("Encryption state not readable yet, leaving the banner.")
+                                    snackbarDispatcher.post(
+                                        SnackbarMessage(CommonStrings.common_please_check_internet_connection)
+                                    )
+                                }
+                                EncryptionRepairOutcome.Failed -> {
+                                    // The repair ran past its ceiling or threw. Same rule: never
+                                    // silent, and never a reset -- a reset is destructive and this
+                                    // outcome does not establish that one is needed.
+                                    Timber.w("Encryption setup did not finish; leaving the banner.")
+                                    snackbarDispatcher.post(
+                                        SnackbarMessage(CommonStrings.common_something_went_wrong)
+                                    )
+                                }
+                                EncryptionRepairOutcome.ResetRequired -> {
+                                    Timber.w("Encryption setup cannot finish without a reset.")
+                                    encryptionSetupNeedsReset = true
+                                }
+                            }
+                        } finally {
+                            // Clears on every path out, so the button can never latch.
+                            isFinishingEncryptionSetup = false
+                        }
+                    }
+                }
                 RoomListEvent.DismissNewNotificationSoundBanner -> coroutineScope.launch {
                     announcementService.onAnnouncementDismissed(Announcement.NewNotificationSound)
                 }
@@ -175,6 +246,8 @@ class RoomListPresenter(
 
         val contentState = roomListContentState(
             securityBannerDismissed,
+            isFinishingEncryptionSetup,
+            encryptionSetupNeedsReset,
             showNewNotificationSoundBanner,
             showUnreadCount,
         )
@@ -219,7 +292,12 @@ class RoomListPresenter(
         }
 
         when (recoveryState) {
-            RecoveryState.DISABLED -> return SecurityBannerState.SetUpRecovery
+            // GUA FORK: both broken states get the SAME banner, the one that finishes setup
+            // silently. Upstream sends DISABLED to SetUpRecovery, whose flow hands the user a
+            // recovery key and asks them to write it down. Gua shows nobody a recovery key, and
+            // DISABLED is exactly the state an identity reset leaves behind, so that banner was
+            // the second half of the reset dead end: reset, then get told to save a key.
+            RecoveryState.DISABLED,
             RecoveryState.INCOMPLETE -> return SecurityBannerState.RecoveryKeyConfirmation
             RecoveryState.UNKNOWN,
             RecoveryState.WAITING_FOR_SYNC,
@@ -232,6 +310,8 @@ class RoomListPresenter(
     @Composable
     private fun roomListContentState(
         securityBannerDismissed: Boolean,
+        isFinishingEncryptionSetup: Boolean,
+        encryptionSetupNeedsReset: Boolean,
         showNewNotificationSoundBanner: Boolean,
         showUnreadCount: Boolean,
     ): RoomListContentState {
@@ -251,9 +331,16 @@ class RoomListPresenter(
         }
         val seenRoomInvites by remember { seenInvitesStore.seenRoomIds() }.collectAsState(emptySet())
         val securityBannerState by rememberSecurityBannerState(securityBannerDismissed)
+        // GUA FORK: provisioning after a reset runs behind this screen, and until it lands the
+        // recovery state is legitimately still unhealthy, so the banner is still up. Without showing
+        // the work it reads as an untouched call to action: people press it, it finishes around
+        // then, and the press looks like what fixed the account.
+        val isProvisioningAfterReset by keyStorageProvisioner.isProvisioning.collectAsState()
         return when {
             showEmpty -> RoomListContentState.Empty(
                 securityBannerState = securityBannerState,
+                isFinishingEncryptionSetup = isFinishingEncryptionSetup || isProvisioningAfterReset,
+                encryptionSetupNeedsReset = encryptionSetupNeedsReset,
             )
             showSkeleton -> RoomListContentState.Skeleton(count = 16)
             else -> {
@@ -261,6 +348,8 @@ class RoomListPresenter(
 
                 RoomListContentState.Rooms(
                     securityBannerState = securityBannerState,
+                    isFinishingEncryptionSetup = isFinishingEncryptionSetup || isProvisioningAfterReset,
+                    encryptionSetupNeedsReset = encryptionSetupNeedsReset,
                     showNewNotificationSoundBanner = showNewNotificationSoundBanner,
                     showUnreadCount = showUnreadCount,
                     fullScreenIntentPermissionsState = fullScreenIntentPermissionsPresenter.present(),

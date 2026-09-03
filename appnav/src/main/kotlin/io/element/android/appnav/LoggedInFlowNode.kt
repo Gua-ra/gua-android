@@ -298,7 +298,10 @@ class LoggedInFlowNode(
 
         @Parcelize
         data class SecureBackup(
-            val initialElement: SecureBackupEntryPoint.InitialTarget = SecureBackupEntryPoint.InitialTarget.Root
+            // GUA FORK: no default. When Root was the default, `NavTarget.SecureBackup()` read as
+            // "open secure backup" while silently meaning "open the recovery-key console", and a
+            // grep for InitialTarget.Root never surfaced the sign-out route that used it.
+            val initialElement: SecureBackupEntryPoint.InitialTarget
         ) : NavTarget
 
         @Parcelize
@@ -352,12 +355,11 @@ class LoggedInFlowNode(
                         backstack.push(NavTarget.CreateSpace)
                     }
 
-                    override fun navigateToSetUpRecovery() {
-                        backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.Root))
-                    }
-
                     override fun navigateToEnterRecoveryKey() {
-                        backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.EnterRecoveryKey))
+                        // GUA FORK: never a recovery-key prompt. The repair itself now runs in the
+                        // room list presenter, which owns the banner's progress state, and only
+                        // calls this once it has established that a reset is genuinely required.
+                        backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.ResetIdentity))
                     }
 
                     override fun navigateToRoomSettings(roomId: RoomId) {
@@ -474,7 +476,7 @@ class LoggedInFlowNode(
                     }
 
                     override fun navigateToSecureBackup() {
-                        backstack.push(NavTarget.SecureBackup())
+                        backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.Root))
                     }
 
                     override fun navigateToRoomNotificationSettings(roomId: RoomId) {

@@ -61,6 +61,7 @@ fun Announcement(
             actionText = type.actionText,
             onActionClick = type.onActionClick,
             onDismissClick = type.onDismissClick,
+            actionInProgress = type.actionInProgress,
             modifier = modifier,
         )
     }
@@ -73,6 +74,8 @@ sealed interface AnnouncementType {
         val actionText: String,
         val onActionClick: () -> Unit,
         val onDismissClick: (() -> Unit)?,
+        /** GUA FORK: shows a spinner and blocks further presses while the action is running. */
+        val actionInProgress: Boolean = false,
     ) : AnnouncementType
 }
 
@@ -84,6 +87,7 @@ private fun ActionableAnnouncement(
     onActionClick: () -> Unit,
     onDismissClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    actionInProgress: Boolean = false,
 ) {
     AnnouncementSurface(modifier) {
         Column {
@@ -105,6 +109,8 @@ private fun ActionableAnnouncement(
                 text = actionText,
                 size = ButtonSize.Medium,
                 onClick = onActionClick,
+                enabled = !actionInProgress,
+                showProgress = actionInProgress,
                 modifier = Modifier.fillMaxWidth(),
             )
         }

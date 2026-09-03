@@ -47,7 +47,6 @@ class DefaultHomeEntryPointTest : RobolectricTest() {
             override fun navigateToCreateRoom() = lambdaError()
             override fun navigateToCreateSpace() = lambdaError()
             override fun navigateToSettings() = lambdaError()
-            override fun navigateToSetUpRecovery() = lambdaError()
             override fun navigateToEnterRecoveryKey() = lambdaError()
             override fun navigateToRoomSettings(roomId: RoomId) = lambdaError()
             override fun navigateToBugReport() = lambdaError()

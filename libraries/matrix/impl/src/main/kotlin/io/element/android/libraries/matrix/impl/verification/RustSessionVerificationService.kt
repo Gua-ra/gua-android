@@ -34,6 +34,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.matrix.rustcomponents.sdk.Client
 import org.matrix.rustcomponents.sdk.Encryption
 import org.matrix.rustcomponents.sdk.RecoveryState
@@ -264,7 +265,15 @@ class RustSessionVerificationService(
         // so we can skip crossing the FFI layer when it's not needed
         tryOrFail {
             if (!isInitialized.get()) {
-                encryptionService.waitForE2eeInitializationTasks()
+                // GUA FORK: bounded. After an identity reset done from another device this wait
+                // never returned, which left every caller hanging: the first-time-use flow, and
+                // the verification the user needs precisely then. The controller below works
+                // regardless; what it reports is judged by the recovery state anyway.
+                val ready = withTimeoutOrNull(E2EE_INITIALISATION_CEILING) {
+                    encryptionService.waitForE2eeInitializationTasks()
+                    true
+                } ?: false
+                if (!ready) Timber.w("E2EE initialisation did not report ready within $E2EE_INITIALISATION_CEILING, continuing anyway")
                 isInitialized.set(true)
             }
 
@@ -304,3 +313,5 @@ private fun RustSessionVerificationData.map(): SessionVerificationData {
         }
     }
 }
+
+private val E2EE_INITIALISATION_CEILING = 10.seconds

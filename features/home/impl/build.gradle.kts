@@ -53,6 +53,7 @@ dependencies {
     implementation(projects.features.logout.api)
     implementation(projects.features.leaveroom.api)
     implementation(projects.features.rageshake.api)
+    implementation(projects.features.securebackup.api)
     implementation(projects.services.analytics.api)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.haze)

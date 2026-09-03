@@ -34,6 +34,7 @@ class OutgoingVerificationNode(
     private val presenter = presenterFactory.create(
         showDeviceVerifiedScreen = inputs.showDeviceVerifiedScreen,
         verificationRequest = inputs.verificationRequest,
+        forceVerification = inputs.forceVerification,
     )
 
     @Composable

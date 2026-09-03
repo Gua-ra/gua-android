@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_encryption_reset_required_title">Einige frühere Nachrichten können nicht wiederhergestellt werden</string>
+    <string name="gua_encryption_reset_required_message">Um die Einrichtung verschlüsselter Chats auf diesem Gerät abzuschließen, muss dein verschlüsseltes Backup zurückgesetzt werden. Nachrichten, die nur in diesem Backup liegen, gehen verloren. Nachrichten, die bereits auf deinen Geräten sind, bleiben unberührt.</string>
+    <string name="gua_encryption_reset_required_action">Zurücksetzen und abschließen</string>
+    <string name="gua_encryption_reset_finishing">Einrichtung wird abgeschlossen…</string>
+    <string name="gua_encryption_reset_failed">Die Einrichtung konnte nicht abgeschlossen werden. Tippe auf „Zurücksetzen und abschließen“, um es erneut zu versuchen.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Stelle deine früheren Nachrichten wieder her</string>
+    <string name="gua_encryption_recover_from_other_device_message">Verwende dein anderes Gerät, um Nachrichten wiederherzustellen, die auf diesem Gerät noch nicht verfügbar sind.\n\nWenn du keinen Zugriff darauf hast, kannst du zurücksetzen und die Einrichtung abschließen, aber Nachrichten, die nur in deinem Backup liegen, gehen dann dauerhaft verloren.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Anderes Gerät verwenden</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Deine Nachrichten konnten nicht vom anderen Gerät abgerufen werden. Stelle sicher, dass Gua dort geöffnet ist, und versuche es erneut. Du kannst auch zurücksetzen und die Einrichtung abschließen.</string>
+</resources>

@@ -33,6 +33,7 @@ import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.timeline.item.event.MessageShield
 import io.element.android.libraries.matrix.api.timeline.item.event.ProfileDetails
 import io.element.android.libraries.matrix.api.timeline.item.event.getDisplayName
+import io.element.android.libraries.matrix.api.timeline.item.event.isAlarming
 import io.element.android.libraries.matrix.api.timeline.item.event.isCritical
 import io.element.android.libraries.ui.strings.CommonStrings
 
@@ -78,7 +79,10 @@ val MessageShieldData.isCritical: Boolean
 
 @Composable
 internal fun MessageShieldData.toIconColor(): Color {
-    return when (isCritical) {
+    // GUA FORK: the SDK marks plenty of states critical that are not alarming to a reader, and
+    // this icon sits beside the send-failure icon, so red here reads as "did not send". Only the
+    // states that genuinely mean this may not be who you think keep the critical colour.
+    return when (isCritical && shield.isAlarming) {
         true -> ElementTheme.colors.iconCriticalPrimary
         false -> ElementTheme.colors.iconSecondary
     }
@@ -86,7 +90,8 @@ internal fun MessageShieldData.toIconColor(): Color {
 
 @Composable
 private fun MessageShieldData.toTextColor(): Color {
-    return when (isCritical) {
+    // GUA FORK: same reasoning as toIconColor.
+    return when (isCritical && shield.isAlarming) {
         true -> ElementTheme.colors.textCriticalPrimary
         false -> ElementTheme.colors.textSecondary
     }
@@ -125,12 +130,15 @@ internal fun MessageShieldData.toText(): String {
 @Composable
 internal fun MessageShieldData.toIcon(): ImageVector {
     return when (shield) {
-        is MessageShield.AuthenticityNotGuaranteed -> CompoundIcons.Info()
-        is MessageShield.UnknownDevice,
-        is MessageShield.UnsignedDevice,
-        is MessageShield.UnverifiedIdentity,
+        // GUA FORK: only the two states that mean "this may not be who you think" keep the solid
+        // alarm glyph. The rest describe how a message was encrypted, which is context rather
+        // than a warning, and a solid mark in the delivery-status slot reads as a failed send.
         is MessageShield.VerificationViolation,
         is MessageShield.MismatchedSender -> CompoundIcons.HelpSolid()
+        is MessageShield.AuthenticityNotGuaranteed,
+        is MessageShield.UnknownDevice,
+        is MessageShield.UnsignedDevice,
+        is MessageShield.UnverifiedIdentity -> CompoundIcons.Info()
         is MessageShield.SentInClear -> CompoundIcons.LockOff()
     }
 }

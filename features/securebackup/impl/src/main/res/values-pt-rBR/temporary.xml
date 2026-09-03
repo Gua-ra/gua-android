@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_encryption_reset_required_title">Algumas mensagens anteriores não podem ser recuperadas</string>
+    <string name="gua_encryption_reset_required_message">Para terminar de configurar as conversas criptografadas neste dispositivo, seu backup criptografado precisa ser redefinido. As mensagens guardadas apenas nesse backup serão perdidas. As mensagens já presentes nos seus dispositivos não serão afetadas.</string>
+    <string name="gua_encryption_reset_required_action">Redefinir e concluir</string>
+    <string name="gua_encryption_reset_finishing">Concluindo a configuração…</string>
+    <string name="gua_encryption_reset_failed">Não foi possível concluir a configuração. Toque em Redefinir e concluir para tentar novamente.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Recupere suas mensagens anteriores</string>
+    <string name="gua_encryption_recover_from_other_device_message">Use seu outro dispositivo para recuperar as mensagens que ainda não estão disponíveis aqui.\n\nSe você não tiver acesso a ele, pode redefinir e concluir a configuração, mas as mensagens guardadas apenas no seu backup serão perdidas para sempre.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Usar meu outro dispositivo</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Não foi possível obter suas mensagens do outro dispositivo. Verifique se o Gua está aberto nele e tente novamente, ou redefina.</string>
+</resources>

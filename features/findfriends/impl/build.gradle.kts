@@ -36,6 +36,7 @@ dependencies {
     implementation(projects.libraries.permissions.api)
     implementation(projects.libraries.sessionStorage.api)
     implementation(projects.libraries.guaresolver)
+    implementation(projects.libraries.phonenumberentry)
     implementation(libs.coil.compose)
     implementation(libs.coroutines.core)
     api(projects.features.findfriends.api)

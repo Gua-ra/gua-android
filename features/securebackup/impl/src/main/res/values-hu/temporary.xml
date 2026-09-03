@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_encryption_reset_required_title">Néhány korábbi üzenet nem állítható vissza</string>
+    <string name="gua_encryption_reset_required_message">A titkosított beszélgetések beállításának befejezéséhez ezen az eszközön vissza kell állítani a titkosított biztonsági mentést. A csak abban a mentésben tárolt üzenetek elvesznek. Az eszközein már meglévő üzeneteket ez nem érinti.</string>
+    <string name="gua_encryption_reset_required_action">Visszaállítás és befejezés</string>
+    <string name="gua_encryption_reset_finishing">Beállítás befejezése…</string>
+    <string name="gua_encryption_reset_failed">Nem sikerült befejezni a beállítást. Az újrapróbálkozáshoz koppintson a „Visszaállítás és befejezés” gombra.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Állítsa vissza a korábbi üzeneteit</string>
+    <string name="gua_encryption_recover_from_other_device_message">A másik eszközével visszaállíthatja azokat az üzeneteket, amelyek ezen az eszközön még nem érhetők el.\n\nHa nem fér hozzá ahhoz az eszközhöz, visszaállíthatja a biztonsági mentést és befejezheti a beállítást, de véglegesen elvesznek azok az üzenetek, amelyek csak a mentésben vannak meg.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Másik eszköz használata</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Nem sikerült lekérni az üzeneteit a másik eszközről. Győződjön meg róla, hogy nyitva van rajta a Gua, majd próbálja újra, vagy válassza a „Visszaállítás és befejezés” lehetőséget.</string>
+</resources>
