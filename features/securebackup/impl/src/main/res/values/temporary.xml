@@ -17,7 +17,8 @@
     <string name="gua_encryption_reset_finishing">Finishing setup…</string>
     <!-- GUA FORK: getting the keys from another device of the account instead of resetting. Shown
          only when such a device exists. -->
-    <string name="gua_encryption_recover_from_other_device_action">Get them from my other device</string>
+    <string name="gua_encryption_recover_from_other_device_message">Your other device still has the keys for these messages. Verify it to copy them over. Resetting instead finishes setup right away, but messages stored only in the backup will be lost.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Use my other device</string>
     <string name="gua_encryption_recover_from_other_device_failed">Couldn\'t get your messages from the other device. Make sure it\'s open and try again, or reset.</string>
     <string name="gua_encryption_reset_failed">Couldn\'t finish setup. Tap Reset and finish setup to try again.</string>
 </resources>

@@ -41,7 +41,7 @@ fun ResetIdentityRootView(
         iconStyle = BigIcon.Style.AlertSolid,
         title = stringResource(R.string.gua_encryption_reset_required_title),
         isScrollable = true,
-        content = { Content() },
+        content = { Content(canRecoverFromOtherDevice = state.canRecoverFromOtherDevice) },
         buttons = {
             // GUA FORK: offered only when another device of this account holds the keys. It
             // brings the messages here without resetting anything; otherwise the reset is the
@@ -73,16 +73,24 @@ fun ResetIdentityRootView(
 }
 
 @Composable
-private fun Content() {
+private fun Content(canRecoverFromOtherDevice: Boolean) {
     Column(
         modifier = Modifier.padding(top = 8.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
         // GUA FORK: one plain sentence about what is lost, instead of three bullets of
-        // upstream jargon about identities and recovery keys the user has never seen.
+        // upstream jargon about identities and recovery keys the user has never seen. When the
+        // keys can be fetched from another device, saying the backup must be reset would be
+        // untrue, and the button below offers the other way out.
         Text(
             modifier = Modifier.fillMaxWidth(),
-            text = stringResource(R.string.gua_encryption_reset_required_message),
+            text = stringResource(
+                if (canRecoverFromOtherDevice) {
+                    R.string.gua_encryption_recover_from_other_device_message
+                } else {
+                    R.string.gua_encryption_reset_required_message
+                }
+            ),
             style = ElementTheme.typography.fontBodyMdRegular,
             color = ElementTheme.colors.textSecondary,
             textAlign = TextAlign.Center,
