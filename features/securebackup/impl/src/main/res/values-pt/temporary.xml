@@ -8,4 +8,10 @@
     <string name="gua_encryption_reset_required_title">Algumas mensagens anteriores não podem ser recuperadas</string>
     <string name="gua_encryption_reset_required_message">Para terminar de configurar as conversas encriptadas neste dispositivo, a sua cópia de segurança encriptada tem de ser reposta. As mensagens guardadas apenas nessa cópia serão perdidas. As mensagens já presentes nos seus dispositivos não serão afetadas.</string>
     <string name="gua_encryption_reset_required_action">Repor e concluir</string>
+    <string name="gua_encryption_reset_finishing">A concluir a configuração…</string>
+    <string name="gua_encryption_reset_failed">Não foi possível concluir a configuração. Toque em Repor e concluir para tentar novamente.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Recupere as suas mensagens anteriores</string>
+    <string name="gua_encryption_recover_from_other_device_message">Utilize o seu outro dispositivo para recuperar as mensagens que ainda não estão disponíveis neste dispositivo.\n\nSe não tiver acesso a ele, pode repor e concluir a configuração, mas as mensagens guardadas apenas na sua cópia de segurança serão perdidas para sempre.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Utilizar outro dispositivo</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Não foi possível obter as suas mensagens do outro dispositivo. Certifique-se de que o Gua está aberto e tente novamente, ou faça a reposição.</string>
 </resources>

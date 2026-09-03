@@ -8,4 +8,10 @@
     <string name="gua_encryption_reset_required_title">Một số tin nhắn trước đây không thể khôi phục</string>
     <string name="gua_encryption_reset_required_message">Để hoàn tất thiết lập trò chuyện mã hóa trên thiết bị này, bản sao lưu được mã hóa của bạn cần được đặt lại. Những tin nhắn chỉ được lưu trong bản sao lưu đó sẽ bị mất. Tin nhắn đã có trên các thiết bị của bạn sẽ không bị ảnh hưởng.</string>
     <string name="gua_encryption_reset_required_action">Đặt lại và hoàn tất</string>
+    <string name="gua_encryption_reset_finishing">Đang hoàn tất thiết lập…</string>
+    <string name="gua_encryption_reset_failed">Không thể hoàn tất thiết lập. Chạm vào “Đặt lại và hoàn tất” để thử lại.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Khôi phục tin nhắn trước đây của bạn</string>
+    <string name="gua_encryption_recover_from_other_device_message">Dùng thiết bị khác của bạn để khôi phục những tin nhắn chưa có trên thiết bị này.\n\nNếu bạn không thể truy cập thiết bị đó, bạn có thể đặt lại và hoàn tất thiết lập, nhưng những tin nhắn chỉ được lưu trong bản sao lưu của bạn sẽ bị mất vĩnh viễn.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Dùng thiết bị khác</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Không lấy được tin nhắn của bạn từ thiết bị khác. Hãy đảm bảo Gua đang mở trên thiết bị đó rồi thử lại, hoặc đặt lại.</string>
 </resources>

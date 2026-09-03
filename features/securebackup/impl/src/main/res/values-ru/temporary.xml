@@ -8,4 +8,10 @@
     <string name="gua_encryption_reset_required_title">Некоторые прошлые сообщения восстановить нельзя</string>
     <string name="gua_encryption_reset_required_message">Чтобы завершить настройку зашифрованных чатов на этом устройстве, нужно сбросить зашифрованную резервную копию. Сообщения, хранящиеся только в этой копии, будут потеряны. Сообщения, уже имеющиеся на ваших устройствах, не пострадают.</string>
     <string name="gua_encryption_reset_required_action">Сбросить и завершить</string>
+    <string name="gua_encryption_reset_finishing">Завершение настройки…</string>
+    <string name="gua_encryption_reset_failed">Не удалось завершить настройку. Нажмите «Сбросить и завершить», чтобы попробовать ещё раз.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Восстановите прошлые сообщения</string>
+    <string name="gua_encryption_recover_from_other_device_message">Воспользуйтесь другим устройством, чтобы восстановить сообщения, которых пока нет на этом устройстве.\n\nЕсли у вас нет к нему доступа, вы можете сбросить и завершить настройку, но сообщения, хранящиеся только в резервной копии, будут потеряны навсегда.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Другое устройство</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Не удалось получить сообщения с другого устройства. Убедитесь, что на нём открыт Gua, и попробуйте ещё раз или выполните сброс.</string>
 </resources>

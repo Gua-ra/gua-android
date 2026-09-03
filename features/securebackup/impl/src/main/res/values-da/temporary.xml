@@ -8,4 +8,10 @@
     <string name="gua_encryption_reset_required_title">Nogle tidligere beskeder kan ikke gendannes</string>
     <string name="gua_encryption_reset_required_message">For at færdiggøre opsætningen af krypterede chats på denne enhed skal din krypterede sikkerhedskopi nulstilles. Beskeder, der kun er gemt i den sikkerhedskopi, går tabt. Beskeder, der allerede findes på dine enheder, påvirkes ikke.</string>
     <string name="gua_encryption_reset_required_action">Nulstil og færdiggør</string>
+    <string name="gua_encryption_reset_finishing">Færdiggør opsætningen…</string>
+    <string name="gua_encryption_reset_failed">Opsætningen kunne ikke færdiggøres. Tryk på Nulstil og færdiggør for at prøve igen.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Gendan dine tidligere beskeder</string>
+    <string name="gua_encryption_recover_from_other_device_message">Brug din anden enhed til at gendanne de beskeder, der endnu ikke er tilgængelige på denne enhed.\n\nHvis du ikke har adgang til den, kan du nulstille og færdiggøre opsætningen, men beskeder, der kun er gemt i din sikkerhedskopi, går tabt for altid.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Brug min anden enhed</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Kunne ikke hente dine beskeder fra den anden enhed. Sørg for, at Gua er åben på den, og prøv igen, eller nulstil.</string>
 </resources>

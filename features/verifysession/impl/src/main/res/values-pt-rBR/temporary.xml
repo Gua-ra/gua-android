@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_verification_other_device_title">Abra o Gua no seu outro dispositivo</string>
+    <string name="gua_verification_other_device_subtitle">Mantenha o Gua aberto. Você vai comparar alguns emojis nos dois dispositivos para confirmar que é você.</string>
+    <string name="gua_verification_waiting_other_device_title">Aguardando seu outro dispositivo</string>
+    <string name="gua_verification_compare_emojis_subtitle">Confirme se os emojis abaixo correspondem aos mostrados no seu outro dispositivo.</string>
+</resources>
