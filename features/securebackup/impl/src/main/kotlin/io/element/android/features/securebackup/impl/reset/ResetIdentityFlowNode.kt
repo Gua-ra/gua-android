@@ -23,6 +23,7 @@ import com.bumble.appyx.core.modality.BuildContext
 import com.bumble.appyx.core.node.Node
 import com.bumble.appyx.core.plugin.Plugin
 import com.bumble.appyx.navmodel.backstack.BackStack
+import com.bumble.appyx.navmodel.backstack.operation.pop
 import com.bumble.appyx.navmodel.backstack.operation.push
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedInject
@@ -34,6 +35,7 @@ import io.element.android.features.securebackup.api.KeyStorageProvisioner
 import io.element.android.features.securebackup.impl.R
 import io.element.android.features.securebackup.impl.reset.password.ResetIdentityPasswordNode
 import io.element.android.features.securebackup.impl.reset.root.ResetIdentityRootNode
+import io.element.android.features.verifysession.api.OutgoingVerificationEntryPoint
 import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.BackstackView
@@ -41,6 +43,7 @@ import io.element.android.libraries.architecture.BaseFlowNode
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.architecture.createNode
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
+import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.designsystem.components.ProgressDialog
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
@@ -50,6 +53,8 @@ import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.auth.OAuthRedirectUrlProvider
 import io.element.android.libraries.matrix.api.encryption.IdentityOAuthResetHandle
 import io.element.android.libraries.matrix.api.encryption.IdentityPasswordResetHandle
+import io.element.android.libraries.matrix.api.encryption.RecoveryState
+import io.element.android.libraries.matrix.api.verification.VerificationRequest
 import io.element.android.libraries.oauth.api.OAuthAction
 import io.element.android.libraries.oauth.api.OAuthActionFlow
 import io.element.android.libraries.sessionstorage.api.SessionStore
@@ -63,6 +68,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.parcelize.Parcelize
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import timber.log.Timber
 import kotlin.time.Duration.Companion.seconds
 
@@ -84,6 +90,7 @@ class ResetIdentityFlowNode(
     private val dispatchers: CoroutineDispatchers,
     private val sessionStore: SessionStore,
     private val okHttpClient: () -> OkHttpClient,
+    private val outgoingVerificationEntryPoint: OutgoingVerificationEntryPoint,
 ) : BaseFlowNode<ResetIdentityFlowNode.NavTarget>(
     backstack = BackStack(initialElement = NavTarget.Root, savedStateMap = buildContext.savedStateMap),
     buildContext = buildContext,
@@ -101,6 +108,10 @@ class ResetIdentityFlowNode(
 
         @Parcelize
         data object ResetPassword : NavTarget
+
+        /** GUA FORK: verify with another device of the account so it hands the keys over. */
+        @Parcelize
+        data object RecoverFromOtherDevice : NavTarget
     }
 
     private lateinit var activity: Activity
@@ -150,8 +161,38 @@ class ResetIdentityFlowNode(
                     override fun onContinue() {
                         sessionCoroutineScope.startReset()
                     }
+
+                    override fun onRecoverFromOtherDevice() {
+                        backstack.push(NavTarget.RecoverFromOtherDevice)
+                    }
                 }
                 createNode<ResetIdentityRootNode>(buildContext, listOf(callback))
+            }
+            is NavTarget.RecoverFromOtherDevice -> {
+                // GUA FORK: once the two devices agree on the emojis, the SDK asks the other
+                // device for the keys and it hands them over; nothing is reset and no recovery
+                // key is involved. The verdict is the recovery state, checked when the flow ends.
+                outgoingVerificationEntryPoint.createNode(
+                    parentNode = this,
+                    buildContext = buildContext,
+                    params = OutgoingVerificationEntryPoint.Params(
+                        showDeviceVerifiedScreen = false,
+                        verificationRequest = VerificationRequest.Outgoing.CurrentSession,
+                        forceVerification = true,
+                    ),
+                    callback = object : OutgoingVerificationEntryPoint.Callback {
+                        override fun onDone() {
+                            backstack.pop()
+                            finishRecoveryFromOtherDevice()
+                        }
+
+                        override fun onBack() {
+                            backstack.pop()
+                        }
+
+                        override fun navigateToLearnMoreAboutEncryption() = Unit
+                    },
+                )
             }
             is NavTarget.ResetPassword -> {
                 val handle = resetIdentityFlowManager.currentHandleFlow.value.dataOrNull() as? IdentityPasswordResetHandle ?: error("No password handle found")
@@ -236,15 +277,15 @@ class ResetIdentityFlowNode(
     private suspend fun approveFromApp(approvalUrl: String): Boolean = withContext(dispatchers.io) {
         val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
         if (accessToken.isNullOrEmpty()) return@withContext false
-        val endpoint = runCatching {
+        val endpoint = runCatchingExceptions {
             Uri.parse(approvalUrl).buildUpon().path(APP_APPROVAL_PATH).clearQuery().fragment(null).build().toString()
         }.getOrNull() ?: return@withContext false
         val request = Request.Builder()
             .url(endpoint)
             .header("Authorization", "Bearer $accessToken")
-            .post(okhttp3.RequestBody.create(null, ByteArray(0)))
+            .post(ByteArray(0).toRequestBody(null))
             .build()
-        runCatching { okHttpClient().newCall(request).execute().use { it.code } }
+        runCatchingExceptions { okHttpClient().newCall(request).execute().use { it.code } }
             .onFailure { Timber.w(it, "App-side approval failed; falling back to the approval page.") }
             .map { code ->
                 if (code in 200..299) {
@@ -323,6 +364,30 @@ class ResetIdentityFlowNode(
     private suspend fun abandonAttempt() {
         resetIdentityFlowManager.cancel()
         snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_reset_failed))
+    }
+
+    /**
+     * GUA FORK: judges a recovery from another device by the recovery state.
+     *
+     * Enabled means the keys (and the backup key with them) arrived; anything else within the
+     * bound is an honest "not yet", and the reset screen stays with both options.
+     */
+    private fun finishRecoveryFromOtherDevice() {
+        sessionCoroutineScope.launch {
+            finishing.value = true
+            val recovered = withTimeoutOrNull(RECOVERY_FROM_OTHER_DEVICE_CEILING) {
+                matrixClient.encryptionService.recoveryStateStateFlow.first { it == RecoveryState.ENABLED }
+                true
+            } ?: false
+            finishing.value = false
+            if (recovered) {
+                Timber.d("Keys arrived from the other device")
+                finishOnce()
+            } else {
+                Timber.w("Keys did not arrive from the other device within $RECOVERY_FROM_OTHER_DEVICE_CEILING")
+                snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_recover_from_other_device_failed))
+            }
+        }
     }
 
     /**
@@ -421,5 +486,13 @@ class ResetIdentityFlowNode(
 
         /** The server endpoint that opens the reset window for the caller's own account. */
         const val APP_APPROVAL_PATH = "/api/gua/identity-reset/allow"
+
+        /**
+         * The other device answers within a second or two once the emojis match, but the keys
+         * ride on the encryption sync, which polls every 30 s at rest. The bound covers one poll
+         * with margin; it only exists so that a device that never answers cannot hold the user
+         * on a spinner. If the keys arrive after it, the banner still clears by itself.
+         */
+        val RECOVERY_FROM_OTHER_DEVICE_CEILING = 60.seconds
     }
 }

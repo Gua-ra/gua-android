@@ -25,14 +25,14 @@ import io.element.android.libraries.designsystem.components.BigIcon
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Button
+import io.element.android.libraries.designsystem.theme.components.OutlinedButton
 import io.element.android.libraries.designsystem.theme.components.Text
 
 @Composable
 fun ResetIdentityRootView(
-    // GUA FORK: kept so the node and preview signatures do not churn. Nothing on this screen
-    // depends on state any more: the confirmation dialog it drove has gone.
-    @Suppress("UNUSED_PARAMETER") state: ResetIdentityRootState,
+    state: ResetIdentityRootState,
     onContinue: () -> Unit,
+    onRecoverFromOtherDevice: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -43,16 +43,30 @@ fun ResetIdentityRootView(
         isScrollable = true,
         content = { Content() },
         buttons = {
-            Button(
-                modifier = Modifier.fillMaxWidth(),
-                text = stringResource(id = R.string.gua_encryption_reset_required_action),
-                // GUA FORK: straight through. This screen already names what is lost and its
-                // button is destructive; the dialog that used to sit here asked "are you sure you
-                // want to reset your digital identity?", which is both jargon and a second
-                // confirmation of the thing the user just read and agreed to.
-                onClick = onContinue,
-                destructive = true,
-            )
+            // GUA FORK: offered only when another device of this account holds the keys. It
+            // brings the messages here without resetting anything; otherwise the reset is the
+            // only way forward and the sole option shown. The reset goes straight through: this
+            // screen already names what is lost and its button is destructive.
+            if (state.canRecoverFromOtherDevice) {
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(id = R.string.gua_encryption_recover_from_other_device_action),
+                    onClick = onRecoverFromOtherDevice,
+                )
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(id = R.string.gua_encryption_reset_required_action),
+                    onClick = onContinue,
+                    destructive = true,
+                )
+            } else {
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(id = R.string.gua_encryption_reset_required_action),
+                    onClick = onContinue,
+                    destructive = true,
+                )
+            }
         },
         onBackClick = onBack,
     )
@@ -83,6 +97,7 @@ internal fun ResetIdentityRootViewPreview(@PreviewParameter(ResetIdentityRootSta
         ResetIdentityRootView(
             state = state,
             onContinue = {},
+            onRecoverFromOtherDevice = {},
             onBack = {},
         )
     }

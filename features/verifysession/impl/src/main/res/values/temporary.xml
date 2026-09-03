@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+
+    <!-- GUA FORK: verifying with another device of the same account, in plain words. Upstream's
+         copy speaks of "sessions"; a Gua user has a phone and maybe another device. -->
+    <string name="gua_verification_other_device_title">Open Gua on your other device</string>
+    <string name="gua_verification_other_device_subtitle">Keep it open. You\'ll compare a few emojis on both devices to confirm it\'s you.</string>
+    <string name="gua_verification_waiting_other_device_title">Waiting for your other device</string>
+    <string name="gua_verification_compare_emojis_subtitle">Make sure the emojis below match the ones on your other device.</string>
+</resources>

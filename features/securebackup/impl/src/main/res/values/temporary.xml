@@ -15,5 +15,9 @@
     <!-- GUA FORK: the wait between the approval page handing control back and the setup being
          confirmed, and the honest outcome when it could not be. -->
     <string name="gua_encryption_reset_finishing">Finishing setup…</string>
+    <!-- GUA FORK: getting the keys from another device of the account instead of resetting. Shown
+         only when such a device exists. -->
+    <string name="gua_encryption_recover_from_other_device_action">Get them from my other device</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Couldn\'t get your messages from the other device. Make sure it\'s open and try again, or reset.</string>
     <string name="gua_encryption_reset_failed">Couldn\'t finish setup. Tap Reset and finish setup to try again.</string>
 </resources>

@@ -10,5 +10,10 @@ package io.element.android.features.securebackup.impl.reset.root
 
 data class ResetIdentityRootState(
     val displayConfirmationDialog: Boolean,
+    /**
+     * GUA FORK: true only when another device of this account holds the keys, so verifying with
+     * it can bring the messages here without a reset. Otherwise the reset is the only option.
+     */
+    val canRecoverFromOtherDevice: Boolean,
     val eventSink: (ResetIdentityRootEvent) -> Unit,
 )

@@ -29,7 +29,7 @@ class ResetIdentityRootViewTest : RobolectricTest() {
     fun `pressing the back HW button invokes the expected callback`() = runAndroidComposeUiTest {
         ensureCalledOnce {
             setResetRootView(
-                ResetIdentityRootState(displayConfirmationDialog = false, eventSink = {}),
+                ResetIdentityRootState(displayConfirmationDialog = false, canRecoverFromOtherDevice = false, eventSink = {}),
                 onBack = it,
             )
             pressBackKey()
@@ -40,7 +40,7 @@ class ResetIdentityRootViewTest : RobolectricTest() {
     fun `clicking on the back navigation button invokes the expected callback`() = runAndroidComposeUiTest {
         ensureCalledOnce {
             setResetRootView(
-                ResetIdentityRootState(displayConfirmationDialog = false, eventSink = {}),
+                ResetIdentityRootState(displayConfirmationDialog = false, canRecoverFromOtherDevice = false, eventSink = {}),
                 onBack = it,
             )
             pressBack()
@@ -55,10 +55,22 @@ class ResetIdentityRootViewTest : RobolectricTest() {
         // that used to sit in between was jargon on top of a confirmation the user had just given.
         ensureCalledOnce {
             setResetRootView(
-                ResetIdentityRootState(displayConfirmationDialog = false, eventSink = {}),
+                ResetIdentityRootState(displayConfirmationDialog = false, canRecoverFromOtherDevice = false, eventSink = {}),
                 onContinue = it,
             )
             clickOn(R.string.gua_encryption_reset_required_action)
+        }
+    }
+
+    // GUA FORK: the recovery option appears only when the state says another device holds the keys.
+    @Test
+    fun `clicking on recover from another device invokes the expected callback`() = runAndroidComposeUiTest {
+        ensureCalledOnce {
+            setResetRootView(
+                ResetIdentityRootState(displayConfirmationDialog = false, canRecoverFromOtherDevice = true, eventSink = {}),
+                onRecoverFromOtherDevice = it,
+            )
+            clickOn(R.string.gua_encryption_recover_from_other_device_action)
         }
     }
 }
@@ -67,8 +79,9 @@ private fun AndroidComposeUiTest<ComponentActivity>.setResetRootView(
     state: ResetIdentityRootState,
     onBack: () -> Unit = EnsureNeverCalled(),
     onContinue: () -> Unit = EnsureNeverCalled(),
+    onRecoverFromOtherDevice: () -> Unit = EnsureNeverCalled(),
 ) {
     setContent {
-        ResetIdentityRootView(state = state, onContinue = onContinue, onBack = onBack)
+        ResetIdentityRootView(state = state, onContinue = onContinue, onRecoverFromOtherDevice = onRecoverFromOtherDevice, onBack = onBack)
     }
 }

@@ -20,6 +20,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,6 +66,14 @@ fun OutgoingVerificationView(
     modifier: Modifier = Modifier,
 ) {
     val step = state.step
+    // GUA FORK: Exit is a step that draws nothing. Upstream never lands on it while the
+    // screen is showing; the fork does (recovery from another device), so leave through
+    // the caller instead of showing a blank screen.
+    if (step is Step.Exit) {
+        val finish by rememberUpdatedState(onFinish)
+        LaunchedEffect(Unit) { finish() }
+        return
+    }
     fun cancelOrResetFlow() {
         when (step) {
             is Step.Canceled -> state.eventSink(OutgoingVerificationViewEvents.Reset)
@@ -142,11 +153,11 @@ private fun OutgoingVerificationHeader(step: Step, request: VerificationRequest.
     val titleTextId = when (step) {
         Step.Loading -> error("Should not happen")
         Step.Initial -> when (request) {
-            is VerificationRequest.Outgoing.CurrentSession -> R.string.screen_session_verification_use_another_device_title
+            is VerificationRequest.Outgoing.CurrentSession -> R.string.gua_verification_other_device_title
             is VerificationRequest.Outgoing.User -> R.string.screen_session_verification_user_initiator_title
         }
         Step.AwaitingOtherDeviceResponse -> when (request) {
-            is VerificationRequest.Outgoing.CurrentSession -> R.string.screen_session_verification_waiting_another_device_title
+            is VerificationRequest.Outgoing.CurrentSession -> R.string.gua_verification_waiting_other_device_title
             is VerificationRequest.Outgoing.User -> R.string.screen_session_verification_waiting_other_user_title
         }
         Step.Canceled -> CommonStrings.common_verification_failed
@@ -164,7 +175,7 @@ private fun OutgoingVerificationHeader(step: Step, request: VerificationRequest.
     val subtitleTextId = when (step) {
         Step.Loading -> error("Should not happen")
         Step.Initial -> when (request) {
-            is VerificationRequest.Outgoing.CurrentSession -> R.string.screen_session_verification_use_another_device_subtitle
+            is VerificationRequest.Outgoing.CurrentSession -> R.string.gua_verification_other_device_subtitle
             is VerificationRequest.Outgoing.User -> R.string.screen_session_verification_user_initiator_subtitle
         }
         Step.AwaitingOtherDeviceResponse -> R.string.screen_session_verification_waiting_subtitle
@@ -177,7 +188,7 @@ private fun OutgoingVerificationHeader(step: Step, request: VerificationRequest.
         is Step.Verifying -> when (step.data) {
             is SessionVerificationData.Decimals -> R.string.screen_session_verification_compare_numbers_subtitle
             is SessionVerificationData.Emojis -> when (request) {
-                is VerificationRequest.Outgoing.CurrentSession -> R.string.screen_session_verification_compare_emojis_subtitle
+                is VerificationRequest.Outgoing.CurrentSession -> R.string.gua_verification_compare_emojis_subtitle
                 is VerificationRequest.Outgoing.User -> R.string.screen_session_verification_compare_emojis_user_subtitle
             }
         }

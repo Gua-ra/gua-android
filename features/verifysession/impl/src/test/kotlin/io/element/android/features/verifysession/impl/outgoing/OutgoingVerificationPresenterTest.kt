@@ -275,6 +275,65 @@ class OutgoingVerificationPresenterTest {
         }
     }
 
+    @Test
+    fun `present - forceVerification runs the flow even when verification is not needed`() = runTest {
+        val service = FakeSessionVerificationService(
+            resetLambda = { },
+        ).apply {
+            emitNeedsSessionVerification(false)
+            emitVerifiedStatus(SessionVerifiedStatus.Verified)
+            emitVerificationFlowState(VerificationFlowState.DidFinish)
+        }
+        val presenter = createOutgoingVerificationPresenter(
+            service = service,
+            showDeviceVerifiedScreen = false,
+            forceVerification = true,
+        )
+        presenter.test {
+            // Counterpart of the skip test above, which starts on Completed and settles on
+            // Exit. Being verified says nothing about holding the keys, so a second attempt
+            // starts over instead of leaving at once.
+            assertThat(awaitItem().step).isEqualTo(Step.Initial)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - forceVerification leaves once the flow completes`() = runTest {
+        val emojis = listOf(VerificationEmoji(number = 30))
+        val service = unverifiedSessionService(
+            requestDeviceVerificationLambda = { },
+            startSasVerificationLambda = { },
+            approveVerificationLambda = { },
+        )
+        val presenter = createOutgoingVerificationPresenter(
+            service = service,
+            // No backup on the server, so the state machine does not pause to wait for one.
+            encryptionService = FakeEncryptionService().apply {
+                givenDoesBackupExistOnServerResult(Result.success(false))
+            },
+            showDeviceVerifiedScreen = false,
+            forceVerification = true,
+        )
+        presenter.test {
+            val state = requestVerificationAndAwaitVerifyingState(
+                service,
+                SessionVerificationData.Emojis(emojis)
+            )
+            state.eventSink(OutgoingVerificationViewEvents.ConfirmVerification)
+            assertThat(awaitItem().step).isEqualTo(
+                Step.Verifying(
+                    SessionVerificationData.Emojis(emojis),
+                    AsyncData.Loading(),
+                )
+            )
+            service.emitVerificationFlowState(VerificationFlowState.DidFinish)
+            service.emitVerifiedStatus(SessionVerifiedStatus.Verified)
+            // The caller asked for no success screen, so finishing means leaving.
+            assertThat(awaitItem().step).isEqualTo(Step.Exit)
+        }
+    }
+
     context(testScope: TestScope)
     private suspend fun ReceiveTurbine<OutgoingVerificationState>.requestVerificationAndAwaitVerifyingState(
         fakeService: FakeSessionVerificationService,
@@ -335,9 +394,11 @@ internal fun createOutgoingVerificationPresenter(
     verificationRequest: VerificationRequest.Outgoing = anOutgoingSessionVerificationRequest(),
     encryptionService: EncryptionService = FakeEncryptionService(),
     showDeviceVerifiedScreen: Boolean = false,
+    forceVerification: Boolean = false,
 ): OutgoingVerificationPresenter {
     return OutgoingVerificationPresenter(
         showDeviceVerifiedScreen = showDeviceVerifiedScreen,
+        forceVerification = forceVerification,
         verificationRequest = verificationRequest,
         sessionVerificationService = service,
         encryptionService = encryptionService,
