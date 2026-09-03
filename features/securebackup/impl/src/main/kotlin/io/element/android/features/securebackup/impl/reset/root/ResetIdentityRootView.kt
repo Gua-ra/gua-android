@@ -39,7 +39,15 @@ fun ResetIdentityRootView(
     FlowStepPage(
         modifier = modifier,
         iconStyle = BigIcon.Style.AlertSolid,
-        title = stringResource(R.string.gua_encryption_reset_required_title),
+        // GUA FORK: when the keys can come from another device, this screen is about
+        // getting them back, not about what is lost.
+        title = stringResource(
+            if (state.canRecoverFromOtherDevice) {
+                R.string.gua_encryption_recover_from_other_device_title
+            } else {
+                R.string.gua_encryption_reset_required_title
+            }
+        ),
         isScrollable = true,
         content = { Content(canRecoverFromOtherDevice = state.canRecoverFromOtherDevice) },
         buttons = {
