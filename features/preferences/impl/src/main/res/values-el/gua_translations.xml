@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: el translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Ρύθμιση επαλήθευσης δύο βημάτων</string>
+    <string name="screen_preferences_pin_nudge_message">Προσθέστε ένα PIN 6 ψηφίων για καλύτερη προστασία του λογαριασμού σας.</string>
+    <string name="screen_preferences_pin_nudge_action">Ρύθμιση τώρα</string>
+    <string name="screen_two_step_verification_title">Επαλήθευση δύο βημάτων</string>
+    <string name="screen_two_step_verification_overview_header">PIN λογαριασμού</string>
+    <string name="screen_two_step_verification_status_on">Η επαλήθευση δύο βημάτων είναι ενεργή</string>
+    <string name="screen_two_step_verification_status_off">Η επαλήθευση δύο βημάτων είναι ανενεργή</string>
+    <string name="screen_two_step_verification_overview_footer_on">Το PIN 6 ψηφίων προσθέτει ένα επιπλέον επίπεδο ασφάλειας στον λογαριασμό σας.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Προσθέστε ένα PIN 6 ψηφίων για ένα επιπλέον επίπεδο ασφάλειας.</string>
+    <string name="screen_two_step_verification_set_button">Ρύθμιση PIN</string>
+    <string name="screen_two_step_verification_change_button">Αλλαγή PIN</string>
+    <string name="screen_two_step_verification_passkey_button">Ρύθμιση κλειδιού πρόσβασης</string>
+    <string name="screen_two_step_verification_passkey_footer">Χρησιμοποιήστε κλειδί πρόσβασης για ταχύτερη σύνδεση με δακτυλικό αποτύπωμα, πρόσωπο ή το PIN της συσκευής.</string>
+    <string name="screen_two_step_verification_phone_header">Επιβεβαιώστε τον αριθμό τηλεφώνου σας</string>
+    <string name="screen_two_step_verification_phone_footer">Θα στείλουμε έναν κωδικό σε αυτόν τον αριθμό για επιβεβαίωση της αλλαγής.</string>
+    <string name="screen_two_step_verification_current_header">Εισαγάγετε το τρέχον PIN σας</string>
+    <string name="screen_two_step_verification_current_footer">Εισαγάγετε το PIN 6 ψηφίων που ορίσατε προηγουμένως.</string>
+    <string name="screen_two_step_verification_otp_header">Εισαγάγετε τον κωδικό που στείλαμε</string>
+    <string name="screen_two_step_verification_otp_footer">Εισαγάγετε τον κωδικό 6 ψηφίων που στάλθηκε στο τηλέφωνό σας.</string>
+    <string name="screen_two_step_verification_new_header">Επιλέξτε νέο PIN</string>
+    <string name="screen_two_step_verification_new_footer">Επιλέξτε ένα PIN 6 ψηφίων. Αποφύγετε ακολουθίες που μαντεύονται εύκολα.</string>
+    <string name="screen_two_step_verification_confirm_header">Επιβεβαιώστε το νέο PIN</string>
+    <string name="screen_two_step_verification_confirm_footer">Εισαγάγετε ξανά το PIN 6 ψηφίων για επιβεβαίωση.</string>
+    <string name="screen_two_step_verification_phone_label">Αριθμός τηλεφώνου</string>
+    <string name="screen_two_step_verification_phone_invalid">Εισαγάγετε έγκυρο αριθμό τηλεφώνου.</string>
+    <string name="screen_two_step_verification_current_incorrect">Αυτό το PIN είναι λανθασμένο. Δοκιμάστε ξανά.</string>
+    <string name="screen_two_step_verification_otp_invalid">Ο κωδικός που εισαγάγατε δεν είναι έγκυρος ή έχει λήξει.</string>
+    <string name="screen_two_step_verification_locked">Το PIN κλειδώθηκε λόγω πολλών λανθασμένων προσπαθειών. Δοκιμάστε αργότερα.</string>
+    <string name="screen_two_step_verification_cooldown">Για λόγους ασφαλείας, μπορείτε να αλλάξετε το PIN σας μόνο μία φορά την ημέρα.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Η συνεδρία αλλαγής PIN έληξε. Ξεκινήστε από την αρχή.</string>
+    <string name="screen_two_step_verification_weak_error">Αυτό το PIN μαντεύεται πολύ εύκολα. Επιλέξτε άλλο.</string>
+    <string name="screen_two_step_verification_mismatch_error">Τα PIN δεν ταιριάζουν. Δοκιμάστε ξανά.</string>
+    <string name="screen_two_step_verification_same_as_current">Το νέο PIN πρέπει να διαφέρει από το τρέχον.</string>
+    <string name="screen_two_step_verification_rate_limited">Πάρα πολλές προσπάθειες. Περιμένετε λίγο και δοκιμάστε ξανά.</string>
+    <string name="screen_two_step_verification_updated">Η επαλήθευση δύο βημάτων ενημερώθηκε</string>
+    <string name="screen_change_phone_title">Αλλαγή αριθμού τηλεφώνου</string>
+    <string name="screen_change_phone_intro_header">Αλλάξτε τον αριθμό σας</string>
+    <string name="screen_change_phone_intro_message">Θα επιβεβαιώσουμε το PIN σας και έπειτα θα στείλουμε κωδικό με SMS στον νέο σας αριθμό. Ο λογαριασμός, οι συνομιλίες και τα μηνύματά σας παραμένουν ίδια.</string>
+    <string name="screen_change_phone_new_header">Νέος αριθμός τηλεφώνου</string>
+    <string name="screen_change_phone_new_footer">Εισαγάγετε τον αριθμό που θέλετε να χρησιμοποιείτε από εδώ και στο εξής.</string>
+    <string name="screen_change_phone_new_invalid">Εισαγάγετε έγκυρο αριθμό τηλεφώνου.</string>
+    <string name="screen_change_phone_pin_header">Εισαγάγετε το PIN σας</string>
+    <string name="screen_change_phone_pin_footer">Επιβεβαιώστε το PIN 6 ψηφίων για να εγκρίνετε αυτή την αλλαγή.</string>
+    <string name="screen_change_phone_pin_incorrect">Αυτό το PIN είναι λανθασμένο. Δοκιμάστε ξανά.</string>
+    <string name="screen_change_phone_otp_header">Επαληθεύστε τον νέο σας αριθμό</string>
+    <string name="screen_change_phone_otp_footer">Εισαγάγετε τον κωδικό 6 ψηφίων που στείλαμε στον νέο σας αριθμό.</string>
+    <string name="screen_change_phone_otp_invalid">Αυτός ο κωδικός δεν είναι έγκυρος ή έχει λήξει. Δοκιμάστε ξανά.</string>
+    <string name="screen_change_phone_already_linked">Αυτός ο αριθμός τηλεφώνου συνδέεται ήδη με άλλον λογαριασμό.</string>
+    <string name="screen_change_phone_updated">Ο αριθμός τηλεφώνου σας ενημερώθηκε.</string>
+    <string name="screen_change_phone_done_header">Όλα έτοιμα</string>
+    <string name="screen_change_phone_done_message">Ο αριθμός τηλεφώνου σας ενημερώθηκε. Από εδώ και στο εξής θα συνδέεστε με τον νέο σας αριθμό.</string>
+    <string name="screen_change_phone_needs_pin_header">Χρειάζεστε PIN για να αλλάξετε αριθμό</string>
+    <string name="screen_change_phone_needs_pin_message">Για την ασφάλειά σας, ορίστε ένα PIN 6 ψηφίων. Θα το επιβεβαιώσετε πριν αλλάξετε αριθμό.</string>
+    <string name="screen_change_phone_needs_pin_action">Ρύθμιση PIN</string>
+    <string name="screen_change_phone_cooldown_header">Όχι ακόμη</string>
+    <string name="screen_change_phone_cooldown_message">Για την ασφάλειά σας, μπορείτε να αλλάξετε αριθμό σε %1$s.</string>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: fi translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_encryption_reset_required_title">Joitakin aiempia viestejä ei voi palauttaa</string>
+    <string name="gua_encryption_reset_required_message">Jotta salattujen keskustelujen määritys saadaan valmiiksi tällä laitteella, salattu varmuuskopio on nollattava. Vain siinä varmuuskopiossa olevat viestit menetetään. Laitteillasi jo olevat viestit eivät muutu.</string>
+    <string name="gua_encryption_reset_required_action">Nollaa ja viimeistele</string>
+    <string name="gua_encryption_reset_finishing">Viimeistellään määritystä…</string>
+    <string name="gua_encryption_reset_failed">Määrityksen viimeistely ei onnistunut. Napauta ”Nollaa ja viimeistele” yrittääksesi uudelleen.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Palauta aiemmat viestisi</string>
+    <string name="gua_encryption_recover_from_other_device_message">Palauta toisella laitteellasi viestit, jotka eivät ole vielä käytettävissä tällä laitteella.\n\nJos et voi käyttää sitä, voit nollata ja viimeistellä määrityksen, mutta vain varmuuskopiossa olevat viestit menetetään lopullisesti.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Käytä toista laitettani</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Viestien hakeminen toiselta laitteelta ei onnistunut. Varmista, että Gua on siellä avoinna, ja yritä uudelleen tai nollaa.</string>
+</resources>

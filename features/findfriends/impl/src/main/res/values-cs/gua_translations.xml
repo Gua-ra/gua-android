@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: cs translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Najít přátele</string>
+    <string name="screen_find_friends_action">Najít přátele</string>
+    <string name="screen_find_friends_action_description">Podívejte se, kdo z vašich kontaktů je na Gua</string>
+    <string name="screen_find_friends_loading">Hledáme vaše kontakty na Gua…</string>
+    <string name="screen_find_friends_permission_title">Povolit přístup ke kontaktům</string>
+    <string name="screen_find_friends_permission_message">Gua soukromě ověří vaše kontakty, aby zjistila, kdo už tu je. Vaše kontakty se nikdy neukládají.</string>
+    <string name="screen_find_friends_permission_action">Povolit přístup</string>
+    <string name="screen_find_friends_permission_denied_action">Otevřít nastavení</string>
+    <string name="screen_find_friends_empty_title">Zatím žádné kontakty na Gua</string>
+    <string name="screen_find_friends_empty_message">Nikdo z vašich kontaktů zatím není na Gua. Pozvěte je a objeví se zde.</string>
+    <string name="screen_find_friends_empty_action">Zkontrolovat znovu</string>
+    <string name="screen_find_friends_error_title">Něco se pokazilo</string>
+    <string name="screen_find_friends_error_message">Vaše kontakty se teď nepodařilo ověřit. Zkuste to znovu.</string>
+    <string name="screen_find_friends_error_action">Zkusit znovu</string>
+    <string name="a11y_find_friends_view_profile">Zobrazit profil uživatele %1$s</string>
+    <string name="a11y_find_friends_start_chat">Zahájit konverzaci s %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d kontakt je na Gua</item>
+        <item quantity="other">%1$d kontaktů je na Gua</item>
+    </plurals>
+</resources>

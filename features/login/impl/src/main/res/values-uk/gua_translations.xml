@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: uk translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_onboarding_welcome_title">Ласкаво просимо до Gua</string>
+    <string name="gua_onboarding_welcome_message">Приватні повідомлення — це просто.</string>
+    <string name="screen_onboarding_trust_encrypted">Наскрізне шифрування</string>
+    <string name="screen_phone_entry_welcome_title">Ласкаво просимо до Gua</string>
+    <string name="screen_phone_entry_title">Який ваш номер?</string>
+    <string name="screen_phone_entry_message">Введіть свій номер телефону</string>
+    <string name="screen_phone_entry_footer">Ми надішлемо код підтвердження в SMS на цей номер.</string>
+    <string name="screen_phone_entry_phone_number_label">Номер телефону</string>
+    <string name="screen_phone_entry_country_picker_a11y">Обрати країну</string>
+</resources>

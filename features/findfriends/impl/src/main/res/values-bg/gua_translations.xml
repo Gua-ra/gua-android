@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: bg translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Намиране на приятели</string>
+    <string name="screen_find_friends_action">Намиране на приятели</string>
+    <string name="screen_find_friends_action_description">Вижте кои от контактите ви са в Gua</string>
+    <string name="screen_find_friends_loading">Търсим контактите ви в Gua…</string>
+    <string name="screen_find_friends_permission_title">Разрешаване на достъп до контактите</string>
+    <string name="screen_find_friends_permission_message">Gua проверява контактите ви поверително, за да разбере кой вече е тук. Контактите ви никога не се съхраняват.</string>
+    <string name="screen_find_friends_permission_action">Разрешаване на достъп</string>
+    <string name="screen_find_friends_permission_denied_action">Отваряне на настройките</string>
+    <string name="screen_find_friends_empty_title">Още няма контакти в Gua</string>
+    <string name="screen_find_friends_empty_message">Никой от контактите ви още не е в Gua. Поканете ги и ще се появят тук.</string>
+    <string name="screen_find_friends_empty_action">Проверете отново</string>
+    <string name="screen_find_friends_error_title">Нещо се обърка</string>
+    <string name="screen_find_friends_error_message">В момента не успяхме да проверим контактите ви. Опитайте отново.</string>
+    <string name="screen_find_friends_error_action">Опитайте отново</string>
+    <string name="a11y_find_friends_view_profile">Преглед на профила на %1$s</string>
+    <string name="a11y_find_friends_start_chat">Започване на чат с %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d контакт е в Gua</item>
+        <item quantity="other">%1$d контакта са в Gua</item>
+    </plurals>
+</resources>

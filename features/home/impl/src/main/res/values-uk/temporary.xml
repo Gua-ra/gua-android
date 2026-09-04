@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="gua_encryption_repair_title">Завершіть налаштування цього пристрою</string>
-    <string name="gua_encryption_repair_message">Завершіть налаштування, щоб отримати доступ до зашифрованих чатів і історії повідомлень, доступної на цьому пристрої.</string>
-    <string name="gua_encryption_repair_action">Завершити налаштування</string>
-</resources>

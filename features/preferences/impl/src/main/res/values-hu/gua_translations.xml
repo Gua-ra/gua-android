@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: hu translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Kétlépcsős azonosítás beállítása</string>
+    <string name="screen_preferences_pin_nudge_message">Adjon hozzá egy 6 jegyű PIN-kódot fiókja jobb védelméhez.</string>
+    <string name="screen_preferences_pin_nudge_action">Beállítás most</string>
+    <string name="screen_two_step_verification_title">Kétlépcsős azonosítás</string>
+    <string name="screen_two_step_verification_overview_header">Fiók PIN-kódja</string>
+    <string name="screen_two_step_verification_status_on">A kétlépcsős azonosítás be van kapcsolva</string>
+    <string name="screen_two_step_verification_status_off">A kétlépcsős azonosítás ki van kapcsolva</string>
+    <string name="screen_two_step_verification_overview_footer_on">A 6 jegyű PIN-kód további biztonsági réteget ad a fiókjához.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Adjon hozzá egy 6 jegyű PIN-kódot további biztonsági rétegként.</string>
+    <string name="screen_two_step_verification_set_button">PIN-kód beállítása</string>
+    <string name="screen_two_step_verification_change_button">PIN-kód módosítása</string>
+    <string name="screen_two_step_verification_passkey_button">Azonosítókulcs beállítása</string>
+    <string name="screen_two_step_verification_passkey_footer">Az azonosítókulccsal gyorsabban jelentkezhet be ujjlenyomattal, arccal vagy az eszköz PIN-kódjával.</string>
+    <string name="screen_two_step_verification_phone_header">Erősítse meg a telefonszámát</string>
+    <string name="screen_two_step_verification_phone_footer">A módosítás megerősítéséhez kódot küldünk erre a számra.</string>
+    <string name="screen_two_step_verification_current_header">Adja meg a jelenlegi PIN-kódját</string>
+    <string name="screen_two_step_verification_current_footer">Adja meg a korábban beállított 6 jegyű PIN-kódot.</string>
+    <string name="screen_two_step_verification_otp_header">Adja meg a küldött kódot</string>
+    <string name="screen_two_step_verification_otp_footer">Adja meg a telefonjára küldött 6 jegyű kódot.</string>
+    <string name="screen_two_step_verification_new_header">Válasszon új PIN-kódot</string>
+    <string name="screen_two_step_verification_new_footer">Válasszon 6 jegyű PIN-kódot. Kerülje a könnyen kitalálható sorozatokat.</string>
+    <string name="screen_two_step_verification_confirm_header">Erősítse meg az új PIN-kódot</string>
+    <string name="screen_two_step_verification_confirm_footer">A megerősítéshez adja meg újra a 6 jegyű PIN-kódot.</string>
+    <string name="screen_two_step_verification_phone_label">Telefonszám</string>
+    <string name="screen_two_step_verification_phone_invalid">Adjon meg érvényes telefonszámot.</string>
+    <string name="screen_two_step_verification_current_incorrect">Ez a PIN-kód helytelen. Próbálja újra.</string>
+    <string name="screen_two_step_verification_otp_invalid">A megadott kód érvénytelen vagy lejárt.</string>
+    <string name="screen_two_step_verification_locked">A PIN-kód túl sok hibás próbálkozás miatt zárolva. Próbálja később.</string>
+    <string name="screen_two_step_verification_cooldown">Biztonsági okokból naponta csak egyszer módosíthatja a PIN-kódját.</string>
+    <string name="screen_two_step_verification_challenge_invalid">A PIN-kód módosítására szolgáló munkamenet lejárt. Kezdje elölről.</string>
+    <string name="screen_two_step_verification_weak_error">Ez a PIN-kód túl könnyen kitalálható. Válasszon másikat.</string>
+    <string name="screen_two_step_verification_mismatch_error">A PIN-kódok nem egyeznek. Próbálja újra.</string>
+    <string name="screen_two_step_verification_same_as_current">Az új PIN-kódnak különböznie kell a jelenlegitől.</string>
+    <string name="screen_two_step_verification_rate_limited">Túl sok próbálkozás. Várjon egy kicsit, majd próbálja újra.</string>
+    <string name="screen_two_step_verification_updated">A kétlépcsős azonosítás frissítve</string>
+    <string name="screen_change_phone_title">Telefonszám módosítása</string>
+    <string name="screen_change_phone_intro_header">Módosítsa a számát</string>
+    <string name="screen_change_phone_intro_message">Megerősítjük a PIN-kódját, majd SMS-ben kódot küldünk az új számára. A fiókja, beszélgetései és üzenetei változatlanok maradnak.</string>
+    <string name="screen_change_phone_new_header">Új telefonszám</string>
+    <string name="screen_change_phone_new_footer">Adja meg azt a számot, amelyet mostantól használni szeretne.</string>
+    <string name="screen_change_phone_new_invalid">Adjon meg érvényes telefonszámot.</string>
+    <string name="screen_change_phone_pin_header">Adja meg a PIN-kódját</string>
+    <string name="screen_change_phone_pin_footer">A módosítás engedélyezéséhez erősítse meg 6 jegyű PIN-kódját.</string>
+    <string name="screen_change_phone_pin_incorrect">Ez a PIN-kód helytelen. Próbálja újra.</string>
+    <string name="screen_change_phone_otp_header">Erősítse meg az új számát</string>
+    <string name="screen_change_phone_otp_footer">Adja meg az új számára küldött 6 jegyű kódot.</string>
+    <string name="screen_change_phone_otp_invalid">Ez a kód érvénytelen vagy lejárt. Próbálja újra.</string>
+    <string name="screen_change_phone_already_linked">Ez a telefonszám már egy másik fiókhoz tartozik.</string>
+    <string name="screen_change_phone_updated">A telefonszáma frissült.</string>
+    <string name="screen_change_phone_done_header">Kész</string>
+    <string name="screen_change_phone_done_message">A telefonszáma frissült. Mostantól az új számával jelentkezik be.</string>
+    <string name="screen_change_phone_needs_pin_header">A szám módosításához PIN-kód szükséges</string>
+    <string name="screen_change_phone_needs_pin_message">Biztonsága érdekében állítson be egy 6 jegyű fiók-PIN-kódot. A szám módosítása előtt meg kell erősítenie.</string>
+    <string name="screen_change_phone_needs_pin_action">PIN-kód beállítása</string>
+    <string name="screen_change_phone_cooldown_header">Még nem</string>
+    <string name="screen_change_phone_cooldown_message">Biztonsága érdekében %1$s múlva módosíthatja a számát.</string>
+</resources>

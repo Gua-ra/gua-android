@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ko translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">2단계 인증 설정</string>
+    <string name="screen_preferences_pin_nudge_message">6자리 PIN을 추가해 계정을 더 안전하게 보호하세요.</string>
+    <string name="screen_preferences_pin_nudge_action">지금 설정</string>
+    <string name="screen_two_step_verification_title">2단계 인증</string>
+    <string name="screen_two_step_verification_overview_header">계정 PIN</string>
+    <string name="screen_two_step_verification_status_on">2단계 인증이 켜져 있습니다</string>
+    <string name="screen_two_step_verification_status_off">2단계 인증이 꺼져 있습니다</string>
+    <string name="screen_two_step_verification_overview_footer_on">6자리 PIN이 계정에 보안 계층을 하나 더 더해 줍니다.</string>
+    <string name="screen_two_step_verification_overview_footer_off">6자리 PIN을 추가해 계정 보안을 한 단계 더 강화하세요.</string>
+    <string name="screen_two_step_verification_set_button">PIN 설정</string>
+    <string name="screen_two_step_verification_change_button">PIN 변경</string>
+    <string name="screen_two_step_verification_passkey_button">패스키 설정</string>
+    <string name="screen_two_step_verification_passkey_footer">패스키를 사용하면 지문, 얼굴 또는 기기 PIN으로 더 빠르게 로그인할 수 있습니다.</string>
+    <string name="screen_two_step_verification_phone_header">전화번호를 확인하세요</string>
+    <string name="screen_two_step_verification_phone_footer">변경을 확인하기 위해 이 번호로 코드를 보냅니다.</string>
+    <string name="screen_two_step_verification_current_header">현재 PIN을 입력하세요</string>
+    <string name="screen_two_step_verification_current_footer">이전에 설정한 6자리 PIN을 입력하세요.</string>
+    <string name="screen_two_step_verification_otp_header">보내드린 코드를 입력하세요</string>
+    <string name="screen_two_step_verification_otp_footer">기기로 보낸 6자리 코드를 입력하세요.</string>
+    <string name="screen_two_step_verification_new_header">새 PIN을 선택하세요</string>
+    <string name="screen_two_step_verification_new_footer">6자리 PIN을 선택하세요. 쉽게 추측되는 순서는 피하세요.</string>
+    <string name="screen_two_step_verification_confirm_header">새 PIN을 확인하세요</string>
+    <string name="screen_two_step_verification_confirm_footer">확인을 위해 6자리 PIN을 다시 입력하세요.</string>
+    <string name="screen_two_step_verification_phone_label">전화번호</string>
+    <string name="screen_two_step_verification_phone_invalid">유효한 전화번호를 입력하세요.</string>
+    <string name="screen_two_step_verification_current_incorrect">PIN이 올바르지 않습니다. 다시 시도해 주세요.</string>
+    <string name="screen_two_step_verification_otp_invalid">입력한 코드가 유효하지 않거나 만료되었습니다.</string>
+    <string name="screen_two_step_verification_locked">잘못된 시도가 많아 PIN이 잠겼습니다. 나중에 다시 시도해 주세요.</string>
+    <string name="screen_two_step_verification_cooldown">보안을 위해 PIN은 하루에 한 번만 변경할 수 있습니다.</string>
+    <string name="screen_two_step_verification_challenge_invalid">PIN 변경 세션이 만료되었습니다. 처음부터 다시 시작하세요.</string>
+    <string name="screen_two_step_verification_weak_error">이 PIN은 너무 쉽게 추측됩니다. 다른 PIN을 선택하세요.</string>
+    <string name="screen_two_step_verification_mismatch_error">PIN이 일치하지 않습니다. 다시 시도해 주세요.</string>
+    <string name="screen_two_step_verification_same_as_current">새 PIN은 현재 PIN과 달라야 합니다.</string>
+    <string name="screen_two_step_verification_rate_limited">시도 횟수가 너무 많습니다. 잠시 후 다시 시도해 주세요.</string>
+    <string name="screen_two_step_verification_updated">2단계 인증이 업데이트되었습니다</string>
+    <string name="screen_change_phone_title">전화번호 변경</string>
+    <string name="screen_change_phone_intro_header">전화번호를 변경하세요</string>
+    <string name="screen_change_phone_intro_message">PIN을 확인한 뒤 새 번호로 코드를 문자로 보냅니다. 계정, 대화, 메시지는 그대로 유지됩니다.</string>
+    <string name="screen_change_phone_new_header">새 전화번호</string>
+    <string name="screen_change_phone_new_footer">앞으로 사용할 번호를 입력하세요.</string>
+    <string name="screen_change_phone_new_invalid">유효한 전화번호를 입력하세요.</string>
+    <string name="screen_change_phone_pin_header">PIN을 입력하세요</string>
+    <string name="screen_change_phone_pin_footer">이 변경을 승인하려면 6자리 PIN을 확인하세요.</string>
+    <string name="screen_change_phone_pin_incorrect">PIN이 올바르지 않습니다. 다시 시도해 주세요.</string>
+    <string name="screen_change_phone_otp_header">새 번호를 인증하세요</string>
+    <string name="screen_change_phone_otp_footer">새 번호로 보낸 6자리 코드를 입력하세요.</string>
+    <string name="screen_change_phone_otp_invalid">이 코드는 유효하지 않거나 만료되었습니다. 다시 시도해 주세요.</string>
+    <string name="screen_change_phone_already_linked">이 전화번호는 이미 다른 계정에 연결되어 있습니다.</string>
+    <string name="screen_change_phone_updated">전화번호가 업데이트되었습니다.</string>
+    <string name="screen_change_phone_done_header">모두 완료</string>
+    <string name="screen_change_phone_done_message">전화번호가 업데이트되었습니다. 앞으로는 새 번호로 로그인합니다.</string>
+    <string name="screen_change_phone_needs_pin_header">번호를 변경하려면 PIN이 필요합니다</string>
+    <string name="screen_change_phone_needs_pin_message">보안을 위해 6자리 계정 PIN을 설정하세요. 번호를 변경하기 전에 확인하게 됩니다.</string>
+    <string name="screen_change_phone_needs_pin_action">PIN 설정</string>
+    <string name="screen_change_phone_cooldown_header">아직은 안 됩니다</string>
+    <string name="screen_change_phone_cooldown_message">보안을 위해 %1$s 후에 번호를 변경할 수 있습니다.</string>
+</resources>

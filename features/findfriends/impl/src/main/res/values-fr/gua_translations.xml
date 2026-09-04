@@ -8,31 +8,31 @@
      English source of truth lives in values/temporary.xml. iOS ships these as hardcoded English
      literals (FindFriendsScreen.swift), so these are translated fresh to match the iOS tone. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="screen_find_friends_title">"Trouver des amis"</string>
+    <string name="screen_find_friends_title">Trouver des amis</string>
 
-    <string name="screen_find_friends_action">"Trouver des amis"</string>
-    <string name="screen_find_friends_action_description">"Voyez lesquels de vos contacts sont sur Gua"</string>
+    <string name="screen_find_friends_action">Trouver des amis</string>
+    <string name="screen_find_friends_action_description">Voyez lesquels de vos contacts sont sur Gua</string>
 
-    <string name="screen_find_friends_loading">"Recherche de vos contacts sur Gua…"</string>
+    <string name="screen_find_friends_loading">Recherche de vos contacts sur Gua…</string>
 
-    <string name="screen_find_friends_permission_title">"Autoriser l\'accès aux contacts"</string>
-    <string name="screen_find_friends_permission_message">"Gua vérifie vos contacts en privé pour savoir lesquels sont déjà ici. Vos contacts ne sont jamais conservés."</string>
-    <string name="screen_find_friends_permission_action">"Autoriser l\'accès"</string>
-    <string name="screen_find_friends_permission_denied_action">"Ouvrir les paramètres"</string>
+    <string name="screen_find_friends_permission_title">Autoriser l\'accès aux contacts</string>
+    <string name="screen_find_friends_permission_message">Gua consulte vos contacts de manière privée pour savoir lesquels sont déjà ici. Vos contacts ne sont jamais conservés.</string>
+    <string name="screen_find_friends_permission_action">Autoriser l\'accès</string>
+    <string name="screen_find_friends_permission_denied_action">Ouvrir les réglages</string>
 
-    <string name="screen_find_friends_empty_title">"Aucun contact sur Gua pour l\'instant"</string>
-    <string name="screen_find_friends_empty_message">"Aucun de vos contacts n\'est encore sur Gua. Invitez-les et ils apparaîtront ici."</string>
-    <string name="screen_find_friends_empty_action">"Vérifier de nouveau"</string>
+    <string name="screen_find_friends_empty_title">Aucun contact sur Gua pour l\'instant</string>
+    <string name="screen_find_friends_empty_message">Aucun de vos contacts n\'est encore sur Gua. Invitez-les et ils apparaîtront ici.</string>
+    <string name="screen_find_friends_empty_action">Vérifier à nouveau</string>
 
-    <string name="screen_find_friends_error_title">"Une erreur est survenue"</string>
-    <string name="screen_find_friends_error_message">"Nous n\'avons pas pu vérifier vos contacts pour le moment. Veuillez réessayer."</string>
-    <string name="screen_find_friends_error_action">"Réessayer"</string>
+    <string name="screen_find_friends_error_title">Une erreur est survenue</string>
+    <string name="screen_find_friends_error_message">Impossible de vérifier vos contacts pour le moment. Réessayez.</string>
+    <string name="screen_find_friends_error_action">Réessayer</string>
 
     <plurals name="screen_find_friends_results_header_plural">
-        <item quantity="one">"%1$d contact est sur Gua"</item>
-        <item quantity="other">"%1$d contacts sont sur Gua"</item>
+        <item quantity="one">%1$d contact est sur Gua</item>
+        <item quantity="other">%1$d contacts sont sur Gua</item>
     </plurals>
 
-    <string name="a11y_find_friends_view_profile">"Voir le profil de %1$s"</string>
-    <string name="a11y_find_friends_start_chat">"Démarrer une conversation avec %1$s"</string>
+    <string name="a11y_find_friends_view_profile">Voir le profil de %1$s</string>
+    <string name="a11y_find_friends_start_chat">Démarrer une conversation avec %1$s</string>
 </resources>

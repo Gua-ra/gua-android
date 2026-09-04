@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: pl translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Skonfiguruj weryfikację dwuetapową</string>
+    <string name="screen_preferences_pin_nudge_message">Dodaj 6-cyfrowy PIN, aby lepiej chronić swoje konto.</string>
+    <string name="screen_preferences_pin_nudge_action">Skonfiguruj teraz</string>
+    <string name="screen_two_step_verification_title">Weryfikacja dwuetapowa</string>
+    <string name="screen_two_step_verification_overview_header">PIN konta</string>
+    <string name="screen_two_step_verification_status_on">Weryfikacja dwuetapowa jest włączona</string>
+    <string name="screen_two_step_verification_status_off">Weryfikacja dwuetapowa jest wyłączona</string>
+    <string name="screen_two_step_verification_overview_footer_on">Twój 6-cyfrowy PIN dodaje kontu dodatkową warstwę zabezpieczeń.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Dodaj 6-cyfrowy PIN, aby zapewnić kontu dodatkową warstwę zabezpieczeń.</string>
+    <string name="screen_two_step_verification_set_button">Ustaw PIN</string>
+    <string name="screen_two_step_verification_change_button">Zmień PIN</string>
+    <string name="screen_two_step_verification_passkey_button">Skonfiguruj klucz dostępu</string>
+    <string name="screen_two_step_verification_passkey_footer">Używaj klucza dostępu, aby logować się szybciej odciskiem palca, twarzą lub PIN-em urządzenia.</string>
+    <string name="screen_two_step_verification_phone_header">Potwierdź swój numer telefonu</string>
+    <string name="screen_two_step_verification_phone_footer">Wyślemy kod na ten numer, aby potwierdzić zmianę.</string>
+    <string name="screen_two_step_verification_current_header">Wpisz swój obecny PIN</string>
+    <string name="screen_two_step_verification_current_footer">Wpisz 6-cyfrowy PIN ustawiony wcześniej.</string>
+    <string name="screen_two_step_verification_otp_header">Wpisz kod, który wysłaliśmy</string>
+    <string name="screen_two_step_verification_otp_footer">Wpisz 6-cyfrowy kod wysłany na Twój telefon.</string>
+    <string name="screen_two_step_verification_new_header">Wybierz nowy PIN</string>
+    <string name="screen_two_step_verification_new_footer">Wybierz 6-cyfrowy PIN. Unikaj łatwych do odgadnięcia sekwencji.</string>
+    <string name="screen_two_step_verification_confirm_header">Potwierdź nowy PIN</string>
+    <string name="screen_two_step_verification_confirm_footer">Wpisz ponownie 6-cyfrowy PIN, aby potwierdzić.</string>
+    <string name="screen_two_step_verification_phone_label">Numer telefonu</string>
+    <string name="screen_two_step_verification_phone_invalid">Wpisz prawidłowy numer telefonu.</string>
+    <string name="screen_two_step_verification_current_incorrect">Ten PIN jest nieprawidłowy. Spróbuj ponownie.</string>
+    <string name="screen_two_step_verification_otp_invalid">Wpisany kod jest nieprawidłowy lub wygasł.</string>
+    <string name="screen_two_step_verification_locked">PIN zablokowany po zbyt wielu błędnych próbach. Spróbuj ponownie później.</string>
+    <string name="screen_two_step_verification_cooldown">Ze względów bezpieczeństwa PIN można zmienić tylko raz dziennie.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Sesja zmiany PIN-u wygasła. Zacznij od nowa.</string>
+    <string name="screen_two_step_verification_weak_error">Ten PIN jest zbyt łatwy do odgadnięcia. Wybierz inny.</string>
+    <string name="screen_two_step_verification_mismatch_error">PIN-y nie są zgodne. Spróbuj ponownie.</string>
+    <string name="screen_two_step_verification_same_as_current">Nowy PIN musi różnić się od obecnego.</string>
+    <string name="screen_two_step_verification_rate_limited">Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie.</string>
+    <string name="screen_two_step_verification_updated">Zaktualizowano weryfikację dwuetapową</string>
+    <string name="screen_change_phone_title">Zmień numer telefonu</string>
+    <string name="screen_change_phone_intro_header">Zmień swój numer</string>
+    <string name="screen_change_phone_intro_message">Potwierdzimy Twój PIN, a następnie wyślemy SMS-em kod na nowy numer. Twoje konto, czaty i wiadomości pozostaną bez zmian.</string>
+    <string name="screen_change_phone_new_header">Nowy numer telefonu</string>
+    <string name="screen_change_phone_new_footer">Wpisz numer, którego chcesz odtąd używać.</string>
+    <string name="screen_change_phone_new_invalid">Wpisz prawidłowy numer telefonu.</string>
+    <string name="screen_change_phone_pin_header">Wpisz swój PIN</string>
+    <string name="screen_change_phone_pin_footer">Potwierdź 6-cyfrowy PIN, aby autoryzować tę zmianę.</string>
+    <string name="screen_change_phone_pin_incorrect">Ten PIN jest nieprawidłowy. Spróbuj ponownie.</string>
+    <string name="screen_change_phone_otp_header">Zweryfikuj nowy numer</string>
+    <string name="screen_change_phone_otp_footer">Wpisz 6-cyfrowy kod wysłany na Twój nowy numer.</string>
+    <string name="screen_change_phone_otp_invalid">Ten kod jest nieprawidłowy lub wygasł. Spróbuj ponownie.</string>
+    <string name="screen_change_phone_already_linked">Ten numer telefonu jest już powiązany z innym kontem.</string>
+    <string name="screen_change_phone_updated">Twój numer telefonu został zaktualizowany.</string>
+    <string name="screen_change_phone_done_header">Gotowe</string>
+    <string name="screen_change_phone_done_message">Twój numer telefonu został zaktualizowany. Od teraz będziesz logować się nowym numerem.</string>
+    <string name="screen_change_phone_needs_pin_header">Do zmiany numeru potrzebny jest PIN</string>
+    <string name="screen_change_phone_needs_pin_message">Dla bezpieczeństwa ustaw 6-cyfrowy PIN konta. Potwierdzisz go przed zmianą numeru.</string>
+    <string name="screen_change_phone_needs_pin_action">Ustaw PIN</string>
+    <string name="screen_change_phone_cooldown_header">Jeszcze nie teraz</string>
+    <string name="screen_change_phone_cooldown_message">Ze względów bezpieczeństwa numer będzie można zmienić za %1$s.</string>
+</resources>

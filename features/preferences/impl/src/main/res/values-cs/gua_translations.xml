@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: cs translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Nastavit dvoufázové ověření</string>
+    <string name="screen_preferences_pin_nudge_message">Přidejte 6místný PIN pro lepší ochranu svého účtu.</string>
+    <string name="screen_preferences_pin_nudge_action">Nastavit teď</string>
+    <string name="screen_two_step_verification_title">Dvoufázové ověření</string>
+    <string name="screen_two_step_verification_overview_header">PIN účtu</string>
+    <string name="screen_two_step_verification_status_on">Dvoufázové ověření je zapnuté</string>
+    <string name="screen_two_step_verification_status_off">Dvoufázové ověření je vypnuté</string>
+    <string name="screen_two_step_verification_overview_footer_on">Váš 6místný PIN přidává účtu další vrstvu zabezpečení.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Přidejte 6místný PIN pro další vrstvu zabezpečení účtu.</string>
+    <string name="screen_two_step_verification_set_button">Nastavit PIN</string>
+    <string name="screen_two_step_verification_change_button">Změnit PIN</string>
+    <string name="screen_two_step_verification_passkey_button">Nastavit přístupový klíč</string>
+    <string name="screen_two_step_verification_passkey_footer">Pomocí přístupového klíče se přihlásíte rychleji otiskem prstu, obličejem nebo PINem zařízení.</string>
+    <string name="screen_two_step_verification_phone_header">Potvrďte své telefonní číslo</string>
+    <string name="screen_two_step_verification_phone_footer">Na toto číslo pošleme kód pro potvrzení změny.</string>
+    <string name="screen_two_step_verification_current_header">Zadejte svůj současný PIN</string>
+    <string name="screen_two_step_verification_current_footer">Zadejte 6místný PIN, který jste dříve nastavili.</string>
+    <string name="screen_two_step_verification_otp_header">Zadejte kód, který jsme poslali</string>
+    <string name="screen_two_step_verification_otp_footer">Zadejte 6místný kód odeslaný na váš telefon.</string>
+    <string name="screen_two_step_verification_new_header">Zvolte nový PIN</string>
+    <string name="screen_two_step_verification_new_footer">Zvolte 6místný PIN. Vyhněte se snadno uhodnutelným posloupnostem.</string>
+    <string name="screen_two_step_verification_confirm_header">Potvrďte nový PIN</string>
+    <string name="screen_two_step_verification_confirm_footer">Zadejte 6místný PIN znovu pro potvrzení.</string>
+    <string name="screen_two_step_verification_phone_label">Telefonní číslo</string>
+    <string name="screen_two_step_verification_phone_invalid">Zadejte platné telefonní číslo.</string>
+    <string name="screen_two_step_verification_current_incorrect">Tento PIN je nesprávný. Zkuste to znovu.</string>
+    <string name="screen_two_step_verification_otp_invalid">Zadaný kód je neplatný nebo vypršel.</string>
+    <string name="screen_two_step_verification_locked">PIN byl zablokován po příliš mnoha chybných pokusech. Zkuste to později.</string>
+    <string name="screen_two_step_verification_cooldown">Z bezpečnostních důvodů můžete PIN změnit jen jednou denně.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Vaše relace pro změnu PINu vypršela. Začněte znovu.</string>
+    <string name="screen_two_step_verification_weak_error">Tento PIN je příliš snadno uhodnutelný. Zvolte jiný.</string>
+    <string name="screen_two_step_verification_mismatch_error">PINy se neshodují. Zkuste to znovu.</string>
+    <string name="screen_two_step_verification_same_as_current">Nový PIN se musí lišit od současného.</string>
+    <string name="screen_two_step_verification_rate_limited">Příliš mnoho pokusů. Chvíli počkejte a zkuste to znovu.</string>
+    <string name="screen_two_step_verification_updated">Dvoufázové ověření aktualizováno</string>
+    <string name="screen_change_phone_title">Změnit telefonní číslo</string>
+    <string name="screen_change_phone_intro_header">Změňte své číslo</string>
+    <string name="screen_change_phone_intro_message">Potvrdíme váš PIN a poté pošleme SMS kód na vaše nové číslo. Váš účet, konverzace i zprávy zůstanou stejné.</string>
+    <string name="screen_change_phone_new_header">Nové telefonní číslo</string>
+    <string name="screen_change_phone_new_footer">Zadejte číslo, které chcete od teď používat.</string>
+    <string name="screen_change_phone_new_invalid">Zadejte platné telefonní číslo.</string>
+    <string name="screen_change_phone_pin_header">Zadejte svůj PIN</string>
+    <string name="screen_change_phone_pin_footer">Potvrďte 6místný PIN pro autorizaci této změny.</string>
+    <string name="screen_change_phone_pin_incorrect">Tento PIN je nesprávný. Zkuste to znovu.</string>
+    <string name="screen_change_phone_otp_header">Ověřte své nové číslo</string>
+    <string name="screen_change_phone_otp_footer">Zadejte 6místný kód, který jsme poslali na vaše nové číslo.</string>
+    <string name="screen_change_phone_otp_invalid">Kód je neplatný nebo vypršel. Zkuste to znovu.</string>
+    <string name="screen_change_phone_already_linked">Toto telefonní číslo je již propojeno s jiným účtem.</string>
+    <string name="screen_change_phone_updated">Vaše telefonní číslo bylo aktualizováno.</string>
+    <string name="screen_change_phone_done_header">Hotovo</string>
+    <string name="screen_change_phone_done_message">Vaše telefonní číslo bylo aktualizováno. Od teď se budete přihlašovat novým číslem.</string>
+    <string name="screen_change_phone_needs_pin_header">Ke změně čísla potřebujete PIN</string>
+    <string name="screen_change_phone_needs_pin_message">Pro vaši bezpečnost si nastavte 6místný PIN účtu. Potvrdíte ho před změnou čísla.</string>
+    <string name="screen_change_phone_needs_pin_action">Nastavit PIN</string>
+    <string name="screen_change_phone_cooldown_header">Ještě ne</string>
+    <string name="screen_change_phone_cooldown_message">Z bezpečnostních důvodů budete moci číslo změnit za %1$s.</string>
+</resources>

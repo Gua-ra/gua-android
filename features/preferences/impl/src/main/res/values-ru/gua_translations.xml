@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ru translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Настроить двухэтапную проверку</string>
+    <string name="screen_preferences_pin_nudge_message">Добавьте 6-значный PIN, чтобы лучше защитить аккаунт.</string>
+    <string name="screen_preferences_pin_nudge_action">Настроить сейчас</string>
+    <string name="screen_two_step_verification_title">Двухэтапная проверка</string>
+    <string name="screen_two_step_verification_overview_header">PIN аккаунта</string>
+    <string name="screen_two_step_verification_status_on">Двухэтапная проверка включена</string>
+    <string name="screen_two_step_verification_status_off">Двухэтапная проверка выключена</string>
+    <string name="screen_two_step_verification_overview_footer_on">6-значный PIN добавляет вашему аккаунту дополнительный уровень защиты.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Добавьте 6-значный PIN для дополнительного уровня защиты аккаунта.</string>
+    <string name="screen_two_step_verification_set_button">Настроить PIN</string>
+    <string name="screen_two_step_verification_change_button">Изменить PIN</string>
+    <string name="screen_two_step_verification_passkey_button">Настроить ключ доступа</string>
+    <string name="screen_two_step_verification_passkey_footer">Используйте ключ доступа, чтобы входить быстрее по отпечатку, лицу или PIN устройства.</string>
+    <string name="screen_two_step_verification_phone_header">Подтвердите номер телефона</string>
+    <string name="screen_two_step_verification_phone_footer">Мы отправим код на этот номер, чтобы подтвердить изменение.</string>
+    <string name="screen_two_step_verification_current_header">Введите текущий PIN</string>
+    <string name="screen_two_step_verification_current_footer">Введите 6-значный PIN, который вы задали ранее.</string>
+    <string name="screen_two_step_verification_otp_header">Введите отправленный код</string>
+    <string name="screen_two_step_verification_otp_footer">Введите 6-значный код, отправленный на ваш телефон.</string>
+    <string name="screen_two_step_verification_new_header">Выберите новый PIN</string>
+    <string name="screen_two_step_verification_new_footer">Выберите 6-значный PIN. Избегайте легко угадываемых последовательностей.</string>
+    <string name="screen_two_step_verification_confirm_header">Подтвердите новый PIN</string>
+    <string name="screen_two_step_verification_confirm_footer">Введите 6-значный PIN ещё раз для подтверждения.</string>
+    <string name="screen_two_step_verification_phone_label">Номер телефона</string>
+    <string name="screen_two_step_verification_phone_invalid">Введите действительный номер телефона.</string>
+    <string name="screen_two_step_verification_current_incorrect">Неверный PIN. Попробуйте ещё раз.</string>
+    <string name="screen_two_step_verification_otp_invalid">Введённый код недействителен или истёк.</string>
+    <string name="screen_two_step_verification_locked">PIN заблокирован из-за слишком многих неверных попыток. Повторите позже.</string>
+    <string name="screen_two_step_verification_cooldown">В целях безопасности менять PIN можно только раз в сутки.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Сессия изменения PIN истекла. Начните заново.</string>
+    <string name="screen_two_step_verification_weak_error">Этот PIN слишком легко угадать. Выберите другой.</string>
+    <string name="screen_two_step_verification_mismatch_error">PIN-коды не совпадают. Попробуйте ещё раз.</string>
+    <string name="screen_two_step_verification_same_as_current">Новый PIN должен отличаться от текущего.</string>
+    <string name="screen_two_step_verification_rate_limited">Слишком много попыток. Подождите немного и повторите.</string>
+    <string name="screen_two_step_verification_updated">Двухэтапная проверка обновлена</string>
+    <string name="screen_change_phone_title">Изменить номер телефона</string>
+    <string name="screen_change_phone_intro_header">Измените свой номер</string>
+    <string name="screen_change_phone_intro_message">Мы подтвердим ваш PIN, затем отправим SMS с кодом на новый номер. Аккаунт, чаты и сообщения останутся прежними.</string>
+    <string name="screen_change_phone_new_header">Новый номер телефона</string>
+    <string name="screen_change_phone_new_footer">Введите номер, которым хотите пользоваться дальше.</string>
+    <string name="screen_change_phone_new_invalid">Введите действительный номер телефона.</string>
+    <string name="screen_change_phone_pin_header">Введите PIN</string>
+    <string name="screen_change_phone_pin_footer">Подтвердите 6-значный PIN, чтобы разрешить это изменение.</string>
+    <string name="screen_change_phone_pin_incorrect">Неверный PIN. Попробуйте ещё раз.</string>
+    <string name="screen_change_phone_otp_header">Подтвердите новый номер</string>
+    <string name="screen_change_phone_otp_footer">Введите 6-значный код, отправленный на ваш новый номер.</string>
+    <string name="screen_change_phone_otp_invalid">Код недействителен или истёк. Попробуйте ещё раз.</string>
+    <string name="screen_change_phone_already_linked">Этот номер телефона уже привязан к другому аккаунту.</string>
+    <string name="screen_change_phone_updated">Ваш номер телефона обновлён.</string>
+    <string name="screen_change_phone_done_header">Готово</string>
+    <string name="screen_change_phone_done_message">Ваш номер телефона обновлён. Дальше для входа используйте новый номер.</string>
+    <string name="screen_change_phone_needs_pin_header">Для смены номера нужен PIN</string>
+    <string name="screen_change_phone_needs_pin_message">Для безопасности задайте 6-значный PIN аккаунта. Вы подтвердите его перед сменой номера.</string>
+    <string name="screen_change_phone_needs_pin_action">Настроить PIN</string>
+    <string name="screen_change_phone_cooldown_header">Пока нельзя</string>
+    <string name="screen_change_phone_cooldown_message">В целях безопасности сменить номер можно через %1$s.</string>
+</resources>

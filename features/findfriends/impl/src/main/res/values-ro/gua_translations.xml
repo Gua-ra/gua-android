@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ro translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Găsește prieteni</string>
+    <string name="screen_find_friends_action">Găsește prieteni</string>
+    <string name="screen_find_friends_action_description">Vezi care dintre contactele tale sunt pe Gua</string>
+    <string name="screen_find_friends_loading">Se caută contactele tale pe Gua…</string>
+    <string name="screen_find_friends_permission_title">Permite accesul la contacte</string>
+    <string name="screen_find_friends_permission_message">Gua îți verifică privat contactele pentru a afla cine este deja aici. Contactele tale nu sunt niciodată stocate.</string>
+    <string name="screen_find_friends_permission_action">Permite accesul</string>
+    <string name="screen_find_friends_permission_denied_action">Deschide setările</string>
+    <string name="screen_find_friends_empty_title">Încă niciun contact pe Gua</string>
+    <string name="screen_find_friends_empty_message">Niciunul dintre contactele tale nu este încă pe Gua. Invită-i și vor apărea aici.</string>
+    <string name="screen_find_friends_empty_action">Verifică din nou</string>
+    <string name="screen_find_friends_error_title">Ceva n-a mers bine</string>
+    <string name="screen_find_friends_error_message">Nu am putut verifica acum contactele tale. Încearcă din nou.</string>
+    <string name="screen_find_friends_error_action">Reîncearcă</string>
+    <string name="a11y_find_friends_view_profile">Vezi profilul lui %1$s</string>
+    <string name="a11y_find_friends_start_chat">Începe o conversație cu %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d contact este pe Gua</item>
+        <item quantity="other">%1$d contacte sunt pe Gua</item>
+    </plurals>
+</resources>

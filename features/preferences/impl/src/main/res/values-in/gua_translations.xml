@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: in translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Siapkan verifikasi dua langkah</string>
+    <string name="screen_preferences_pin_nudge_message">Tambahkan PIN 6 digit untuk melindungi akun Anda dengan lebih baik.</string>
+    <string name="screen_preferences_pin_nudge_action">Siapkan sekarang</string>
+    <string name="screen_two_step_verification_title">Verifikasi dua langkah</string>
+    <string name="screen_two_step_verification_overview_header">PIN akun</string>
+    <string name="screen_two_step_verification_status_on">Verifikasi dua langkah aktif</string>
+    <string name="screen_two_step_verification_status_off">Verifikasi dua langkah nonaktif</string>
+    <string name="screen_two_step_verification_overview_footer_on">PIN 6 digit Anda menambah satu lapis keamanan pada akun Anda.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Tambahkan PIN 6 digit untuk satu lapis keamanan tambahan pada akun Anda.</string>
+    <string name="screen_two_step_verification_set_button">Siapkan PIN</string>
+    <string name="screen_two_step_verification_change_button">Ubah PIN</string>
+    <string name="screen_two_step_verification_passkey_button">Siapkan kunci sandi</string>
+    <string name="screen_two_step_verification_passkey_footer">Gunakan kunci sandi untuk masuk lebih cepat dengan sidik jari, wajah, atau PIN perangkat.</string>
+    <string name="screen_two_step_verification_phone_header">Konfirmasi nomor telepon Anda</string>
+    <string name="screen_two_step_verification_phone_footer">Kami akan mengirim kode ke nomor ini untuk mengonfirmasi perubahan.</string>
+    <string name="screen_two_step_verification_current_header">Masukkan PIN Anda saat ini</string>
+    <string name="screen_two_step_verification_current_footer">Masukkan PIN 6 digit yang Anda tetapkan sebelumnya.</string>
+    <string name="screen_two_step_verification_otp_header">Masukkan kode yang kami kirim</string>
+    <string name="screen_two_step_verification_otp_footer">Masukkan kode 6 digit yang dikirim ke ponsel Anda.</string>
+    <string name="screen_two_step_verification_new_header">Pilih PIN baru</string>
+    <string name="screen_two_step_verification_new_footer">Pilih PIN 6 digit. Hindari urutan yang mudah ditebak.</string>
+    <string name="screen_two_step_verification_confirm_header">Konfirmasi PIN baru Anda</string>
+    <string name="screen_two_step_verification_confirm_footer">Masukkan kembali PIN 6 digit untuk mengonfirmasi.</string>
+    <string name="screen_two_step_verification_phone_label">Nomor telepon</string>
+    <string name="screen_two_step_verification_phone_invalid">Masukkan nomor telepon yang valid.</string>
+    <string name="screen_two_step_verification_current_incorrect">PIN itu salah. Silakan coba lagi.</string>
+    <string name="screen_two_step_verification_otp_invalid">Kode yang Anda masukkan tidak valid atau sudah kedaluwarsa.</string>
+    <string name="screen_two_step_verification_locked">PIN terkunci karena terlalu banyak percobaan yang salah. Coba lagi nanti.</string>
+    <string name="screen_two_step_verification_cooldown">Demi keamanan, Anda hanya dapat mengubah PIN sekali sehari.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Sesi perubahan PIN Anda kedaluwarsa. Mulai dari awal.</string>
+    <string name="screen_two_step_verification_weak_error">PIN itu terlalu mudah ditebak. Silakan pilih yang lain.</string>
+    <string name="screen_two_step_verification_mismatch_error">PIN tidak cocok. Silakan coba lagi.</string>
+    <string name="screen_two_step_verification_same_as_current">PIN baru Anda harus berbeda dari PIN saat ini.</string>
+    <string name="screen_two_step_verification_rate_limited">Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.</string>
+    <string name="screen_two_step_verification_updated">Verifikasi dua langkah diperbarui</string>
+    <string name="screen_change_phone_title">Ubah nomor telepon</string>
+    <string name="screen_change_phone_intro_header">Ubah nomor Anda</string>
+    <string name="screen_change_phone_intro_message">Kami akan mengonfirmasi PIN Anda, lalu mengirim kode lewat SMS ke nomor baru Anda. Akun, obrolan, dan pesan Anda tetap sama.</string>
+    <string name="screen_change_phone_new_header">Nomor telepon baru</string>
+    <string name="screen_change_phone_new_footer">Masukkan nomor yang ingin Anda gunakan mulai sekarang.</string>
+    <string name="screen_change_phone_new_invalid">Masukkan nomor telepon yang valid.</string>
+    <string name="screen_change_phone_pin_header">Masukkan PIN Anda</string>
+    <string name="screen_change_phone_pin_footer">Konfirmasi PIN 6 digit Anda untuk mengizinkan perubahan ini.</string>
+    <string name="screen_change_phone_pin_incorrect">PIN itu salah. Silakan coba lagi.</string>
+    <string name="screen_change_phone_otp_header">Verifikasi nomor baru Anda</string>
+    <string name="screen_change_phone_otp_footer">Masukkan kode 6 digit yang kami kirim ke nomor baru Anda.</string>
+    <string name="screen_change_phone_otp_invalid">Kode itu tidak valid atau sudah kedaluwarsa. Silakan coba lagi.</string>
+    <string name="screen_change_phone_already_linked">Nomor telepon itu sudah tertaut ke akun lain.</string>
+    <string name="screen_change_phone_updated">Nomor telepon Anda telah diperbarui.</string>
+    <string name="screen_change_phone_done_header">Selesai</string>
+    <string name="screen_change_phone_done_message">Nomor telepon Anda telah diperbarui. Mulai sekarang Anda akan masuk dengan nomor baru.</string>
+    <string name="screen_change_phone_needs_pin_header">Anda memerlukan PIN untuk mengubah nomor</string>
+    <string name="screen_change_phone_needs_pin_message">Demi keamanan Anda, siapkan PIN akun 6 digit. Anda akan mengonfirmasinya sebelum mengubah nomor.</string>
+    <string name="screen_change_phone_needs_pin_action">Siapkan PIN</string>
+    <string name="screen_change_phone_cooldown_header">Belum bisa</string>
+    <string name="screen_change_phone_cooldown_message">Demi keamanan Anda, Anda dapat mengubah nomor dalam %1$s.</string>
+</resources>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: et translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Seadista kaheastmeline kinnitamine</string>
+    <string name="screen_preferences_pin_nudge_message">Lisa 6-kohaline PIN-kood, et oma kontot paremini kaitsta.</string>
+    <string name="screen_preferences_pin_nudge_action">Seadista kohe</string>
+    <string name="screen_two_step_verification_title">Kaheastmeline kinnitamine</string>
+    <string name="screen_two_step_verification_overview_header">Konto PIN-kood</string>
+    <string name="screen_two_step_verification_status_on">Kaheastmeline kinnitamine on sees</string>
+    <string name="screen_two_step_verification_status_off">Kaheastmeline kinnitamine on väljas</string>
+    <string name="screen_two_step_verification_overview_footer_on">6-kohaline PIN-kood lisab kontole täiendava turvakihi.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Lisa 6-kohaline PIN-kood kontole täiendava turvakihi jaoks.</string>
+    <string name="screen_two_step_verification_set_button">Seadista PIN-kood</string>
+    <string name="screen_two_step_verification_change_button">Muuda PIN-koodi</string>
+    <string name="screen_two_step_verification_passkey_button">Seadista pääsuvõti</string>
+    <string name="screen_two_step_verification_passkey_footer">Kasuta pääsuvõtit, et logida sisse kiiremini sõrmejälje, näo või seadme PIN-koodiga.</string>
+    <string name="screen_two_step_verification_phone_header">Kinnita oma telefoninumber</string>
+    <string name="screen_two_step_verification_phone_footer">Saadame sellele numbrile koodi, et muudatust kinnitada.</string>
+    <string name="screen_two_step_verification_current_header">Sisesta oma praegune PIN-kood</string>
+    <string name="screen_two_step_verification_current_footer">Sisesta 6-kohaline PIN-kood, mille varem määrasid.</string>
+    <string name="screen_two_step_verification_otp_header">Sisesta saadetud kood</string>
+    <string name="screen_two_step_verification_otp_footer">Sisesta 6-kohaline kood, mis saadeti sinu telefoni.</string>
+    <string name="screen_two_step_verification_new_header">Vali uus PIN-kood</string>
+    <string name="screen_two_step_verification_new_footer">Vali 6-kohaline PIN-kood. Väldi kergesti äraarvatavaid jadasid.</string>
+    <string name="screen_two_step_verification_confirm_header">Kinnita oma uus PIN-kood</string>
+    <string name="screen_two_step_verification_confirm_footer">Sisesta kinnitamiseks 6-kohaline PIN-kood uuesti.</string>
+    <string name="screen_two_step_verification_phone_label">Telefoninumber</string>
+    <string name="screen_two_step_verification_phone_invalid">Sisesta kehtiv telefoninumber.</string>
+    <string name="screen_two_step_verification_current_incorrect">See PIN-kood on vale. Proovi uuesti.</string>
+    <string name="screen_two_step_verification_otp_invalid">Sisestatud kood on kehtetu või aegunud.</string>
+    <string name="screen_two_step_verification_locked">PIN-kood lukustati liiga paljude valede katsete tõttu. Proovi hiljem uuesti.</string>
+    <string name="screen_two_step_verification_cooldown">Turvalisuse huvides saad PIN-koodi muuta vaid kord ööpäevas.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Sinu PIN-koodi muutmise seanss aegus. Alusta uuesti.</string>
+    <string name="screen_two_step_verification_weak_error">Seda PIN-koodi on liiga lihtne ära arvata. Vali mõni teine.</string>
+    <string name="screen_two_step_verification_mismatch_error">PIN-koodid ei kattu. Proovi uuesti.</string>
+    <string name="screen_two_step_verification_same_as_current">Uus PIN-kood peab erinema praegusest.</string>
+    <string name="screen_two_step_verification_rate_limited">Liiga palju katseid. Oota hetk ja proovi uuesti.</string>
+    <string name="screen_two_step_verification_updated">Kaheastmeline kinnitamine uuendatud</string>
+    <string name="screen_change_phone_title">Muuda telefoninumbrit</string>
+    <string name="screen_change_phone_intro_header">Muuda oma numbrit</string>
+    <string name="screen_change_phone_intro_message">Kinnitame sinu PIN-koodi ja saadame siis SMS-iga koodi uuele numbrile. Sinu konto, vestlused ja sõnumid jäävad samaks.</string>
+    <string name="screen_change_phone_new_header">Uus telefoninumber</string>
+    <string name="screen_change_phone_new_footer">Sisesta number, mida soovid edaspidi kasutada.</string>
+    <string name="screen_change_phone_new_invalid">Sisesta kehtiv telefoninumber.</string>
+    <string name="screen_change_phone_pin_header">Sisesta oma PIN-kood</string>
+    <string name="screen_change_phone_pin_footer">Kinnita 6-kohaline PIN-kood, et see muudatus lubada.</string>
+    <string name="screen_change_phone_pin_incorrect">See PIN-kood on vale. Proovi uuesti.</string>
+    <string name="screen_change_phone_otp_header">Kinnita oma uus number</string>
+    <string name="screen_change_phone_otp_footer">Sisesta 6-kohaline kood, mille saatsime sinu uuele numbrile.</string>
+    <string name="screen_change_phone_otp_invalid">See kood on kehtetu või aegunud. Proovi uuesti.</string>
+    <string name="screen_change_phone_already_linked">See telefoninumber on juba seotud teise kontoga.</string>
+    <string name="screen_change_phone_updated">Sinu telefoninumber on uuendatud.</string>
+    <string name="screen_change_phone_done_header">Valmis</string>
+    <string name="screen_change_phone_done_message">Sinu telefoninumber on uuendatud. Edaspidi logid sisse uue numbriga.</string>
+    <string name="screen_change_phone_needs_pin_header">Numbri muutmiseks on vaja PIN-koodi</string>
+    <string name="screen_change_phone_needs_pin_message">Turvalisuse huvides seadista 6-kohaline konto PIN-kood. Kinnitad selle enne numbri muutmist.</string>
+    <string name="screen_change_phone_needs_pin_action">Seadista PIN-kood</string>
+    <string name="screen_change_phone_cooldown_header">Veel mitte</string>
+    <string name="screen_change_phone_cooldown_message">Turvalisuse huvides saad numbrit muuta %1$s pärast.</string>
+</resources>

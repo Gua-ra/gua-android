@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: sv translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Konfigurera tvåstegsverifiering</string>
+    <string name="screen_preferences_pin_nudge_message">Lägg till en 6-siffrig PIN-kod för att skydda ditt konto bättre.</string>
+    <string name="screen_preferences_pin_nudge_action">Konfigurera nu</string>
+    <string name="screen_two_step_verification_title">Tvåstegsverifiering</string>
+    <string name="screen_two_step_verification_overview_header">Konto-PIN</string>
+    <string name="screen_two_step_verification_status_on">Tvåstegsverifiering är på</string>
+    <string name="screen_two_step_verification_status_off">Tvåstegsverifiering är av</string>
+    <string name="screen_two_step_verification_overview_footer_on">Din 6-siffriga PIN-kod ger kontot ett extra säkerhetslager.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Lägg till en 6-siffrig PIN-kod för ett extra säkerhetslager på kontot.</string>
+    <string name="screen_two_step_verification_set_button">Ställ in PIN-kod</string>
+    <string name="screen_two_step_verification_change_button">Byt PIN-kod</string>
+    <string name="screen_two_step_verification_passkey_button">Konfigurera en passkey</string>
+    <string name="screen_two_step_verification_passkey_footer">Använd en passkey för att logga in snabbare med fingeravtryck, ansikte eller enhetens PIN-kod.</string>
+    <string name="screen_two_step_verification_phone_header">Bekräfta ditt telefonnummer</string>
+    <string name="screen_two_step_verification_phone_footer">Vi skickar en kod till det här numret för att bekräfta ändringen.</string>
+    <string name="screen_two_step_verification_current_header">Ange din nuvarande PIN-kod</string>
+    <string name="screen_two_step_verification_current_footer">Ange den 6-siffriga PIN-kod du angav tidigare.</string>
+    <string name="screen_two_step_verification_otp_header">Ange koden vi skickade</string>
+    <string name="screen_two_step_verification_otp_footer">Ange den 6-siffriga koden som skickades till din telefon.</string>
+    <string name="screen_two_step_verification_new_header">Välj en ny PIN-kod</string>
+    <string name="screen_two_step_verification_new_footer">Välj en 6-siffrig PIN-kod. Undvik sekvenser som är lätta att gissa.</string>
+    <string name="screen_two_step_verification_confirm_header">Bekräfta din nya PIN-kod</string>
+    <string name="screen_two_step_verification_confirm_footer">Ange den 6-siffriga PIN-koden igen för att bekräfta.</string>
+    <string name="screen_two_step_verification_phone_label">Telefonnummer</string>
+    <string name="screen_two_step_verification_phone_invalid">Ange ett giltigt telefonnummer.</string>
+    <string name="screen_two_step_verification_current_incorrect">PIN-koden är fel. Försök igen.</string>
+    <string name="screen_two_step_verification_otp_invalid">Koden du angav är ogiltig eller har gått ut.</string>
+    <string name="screen_two_step_verification_locked">PIN-koden är låst efter för många felaktiga försök. Försök igen senare.</string>
+    <string name="screen_two_step_verification_cooldown">Av säkerhetsskäl kan du bara byta PIN-kod en gång per dygn.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Din session för att byta PIN-kod har gått ut. Börja om.</string>
+    <string name="screen_two_step_verification_weak_error">PIN-koden är för lätt att gissa. Välj en annan.</string>
+    <string name="screen_two_step_verification_mismatch_error">PIN-koderna stämmer inte överens. Försök igen.</string>
+    <string name="screen_two_step_verification_same_as_current">Din nya PIN-kod måste skilja sig från den nuvarande.</string>
+    <string name="screen_two_step_verification_rate_limited">För många försök. Vänta en stund och försök igen.</string>
+    <string name="screen_two_step_verification_updated">Tvåstegsverifiering uppdaterad</string>
+    <string name="screen_change_phone_title">Byt telefonnummer</string>
+    <string name="screen_change_phone_intro_header">Byt ditt nummer</string>
+    <string name="screen_change_phone_intro_message">Vi bekräftar din PIN-kod och skickar sedan en kod via sms till ditt nya nummer. Ditt konto, dina chattar och dina meddelanden är oförändrade.</string>
+    <string name="screen_change_phone_new_header">Nytt telefonnummer</string>
+    <string name="screen_change_phone_new_footer">Ange det nummer du vill använda hädanefter.</string>
+    <string name="screen_change_phone_new_invalid">Ange ett giltigt telefonnummer.</string>
+    <string name="screen_change_phone_pin_header">Ange din PIN-kod</string>
+    <string name="screen_change_phone_pin_footer">Bekräfta din 6-siffriga PIN-kod för att godkänna ändringen.</string>
+    <string name="screen_change_phone_pin_incorrect">PIN-koden är fel. Försök igen.</string>
+    <string name="screen_change_phone_otp_header">Verifiera ditt nya nummer</string>
+    <string name="screen_change_phone_otp_footer">Ange den 6-siffriga koden vi skickade till ditt nya nummer.</string>
+    <string name="screen_change_phone_otp_invalid">Koden är ogiltig eller har gått ut. Försök igen.</string>
+    <string name="screen_change_phone_already_linked">Det telefonnumret är redan kopplat till ett annat konto.</string>
+    <string name="screen_change_phone_updated">Ditt telefonnummer har uppdaterats.</string>
+    <string name="screen_change_phone_done_header">Klart</string>
+    <string name="screen_change_phone_done_message">Ditt telefonnummer har uppdaterats. Hädanefter loggar du in med ditt nya nummer.</string>
+    <string name="screen_change_phone_needs_pin_header">Du behöver en PIN-kod för att byta nummer</string>
+    <string name="screen_change_phone_needs_pin_message">För din säkerhet, ställ in en 6-siffrig konto-PIN. Du bekräftar den innan du byter nummer.</string>
+    <string name="screen_change_phone_needs_pin_action">Ställ in PIN-kod</string>
+    <string name="screen_change_phone_cooldown_header">Inte än</string>
+    <string name="screen_change_phone_cooldown_message">För din säkerhet kan du byta nummer om %1$s.</string>
+</resources>

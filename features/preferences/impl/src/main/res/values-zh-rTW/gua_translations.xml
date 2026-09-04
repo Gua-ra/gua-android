@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: zh-rTW translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">設定兩步驟驗證</string>
+    <string name="screen_preferences_pin_nudge_message">新增 6 位數 PIN 碼，更好地保護你的帳號。</string>
+    <string name="screen_preferences_pin_nudge_action">立即設定</string>
+    <string name="screen_two_step_verification_title">兩步驟驗證</string>
+    <string name="screen_two_step_verification_overview_header">帳號 PIN 碼</string>
+    <string name="screen_two_step_verification_status_on">兩步驟驗證已開啟</string>
+    <string name="screen_two_step_verification_status_off">兩步驟驗證已關閉</string>
+    <string name="screen_two_step_verification_overview_footer_on">6 位數 PIN 碼為你的帳號增加一層額外保護。</string>
+    <string name="screen_two_step_verification_overview_footer_off">新增 6 位數 PIN 碼，為帳號增加一層額外保護。</string>
+    <string name="screen_two_step_verification_set_button">設定 PIN 碼</string>
+    <string name="screen_two_step_verification_change_button">變更 PIN 碼</string>
+    <string name="screen_two_step_verification_passkey_button">設定通行密鑰</string>
+    <string name="screen_two_step_verification_passkey_footer">使用通行密鑰，透過指紋、臉部或裝置 PIN 碼更快登入。</string>
+    <string name="screen_two_step_verification_phone_header">確認你的手機號碼</string>
+    <string name="screen_two_step_verification_phone_footer">我們會向該號碼傳送驗證碼以確認這項變更。</string>
+    <string name="screen_two_step_verification_current_header">輸入目前的 PIN 碼</string>
+    <string name="screen_two_step_verification_current_footer">請輸入你先前設定的 6 位數 PIN 碼。</string>
+    <string name="screen_two_step_verification_otp_header">輸入我們傳送的驗證碼</string>
+    <string name="screen_two_step_verification_otp_footer">請輸入傳送到你手機的 6 位數驗證碼。</string>
+    <string name="screen_two_step_verification_new_header">選擇新的 PIN 碼</string>
+    <string name="screen_two_step_verification_new_footer">選擇一組 6 位數 PIN 碼，避免容易被猜到的數字序列。</string>
+    <string name="screen_two_step_verification_confirm_header">確認新的 PIN 碼</string>
+    <string name="screen_two_step_verification_confirm_footer">請再次輸入 6 位數 PIN 碼以確認。</string>
+    <string name="screen_two_step_verification_phone_label">手機號碼</string>
+    <string name="screen_two_step_verification_phone_invalid">請輸入有效的手機號碼。</string>
+    <string name="screen_two_step_verification_current_incorrect">PIN 碼不正確，請重試。</string>
+    <string name="screen_two_step_verification_otp_invalid">你輸入的驗證碼無效或已過期。</string>
+    <string name="screen_two_step_verification_locked">錯誤嘗試次數過多，PIN 碼已鎖定。請稍後再試。</string>
+    <string name="screen_two_step_verification_cooldown">基於安全考量，每天只能變更一次 PIN 碼。</string>
+    <string name="screen_two_step_verification_challenge_invalid">變更 PIN 碼的工作階段已過期，請重新開始。</string>
+    <string name="screen_two_step_verification_weak_error">這組 PIN 碼太容易被猜到，請換一組。</string>
+    <string name="screen_two_step_verification_mismatch_error">兩次輸入的 PIN 碼不一致，請重試。</string>
+    <string name="screen_two_step_verification_same_as_current">新的 PIN 碼必須與目前的 PIN 碼不同。</string>
+    <string name="screen_two_step_verification_rate_limited">嘗試次數過多，請稍候再試。</string>
+    <string name="screen_two_step_verification_updated">已更新兩步驟驗證</string>
+    <string name="screen_change_phone_title">變更手機號碼</string>
+    <string name="screen_change_phone_intro_header">變更你的號碼</string>
+    <string name="screen_change_phone_intro_message">我們會先確認你的 PIN 碼，然後向新號碼傳送驗證碼簡訊。你的帳號、聊天與訊息維持不變。</string>
+    <string name="screen_change_phone_new_header">新手機號碼</string>
+    <string name="screen_change_phone_new_footer">請輸入你往後想使用的號碼。</string>
+    <string name="screen_change_phone_new_invalid">請輸入有效的手機號碼。</string>
+    <string name="screen_change_phone_pin_header">輸入你的 PIN 碼</string>
+    <string name="screen_change_phone_pin_footer">確認 6 位數 PIN 碼以授權這項變更。</string>
+    <string name="screen_change_phone_pin_incorrect">PIN 碼不正確，請重試。</string>
+    <string name="screen_change_phone_otp_header">驗證你的新號碼</string>
+    <string name="screen_change_phone_otp_footer">請輸入我們傳送到你新號碼的 6 位數驗證碼。</string>
+    <string name="screen_change_phone_otp_invalid">這組驗證碼無效或已過期，請重試。</string>
+    <string name="screen_change_phone_already_linked">這個手機號碼已綁定至另一個帳號。</string>
+    <string name="screen_change_phone_updated">你的手機號碼已更新。</string>
+    <string name="screen_change_phone_done_header">全部完成</string>
+    <string name="screen_change_phone_done_message">你的手機號碼已更新。往後請使用新號碼登入。</string>
+    <string name="screen_change_phone_needs_pin_header">變更號碼需要 PIN 碼</string>
+    <string name="screen_change_phone_needs_pin_message">為了你的安全，請設定 6 位數帳號 PIN 碼。變更號碼前需要確認。</string>
+    <string name="screen_change_phone_needs_pin_action">設定 PIN 碼</string>
+    <string name="screen_change_phone_cooldown_header">還不能變更</string>
+    <string name="screen_change_phone_cooldown_message">基於安全考量，你可以在 %1$s 後變更號碼。</string>
+</resources>

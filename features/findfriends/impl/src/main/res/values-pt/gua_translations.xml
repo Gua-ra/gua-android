@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: pt translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Encontrar amigos</string>
+    <string name="screen_find_friends_action">Encontrar amigos</string>
+    <string name="screen_find_friends_action_description">Veja quais dos seus contactos estão no Gua</string>
+    <string name="screen_find_friends_loading">A procurar os seus contactos no Gua…</string>
+    <string name="screen_find_friends_permission_title">Permitir acesso aos contactos</string>
+    <string name="screen_find_friends_permission_message">O Gua verifica os seus contactos de forma privada para descobrir quais deles já estão aqui. Os seus contactos nunca são armazenados.</string>
+    <string name="screen_find_friends_permission_action">Permitir acesso</string>
+    <string name="screen_find_friends_permission_denied_action">Abrir definições</string>
+    <string name="screen_find_friends_empty_title">Ainda não há contactos no Gua</string>
+    <string name="screen_find_friends_empty_message">Nenhum dos seus contactos está no Gua ainda. Convide-os e aparecerão aqui.</string>
+    <string name="screen_find_friends_empty_action">Verificar novamente</string>
+    <string name="screen_find_friends_error_title">Algo correu mal</string>
+    <string name="screen_find_friends_error_message">Não foi possível verificar os seus contactos agora. Tente novamente.</string>
+    <string name="screen_find_friends_error_action">Tentar novamente</string>
+    <string name="a11y_find_friends_view_profile">Ver o perfil de %1$s</string>
+    <string name="a11y_find_friends_start_chat">Iniciar uma conversa com %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d contacto está no Gua</item>
+        <item quantity="other">%1$d contactos estão no Gua</item>
+    </plurals>
+</resources>

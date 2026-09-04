@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: hr translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">Postavi provjeru u dva koraka</string>
+    <string name="screen_preferences_pin_nudge_message">Dodajte 6-znamenkasti PIN za bolju zaštitu svog računa.</string>
+    <string name="screen_preferences_pin_nudge_action">Postavi sada</string>
+    <string name="screen_two_step_verification_title">Provjera u dva koraka</string>
+    <string name="screen_two_step_verification_overview_header">PIN računa</string>
+    <string name="screen_two_step_verification_status_on">Provjera u dva koraka je uključena</string>
+    <string name="screen_two_step_verification_status_off">Provjera u dva koraka je isključena</string>
+    <string name="screen_two_step_verification_overview_footer_on">Vaš 6-znamenkasti PIN dodaje računu dodatni sloj sigurnosti.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Dodajte 6-znamenkasti PIN za dodatni sloj sigurnosti računa.</string>
+    <string name="screen_two_step_verification_set_button">Postavi PIN</string>
+    <string name="screen_two_step_verification_change_button">Promijeni PIN</string>
+    <string name="screen_two_step_verification_passkey_button">Postavi pristupni ključ</string>
+    <string name="screen_two_step_verification_passkey_footer">Pristupnim ključem prijavite se brže otiskom prsta, licem ili PIN-om uređaja.</string>
+    <string name="screen_two_step_verification_phone_header">Potvrdite svoj broj telefona</string>
+    <string name="screen_two_step_verification_phone_footer">Poslat ćemo kod na ovaj broj kako bismo potvrdili promjenu.</string>
+    <string name="screen_two_step_verification_current_header">Unesite svoj trenutačni PIN</string>
+    <string name="screen_two_step_verification_current_footer">Unesite 6-znamenkasti PIN koji ste ranije postavili.</string>
+    <string name="screen_two_step_verification_otp_header">Unesite kod koji smo poslali</string>
+    <string name="screen_two_step_verification_otp_footer">Unesite 6-znamenkasti kod poslan na vaš telefon.</string>
+    <string name="screen_two_step_verification_new_header">Odaberite novi PIN</string>
+    <string name="screen_two_step_verification_new_footer">Odaberite 6-znamenkasti PIN. Izbjegavajte nizove koje je lako pogoditi.</string>
+    <string name="screen_two_step_verification_confirm_header">Potvrdite novi PIN</string>
+    <string name="screen_two_step_verification_confirm_footer">Ponovno unesite 6-znamenkasti PIN za potvrdu.</string>
+    <string name="screen_two_step_verification_phone_label">Broj telefona</string>
+    <string name="screen_two_step_verification_phone_invalid">Unesite važeći broj telefona.</string>
+    <string name="screen_two_step_verification_current_incorrect">Taj PIN nije točan. Pokušajte ponovno.</string>
+    <string name="screen_two_step_verification_otp_invalid">Uneseni kod nije važeći ili je istekao.</string>
+    <string name="screen_two_step_verification_locked">PIN je zaključan zbog previše netočnih pokušaja. Pokušajte kasnije.</string>
+    <string name="screen_two_step_verification_cooldown">Radi sigurnosti PIN možete promijeniti samo jednom dnevno.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Sesija za promjenu PIN-a je istekla. Počnite ispočetka.</string>
+    <string name="screen_two_step_verification_weak_error">Taj je PIN prelako pogoditi. Odaberite drugi.</string>
+    <string name="screen_two_step_verification_mismatch_error">PIN-ovi se ne podudaraju. Pokušajte ponovno.</string>
+    <string name="screen_two_step_verification_same_as_current">Novi PIN mora se razlikovati od trenutačnog.</string>
+    <string name="screen_two_step_verification_rate_limited">Previše pokušaja. Pričekajte trenutak i pokušajte ponovno.</string>
+    <string name="screen_two_step_verification_updated">Provjera u dva koraka ažurirana</string>
+    <string name="screen_change_phone_title">Promijeni broj telefona</string>
+    <string name="screen_change_phone_intro_header">Promijenite svoj broj</string>
+    <string name="screen_change_phone_intro_message">Potvrdit ćemo vaš PIN, a zatim poslati kod SMS-om na novi broj. Vaš račun, razgovori i poruke ostaju isti.</string>
+    <string name="screen_change_phone_new_header">Novi broj telefona</string>
+    <string name="screen_change_phone_new_footer">Unesite broj koji želite koristiti od sada.</string>
+    <string name="screen_change_phone_new_invalid">Unesite važeći broj telefona.</string>
+    <string name="screen_change_phone_pin_header">Unesite svoj PIN</string>
+    <string name="screen_change_phone_pin_footer">Potvrdite 6-znamenkasti PIN kako biste odobrili ovu promjenu.</string>
+    <string name="screen_change_phone_pin_incorrect">Taj PIN nije točan. Pokušajte ponovno.</string>
+    <string name="screen_change_phone_otp_header">Potvrdite svoj novi broj</string>
+    <string name="screen_change_phone_otp_footer">Unesite 6-znamenkasti kod koji smo poslali na vaš novi broj.</string>
+    <string name="screen_change_phone_otp_invalid">Taj kod nije važeći ili je istekao. Pokušajte ponovno.</string>
+    <string name="screen_change_phone_already_linked">Taj je broj telefona već povezan s drugim računom.</string>
+    <string name="screen_change_phone_updated">Vaš broj telefona je ažuriran.</string>
+    <string name="screen_change_phone_done_header">Sve je spremno</string>
+    <string name="screen_change_phone_done_message">Vaš broj telefona je ažuriran. Od sada ćete se prijavljivati novim brojem.</string>
+    <string name="screen_change_phone_needs_pin_header">Za promjenu broja potreban je PIN</string>
+    <string name="screen_change_phone_needs_pin_message">Radi vaše sigurnosti postavite 6-znamenkasti PIN računa. Potvrdit ćete ga prije promjene broja.</string>
+    <string name="screen_change_phone_needs_pin_action">Postavi PIN</string>
+    <string name="screen_change_phone_cooldown_header">Još ne</string>
+    <string name="screen_change_phone_cooldown_message">Radi vaše sigurnosti broj ćete moći promijeniti za %1$s.</string>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: hu translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_onboarding_welcome_title">Üdvözöljük a Guán</string>
+    <string name="gua_onboarding_welcome_message">Privát üzenetküldés, egyszerűen.</string>
+    <string name="screen_onboarding_trust_encrypted">Végponttól végpontig titkosítva</string>
+    <string name="screen_phone_entry_welcome_title">Üdvözöljük a Guán</string>
+    <string name="screen_phone_entry_title">Mi a telefonszáma?</string>
+    <string name="screen_phone_entry_message">Adja meg a telefonszámát</string>
+    <string name="screen_phone_entry_footer">SMS-ben küldünk egy megerősítő kódot erre a számra.</string>
+    <string name="screen_phone_entry_phone_number_label">Telefonszám</string>
+    <string name="screen_phone_entry_country_picker_a11y">Válasszon országot</string>
+</resources>

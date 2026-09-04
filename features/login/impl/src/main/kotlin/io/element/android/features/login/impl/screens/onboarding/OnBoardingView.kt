@@ -227,14 +227,14 @@ private fun OnBoardingContent() {
             )
             Spacer(modifier = Modifier.height(40.dp))
             Text(
-                text = stringResource(id = R.string.screen_onboarding_welcome_title),
+                text = stringResource(id = R.string.gua_onboarding_welcome_title),
                 color = titleColor,
                 style = ElementTheme.typography.fontHeadingLgBold,
                 textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = stringResource(id = R.string.screen_onboarding_welcome_message),
+                text = stringResource(id = R.string.gua_onboarding_welcome_message),
                 color = subtitleColor,
                 style = ElementTheme.typography.fontBodyLgRegular,
                 textAlign = TextAlign.Center,

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: fa translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">راه‌اندازی تأیید دومرحله‌ای</string>
+    <string name="screen_preferences_pin_nudge_message">یک پین ۶ رقمی اضافه کنید تا حساب شما بهتر محافظت شود.</string>
+    <string name="screen_preferences_pin_nudge_action">همین حالا راه‌اندازی کنید</string>
+    <string name="screen_two_step_verification_title">تأیید دومرحله‌ای</string>
+    <string name="screen_two_step_verification_overview_header">پین حساب</string>
+    <string name="screen_two_step_verification_status_on">تأیید دومرحله‌ای روشن است</string>
+    <string name="screen_two_step_verification_status_off">تأیید دومرحله‌ای خاموش است</string>
+    <string name="screen_two_step_verification_overview_footer_on">پین ۶ رقمی شما لایهٔ امنیتی بیشتری به حسابتان اضافه می‌کند.</string>
+    <string name="screen_two_step_verification_overview_footer_off">یک پین ۶ رقمی اضافه کنید تا حسابتان لایهٔ امنیتی بیشتری داشته باشد.</string>
+    <string name="screen_two_step_verification_set_button">تنظیم پین</string>
+    <string name="screen_two_step_verification_change_button">تغییر پین</string>
+    <string name="screen_two_step_verification_passkey_button">راه‌اندازی کلید عبور</string>
+    <string name="screen_two_step_verification_passkey_footer">با کلید عبور سریع‌تر و با اثر انگشت، چهره یا پین دستگاه وارد شوید.</string>
+    <string name="screen_two_step_verification_phone_header">شمارهٔ تلفن خود را تأیید کنید</string>
+    <string name="screen_two_step_verification_phone_footer">برای تأیید این تغییر، کدی به این شماره می‌فرستیم.</string>
+    <string name="screen_two_step_verification_current_header">پین فعلی خود را وارد کنید</string>
+    <string name="screen_two_step_verification_current_footer">پین ۶ رقمی‌ای را که قبلاً تنظیم کرده‌اید وارد کنید.</string>
+    <string name="screen_two_step_verification_otp_header">کدی را که فرستادیم وارد کنید</string>
+    <string name="screen_two_step_verification_otp_footer">کد ۶ رقمی ارسال‌شده به گوشی خود را وارد کنید.</string>
+    <string name="screen_two_step_verification_new_header">یک پین جدید انتخاب کنید</string>
+    <string name="screen_two_step_verification_new_footer">یک پین ۶ رقمی انتخاب کنید. از دنباله‌های آسان خودداری کنید.</string>
+    <string name="screen_two_step_verification_confirm_header">پین جدید خود را تأیید کنید</string>
+    <string name="screen_two_step_verification_confirm_footer">برای تأیید، پین ۶ رقمی را دوباره وارد کنید.</string>
+    <string name="screen_two_step_verification_phone_label">شمارهٔ تلفن</string>
+    <string name="screen_two_step_verification_phone_invalid">یک شمارهٔ تلفن معتبر وارد کنید.</string>
+    <string name="screen_two_step_verification_current_incorrect">این پین نادرست است. دوباره تلاش کنید.</string>
+    <string name="screen_two_step_verification_otp_invalid">کدی که وارد کردید نامعتبر است یا منقضی شده.</string>
+    <string name="screen_two_step_verification_locked">به دلیل تلاش‌های نادرست زیاد، پین قفل شد. بعداً دوباره تلاش کنید.</string>
+    <string name="screen_two_step_verification_cooldown">برای امنیت، فقط یک بار در روز می‌توانید پین خود را تغییر دهید.</string>
+    <string name="screen_two_step_verification_challenge_invalid">نشست تغییر پین شما منقضی شد. از ابتدا شروع کنید.</string>
+    <string name="screen_two_step_verification_weak_error">حدس زدن این پین خیلی آسان است. یکی دیگر انتخاب کنید.</string>
+    <string name="screen_two_step_verification_mismatch_error">پین‌ها مطابقت ندارند. دوباره تلاش کنید.</string>
+    <string name="screen_two_step_verification_same_as_current">پین جدید شما باید با پین فعلی متفاوت باشد.</string>
+    <string name="screen_two_step_verification_rate_limited">تلاش‌های بیش از حد. کمی صبر کنید و دوباره تلاش کنید.</string>
+    <string name="screen_two_step_verification_updated">تأیید دومرحله‌ای به‌روزرسانی شد</string>
+    <string name="screen_change_phone_title">تغییر شمارهٔ تلفن</string>
+    <string name="screen_change_phone_intro_header">شمارهٔ خود را تغییر دهید</string>
+    <string name="screen_change_phone_intro_message">پین شما را تأیید می‌کنیم و سپس کدی را با پیامک به شمارهٔ جدیدتان می‌فرستیم. حساب، گفت‌وگوها و پیام‌های شما بدون تغییر می‌ماند.</string>
+    <string name="screen_change_phone_new_header">شمارهٔ تلفن جدید</string>
+    <string name="screen_change_phone_new_footer">شماره‌ای را که از این پس می‌خواهید استفاده کنید وارد کنید.</string>
+    <string name="screen_change_phone_new_invalid">یک شمارهٔ تلفن معتبر وارد کنید.</string>
+    <string name="screen_change_phone_pin_header">پین خود را وارد کنید</string>
+    <string name="screen_change_phone_pin_footer">برای تأیید این تغییر، پین ۶ رقمی خود را تأیید کنید.</string>
+    <string name="screen_change_phone_pin_incorrect">این پین نادرست است. دوباره تلاش کنید.</string>
+    <string name="screen_change_phone_otp_header">شمارهٔ جدید خود را تأیید کنید</string>
+    <string name="screen_change_phone_otp_footer">کد ۶ رقمی ارسال‌شده به شمارهٔ جدیدتان را وارد کنید.</string>
+    <string name="screen_change_phone_otp_invalid">این کد نامعتبر است یا منقضی شده. دوباره تلاش کنید.</string>
+    <string name="screen_change_phone_already_linked">این شمارهٔ تلفن قبلاً به حساب دیگری متصل شده است.</string>
+    <string name="screen_change_phone_updated">شمارهٔ تلفن شما به‌روزرسانی شد.</string>
+    <string name="screen_change_phone_done_header">همه چیز آماده است</string>
+    <string name="screen_change_phone_done_message">شمارهٔ تلفن شما به‌روزرسانی شد. از این پس با شمارهٔ جدید وارد می‌شوید.</string>
+    <string name="screen_change_phone_needs_pin_header">برای تغییر شماره به یک پین نیاز دارید</string>
+    <string name="screen_change_phone_needs_pin_message">برای امنیت خود، یک پین ۶ رقمی برای حساب تنظیم کنید. پیش از تغییر شماره آن را تأیید می‌کنید.</string>
+    <string name="screen_change_phone_needs_pin_action">تنظیم پین</string>
+    <string name="screen_change_phone_cooldown_header">هنوز نه</string>
+    <string name="screen_change_phone_cooldown_message">برای امنیت شما، پس از %1$s می‌توانید شمارهٔ خود را تغییر دهید.</string>
+</resources>

@@ -7,7 +7,7 @@
 <!-- GUA FORK: Brazilian Portuguese (pt-BR) translations for the shared country picker.
      English source of truth lives in values/temporary.xml. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="screen_country_picker_title">"Selecionar país"</string>
-    <string name="screen_country_picker_search_placeholder">"Pesquisar país"</string>
-    <string name="screen_country_picker_empty">"Nenhum país correspondente"</string>
+    <string name="screen_country_picker_title">Selecionar país</string>
+    <string name="screen_country_picker_search_placeholder">Buscar país</string>
+    <string name="screen_country_picker_empty">Nenhum país correspondente</string>
 </resources>

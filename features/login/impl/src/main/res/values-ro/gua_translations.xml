@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ro translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_onboarding_welcome_title">Bine ai venit pe Gua</string>
+    <string name="gua_onboarding_welcome_message">Mesaje private, simplu.</string>
+    <string name="screen_onboarding_trust_encrypted">Criptat integral</string>
+    <string name="screen_phone_entry_welcome_title">Bine ai venit pe Gua</string>
+    <string name="screen_phone_entry_title">Care este numărul tău?</string>
+    <string name="screen_phone_entry_message">Introdu numărul tău de telefon</string>
+    <string name="screen_phone_entry_footer">Vom trimite prin SMS un cod de verificare la acest număr.</string>
+    <string name="screen_phone_entry_phone_number_label">Număr de telefon</string>
+    <string name="screen_phone_entry_country_picker_a11y">Selectează țara</string>
+</resources>

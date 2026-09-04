@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ko translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_onboarding_welcome_title">Gua에 오신 것을 환영합니다</string>
+    <string name="gua_onboarding_welcome_message">간편한 비공개 메시지.</string>
+    <string name="screen_onboarding_trust_encrypted">종단 간 암호화</string>
+    <string name="screen_phone_entry_welcome_title">Gua에 오신 것을 환영합니다</string>
+    <string name="screen_phone_entry_title">전화번호가 어떻게 되나요?</string>
+    <string name="screen_phone_entry_message">전화번호를 입력하세요</string>
+    <string name="screen_phone_entry_footer">이 번호로 인증 코드를 문자로 보내드립니다.</string>
+    <string name="screen_phone_entry_phone_number_label">전화번호</string>
+    <string name="screen_phone_entry_country_picker_a11y">국가 선택</string>
+</resources>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ur translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_preferences_set_up_pin_title">دو مرحلوں والی تصدیق ترتیب دیں</string>
+    <string name="screen_preferences_pin_nudge_message">اپنے اکاؤنٹ کی بہتر حفاظت کے لیے 6 ہندسوں کا پن شامل کریں۔</string>
+    <string name="screen_preferences_pin_nudge_action">ابھی ترتیب دیں</string>
+    <string name="screen_two_step_verification_title">دو مرحلوں والی تصدیق</string>
+    <string name="screen_two_step_verification_overview_header">اکاؤنٹ پن</string>
+    <string name="screen_two_step_verification_status_on">دو مرحلوں والی تصدیق آن ہے</string>
+    <string name="screen_two_step_verification_status_off">دو مرحلوں والی تصدیق آف ہے</string>
+    <string name="screen_two_step_verification_overview_footer_on">آپ کا 6 ہندسوں کا پن آپ کے اکاؤنٹ کو تحفظ کی ایک اضافی تہہ دیتا ہے۔</string>
+    <string name="screen_two_step_verification_overview_footer_off">اپنے اکاؤنٹ کو تحفظ کی اضافی تہہ دینے کے لیے 6 ہندسوں کا پن شامل کریں۔</string>
+    <string name="screen_two_step_verification_set_button">پن ترتیب دیں</string>
+    <string name="screen_two_step_verification_change_button">پن تبدیل کریں</string>
+    <string name="screen_two_step_verification_passkey_button">پاس کی ترتیب دیں</string>
+    <string name="screen_two_step_verification_passkey_footer">پاس کی کے ذریعے اپنے فنگر پرنٹ، چہرے یا آلے کے پن سے تیزی سے سائن ان کریں۔</string>
+    <string name="screen_two_step_verification_phone_header">اپنے فون نمبر کی تصدیق کریں</string>
+    <string name="screen_two_step_verification_phone_footer">تبدیلی کی تصدیق کے لیے ہم اس نمبر پر ایک کوڈ بھیجیں گے۔</string>
+    <string name="screen_two_step_verification_current_header">اپنا موجودہ پن درج کریں</string>
+    <string name="screen_two_step_verification_current_footer">وہ 6 ہندسوں کا پن درج کریں جو آپ نے پہلے مقرر کیا تھا۔</string>
+    <string name="screen_two_step_verification_otp_header">بھیجا گیا کوڈ درج کریں</string>
+    <string name="screen_two_step_verification_otp_footer">اپنے فون پر بھیجا گیا 6 ہندسوں کا کوڈ درج کریں۔</string>
+    <string name="screen_two_step_verification_new_header">نیا پن منتخب کریں</string>
+    <string name="screen_two_step_verification_new_footer">6 ہندسوں کا پن منتخب کریں۔ آسانی سے اندازہ لگنے والی ترتیبوں سے گریز کریں۔</string>
+    <string name="screen_two_step_verification_confirm_header">اپنے نئے پن کی تصدیق کریں</string>
+    <string name="screen_two_step_verification_confirm_footer">تصدیق کے لیے 6 ہندسوں کا پن دوبارہ درج کریں۔</string>
+    <string name="screen_two_step_verification_phone_label">فون نمبر</string>
+    <string name="screen_two_step_verification_phone_invalid">براہ کرم درست فون نمبر درج کریں۔</string>
+    <string name="screen_two_step_verification_current_incorrect">یہ پن غلط ہے۔ براہ کرم دوبارہ کوشش کریں۔</string>
+    <string name="screen_two_step_verification_otp_invalid">آپ کا درج کردہ کوڈ غلط ہے یا اس کی مدت ختم ہو چکی ہے۔</string>
+    <string name="screen_two_step_verification_locked">بہت زیادہ غلط کوششوں کی وجہ سے پن مقفل ہو گیا۔ بعد میں دوبارہ کوشش کریں۔</string>
+    <string name="screen_two_step_verification_cooldown">سیکیورٹی کے لیے آپ اپنا پن دن میں صرف ایک بار تبدیل کر سکتے ہیں۔</string>
+    <string name="screen_two_step_verification_challenge_invalid">پن تبدیل کرنے کا سیشن ختم ہو گیا۔ دوبارہ شروع کریں۔</string>
+    <string name="screen_two_step_verification_weak_error">اس پن کا اندازہ لگانا بہت آسان ہے۔ کوئی اور منتخب کریں۔</string>
+    <string name="screen_two_step_verification_mismatch_error">پن آپس میں نہیں ملتے۔ براہ کرم دوبارہ کوشش کریں۔</string>
+    <string name="screen_two_step_verification_same_as_current">آپ کا نیا پن موجودہ پن سے مختلف ہونا چاہیے۔</string>
+    <string name="screen_two_step_verification_rate_limited">بہت زیادہ کوششیں۔ ذرا انتظار کریں اور دوبارہ کوشش کریں۔</string>
+    <string name="screen_two_step_verification_updated">دو مرحلوں والی تصدیق اپ ڈیٹ ہو گئی</string>
+    <string name="screen_change_phone_title">فون نمبر تبدیل کریں</string>
+    <string name="screen_change_phone_intro_header">اپنا نمبر تبدیل کریں</string>
+    <string name="screen_change_phone_intro_message">ہم آپ کے پن کی تصدیق کریں گے، پھر آپ کے نئے نمبر پر پیغام کے ذریعے کوڈ بھیجیں گے۔ آپ کا اکاؤنٹ، گفتگوئیں اور پیغامات ویسے ہی رہیں گے۔</string>
+    <string name="screen_change_phone_new_header">نیا فون نمبر</string>
+    <string name="screen_change_phone_new_footer">وہ نمبر درج کریں جو آپ اب سے استعمال کرنا چاہتے ہیں۔</string>
+    <string name="screen_change_phone_new_invalid">براہ کرم درست فون نمبر درج کریں۔</string>
+    <string name="screen_change_phone_pin_header">اپنا پن درج کریں</string>
+    <string name="screen_change_phone_pin_footer">اس تبدیلی کی اجازت دینے کے لیے اپنے 6 ہندسوں کے پن کی تصدیق کریں۔</string>
+    <string name="screen_change_phone_pin_incorrect">یہ پن غلط ہے۔ براہ کرم دوبارہ کوشش کریں۔</string>
+    <string name="screen_change_phone_otp_header">اپنے نئے نمبر کی توثیق کریں</string>
+    <string name="screen_change_phone_otp_footer">وہ 6 ہندسوں کا کوڈ درج کریں جو ہم نے آپ کے نئے نمبر پر بھیجا۔</string>
+    <string name="screen_change_phone_otp_invalid">یہ کوڈ غلط ہے یا اس کی مدت ختم ہو چکی ہے۔ دوبارہ کوشش کریں۔</string>
+    <string name="screen_change_phone_already_linked">یہ فون نمبر پہلے سے کسی اور اکاؤنٹ سے منسلک ہے۔</string>
+    <string name="screen_change_phone_updated">آپ کا فون نمبر اپ ڈیٹ ہو گیا۔</string>
+    <string name="screen_change_phone_done_header">سب تیار ہے</string>
+    <string name="screen_change_phone_done_message">آپ کا فون نمبر اپ ڈیٹ ہو گیا۔ اب سے آپ سائن ان کے لیے اپنا نیا نمبر استعمال کریں گے۔</string>
+    <string name="screen_change_phone_needs_pin_header">نمبر تبدیل کرنے کے لیے آپ کو پن درکار ہے</string>
+    <string name="screen_change_phone_needs_pin_message">اپنی حفاظت کے لیے 6 ہندسوں کا اکاؤنٹ پن ترتیب دیں۔ نمبر تبدیل کرنے سے پہلے آپ اس کی تصدیق کریں گے۔</string>
+    <string name="screen_change_phone_needs_pin_action">پن ترتیب دیں</string>
+    <string name="screen_change_phone_cooldown_header">ابھی نہیں</string>
+    <string name="screen_change_phone_cooldown_message">اپنی حفاظت کے لیے آپ %1$s بعد اپنا نمبر تبدیل کر سکتے ہیں۔</string>
+</resources>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: nl translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Vrienden vinden</string>
+    <string name="screen_find_friends_action">Vrienden vinden</string>
+    <string name="screen_find_friends_action_description">Bekijk wie van je contacten op Gua zit</string>
+    <string name="screen_find_friends_loading">Je contacten worden op Gua gezocht…</string>
+    <string name="screen_find_friends_permission_title">Toegang tot contacten toestaan</string>
+    <string name="screen_find_friends_permission_message">Gua controleert je contacten privé om te zien wie er al is. Je contacten worden nooit opgeslagen.</string>
+    <string name="screen_find_friends_permission_action">Toegang toestaan</string>
+    <string name="screen_find_friends_permission_denied_action">Instellingen openen</string>
+    <string name="screen_find_friends_empty_title">Nog geen contacten op Gua</string>
+    <string name="screen_find_friends_empty_message">Nog niemand uit je contacten zit op Gua. Nodig ze uit en ze verschijnen hier.</string>
+    <string name="screen_find_friends_empty_action">Opnieuw controleren</string>
+    <string name="screen_find_friends_error_title">Er is iets misgegaan</string>
+    <string name="screen_find_friends_error_message">We konden je contacten nu niet controleren. Probeer het opnieuw.</string>
+    <string name="screen_find_friends_error_action">Opnieuw proberen</string>
+    <string name="a11y_find_friends_view_profile">Profiel van %1$s bekijken</string>
+    <string name="a11y_find_friends_start_chat">Een chat met %1$s beginnen</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d contact zit op Gua</item>
+        <item quantity="other">%1$d contacten zitten op Gua</item>
+    </plurals>
+</resources>
