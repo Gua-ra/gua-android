@@ -12,13 +12,24 @@ object BuildTimeConfig {
     const val APPLICATION_ID = "global.gua"
     const val APPLICATION_NAME = "Gua"
 
-    // GUA FORK: these were Element's Firebase (vector-alpha, project 912726360885) app IDs and must
-    // not ship in the Gua binary. They feed the "google_app_id" string resource in the firebase push
-    // provider. Empty = FirebaseApp skips init (no push, no crash). To enable push, set each to the
-    // mobilesdk_app_id ("1:<sender>:android:<hash>") of the matching Gua Firebase Android app from
-    // its google-services.json, and fill libraries/pushproviders/firebase/.../values/firebase.xml.
-    const val GOOGLE_APP_ID_RELEASE = ""
-    const val GOOGLE_APP_ID_DEBUG = ""
+    // GUA FORK: the mobilesdk_app_id of each Gua Firebase Android app, feeding the
+    // "google_app_id" string resource in the firebase push provider. These replaced
+    // Element's (project vector-alpha, 912726360885), which must never ship in a Gua
+    // binary. An empty value makes FirebaseApp skip initialisation: no push, no crash.
+    //
+    // Project "Gua Global" (gua-global, 511804071315). One per package, because Firebase
+    // keys its app records on the package name.
+    //
+    // RELEASE and DEV are both the release build type: the QA app is the release type
+    // built with -Pgua.deployment=dev, which suffixes the applicationId with ".dev". The
+    // firebase module picks between them on that same property, so QA registers as itself
+    // rather than falling back to production's id and failing.
+    const val GOOGLE_APP_ID_RELEASE = "1:511804071315:android:7a87ae8499f379204e1c66"
+    const val GOOGLE_APP_ID_DEV = "1:511804071315:android:55bc17310919f64c4e1c66"
+    const val GOOGLE_APP_ID_DEBUG = "1:511804071315:android:0b8eb92ccf4eaa6a4e1c66"
+
+    // Nightly has no Firebase app record: global.gua.nightly is not registered. Left empty
+    // so those builds start with push disabled rather than registering as another package.
     const val GOOGLE_APP_ID_NIGHTLY = ""
 
     // Reverse-DNS of the brand host gua.global. Drives the OIDC custom-scheme redirect

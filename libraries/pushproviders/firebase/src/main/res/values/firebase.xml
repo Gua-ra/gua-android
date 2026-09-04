@@ -5,16 +5,22 @@
   removed here. Empty api-key/app-id values make FirebaseApp skip auto-initialization (no crash,
   no push) until Gua's own Firebase project is wired in.
 
-  TO ENABLE PUSH: create the Gua Firebase project (Android app id "global.gua"), then paste the
-  matching values from its google-services.json below AND set BuildTimeConfig.GOOGLE_APP_ID_*
-  (which feeds the "google_app_id" resource) to the Gua mobilesdk_app_id values.
+  These are Gua's own, from project "Gua Global" (gua-global, 511804071315). They are
+  project-wide: one Android API key serves all three packages, and which app a push reaches
+  is decided by google_app_id, which BuildTimeConfig.GOOGLE_APP_ID_* sets per build.
+
+  google_api_key is not a secret in the usual sense: it ships inside every APK, and Google
+  restricts it by package name and signing certificate rather than by keeping it hidden.
+
+  Left empty on purpose: default_web_client_id (no Google Sign-In), firebase_database_url
+  (no Realtime Database), google_crash_reporting_api_key (Crashlytics is not used).
 -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="default_web_client_id" translatable="false"></string>
     <string name="firebase_database_url" translatable="false"></string>
-    <string name="gcm_defaultSenderId" translatable="false"></string>
-    <string name="google_api_key" translatable="false"></string>
+    <string name="gcm_defaultSenderId" translatable="false">511804071315</string>
+    <string name="google_api_key" translatable="false">AIzaSyB2RTAWSf9v5lqoXILeoc7wzgfImvv1Pxs</string>
     <string name="google_crash_reporting_api_key" translatable="false"></string>
-    <string name="google_storage_bucket" translatable="false"></string>
-    <string name="project_id" translatable="false" tools:ignore="UnusedResources"></string>
+    <string name="google_storage_bucket" translatable="false">gua-global.firebasestorage.app</string>
+    <string name="project_id" translatable="false" tools:ignore="UnusedResources">gua-global</string>
 </resources>
