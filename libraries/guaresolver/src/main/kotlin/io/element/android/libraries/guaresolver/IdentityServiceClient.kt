@@ -8,13 +8,15 @@
 package io.element.android.libraries.guaresolver
 
 /**
- * GUA FORK: talks to the Gua identity-service (`POST /directory/lookup`) for contact discovery —
+ * GUA FORK: talks to the Gua identity-service (`POST /directory/lookup`) for contact discovery:
  * matching a batch of address-book phone numbers against Gua accounts. Android counterpart of iOS
  * `IdentityServiceClientProtocol.lookupContacts` (+ `ContactMatch`).
  *
- * PRIVACY: callers pass **protected (hashed) phone digests**, never raw numbers — see [PhoneHasher].
- * The address book is never persisted; the digests are sent over TLS for a one-shot lookup and the
- * raw numbers never leave the device. Only the contacts that are on Gua and discoverable come back.
+ * PRIVACY: callers pass hashed phone digests, never raw numbers, see [PhoneHasher]. The address
+ * book is never persisted; the digests are sent over TLS for a one-shot lookup and the raw numbers
+ * never leave the device. The digest is a privacy-hardening step, not a guarantee of
+ * irreversibility: the domain tag is public and the phone keyspace is small, so the identity-service
+ * can match a digest back to a number. Only the contacts that are on Gua and discoverable come back.
  */
 interface IdentityServiceClient {
     /**
@@ -22,7 +24,8 @@ interface IdentityServiceClient {
      *
      * @param accessToken the caller's Matrix access token (the lookup is authenticated, mirroring iOS).
      * @param hashedPhones address-book phone numbers already protected via [PhoneHasher.hash]
-     * (E.164 -> stable, salted digest). Raw numbers must never be passed here.
+     * (E.164 -> stable, domain-tagged SHA-256 digest; the tag is public, not a salt). Raw numbers
+     * must never be passed here.
      * @return [Result.success] with the matched [ContactMatch]es, or [Result.failure] with a
      * [ResolverError] (notably [ResolverError.NotConfigured] when no identity-service URL is configured).
      */

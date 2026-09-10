@@ -12,10 +12,10 @@
 
 This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://github.com/element-hq/element-x-android) (Element X Android). On top of the upstream client, it adds the Gua product layer:
 
-- **Routing across a trusted federation.** A dedicated resolver ([`gua-resolver`](https://github.com/Gua-ra/gua-resolver)) locates each account inside the Gua federation, so conversations work across providers while homeserver details stay fully abstracted from the user. People see usernames, never server addresses.
-- **Simplified onboarding with two-step verification.** Sign-in is simplified and currently phone-based by default: enter your number, confirm a verification code, and protect the account with a 6-digit PIN as a second step. The flow is designed to stay flexible, including institutional SSO providers.
-- **Private contact discovery.** Find Friends matches your contacts through hashed phone lookups and is wired straight into Start Chat, so finding people feels instant without exposing your address book.
-- **Phone number management.** Accounts stay tied to a current number, with guarded flows for changing it safely.
+- **Routing across a trusted federation.** Sign-in starts at the Gua resolver ([`gua-resolver`](https://github.com/Gua-ra/gua-resolver)): the app asks it by phone number which homeserver in the closed Gua federation to use, then signs in through the Gua identity host and connects to that homeserver. Homeserver details stay abstracted from the user: people see usernames, never server addresses.
+- **Simplified onboarding with two-step verification.** Sign-in is simplified and currently phone-based by default: enter your number, confirm a verification code, and protect the account with a 6-digit PIN as a second step. The flow is designed to stay flexible, with institutional SSO planned for organizations that bring their own identity.
+- **Private contact discovery.** Find Friends shows which of your contacts are already on Gua and is wired straight into Start Chat. It hashes numbers on the device and sends the digests to the Gua identity service rather than the address book itself; the hashing is a privacy-hardening step, not a guarantee of irreversibility.
+- **Phone number management.** The number linked to an account can be changed from Settings, verified with a one-time code sent to the new number plus the account PIN as the second factor.
 - **A reworked welcome experience.** A native welcome screen with the Gua aurora, phone entry and country picker as the entry point into the app.
 
 ---
@@ -25,10 +25,10 @@ This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://git
 | Area | Upstream (Element X) | Gua |
 |---|---|---|
 | Brand | Element / New Vector | Gua (`global.gua` application id) |
-| Login flow | Matrix password / SSO with manual homeserver selection | Simplified sign-in (phone number and verification code by default, flexible by design including institutional SSO), no homeserver picking |
+| Login flow | Matrix password / SSO with manual homeserver selection | Simplified sign-in (phone number and verification code by default; institutional SSO planned), no homeserver picking |
 | Welcome screen | Element onboarding | Gua aurora welcome with native phone entry and country picker |
 | Account home | user selects a homeserver | resolved automatically behind the scenes (`libraries/guaresolver`) |
-| Contact discovery | user directory search | private Find Friends (hashed phone lookups) wired into Start Chat (`features/findfriends`) |
+| Contact discovery | user directory search | Find Friends (hashed phone lookups) wired into Start Chat (`features/findfriends`) |
 | Two-step verification | device verification | 6-digit account PIN: set, change, reset (`features/preferences` two-step verification) |
 | Settings identity | full user id with server suffix | username only, server abstracted |
 | Chat list | all rooms, including Spaces and empty rooms | chats-first: Spaces and state-only rooms are hidden |
@@ -42,20 +42,26 @@ This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://git
 
 ```
 Gua Android app
-    |  OIDC authorization-code + PKCE (Custom Tab)
+    |  1. resolver lookup by phone number: which homeserver to use
+    v
+gua-resolver
+    |  2. OIDC authorization code + PKCE (Custom Tab) against the resolved server
     v
 Matrix Authentication Service (Gua fork: gua-auth-service)
-    |  upstream OIDC (simplified sign-in, phone-based by default)
+    |  3. delegated sign-in (phone + one-time code + PIN today; institutional SSO planned)
     v
 Gua Identity Service
-    |  provisioning
+    |  provisioning, account PIN, contact lookup, phone-number changes
     v
-Synapse homeserver   <-- account + contact resolution -->   gua-resolver
+Synapse homeserver in the Gua federation
 ```
 
+- Before sign-in the app asks [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) which homeserver to use (`libraries/guaresolver`), so the client never hardcodes a server and the federation topology stays out of the UI.
 - The app registers as a public OIDC client (PKCE required) and opens the sign-in flow in a Custom Tab, backed by the [Gua fork of MAS](https://github.com/Gua-ra/gua-auth-service) and the [Gua Identity Service](https://github.com/Gua-ra/identity-service).
-- Account location and contact discovery go through [`gua-resolver`](https://github.com/Gua-ra/gua-resolver), keeping the federation topology out of the client UI.
-- End-to-end encryption stays on with safe defaults, including key storage and recovery.
+- Contact discovery (Find Friends), the account PIN and phone-number changes talk to the Gua Identity Service, not the resolver.
+- End-to-end encryption stays on by default.
+
+This is the current implementation. The target is explained in plain language in [Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md) and decided in [ADM-001](https://github.com/Gua-ra/gua-resolver/blob/main/docs/decisions/ADM-001-identifier-binding-placement-trust.md). Per-homeserver authentication and verified routing are part of that target and are not shipped yet: today every sign-in completes at the single Gua identity host, and the app follows the resolver's answer without verifying it against signed federation state.
 
 ---
 
