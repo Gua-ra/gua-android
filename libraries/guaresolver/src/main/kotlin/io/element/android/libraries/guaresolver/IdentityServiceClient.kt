@@ -111,7 +111,7 @@ interface IdentityServiceClient {
      * returning `{ "enrollUrl": ... }`).
      *
      * The returned URL is self-authenticating (it carries a short-lived enrollment token), so the
-     * client just opens it in an authenticated web ceremony — on Android a Chrome Custom Tab — and
+     * client just opens it in an authenticated web ceremony, on Android a Chrome Custom Tab, and
      * the user completes the WebAuthn registration in-browser at the IdP.
      *
      * @return [Result.success] with the enrollment URL, or [Result.failure] with a [ResolverError].
