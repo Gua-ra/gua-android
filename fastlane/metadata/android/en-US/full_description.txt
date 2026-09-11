@@ -8,16 +8,16 @@ Why Gua
  • Sign in with your phone number and start talking in seconds.
  • Find people you already know who are on Gua, and start a private chat or a group.
  • Rich messaging: replies, reactions, edits, voice messages, and photo, video and file sharing.
- • Built on an open, federated network, so no single company owns your communication.
+ • Built on the open Matrix protocol, and designed as a network of independently run servers rather than one company's silo.
 
 <b>Private by design</b>
 Gua does not mine your conversations and does not sell your data. Encryption is on from the very first message, with nothing to set up. You are not the product.
 
 <b>Open and verifiable</b>
-Gua is open source and built on an open, federated network. Anyone can study how it works and check how their data is handled. Organizations can run their own trusted servers within the network, so communities and institutions can keep control of their own data.
+Gua is open source and built on the open, federated Matrix protocol. Anyone can study how it works and check how their data is handled. The network is designed so that organizations will be able to run their own trusted servers within it, giving communities and institutions control of their own data.
 
 <b>Permissions</b>
- • Contacts: used to help you find people you already know who are on Gua. Your contact details are protected before they leave your device.
+ • Contacts: used to help you find people you already know who are on Gua. Phone numbers are hashed on your device before matching, and your address book itself is never uploaded.
  • Camera and microphone: used to capture and send photos, videos and voice messages.
  • Notifications: used to let you know about new messages, including on your lock screen.
 
