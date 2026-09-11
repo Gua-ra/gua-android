@@ -22,6 +22,8 @@ import io.element.android.features.login.impl.screens.onboarding.OnBoardingPrese
 import io.element.android.features.login.impl.web.WebClientUrlForAuthenticationRetriever
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.runCatchingUpdatingState
+import io.element.android.libraries.guaresolver.GuaDeployment
+import io.element.android.libraries.guaresolver.GuaResolverConfig
 import io.element.android.libraries.guaresolver.ResolverClient
 import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
 import io.element.android.libraries.matrix.api.auth.OAuthPrompt
@@ -40,6 +42,7 @@ class LoginHelper(
     private val authenticationService: MatrixAuthenticationService,
     private val webClientUrlForAuthenticationRetriever: WebClientUrlForAuthenticationRetriever,
     private val resolverClient: ResolverClient,
+    private val deployment: GuaDeployment = GuaResolverConfig.current,
 ) {
     private val loginModeState: MutableState<AsyncData<LoginMode>> = mutableStateOf(AsyncData.Uninitialized)
 
@@ -135,6 +138,46 @@ class LoginHelper(
         )
     }
 
+    /**
+     * GUA FORK: sign in with a passkey. Mirrors iOS `AuthenticationFlowCoordinator.handlePasskeySignIn`.
+     *
+     * A passkey is a discoverable credential: it was registered with a resident key and the assertion
+     * carries neither a username nor an allow list, so the credential identifies the account by itself.
+     * Nothing about signing in this way needs a phone number, so the resolver is skipped for the same
+     * reason it cannot be used: it maps a number to a homeserver, and there is no number here. The
+     * deployment's default account provider is configured instead (the first configured provider, as
+     * on iOS), so an account that lives elsewhere still signs in by number.
+     *
+     * The OIDC request keeps `prompt=login` and sends the reserved [PASSKEY_LOGIN_HINT] as the
+     * `login_hint`. MAS forwards the hint verbatim; identity-service maps it to a PASSKEY session
+     * intent so the sign-in page leads with the passkey instead of auto-submitting a number and
+     * sending a code. An older identity-service that does not know the hint maps it to no phone
+     * hint, which is today's behaviour, so nothing regresses if the app ships first.
+     *
+     * Fails closed with [PasskeySignInError.NotConfigured] when the deployment has no default account
+     * provider, the way the phone path fails with `ResolverError.NotConfigured`.
+     */
+    suspend fun submitPasskey() {
+        suspend {
+            val accountProvider = deployment.defaultAccountProvider?.takeIf { it.isNotEmpty() }
+                ?: throw PasskeySignInError.NotConfigured
+            authenticationService.setHomeserver(accountProvider)
+                .map { matrixHomeServerDetails ->
+                    if (matrixHomeServerDetails.supportsOAuthLogin) {
+                        LoginMode.OAuth(
+                            authenticationService.getOAuthUrl(prompt = OAuthPrompt.Login, loginHint = PASSKEY_LOGIN_HINT).getOrThrow()
+                        )
+                    } else {
+                        throw ChangeServerError.UnsupportedServer
+                    }
+                }
+                .getOrThrow()
+        }.runCatchingUpdatingState(
+            state = loginModeState,
+            errorTransform = { ChangeServerError.from(it) }
+        )
+    }
+
     private suspend fun onOAuthAction(oAuthAction: OAuthAction) {
         // GUA FORK: the identity-reset return is for the reset flow, not for login.
         if (oAuthAction is OAuthAction.IdentityResetApproved) return
@@ -163,5 +206,13 @@ class LoginHelper(
             is OAuthAction.IdentityResetApproved -> Unit
         }
         oAuthActionFlow.reset()
+    }
+
+    companion object {
+        /**
+         * GUA FORK: the reserved OIDC `login_hint` value that asks the sign-in page to lead with a
+         * passkey. Defined once here; the identity-service maps this literal to its PASSKEY intent.
+         */
+        const val PASSKEY_LOGIN_HINT = "passkey"
     }
 }

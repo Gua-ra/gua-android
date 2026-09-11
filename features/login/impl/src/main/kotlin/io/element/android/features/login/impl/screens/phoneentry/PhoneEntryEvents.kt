@@ -22,6 +22,13 @@ sealed interface PhoneEntryEvents {
     /** The user tapped continue; runs resolve -> configure -> OIDC. */
     data object Continue : PhoneEntryEvents
 
+    /**
+     * The user chose to sign in with a passkey instead of a number. Deliberately carries no phone
+     * number: the credential is discoverable, so it identifies the account by itself and no code
+     * has to be sent to reach it. Runs configure (default account provider) -> OIDC.
+     */
+    data object SignInWithPasskey : PhoneEntryEvents
+
     /** Dismiss the current error. */
     data object ClearError : PhoneEntryEvents
 }

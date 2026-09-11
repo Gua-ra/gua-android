@@ -85,6 +85,11 @@ class PhoneEntryPresenter(
                         loginHelper.submitPhone(e164)
                     }
                 }
+                PhoneEntryEvents.SignInWithPasskey -> {
+                    coroutineScope.launch {
+                        loginHelper.submitPasskey()
+                    }
+                }
                 PhoneEntryEvents.ClearError -> loginHelper.clearError()
             }
         }

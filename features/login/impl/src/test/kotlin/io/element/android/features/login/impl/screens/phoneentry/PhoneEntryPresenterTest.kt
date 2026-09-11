@@ -8,13 +8,20 @@
 package io.element.android.features.login.impl.screens.phoneentry
 
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.login.impl.error.ChangeServerError
+import io.element.android.features.login.impl.login.FakeGuaDeployment
 import io.element.android.features.login.impl.login.FakeResolverClient
+import io.element.android.features.login.impl.login.LoginHelper
 import io.element.android.features.login.impl.login.LoginMode
+import io.element.android.features.login.impl.login.PasskeySignInError
 import io.element.android.features.login.impl.screens.onboarding.createLoginHelper
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.guaresolver.HomeserverResolution
 import io.element.android.libraries.guaresolver.ResolvedHomeserver
 import io.element.android.libraries.guaresolver.ResolverError
+import io.element.android.libraries.matrix.api.auth.OAuthDetails
+import io.element.android.libraries.matrix.api.auth.OAuthPrompt
+import io.element.android.libraries.matrix.test.auth.AN_OAUTH_DATA
 import io.element.android.libraries.matrix.test.auth.FakeMatrixAuthenticationService
 import io.element.android.libraries.matrix.test.auth.aMatrixHomeServerDetails
 import io.element.android.libraries.phonenumberentry.DeviceCountryProvider
@@ -222,6 +229,83 @@ class PhoneEntryPresenterTest {
             typedState.eventSink(PhoneEntryEvents.Continue)
             val failureState = awaitTerminalLoginMode()
             assertThat(failureState.loginMode).isInstanceOf(AsyncData.Failure::class.java)
+        }
+    }
+
+    @Test
+    fun `present - sign in with passkey configures the default account provider and sends the passkey hint`() = runTest {
+        // No number is involved, so the resolver must never be consulted.
+        val resolveRecorder = lambdaRecorder<String, Result<HomeserverResolution>> { error("resolver must not be called") }
+        val setHomeserverRecorder = lambdaRecorder<String, Result<io.element.android.libraries.matrix.api.auth.MatrixHomeServerDetails>> { homeserver ->
+            assertThat(homeserver).isEqualTo("gua.global")
+            Result.success(aMatrixHomeServerDetails(supportsOAuthLogin = true))
+        }
+        val getOAuthUrlRecorder = lambdaRecorder<OAuthPrompt, String?, Result<OAuthDetails>> { prompt, loginHint ->
+            // The prompt stays `login`; only the reserved hint tells the sign-in page to lead with the passkey.
+            assertThat(prompt).isEqualTo(OAuthPrompt.Login)
+            assertThat(loginHint).isEqualTo(LoginHelper.PASSKEY_LOGIN_HINT)
+            assertThat(loginHint).isEqualTo("passkey")
+            Result.success(AN_OAUTH_DATA)
+        }
+        val presenter = createPhoneEntryPresenter(
+            loginHelper = createLoginHelper(
+                authenticationService = FakeMatrixAuthenticationService(
+                    setHomeserverResult = setHomeserverRecorder,
+                    getOAuthUrlResult = getOAuthUrlRecorder,
+                ),
+                resolverClient = FakeResolverClient(resolveResult = resolveRecorder),
+                deployment = FakeGuaDeployment(defaultAccountProvider = "gua.global"),
+            ),
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            // Works with an empty phone field: the passkey identifies the account by itself.
+            assertThat(initialState.canContinue).isFalse()
+            initialState.eventSink(PhoneEntryEvents.SignInWithPasskey)
+            val successState = awaitTerminalLoginMode()
+            assertThat(successState.loginMode.dataOrNull()).isEqualTo(LoginMode.OAuth(AN_OAUTH_DATA))
+        }
+        resolveRecorder.assertions().isNeverCalled()
+        setHomeserverRecorder.assertions().isCalledOnce()
+        getOAuthUrlRecorder.assertions().isCalledOnce()
+    }
+
+    @Test
+    fun `present - sign in with passkey without a configured account provider fails closed`() = runTest {
+        val resolveRecorder = lambdaRecorder<String, Result<HomeserverResolution>> { error("resolver must not be called") }
+        val presenter = createPhoneEntryPresenter(
+            loginHelper = createLoginHelper(
+                // setHomeserver is left at its lambdaError default: nothing may be configured.
+                authenticationService = FakeMatrixAuthenticationService(),
+                resolverClient = FakeResolverClient(resolveResult = resolveRecorder),
+                deployment = FakeGuaDeployment(defaultAccountProvider = null),
+            ),
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(PhoneEntryEvents.SignInWithPasskey)
+            val failureState = awaitTerminalLoginMode()
+            val error = (failureState.loginMode as AsyncData.Failure).error
+            assertThat(error).isEqualTo(ChangeServerError.Error(messageStr = PasskeySignInError.NotConfigured.message))
+        }
+        resolveRecorder.assertions().isNeverCalled()
+    }
+
+    @Test
+    fun `present - sign in with passkey on a server without OIDC surfaces the unsupported error`() = runTest {
+        val presenter = createPhoneEntryPresenter(
+            loginHelper = createLoginHelper(
+                authenticationService = FakeMatrixAuthenticationService(
+                    setHomeserverResult = { Result.success(aMatrixHomeServerDetails(supportsOAuthLogin = false)) },
+                ),
+                resolverClient = FakeResolverClient(resolveResult = { error("resolver must not be called") }),
+            ),
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(PhoneEntryEvents.SignInWithPasskey)
+            val failureState = awaitTerminalLoginMode()
+            assertThat((failureState.loginMode as AsyncData.Failure).error).isEqualTo(ChangeServerError.UnsupportedServer)
         }
     }
 }

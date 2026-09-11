@@ -20,4 +20,9 @@
     <string name="screen_phone_entry_footer">We\'ll text a verification code to this number.</string>
     <string name="screen_phone_entry_phone_number_label">Phone number</string>
     <string name="screen_phone_entry_country_picker_a11y">Select country</string>
+
+    <!-- Gua sign in with a passkey. Button on the phone-entry screen; the passkey is a discoverable
+         credential, so it identifies the account on its own: choosing this sends no code. Same key as
+         iOS Untranslated.strings. -->
+    <string name="gua_sign_in_with_passkey">Sign in with a passkey</string>
 </resources>

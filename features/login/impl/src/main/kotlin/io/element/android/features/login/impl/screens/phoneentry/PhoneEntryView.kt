@@ -21,7 +21,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
+import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.login.LoginModeView
 import io.element.android.libraries.architecture.AsyncData
@@ -51,7 +54,9 @@ import io.element.android.libraries.designsystem.background.GuaWelcomeBackground
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Button
+import io.element.android.libraries.designsystem.theme.components.IconSource
 import io.element.android.libraries.designsystem.theme.components.Text
+import io.element.android.libraries.designsystem.theme.components.TextButton
 import io.element.android.libraries.matrix.api.auth.OAuthDetails
 import io.element.android.libraries.phonenumberentry.Country
 import io.element.android.libraries.phonenumberentry.PhoneNumberVisualTransformation
@@ -99,6 +104,18 @@ fun PhoneEntryView(
                         .fillMaxWidth()
                         .testTag(TestTags.loginContinue),
                 )
+                // Tertiary action, as on iOS. The text button takes its colour from LocalContentColor,
+                // so hand it the on-aurora white: the theme's textPrimary is near-black in light mode
+                // and would vanish against the dark canvas.
+                CompositionLocalProvider(LocalContentColor provides OnAuroraPrimary) {
+                    TextButton(
+                        text = stringResource(id = R.string.gua_sign_in_with_passkey),
+                        leadingIcon = IconSource.Vector(CompoundIcons.Lock()),
+                        onClick = { eventSink(PhoneEntryEvents.SignInWithPasskey) },
+                        enabled = !state.isSubmitting,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         },
     ) {
