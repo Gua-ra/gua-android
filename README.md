@@ -8,24 +8,28 @@
 
 </div>
 
-**Gua** is a private messenger with end-to-end encryption by default, built on top of [Matrix](https://matrix.org/).
+## What this is
 
-This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://github.com/element-hq/element-x-android) (Element X Android). On top of the upstream client, it adds the Gua product layer:
+**Gua** is a private messenger. End-to-end encryption is on by default. It is built on [Matrix](https://matrix.org/).
 
-- **Routing across a trusted federation.** Sign-in starts at the Gua resolver ([`gua-resolver`](https://github.com/Gua-ra/gua-resolver)): the app asks it by phone number which homeserver in the closed Gua federation to use, then signs in through the Gua identity host and connects to that homeserver. Homeserver details stay abstracted from the user: people see usernames, never server addresses.
-- **Simplified onboarding with two-step verification.** Sign-in is simplified and currently phone-based by default: enter your number, confirm a verification code, and protect the account with a 6-digit PIN as a second step. The flow is designed to stay flexible, with institutional SSO planned for organizations that bring their own identity.
-- **Private contact discovery.** Find Friends shows which of your contacts are already on Gua and is wired straight into Start Chat. It hashes numbers on the device and sends the digests to the Gua identity service rather than the address book itself; the hashing is a privacy-hardening step, not a guarantee of irreversibility.
-- **Phone number management.** The number linked to an account can be changed from Settings, verified with a one-time code sent to the new number plus the account PIN as the second factor.
-- **A reworked welcome experience.** A native welcome screen with the Gua aurora, phone entry and country picker as the entry point into the app.
+This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://github.com/element-hq/element-x-android) (Element X Android). Upstream provides the messaging core. This fork adds the Gua product layer on top: sign-in, routing, contact discovery, account management and the Gua look and feel.
 
 ---
 
-## What's different from upstream Element X
+## What the app does today
+
+- **Finds your homeserver for you.** Gua runs as a closed federation of homeservers. At sign-in, the app asks [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) which homeserver to use for your phone number. It then signs in through the Gua identity host and connects to that homeserver. You see usernames, never a server address.
+- **Simple sign-in with a second step.** You enter your phone number and confirm a verification code. A 6-digit PIN protects the account as a second step. The flow is built to stay flexible: institutional SSO is planned for organizations that bring their own identity.
+- **Private contact discovery.** Find Friends shows which of your contacts already use Gua and feeds straight into Start Chat. The app hashes phone numbers on the device and sends only the digests to the Gua identity service. It never sends the address book itself. Hashing makes the lookup more private. It does not make the numbers impossible to recover.
+- **Phone number changes.** You can change the number linked to your account from Settings. The new number receives a one-time code. The account PIN is the second factor.
+- **A Gua welcome screen.** The app opens on a native welcome screen with the Gua aurora, phone entry and a country picker.
+
+### What is different from upstream Element X
 
 | Area | Upstream (Element X) | Gua |
 |---|---|---|
 | Brand | Element / New Vector | Gua (`global.gua` application id) |
-| Login flow | Matrix password / SSO with manual homeserver selection | Simplified sign-in (phone number and verification code by default; institutional SSO planned), no homeserver picking |
+| Login flow | Matrix password / SSO with manual homeserver selection | Phone number and verification code, no homeserver picking. Institutional SSO planned |
 | Welcome screen | Element onboarding | Gua aurora welcome with native phone entry and country picker |
 | Account home | user selects a homeserver | resolved automatically behind the scenes (`libraries/guaresolver`) |
 | Contact discovery | user directory search | Find Friends (hashed phone lookups) wired into Start Chat (`features/findfriends`) |
@@ -36,9 +40,7 @@ This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://git
 | Sign-in session handling | may silently resume a previous web session | fresh authentication forced on every sign-in (`prompt=login`) |
 | Languages | upstream translations | adds Gua pt-BR and fr strings |
 
----
-
-## Architecture
+### How sign-in works today
 
 ```
 Gua Android app
@@ -56,18 +58,31 @@ Gua Identity Service
 Synapse homeserver in the Gua federation
 ```
 
-- Before sign-in the app asks [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) which homeserver to use (`libraries/guaresolver`), so the client never hardcodes a server and the federation topology stays out of the UI.
-- The app registers as a public OIDC client (PKCE required) and opens the sign-in flow in a Custom Tab, backed by the [Gua fork of MAS](https://github.com/Gua-ra/gua-auth-service) and the [Gua Identity Service](https://github.com/Gua-ra/identity-service).
-- Contact discovery (Find Friends), the account PIN and phone-number changes talk to the Gua Identity Service, not the resolver.
+- Before sign-in, the app asks [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) which homeserver to use (`libraries/guaresolver`). The client never hardcodes a server. The federation layout stays out of the UI.
+- The app registers as a public OIDC client and requires PKCE. It opens the sign-in flow in a Custom Tab. The [Gua fork of MAS](https://github.com/Gua-ra/gua-auth-service) and the [Gua Identity Service](https://github.com/Gua-ra/identity-service) serve that flow.
+- Find Friends, the account PIN and phone number changes talk to the Gua Identity Service, not the resolver.
 - End-to-end encryption stays on by default.
 
-This is the current implementation. The target is explained in plain language in [Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md) and decided in [ADM-001](https://github.com/Gua-ra/gua-resolver/blob/main/docs/decisions/ADM-001-identifier-binding-placement-trust.md). Per-homeserver authentication and verified routing are part of that target and are not shipped yet: today every sign-in completes at the single Gua identity host, and the app follows the resolver's answer without verifying it against signed federation state.
+---
+
+## How this relates to the target design
+
+Everything above describes the current implementation. Parts of the target design are not shipped yet, including:
+
+- **Per-homeserver authentication.** Today every sign-in completes at the single Gua identity host.
+- **Verified routing.** Today the app follows the resolver's answer as given. It does not check that answer against signed federation state.
+
+[Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md) explains the target in plain language. [ADM-001](https://github.com/Gua-ra/gua-resolver/blob/main/docs/decisions/ADM-001-identifier-binding-placement-trust.md) records the decision behind it.
 
 ---
 
 ## Building
 
-Requirements: **Android Studio** (or the Android command line tools) with **JDK 21**.
+### Requirements
+
+You need **Android Studio** (or the Android command line tools) and **JDK 21**.
+
+### Build a debug APK
 
 ```bash
 git clone git@github.com:Gua-ra/gua-android.git
@@ -75,9 +90,11 @@ cd gua-android
 ./gradlew :app:assembleGplayDebug
 ```
 
-Or open the project in Android Studio and run the `app` configuration (the debug application id is `global.gua.debug`).
+Or open the project in Android Studio and run the `app` configuration. The debug application id is `global.gua.debug`.
 
-To point the app at your own Gua stack, set the `gua.*` properties in `local.properties`:
+### Point the app at your own Gua stack
+
+Set the `gua.*` properties in `local.properties`:
 
 ```properties
 gua.resolverBaseUrl=...
@@ -85,7 +102,7 @@ gua.identityServiceBaseUrl=...
 gua.defaultAccountProvider=...
 ```
 
-See the upstream [contribution guide](CONTRIBUTING.md) for full environment setup, code generation and testing instructions.
+The upstream [contribution guide](CONTRIBUTING.md) covers environment setup, code generation and testing.
 
 ---
 
