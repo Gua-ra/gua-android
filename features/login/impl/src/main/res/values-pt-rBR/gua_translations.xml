@@ -24,4 +24,7 @@
     <string name="screen_phone_entry_country_picker_a11y">Selecionar país</string>
 
     <string name="gua_onboarding_welcome_message">Mensagens privadas, de um jeito simples.</string>
+
+    <!-- Sign in with a passkey ("chave de acesso", the term the preferences module already uses). -->
+    <string name="gua_sign_in_with_passkey">Entrar com chave de acesso</string>
 </resources>
