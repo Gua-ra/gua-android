@@ -68,11 +68,21 @@ data class TwoStepVerificationState(
 ) {
     val isWorking: Boolean = phase == TwoStepVerificationPhase.Submitting
 
-    /** True once the account is known to hold a PIN; drives "Set up PIN" versus "Change PIN". */
-    val hasPin: Boolean = factors?.hasPin == true
+    /**
+     * True once the account is known to hold a PIN, false once it is known not to, and null while
+     * the status could not be read. Drives "Change PIN" versus "Set up PIN", and UNKNOWN must get
+     * neither: collapsing it to "no PIN" is what offered "Set up PIN" to a PIN holder and then sent
+     * them into the initial-PIN call the server refuses.
+     */
+    val hasPin: Boolean? = factors?.hasPin
 
-    /** True once the account is known to hold a passkey. */
-    val passkeyRegistered: Boolean = factors?.passkeyRegistered == true
+    /**
+     * True once the account is known to hold a passkey, false once it is known not to, null while
+     * the status could not be read. Unknown offers no enrollment: the ceremony excludes credentials
+     * the account already holds, so guessing "none" here just sends the user to an authenticator
+     * that refuses.
+     */
+    val passkeyRegistered: Boolean? = factors?.passkeyRegistered
 
     /**
      * Whether two-step verification is on, off, or not known. A passkey alone turns it on: that is

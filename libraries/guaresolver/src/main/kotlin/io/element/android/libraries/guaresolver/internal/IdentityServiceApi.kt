@@ -229,7 +229,6 @@ internal data class PhoneChangeCompleteRequest(
     val code: String,
 )
 
-
 @Serializable
 internal data class AccountGenesisRegisterRequest(
     /** Canonical AccountGenesis bytes (87 bytes), base64url without padding. */

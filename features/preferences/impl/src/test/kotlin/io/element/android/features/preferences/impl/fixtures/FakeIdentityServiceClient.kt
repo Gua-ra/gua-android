@@ -39,6 +39,9 @@ class FakeIdentityServiceClient(
 
     val passkeyEnrollmentCalls: MutableList<String> = mutableListOf()
 
+    /** Every initial-PIN call, in order. The server refuses this one when a PIN already exists. */
+    val setInitialPinCalls: MutableList<String> = mutableListOf()
+
     data class StartCall(
         val reauthToken: String,
         val newPhone: String,
@@ -53,8 +56,10 @@ class FakeIdentityServiceClient(
     override suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus> =
         factorStatusResult()
 
-    override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> =
-        Result.success(Unit)
+    override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> {
+        setInitialPinCalls += newPin
+        return Result.success(Unit)
+    }
 
     override suspend fun startPinChange(accessToken: String, phone: String, currentPin: String): Result<String> =
         Result.success("pin-change-challenge")

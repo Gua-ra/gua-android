@@ -296,7 +296,7 @@ class DefaultIdentityServiceClientTest {
         ).exceptionOrNull()
 
         // The body wins over the header: they are the same number, but only the body is authoritative.
-        assertThat(error).isEqualTo(ResolverError.TwoFactorCooldown(retryAfterSeconds = 604800))
+        assertThat(error).isEqualTo(ResolverError.TwoFactorCooldown(retryAfterSeconds = 604_800))
         server.shutdown()
     }
 
