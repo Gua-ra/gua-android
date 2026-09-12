@@ -46,12 +46,17 @@ internal object Ed25519PublicKeys {
      *
      * The encoding is little-endian y with the top bit carrying the sign of x, so a y at or above the
      * field prime is refused first (that is the "y is larger than the field prime" rejection vector),
-     * then x is recovered and the curve equation is checked (the "not on the curve" one).
+     * then x is recovered and the curve equation is checked (the "not on the curve" one). The sign bit
+     * is not decoration: RFC 8032 section 5.1.3 step 4 fails decoding when the recovered x is zero and
+     * the sign bit asks for the negative root, because that root does not exist. identity-service decodes
+     * with the JDK provider, which enforces that rule, so a decoder whose job is to refuse exactly what
+     * the server refuses has to enforce it too.
      */
     fun isOnCurve(rawPublicKey: ByteArray): Boolean {
         if (rawPublicKey.size != RAW_PUBLIC_KEY_LENGTH) return false
         val y = BigInteger(1, rawPublicKey.reversedArray()).clearBit(255)
         if (y >= P) return false
+        val signBit = rawPublicKey[RAW_PUBLIC_KEY_LENGTH - 1].toInt() and 0x80
 
         val ySquared = y.multiply(y).mod(P)
         val u = ySquared.subtract(BigInteger.ONE).mod(P)
@@ -65,15 +70,19 @@ internal object Ed25519PublicKeys {
         var x = u.multiply(vCubed).mod(P).multiply(u.multiply(vSeventh).mod(P).modPow(exponent, P)).mod(P)
 
         val check = v.multiply(x).mod(P).multiply(x).mod(P)
-        return when {
-            check == u -> true
+        when {
+            check == u -> Unit
             check == u.negate().mod(P) -> {
                 // The other root; a point either way, which is what decoding has to establish.
                 x = x.multiply(SQRT_MINUS_ONE).mod(P)
-                v.multiply(x).mod(P).multiply(x).mod(P) == u
+                if (v.multiply(x).mod(P).multiply(x).mod(P) != u) return false
             }
-            else -> false
+            else -> return false
         }
+
+        // x = 0 has one root, not two, so the encoding that asks for its negative has no point behind it.
+        // Only y = 1 and y = p - 1 reach this, and both are refused by the server's decoder.
+        return !(x.signum() == 0 && signBit != 0)
     }
 
     /**

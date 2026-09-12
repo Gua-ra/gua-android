@@ -50,7 +50,7 @@ class LoginHelperAccountGenesisTest {
             registerResult = { error("the genesis path must not run while the flag is off") },
         )
         val hintRecorder = recordLoginHint()
-        val presenter = createPresenter(
+        val presenter = createPhoneEntryPresenter(
             genesisManager = genesisManager,
             accountGenesisEnabled = false,
             // A brand-new account, which is the only case that would ever register a genesis.
@@ -71,7 +71,7 @@ class LoginHelperAccountGenesisTest {
                 GenesisRegistration.Registered(accountId = AccountId.parse(AN_ACCOUNT_ID), attachHandle = A_HANDLE)
             },
         )
-        val presenter = createPresenter(
+        val presenter = createPhoneEntryPresenter(
             genesisManager = genesisManager,
             accountGenesisEnabled = true,
             accountExists = false,
@@ -89,7 +89,7 @@ class LoginHelperAccountGenesisTest {
         val genesisManager = FakeAccountGenesisManager(
             registerResult = { error("a returning user already has an accountId") },
         )
-        val presenter = createPresenter(
+        val presenter = createPhoneEntryPresenter(
             genesisManager = genesisManager,
             accountGenesisEnabled = true,
             accountExists = true,
@@ -105,7 +105,7 @@ class LoginHelperAccountGenesisTest {
     @Test
     fun `a deployment with no genesis support falls back to today's signup with no error`() = runTest {
         val genesisManager = FakeAccountGenesisManager(registerResult = { GenesisRegistration.Unavailable })
-        val presenter = createPresenter(
+        val presenter = createPhoneEntryPresenter(
             genesisManager = genesisManager,
             accountGenesisEnabled = true,
             accountExists = false,
@@ -128,7 +128,7 @@ class LoginHelperAccountGenesisTest {
         val oAuthRecorder = lambdaRecorder<OAuthPrompt, String?, Result<OAuthDetails>> { _, _ ->
             error("the OIDC flow must not start without the genesis this signup meant to register")
         }
-        val presenter = createPresenter(
+        val presenter = createPhoneEntryPresenter(
             genesisManager = genesisManager,
             accountGenesisEnabled = true,
             accountExists = false,
@@ -169,7 +169,7 @@ class LoginHelperAccountGenesisTest {
         return checkNotNull(terminal)
     }
 
-    private fun createPresenter(
+    private fun createPhoneEntryPresenter(
         genesisManager: FakeAccountGenesisManager,
         accountGenesisEnabled: Boolean,
         accountExists: Boolean,

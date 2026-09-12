@@ -34,7 +34,8 @@ class DefaultAccountGenesisManager(
     override suspend fun registerForSignup(): GenesisRegistration {
         return try {
             // A fresh pair per signup: re-using one that already owns an account would be an attempt to
-            // re-point it, which the server refuses with a conflict anyway.
+            // re-point it, which the server refuses with a conflict anyway. This mints into the store's
+            // signup slot, so a pair that already owns an account is left where it is.
             val keys = keyStore.createKeyPair()
             val canonicalBytes = AccountGenesisCodec.mint(
                 authorityPublicKey = keys.authorityPublicKey(),
@@ -55,6 +56,7 @@ class DefaultAccountGenesisManager(
                         // Not a failure: the deployment does not do genesis, so this signup takes the
                         // bootstrap branch with no handle and nothing shown to the user.
                         Timber.i("This deployment does not issue an account genesis; continuing without one")
+                        // Drops the pair minted just above. An attached pair is not part of this.
                         keyStore.clear()
                         GenesisRegistration.Unavailable
                     }

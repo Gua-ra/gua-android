@@ -7,6 +7,7 @@
 
 package io.element.android.libraries.guaresolver.genesis
 
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.google.crypto.tink.subtle.Ed25519Sign
@@ -34,6 +35,10 @@ import kotlinx.coroutines.sync.withLock
  * key can open. The application sets `android:allowBackup="false"`, so nothing stored here is backed up
  * or transferred to another device, which is what keeps the key non-syncing.
  *
+ * The two slots are separate preference entries sealed under the SAME keystore key, which is why [clear]
+ * deletes that key only once nothing is attached: deleting it while an attached pair is stored would
+ * leave a blob nothing can open, which is the same thing as losing the account's authority.
+ *
  * The suite byte reserves room for a hardware-resident P-256 suite, and that is the change that would
  * make the private half keystore-resident.
  */
@@ -59,20 +64,46 @@ class DefaultAccountAuthorityKeyStore(
         val sealedAuthority = encryptionDecryptionService.encrypt(secretKey, authority.privateKey).toBase64()
         val sealedRecovery = encryptionDecryptionService.encrypt(secretKey, recovery.privateKey).toBase64()
         dataStore.edit { preferences ->
+            // The signup slot only. The attached entries are never written from here.
             preferences[sealedAuthoritySeedKey] = sealedAuthority
             preferences[sealedRecoverySeedKey] = sealedRecovery
         }
         AccountAuthorityPublicKeys(authority.publicKey, recovery.publicKey)
     }
 
-    override suspend fun publicKeys(): AccountAuthorityPublicKeys? {
-        val authoritySeed = readSeed(sealedAuthoritySeedKey) ?: return null
-        val recoverySeed = readSeed(sealedRecoverySeedKey) ?: return null
-        return AccountAuthorityPublicKeys(
-            authority = Ed25519Sign.KeyPair.newKeyPairFromSeed(authoritySeed).publicKey,
-            recovery = Ed25519Sign.KeyPair.newKeyPairFromSeed(recoverySeed).publicKey,
-        )
+    override suspend fun publicKeys(): AccountAuthorityPublicKeys? =
+        publicKeysOf(sealedAuthoritySeedKey, sealedRecoverySeedKey)
+
+    override suspend fun markAttached(accountId: AccountId) {
+        mutex.withLock {
+            val preferences = dataStore.data.first()
+            val alreadyAttached = preferences[attachedAccountIdKey]
+            if (alreadyAttached != null && alreadyAttached != accountId.value) {
+                error("Another account is already attached on this device")
+            }
+            if (alreadyAttached == accountId.value && preferences[attachedAuthoritySeedKey] != null) {
+                // Already recorded, so a retried attach step is a no-op rather than a second promotion.
+                return@withLock
+            }
+            val sealedAuthority = preferences[sealedAuthoritySeedKey]
+                ?: error("No account authority key is stored on this device")
+            val sealedRecovery = preferences[sealedRecoverySeedKey]
+                ?: error("No recovery authority key is stored on this device")
+            dataStore.edit { edited ->
+                edited[attachedAccountIdKey] = accountId.value
+                edited[attachedAuthoritySeedKey] = sealedAuthority
+                edited[attachedRecoverySeedKey] = sealedRecovery
+                // The pair is the account's now, not the signup's, so the signup slot is emptied.
+                edited.remove(sealedAuthoritySeedKey)
+                edited.remove(sealedRecoverySeedKey)
+            }
+        }
     }
+
+    override suspend fun attachedAccountId(): String? = dataStore.data.first()[attachedAccountIdKey]
+
+    override suspend fun attachedPublicKeys(): AccountAuthorityPublicKeys? =
+        publicKeysOf(attachedAuthoritySeedKey, attachedRecoverySeedKey)
 
     override suspend fun signWithAuthorityKey(message: ByteArray): ByteArray {
         val seed = readSeed(sealedAuthoritySeedKey)
@@ -80,12 +111,29 @@ class DefaultAccountAuthorityKeyStore(
         return Ed25519Sign(seed).sign(message)
     }
 
-    override suspend fun clear() = mutex.withLock {
-        dataStore.edit { preferences ->
-            preferences.remove(sealedAuthoritySeedKey)
-            preferences.remove(sealedRecoverySeedKey)
+    override suspend fun clear() {
+        mutex.withLock {
+            dataStore.edit { preferences ->
+                // The signup slot only: an attached pair is an account's authority and outlives a signup.
+                preferences.remove(sealedAuthoritySeedKey)
+                preferences.remove(sealedRecoverySeedKey)
+            }
+            if (dataStore.data.first()[attachedAccountIdKey] == null) {
+                secretKeyRepository.deleteKey(SECRET_KEY_ALIAS)
+            }
         }
-        secretKeyRepository.deleteKey(SECRET_KEY_ALIAS)
+    }
+
+    private suspend fun publicKeysOf(
+        authorityKey: Preferences.Key<String>,
+        recoveryKey: Preferences.Key<String>,
+    ): AccountAuthorityPublicKeys? {
+        val authoritySeed = readSeed(authorityKey) ?: return null
+        val recoverySeed = readSeed(recoveryKey) ?: return null
+        return AccountAuthorityPublicKeys(
+            authority = Ed25519Sign.KeyPair.newKeyPairFromSeed(authoritySeed).publicKey,
+            recovery = Ed25519Sign.KeyPair.newKeyPairFromSeed(recoverySeed).publicKey,
+        )
     }
 
     /**
@@ -94,7 +142,7 @@ class DefaultAccountAuthorityKeyStore(
      * reported as "no key", never as a signature, because a silent bootstrap on a device that meant to
      * register a genesis is the failure mode ADM-008 warns about.
      */
-    private suspend fun readSeed(key: androidx.datastore.preferences.core.Preferences.Key<String>): ByteArray? {
+    private suspend fun readSeed(key: Preferences.Key<String>): ByteArray? {
         val sealed = dataStore.data.first()[key] ?: return null
         return try {
             val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
@@ -110,5 +158,8 @@ class DefaultAccountAuthorityKeyStore(
         private const val SECRET_KEY_ALIAS = "gua.SECRET_KEY_ALIAS_ACCOUNT_AUTHORITY"
         private val sealedAuthoritySeedKey = stringPreferencesKey("sealed_authority_seed")
         private val sealedRecoverySeedKey = stringPreferencesKey("sealed_recovery_seed")
+        private val attachedAccountIdKey = stringPreferencesKey("attached_account_id")
+        private val attachedAuthoritySeedKey = stringPreferencesKey("attached_authority_seed")
+        private val attachedRecoverySeedKey = stringPreferencesKey("attached_recovery_seed")
     }
 }

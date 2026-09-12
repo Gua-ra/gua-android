@@ -134,6 +134,91 @@ class DefaultAccountAuthorityKeyStoreTest {
         assertThat(persisted).doesNotContain(String(seed, Charsets.ISO_8859_1))
     }
 
+    @Test
+    fun `the next signup does not touch the key pair of an attached account`() = runTest {
+        val keyStore = createKeyStore()
+        val attached = keyStore.createKeyPair()
+        keyStore.markAttached(AN_ACCOUNT_ID)
+
+        // A second signup on the same device: this is the call that used to overwrite both seeds.
+        val forTheNextSignup = keyStore.createKeyPair()
+
+        assertThat(forTheNextSignup.authorityPublicKey()).isNotEqualTo(attached.authorityPublicKey())
+        val kept = checkNotNull(keyStore.attachedPublicKeys())
+        assertThat(kept.authorityPublicKey()).isEqualTo(attached.authorityPublicKey())
+        // Framework 0x01 seals the recovery key beside it, so it has to survive the same way.
+        assertThat(kept.recoveryAuthorityPublicKey()).isEqualTo(attached.recoveryAuthorityPublicKey())
+        assertThat(keyStore.attachedAccountId()).isEqualTo(AN_ACCOUNT_ID.value)
+    }
+
+    @Test
+    fun `clearing the signup pair keeps the attached one and the key that seals it`() = runTest {
+        val keyStore = createKeyStore()
+        val attached = keyStore.createKeyPair()
+        keyStore.markAttached(AN_ACCOUNT_ID)
+        keyStore.createKeyPair()
+
+        // The no-genesis branch calls this after minting a pair. It must not take the account with it.
+        keyStore.clear()
+
+        assertThat(keyStore.hasKeyPair()).isFalse()
+        val kept = checkNotNull(keyStore.attachedPublicKeys())
+        assertThat(kept.authorityPublicKey()).isEqualTo(attached.authorityPublicKey())
+        assertThat(keyStore.attachedAccountId()).isEqualTo(AN_ACCOUNT_ID.value)
+    }
+
+    @Test
+    fun `attaching a second account is refused instead of overwriting the first`() = runTest {
+        val keyStore = createKeyStore()
+        val attached = keyStore.createKeyPair()
+        keyStore.markAttached(AN_ACCOUNT_ID)
+        keyStore.createKeyPair()
+
+        val thrown = runCatchingExceptions { keyStore.markAttached(ANOTHER_ACCOUNT_ID) }.exceptionOrNull()
+
+        assertThat(thrown).isInstanceOf(IllegalStateException::class.java)
+        assertThat(checkNotNull(keyStore.attachedPublicKeys()).authorityPublicKey())
+            .isEqualTo(attached.authorityPublicKey())
+        assertThat(keyStore.attachedAccountId()).isEqualTo(AN_ACCOUNT_ID.value)
+    }
+
+    @Test
+    fun `attaching the same account twice is a no-op`() = runTest {
+        val keyStore = createKeyStore()
+        val attached = keyStore.createKeyPair()
+        keyStore.markAttached(AN_ACCOUNT_ID)
+
+        keyStore.markAttached(AN_ACCOUNT_ID)
+
+        assertThat(checkNotNull(keyStore.attachedPublicKeys()).authorityPublicKey())
+            .isEqualTo(attached.authorityPublicKey())
+    }
+
+    @Test
+    fun `attaching without a signup pair fails instead of recording an account with no key`() = runTest {
+        val keyStore = createKeyStore()
+
+        val thrown = runCatchingExceptions { keyStore.markAttached(AN_ACCOUNT_ID) }.exceptionOrNull()
+
+        assertThat(thrown).isInstanceOf(IllegalStateException::class.java)
+        assertThat(keyStore.attachedAccountId()).isNull()
+    }
+
+    @Test
+    fun `the attached pair survives a new instance over the same store`() = runTest {
+        val factory = CachingPreferenceDataStoreFactory()
+        val secretKeyRepository = SimpleSecretKeyRepository()
+        val first = createKeyStore(factory, secretKeyRepository)
+        val attached = first.createKeyPair()
+        first.markAttached(AN_ACCOUNT_ID)
+
+        val reopened = createKeyStore(factory, secretKeyRepository)
+
+        assertThat(reopened.attachedAccountId()).isEqualTo(AN_ACCOUNT_ID.value)
+        assertThat(checkNotNull(reopened.attachedPublicKeys()).authorityPublicKey())
+            .isEqualTo(attached.authorityPublicKey())
+    }
+
     private fun createKeyStore(
         preferenceDataStoreFactory: PreferenceDataStoreFactory = CachingPreferenceDataStoreFactory(),
         secretKeyRepository: SimpleSecretKeyRepository = SimpleSecretKeyRepository(),
@@ -157,6 +242,10 @@ class DefaultAccountAuthorityKeyStoreTest {
     private companion object {
         private const val SPKI_PREFIX = "302a300506032b6570032100"
         private const val SECRET_KEY_ALIAS = "gua.SECRET_KEY_ALIAS_ACCOUNT_AUTHORITY"
+
+        // Derived rather than written out, so they are canonical by construction.
+        private val AN_ACCOUNT_ID = AccountId.derive(AccountId.CLASS_GENESIS, "an attached account".toByteArray())
+        private val ANOTHER_ACCOUNT_ID = AccountId.derive(AccountId.CLASS_GENESIS, "a second account".toByteArray())
 
         private fun String.hexToBytesForTest(): ByteArray = chunked(2).map { it.toInt(16).toByte() }.toByteArray()
         private fun ByteArray.toHexForTest(): String = joinToString("") { "%02x".format(it) }

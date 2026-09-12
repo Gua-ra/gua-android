@@ -14,31 +14,59 @@ package io.element.android.libraries.guaresolver.genesis
  * The keys are generated on device before the OIDC flow starts and never leave it. There is no escrow
  * and no sync: ADM-008's own consequences section states that a lost device loses authority, which is
  * the deliberate cost of the key being unexportable.
+ *
+ * There are two slots, and the difference between them is the difference between a key that can be
+ * thrown away and one that cannot. The SIGNUP slot holds the pair minted for the signup in flight,
+ * which owns nothing until the server attaches it, so a later signup may replace it and [clear] may
+ * drop it. The ATTACHED slot holds the pair that owns an account: it is what that account's authority
+ * IS, and under recovery framework 0x01 the recovery key is sealed beside it, so nothing here ever
+ * overwrites or deletes it. [markAttached] is what moves a pair from the first slot to the second.
  */
 interface AccountAuthorityKeyStore {
-    /** True when a key pair has already been generated and is still readable. */
+    /** True when a pair for the signup in flight has been generated and is still readable. */
     suspend fun hasKeyPair(): Boolean
 
     /**
-     * Generates a fresh authority and recovery key pair, replacing any pair that was never attached.
+     * Generates a fresh authority and recovery key pair for a signup, replacing any earlier pair in the
+     * signup slot, which by definition was never attached to an account.
+     *
+     * An attached pair is not touched, because replacing it would destroy the authority of the account
+     * that already owns it and, with it, the recovery key sealed beside it.
      *
      * @return the two raw 32-byte Ed25519 PUBLIC keys, which are the only halves that ever leave here.
      */
     suspend fun createKeyPair(): AccountAuthorityPublicKeys
 
-    /** The public halves of the stored pair, or null when none is stored. */
+    /** The public halves of the pair in the signup slot, or null when none is stored. */
     suspend fun publicKeys(): AccountAuthorityPublicKeys?
 
     /**
-     * Signs [message] with the account authority key.
+     * Records that the pair in the signup slot now owns [accountId], moving it to the attached slot
+     * where no later signup and no [clear] can reach it. Calling it again for the same account does
+     * nothing, so an attach step that is retried is safe.
+     *
+     * @throws IllegalStateException when the signup slot is empty, or when a DIFFERENT account is
+     * already attached on this device: promoting over that pair would be the one loss ADM-008 decision
+     * 5 offers no recovery from, so it is refused rather than performed.
+     */
+    suspend fun markAttached(accountId: AccountId)
+
+    /** The accountId owned by the attached pair, or null when no pair on this device is attached. */
+    suspend fun attachedAccountId(): String?
+
+    /** The public halves of the attached pair, or null when no pair is attached. */
+    suspend fun attachedPublicKeys(): AccountAuthorityPublicKeys?
+
+    /**
+     * Signs [message] with the account authority key of the signup in flight.
      *
      * @return the 64-byte detached Ed25519 signature.
-     * @throws IllegalStateException when no key pair is stored, so a caller can never mistake a missing
-     * key for a successful signature.
+     * @throws IllegalStateException when the signup slot is empty, so a caller can never mistake a
+     * missing key for a successful signature.
      */
     suspend fun signWithAuthorityKey(message: ByteArray): ByteArray
 
-    /** Forgets the stored pair. */
+    /** Forgets the pair in the signup slot. An attached pair is kept. */
     suspend fun clear()
 }
 
