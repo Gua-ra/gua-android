@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">A telefonszáma frissült.</string>
     <string name="screen_change_phone_done_header">Kész</string>
     <string name="screen_change_phone_done_message">A telefonszáma frissült. Mostantól az új számával jelentkezik be.</string>
-    <string name="screen_change_phone_needs_pin_header">A szám módosításához PIN-kód szükséges</string>
-    <string name="screen_change_phone_needs_pin_message">Biztonsága érdekében állítson be egy 6 jegyű fiók-PIN-kódot. A szám módosítása előtt meg kell erősítenie.</string>
-    <string name="screen_change_phone_needs_pin_action">PIN-kód beállítása</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">PIN-kód beállítása</string>
     <string name="screen_change_phone_cooldown_header">Még nem</string>
     <string name="screen_change_phone_cooldown_message">Biztonsága érdekében %1$s múlva módosíthatja a számát.</string>
 </resources>

@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Deine Telefonnummer wurde aktualisiert.</string>
     <string name="screen_change_phone_done_header">Alles erledigt</string>
     <string name="screen_change_phone_done_message">Deine Telefonnummer wurde aktualisiert. Ab jetzt meldest du dich mit deiner neuen Nummer an.</string>
-    <string name="screen_change_phone_needs_pin_header">Zum Ändern deiner Nummer brauchst du eine PIN</string>
-    <string name="screen_change_phone_needs_pin_message">Richte zu deiner Sicherheit eine 6-stellige Konto-PIN ein. Du bestätigst sie, bevor du deine Nummer änderst.</string>
-    <string name="screen_change_phone_needs_pin_action">PIN einrichten</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">PIN einrichten</string>
     <string name="screen_change_phone_cooldown_header">Noch nicht</string>
     <string name="screen_change_phone_cooldown_message">Aus Sicherheitsgründen kannst du deine Nummer in %1$s ändern.</string>
 </resources>

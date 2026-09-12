@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Vaš broj telefona je ažuriran.</string>
     <string name="screen_change_phone_done_header">Sve je spremno</string>
     <string name="screen_change_phone_done_message">Vaš broj telefona je ažuriran. Od sada ćete se prijavljivati novim brojem.</string>
-    <string name="screen_change_phone_needs_pin_header">Za promjenu broja potreban je PIN</string>
-    <string name="screen_change_phone_needs_pin_message">Radi vaše sigurnosti postavite 6-znamenkasti PIN računa. Potvrdit ćete ga prije promjene broja.</string>
-    <string name="screen_change_phone_needs_pin_action">Postavi PIN</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Postavi PIN</string>
     <string name="screen_change_phone_cooldown_header">Još ne</string>
     <string name="screen_change_phone_cooldown_message">Radi vaše sigurnosti broj ćete moći promijeniti za %1$s.</string>
 </resources>

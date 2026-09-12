@@ -8,6 +8,7 @@
 package io.element.android.libraries.guaresolver.internal
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -54,26 +55,41 @@ internal interface IdentityServiceApi {
         @Body body: CompletePinChangeRequest,
     )
 
-    // GUA FORK: change phone number (PIN-first). Mirrors iOS' `security/pin/reauth` +
-    // `otp/change-number/request` + `otp/change-number` endpoints. The PIN step-up runs FIRST and
-    // yields a reauth token; the SMS only fires from `otp/change-number/request`.
+    // GUA FORK: change phone number, against the real `/account` contract.
+    //
+    // An earlier revision of this file called `security/pin/reauth`, `otp/change-number/request` and
+    // `otp/change-number`. The identity service has never served any of those three, so every phone
+    // change failed at the first call. The real sequence is:
+    //   1. account/reauth/start   sends an OTP to the CURRENT number (proof of possession only),
+    //   2. account/reauth/verify  exchanges that OTP for a single-use, PHONE_CHANGE-scoped token,
+    //   3. account/phone/change/start   spends the token AND a step-up factor (a passkey assertion,
+    //      else the account PIN), and only then sends the OTP to the NEW number,
+    //   4. account/phone/change/complete   redeems the challenge with that OTP.
+    // No SMS reaches the new number before step 3 has accepted a step-up factor.
 
-    @POST("security/pin/reauth")
-    suspend fun verifyPinReauth(
+    @POST("account/reauth/start")
+    suspend fun startAccountReauth(
         @Header("Authorization") authorization: String,
-        @Body body: PinReauthRequest,
-    ): ReauthTokenResponse
-
-    @POST("otp/change-number/request")
-    suspend fun requestChangeNumberOtp(
-        @Header("Authorization") authorization: String,
-        @Body body: OtpChangeNumberStartRequest,
+        @Header("Accept-Language") acceptLanguage: String?,
     )
 
-    @POST("otp/change-number")
-    suspend fun changeNumber(
+    @POST("account/reauth/verify")
+    suspend fun verifyAccountReauth(
         @Header("Authorization") authorization: String,
-        @Body body: OtpChangeNumberRequest,
+        @Body body: AccountReauthVerifyRequest,
+    ): AccountReauthTokenResponse
+
+    @POST("account/phone/change/start")
+    suspend fun startPhoneChange(
+        @Header("Authorization") authorization: String,
+        @Header("Accept-Language") acceptLanguage: String?,
+        @Body body: PhoneChangeStartRequest,
+    ): PhoneChangeStartResponse
+
+    @POST("account/phone/change/complete")
+    suspend fun completePhoneChange(
+        @Header("Authorization") authorization: String,
+        @Body body: PhoneChangeCompleteRequest,
     )
 
     // GUA FORK: passkey enrollment. Returns the authenticated web-ceremony URL the client opens to
@@ -124,11 +140,21 @@ internal data class LookupResponse(
 internal data class PinStatusResponse(
     val hasPin: Boolean,
     /**
-     * Remaining seconds of the WhatsApp-style fresh-2FA cooldown before the phone number can be
-     * changed again (0 = no active cooldown). Defaults to 0 for older identity-service builds that
-     * do not yet return the field.
+     * Remaining seconds of the fresh-2FA hold before the account PIN may be spent as the
+     * phone-change step-up (0 = no active hold). Defaults to 0 for older identity-service builds
+     * that do not yet return the field.
      */
     val changePhoneCooldownRemainingSeconds: Long = 0,
+    /** True when the account has a passkey registered and this deployment has passkeys enabled. */
+    val passkeyRegistered: Boolean = false,
+    /** The strongest factor the account holds: "PASSKEY", "PIN" or "PHONE_OTP". */
+    val preferredFactor: String? = null,
+    /**
+     * The factors `account/phone/change/start` accepts as its step-up, strongest first. Absent on
+     * builds that predate the factor policy; the client then derives the list from the factors the
+     * account is known to hold rather than assuming the account can settle nothing.
+     */
+    val phoneChangeStepUpFactors: List<String> = emptyList(),
 )
 
 @Serializable
@@ -157,32 +183,52 @@ internal data class CompletePinChangeRequest(
 )
 
 @Serializable
-internal data class PinReauthRequest(
-    val userId: String,
-    val pin: String,
-)
-
-@Serializable
-internal data class ReauthTokenResponse(
-    val reauthToken: String,
-    val expiresInSeconds: Int? = null,
-)
-
-@Serializable
-internal data class OtpChangeNumberStartRequest(
-    val userId: String,
-    val newPhone: String,
-    val reauthToken: String,
-    val language: String? = null,
-)
-
-@Serializable
-internal data class OtpChangeNumberRequest(
-    val userId: String,
-    val newPhone: String,
+internal data class AccountReauthVerifyRequest(
+    /** OTP delivered by SMS to the number currently on file. */
     val code: String,
-    val reauthToken: String,
+    /**
+     * The privileged operation the issued token may be spent on. The server binds the token to it
+     * and refuses to spend a token scoped elsewhere, so this is never left to the default.
+     */
+    val operation: String,
 )
+
+@Serializable
+internal data class AccountReauthTokenResponse(
+    val reauthToken: String,
+    val expiresInSeconds: Long? = null,
+)
+
+@Serializable
+internal data class PhoneChangeStartRequest(
+    /** Single-use, PHONE_CHANGE-scoped token from `account/reauth/verify`. Spent by this call. */
+    val reauthToken: String,
+    val newPhone: String,
+    /**
+     * Account PIN, the fallback step-up factor. Sent when the PIN is the factor being offered; not
+     * consulted by the server when a passkey assertion is accepted, since that is the stronger one.
+     */
+    val pin: String? = null,
+    /** Step-up ceremony id from `security/passkey/stepup/options`, sent with [passkeyCredential]. */
+    val passkeyStepUpId: String? = null,
+    /** Assertion response JSON from the step-up WebAuthn ceremony, verbatim. */
+    val passkeyCredential: JsonElement? = null,
+)
+
+@Serializable
+internal data class PhoneChangeStartResponse(
+    /** Opaque challenge proving the step-up succeeded and an OTP went to the new number. */
+    val challengeId: String,
+    val otpExpiresInSeconds: Long? = null,
+)
+
+@Serializable
+internal data class PhoneChangeCompleteRequest(
+    val challengeId: String,
+    /** OTP delivered by SMS to the NEW number. */
+    val code: String,
+)
+
 
 @Serializable
 internal data class AccountGenesisRegisterRequest(

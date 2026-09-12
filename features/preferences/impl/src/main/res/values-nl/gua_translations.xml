@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Je telefoonnummer is bijgewerkt.</string>
     <string name="screen_change_phone_done_header">Alles klaar</string>
     <string name="screen_change_phone_done_message">Je telefoonnummer is bijgewerkt. Vanaf nu log je in met je nieuwe nummer.</string>
-    <string name="screen_change_phone_needs_pin_header">Je hebt een pincode nodig om je nummer te wijzigen</string>
-    <string name="screen_change_phone_needs_pin_message">Stel voor je veiligheid een pincode van 6 cijfers in. Je bevestigt die voordat je je nummer wijzigt.</string>
-    <string name="screen_change_phone_needs_pin_action">Pincode instellen</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Pincode instellen</string>
     <string name="screen_change_phone_cooldown_header">Nog even niet</string>
     <string name="screen_change_phone_cooldown_message">Uit veiligheidsoverwegingen kun je je nummer over %1$s wijzigen.</string>
 </resources>

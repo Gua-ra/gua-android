@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Số điện thoại của bạn đã được cập nhật.</string>
     <string name="screen_change_phone_done_header">Xong</string>
     <string name="screen_change_phone_done_message">Số điện thoại của bạn đã được cập nhật. Từ nay bạn sẽ dùng số mới để đăng nhập.</string>
-    <string name="screen_change_phone_needs_pin_header">Bạn cần mã PIN để đổi số</string>
-    <string name="screen_change_phone_needs_pin_message">Vì sự an toàn của bạn, hãy thiết lập mã PIN tài khoản 6 chữ số. Bạn sẽ xác nhận mã này trước khi đổi số.</string>
-    <string name="screen_change_phone_needs_pin_action">Thiết lập mã PIN</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Thiết lập mã PIN</string>
     <string name="screen_change_phone_cooldown_header">Chưa được</string>
     <string name="screen_change_phone_cooldown_message">Vì sự an toàn của bạn, bạn có thể đổi số sau %1$s.</string>
 </resources>

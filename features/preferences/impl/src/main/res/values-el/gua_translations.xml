@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Ο αριθμός τηλεφώνου σας ενημερώθηκε.</string>
     <string name="screen_change_phone_done_header">Όλα έτοιμα</string>
     <string name="screen_change_phone_done_message">Ο αριθμός τηλεφώνου σας ενημερώθηκε. Από εδώ και στο εξής θα συνδέεστε με τον νέο σας αριθμό.</string>
-    <string name="screen_change_phone_needs_pin_header">Χρειάζεστε PIN για να αλλάξετε αριθμό</string>
-    <string name="screen_change_phone_needs_pin_message">Για την ασφάλειά σας, ορίστε ένα PIN 6 ψηφίων. Θα το επιβεβαιώσετε πριν αλλάξετε αριθμό.</string>
-    <string name="screen_change_phone_needs_pin_action">Ρύθμιση PIN</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Ρύθμιση PIN</string>
     <string name="screen_change_phone_cooldown_header">Όχι ακόμη</string>
     <string name="screen_change_phone_cooldown_message">Για την ασφάλειά σας, μπορείτε να αλλάξετε αριθμό σε %1$s.</string>
 </resources>

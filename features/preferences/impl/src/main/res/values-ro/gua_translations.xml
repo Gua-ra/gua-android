@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Numărul tău de telefon a fost actualizat.</string>
     <string name="screen_change_phone_done_header">Gata</string>
     <string name="screen_change_phone_done_message">Numărul tău de telefon a fost actualizat. De acum înainte te vei conecta cu noul număr.</string>
-    <string name="screen_change_phone_needs_pin_header">Ai nevoie de un PIN pentru a-ți schimba numărul</string>
-    <string name="screen_change_phone_needs_pin_message">Pentru siguranța ta, setează un PIN din 6 cifre. Îl vei confirma înainte de a-ți schimba numărul.</string>
-    <string name="screen_change_phone_needs_pin_action">Configurează PIN</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Configurează PIN</string>
     <string name="screen_change_phone_cooldown_header">Nu chiar acum</string>
     <string name="screen_change_phone_cooldown_message">Pentru siguranța ta, îți vei putea schimba numărul peste %1$s.</string>
 </resources>

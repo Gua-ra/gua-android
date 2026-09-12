@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">آپ کا فون نمبر اپ ڈیٹ ہو گیا۔</string>
     <string name="screen_change_phone_done_header">سب تیار ہے</string>
     <string name="screen_change_phone_done_message">آپ کا فون نمبر اپ ڈیٹ ہو گیا۔ اب سے آپ سائن ان کے لیے اپنا نیا نمبر استعمال کریں گے۔</string>
-    <string name="screen_change_phone_needs_pin_header">نمبر تبدیل کرنے کے لیے آپ کو پن درکار ہے</string>
-    <string name="screen_change_phone_needs_pin_message">اپنی حفاظت کے لیے 6 ہندسوں کا اکاؤنٹ پن ترتیب دیں۔ نمبر تبدیل کرنے سے پہلے آپ اس کی تصدیق کریں گے۔</string>
-    <string name="screen_change_phone_needs_pin_action">پن ترتیب دیں</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">پن ترتیب دیں</string>
     <string name="screen_change_phone_cooldown_header">ابھی نہیں</string>
     <string name="screen_change_phone_cooldown_message">اپنی حفاظت کے لیے آپ %1$s بعد اپنا نمبر تبدیل کر سکتے ہیں۔</string>
 </resources>

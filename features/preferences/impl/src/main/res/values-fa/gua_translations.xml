@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">شمارهٔ تلفن شما به‌روزرسانی شد.</string>
     <string name="screen_change_phone_done_header">همه چیز آماده است</string>
     <string name="screen_change_phone_done_message">شمارهٔ تلفن شما به‌روزرسانی شد. از این پس با شمارهٔ جدید وارد می‌شوید.</string>
-    <string name="screen_change_phone_needs_pin_header">برای تغییر شماره به یک پین نیاز دارید</string>
-    <string name="screen_change_phone_needs_pin_message">برای امنیت خود، یک پین ۶ رقمی برای حساب تنظیم کنید. پیش از تغییر شماره آن را تأیید می‌کنید.</string>
-    <string name="screen_change_phone_needs_pin_action">تنظیم پین</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">تنظیم پین</string>
     <string name="screen_change_phone_cooldown_header">هنوز نه</string>
     <string name="screen_change_phone_cooldown_message">برای امنیت شما، پس از %1$s می‌توانید شمارهٔ خود را تغییر دهید.</string>
 </resources>

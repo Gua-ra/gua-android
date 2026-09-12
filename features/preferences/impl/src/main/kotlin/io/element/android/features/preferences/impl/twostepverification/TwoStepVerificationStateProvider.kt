@@ -9,7 +9,10 @@ package io.element.android.features.preferences.impl.twostepverification
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import io.element.android.features.preferences.impl.R
+import io.element.android.libraries.guaresolver.AccountFactorStatus
+import io.element.android.libraries.guaresolver.AuthFactor
 import io.element.android.libraries.phonenumberentry.Country
+import io.element.android.libraries.ui.strings.CommonStrings
 
 private val US = Country(isoCode = "US", dialCode = "1")
 private val BR = Country(isoCode = "BR", dialCode = "55")
@@ -17,12 +20,20 @@ private val BR = Country(isoCode = "BR", dialCode = "55")
 open class TwoStepVerificationStateProvider : PreviewParameterProvider<TwoStepVerificationState> {
     override val values: Sequence<TwoStepVerificationState>
         get() = sequenceOf(
+            // GUA FORK: exactly as many entries as before. Paparazzi shards @PreviewsDayNight by
+            // index, so adding or removing one re-shards the whole list and churns dozens of
+            // unrelated goldens; the rest of the state machine is covered by
+            // TwoStepVerificationPresenterTest instead.
             aTwoStepVerificationState(phase = TwoStepVerificationPhase.Loading),
-            aTwoStepVerificationState(phase = TwoStepVerificationPhase.OverviewNoPin),
-            aTwoStepVerificationState(phase = TwoStepVerificationPhase.OverviewHasPin),
+            // The overview, per factor: none, PIN only, passkey only (which used to render as
+            // "off" and push a PIN at someone who already held the stronger factor), and unknown.
+            aTwoStepVerificationState(factors = aPreviewFactorStatus()),
+            aTwoStepVerificationState(factors = aPreviewFactorStatus(hasPin = true)),
+            aTwoStepVerificationState(factors = aPreviewFactorStatus(passkeyRegistered = true)),
+            aTwoStepVerificationState(factors = null, errorMessage = CommonStrings.error_unknown),
             // PIN-first change flow: the current PIN is verified BEFORE the phone is confirmed.
-            aTwoStepVerificationState(phase = TwoStepVerificationPhase.EnteringCurrent, code = "123"),
             aTwoStepVerificationState(
+                factors = aPreviewFactorStatus(hasPin = true),
                 phase = TwoStepVerificationPhase.EnteringCurrent,
                 code = "12",
                 errorMessage = R.string.screen_two_step_verification_current_incorrect,
@@ -53,12 +64,27 @@ open class TwoStepVerificationStateProvider : PreviewParameterProvider<TwoStepVe
                 code = "12",
                 errorMessage = R.string.screen_two_step_verification_mismatch_error,
             ),
-            aTwoStepVerificationState(phase = TwoStepVerificationPhase.Submitting, code = "123456"),
         )
 }
 
+private fun aPreviewFactorStatus(
+    hasPin: Boolean = false,
+    passkeyRegistered: Boolean = false,
+) = AccountFactorStatus(
+    hasPin = hasPin,
+    passkeyRegistered = passkeyRegistered,
+    preferredFactor = when {
+        passkeyRegistered -> AuthFactor.PASSKEY
+        hasPin -> AuthFactor.PIN
+        else -> AuthFactor.PHONE_OTP
+    },
+    phoneChangeStepUpFactors = listOf(AuthFactor.PASSKEY, AuthFactor.PIN),
+    changePhoneCooldownRemainingSeconds = 0,
+)
+
 fun aTwoStepVerificationState(
-    phase: TwoStepVerificationPhase = TwoStepVerificationPhase.OverviewNoPin,
+    phase: TwoStepVerificationPhase = TwoStepVerificationPhase.Overview,
+    factors: AccountFactorStatus? = aPreviewFactorStatus(),
     code: String = "",
     selectedCountry: Country = US,
     localPhoneNumber: String = "",
@@ -68,6 +94,7 @@ fun aTwoStepVerificationState(
     eventSink: (TwoStepVerificationEvent) -> Unit = {},
 ) = TwoStepVerificationState(
     phase = phase,
+    factors = factors,
     code = code,
     selectedCountry = selectedCountry,
     localPhoneNumber = localPhoneNumber,
