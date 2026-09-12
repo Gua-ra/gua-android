@@ -16,6 +16,8 @@ import io.element.android.features.enterprise.api.SessionEnterpriseService
 import io.element.android.features.enterprise.test.FakeSessionEnterpriseService
 import io.element.android.features.lockscreen.test.FakeLockScreenService
 import io.element.android.features.logout.api.direct.aDirectLogoutState
+import io.element.android.features.preferences.impl.fixtures.FakeIdentityServiceClient
+import io.element.android.features.preferences.impl.fixtures.aFactorStatus
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
 import io.element.android.libraries.core.meta.BuildMeta
@@ -25,8 +27,6 @@ import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.featureflag.test.FakeFeature
 import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
-import io.element.android.features.preferences.impl.fixtures.FakeIdentityServiceClient
-import io.element.android.features.preferences.impl.fixtures.aFactorStatus
 import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.indicator.api.IndicatorService

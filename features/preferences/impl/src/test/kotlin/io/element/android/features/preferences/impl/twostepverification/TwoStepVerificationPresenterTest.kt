@@ -51,8 +51,9 @@ class TwoStepVerificationPresenterTest {
             val state = awaitFirst { it.phase == TwoStepVerificationPhase.Overview }
             assertThat(state.twoStepVerificationOn).isTrue()
             assertThat(state.passkeyRegistered).isTrue()
-            // The PIN row still reads "set up", because there is genuinely no PIN, but the screen no
-            // longer claims the account has no two-step verification.
+            // The PIN row still reads "set up", because there is genuinely no PIN (false, not the
+            // null of an unread status), but the screen no longer claims the account has no
+            // two-step verification.
             assertThat(state.hasPin).isFalse()
             assertThat(state.errorMessage).isNull()
         }
@@ -107,7 +108,62 @@ class TwoStepVerificationPresenterTest {
         presenter.test {
             val state = awaitFirst { it.phase == TwoStepVerificationPhase.Overview }
             assertThat(state.twoStepVerificationOn).isNull()
-            assertThat(state.hasPin).isFalse()
+            // Null, not false. False here means "we know this account has no PIN", which is the
+            // claim that put "Set up PIN" in front of a PIN holder.
+            assertThat(state.hasPin).isNull()
+            assertThat(state.passkeyRegistered).isNull()
+        }
+    }
+
+    @Test
+    fun `present - an unreadable status starts neither PIN flow`() = runTest {
+        val client = FakeIdentityServiceClient(
+            factorStatusResult = { Result.failure(ResolverError.Transport(RuntimeException("offline"))) },
+        )
+        val presenter = createTwoStepVerificationPresenter(client = client)
+        presenter.test {
+            val state = awaitFirst { it.phase == TwoStepVerificationPhase.Overview }
+            assertThat(state.hasPin).isNull()
+
+            state.eventSink(TwoStepVerificationEvent.StartSetup)
+            state.eventSink(TwoStepVerificationEvent.StartChange)
+            state.eventSink(TwoStepVerificationEvent.SetUpPasskey)
+
+            // Nothing moved. Setting up a PIN on an account that already holds one is refused by the
+            // server, and enrolling a passkey it already holds is refused by the authenticator, so
+            // guessing either from a status we could not read only buys a dead end.
+            expectNoEvents()
+            assertThat(client.setInitialPinCalls).isEmpty()
+            assertThat(client.passkeyEnrollmentCalls).isEmpty()
+        }
+    }
+
+    @Test
+    fun `present - a known account with no PIN still starts setup`() = runTest {
+        val presenter = createTwoStepVerificationPresenter(
+            client = FakeIdentityServiceClient(
+                factorStatusResult = { Result.success(aFactorStatus(hasPin = false, passkeyRegistered = false)) },
+            ),
+        )
+        presenter.test {
+            awaitFirst { it.phase == TwoStepVerificationPhase.Overview }.eventSink(TwoStepVerificationEvent.StartSetup)
+
+            assertThat(awaitFirst { it.phase == TwoStepVerificationPhase.EnteringNew }.hasPin).isFalse()
+        }
+    }
+
+    @Test
+    fun `present - a known account with a PIN still starts the change flow`() = runTest {
+        val presenter = createTwoStepVerificationPresenter(
+            client = FakeIdentityServiceClient(
+                factorStatusResult = { Result.success(aFactorStatus(hasPin = true)) },
+            ),
+        )
+        presenter.test {
+            awaitFirst { it.phase == TwoStepVerificationPhase.Overview }.eventSink(TwoStepVerificationEvent.StartChange)
+
+            // PIN-FIRST: the current PIN is asked for before anything is sent.
+            assertThat(awaitFirst { it.phase == TwoStepVerificationPhase.EnteringCurrent }.hasPin).isTrue()
         }
     }
 

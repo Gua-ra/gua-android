@@ -94,8 +94,10 @@ class TwoStepVerificationPresenter(
         var challengeId by remember { mutableStateOf<String?>(null) }
         var otpCode by remember { mutableStateOf("") }
 
-        // Whether the PIN flows act as "set up" or "change". Only true once the server has said so.
-        val userHasPin = factors?.hasPin == true
+        // Whether the PIN flows act as "set up" or "change". Nullable on purpose: null is UNKNOWN,
+        // and neither flow may run on it. Collapsing unknown to false picked "set up", which for an
+        // account that already holds a PIN is a call the server refuses.
+        val userHasPin: Boolean? = factors?.hasPin
 
         LaunchedEffect(Unit) {
             phase = TwoStepVerificationPhase.Loading
@@ -192,6 +194,14 @@ class TwoStepVerificationPresenter(
                     errorMessage = CommonStrings.error_unknown
                     return@launch
                 }
+                if (userHasPin == null) {
+                    // Belt-and-suspenders: the overview withholds both PIN rows while the status is
+                    // unknown, so this flow cannot be entered. If it ever is, stop rather than guess
+                    // which of setInitialPin / completePinChange the account needs.
+                    errorMessage = CommonStrings.error_unknown
+                    phase = TwoStepVerificationPhase.Overview
+                    return@launch
+                }
                 phase = TwoStepVerificationPhase.Submitting
                 val result = if (userHasPin) {
                     val activeChallengeId = challengeId
@@ -237,7 +247,7 @@ class TwoStepVerificationPresenter(
                             is ResolverError.InvalidPin -> {
                                 errorMessage = R.string.screen_two_step_verification_current_incorrect
                                 code = ""
-                                phase = if (userHasPin) TwoStepVerificationPhase.EnteringCurrent else TwoStepVerificationPhase.EnteringNew
+                                phase = if (userHasPin == true) TwoStepVerificationPhase.EnteringCurrent else TwoStepVerificationPhase.EnteringNew
                             }
                             is ResolverError.PinLocked -> {
                                 errorMessage = R.string.screen_two_step_verification_locked
@@ -250,7 +260,7 @@ class TwoStepVerificationPresenter(
                             else -> {
                                 errorMessage = CommonStrings.error_unknown
                                 code = ""
-                                phase = if (userHasPin) TwoStepVerificationPhase.EnteringCurrent else TwoStepVerificationPhase.EnteringNew
+                                phase = if (userHasPin == true) TwoStepVerificationPhase.EnteringCurrent else TwoStepVerificationPhase.EnteringNew
                             }
                         }
                     }
@@ -299,7 +309,7 @@ class TwoStepVerificationPresenter(
                         code = ""
                         return
                     }
-                    if (userHasPin && currentPin.isNotEmpty() && submitted == currentPin) {
+                    if (userHasPin == true && currentPin.isNotEmpty() && submitted == currentPin) {
                         errorMessage = R.string.screen_two_step_verification_same_as_current
                         code = ""
                         return
@@ -325,13 +335,20 @@ class TwoStepVerificationPresenter(
         fun handleEvent(event: TwoStepVerificationEvent) {
             when (event) {
                 TwoStepVerificationEvent.StartSetup -> {
-                    resetFlowState()
-                    phase = TwoStepVerificationPhase.EnteringNew
+                    // Only on a KNOWN "no PIN". The row that emits this is withheld otherwise, and
+                    // an unknown status must not be guessed into the initial-PIN call.
+                    if (userHasPin == false) {
+                        resetFlowState()
+                        phase = TwoStepVerificationPhase.EnteringNew
+                    }
                 }
                 TwoStepVerificationEvent.StartChange -> {
                     // PIN-FIRST: verify the current PIN BEFORE confirming the number / firing the SMS.
-                    resetFlowState()
-                    phase = TwoStepVerificationPhase.EnteringCurrent
+                    // Only on a KNOWN "has PIN": there is nothing to verify otherwise.
+                    if (userHasPin == true) {
+                        resetFlowState()
+                        phase = TwoStepVerificationPhase.EnteringCurrent
+                    }
                 }
                 is TwoStepVerificationEvent.CodeChanged -> {
                     val cleaned = event.code.filter { it.isDigit() }.take(TwoStepVerificationState.CODE_LENGTH)
@@ -385,7 +402,9 @@ class TwoStepVerificationPresenter(
                 TwoStepVerificationEvent.ClearSuccess -> {
                     showSuccess = false
                 }
-                TwoStepVerificationEvent.SetUpPasskey -> startPasskeyEnrollment()
+                // Only on a KNOWN "no passkey", matching the row: enrollment excludes credentials the
+                // account already holds, so an unknown status would send the user to a refusal.
+                TwoStepVerificationEvent.SetUpPasskey -> if (factors?.passkeyRegistered == false) startPasskeyEnrollment()
                 TwoStepVerificationEvent.ClearPasskeyEnrollUrl -> {
                     passkeyEnrollUrl = null
                 }
@@ -412,7 +431,9 @@ class TwoStepVerificationPresenter(
 
     /**
      * The factor status of an account that has just set its first PIN and whose earlier status read
-     * failed. Conservative on purpose: it claims only the PIN we watched succeed.
+     * failed. Conservative on purpose: it claims only the PIN we watched succeed. Unreachable now
+     * that neither PIN flow starts on an unknown status, and kept only so the success path can never
+     * be the thing that invents a factor.
      */
     private fun anAccountWithOnlyAPin() = AccountFactorStatus(
         hasPin = true,
