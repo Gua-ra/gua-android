@@ -7,6 +7,7 @@
 
 package io.element.android.features.preferences.impl.changephonenumber
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.bumble.appyx.core.modality.BuildContext
@@ -15,6 +16,8 @@ import com.bumble.appyx.core.plugin.Plugin
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
+import io.element.android.compound.theme.ElementTheme
+import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.di.SessionScope
 
@@ -29,7 +32,10 @@ class ChangePhoneNumberNode(
         /** Open the shared country picker for the new-number field. */
         fun navigateToCountryPicker()
 
-        /** Open the existing 2SV PIN-setup flow (no PIN is set, so the change cannot proceed). */
+        /**
+         * Open the existing 2SV PIN-setup flow. Offered as one of the two ways out of the step-up
+         * block, alongside registering a passkey; never as the only one when a passkey is possible.
+         */
         fun navigateToPinSetup()
     }
 
@@ -41,11 +47,18 @@ class ChangePhoneNumberNode(
 
     @Composable
     override fun View(modifier: Modifier) {
+        val activity = requireNotNull(LocalActivity.current)
+        val isDark = ElementTheme.isLightTheme.not()
         val state = presenter.present()
         ChangePhoneNumberView(
             state = state,
             onBackClick = ::navigateUp,
             onFinish = ::navigateUp,
+            // GUA FORK: the enrollUrl is self-authenticating, so it opens in a Chrome Custom Tab for
+            // the user to complete WebAuthn registration, exactly as the 2SV screen does.
+            onOpenPasskeyEnrollUrl = { url ->
+                activity.openUrlInChromeCustomTab(session = null, darkTheme = isDark, url = url)
+            },
             modifier = modifier,
         )
     }

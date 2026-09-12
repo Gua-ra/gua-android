@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">電話番号を更新しました。</string>
     <string name="screen_change_phone_done_header">完了しました</string>
     <string name="screen_change_phone_done_message">電話番号を更新しました。これからは新しい番号でサインインします。</string>
-    <string name="screen_change_phone_needs_pin_header">番号の変更には PIN が必要です</string>
-    <string name="screen_change_phone_needs_pin_message">安全のため、6 桁のアカウント PIN を設定してください。番号を変更する前に確認します。</string>
-    <string name="screen_change_phone_needs_pin_action">PIN を設定</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">PIN を設定</string>
     <string name="screen_change_phone_cooldown_header">まだ変更できません</string>
     <string name="screen_change_phone_cooldown_message">安全のため、番号の変更は %1$s 後に可能になります。</string>
 </resources>

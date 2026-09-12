@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">თქვენი ტელეფონის ნომერი განახლდა.</string>
     <string name="screen_change_phone_done_header">მზადაა</string>
     <string name="screen_change_phone_done_message">თქვენი ტელეფონის ნომერი განახლდა. ამიერიდან შესასვლელად ახალ ნომერს გამოიყენებთ.</string>
-    <string name="screen_change_phone_needs_pin_header">ნომრის შესაცვლელად PIN გჭირდებათ</string>
-    <string name="screen_change_phone_needs_pin_message">თქვენი უსაფრთხოებისთვის დააყენეთ 6-ნიშნა ანგარიშის PIN. ნომრის შეცვლამდე დაადასტურებთ.</string>
-    <string name="screen_change_phone_needs_pin_action">PIN-ის დაყენება</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">PIN-ის დაყენება</string>
     <string name="screen_change_phone_cooldown_header">ჯერ არა</string>
     <string name="screen_change_phone_cooldown_message">თქვენი უსაფრთხოებისთვის ნომრის შეცვლა %1$s-ში შეგეძლებათ.</string>
 </resources>

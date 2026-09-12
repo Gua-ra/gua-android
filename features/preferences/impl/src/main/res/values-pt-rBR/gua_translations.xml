@@ -58,9 +58,7 @@
     <string name="screen_two_step_verification_same_as_current">Seu novo PIN precisa ser diferente do atual.</string>
     <string name="screen_two_step_verification_rate_limited">Tentativas demais. Aguarde um momento e tente novamente.</string>
     <string name="screen_two_step_verification_updated">Verificação em duas etapas atualizada</string>
-    <string name="screen_change_phone_needs_pin_header">Você precisa de um PIN para alterar seu número</string>
-    <string name="screen_change_phone_needs_pin_message">Para sua segurança, configure um PIN de 6 dígitos. Você vai confirmá-lo antes de alterar seu número.</string>
-    <string name="screen_change_phone_needs_pin_action">Configurar PIN</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Configurar PIN</string>
     <string name="screen_change_phone_cooldown_header">Ainda não</string>
     <string name="screen_change_phone_cooldown_message">Por segurança, você poderá alterar seu número em %1$s.</string>
 </resources>

@@ -54,18 +54,45 @@ sealed class ResolverError(message: String, cause: Throwable? = null) : Exceptio
     data object PhoneAlreadyLinked : ResolverError("That phone number is already linked to another account.")
 
     /**
-     * The PIN step-up reauth token is missing, invalid, or expired
-     * (identity-service `code: "invalid_reauth_token"`, HTTP 401). The caller should restart the
-     * flow from the PIN step.
+     * The reauth token is missing, invalid, expired or already spent
+     * (identity-service `code: "invalid_reauth_token"`, HTTP 401). The token is single-use and the
+     * server spends it before it weighs the step-up factor, so the caller must mint a fresh one by
+     * restarting the reauthentication rather than retrying the same token.
      */
-    data object InvalidReauthToken : ResolverError("Your confirmation expired. Please re-enter your PIN.")
+    data object InvalidReauthToken : ResolverError("Your confirmation expired. Please start again.")
+
+    /**
+     * The phone-change challenge expired, was already spent, or belongs to someone else
+     * (identity-service `code: "phone_change_challenge_invalid"`, HTTP 401).
+     */
+    data object PhoneChangeChallengeInvalid : ResolverError("Your phone change session expired. Please start over.")
+
+    /**
+     * The operation demands a step-up factor and the account has NEITHER a PIN nor a passkey
+     * registered (identity-service `code: "step_up_required"`, HTTP 403).
+     *
+     * This is a hard block, not a hint: the reauth token alone only proves an OTP sent to the number
+     * being re-pointed, so there is no token-only fallback and the operation terminates here. The
+     * caller routes the user into setting up a factor, passkey or PIN, and starts over afterwards.
+     */
+    data object StepUpRequired : ResolverError("Set up two-step verification before changing your number.")
 
     /**
      * The change-phone flow requires an account PIN to be set up first
-     * (identity-service `code: "pin_setup_required"`, HTTP 400). Distinct from [InvalidPin]: the user
-     * has no PIN at all. The caller should route into the 2SV PIN-setup flow.
+     * (identity-service `code: "pin_setup_required"`, HTTP 400). Kept for identity-service builds
+     * that predate [StepUpRequired]; newer ones answer with that instead. Treated the same way: the
+     * account can settle no step-up, so the operation stops.
      */
     data object PinSetupRequired : ResolverError("You need to set up a PIN before changing your number.")
+
+    /**
+     * Two successful phone changes were attempted too close together
+     * (identity-service `code: "phone_change_cooldown"`, HTTP 425). Distinct from
+     * [TwoFactorCooldown], which is the hold on a freshly minted factor: waiting out one does not
+     * clear the other.
+     */
+    data class PhoneChangeCooldown(val retryAfterSeconds: Long? = null) :
+        ResolverError("For your security, you can change your number again later.")
 
     /**
      * The fresh-2FA cooldown is still active, so the phone number cannot be changed yet

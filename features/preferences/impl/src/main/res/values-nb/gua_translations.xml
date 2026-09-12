@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Telefonnummeret ditt er oppdatert.</string>
     <string name="screen_change_phone_done_header">Ferdig</string>
     <string name="screen_change_phone_done_message">Telefonnummeret ditt er oppdatert. Fra nå av logger du inn med det nye nummeret.</string>
-    <string name="screen_change_phone_needs_pin_header">Du trenger en PIN-kode for å endre nummer</string>
-    <string name="screen_change_phone_needs_pin_message">For sikkerhets skyld må du sette opp en 6-sifret konto-PIN. Du bekrefter den før du endrer nummer.</string>
-    <string name="screen_change_phone_needs_pin_action">Sett opp PIN-kode</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Sett opp PIN-kode</string>
     <string name="screen_change_phone_cooldown_header">Ikke ennå</string>
     <string name="screen_change_phone_cooldown_message">Av sikkerhetsgrunner kan du endre nummer om %1$s.</string>
 </resources>

@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Jūsų telefono numeris atnaujintas.</string>
     <string name="screen_change_phone_done_header">Viskas</string>
     <string name="screen_change_phone_done_message">Jūsų telefono numeris atnaujintas. Nuo šiol prisijungsite naudodami naują numerį.</string>
-    <string name="screen_change_phone_needs_pin_header">Norint pakeisti numerį, reikia PIN kodo</string>
-    <string name="screen_change_phone_needs_pin_message">Saugumo sumetimais nustatykite 6 skaitmenų paskyros PIN kodą. Patvirtinsite jį prieš keisdami numerį.</string>
-    <string name="screen_change_phone_needs_pin_action">Nustatyti PIN kodą</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Nustatyti PIN kodą</string>
     <string name="screen_change_phone_cooldown_header">Kol kas ne</string>
     <string name="screen_change_phone_cooldown_message">Saugumo sumetimais numerį galėsite pakeisti po %1$s.</string>
 </resources>

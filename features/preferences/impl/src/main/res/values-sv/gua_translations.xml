@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Ditt telefonnummer har uppdaterats.</string>
     <string name="screen_change_phone_done_header">Klart</string>
     <string name="screen_change_phone_done_message">Ditt telefonnummer har uppdaterats. Hädanefter loggar du in med ditt nya nummer.</string>
-    <string name="screen_change_phone_needs_pin_header">Du behöver en PIN-kod för att byta nummer</string>
-    <string name="screen_change_phone_needs_pin_message">För din säkerhet, ställ in en 6-siffrig konto-PIN. Du bekräftar den innan du byter nummer.</string>
-    <string name="screen_change_phone_needs_pin_action">Ställ in PIN-kod</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Ställ in PIN-kod</string>
     <string name="screen_change_phone_cooldown_header">Inte än</string>
     <string name="screen_change_phone_cooldown_message">För din säkerhet kan du byta nummer om %1$s.</string>
 </resources>

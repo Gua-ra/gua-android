@@ -7,6 +7,7 @@
 
 package io.element.android.features.preferences.impl.changephonenumber
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,6 +22,8 @@ import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.features.preferences.impl.R
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.guaresolver.AccountFactorStatus
+import io.element.android.libraries.guaresolver.AuthFactor
 import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.matrix.api.MatrixClient
@@ -33,12 +36,21 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 
 /**
- * GUA FORK: presenter for the change-phone-number screen. Drives the real backend PIN-first
- * change-number flow: the user confirms their account PIN up front (yielding a short-lived reauth
- * token, no SMS), then enters their new number (which triggers an OTP to that number), then enters
- * that OTP to complete the change. The reauth token gates both the OTP request and the completion,
- * so the SMS never fires until a valid PIN step-up exists. Translates typed [ResolverError]s into
- * per-error phase transitions, mirroring the iOS change-number view model.
+ * GUA FORK: presenter for the change-phone-number screen, driving the real identity-service
+ * contract: `POST /account/reauth/start` + `/account/reauth/verify` for the single-use,
+ * phone-change-scoped token, then `POST /account/phone/change/start` + `/complete`.
+ *
+ * Security shape, in the order it runs:
+ *  1. The account's FACTORS are read first. An account that holds no factor a phone change accepts
+ *     is blocked outright, and one still inside a cooldown is held; neither goes any further.
+ *  2. An OTP to the number CURRENTLY on file proves possession of it and buys a token. That proof
+ *     alone is not enough to re-point the number, since a SIM-swapper holds that number too.
+ *  3. The step-up factor is collected and spent together with the new number. Only that call texts
+ *     the NEW number, so no SMS reaches it until the server has accepted the factor.
+ *
+ * The token is single-use and the server spends it BEFORE it weighs the step-up, so it is gone on
+ * every outcome of step 3. Any failure there therefore restarts at step 2 rather than retrying, and
+ * a `step_up_required` refusal terminates the operation instead of falling back to the token alone.
  */
 @AssistedInject
 class ChangePhoneNumberPresenter(
@@ -69,8 +81,10 @@ class ChangePhoneNumberPresenter(
         var selectedCountry by remember { mutableStateOf(deviceCountryProvider.current()) }
         var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
-        // Remaining fresh-2FA cooldown surfaced on the Cooldown interstitial (0 otherwise).
+        // Remaining cooldown surfaced on the Cooldown interstitial (0 otherwise).
         var cooldownRemainingSeconds by remember { mutableLongStateOf(0L) }
+        var stepUpBlock by remember { mutableStateOf<StepUpBlock?>(null) }
+        var passkeyEnrollUrl by remember { mutableStateOf<String?>(null) }
 
         // Apply any country picked in the shared CountryPicker child screen, then clear it.
         val pickedCountry by selectedCountryStore.flow.collectAsState()
@@ -82,24 +96,89 @@ class ChangePhoneNumberPresenter(
         }
 
         // Flow scratch state.
-        var newPhone by remember { mutableStateOf("") }
-        // Short-lived PIN step-up token from /security/pin/reauth. Gates the OTP request + completion;
-        // the SMS never fires until this is set. We deliberately do NOT keep the PIN around.
+        // Single-use token from /account/reauth/verify, scoped to PHONE_CHANGE. The server spends it
+        // on the first /start attempt whether or not the step-up that follows is accepted, so it is
+        // cleared on every outcome and a retry always mints a fresh one.
         var reauthToken by remember { mutableStateOf("") }
+        // The step-up factor, held only between the PIN step and the /start call that spends it.
+        var stepUpPin by remember { mutableStateOf("") }
+        // Proof that the step-up was accepted and the new-number OTP went out.
+        var challengeId by remember { mutableStateOf("") }
 
         fun resetFlowState() {
             errorMessage = null
             code = ""
             localPhoneNumber = ""
-            newPhone = ""
             reauthToken = ""
+            stepUpPin = ""
+            challengeId = ""
             cooldownRemainingSeconds = 0L
+            stepUpBlock = null
         }
 
-        // GUA FORK: WhatsApp belt-and-suspenders gate. On Intro Continue we fetch the PIN status FIRST
-        // and branch BEFORE touching the PIN/number steps: no PIN -> NeedsPinSetup interstitial; an
-        // active fresh-2FA cooldown -> Cooldown interstitial; otherwise proceed to the PIN step-up.
-        fun checkPinStatusAndProceed() {
+        /**
+         * The token is gone and the flow cannot continue: drop every credential it was holding and
+         * send the user back to the start, where the factor and cooldown pre-checks run again before
+         * a fresh reauth OTP is sent. Deliberately NOT an automatic re-send: a spent token must cost
+         * a deliberate restart, not a silent SMS.
+         */
+        fun abortSpentReauth(@StringRes errorRes: Int) {
+            reauthToken = ""
+            stepUpPin = ""
+            challengeId = ""
+            code = ""
+            errorMessage = errorRes
+            phase = ChangePhoneNumberPhase.Intro
+        }
+
+        fun blockOnStepUp(block: StepUpBlock) {
+            // Hard block. Everything the flow was carrying is dropped, and the only ways forward are
+            // registering a factor or leaving. There is no branch from here into the change itself.
+            reauthToken = ""
+            stepUpPin = ""
+            challengeId = ""
+            code = ""
+            errorMessage = null
+            stepUpBlock = block
+            phase = ChangePhoneNumberPhase.NeedsStepUp
+        }
+
+        fun showCooldown(remainingSeconds: Long?) {
+            reauthToken = ""
+            stepUpPin = ""
+            code = ""
+            errorMessage = null
+            cooldownRemainingSeconds = remainingSeconds ?: 0L
+            phase = ChangePhoneNumberPhase.Cooldown
+        }
+
+        /** Sends the reauth OTP to the number CURRENTLY on file. Never touches the new number. */
+        suspend fun requestReauthOtp(accessToken: String) {
+            identityServiceClient.startPhoneChangeReauth(
+                accessToken = accessToken,
+                language = Locale.getDefault().toLanguageTag(),
+            )
+                .onSuccess {
+                    code = ""
+                    errorMessage = null
+                    phase = ChangePhoneNumberPhase.EnteringReauthOtp
+                }
+                .onFailure { error ->
+                    errorMessage = when (error) {
+                        is ResolverError.RateLimited -> R.string.screen_two_step_verification_rate_limited
+                        else -> CommonStrings.error_unknown
+                    }
+                    phase = ChangePhoneNumberPhase.Intro
+                }
+        }
+
+        /**
+         * Gate on the server's factor signal BEFORE anything is sent. The branch is over the factors
+         * a phone change accepts and the account actually holds, never over a lone `hasPin`: an
+         * account with a passkey and no PIN already has two-step verification and must not be sent
+         * to set up a PIN as though it had nothing.
+         */
+        fun checkFactorsAndProceed() {
             coroutineScope.launch {
                 val accessToken = accessToken()
                 if (accessToken == null) {
@@ -107,38 +186,33 @@ class ChangePhoneNumberPresenter(
                     return@launch
                 }
                 phase = ChangePhoneNumberPhase.Submitting
-                identityServiceClient.pinStatus(
+                identityServiceClient.accountFactorStatus(
                     accessToken = accessToken,
                     userId = matrixClient.sessionId.value,
                 )
                     .onSuccess { status ->
-                        errorMessage = null
                         when {
-                            !status.hasPin -> {
-                                phase = ChangePhoneNumberPhase.NeedsPinSetup
-                            }
-                            status.changePhoneCooldownRemainingSeconds > 0 -> {
-                                cooldownRemainingSeconds = status.changePhoneCooldownRemainingSeconds
-                                phase = ChangePhoneNumberPhase.Cooldown
-                            }
-                            else -> {
-                                code = ""
-                                phase = ChangePhoneNumberPhase.EnteringPin
-                            }
+                            status.phoneChangeStepUpOptions.isEmpty() ->
+                                blockOnStepUp(StepUpBlock.NoFactorRegistered)
+                            status.changePhoneCooldownRemainingSeconds > 0 ->
+                                showCooldown(status.changePhoneCooldownRemainingSeconds)
+                            producibleStepUpFactors(status).isEmpty() ->
+                                blockOnStepUp(StepUpBlock.PasskeyNotUsableHere)
+                            else -> requestReauthOtp(accessToken)
                         }
                     }
                     .onFailure { error ->
                         when (error) {
-                            is ResolverError.PinSetupRequired -> {
-                                errorMessage = null
-                                phase = ChangePhoneNumberPhase.NeedsPinSetup
-                            }
-                            is ResolverError.TwoFactorCooldown -> {
-                                errorMessage = null
-                                cooldownRemainingSeconds = error.retryAfterSeconds ?: 0L
-                                phase = ChangePhoneNumberPhase.Cooldown
-                            }
+                            // The account can settle no step-up: the same hard block, whichever
+                            // spelling the identity-service uses for it.
+                            is ResolverError.StepUpRequired,
+                            is ResolverError.PinSetupRequired -> blockOnStepUp(StepUpBlock.NoFactorRegistered)
+                            is ResolverError.TwoFactorCooldown -> showCooldown(error.retryAfterSeconds)
+                            is ResolverError.PhoneChangeCooldown -> showCooldown(error.retryAfterSeconds)
                             else -> {
+                                // The factors are UNKNOWN, not absent. Stop on the intro with an
+                                // error rather than guessing, because guessing "no factor" is how a
+                                // passkey holder gets told to create a PIN.
                                 errorMessage = CommonStrings.error_unknown
                                 phase = ChangePhoneNumberPhase.Intro
                             }
@@ -147,7 +221,8 @@ class ChangePhoneNumberPresenter(
             }
         }
 
-        fun verifyPin(enteredPin: String) {
+        /** Exchanges the reauth OTP for the single-use, phone-change-scoped token. No SMS here. */
+        fun verifyReauthOtp(enteredOtp: String) {
             coroutineScope.launch {
                 val accessToken = accessToken()
                 if (accessToken == null) {
@@ -155,96 +230,87 @@ class ChangePhoneNumberPresenter(
                     return@launch
                 }
                 phase = ChangePhoneNumberPhase.Submitting
-                identityServiceClient.verifyPinReauth(
-                    accessToken = accessToken,
-                    userId = matrixClient.sessionId.value,
-                    pin = enteredPin,
-                )
+                identityServiceClient.verifyPhoneChangeReauth(accessToken = accessToken, code = enteredOtp)
                     .onSuccess { token ->
                         reauthToken = token
                         code = ""
                         errorMessage = null
-                        // No SMS yet — the user picks the new number first.
-                        phase = ChangePhoneNumberPhase.EnteringNewPhone
+                        // Still no SMS to the new number: the step-up comes first.
+                        phase = ChangePhoneNumberPhase.EnteringPin
                     }
                     .onFailure { error ->
-                        when (error) {
-                            is ResolverError.PinLocked -> {
-                                errorMessage = R.string.screen_two_step_verification_rate_limited
-                                code = ""
-                                phase = ChangePhoneNumberPhase.EnteringPin
-                            }
-                            is ResolverError.RateLimited -> {
-                                errorMessage = R.string.screen_two_step_verification_rate_limited
-                                code = ""
-                                phase = ChangePhoneNumberPhase.EnteringPin
-                            }
-                            else -> {
-                                // invalid_pin and anything else: stay on the PIN step, no SMS.
-                                errorMessage = R.string.screen_change_phone_pin_incorrect
-                                code = ""
-                                phase = ChangePhoneNumberPhase.EnteringPin
-                            }
+                        errorMessage = when (error) {
+                            is ResolverError.RateLimited -> R.string.screen_two_step_verification_rate_limited
+                            else -> R.string.screen_change_phone_reauth_invalid
                         }
+                        code = ""
+                        phase = ChangePhoneNumberPhase.EnteringReauthOtp
                     }
             }
         }
 
-        fun requestOtp(enteredPhone: String) {
+        /**
+         * Spends the reauth token and the step-up factor, and only on success does an OTP reach the
+         * new number. Every failure leaves the token spent, so each one restarts the flow.
+         */
+        fun startPhoneChange(enteredPhone: String) {
             coroutineScope.launch {
                 val accessToken = accessToken()
                 if (accessToken == null) {
                     errorMessage = CommonStrings.error_unknown
                     return@launch
                 }
+                val token = reauthToken
+                if (token.isEmpty()) {
+                    // Should never happen: the token is minted before this step.
+                    abortSpentReauth(CommonStrings.error_unknown)
+                    return@launch
+                }
                 phase = ChangePhoneNumberPhase.Submitting
-                identityServiceClient.requestPhoneChangeOtp(
+                val result = identityServiceClient.startPhoneChange(
                     accessToken = accessToken,
-                    userId = matrixClient.sessionId.value,
+                    reauthToken = token,
                     newPhone = enteredPhone,
-                    reauthToken = reauthToken,
+                    pin = stepUpPin,
+                    // No passkey assertion is produced on Android yet; the PIN is this client's
+                    // step-up factor. The server ranks the passkey above it and still accepts one
+                    // from any client that can assert it.
+                    passkeyStepUpId = null,
+                    passkeyCredentialJson = null,
                     language = Locale.getDefault().toLanguageTag(),
                 )
-                    .onSuccess {
-                        // SMS fired here.
+                // Spent by the server before it weighed the step-up, so it is gone either way.
+                reauthToken = ""
+                stepUpPin = ""
+                result
+                    .onSuccess { challenge ->
+                        // SMS to the NEW number fired here, and only here.
+                        challengeId = challenge.challengeId
                         code = ""
                         errorMessage = null
                         phase = ChangePhoneNumberPhase.EnteringOtp
                     }
                     .onFailure { error ->
                         when (error) {
-                            is ResolverError.InvalidReauthToken -> {
-                                // The step-up expired: restart from the PIN.
-                                errorMessage = R.string.screen_change_phone_pin_incorrect
-                                reauthToken = ""
-                                code = ""
-                                phase = ChangePhoneNumberPhase.EnteringPin
-                            }
-                            is ResolverError.PhoneAlreadyLinked -> {
-                                errorMessage = R.string.screen_change_phone_already_linked
-                                phase = ChangePhoneNumberPhase.EnteringNewPhone
-                            }
-                            is ResolverError.TwoFactorCooldown -> {
-                                // Defense-in-depth: the cooldown started after the client pre-check.
-                                cooldownRemainingSeconds = error.retryAfterSeconds ?: 0L
-                                errorMessage = null
-                                phase = ChangePhoneNumberPhase.Cooldown
-                            }
-                            is ResolverError.RateLimited -> {
-                                errorMessage = R.string.screen_two_step_verification_rate_limited
-                                phase = ChangePhoneNumberPhase.EnteringNewPhone
-                            }
-                            else -> {
-                                // 400 / invalid-phone and anything else: stay on the number step.
-                                errorMessage = R.string.screen_change_phone_new_invalid
-                                phase = ChangePhoneNumberPhase.EnteringNewPhone
-                            }
+                            // Hard block: the account holds no step-up factor. The operation ends,
+                            // it is never retried on the reauth token alone.
+                            is ResolverError.StepUpRequired,
+                            is ResolverError.PinSetupRequired -> blockOnStepUp(StepUpBlock.NoFactorRegistered)
+                            // Defense in depth: a cooldown that started after the pre-check.
+                            is ResolverError.TwoFactorCooldown -> showCooldown(error.retryAfterSeconds)
+                            is ResolverError.PhoneChangeCooldown -> showCooldown(error.retryAfterSeconds)
+                            is ResolverError.InvalidPin -> abortSpentReauth(R.string.screen_change_phone_pin_incorrect)
+                            is ResolverError.PinLocked -> abortSpentReauth(R.string.screen_two_step_verification_locked)
+                            is ResolverError.PhoneAlreadyLinked -> abortSpentReauth(R.string.screen_change_phone_already_linked)
+                            is ResolverError.InvalidReauthToken -> abortSpentReauth(R.string.screen_change_phone_reauth_expired)
+                            is ResolverError.RateLimited -> abortSpentReauth(R.string.screen_two_step_verification_rate_limited)
+                            else -> abortSpentReauth(R.string.screen_change_phone_new_invalid)
                         }
                     }
             }
         }
 
-        fun submitOtp(enteredOtp: String) {
+        fun completePhoneChange(enteredOtp: String) {
             coroutineScope.launch {
                 val accessToken = accessToken()
                 if (accessToken == null) {
@@ -252,16 +318,15 @@ class ChangePhoneNumberPresenter(
                     return@launch
                 }
                 phase = ChangePhoneNumberPhase.Submitting
-                identityServiceClient.changePhoneNumber(
+                identityServiceClient.completePhoneChange(
                     accessToken = accessToken,
-                    userId = matrixClient.sessionId.value,
-                    newPhone = newPhone,
+                    challengeId = challengeId,
                     code = enteredOtp,
-                    reauthToken = reauthToken,
                 )
                     .onSuccess {
                         errorMessage = null
                         code = ""
+                        challengeId = ""
                         phase = ChangePhoneNumberPhase.Done
                     }
                     .onFailure { error ->
@@ -271,23 +336,17 @@ class ChangePhoneNumberPresenter(
                                 code = ""
                                 phase = ChangePhoneNumberPhase.EnteringOtp
                             }
-                            is ResolverError.InvalidReauthToken -> {
-                                // The step-up expired: restart from the PIN.
-                                errorMessage = R.string.screen_change_phone_pin_incorrect
-                                reauthToken = ""
-                                code = ""
-                                phase = ChangePhoneNumberPhase.EnteringPin
-                            }
-                            is ResolverError.PhoneAlreadyLinked -> {
-                                errorMessage = R.string.screen_change_phone_already_linked
-                                code = ""
-                                phase = ChangePhoneNumberPhase.EnteringNewPhone
-                            }
                             is ResolverError.RateLimited -> {
                                 errorMessage = R.string.screen_two_step_verification_rate_limited
                                 code = ""
                                 phase = ChangePhoneNumberPhase.EnteringOtp
                             }
+                            // The challenge is gone, or the number was taken in the meantime. Either
+                            // way there is nothing left to redeem, so the whole flow restarts.
+                            is ResolverError.PhoneChangeChallengeInvalid ->
+                                abortSpentReauth(R.string.screen_change_phone_challenge_invalid)
+                            is ResolverError.PhoneAlreadyLinked ->
+                                abortSpentReauth(R.string.screen_change_phone_already_linked)
                             else -> {
                                 errorMessage = CommonStrings.error_unknown
                                 code = ""
@@ -298,10 +357,36 @@ class ChangePhoneNumberPresenter(
             }
         }
 
+        fun startPasskeyEnrollment() {
+            coroutineScope.launch {
+                val accessToken = accessToken()
+                if (accessToken == null) {
+                    errorMessage = CommonStrings.error_unknown
+                    return@launch
+                }
+                identityServiceClient.startPasskeyEnrollment(accessToken)
+                    .onSuccess { enrollUrl ->
+                        errorMessage = null
+                        passkeyEnrollUrl = enrollUrl
+                    }
+                    .onFailure {
+                        errorMessage = CommonStrings.error_unknown
+                    }
+            }
+        }
+
         fun handleSubmittedCode(submitted: String) {
             when (phase) {
-                ChangePhoneNumberPhase.EnteringPin -> verifyPin(submitted)
-                ChangePhoneNumberPhase.EnteringOtp -> submitOtp(submitted)
+                ChangePhoneNumberPhase.EnteringReauthOtp -> verifyReauthOtp(submitted)
+                ChangePhoneNumberPhase.EnteringPin -> {
+                    // Captured, not verified: the server weighs it as the step-up factor on
+                    // /account/phone/change/start, in the same call that texts the new number.
+                    stepUpPin = submitted
+                    code = ""
+                    errorMessage = null
+                    phase = ChangePhoneNumberPhase.EnteringNewPhone
+                }
+                ChangePhoneNumberPhase.EnteringOtp -> completePhoneChange(submitted)
                 else -> Unit
             }
         }
@@ -336,13 +421,18 @@ class ChangePhoneNumberPresenter(
                 }
                 ChangePhoneNumberEvents.SelectCountry -> navigateToCountryPicker()
                 ChangePhoneNumberEvents.SetUpPin -> navigateToPinSetup()
+                ChangePhoneNumberEvents.SetUpPasskey -> startPasskeyEnrollment()
+                ChangePhoneNumberEvents.ClearPasskeyEnrollUrl -> {
+                    passkeyEnrollUrl = null
+                }
                 ChangePhoneNumberEvents.Continue -> {
                     when (phase) {
                         ChangePhoneNumberPhase.Intro -> {
-                            // Gate FIRST on PIN status; do not enter the PIN/number steps here.
+                            // Gate FIRST on the account's factors; nothing is sent before that.
                             errorMessage = null
                             code = ""
-                            checkPinStatusAndProceed()
+                            stepUpBlock = null
+                            checkFactorsAndProceed()
                         }
                         ChangePhoneNumberPhase.EnteringNewPhone -> {
                             val digits = localPhoneNumber.filter { it.isDigit() }
@@ -351,10 +441,10 @@ class ChangePhoneNumberPresenter(
                                 return
                             }
                             val e164 = "+" + selectedCountry.dialCode + digits
-                            newPhone = e164
                             errorMessage = null
-                            requestOtp(e164)
+                            startPhoneChange(e164)
                         }
+                        ChangePhoneNumberPhase.EnteringReauthOtp,
                         ChangePhoneNumberPhase.EnteringPin,
                         ChangePhoneNumberPhase.EnteringOtp -> {
                             if (code.length == ChangePhoneNumberState.CODE_LENGTH) {
@@ -379,10 +469,27 @@ class ChangePhoneNumberPresenter(
             localPhoneNumber = localPhoneNumber,
             errorMessage = errorMessage,
             cooldownRemainingSeconds = cooldownRemainingSeconds,
+            stepUpBlock = stepUpBlock,
+            passkeyEnrollUrl = passkeyEnrollUrl,
             eventSink = ::handleEvent,
         )
     }
 
     private suspend fun accessToken(): String? =
         sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
+
+    private companion object {
+        /**
+         * The step-up factors this client can actually produce. Asserting a passkey needs a WebAuthn
+         * ceremony this Android build does not have yet, so the PIN is the only one it can offer.
+         *
+         * This steers the UI and nothing else. It is never sent to the identity service, which does
+         * not accept "my passkey is unavailable" as an input and weighs only what actually arrives.
+         */
+        val PRODUCIBLE_STEP_UP_FACTORS = setOf(AuthFactor.PIN)
+
+        /** The accepted step-up factors this account holds AND this client can produce, strongest first. */
+        fun producibleStepUpFactors(status: AccountFactorStatus): List<AuthFactor> =
+            status.phoneChangeStepUpOptions.filter { it in PRODUCIBLE_STEP_UP_FACTORS }
+    }
 }

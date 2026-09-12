@@ -20,6 +20,8 @@ import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.features.preferences.impl.R
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.guaresolver.AccountFactorStatus
+import io.element.android.libraries.guaresolver.AuthFactor
 import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.matrix.api.MatrixClient
@@ -83,30 +85,37 @@ class TwoStepVerificationPresenter(
         }
 
         // Flow scratch state, mirroring the iOS view-state fields.
-        var userHasPin by remember { mutableStateOf(false) }
+        // The server's factor signal, or null when it could not be read. Null is UNKNOWN, never
+        // "no factors": defaulting a failed read to false is what told a passkey holder their
+        // account had no two-step verification and pushed them to create a PIN.
+        var factors by remember { mutableStateOf<AccountFactorStatus?>(null) }
         var currentPin by remember { mutableStateOf("") }
         var stagedNewPin by remember { mutableStateOf("") }
         var challengeId by remember { mutableStateOf<String?>(null) }
         var otpCode by remember { mutableStateOf("") }
 
+        // Whether the PIN flows act as "set up" or "change". Only true once the server has said so.
+        val userHasPin = factors?.hasPin == true
+
         LaunchedEffect(Unit) {
             phase = TwoStepVerificationPhase.Loading
             val accessToken = accessToken()
             if (accessToken == null) {
-                userHasPin = false
+                factors = null
                 errorMessage = CommonStrings.error_unknown
-                phase = TwoStepVerificationPhase.OverviewNoPin
+                phase = TwoStepVerificationPhase.Overview
                 return@LaunchedEffect
             }
-            identityServiceClient.pinStatus(accessToken, matrixClient.sessionId.value)
+            identityServiceClient.accountFactorStatus(accessToken, matrixClient.sessionId.value)
                 .onSuccess { status ->
-                    userHasPin = status.hasPin
-                    phase = if (status.hasPin) TwoStepVerificationPhase.OverviewHasPin else TwoStepVerificationPhase.OverviewNoPin
+                    factors = status
+                    errorMessage = null
+                    phase = TwoStepVerificationPhase.Overview
                 }
                 .onFailure {
-                    userHasPin = false
+                    factors = null
                     errorMessage = CommonStrings.error_unknown
-                    phase = TwoStepVerificationPhase.OverviewNoPin
+                    phase = TwoStepVerificationPhase.Overview
                 }
         }
 
@@ -157,11 +166,11 @@ class TwoStepVerificationPresenter(
                             }
                             is ResolverError.PinLocked -> {
                                 errorMessage = R.string.screen_two_step_verification_locked
-                                phase = TwoStepVerificationPhase.OverviewHasPin
+                                phase = TwoStepVerificationPhase.Overview
                             }
                             is ResolverError.PinChangeCooldown -> {
                                 errorMessage = R.string.screen_two_step_verification_cooldown
-                                phase = TwoStepVerificationPhase.OverviewHasPin
+                                phase = TwoStepVerificationPhase.Overview
                             }
                             is ResolverError.RateLimited -> {
                                 errorMessage = R.string.screen_two_step_verification_rate_limited
@@ -188,7 +197,7 @@ class TwoStepVerificationPresenter(
                     val activeChallengeId = challengeId
                     if (activeChallengeId == null) {
                         errorMessage = CommonStrings.error_unknown
-                        phase = TwoStepVerificationPhase.OverviewHasPin
+                        phase = TwoStepVerificationPhase.Overview
                         return@launch
                     }
                     identityServiceClient.completePinChange(
@@ -206,9 +215,11 @@ class TwoStepVerificationPresenter(
                 }
                 result
                     .onSuccess {
-                        userHasPin = true
+                        // The account now definitely holds a PIN; keep whatever else the server said
+                        // it holds rather than dropping back to an unknown status.
+                        factors = (factors ?: anAccountWithOnlyAPin()).copy(hasPin = true)
                         resetFlowState()
-                        phase = TwoStepVerificationPhase.OverviewHasPin
+                        phase = TwoStepVerificationPhase.Overview
                         showSuccess = true
                     }
                     .onFailure { error ->
@@ -221,7 +232,7 @@ class TwoStepVerificationPresenter(
                             is ResolverError.PinChangeChallengeInvalid -> {
                                 errorMessage = R.string.screen_two_step_verification_challenge_invalid
                                 resetFlowState()
-                                phase = TwoStepVerificationPhase.OverviewHasPin
+                                phase = TwoStepVerificationPhase.Overview
                             }
                             is ResolverError.InvalidPin -> {
                                 errorMessage = R.string.screen_two_step_verification_current_incorrect
@@ -230,11 +241,11 @@ class TwoStepVerificationPresenter(
                             }
                             is ResolverError.PinLocked -> {
                                 errorMessage = R.string.screen_two_step_verification_locked
-                                phase = if (userHasPin) TwoStepVerificationPhase.OverviewHasPin else TwoStepVerificationPhase.OverviewNoPin
+                                phase = TwoStepVerificationPhase.Overview
                             }
                             is ResolverError.PinChangeCooldown -> {
                                 errorMessage = R.string.screen_two_step_verification_cooldown
-                                phase = TwoStepVerificationPhase.OverviewHasPin
+                                phase = TwoStepVerificationPhase.Overview
                             }
                             else -> {
                                 errorMessage = CommonStrings.error_unknown
@@ -369,7 +380,7 @@ class TwoStepVerificationPresenter(
                 }
                 TwoStepVerificationEvent.CancelEntry -> {
                     resetFlowState()
-                    phase = if (userHasPin) TwoStepVerificationPhase.OverviewHasPin else TwoStepVerificationPhase.OverviewNoPin
+                    phase = TwoStepVerificationPhase.Overview
                 }
                 TwoStepVerificationEvent.ClearSuccess -> {
                     showSuccess = false
@@ -383,6 +394,7 @@ class TwoStepVerificationPresenter(
 
         return TwoStepVerificationState(
             phase = phase,
+            factors = factors,
             code = code,
             selectedCountry = selectedCountry,
             localPhoneNumber = localPhoneNumber,
@@ -397,6 +409,18 @@ class TwoStepVerificationPresenter(
         sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
 
     private fun isWeakPin(pin: String): Boolean = pin in WEAK_PINS
+
+    /**
+     * The factor status of an account that has just set its first PIN and whose earlier status read
+     * failed. Conservative on purpose: it claims only the PIN we watched succeed.
+     */
+    private fun anAccountWithOnlyAPin() = AccountFactorStatus(
+        hasPin = true,
+        passkeyRegistered = false,
+        preferredFactor = AuthFactor.PIN,
+        phoneChangeStepUpFactors = listOf(AuthFactor.PASSKEY, AuthFactor.PIN),
+        changePhoneCooldownRemainingSeconds = 0,
+    )
 
     private companion object {
         val WEAK_PINS = setOf(

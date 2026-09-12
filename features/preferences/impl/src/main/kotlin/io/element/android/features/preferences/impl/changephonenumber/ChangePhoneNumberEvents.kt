@@ -28,8 +28,17 @@ sealed interface ChangePhoneNumberEvents {
     /** The user tapped the primary "Continue" button. */
     data object Continue : ChangePhoneNumberEvents
 
-    /** The user tapped "Set up PIN" on the no-PIN interstitial; the Node opens the 2SV PIN-setup flow. */
+    /** The user chose "Set up PIN" on the step-up block; the Node opens the 2SV PIN-setup flow. */
     data object SetUpPin : ChangePhoneNumberEvents
+
+    /**
+     * The user chose "Set up a passkey" on the step-up block. Fetches the authenticated
+     * web-ceremony URL; the View opens it in a Chrome Custom Tab, as the 2SV screen does.
+     */
+    data object SetUpPasskey : ChangePhoneNumberEvents
+
+    /** The passkey enrollment URL has been opened; clear it so it is not opened twice. */
+    data object ClearPasskeyEnrollUrl : ChangePhoneNumberEvents
 
     /** The user cancelled the in-progress flow. */
     data object CancelEntry : ChangePhoneNumberEvents

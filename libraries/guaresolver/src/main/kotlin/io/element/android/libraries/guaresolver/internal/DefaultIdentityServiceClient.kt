@@ -12,12 +12,14 @@ import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
 import io.element.android.libraries.core.data.tryOrNull
 import io.element.android.libraries.core.uri.ensureProtocol
+import io.element.android.libraries.guaresolver.AccountFactorStatus
 import io.element.android.libraries.guaresolver.AccountGenesisRegistration
+import io.element.android.libraries.guaresolver.AuthFactor
 import io.element.android.libraries.guaresolver.ContactMatch
 import io.element.android.libraries.guaresolver.GuaDeployment
 import io.element.android.libraries.guaresolver.GuaResolverConfig
 import io.element.android.libraries.guaresolver.IdentityServiceClient
-import io.element.android.libraries.guaresolver.PinStatus
+import io.element.android.libraries.guaresolver.PhoneChangeChallenge
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.network.RetrofitFactory
 import kotlinx.serialization.json.Json
@@ -93,14 +95,31 @@ class DefaultIdentityServiceClient(
 
     // GUA FORK: Two-step verification (account PIN). Mirrors iOS `IdentityServiceClient` PIN methods.
 
-    override suspend fun pinStatus(accessToken: String, userId: String): Result<PinStatus> =
+    override suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus> =
         runPinCall { api ->
             val response = api.pinStatus(authorization = "Bearer $accessToken")
-            PinStatus(
-                hasPin = response.hasPin,
+            val hasPin = response.hasPin
+            val passkeyRegistered = response.passkeyRegistered
+            AccountFactorStatus(
+                hasPin = hasPin,
+                passkeyRegistered = passkeyRegistered,
+                // An identity-service that predates the factor policy sends neither field. Derive
+                // them from what the account is known to hold rather than defaulting to "nothing",
+                // which would hard-block a phone change the old server would have allowed.
+                preferredFactor = AuthFactor.fromWire(response.preferredFactor)
+                    ?: strongestHeld(passkeyRegistered = passkeyRegistered, hasPin = hasPin),
+                phoneChangeStepUpFactors = response.phoneChangeStepUpFactors
+                    .mapNotNull(AuthFactor::fromWire)
+                    .ifEmpty { DEFAULT_PHONE_CHANGE_STEP_UP_FACTORS },
                 changePhoneCooldownRemainingSeconds = response.changePhoneCooldownRemainingSeconds.coerceAtLeast(0),
             )
         }
+
+    private fun strongestHeld(passkeyRegistered: Boolean, hasPin: Boolean): AuthFactor = when {
+        passkeyRegistered -> AuthFactor.PASSKEY
+        hasPin -> AuthFactor.PIN
+        else -> AuthFactor.PHONE_OTP
+    }
 
     override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> =
         runPinCall { api ->
@@ -131,48 +150,59 @@ class DefaultIdentityServiceClient(
             )
         }
 
-    // GUA FORK: Change phone number (PIN-first). Mirrors iOS `IdentityServiceClient` phone-change
-    // methods. The PIN step-up runs FIRST and yields a reauth token; the SMS only fires from
-    // [requestPhoneChangeOtp].
+    // GUA FORK: Change phone number, against the real `/account` contract: reauth OTP to the CURRENT
+    // number, then a token, then a step-up factor plus the new number, then the new-number OTP. The
+    // SMS to the new number is sent by `startPhoneChange`, which the server only reaches once it has
+    // accepted a step-up factor, so nothing earlier in this sequence can text the new number.
 
-    override suspend fun verifyPinReauth(accessToken: String, userId: String, pin: String): Result<String> =
+    override suspend fun startPhoneChangeReauth(accessToken: String, language: String?): Result<Unit> =
         runPinCall { api ->
-            api.verifyPinReauth(
+            api.startAccountReauth(authorization = "Bearer $accessToken", acceptLanguage = language)
+        }
+
+    override suspend fun verifyPhoneChangeReauth(accessToken: String, code: String): Result<String> =
+        runPinCall { api ->
+            api.verifyAccountReauth(
                 authorization = "Bearer $accessToken",
-                body = PinReauthRequest(userId = userId, pin = pin),
+                // Always scoped. The server binds the token to this operation and refuses to spend a
+                // token minted for another one, so leaving the default (DEACTIVATE) in place would
+                // hand back a token that the phone change cannot use.
+                body = AccountReauthVerifyRequest(code = code, operation = PHONE_CHANGE_OPERATION),
             ).reauthToken
         }
 
-    override suspend fun requestPhoneChangeOtp(
+    override suspend fun startPhoneChange(
         accessToken: String,
-        userId: String,
-        newPhone: String,
         reauthToken: String,
+        newPhone: String,
+        pin: String?,
+        passkeyStepUpId: String?,
+        passkeyCredentialJson: String?,
         language: String?,
-    ): Result<Unit> =
+    ): Result<PhoneChangeChallenge> =
         runPinCall { api ->
-            api.requestChangeNumberOtp(
+            val response = api.startPhoneChange(
                 authorization = "Bearer $accessToken",
-                body = OtpChangeNumberStartRequest(
-                    userId = userId,
-                    newPhone = newPhone,
+                acceptLanguage = language,
+                body = PhoneChangeStartRequest(
                     reauthToken = reauthToken,
-                    language = language,
+                    newPhone = newPhone,
+                    pin = pin?.takeIf { it.isNotEmpty() },
+                    passkeyStepUpId = passkeyStepUpId?.takeIf { it.isNotEmpty() },
+                    passkeyCredential = passkeyCredentialJson?.let { credentialJson.parseToJsonElement(it) },
                 ),
+            )
+            PhoneChangeChallenge(
+                challengeId = response.challengeId,
+                otpExpiresInSeconds = response.otpExpiresInSeconds,
             )
         }
 
-    override suspend fun changePhoneNumber(
-        accessToken: String,
-        userId: String,
-        newPhone: String,
-        code: String,
-        reauthToken: String,
-    ): Result<Unit> =
+    override suspend fun completePhoneChange(accessToken: String, challengeId: String, code: String): Result<Unit> =
         runPinCall { api ->
-            api.changeNumber(
+            api.completePhoneChange(
                 authorization = "Bearer $accessToken",
-                body = OtpChangeNumberRequest(userId = userId, newPhone = newPhone, code = code, reauthToken = reauthToken),
+                body = PhoneChangeCompleteRequest(challengeId = challengeId, code = code),
             )
         }
 
@@ -239,11 +269,19 @@ class DefaultIdentityServiceClient(
             "pin_locked" -> ResolverError.PinLocked(retryAfterSeconds = retryAfter)
             "pin_change_cooldown" -> ResolverError.PinChangeCooldown(retryAfterSeconds = retryAfter)
             "pin_change_challenge_invalid" -> ResolverError.PinChangeChallengeInvalid
+            "phone_change_challenge_invalid" -> ResolverError.PhoneChangeChallengeInvalid
             "phone_already_linked" -> ResolverError.PhoneAlreadyLinked
             "invalid_reauth_token" -> ResolverError.InvalidReauthToken
+            // The account holds neither a PIN nor a passkey. A hard block, mapped to its own case so
+            // no caller can mistake it for one of the retryable PIN failures below.
+            "step_up_required" -> ResolverError.StepUpRequired
             "pin_setup_required" -> ResolverError.PinSetupRequired
+            "phone_change_cooldown" -> ResolverError.PhoneChangeCooldown(retryAfterSeconds = cooldownRetryAfter)
             "twofa_cooldown_active" -> ResolverError.TwoFactorCooldown(retryAfterSeconds = cooldownRetryAfter)
             "rate_limited" -> ResolverError.RateLimited
+            // Status-only fallbacks, for a response that carried no `code` at all. Deliberately
+            // narrow: a bare 403 is left as a plain server error, because 403 is not on its own a
+            // step-up refusal and other endpoints answer with it for reasons of their own.
             else -> when (code()) {
                 409 -> ResolverError.PhoneAlreadyLinked
                 425 -> ResolverError.PinChangeCooldown(retryAfterSeconds = retryAfter)
@@ -255,5 +293,18 @@ class DefaultIdentityServiceClient(
 
     private companion object {
         private val errorBodyJson = Json { ignoreUnknownKeys = true }
+
+        /** Re-serialises the authenticator's assertion response without reinterpreting it. */
+        private val credentialJson = Json { ignoreUnknownKeys = true }
+
+        /** The reauth scope a phone change demands; anything else the server refuses to spend here. */
+        private const val PHONE_CHANGE_OPERATION = "PHONE_CHANGE"
+
+        /**
+         * What a phone change accepts when the identity-service is too old to say. Strongest first,
+         * matching the server's own order; [AccountFactorStatus.phoneChangeStepUpOptions] then keeps
+         * only the ones the account actually holds.
+         */
+        private val DEFAULT_PHONE_CHANGE_STEP_UP_FACTORS = listOf(AuthFactor.PASSKEY, AuthFactor.PIN)
     }
 }

@@ -84,9 +84,11 @@ fun PreferencesRootView(
             },
             matrixUser = state.myUser,
         )
-        if (!state.isAccountPinSetup) {
-            // GUA FORK: the nudge sets up two-step verification (account PIN), not the local app-lock,
-            // so gate it on the account PIN status rather than isLockScreenPinSetup.
+        // GUA FORK: the nudge sets up two-step verification, not the local app-lock, so it is gated on
+        // the account's factors rather than isLockScreenPinSetup. Only an explicit "no strong factor"
+        // shows it: a null means the status is unknown, and nagging on unknown is how a passkey
+        // holder ends up being told to create a PIN.
+        if (state.hasAccountStrongFactor == false) {
             SetupPinBanner(onSetupTwoStepVerification)
         }
         if (state.isMultiAccountEnabled) {

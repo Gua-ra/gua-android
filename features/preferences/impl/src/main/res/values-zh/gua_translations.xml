@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">你的手机号码已更新。</string>
     <string name="screen_change_phone_done_header">全部完成</string>
     <string name="screen_change_phone_done_message">你的手机号码已更新。今后请使用新号码登录。</string>
-    <string name="screen_change_phone_needs_pin_header">更改号码需要 PIN 码</string>
-    <string name="screen_change_phone_needs_pin_message">为了你的安全，请设置 6 位数账号 PIN 码。更改号码前需要确认。</string>
-    <string name="screen_change_phone_needs_pin_action">设置 PIN 码</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">设置 PIN 码</string>
     <string name="screen_change_phone_cooldown_header">还不能更改</string>
     <string name="screen_change_phone_cooldown_message">出于安全考虑，你可以在 %1$s 后更改号码。</string>
 </resources>
