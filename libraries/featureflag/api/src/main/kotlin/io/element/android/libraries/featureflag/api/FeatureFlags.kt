@@ -130,6 +130,15 @@ enum class FeatureFlags(
         defaultValue = { false },
         isFinished = false,
     ),
+    AccountGenesis(
+        key = "feature.account_genesis",
+        title = "Account genesis",
+        description = "GUA FORK: give a new account an on-device account authority key and an accountId at signup (ADM-008 Phase 3)." +
+            "\n\nOff by default. While it is off the sign-up and sign-in paths are exactly what they were before it existed," +
+            " and a deployment that does not support genesis is handled silently even when it is on.",
+        defaultValue = { false },
+        isFinished = false,
+    ),
     UnreadIndicatorCount(
         key = "feature.unread_indicator_count",
         title = "Unread indicator count",

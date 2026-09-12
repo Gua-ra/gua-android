@@ -22,9 +22,14 @@ import io.element.android.features.login.impl.screens.onboarding.OnBoardingPrese
 import io.element.android.features.login.impl.web.WebClientUrlForAuthenticationRetriever
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.runCatchingUpdatingState
+import io.element.android.libraries.featureflag.api.FeatureFlagService
+import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.guaresolver.GuaDeployment
 import io.element.android.libraries.guaresolver.GuaResolverConfig
 import io.element.android.libraries.guaresolver.ResolverClient
+import io.element.android.libraries.guaresolver.genesis.AccountGenesisManager
+import io.element.android.libraries.guaresolver.genesis.GenesisRegistration
+import io.element.android.libraries.guaresolver.genesis.GuaLoginHint
 import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
 import io.element.android.libraries.matrix.api.auth.OAuthPrompt
 import io.element.android.libraries.oauth.api.OAuthAction
@@ -42,6 +47,8 @@ class LoginHelper(
     private val authenticationService: MatrixAuthenticationService,
     private val webClientUrlForAuthenticationRetriever: WebClientUrlForAuthenticationRetriever,
     private val resolverClient: ResolverClient,
+    private val featureFlagService: FeatureFlagService,
+    private val accountGenesisManager: AccountGenesisManager,
     private val deployment: GuaDeployment = GuaResolverConfig.current,
 ) {
     private val loginModeState: MutableState<AsyncData<LoginMode>> = mutableStateOf(AsyncData.Uninitialized)
@@ -119,13 +126,17 @@ class LoginHelper(
             val resolution = resolverClient.resolve(e164Phone).getOrThrow()
             val homeserverUrl = resolution.homeserver.baseUrl
             val isAccountCreation = !resolution.exists
+            // GUA FORK: ADM-008 Phase 3. A brand-new account registers its on-device genesis BEFORE the
+            // OIDC flow starts and carries the handle in the reserved login_hint grammar. With the
+            // feature flag off this is exactly the bare E.164 hint it has always been.
+            val loginHint = loginHintFor(e164Phone = e164Phone, isAccountCreation = isAccountCreation)
             // Configure the auth service for the resolved homeserver, then build the OIDC url.
             authenticationService.setHomeserver(homeserverUrl)
                 .map { matrixHomeServerDetails ->
                     if (matrixHomeServerDetails.supportsOAuthLogin) {
                         val oAuthPrompt = if (isAccountCreation) OAuthPrompt.Create else OAuthPrompt.Login
                         LoginMode.OAuth(
-                            authenticationService.getOAuthUrl(prompt = oAuthPrompt, loginHint = e164Phone).getOrThrow()
+                            authenticationService.getOAuthUrl(prompt = oAuthPrompt, loginHint = loginHint).getOrThrow()
                         )
                     } else {
                         error("Unsupported login flow")
@@ -134,8 +145,34 @@ class LoginHelper(
                 .getOrThrow()
         }.runCatchingUpdatingState(
             state = loginModeState,
-            errorTransform = { ChangeServerError.from(it) }
+            errorTransform = {
+                // A genesis the device meant to register and could not must reach the user as itself,
+                // not as a generic server error, because it is the one case that stops the signup.
+                if (it is AccountGenesisSignupError) it else ChangeServerError.from(it)
+            }
         )
+    }
+
+    /**
+     * GUA FORK: the OIDC `login_hint` for a phone submission.
+     *
+     * Returns the bare E.164 number, exactly as before account genesis existed, unless the feature flag
+     * is on AND this is a brand-new account AND the deployment issued a handle. A returning user is
+     * never given a genesis here: their account already has an accountId, and registering another would
+     * be an attempt to re-point it.
+     *
+     * @throws AccountGenesisSignupError.SetupFailed when the device meant to register a genesis and
+     * could not, so the signup stops instead of silently creating an account without one.
+     */
+    private suspend fun loginHintFor(e164Phone: String, isAccountCreation: Boolean): String {
+        if (!featureFlagService.isFeatureEnabled(FeatureFlags.AccountGenesis)) return e164Phone
+        if (!isAccountCreation) return e164Phone
+        return when (val registration = accountGenesisManager.registerForSignup()) {
+            is GenesisRegistration.Registered -> GuaLoginHint.forPhone(e164Phone, registration.attachHandle)
+            // The deployment does not do genesis. Continue with today's signup, showing nothing.
+            GenesisRegistration.Unavailable -> e164Phone
+            is GenesisRegistration.Failed -> throw AccountGenesisSignupError.SetupFailed
+        }
     }
 
     /**

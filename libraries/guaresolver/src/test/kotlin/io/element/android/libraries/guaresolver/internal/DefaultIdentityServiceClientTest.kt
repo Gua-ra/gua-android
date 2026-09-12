@@ -124,6 +124,75 @@ class DefaultIdentityServiceClientTest {
         server.shutdown()
     }
 
+    // GUA FORK: account genesis registration (ADM-008 Phase 3).
+
+    @Test
+    fun `registerAccountGenesis POSTs the genesis and proof and parses the accountId and handle`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setResponseCode(201).setBody(
+                """
+                {
+                  "accountId": "ga1aea6aqb5opmzmutench3ggzepkhgwmkajb3epqqrhckkf7bcbcwl2cy",
+                  "attachHandle": "Zm9vYmFyYmF6cXV1eGNvcmdlZ3JhdWx0",
+                  "expiresAt": "2026-09-11T12:00:00Z"
+                }
+                """.trimIndent()
+            )
+        )
+        val client = createClient(server)
+
+        val registration = client.registerAccountGenesis(genesisB64Url = "R1VBRw", proofB64Url = "c2ln").getOrThrow()
+
+        assertThat(registration.accountId).isEqualTo("ga1aea6aqb5opmzmutench3ggzepkhgwmkajb3epqqrhckkf7bcbcwl2cy")
+        assertThat(registration.attachHandle).isEqualTo("Zm9vYmFyYmF6cXV1eGNvcmdlZ3JhdWx0")
+        val request = server.takeRequest()
+        assertThat(request.method).isEqualTo("POST")
+        assertThat(request.path).isEqualTo("/account/genesis")
+        // Self-authenticating: the proof inside the body is the credential, so no bearer token is sent.
+        assertThat(request.getHeader("Authorization")).isNull()
+        val body = request.body.readUtf8()
+        assertThat(body).contains("\"genesis\":\"R1VBRw\"")
+        assertThat(body).contains("\"proof\":\"c2ln\"")
+        server.shutdown()
+    }
+
+    @Test
+    fun `a 503 surfaces as a server error, which is how a deployment says it does no genesis`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(503).setBody("""{ "code": "genesis_disabled" }"""))
+        val client = createClient(server)
+
+        val error = client.registerAccountGenesis("R1VBRw", "c2ln").exceptionOrNull()
+
+        assertThat(error).isEqualTo(ResolverError.Server(503))
+        server.shutdown()
+    }
+
+    @Test
+    fun `a 403 surfaces as a server error, which is how a deployment declines to issue`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(403).setBody("""{ "code": "genesis_issuance_not_permitted" }"""))
+        val client = createClient(server)
+
+        val error = client.registerAccountGenesis("R1VBRw", "c2ln").exceptionOrNull()
+
+        assertThat(error).isEqualTo(ResolverError.Server(403))
+        server.shutdown()
+    }
+
+    @Test
+    fun `an unconfigured deployment never reaches the network`() = runTest {
+        val client = DefaultIdentityServiceClient(
+            retrofitFactory = retrofitFactory(),
+            deployment = FakeGuaDeployment(identityServiceBaseUrl = null),
+        )
+
+        val error = client.registerAccountGenesis("R1VBRw", "c2ln").exceptionOrNull()
+
+        assertThat(error).isInstanceOf(ResolverError.NotConfigured::class.java)
+    }
+
     private fun createClient(server: MockWebServer) = DefaultIdentityServiceClient(
         retrofitFactory = retrofitFactory(),
         deployment = FakeGuaDeployment(identityServiceBaseUrl = server.url("/").toString()),

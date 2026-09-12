@@ -54,6 +54,13 @@ dependencies {
     implementation(projects.libraries.core)
     implementation(projects.libraries.di)
     implementation(projects.libraries.network)
+    // GUA FORK: account genesis (ADM-008 Phase 3). Tink supplies Ed25519, which the Android keystore
+    // does not generate or sign with at this minSdk; the cryptography module supplies the non-exportable
+    // keystore key the Ed25519 seed is sealed under, and the preferences store holds only that sealed blob.
+    implementation(projects.libraries.cryptography.api)
+    implementation(projects.libraries.preferences.api)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.google.tink)
     implementation(libs.serialization.json)
     implementation(libs.timber)
     implementation(platform(libs.network.retrofit.bom))
@@ -62,6 +69,9 @@ dependencies {
 
     testCommonDependencies(libs)
     testImplementation(projects.libraries.androidutils)
+    testImplementation(projects.libraries.cryptography.impl)
+    testImplementation(projects.libraries.cryptography.test)
+    testImplementation(projects.libraries.preferences.test)
     testImplementation(platform(libs.network.okhttp.bom))
     testImplementation(libs.network.okhttp)
     testImplementation(libs.network.mockwebserver)

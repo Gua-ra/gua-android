@@ -62,6 +62,9 @@ class FakeIdentityServiceClient(
     private val requestPhoneChangeOtpResult: (String, String, String, String, String?) -> Result<Unit> = { _, _, _, _, _ -> Result.success(Unit) },
     private val changePhoneNumberResult: (String, String, String, String, String) -> Result<Unit> = { _, _, _, _, _ -> Result.success(Unit) },
     private val startPasskeyEnrollmentResult: (String) -> Result<String> = { _ -> Result.success("https://idp.gua.global/passkey/enroll?token=fake") },
+    private val registerAccountGenesisResult: (String, String) -> Result<AccountGenesisRegistration> = { _, _ ->
+        Result.success(AccountGenesisRegistration(accountId = A_FAKE_ACCOUNT_ID, attachHandle = A_FAKE_ATTACH_HANDLE))
+    },
 ) : IdentityServiceClient {
     override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> =
         lookupResult(accessToken, hashedPhones)
@@ -95,6 +98,17 @@ class FakeIdentityServiceClient(
 
     override suspend fun startPasskeyEnrollment(accessToken: String): Result<String> =
         startPasskeyEnrollmentResult(accessToken)
+
+    override suspend fun registerAccountGenesis(genesisB64Url: String, proofB64Url: String): Result<AccountGenesisRegistration> =
+        registerAccountGenesisResult(genesisB64Url, proofB64Url)
+
+    companion object {
+        /** A genesis-rooted accountId from the published golden vectors, so it is a canonical spelling. */
+        const val A_FAKE_ACCOUNT_ID = "ga1aea6aqb5opmzmutench3ggzepkhgwmkajb3epqqrhckkf7bcbcwl2cy"
+
+        /** Shaped like what identity-service issues: 32 CSPRNG bytes as unpadded base64url. */
+        const val A_FAKE_ATTACH_HANDLE = "Zm9vYmFyYmF6cXV1eGNvcmdlZ3JhdWx0"
+    }
 }
 
 fun aContactMatch(

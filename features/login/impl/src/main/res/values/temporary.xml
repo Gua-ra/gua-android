@@ -25,4 +25,9 @@
          credential, so it identifies the account on its own: choosing this sends no code. Same key as
          iOS Untranslated.strings. -->
     <string name="gua_sign_in_with_passkey">Sign in with a passkey</string>
+
+    <!-- Gua account genesis (ADM-008 Phase 3). Shown only when the device meant to register its own
+         account key and could not: the signup stops rather than quietly creating an account without
+         one. Deliberately says nothing about keys or genesis, which are not user-facing ideas. -->
+    <string name="gua_account_setup_failed">We could not finish setting up your account on this device. Please try again.</string>
 </resources>
