@@ -25,6 +25,7 @@ import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.featureflag.test.FakeFeature
 import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
+import io.element.android.libraries.guaresolver.AccountGenesisRegistration
 import io.element.android.libraries.guaresolver.ContactMatch
 import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.PinStatus
@@ -405,6 +406,9 @@ private class NoopIdentityServiceClient : IdentityServiceClient {
     ): Result<Unit> = Result.success(Unit)
 
     override suspend fun startPasskeyEnrollment(accessToken: String): Result<String> = Result.success("enrollment-challenge")
+
+    override suspend fun registerAccountGenesis(genesisB64Url: String, proofB64Url: String): Result<AccountGenesisRegistration> =
+        Result.success(AccountGenesisRegistration(accountId = "ga1-test-account-id", attachHandle = "test-attach-handle"))
 
     override suspend fun changePhoneNumber(
         accessToken: String,
