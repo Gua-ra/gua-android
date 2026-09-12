@@ -117,4 +117,31 @@ interface IdentityServiceClient {
      * @return [Result.success] with the enrollment URL, or [Result.failure] with a [ResolverError].
      */
     suspend fun startPasskeyEnrollment(accessToken: String): Result<String>
+
+    // GUA FORK: account genesis (ADM-008 Phase 3).
+
+    /**
+     * Register an `AccountGenesis` generated on this device and obtain its accountId plus a single-use
+     * attach handle (`POST /account/genesis`).
+     *
+     * Unauthenticated by design: it runs before any login session exists, and [proofB64Url] is what
+     * makes it self-authenticating, being a signature under the authority key committed inside
+     * [genesisB64Url] itself. Registering creates no account and attaches nothing.
+     *
+     * @param genesisB64Url the canonical genesis bytes, base64url without padding.
+     * @param proofB64Url the registration proof, base64url without padding.
+     * @return [Result.success] with the registration, or [Result.failure] with a [ResolverError].
+     * A [ResolverError.Server] with status 503 means this deployment does not do account genesis, and
+     * the caller must continue with today's signup unchanged rather than surface an error.
+     */
+    suspend fun registerAccountGenesis(genesisB64Url: String, proofB64Url: String): Result<AccountGenesisRegistration>
 }
+
+/**
+ * GUA FORK: what `POST /account/genesis` returned. The handle is a routing hint, not a capability: a
+ * stolen one attaches nothing and a planted one fails at the proof step.
+ */
+data class AccountGenesisRegistration(
+    val accountId: String,
+    val attachHandle: String,
+)

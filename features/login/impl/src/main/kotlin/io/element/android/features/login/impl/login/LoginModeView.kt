@@ -101,6 +101,14 @@ fun LoginModeView(
                         onSubmit = onClearError,
                     )
                 }
+                is AccountGenesisSignupError -> {
+                    // GUA FORK: ADM-008 Phase 3. The device meant to register an account genesis and
+                    // could not, so the signup stopped rather than creating an account without one.
+                    ErrorDialog(
+                        content = stringResource(R.string.gua_account_setup_failed),
+                        onSubmit = onClearError,
+                    )
+                }
                 is AuthenticationException.AccountAlreadyLoggedIn -> {
                     ErrorDialog(
                         content = stringResource(CommonStrings.error_account_already_logged_in, error.userId),

@@ -88,6 +88,15 @@ internal interface IdentityServiceApi {
     suspend fun startPasskeyEnrollment(
         @Header("Authorization") authorization: String,
     ): PasskeyEnrollStartResponse
+
+    // GUA FORK: account genesis registration (ADM-008 decision 6, step 1). Deliberately unauthenticated:
+    // it runs before any OIDC flow exists to authenticate against, and the body carries its own
+    // possession proof under the key committed inside the genesis itself.
+
+    @POST("account/genesis")
+    suspend fun registerAccountGenesis(
+        @Body body: AccountGenesisRegisterRequest,
+    ): AccountGenesisRegisterResponse
 }
 
 @Serializable
@@ -173,6 +182,27 @@ internal data class OtpChangeNumberRequest(
     val newPhone: String,
     val code: String,
     val reauthToken: String,
+)
+
+@Serializable
+internal data class AccountGenesisRegisterRequest(
+    /** Canonical AccountGenesis bytes (87 bytes), base64url without padding. */
+    val genesis: String,
+    /**
+     * Ed25519 signature by the authority key over the ASCII domain "gua-account-genesis-proof.v1"
+     * followed by the canonical bytes, base64url without padding.
+     */
+    val proof: String,
+)
+
+@Serializable
+internal data class AccountGenesisRegisterResponse(
+    /** The accountId the server derived from the bytes it received. */
+    val accountId: String,
+    /** Single-use handle to send as login_hint="gua:phone=<E.164>;genesis=<handle>". */
+    val attachHandle: String,
+    /** When the handle stops being attachable, ISO-8601. Absent on builds that do not send it. */
+    val expiresAt: String? = null,
 )
 
 @Serializable

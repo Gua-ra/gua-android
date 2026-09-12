@@ -12,6 +12,7 @@ import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
 import io.element.android.libraries.core.data.tryOrNull
 import io.element.android.libraries.core.uri.ensureProtocol
+import io.element.android.libraries.guaresolver.AccountGenesisRegistration
 import io.element.android.libraries.guaresolver.ContactMatch
 import io.element.android.libraries.guaresolver.GuaDeployment
 import io.element.android.libraries.guaresolver.GuaResolverConfig
@@ -180,6 +181,17 @@ class DefaultIdentityServiceClient(
     override suspend fun startPasskeyEnrollment(accessToken: String): Result<String> =
         runPinCall { api ->
             api.startPasskeyEnrollment(authorization = "Bearer $accessToken").enrollUrl
+        }
+
+    // GUA FORK: account genesis registration (ADM-008 Phase 3). No access token: the request carries its
+    // own possession proof, because it runs before any login session exists.
+
+    override suspend fun registerAccountGenesis(genesisB64Url: String, proofB64Url: String): Result<AccountGenesisRegistration> =
+        runPinCall { api ->
+            val response = api.registerAccountGenesis(
+                body = AccountGenesisRegisterRequest(genesis = genesisB64Url, proof = proofB64Url),
+            )
+            AccountGenesisRegistration(accountId = response.accountId, attachHandle = response.attachHandle)
         }
 
     /**

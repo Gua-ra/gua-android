@@ -27,4 +27,7 @@
 
     <!-- Sign in with a passkey ("chave de acesso", the term the preferences module already uses). -->
     <string name="gua_sign_in_with_passkey">Entrar com chave de acesso</string>
+
+    <!-- Falha ao preparar a conta neste aparelho (ADM-008). -->
+    <string name="gua_account_setup_failed">Não foi possível concluir a configuração da sua conta neste dispositivo. Tente novamente.</string>
 </resources>
