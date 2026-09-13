@@ -37,7 +37,6 @@ import io.element.android.features.linknewdevice.impl.screens.qrcode.ShowQrCodeN
 import io.element.android.features.linknewdevice.impl.screens.root.LinkNewDeviceRootNode
 import io.element.android.features.linknewdevice.impl.screens.scan.ScanQrCodeNode
 import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
-import io.element.android.libraries.androidutils.browser.withMxidLoginHint
 import io.element.android.libraries.architecture.BackstackView
 import io.element.android.libraries.architecture.BaseFlowNode
 import io.element.android.libraries.architecture.callback
@@ -315,7 +314,7 @@ class LinkNewDeviceFlowNode(
             darkTheme = darkTheme,
             // GUA FORK: name this account, so the approval page refuses to approve the new device
             // under a browser session that belongs to someone else.
-            url = sessionEnterpriseService.tweakMasUrl(url).withMxidLoginHint(sessionId.value),
+            url = sessionEnterpriseService.linkNewDeviceBrowserUrl(url, sessionId),
             // GUA FORK: and a private tab, so there is no such session to pick up in the first place.
             ephemeral = true,
         )
