@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">Lõpeta selle seadme seadistamine</string>
     <string name="gua_encryption_repair_message">Lõpeta seadistamine, et pääseda ligi krüptitud vestlustele ja selles seadmes saadaolevale sõnumiajaloole.</string>
     <string name="gua_encryption_repair_action">Lõpeta seadistamine</string>
+    <string name="gua_account_recovery_banner_title">Keegi alustas sinu konto taastamist</string>
+    <string name="gua_account_recovery_banner_message_later">Taastamise saab lõpule viia %1$s või hiljem. Kui see olid sina, võid seda eirata.</string>
+    <string name="gua_account_recovery_banner_message_now">Taastamise saab nüüd lõpule viia. Kui see olid sina, võid seda eirata.</string>
+    <string name="gua_account_recovery_banner_action">Tühista taastamine</string>
+    <string name="gua_account_recovery_cancel_title">Kas tühistada taastamine?</string>
+    <string name="gua_account_recovery_cancel_message">Tühista see, kui sa seda ei alustanud. Kui alustasid, pead otsast alustama.</string>
+    <string name="gua_account_recovery_cancelled">Taastamine tühistati</string>
+    <string name="gua_account_recovery_cancel_failed">Taastamist ei õnnestunud tühistada. Proovi uuesti.</string>
 </resources>

@@ -53,6 +53,16 @@ data class AccountFactorStatus(
     val phoneChangeStepUpFactors: List<AuthFactor>,
     /** Seconds still to run on the fresh-2FA hold before the PIN may settle a phone change. */
     val changePhoneCooldownRemainingSeconds: Long,
+    /**
+     * True while a delayed account recovery is live on this account: someone who could not present
+     * a factor asked to set a new PIN, and it has neither been cancelled nor run out. Every
+     * signed-in device warns about it and offers to cancel it.
+     */
+    val accountRecoveryPending: Boolean = false,
+    /** When the live recovery can be finished, in epoch seconds. Null when none is live. */
+    val accountRecoveryCompletableAtEpochSeconds: Long? = null,
+    /** When the live recovery stops being finishable, in epoch seconds. Null when none is live. */
+    val accountRecoveryExpiresAtEpochSeconds: Long? = null,
 ) {
     /** Whether the account holds [factor] right now. */
     fun holds(factor: AuthFactor): Boolean = when (factor) {

@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">Finalizează configurarea acestui dispozitiv</string>
     <string name="gua_encryption_repair_message">Finalizează configurarea pentru a accesa conversațiile criptate și istoricul mesajelor disponibil pe acest dispozitiv.</string>
     <string name="gua_encryption_repair_action">Finalizează configurarea</string>
+    <string name="gua_account_recovery_banner_title">Cineva a început recuperarea contului tău</string>
+    <string name="gua_account_recovery_banner_message_later">Recuperarea va putea fi finalizată după %1$s. Dacă ai fost tu, poți ignora acest mesaj.</string>
+    <string name="gua_account_recovery_banner_message_now">Recuperarea poate fi finalizată acum. Dacă ai fost tu, poți ignora acest mesaj.</string>
+    <string name="gua_account_recovery_banner_action">Anulează recuperarea</string>
+    <string name="gua_account_recovery_cancel_title">Anulezi recuperarea?</string>
+    <string name="gua_account_recovery_cancel_message">Anuleaz-o dacă nu ai pornit-o tu. Dacă ai pornit-o, va trebui să o iei de la capăt.</string>
+    <string name="gua_account_recovery_cancelled">Recuperarea a fost anulată</string>
+    <string name="gua_account_recovery_cancel_failed">Recuperarea nu a putut fi anulată. Încearcă din nou.</string>
 </resources>

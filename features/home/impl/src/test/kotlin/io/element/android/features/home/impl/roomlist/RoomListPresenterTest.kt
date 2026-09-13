@@ -13,6 +13,9 @@ import im.vector.app.features.analytics.plan.Interaction
 import io.element.android.features.announcement.api.Announcement
 import io.element.android.features.announcement.api.AnnouncementService
 import io.element.android.features.home.impl.FakeDateTimeObserver
+import io.element.android.features.home.impl.accountrecovery.AccountRecoveryBannerState
+import io.element.android.features.home.impl.accountrecovery.aHiddenAccountRecoveryBannerState
+import io.element.android.features.home.impl.accountrecovery.anAccountRecoveryBannerState
 import io.element.android.features.home.impl.datasource.RoomListDataSource
 import io.element.android.features.home.impl.datasource.aRoomListRoomSummaryFactory
 import io.element.android.features.home.impl.filters.RoomListFiltersState
@@ -160,6 +163,35 @@ class RoomListPresenterTest {
             assertThat(eventWithContentAsRooms.contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.RecoveryKeyConfirmation)
             eventSink(RoomListEvent.DismissRequestVerificationPrompt)
             assertThat(awaitItem().contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.None)
+        }
+    }
+
+    @Test
+    fun `the account recovery banner is not hidden by dismissing the security banner`() = runTest {
+        val roomList = FakeDynamicRoomList(
+            loadingState = MutableStateFlow(RoomList.LoadingState.Loaded(1))
+        )
+        val roomListService = FakeRoomListService(
+            createRoomListLambda = { roomList }
+        )
+        val encryptionService = FakeEncryptionService().apply {
+            emitRecoveryState(RecoveryState.INCOMPLETE)
+        }
+        val syncService = FakeSyncService(initialSyncState = SyncState.Running)
+        val accountRecoveryBannerState = anAccountRecoveryBannerState()
+        val presenter = createRoomListPresenter(
+            client = FakeMatrixClient(roomListService = roomListService, encryptionService = encryptionService, syncService = syncService),
+            accountRecoveryBannerPresenter = { accountRecoveryBannerState },
+        )
+        presenter.test {
+            val roomsState = consumeItemsUntilPredicate {
+                it.contentState is RoomListContentState.Rooms
+            }.last()
+            assertThat(roomsState.accountRecoveryBannerState).isEqualTo(accountRecoveryBannerState)
+            roomsState.eventSink(RoomListEvent.DismissBanner)
+            val dismissedState = awaitItem()
+            assertThat(dismissedState.contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.None)
+            assertThat(dismissedState.accountRecoveryBannerState).isEqualTo(accountRecoveryBannerState)
         }
     }
 
@@ -673,6 +705,7 @@ class RoomListPresenterTest {
         seenInvitesStore: SeenInvitesStore = InMemorySeenInvitesStore(),
         announcementService: AnnouncementService = FakeAnnouncementService(),
         featureFlagService: FeatureFlagService = FakeFeatureFlagService(),
+        accountRecoveryBannerPresenter: Presenter<AccountRecoveryBannerState> = Presenter { aHiddenAccountRecoveryBannerState() },
     ) = RoomListPresenter(
         client = client,
         leaveRoomPresenter = { leaveRoomState },
@@ -705,5 +738,6 @@ class RoomListPresenterTest {
         snackbarDispatcher = SnackbarDispatcher(),
         keyStorageProvisioner = FakeKeyStorageProvisioner(),
         identityResetPendingStore = FakeIdentityResetPendingStore(),
+        accountRecoveryBannerPresenter = accountRecoveryBannerPresenter,
     )
 }

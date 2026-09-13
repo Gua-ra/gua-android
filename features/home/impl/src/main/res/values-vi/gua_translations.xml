@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">Hoàn tất thiết lập thiết bị này</string>
     <string name="gua_encryption_repair_message">Hoàn tất thiết lập để truy cập các cuộc trò chuyện được mã hóa và lịch sử tin nhắn có trên thiết bị này.</string>
     <string name="gua_encryption_repair_action">Hoàn tất thiết lập</string>
+    <string name="gua_account_recovery_banner_title">Ai đó đã bắt đầu khôi phục tài khoản của bạn</string>
+    <string name="gua_account_recovery_banner_message_later">Có thể hoàn tất khôi phục sau %1$s. Nếu đó là bạn, bạn có thể bỏ qua thông báo này.</string>
+    <string name="gua_account_recovery_banner_message_now">Có thể hoàn tất khôi phục ngay bây giờ. Nếu đó là bạn, bạn có thể bỏ qua thông báo này.</string>
+    <string name="gua_account_recovery_banner_action">Hủy khôi phục</string>
+    <string name="gua_account_recovery_cancel_title">Hủy khôi phục?</string>
+    <string name="gua_account_recovery_cancel_message">Hãy hủy nếu bạn không bắt đầu việc này. Nếu là bạn, bạn sẽ phải bắt đầu lại.</string>
+    <string name="gua_account_recovery_cancelled">Đã hủy khôi phục</string>
+    <string name="gua_account_recovery_cancel_failed">Không thể hủy khôi phục. Hãy thử lại.</string>
 </resources>

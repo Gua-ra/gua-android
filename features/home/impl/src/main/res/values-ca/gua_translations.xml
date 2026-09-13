@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">Acaba de configurar aquest dispositiu</string>
     <string name="gua_encryption_repair_message">Completa la configuració per accedir als xats xifrats i a l\'historial de missatges disponible en aquest dispositiu.</string>
     <string name="gua_encryption_repair_action">Completa la configuració</string>
+    <string name="gua_account_recovery_banner_title">Algú ha començat a recuperar el teu compte</string>
+    <string name="gua_account_recovery_banner_message_later">La recuperació es podrà completar a partir del %1$s. Si has estat tu, pots ignorar aquest avís.</string>
+    <string name="gua_account_recovery_banner_message_now">La recuperació ja es pot completar. Si has estat tu, pots ignorar aquest avís.</string>
+    <string name="gua_account_recovery_banner_action">Cancel·la la recuperació</string>
+    <string name="gua_account_recovery_cancel_title">Vols cancel·lar la recuperació?</string>
+    <string name="gua_account_recovery_cancel_message">Cancel·la-la si no l\'has iniciat tu. Si l\'has iniciat, hauràs de tornar a començar.</string>
+    <string name="gua_account_recovery_cancelled">S\'ha cancel·lat la recuperació</string>
+    <string name="gua_account_recovery_cancel_failed">No s\'ha pogut cancel·lar la recuperació. Torna-ho a provar.</string>
 </resources>

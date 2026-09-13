@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">이 기기 설정을 완료하세요</string>
     <string name="gua_encryption_repair_message">설정을 완료하면 이 기기에서 사용할 수 있는 암호화된 대화와 메시지 기록에 접근할 수 있습니다.</string>
     <string name="gua_encryption_repair_action">설정 완료</string>
+    <string name="gua_account_recovery_banner_title">누군가 계정 복구를 시작했습니다</string>
+    <string name="gua_account_recovery_banner_message_later">%1$s 이후에 복구를 완료할 수 있습니다. 직접 시작했다면 이 알림을 무시해도 됩니다.</string>
+    <string name="gua_account_recovery_banner_message_now">지금 복구를 완료할 수 있습니다. 직접 시작했다면 이 알림을 무시해도 됩니다.</string>
+    <string name="gua_account_recovery_banner_action">복구 취소</string>
+    <string name="gua_account_recovery_cancel_title">복구를 취소할까요?</string>
+    <string name="gua_account_recovery_cancel_message">직접 시작하지 않았다면 취소하세요. 직접 시작했다면 처음부터 다시 시작해야 합니다.</string>
+    <string name="gua_account_recovery_cancelled">복구가 취소되었습니다</string>
+    <string name="gua_account_recovery_cancel_failed">복구를 취소하지 못했습니다. 다시 시도하세요.</string>
 </resources>

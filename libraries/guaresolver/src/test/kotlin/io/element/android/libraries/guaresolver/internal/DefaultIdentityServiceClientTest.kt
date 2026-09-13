@@ -178,6 +178,98 @@ class DefaultIdentityServiceClientTest {
     }
 
     @Test
+    fun `accountFactorStatus reports a live account recovery with its times`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "hasPin": true,
+                  "passkeyRegistered": false,
+                  "accountRecoveryPending": true,
+                  "accountRecoveryCompletableAtEpochSeconds": 1790000000,
+                  "accountRecoveryExpiresAtEpochSeconds": 1790604800
+                }
+                """.trimIndent()
+            )
+        )
+        val client = createClient(server)
+
+        val status = client.accountFactorStatus("token", "@alice:gua.global").getOrThrow()
+
+        assertThat(status.accountRecoveryPending).isTrue()
+        assertThat(status.accountRecoveryCompletableAtEpochSeconds).isEqualTo(1_790_000_000L)
+        assertThat(status.accountRecoveryExpiresAtEpochSeconds).isEqualTo(1_790_604_800L)
+        server.shutdown()
+    }
+
+    @Test
+    fun `accountFactorStatus from an identity-service without delayed recovery reports none live`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setBody("""{ "hasPin": true, "changePhoneCooldownRemainingSeconds": 0 }"""))
+        val client = createClient(server)
+
+        val status = client.accountFactorStatus("token", "@alice:gua.global").getOrThrow()
+
+        assertThat(status.accountRecoveryPending).isFalse()
+        assertThat(status.accountRecoveryCompletableAtEpochSeconds).isNull()
+        assertThat(status.accountRecoveryExpiresAtEpochSeconds).isNull()
+        server.shutdown()
+    }
+
+    @Test
+    fun `recovery times are dropped when no recovery is live`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "hasPin": true,
+                  "accountRecoveryPending": false,
+                  "accountRecoveryCompletableAtEpochSeconds": 1790000000,
+                  "accountRecoveryExpiresAtEpochSeconds": 1790604800
+                }
+                """.trimIndent()
+            )
+        )
+        val client = createClient(server)
+
+        val status = client.accountFactorStatus("token", "@alice:gua.global").getOrThrow()
+
+        assertThat(status.accountRecoveryCompletableAtEpochSeconds).isNull()
+        assertThat(status.accountRecoveryExpiresAtEpochSeconds).isNull()
+        server.shutdown()
+    }
+
+    @Test
+    fun `cancelAccountRecovery POSTs the cancel endpoint with a bearer token and accepts 204`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(204))
+        val client = createClient(server)
+
+        val result = client.cancelAccountRecovery("secret-token")
+
+        assertThat(result.isSuccess).isTrue()
+        val request = server.takeRequest()
+        assertThat(request.method).isEqualTo("POST")
+        assertThat(request.path).isEqualTo("/security/recovery/cancel")
+        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer secret-token")
+        server.shutdown()
+    }
+
+    @Test
+    fun `a refused cancel surfaces as a failure`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(401).setBody("""{ "code": "unauthorized" }"""))
+        val client = createClient(server)
+
+        val result = client.cancelAccountRecovery("expired-token")
+
+        assertThat(result.exceptionOrNull()).isEqualTo(ResolverError.Server(401))
+        server.shutdown()
+    }
+
+    @Test
     fun `the reauth OTP goes to the account endpoint and the token is scoped to the phone change`() = runTest {
         val server = MockWebServer()
         server.enqueue(MockResponse().setResponseCode(204))

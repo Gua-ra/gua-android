@@ -9,6 +9,7 @@
 package io.element.android.features.home.impl.roomlist
 
 import androidx.compose.runtime.Immutable
+import io.element.android.features.home.impl.accountrecovery.AccountRecoveryBannerState
 import io.element.android.features.home.impl.filters.RoomListFiltersState
 import io.element.android.features.home.impl.model.RoomListRoomSummary
 import io.element.android.features.home.impl.search.RoomListSearchState
@@ -32,6 +33,8 @@ data class RoomListState(
     val acceptDeclineInviteState: AcceptDeclineInviteState,
     val hideInvitesAvatars: Boolean,
     val canReportRoom: Boolean,
+    /** GUA FORK: the delayed account recovery warning. Separate from the encryption banner. */
+    val accountRecoveryBannerState: AccountRecoveryBannerState,
     val eventSink: (RoomListEvent) -> Unit,
 ) {
     val displayFilters = contentState is RoomListContentState.Rooms

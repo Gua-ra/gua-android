@@ -56,6 +56,8 @@ class FakeIdentityServiceClient(
     override suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus> =
         factorStatusResult()
 
+    override suspend fun cancelAccountRecovery(accessToken: String): Result<Unit> = Result.success(Unit)
+
     override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> {
         setInitialPinCalls += newPin
         return Result.success(Unit)
