@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,9 +50,20 @@ fun ChangePhoneNumberView(
     state: ChangePhoneNumberState,
     onBackClick: () -> Unit,
     onFinish: () -> Unit,
+    onOpenPasskeyEnrollUrl: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val eventSink = state.eventSink
+
+    // GUA FORK: hand the authenticated passkey-enrollment URL to the Node exactly once, mirroring
+    // the two-step-verification screen.
+    val currentOnOpenPasskeyEnrollUrl by rememberUpdatedState(onOpenPasskeyEnrollUrl)
+    LaunchedEffect(state.passkeyEnrollUrl) {
+        state.passkeyEnrollUrl?.let { url ->
+            currentOnOpenPasskeyEnrollUrl(url)
+            eventSink(ChangePhoneNumberEvents.ClearPasskeyEnrollUrl)
+        }
+    }
 
     PreferencePage(
         modifier = modifier,
@@ -63,10 +77,11 @@ fun ChangePhoneNumberView(
         title = stringResource(id = state.phase.titleRes()),
     ) {
         when (state.phase) {
-            ChangePhoneNumberPhase.Intro -> IntroSection(eventSink = eventSink)
-            ChangePhoneNumberPhase.NeedsPinSetup -> NeedsPinSetupSection(eventSink = eventSink)
+            ChangePhoneNumberPhase.Intro -> IntroSection(state = state, eventSink = eventSink)
+            ChangePhoneNumberPhase.NeedsStepUp -> NeedsStepUpSection(state = state, eventSink = eventSink)
             ChangePhoneNumberPhase.Cooldown -> CooldownSection(state = state)
             ChangePhoneNumberPhase.EnteringNewPhone -> PhoneEntrySection(state = state, eventSink = eventSink)
+            ChangePhoneNumberPhase.EnteringReauthOtp,
             ChangePhoneNumberPhase.EnteringPin,
             ChangePhoneNumberPhase.EnteringOtp -> CodeEntrySection(state = state, eventSink = eventSink)
             ChangePhoneNumberPhase.Submitting -> AsyncLoading()
@@ -130,6 +145,7 @@ private fun MessageCard(
 
 @Composable
 private fun IntroSection(
+    state: ChangePhoneNumberState,
     eventSink: (ChangePhoneNumberEvents) -> Unit,
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
@@ -140,6 +156,19 @@ private fun IntroSection(
             heading = stringResource(id = R.string.screen_change_phone_intro_header),
             body = stringResource(id = R.string.screen_change_phone_intro_message),
         )
+        // GUA FORK: a spent reauth token sends the user back here, so the reason has to be readable
+        // from this screen. Without it a restart looked like the Continue button had done nothing.
+        state.errorMessage?.let { errorMessage ->
+            Text(
+                text = stringResource(id = errorMessage),
+                style = ElementTheme.typography.fontBodySmRegular,
+                color = ElementTheme.colors.textCriticalPrimary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+            )
+        }
         Button(
             text = stringResource(id = CommonStrings.action_continue),
             onClick = { eventSink(ChangePhoneNumberEvents.Continue) },
@@ -150,25 +179,68 @@ private fun IntroSection(
     }
 }
 
+/**
+ * GUA FORK: the hard block. The account cannot settle the step-up the server demands, so the change
+ * stops here and the only buttons are ways to register a factor. Which ones are offered comes from
+ * [ChangePhoneNumberState.canSetUpPasskey] / [ChangePhoneNumberState.canSetUpPin]: a passkey first
+ * where it is possible, the PIN as the fallback, never the PIN alone as though it were the only
+ * factor two-step verification has.
+ */
 @Composable
-private fun NeedsPinSetupSection(
+private fun NeedsStepUpSection(
+    state: ChangePhoneNumberState,
     eventSink: (ChangePhoneNumberEvents) -> Unit,
 ) {
+    val isPasskeyUnusable = state.stepUpBlock == StepUpBlock.PasskeyNotUsableHere
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
         MessageCard(
             icon = CompoundIcons.LockSolid(),
             iconTint = ElementTheme.colors.iconPrimary,
             badgeColor = ElementTheme.colors.bgSubtlePrimary,
-            heading = stringResource(id = R.string.screen_change_phone_needs_pin_header),
-            body = stringResource(id = R.string.screen_change_phone_needs_pin_message),
+            heading = stringResource(
+                id = if (isPasskeyUnusable) {
+                    R.string.screen_change_phone_passkey_unavailable_header
+                } else {
+                    R.string.screen_change_phone_needs_step_up_header
+                }
+            ),
+            body = stringResource(
+                id = if (isPasskeyUnusable) {
+                    R.string.screen_change_phone_passkey_unavailable_message
+                } else {
+                    R.string.screen_change_phone_needs_step_up_message
+                }
+            ),
         )
-        Button(
-            text = stringResource(id = R.string.screen_change_phone_needs_pin_action),
-            onClick = { eventSink(ChangePhoneNumberEvents.SetUpPin) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 24.dp),
-        )
+        if (state.canSetUpPasskey) {
+            Button(
+                text = stringResource(id = R.string.screen_change_phone_needs_step_up_passkey_action),
+                onClick = { eventSink(ChangePhoneNumberEvents.SetUpPasskey) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 24.dp),
+            )
+        }
+        if (state.canSetUpPin) {
+            Button(
+                text = stringResource(id = R.string.screen_change_phone_needs_step_up_pin_action),
+                onClick = { eventSink(ChangePhoneNumberEvents.SetUpPin) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = if (state.canSetUpPasskey) 12.dp else 24.dp),
+            )
+        }
+        state.errorMessage?.let { errorMessage ->
+            Text(
+                text = stringResource(id = errorMessage),
+                style = ElementTheme.typography.fontBodySmRegular,
+                color = ElementTheme.colors.textCriticalPrimary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+            )
+        }
     }
 }
 
@@ -231,7 +303,7 @@ private fun CodeEntrySection(
             hasError = state.errorMessage != null,
             enabled = !state.isWorking,
             onValueChange = { eventSink(ChangePhoneNumberEvents.CodeChanged(it)) },
-            // GUA FORK: mask the secret account PIN, but keep the OTP readable.
+            // GUA FORK: mask the secret account PIN, but keep both OTPs readable.
             masked = state.phase == ChangePhoneNumberPhase.EnteringPin,
             modifier = Modifier
                 .fillMaxWidth()
@@ -340,6 +412,7 @@ internal fun humanizeDuration(totalSeconds: Long): String {
 
 private fun ChangePhoneNumberPhase.isEnteringFlow(): Boolean = when (this) {
     ChangePhoneNumberPhase.EnteringNewPhone,
+    ChangePhoneNumberPhase.EnteringReauthOtp,
     ChangePhoneNumberPhase.EnteringPin,
     ChangePhoneNumberPhase.EnteringOtp,
     ChangePhoneNumberPhase.Submitting -> true
@@ -348,10 +421,11 @@ private fun ChangePhoneNumberPhase.isEnteringFlow(): Boolean = when (this) {
 
 private fun ChangePhoneNumberPhase.titleRes(): Int = when (this) {
     ChangePhoneNumberPhase.Intro,
-    ChangePhoneNumberPhase.NeedsPinSetup,
+    ChangePhoneNumberPhase.NeedsStepUp,
     ChangePhoneNumberPhase.Cooldown,
     ChangePhoneNumberPhase.Submitting -> R.string.screen_change_phone_title
     ChangePhoneNumberPhase.EnteringNewPhone -> R.string.screen_change_phone_new_header
+    ChangePhoneNumberPhase.EnteringReauthOtp -> R.string.screen_change_phone_reauth_header
     ChangePhoneNumberPhase.EnteringPin -> R.string.screen_change_phone_pin_header
     ChangePhoneNumberPhase.EnteringOtp -> R.string.screen_change_phone_otp_header
     ChangePhoneNumberPhase.Done -> R.string.screen_change_phone_done_header
@@ -359,6 +433,7 @@ private fun ChangePhoneNumberPhase.titleRes(): Int = when (this) {
 
 private fun ChangePhoneNumberPhase.footerRes(): Int? = when (this) {
     ChangePhoneNumberPhase.EnteringNewPhone -> R.string.screen_change_phone_new_footer
+    ChangePhoneNumberPhase.EnteringReauthOtp -> R.string.screen_change_phone_reauth_footer
     ChangePhoneNumberPhase.EnteringPin -> R.string.screen_change_phone_pin_footer
     ChangePhoneNumberPhase.EnteringOtp -> R.string.screen_change_phone_otp_footer
     else -> null
@@ -373,5 +448,6 @@ internal fun ChangePhoneNumberViewPreview(
         state = state,
         onBackClick = {},
         onFinish = {},
+        onOpenPasskeyEnrollUrl = {},
     )
 }

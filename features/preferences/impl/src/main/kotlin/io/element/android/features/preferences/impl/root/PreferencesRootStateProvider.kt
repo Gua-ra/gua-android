@@ -69,7 +69,7 @@ open class PreferencesRootStateProvider : PreviewParameterProvider<PreferencesRo
             ),
             // GUA FORK: account PIN not yet set up -> the set-up-2SV nudge banner is shown.
             aPreferencesRootState(
-                isAccountPinSetup = false,
+                hasAccountStrongFactor = false,
             ),
             // Minimal state
             aPreferencesRootState(),
@@ -93,7 +93,7 @@ fun aPreferencesRootState(
     nbOfBlockedUsers: Int = 0,
     showLabsItem: Boolean = false,
     isLockScreenPinSetup: Boolean = true,
-    isAccountPinSetup: Boolean = true,
+    hasAccountStrongFactor: Boolean? = true,
     directLogoutState: DirectLogoutState = aDirectLogoutState(),
     snackbarMessage: SnackbarMessage? = null,
     eventSink: (PreferencesRootEvent) -> Unit = {},
@@ -114,7 +114,7 @@ fun aPreferencesRootState(
     nbOfBlockedUsers = nbOfBlockedUsers,
     showLabsItem = showLabsItem,
     isLockScreenPinSetup = isLockScreenPinSetup,
-    isAccountPinSetup = isAccountPinSetup,
+    hasAccountStrongFactor = hasAccountStrongFactor,
     directLogoutState = directLogoutState,
     snackbarMessage = snackbarMessage,
     eventSink = eventSink,

@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">Fullfør oppsettet av denne enheten</string>
     <string name="gua_encryption_repair_message">Fullfør oppsettet for å få tilgang til de krypterte chattene og meldingsloggen som finnes på denne enheten.</string>
     <string name="gua_encryption_repair_action">Fullfør oppsett</string>
+    <string name="gua_account_recovery_banner_title">Noen har startet gjenoppretting av kontoen din</string>
+    <string name="gua_account_recovery_banner_message_later">Gjenopprettingen kan fullføres etter %1$s. Hvis det var deg, kan du se bort fra dette.</string>
+    <string name="gua_account_recovery_banner_message_now">Gjenopprettingen kan fullføres nå. Hvis det var deg, kan du se bort fra dette.</string>
+    <string name="gua_account_recovery_banner_action">Avbryt gjenoppretting</string>
+    <string name="gua_account_recovery_cancel_title">Avbryte gjenopprettingen?</string>
+    <string name="gua_account_recovery_cancel_message">Avbryt den hvis du ikke startet den. Hvis du gjorde det, må du begynne på nytt.</string>
+    <string name="gua_account_recovery_cancelled">Gjenoppretting avbrutt</string>
+    <string name="gua_account_recovery_cancel_failed">Kunne ikke avbryte gjenopprettingen. Prøv igjen.</string>
 </resources>

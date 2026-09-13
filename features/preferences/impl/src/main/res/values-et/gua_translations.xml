@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Sinu telefoninumber on uuendatud.</string>
     <string name="screen_change_phone_done_header">Valmis</string>
     <string name="screen_change_phone_done_message">Sinu telefoninumber on uuendatud. Edaspidi logid sisse uue numbriga.</string>
-    <string name="screen_change_phone_needs_pin_header">Numbri muutmiseks on vaja PIN-koodi</string>
-    <string name="screen_change_phone_needs_pin_message">Turvalisuse huvides seadista 6-kohaline konto PIN-kood. Kinnitad selle enne numbri muutmist.</string>
-    <string name="screen_change_phone_needs_pin_action">Seadista PIN-kood</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Seadista PIN-kood</string>
     <string name="screen_change_phone_cooldown_header">Veel mitte</string>
     <string name="screen_change_phone_cooldown_message">Turvalisuse huvides saad numbrit muuta %1$s pärast.</string>
 </resources>

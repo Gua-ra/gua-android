@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">Slutför konfigurationen av den här enheten</string>
     <string name="gua_encryption_repair_message">Slutför konfigurationen för att komma åt de krypterade chattarna och den meddelandehistorik som finns på den här enheten.</string>
     <string name="gua_encryption_repair_action">Slutför konfiguration</string>
+    <string name="gua_account_recovery_banner_title">Någon har börjat återställa ditt konto</string>
+    <string name="gua_account_recovery_banner_message_later">Återställningen kan slutföras efter %1$s. Om det var du kan du bortse från detta.</string>
+    <string name="gua_account_recovery_banner_message_now">Återställningen kan slutföras nu. Om det var du kan du bortse från detta.</string>
+    <string name="gua_account_recovery_banner_action">Avbryt återställning</string>
+    <string name="gua_account_recovery_cancel_title">Avbryta återställningen?</string>
+    <string name="gua_account_recovery_cancel_message">Avbryt den om du inte startade den. Om du gjorde det måste du börja om.</string>
+    <string name="gua_account_recovery_cancelled">Återställningen avbröts</string>
+    <string name="gua_account_recovery_cancel_failed">Det gick inte att avbryta återställningen. Försök igen.</string>
 </resources>

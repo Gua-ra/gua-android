@@ -27,6 +27,7 @@ import dev.zacsweers.metro.Inject
 import im.vector.app.features.analytics.plan.Interaction
 import io.element.android.features.announcement.api.Announcement
 import io.element.android.features.announcement.api.AnnouncementService
+import io.element.android.features.home.impl.accountrecovery.AccountRecoveryBannerState
 import io.element.android.features.home.impl.datasource.RoomListDataSource
 import io.element.android.features.home.impl.filters.RoomListFilter.Rooms
 import io.element.android.features.home.impl.filters.RoomListFiltersState
@@ -104,6 +105,7 @@ class RoomListPresenter(
     private val snackbarDispatcher: SnackbarDispatcher,
     private val keyStorageProvisioner: KeyStorageProvisioner,
     private val identityResetPendingStore: IdentityResetPendingStore,
+    private val accountRecoveryBannerPresenter: Presenter<AccountRecoveryBannerState>,
 ) : Presenter<RoomListState> {
     private val encryptionService = client.encryptionService
 
@@ -115,6 +117,9 @@ class RoomListPresenter(
         val searchState = searchPresenter.present()
         val spaceFiltersState = spaceFiltersPresenter.present()
         val acceptDeclineInviteState = acceptDeclineInvitePresenter.present()
+        // GUA FORK: its own state, deliberately outside the security banner: dismissing that one must
+        // never hide a warning that someone is taking over the account.
+        val accountRecoveryBannerState = accountRecoveryBannerPresenter.present()
 
         LaunchedEffect(Unit) {
             roomListDataSource.launchIn(this)
@@ -263,6 +268,7 @@ class RoomListPresenter(
             acceptDeclineInviteState = acceptDeclineInviteState,
             hideInvitesAvatars = hideInvitesAvatar,
             canReportRoom = canReportRoom,
+            accountRecoveryBannerState = accountRecoveryBannerState,
             eventSink = ::handleEvent,
         )
     }

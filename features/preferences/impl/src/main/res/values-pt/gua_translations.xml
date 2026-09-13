@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">O seu número de telemóvel foi atualizado.</string>
     <string name="screen_change_phone_done_header">Tudo pronto</string>
     <string name="screen_change_phone_done_message">O seu número de telemóvel foi atualizado. A partir de agora, usará o novo número para entrar.</string>
-    <string name="screen_change_phone_needs_pin_header">Precisa de um PIN para alterar o seu número</string>
-    <string name="screen_change_phone_needs_pin_message">Para sua segurança, configure um PIN de 6 dígitos. Vai confirmá-lo antes de alterar o seu número.</string>
-    <string name="screen_change_phone_needs_pin_action">Configurar PIN</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Configurar PIN</string>
     <string name="screen_change_phone_cooldown_header">Ainda não</string>
     <string name="screen_change_phone_cooldown_message">Por segurança, poderá alterar o seu número dentro de %1$s.</string>
 </resources>

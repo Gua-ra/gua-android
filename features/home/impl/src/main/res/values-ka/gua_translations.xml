@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">დაასრულეთ ამ მოწყობილობის დაყენება</string>
     <string name="gua_encryption_repair_message">დაასრულეთ დაყენება, რომ იხილოთ დაშიფრული ჩატები და ამ მოწყობილობაზე ხელმისაწვდომი შეტყობინებების ისტორია.</string>
     <string name="gua_encryption_repair_action">დაყენების დასრულება</string>
+    <string name="gua_account_recovery_banner_title">ვიღაცამ დაიწყა თქვენი ანგარიშის აღდგენა</string>
+    <string name="gua_account_recovery_banner_message_later">აღდგენის დასრულება შესაძლებელი იქნება ამ დროის შემდეგ: %1$s. თუ ეს თქვენ იყავით, შეგიძლიათ ეს შეტყობინება უგულებელყოთ.</string>
+    <string name="gua_account_recovery_banner_message_now">აღდგენის დასრულება ახლა შესაძლებელია. თუ ეს თქვენ იყავით, შეგიძლიათ ეს შეტყობინება უგულებელყოთ.</string>
+    <string name="gua_account_recovery_banner_action">აღდგენის გაუქმება</string>
+    <string name="gua_account_recovery_cancel_title">გაუქმდეს აღდგენა?</string>
+    <string name="gua_account_recovery_cancel_message">გააუქმეთ, თუ ის თქვენ არ დაიწყეთ. თუ თქვენ დაიწყეთ, ხელახლა დაწყება მოგიწევთ.</string>
+    <string name="gua_account_recovery_cancelled">აღდგენა გაუქმდა</string>
+    <string name="gua_account_recovery_cancel_failed">აღდგენის გაუქმება ვერ მოხერხდა. სცადეთ ხელახლა.</string>
 </resources>

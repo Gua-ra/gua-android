@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Ваш номер телефона обновлён.</string>
     <string name="screen_change_phone_done_header">Готово</string>
     <string name="screen_change_phone_done_message">Ваш номер телефона обновлён. Дальше для входа используйте новый номер.</string>
-    <string name="screen_change_phone_needs_pin_header">Для смены номера нужен PIN</string>
-    <string name="screen_change_phone_needs_pin_message">Для безопасности задайте 6-значный PIN аккаунта. Вы подтвердите его перед сменой номера.</string>
-    <string name="screen_change_phone_needs_pin_action">Настроить PIN</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Настроить PIN</string>
     <string name="screen_change_phone_cooldown_header">Пока нельзя</string>
     <string name="screen_change_phone_cooldown_message">В целях безопасности сменить номер можно через %1$s.</string>
 </resources>

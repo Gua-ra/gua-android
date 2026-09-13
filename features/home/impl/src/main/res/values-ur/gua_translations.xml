@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">اس ڈیوائس کا سیٹ اپ مکمل کریں</string>
     <string name="gua_encryption_repair_message">اس ڈیوائس پر دستیاب خفیہ کردہ چیٹس اور پیغامات کی تاریخ تک رسائی کے لیے سیٹ اپ مکمل کریں۔</string>
     <string name="gua_encryption_repair_action">سیٹ اپ مکمل کریں</string>
+    <string name="gua_account_recovery_banner_title">کسی نے آپ کے اکاؤنٹ کی بازیابی شروع کی ہے</string>
+    <string name="gua_account_recovery_banner_message_later">بازیابی %1$s کے بعد مکمل کی جا سکتی ہے۔ اگر یہ آپ تھے تو آپ اسے نظر انداز کر سکتے ہیں۔</string>
+    <string name="gua_account_recovery_banner_message_now">بازیابی اب مکمل کی جا سکتی ہے۔ اگر یہ آپ تھے تو آپ اسے نظر انداز کر سکتے ہیں۔</string>
+    <string name="gua_account_recovery_banner_action">بازیابی منسوخ کریں</string>
+    <string name="gua_account_recovery_cancel_title">بازیابی منسوخ کریں؟</string>
+    <string name="gua_account_recovery_cancel_message">اگر آپ نے اسے شروع نہیں کیا تو اسے منسوخ کریں۔ اگر آپ نے شروع کیا تھا تو آپ کو دوبارہ شروع کرنا ہوگا۔</string>
+    <string name="gua_account_recovery_cancelled">بازیابی منسوخ کر دی گئی</string>
+    <string name="gua_account_recovery_cancel_failed">بازیابی منسوخ نہیں ہو سکی۔ دوبارہ کوشش کریں۔</string>
 </resources>

@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">Gorffennwch osod y ddyfais hon</string>
     <string name="gua_encryption_repair_message">Cwblhewch y gosodiad i gael mynediad at y sgyrsiau wedi\'u hamgryptio a\'r hanes negeseuon sydd ar gael ar y ddyfais hon.</string>
     <string name="gua_encryption_repair_action">Gorffen gosod</string>
+    <string name="gua_account_recovery_banner_title">Mae rhywun wedi dechrau adfer eich cyfrif</string>
+    <string name="gua_account_recovery_banner_message_later">Gellir cwblhau\'r adfer ar ôl %1$s. Os mai chi oedd hyn, gallwch anwybyddu hyn.</string>
+    <string name="gua_account_recovery_banner_message_now">Gellir cwblhau\'r adfer nawr. Os mai chi oedd hyn, gallwch anwybyddu hyn.</string>
+    <string name="gua_account_recovery_banner_action">Canslo\'r adfer</string>
+    <string name="gua_account_recovery_cancel_title">Canslo\'r adfer?</string>
+    <string name="gua_account_recovery_cancel_message">Canslwch ef os na wnaethoch chi ei ddechrau. Os gwnaethoch chi, bydd angen i chi ddechrau eto.</string>
+    <string name="gua_account_recovery_cancelled">Mae\'r adfer wedi\'i ganslo</string>
+    <string name="gua_account_recovery_cancel_failed">Doedd dim modd canslo\'r adfer. Rhowch gynnig arall arni.</string>
 </resources>

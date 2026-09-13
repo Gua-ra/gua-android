@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">Completa la configurazione di questo dispositivo</string>
     <string name="gua_encryption_repair_message">Completa la configurazione per accedere alle chat cifrate e alla cronologia dei messaggi disponibili su questo dispositivo.</string>
     <string name="gua_encryption_repair_action">Completa configurazione</string>
+    <string name="gua_account_recovery_banner_title">Qualcuno ha avviato il recupero del tuo account</string>
+    <string name="gua_account_recovery_banner_message_later">Il recupero potrà essere completato dopo il %1$s. Se l\'hai avviato tu, puoi ignorare questo avviso.</string>
+    <string name="gua_account_recovery_banner_message_now">Il recupero può essere completato ora. Se l\'hai avviato tu, puoi ignorare questo avviso.</string>
+    <string name="gua_account_recovery_banner_action">Annulla recupero</string>
+    <string name="gua_account_recovery_cancel_title">Annullare il recupero?</string>
+    <string name="gua_account_recovery_cancel_message">Annullalo se non l\'hai avviato tu. Altrimenti dovrai ricominciare da capo.</string>
+    <string name="gua_account_recovery_cancelled">Recupero annullato</string>
+    <string name="gua_account_recovery_cancel_failed">Impossibile annullare il recupero. Riprova.</string>
 </resources>

@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Telefon raqamingiz yangilandi.</string>
     <string name="screen_change_phone_done_header">Tayyor</string>
     <string name="screen_change_phone_done_message">Telefon raqamingiz yangilandi. Bundan buyon kirish uchun yangi raqamingizdan foydalanasiz.</string>
-    <string name="screen_change_phone_needs_pin_header">Raqamni o\'zgartirish uchun PIN kerak</string>
-    <string name="screen_change_phone_needs_pin_message">Xavfsizligingiz uchun 6 raqamli hisob PIN kodini o\'rnating. Raqamni o\'zgartirishdan oldin uni tasdiqlaysiz.</string>
-    <string name="screen_change_phone_needs_pin_action">PIN o\'rnatish</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">PIN o\'rnatish</string>
     <string name="screen_change_phone_cooldown_header">Hali emas</string>
     <string name="screen_change_phone_cooldown_message">Xavfsizligingiz uchun raqamingizni %1$s dan keyin o\'zgartira olasiz.</string>
 </resources>

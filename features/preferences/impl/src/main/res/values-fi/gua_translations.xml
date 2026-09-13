@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Puhelinnumerosi on päivitetty.</string>
     <string name="screen_change_phone_done_header">Valmista</string>
     <string name="screen_change_phone_done_message">Puhelinnumerosi on päivitetty. Tästä eteenpäin kirjaudut sisään uudella numerollasi.</string>
-    <string name="screen_change_phone_needs_pin_header">Tarvitset PIN-koodin numeron vaihtamiseen</string>
-    <string name="screen_change_phone_needs_pin_message">Turvallisuutesi vuoksi aseta 6-numeroinen tilin PIN-koodi. Vahvistat sen ennen numeron vaihtamista.</string>
-    <string name="screen_change_phone_needs_pin_action">Aseta PIN-koodi</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Aseta PIN-koodi</string>
     <string name="screen_change_phone_cooldown_header">Ei vielä</string>
     <string name="screen_change_phone_cooldown_message">Turvallisuutesi vuoksi voit vaihtaa numerosi %1$s kuluttua.</string>
 </resources>

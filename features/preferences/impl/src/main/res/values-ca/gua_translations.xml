@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">El teu número de telèfon s\'ha actualitzat.</string>
     <string name="screen_change_phone_done_header">Tot a punt</string>
     <string name="screen_change_phone_done_message">El teu número de telèfon s\'ha actualitzat. A partir d\'ara iniciaràs la sessió amb el número nou.</string>
-    <string name="screen_change_phone_needs_pin_header">Necessites un PIN per canviar de número</string>
-    <string name="screen_change_phone_needs_pin_message">Per seguretat, configura un PIN de 6 xifres. El confirmaràs abans de canviar de número.</string>
-    <string name="screen_change_phone_needs_pin_action">Configura el PIN</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Configura el PIN</string>
     <string name="screen_change_phone_cooldown_header">Encara no</string>
     <string name="screen_change_phone_cooldown_message">Per seguretat, podràs canviar de número d\'aquí a %1$s.</string>
 </resources>

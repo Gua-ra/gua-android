@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Zure telefono zenbakia eguneratu da.</string>
     <string name="screen_change_phone_done_header">Dena prest</string>
     <string name="screen_change_phone_done_message">Zure telefono zenbakia eguneratu da. Hemendik aurrera zenbaki berriarekin hasiko duzu saioa.</string>
-    <string name="screen_change_phone_needs_pin_header">PIN bat behar duzu zenbakia aldatzeko</string>
-    <string name="screen_change_phone_needs_pin_message">Zure segurtasunerako, ezarri 6 digituko kontu PIN bat. Zenbakia aldatu aurretik berretsiko duzu.</string>
-    <string name="screen_change_phone_needs_pin_action">Konfiguratu PINa</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Konfiguratu PINa</string>
     <string name="screen_change_phone_cooldown_header">Oraindik ez</string>
     <string name="screen_change_phone_cooldown_message">Zure segurtasunerako, %1$s barru alda dezakezu zenbakia.</string>
 </resources>

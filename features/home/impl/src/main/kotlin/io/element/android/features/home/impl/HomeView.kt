@@ -239,6 +239,7 @@ private fun HomeScaffold(
                 HomeNavigationBarItem.Chats -> {
                     RoomListContentView(
                         contentState = roomListState.contentState,
+                        accountRecoveryBannerState = roomListState.accountRecoveryBannerState,
                         filtersState = roomListState.filtersState,
                         spaceFiltersState = roomListState.spaceFiltersState,
                         lazyListState = roomsLazyListState,

@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Vaše telefónne číslo bolo aktualizované.</string>
     <string name="screen_change_phone_done_header">Hotovo</string>
     <string name="screen_change_phone_done_message">Vaše telefónne číslo bolo aktualizované. Odteraz sa budete prihlasovať novým číslom.</string>
-    <string name="screen_change_phone_needs_pin_header">Na zmenu čísla potrebujete PIN</string>
-    <string name="screen_change_phone_needs_pin_message">Pre vašu bezpečnosť si nastavte 6-miestny PIN účtu. Potvrdíte ho pred zmenou čísla.</string>
-    <string name="screen_change_phone_needs_pin_action">Nastaviť PIN</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Nastaviť PIN</string>
     <string name="screen_change_phone_cooldown_header">Ešte nie</string>
     <string name="screen_change_phone_cooldown_message">Z bezpečnostných dôvodov budete môcť číslo zmeniť o %1$s.</string>
 </resources>

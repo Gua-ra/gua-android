@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">Завяршыце наладу гэтай прылады</string>
     <string name="gua_encryption_repair_message">Завяршыце наладу, каб атрымаць доступ да зашыфраваных чатаў і гісторыі паведамленняў, даступнай на гэтай прыладзе.</string>
     <string name="gua_encryption_repair_action">Завяршыць наладу</string>
+    <string name="gua_account_recovery_banner_title">Хтосьці пачаў аднаўленне вашага ўліковага запісу</string>
+    <string name="gua_account_recovery_banner_message_later">Аднаўленне можна будзе завяршыць пасля %1$s. Калі гэта былі вы, можаце не звяртаць на гэта ўвагі.</string>
+    <string name="gua_account_recovery_banner_message_now">Аднаўленне ўжо можна завяршыць. Калі гэта былі вы, можаце не звяртаць на гэта ўвагі.</string>
+    <string name="gua_account_recovery_banner_action">Скасаваць аднаўленне</string>
+    <string name="gua_account_recovery_cancel_title">Скасаваць аднаўленне?</string>
+    <string name="gua_account_recovery_cancel_message">Скасуйце яго, калі вы яго не пачыналі. Калі пачыналі, давядзецца пачаць спачатку.</string>
+    <string name="gua_account_recovery_cancelled">Аднаўленне скасавана</string>
+    <string name="gua_account_recovery_cancel_failed">Не ўдалося скасаваць аднаўленне. Паспрабуйце яшчэ раз.</string>
 </resources>

@@ -9,6 +9,8 @@
 package io.element.android.features.home.impl.roomlist
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import io.element.android.features.home.impl.accountrecovery.AccountRecoveryBannerState
+import io.element.android.features.home.impl.accountrecovery.aHiddenAccountRecoveryBannerState
 import io.element.android.features.home.impl.filters.RoomListFiltersState
 import io.element.android.features.home.impl.filters.aRoomListFiltersState
 import io.element.android.features.home.impl.model.LatestEvent
@@ -59,6 +61,7 @@ internal fun aRoomListState(
     acceptDeclineInviteState: AcceptDeclineInviteState = anAcceptDeclineInviteState(),
     hideInvitesAvatars: Boolean = false,
     canReportRoom: Boolean = true,
+    accountRecoveryBannerState: AccountRecoveryBannerState = aHiddenAccountRecoveryBannerState(),
     eventSink: (RoomListEvent) -> Unit = {}
 ) = RoomListState(
     contextMenu = contextMenu,
@@ -71,6 +74,7 @@ internal fun aRoomListState(
     acceptDeclineInviteState = acceptDeclineInviteState,
     hideInvitesAvatars = hideInvitesAvatars,
     canReportRoom = canReportRoom,
+    accountRecoveryBannerState = accountRecoveryBannerState,
     eventSink = eventSink,
 )
 

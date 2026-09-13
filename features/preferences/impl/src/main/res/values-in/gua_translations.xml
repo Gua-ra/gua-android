@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Nomor telepon Anda telah diperbarui.</string>
     <string name="screen_change_phone_done_header">Selesai</string>
     <string name="screen_change_phone_done_message">Nomor telepon Anda telah diperbarui. Mulai sekarang Anda akan masuk dengan nomor baru.</string>
-    <string name="screen_change_phone_needs_pin_header">Anda memerlukan PIN untuk mengubah nomor</string>
-    <string name="screen_change_phone_needs_pin_message">Demi keamanan Anda, siapkan PIN akun 6 digit. Anda akan mengonfirmasinya sebelum mengubah nomor.</string>
-    <string name="screen_change_phone_needs_pin_action">Siapkan PIN</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Siapkan PIN</string>
     <string name="screen_change_phone_cooldown_header">Belum bisa</string>
     <string name="screen_change_phone_cooldown_message">Demi keamanan Anda, Anda dapat mengubah nomor dalam %1$s.</string>
 </resources>

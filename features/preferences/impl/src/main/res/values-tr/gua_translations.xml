@@ -58,9 +58,7 @@
     <string name="screen_change_phone_updated">Telefon numaranız güncellendi.</string>
     <string name="screen_change_phone_done_header">Hazır</string>
     <string name="screen_change_phone_done_message">Telefon numaranız güncellendi. Bundan sonra giriş için yeni numaranızı kullanacaksınız.</string>
-    <string name="screen_change_phone_needs_pin_header">Numaranızı değiştirmek için bir PIN gerekir</string>
-    <string name="screen_change_phone_needs_pin_message">Güvenliğiniz için 6 haneli bir hesap PIN\'i belirleyin. Numaranızı değiştirmeden önce onaylayacaksınız.</string>
-    <string name="screen_change_phone_needs_pin_action">PIN kur</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">PIN kur</string>
     <string name="screen_change_phone_cooldown_header">Henüz değil</string>
     <string name="screen_change_phone_cooldown_message">Güvenliğiniz için numaranızı %1$s sonra değiştirebilirsiniz.</string>
 </resources>

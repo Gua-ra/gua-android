@@ -81,10 +81,7 @@ fun TwoStepVerificationView(
             TwoStepVerificationPhase.Loading -> {
                 AsyncLoading()
             }
-            TwoStepVerificationPhase.OverviewNoPin ->
-                OverviewSection(hasPin = false, errorMessage = state.errorMessage, eventSink = eventSink)
-            TwoStepVerificationPhase.OverviewHasPin ->
-                OverviewSection(hasPin = true, errorMessage = state.errorMessage, eventSink = eventSink)
+            TwoStepVerificationPhase.Overview -> OverviewSection(state = state, eventSink = eventSink)
             TwoStepVerificationPhase.EnteringPhone -> PhoneEntrySection(state = state, eventSink = eventSink)
             TwoStepVerificationPhase.EnteringCurrent,
             TwoStepVerificationPhase.EnteringOtp,
@@ -95,12 +92,30 @@ fun TwoStepVerificationView(
     }
 }
 
+/**
+ * GUA FORK: the landing rows.
+ *
+ * The status row reads the account's FACTORS, not its PIN. A registered passkey turns two-step
+ * verification on by itself, so reporting "off" to its holder, and then offering "Set up PIN" as the
+ * fix, was telling someone with the stronger factor to add the weaker one. A status that could not
+ * be read says so rather than claiming "off".
+ *
+ * The action rows below stay per-factor: the PIN row is about the PIN, and the passkey row is only
+ * offered while the account has none, since a second enrollment cannot succeed.
+ *
+ * Both action rows are withheld entirely while the status is UNKNOWN. A row has to claim something
+ * to be tappable ("Set up PIN" says the account holds none), and there is nothing to claim on a read
+ * that failed. The status row above says so, and its footer is the instruction: try again.
+ */
 @Composable
 private fun OverviewSection(
-    hasPin: Boolean,
-    errorMessage: Int?,
+    state: TwoStepVerificationState,
     eventSink: (TwoStepVerificationEvent) -> Unit,
 ) {
+    // Nullable on purpose: null is UNKNOWN, and every branch below has to say what it does with it.
+    val hasPin = state.hasPin
+    val passkeyRegistered = state.passkeyRegistered
+    val errorMessage = state.errorMessage
     // GUA FORK: one top-level emitter, matching PhoneEntrySection and CodeEntrySection.
     // No modifier: these list rows are deliberately full width.
     Column {
@@ -108,10 +123,10 @@ private fun OverviewSection(
             headlineContent = {
                 Text(
                     stringResource(
-                        id = if (hasPin) {
-                            R.string.screen_two_step_verification_status_on
-                        } else {
-                            R.string.screen_two_step_verification_status_off
+                        id = when (state.twoStepVerificationOn) {
+                            true -> R.string.screen_two_step_verification_status_on
+                            false -> R.string.screen_two_step_verification_status_off
+                            null -> R.string.screen_two_step_verification_status_unknown
                         }
                     )
                 )
@@ -119,53 +134,75 @@ private fun OverviewSection(
             supportingContent = {
                 Text(
                     stringResource(
-                        id = if (hasPin) {
-                            R.string.screen_two_step_verification_overview_footer_on
-                        } else {
-                            R.string.screen_two_step_verification_overview_footer_off
+                        id = when {
+                            state.twoStepVerificationOn == null -> R.string.screen_two_step_verification_overview_footer_unknown
+                            // Named for the factor that is actually on, so a passkey holder is not
+                            // told their PIN is protecting them.
+                            passkeyRegistered == true && hasPin == true -> R.string.screen_two_step_verification_overview_footer_on_both
+                            passkeyRegistered == true -> R.string.screen_two_step_verification_overview_footer_on_passkey
+                            hasPin == true -> R.string.screen_two_step_verification_overview_footer_on
+                            else -> R.string.screen_two_step_verification_overview_footer_off
                         }
                     )
                 )
             },
             leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Lock())),
         )
-        HorizontalDivider()
-        ListItem(
-            headlineContent = {
-                Text(
-                    stringResource(
-                        id = if (hasPin) {
-                            R.string.screen_two_step_verification_change_button
-                        } else {
-                            R.string.screen_two_step_verification_set_button
-                        }
+        // Only once the status is known: "set up" against an account that already holds a PIN is
+        // refused by the server, so offering it on an unreadable status buys a dead end and a
+        // generic error, not a PIN.
+        if (hasPin != null) {
+            HorizontalDivider()
+            ListItem(
+                headlineContent = {
+                    Text(
+                        stringResource(
+                            id = if (hasPin) {
+                                R.string.screen_two_step_verification_change_button
+                            } else {
+                                R.string.screen_two_step_verification_set_button
+                            }
+                        )
                     )
-                )
-            },
-            leadingContent = ListItemContent.Icon(
-                IconSource.Vector(if (hasPin) CompoundIcons.Edit() else CompoundIcons.Lock())
-            ),
-            style = ListItemStyle.Primary,
-            onClick = {
-                eventSink(if (hasPin) TwoStepVerificationEvent.StartChange else TwoStepVerificationEvent.StartSetup)
-            },
-        )
+                },
+                supportingContent = if (!hasPin && passkeyRegistered == true) {
+                    {
+                        // The PIN is the fallback here, not the missing requirement.
+                        Text(stringResource(id = R.string.screen_two_step_verification_set_footer_fallback))
+                    }
+                } else {
+                    null
+                },
+                leadingContent = ListItemContent.Icon(
+                    IconSource.Vector(if (hasPin) CompoundIcons.Edit() else CompoundIcons.Lock())
+                ),
+                style = ListItemStyle.Primary,
+                onClick = {
+                    eventSink(if (hasPin) TwoStepVerificationEvent.StartChange else TwoStepVerificationEvent.StartSetup)
+                },
+            )
+        }
         // GUA FORK: passkey setup row, mirroring iOS' "Set up a passkey" row. Opens the authenticated
-        // web ceremony (Chrome Custom Tab) where the user registers a passkey at the IdP.
-        HorizontalDivider()
-        ListItem(
-            headlineContent = {
-                Text(stringResource(id = R.string.screen_two_step_verification_passkey_button))
-            },
-            supportingContent = {
-                Text(stringResource(id = R.string.screen_two_step_verification_passkey_footer))
-            },
-            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Key())),
-            style = ListItemStyle.Primary,
-            onClick = {
-                eventSink(TwoStepVerificationEvent.SetUpPasskey)
-            },
-        )
+        // web ceremony (Chrome Custom Tab) where the user registers a passkey at the IdP. Hidden once
+        // a passkey is registered: the ceremony excludes credentials the account already holds, so
+        // the authenticator would just refuse. Hidden on an unknown status for the same reason: we
+        // cannot tell whether it is already held.
+        if (passkeyRegistered == false) {
+            HorizontalDivider()
+            ListItem(
+                headlineContent = {
+                    Text(stringResource(id = R.string.screen_two_step_verification_passkey_button))
+                },
+                supportingContent = {
+                    Text(stringResource(id = R.string.screen_two_step_verification_passkey_footer))
+                },
+                leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Key())),
+                style = ListItemStyle.Primary,
+                onClick = {
+                    eventSink(TwoStepVerificationEvent.SetUpPasskey)
+                },
+            )
+        }
         // Anything that fails from this screen surfaces here. Without it a failed passkey start wrote
         // an error into the state that no phase on screen rendered, so tapping the row looked like the
         // row did nothing at all.
@@ -288,8 +325,7 @@ private fun TwoStepVerificationPhase.isEnteringFlow(): Boolean = when (this) {
 
 private fun TwoStepVerificationPhase.titleRes(): Int = when (this) {
     TwoStepVerificationPhase.Loading,
-    TwoStepVerificationPhase.OverviewNoPin,
-    TwoStepVerificationPhase.OverviewHasPin,
+    TwoStepVerificationPhase.Overview,
     TwoStepVerificationPhase.Submitting -> R.string.screen_two_step_verification_title
     TwoStepVerificationPhase.EnteringPhone -> R.string.screen_two_step_verification_phone_header
     TwoStepVerificationPhase.EnteringCurrent -> R.string.screen_two_step_verification_current_header
