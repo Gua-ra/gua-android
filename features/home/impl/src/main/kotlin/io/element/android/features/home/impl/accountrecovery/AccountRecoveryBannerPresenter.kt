@@ -46,6 +46,8 @@ import kotlin.time.Duration.Companion.seconds
  * app, and again every [REFRESH_INTERVAL] while it stays resumed, or sooner when the recovery becomes
  * finishable or runs out before then, so the wording and the banner follow those moments. A failed
  * read changes nothing: it neither raises a warning without evidence nor takes down one that is up.
+ * It is followed by one extra read after [RETRY_AFTER_FAILURE] rather than a wait for the next
+ * periodic one.
  */
 @Inject
 class AccountRecoveryBannerPresenter(
@@ -63,14 +65,16 @@ class AccountRecoveryBannerPresenter(
         var cancelAction by remember { mutableStateOf<AsyncAction<Unit>>(AsyncAction.Uninitialized) }
         val statusReads = remember { StatusReads() }
 
-        suspend fun refresh() = statusReads.mutex.withLock {
+        /** Reads the status and applies it. False when the read could not be made or failed. */
+        suspend fun refresh(): Boolean = statusReads.mutex.withLock {
             val generation = statusReads.generation
-            val status = fetchStatus() ?: return@withLock
+            val status = fetchStatus() ?: return@withLock false
             // A cancel went through while this read was out, so its answer may predate the cancel.
             // Dropping it keeps a read that fails after the cancel from leaving the banner up.
-            if (generation != statusReads.generation) return@withLock
+            if (generation != statusReads.generation) return@withLock true
             statusReads.latest = status
             pendingRecovery = status.toPendingRecovery()
+            true
         }
 
         var isResumed by remember { mutableStateOf(false) }
@@ -84,9 +88,16 @@ class AccountRecoveryBannerPresenter(
         val resumed = isResumed
         LaunchedEffect(resumed) {
             if (!resumed) return@LaunchedEffect
+            var retrying = false
             while (true) {
-                refresh()
-                delay(nextReadDelay(statusReads.latest))
+                val failed = !refresh()
+                // A failure, such as a 401 for a token that expired while the app was in the
+                // background and is refreshed on return, gets one early read. When that read fails
+                // too the schedule goes back to normal, so retries never chain. Everything runs in
+                // this one loop, which a pause cancels, so a resume replaces a waiting retry.
+                retrying = failed && !retrying
+                val nextDelay = nextReadDelay(statusReads.latest)
+                delay(if (retrying) minOf(RETRY_AFTER_FAILURE, nextDelay) else nextDelay)
             }
         }
 
@@ -112,6 +123,8 @@ class AccountRecoveryBannerPresenter(
                                 statusReads.generation++
                                 statusReads.latest = null
                                 pendingRecovery = null
+                                // No early retry if this read fails: the server does not let a new
+                                // recovery start right after a cancel, so the periodic read is enough.
                                 refresh()
                                 snackbarDispatcher.post(SnackbarMessage(R.string.gua_account_recovery_cancelled))
                             }
@@ -184,6 +197,9 @@ class AccountRecoveryBannerPresenter(
 
     companion object {
         val REFRESH_INTERVAL = 15.minutes
+
+        /** How soon a failed read is tried once more. */
+        val RETRY_AFTER_FAILURE = 30.seconds
 
         /** Reads a moment later than the recovery's own times, so the server has passed them too. */
         private val MOMENT_SLACK = 1.seconds
