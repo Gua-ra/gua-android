@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">Fejezze be az eszköz beállítását</string>
     <string name="gua_encryption_repair_message">Fejezze be a beállítást, hogy hozzáférjen a titkosított beszélgetésekhez és az ezen az eszközön elérhető üzenetelőzményekhez.</string>
     <string name="gua_encryption_repair_action">Beállítás befejezése</string>
+    <string name="gua_account_recovery_banner_title">Valaki elkezdte a fiókja helyreállítását</string>
+    <string name="gua_account_recovery_banner_message_later">A helyreállítás %1$s után fejezhető be. Ha Ön volt az, figyelmen kívül hagyhatja ezt.</string>
+    <string name="gua_account_recovery_banner_message_now">A helyreállítás most már befejezhető. Ha Ön volt az, figyelmen kívül hagyhatja ezt.</string>
+    <string name="gua_account_recovery_banner_action">Helyreállítás megszakítása</string>
+    <string name="gua_account_recovery_cancel_title">Megszakítja a helyreállítást?</string>
+    <string name="gua_account_recovery_cancel_message">Szakítsa meg, ha nem Ön indította. Ha Ön indította, újra kell kezdenie.</string>
+    <string name="gua_account_recovery_cancelled">Helyreállítás megszakítva</string>
+    <string name="gua_account_recovery_cancel_failed">Nem sikerült megszakítani a helyreállítást. Próbálja újra.</string>
 </resources>

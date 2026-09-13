@@ -55,6 +55,7 @@ class FakeIdentityServiceClient(
     private val accountFactorStatusResult: (String, String) -> Result<AccountFactorStatus> = { _, _ ->
         Result.success(anAccountFactorStatus())
     },
+    private val cancelAccountRecoveryResult: (String) -> Result<Unit> = { _ -> Result.success(Unit) },
     private val setInitialPinResult: (String, String, String) -> Result<Unit> = { _, _, _ -> Result.success(Unit) },
     private val startPinChangeResult: (String, String, String) -> Result<String> = { _, _, _ -> Result.success("challenge-id") },
     private val completePinChangeResult: (String, String, String, String) -> Result<Unit> = { _, _, _, _ -> Result.success(Unit) },
@@ -80,6 +81,9 @@ class FakeIdentityServiceClient(
 
     override suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus> =
         accountFactorStatusResult(accessToken, userId)
+
+    override suspend fun cancelAccountRecovery(accessToken: String): Result<Unit> =
+        cancelAccountRecoveryResult(accessToken)
 
     override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> =
         setInitialPinResult(accessToken, userId, newPin)

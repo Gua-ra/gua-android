@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">Einrichtung dieses Geräts abschließen</string>
     <string name="gua_encryption_repair_message">Schließe die Einrichtung ab, um auf die verschlüsselten Chats und den auf diesem Gerät verfügbaren Nachrichtenverlauf zuzugreifen.</string>
     <string name="gua_encryption_repair_action">Einrichtung abschließen</string>
+    <string name="gua_account_recovery_banner_title">Jemand hat begonnen, dein Konto wiederherzustellen</string>
+    <string name="gua_account_recovery_banner_message_later">Die Wiederherstellung kann ab %1$s abgeschlossen werden. Wenn du das warst, kannst du diesen Hinweis ignorieren.</string>
+    <string name="gua_account_recovery_banner_message_now">Die Wiederherstellung kann jetzt abgeschlossen werden. Wenn du das warst, kannst du diesen Hinweis ignorieren.</string>
+    <string name="gua_account_recovery_banner_action">Wiederherstellung abbrechen</string>
+    <string name="gua_account_recovery_cancel_title">Wiederherstellung abbrechen?</string>
+    <string name="gua_account_recovery_cancel_message">Brich sie ab, wenn du sie nicht gestartet hast. Wenn doch, musst du von vorn beginnen.</string>
+    <string name="gua_account_recovery_cancelled">Wiederherstellung abgebrochen</string>
+    <string name="gua_account_recovery_cancel_failed">Die Wiederherstellung konnte nicht abgebrochen werden. Versuche es erneut.</string>
 </resources>

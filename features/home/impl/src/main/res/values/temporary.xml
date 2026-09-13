@@ -11,4 +11,16 @@
     <string name="gua_encryption_repair_title">Finish setting up this device</string>
     <string name="gua_encryption_repair_message">Complete setup to access encrypted chats and message history available on this device.</string>
     <string name="gua_encryption_repair_action">Finish setup</string>
+
+    <!-- GUA FORK: shown on every signed-in device while someone is recovering this account with the
+         delayed recovery, so the owner can stop it. Not dismissible. -->
+    <string name="gua_account_recovery_banner_title">Someone started recovering your account</string>
+    <!-- %1$s is a localised date and time, for example "April 6, 2027 at 6:35 PM". -->
+    <string name="gua_account_recovery_banner_message_later">It can be finished after %1$s. If this was you, you can ignore this.</string>
+    <string name="gua_account_recovery_banner_message_now">It can be finished now. If this was you, you can ignore this.</string>
+    <string name="gua_account_recovery_banner_action">Cancel recovery</string>
+    <string name="gua_account_recovery_cancel_title">Cancel recovery?</string>
+    <string name="gua_account_recovery_cancel_message">Cancel it if you didn\'t start it. If you did, you will have to start again.</string>
+    <string name="gua_account_recovery_cancelled">Recovery cancelled</string>
+    <string name="gua_account_recovery_cancel_failed">Couldn\'t cancel the recovery. Try again.</string>
 </resources>

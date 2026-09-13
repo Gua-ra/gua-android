@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">Viimeistele tämän laitteen määritys</string>
     <string name="gua_encryption_repair_message">Viimeistele määritys päästäksesi salattuihin keskusteluihin ja tällä laitteella saatavilla olevaan viestihistoriaan.</string>
     <string name="gua_encryption_repair_action">Viimeistele määritys</string>
+    <string name="gua_account_recovery_banner_title">Joku aloitti tilisi palauttamisen</string>
+    <string name="gua_account_recovery_banner_message_later">Palautuksen voi viimeistellä aikaisintaan %1$s. Jos se olit sinä, voit ohittaa tämän.</string>
+    <string name="gua_account_recovery_banner_message_now">Palautuksen voi viimeistellä nyt. Jos se olit sinä, voit ohittaa tämän.</string>
+    <string name="gua_account_recovery_banner_action">Peruuta palautus</string>
+    <string name="gua_account_recovery_cancel_title">Peruutetaanko palautus?</string>
+    <string name="gua_account_recovery_cancel_message">Peruuta se, jos et aloittanut sitä. Jos aloitit, sinun on aloitettava alusta.</string>
+    <string name="gua_account_recovery_cancelled">Palautus peruutettu</string>
+    <string name="gua_account_recovery_cancel_failed">Palautusta ei voitu peruuttaa. Yritä uudelleen.</string>
 </resources>

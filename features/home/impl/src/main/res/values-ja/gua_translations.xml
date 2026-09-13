@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">この端末のセットアップを完了してください</string>
     <string name="gua_encryption_repair_message">セットアップを完了すると、この端末で利用できる暗号化されたチャットとメッセージ履歴にアクセスできます。</string>
     <string name="gua_encryption_repair_action">セットアップを完了</string>
+    <string name="gua_account_recovery_banner_title">誰かがあなたのアカウントの復旧を開始しました</string>
+    <string name="gua_account_recovery_banner_message_later">%1$s 以降に復旧を完了できます。ご自身で開始した場合は、このお知らせを無視してください。</string>
+    <string name="gua_account_recovery_banner_message_now">復旧は今すぐ完了できます。ご自身で開始した場合は、このお知らせを無視してください。</string>
+    <string name="gua_account_recovery_banner_action">復旧をキャンセル</string>
+    <string name="gua_account_recovery_cancel_title">復旧をキャンセルしますか？</string>
+    <string name="gua_account_recovery_cancel_message">ご自身で開始していない場合はキャンセルしてください。ご自身で開始した場合は、最初からやり直す必要があります。</string>
+    <string name="gua_account_recovery_cancelled">復旧をキャンセルしました</string>
+    <string name="gua_account_recovery_cancel_failed">復旧をキャンセルできませんでした。もう一度お試しください。</string>
 </resources>

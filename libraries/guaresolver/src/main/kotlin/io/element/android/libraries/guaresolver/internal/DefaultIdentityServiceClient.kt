@@ -112,6 +112,12 @@ class DefaultIdentityServiceClient(
                     .mapNotNull(AuthFactor::fromWire)
                     .ifEmpty { DEFAULT_PHONE_CHANGE_STEP_UP_FACTORS },
                 changePhoneCooldownRemainingSeconds = response.changePhoneCooldownRemainingSeconds.coerceAtLeast(0),
+                accountRecoveryPending = response.accountRecoveryPending,
+                // Times only mean something while a recovery is live; never report a stale one.
+                accountRecoveryCompletableAtEpochSeconds = response.accountRecoveryCompletableAtEpochSeconds
+                    ?.takeIf { response.accountRecoveryPending },
+                accountRecoveryExpiresAtEpochSeconds = response.accountRecoveryExpiresAtEpochSeconds
+                    ?.takeIf { response.accountRecoveryPending },
             )
         }
 
@@ -120,6 +126,11 @@ class DefaultIdentityServiceClient(
         hasPin -> AuthFactor.PIN
         else -> AuthFactor.PHONE_OTP
     }
+
+    override suspend fun cancelAccountRecovery(accessToken: String): Result<Unit> =
+        runPinCall { api ->
+            api.cancelAccountRecovery(authorization = "Bearer $accessToken")
+        }
 
     override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> =
         runPinCall { api ->

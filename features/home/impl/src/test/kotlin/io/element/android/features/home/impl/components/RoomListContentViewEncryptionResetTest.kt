@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
+import io.element.android.features.home.impl.accountrecovery.aHiddenAccountRecoveryBannerState
 import io.element.android.features.home.impl.filters.aRoomListFiltersState
 import io.element.android.features.home.impl.roomlist.RoomListContentState
 import io.element.android.features.home.impl.roomlist.RoomListEvent
@@ -44,6 +45,7 @@ class RoomListContentViewEncryptionResetTest : RobolectricTest() {
                 contentState = aRoomsContentState(
                     securityBannerState = SecurityBannerState.RecoveryKeyConfirmation,
                 ).copy(encryptionSetupNeedsReset = true),
+                accountRecoveryBannerState = aHiddenAccountRecoveryBannerState(),
                 filtersState = aRoomListFiltersState(),
                 spaceFiltersState = aDisabledSpaceFiltersState(),
                 lazyListState = rememberLazyListState(),
@@ -74,6 +76,7 @@ class RoomListContentViewEncryptionResetTest : RobolectricTest() {
                 contentState = anEmptyContentState(
                     securityBannerState = SecurityBannerState.RecoveryKeyConfirmation,
                 ).copy(encryptionSetupNeedsReset = true),
+                accountRecoveryBannerState = aHiddenAccountRecoveryBannerState(),
                 filtersState = aRoomListFiltersState(),
                 spaceFiltersState = aDisabledSpaceFiltersState(),
                 lazyListState = rememberLazyListState(),
@@ -102,6 +105,7 @@ class RoomListContentViewEncryptionResetTest : RobolectricTest() {
                 contentState = aRoomsContentState(
                     securityBannerState = SecurityBannerState.RecoveryKeyConfirmation,
                 ) as RoomListContentState,
+                accountRecoveryBannerState = aHiddenAccountRecoveryBannerState(),
                 filtersState = aRoomListFiltersState(),
                 spaceFiltersState = aDisabledSpaceFiltersState(),
                 lazyListState = rememberLazyListState(),

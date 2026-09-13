@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">Bu cihazın kurulumunu tamamlayın</string>
     <string name="gua_encryption_repair_message">Şifreli sohbetlere ve bu cihazda bulunan mesaj geçmişine erişmek için kurulumu tamamlayın.</string>
     <string name="gua_encryption_repair_action">Kurulumu tamamla</string>
+    <string name="gua_account_recovery_banner_title">Birisi hesabınızı kurtarmaya başladı</string>
+    <string name="gua_account_recovery_banner_message_later">Kurtarma işlemi %1$s sonrasında tamamlanabilir. Bu siz idiyseniz bu uyarıyı yok sayabilirsiniz.</string>
+    <string name="gua_account_recovery_banner_message_now">Kurtarma işlemi artık tamamlanabilir. Bu siz idiyseniz bu uyarıyı yok sayabilirsiniz.</string>
+    <string name="gua_account_recovery_banner_action">Kurtarmayı iptal et</string>
+    <string name="gua_account_recovery_cancel_title">Kurtarma iptal edilsin mi?</string>
+    <string name="gua_account_recovery_cancel_message">Siz başlatmadıysanız iptal edin. Siz başlattıysanız baştan başlamanız gerekir.</string>
+    <string name="gua_account_recovery_cancelled">Kurtarma iptal edildi</string>
+    <string name="gua_account_recovery_cancel_failed">Kurtarma iptal edilemedi. Tekrar deneyin.</string>
 </resources>

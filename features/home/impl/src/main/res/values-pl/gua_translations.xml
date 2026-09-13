@@ -10,4 +10,12 @@
     <string name="gua_encryption_repair_title">Dokończ konfigurację tego urządzenia</string>
     <string name="gua_encryption_repair_message">Dokończ konfigurację, aby uzyskać dostęp do zaszyfrowanych czatów i historii wiadomości dostępnej na tym urządzeniu.</string>
     <string name="gua_encryption_repair_action">Dokończ konfigurację</string>
+    <string name="gua_account_recovery_banner_title">Ktoś rozpoczął odzyskiwanie Twojego konta</string>
+    <string name="gua_account_recovery_banner_message_later">Odzyskiwanie będzie można dokończyć po %1$s. Jeśli to Ty, możesz to zignorować.</string>
+    <string name="gua_account_recovery_banner_message_now">Odzyskiwanie można już dokończyć. Jeśli to Ty, możesz to zignorować.</string>
+    <string name="gua_account_recovery_banner_action">Anuluj odzyskiwanie</string>
+    <string name="gua_account_recovery_cancel_title">Anulować odzyskiwanie?</string>
+    <string name="gua_account_recovery_cancel_message">Anuluj je, jeśli nie zostało rozpoczęte przez Ciebie. W przeciwnym razie trzeba będzie zacząć od nowa.</string>
+    <string name="gua_account_recovery_cancelled">Odzyskiwanie anulowane</string>
+    <string name="gua_account_recovery_cancel_failed">Nie udało się anulować odzyskiwania. Spróbuj ponownie.</string>
 </resources>

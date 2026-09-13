@@ -55,6 +55,13 @@ internal interface IdentityServiceApi {
         @Body body: CompletePinChangeRequest,
     )
 
+    // GUA FORK: the account owner cancels a live delayed recovery from a signed-in device. Answers
+    // 204 whether or not one was live.
+    @POST("security/recovery/cancel")
+    suspend fun cancelAccountRecovery(
+        @Header("Authorization") authorization: String,
+    )
+
     // GUA FORK: change phone number, against the real `/account` contract.
     //
     // An earlier revision of this file called `security/pin/reauth`, `otp/change-number/request` and
@@ -155,6 +162,13 @@ internal data class PinStatusResponse(
      * account is known to hold rather than assuming the account can settle nothing.
      */
     val phoneChangeStepUpFactors: List<String> = emptyList(),
+    /**
+     * True while a delayed account recovery is live. The three recovery fields are absent on
+     * builds that predate delayed recovery, which is the same as no recovery being live.
+     */
+    val accountRecoveryPending: Boolean = false,
+    val accountRecoveryCompletableAtEpochSeconds: Long? = null,
+    val accountRecoveryExpiresAtEpochSeconds: Long? = null,
 )
 
 @Serializable

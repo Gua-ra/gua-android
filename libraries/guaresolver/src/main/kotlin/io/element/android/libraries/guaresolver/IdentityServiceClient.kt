@@ -53,6 +53,16 @@ interface IdentityServiceClient {
     suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus>
 
     /**
+     * Cancel a live delayed account recovery on the caller's own account
+     * (`POST /security/recovery/cancel`). Succeeds whether or not one was live, so a retry is safe.
+     * The server also counts it as account activity, so whoever started the recovery cannot simply
+     * start another one straight away.
+     *
+     * @return [Result.success] on success, or [Result.failure] with a [ResolverError].
+     */
+    suspend fun cancelAccountRecovery(accessToken: String): Result<Unit>
+
+    /**
      * Set the initial account PIN (no existing PIN). Mirrors iOS `setInitialPin`.
      *
      * @return [Result.success] on success, or [Result.failure] with a [ResolverError] (notably
