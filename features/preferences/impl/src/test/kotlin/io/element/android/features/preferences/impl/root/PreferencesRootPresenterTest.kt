@@ -120,7 +120,10 @@ class PreferencesRootPresenterTest {
             val finalState = awaitItem()
             accountManagementUrlResult.assertions().isCalledOnce()
                 .with(value(null))
-            assertThat(finalState.accountManagementUrl).isEqualTo("tweaked null url")
+            // GUA FORK: the shared browser tab can hold another account's session, so the URL names
+            // this account for the page to refuse any other.
+            assertThat(finalState.accountManagementUrl)
+                .isEqualTo("tweaked null url?org.matrix.msc4198.login_hint=mxid%3A%40alice%3Aserver.org")
         }
     }
 
