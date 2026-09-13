@@ -37,7 +37,7 @@ This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://git
 | Settings identity | full user id with server suffix | username only, server abstracted |
 | Chat list | all rooms, including Spaces and empty rooms | chats-first: Spaces and state-only rooms are hidden |
 | 1:1 conversations | state events visible in the timeline | configuration noise suppressed for clean 1:1 chats |
-| Sign-in session handling | may silently resume a previous web session | fresh authentication forced on every sign-in (`prompt=login`) |
+| Sign-in session handling | may silently resume a previous web session | fresh authentication forced on every sign-in (`prompt=login`), in a private Custom Tab where the browser supports one |
 | Languages | upstream translations | adds Gua pt-BR and fr strings |
 
 ### How sign-in works today
@@ -59,7 +59,7 @@ Synapse homeserver in the Gua federation
 ```
 
 - Before sign-in, the app asks [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) which homeserver to use (`libraries/guaresolver`). The client never hardcodes a server. The federation layout stays out of the UI.
-- The app registers as a public OIDC client and requires PKCE. It opens the sign-in flow in a Custom Tab. The [Gua fork of MAS](https://github.com/Gua-ra/gua-auth-service) and the [Gua Identity Service](https://github.com/Gua-ra/identity-service) serve that flow.
+- The app registers as a public OIDC client and requires PKCE. It opens the sign-in flow in a private (ephemeral) Custom Tab when the browser supports one, so no earlier browser session is carried into it. Account management stays in the shared tab and names the signed-in account (`org.matrix.msc4198.login_hint`). The [Gua fork of MAS](https://github.com/Gua-ra/gua-auth-service) and the [Gua Identity Service](https://github.com/Gua-ra/identity-service) serve that flow.
 - Find Friends, the account PIN and phone number changes talk to the Gua Identity Service, not the resolver.
 - End-to-end encryption stays on by default.
 

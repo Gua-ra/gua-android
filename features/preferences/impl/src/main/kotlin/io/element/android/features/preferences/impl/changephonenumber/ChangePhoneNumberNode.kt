@@ -54,10 +54,10 @@ class ChangePhoneNumberNode(
             state = state,
             onBackClick = ::navigateUp,
             onFinish = ::navigateUp,
-            // GUA FORK: the enrollUrl is self-authenticating, so it opens in a Chrome Custom Tab for
+            // GUA FORK: the enrollUrl is self-authenticating, so it opens in a private Custom Tab for
             // the user to complete WebAuthn registration, exactly as the 2SV screen does.
             onOpenPasskeyEnrollUrl = { url ->
-                activity.openUrlInChromeCustomTab(session = null, darkTheme = isDark, url = url)
+                activity.openUrlInChromeCustomTab(session = null, darkTheme = isDark, url = url, ephemeral = true)
             },
             modifier = modifier,
         )

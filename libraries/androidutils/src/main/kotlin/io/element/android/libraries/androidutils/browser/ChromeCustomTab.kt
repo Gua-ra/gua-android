@@ -27,8 +27,12 @@ import java.util.Locale
 fun Activity.openUrlInChromeCustomTab(
     session: CustomTabsSession?,
     darkTheme: Boolean,
-    url: String
+    url: String,
+    // GUA FORK: open in a private tab that shares no cookies with the browser, where the browser
+    // supports one. See [ephemeralCustomTabsProvider].
+    ephemeral: Boolean = false,
 ) {
+    val ephemeralProvider = if (ephemeral) ephemeralCustomTabsProvider(this) else null
     try {
         CustomTabsIntent.Builder()
             .setDefaultColorSchemeParams(
@@ -49,8 +53,11 @@ fun Activity.openUrlInChromeCustomTab(
             // .setStartAnimations(context, R.anim.enter_fade_in, R.anim.exit_fade_out)
             // .setExitAnimations(context, R.anim.enter_fade_in, R.anim.exit_fade_out)
             .apply { session?.let { setSession(it) } }
+            .apply { if (ephemeralProvider != null) setEphemeralBrowsingEnabled(true) }
             .build()
             .apply {
+                // GUA FORK: the flag only means something to the provider that reported support for it.
+                ephemeralProvider?.let { intent.setPackage(it) }
                 // Disable download button
                 intent.putExtra("org.chromium.chrome.browser.customtabs.EXTRA_DISABLE_DOWNLOAD_BUTTON", true)
                 // Disable bookmark button

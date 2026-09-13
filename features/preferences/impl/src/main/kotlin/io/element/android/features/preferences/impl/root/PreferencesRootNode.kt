@@ -62,6 +62,8 @@ class PreferencesRootNode(
         isDark: Boolean,
     ) {
         url?.let {
+            // GUA FORK: deliberately the shared tab, not a private one, so account management keeps
+            // its browser session between visits. The URL names this account (see the presenter).
             activity.openUrlInChromeCustomTab(
                 null,
                 darkTheme = isDark,

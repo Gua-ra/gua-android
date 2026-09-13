@@ -24,6 +24,7 @@ import io.element.android.features.lockscreen.api.LockScreenService
 import io.element.android.features.logout.api.direct.DirectLogoutState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
+import io.element.android.libraries.androidutils.browser.withMxidLoginHint
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.core.meta.BuildType
@@ -197,5 +198,9 @@ class PreferencesRootPresenter(
             ?.let {
                 sessionEnterpriseService.tweakMasUrl(it)
             }
+            // GUA FORK: account management opens in the browser's shared tab, so it can meet a
+            // browser session for another account. Naming this one lets the page refuse that
+            // session instead of showing someone else's account.
+            ?.withMxidLoginHint(matrixClient.sessionId.value)
     }
 }
