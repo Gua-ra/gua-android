@@ -20,6 +20,7 @@ import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
+import io.element.android.services.toolbox.api.systemclock.SystemClock
 import io.element.android.services.toolbox.test.systemclock.FakeSystemClock
 import io.element.android.tests.testutils.FakeLifecycleOwner
 import io.element.android.tests.testutils.WarmUpRule
@@ -34,6 +35,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 class AccountRecoveryBannerPresenterTest {
     @get:Rule
@@ -168,6 +170,52 @@ class AccountRecoveryBannerPresenterTest {
     }
 
     @Test
+    fun `the status is read again when the recovery becomes finishable and when it runs out`() = runTest {
+        val startMillis = (A_COMPLETABLE_AT_EPOCH_SECONDS - 5 * 60) * 1000
+        val liveRecovery = aRecoveryStatus(pending = true)
+            .copy(accountRecoveryExpiresAtEpochSeconds = A_COMPLETABLE_AT_EPOCH_SECONDS + 5 * 60)
+        val results = ArrayDeque(listOf(liveRecovery, liveRecovery, aRecoveryStatus(pending = false)))
+        var statusReads = 0
+        val presenter = createAccountRecoveryBannerPresenter(
+            identityServiceClient = FakeIdentityServiceClient(
+                accountFactorStatusResult = { _, _ ->
+                    statusReads++
+                    Result.success(results.removeFirst())
+                },
+            ),
+            // Follows the test's virtual time, so the wall clock and the scheduled reads agree.
+            systemClock = object : SystemClock {
+                override fun epochMillis() = startMillis + testScheduler.currentTime
+            },
+        )
+        presenter.testWithLifecycleOwner(FakeLifecycleOwner(Lifecycle.State.RESUMED)) {
+            val waitingState = consumeItemsUntilPredicate { it.pendingRecovery != null }.last()
+            assertThat(waitingState.pendingRecovery?.finishableAfter).isNotNull()
+            assertThat(statusReads).isEqualTo(1)
+
+            advanceTimeBy(5.minutes)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(1)
+            advanceTimeBy(1.seconds)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(2)
+            val finishableState = consumeItemsUntilPredicate { it.pendingRecovery?.finishableAfter == null }.last()
+            assertThat(finishableState.pendingRecovery).isEqualTo(PendingAccountRecovery(finishableAfter = null))
+
+            advanceTimeBy(5.minutes)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(3)
+            assertThat(consumeItemsUntilPredicate { it.pendingRecovery == null }.last().pendingRecovery).isNull()
+
+            // Nothing is left to wait for, so the next read is the periodic one.
+            advanceTimeBy(14.minutes)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(3)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `a failed read neither hides a warning that is up nor raises one`() = runTest {
         val results = ArrayDeque<Result<AccountFactorStatus>>(
             listOf(Result.success(aRecoveryStatus(pending = true)), Result.failure(ResolverError.Server(503)))
@@ -294,6 +342,70 @@ class AccountRecoveryBannerPresenterTest {
     }
 
     @Test
+    fun `a read that was out when the cancel went through cannot put the warning back`() = runTest {
+        val staleRead = CompletableDeferred<Result<AccountFactorStatus>>()
+        val reads = ArrayDeque<suspend () -> Result<AccountFactorStatus>>(
+            listOf(
+                { Result.success(aRecoveryStatus(pending = true)) },
+                { staleRead.await() },
+                { Result.failure(ResolverError.Server(503)) },
+            )
+        )
+        val snackbarDispatcher = SnackbarDispatcher()
+        val presenter = createAccountRecoveryBannerPresenter(
+            identityServiceClient = FakeIdentityServiceClient(
+                accountFactorStatusResult = { _, _ -> reads.removeFirst().invoke() },
+                cancelAccountRecoveryResult = { Result.success(Unit) },
+            ),
+            snackbarDispatcher = snackbarDispatcher,
+        )
+        presenter.testWithLifecycleOwner(FakeLifecycleOwner(Lifecycle.State.RESUMED)) {
+            val shownState = consumeItemsUntilPredicate { it.pendingRecovery != null }.last()
+            // The periodic read goes out and has not answered yet.
+            advanceTimeBy(AccountRecoveryBannerPresenter.REFRESH_INTERVAL)
+            runCurrent()
+            assertThat(reads).hasSize(1)
+
+            shownState.eventSink(AccountRecoveryBannerEvent.CancelRecovery)
+            val confirmingState = consumeItemsUntilPredicate { it.cancelAction.isConfirming() }.last()
+            confirmingState.eventSink(AccountRecoveryBannerEvent.ConfirmCancelRecovery)
+            consumeItemsUntilPredicate { it.cancelAction == AsyncAction.Loading }
+            runCurrent()
+
+            // It answers from before the cancel, and the read after the cancel fails.
+            staleRead.complete(Result.success(aRecoveryStatus(pending = true)))
+            val doneState = consumeItemsUntilPredicate { it.cancelAction == AsyncAction.Uninitialized }.last()
+            assertThat(reads).isEmpty()
+            assertThat(doneState.pendingRecovery).isNull()
+            assertThat(snackbarDispatcher.snackbarMessage.first()?.messageResId).isEqualTo(R.string.gua_account_recovery_cancelled)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a confirmation that was never asked for sends nothing`() = runTest {
+        var cancelCalls = 0
+        val presenter = createAccountRecoveryBannerPresenter(
+            identityServiceClient = FakeIdentityServiceClient(
+                accountFactorStatusResult = { _, _ -> Result.success(aRecoveryStatus(pending = true)) },
+                cancelAccountRecoveryResult = {
+                    cancelCalls++
+                    Result.success(Unit)
+                },
+            ),
+        )
+        presenter.testWithLifecycleOwner(FakeLifecycleOwner(Lifecycle.State.RESUMED)) {
+            val shownState = consumeItemsUntilPredicate { it.pendingRecovery != null }.last()
+            shownState.eventSink(AccountRecoveryBannerEvent.ConfirmCancelRecovery)
+            runCurrent()
+            assertThat(cancelCalls).isEqualTo(0)
+            // No confirmation dialog and no progress either: the state does not move at all.
+            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `dismissing the confirmation cancels nothing`() = runTest {
         val presenter = createAccountRecoveryBannerPresenter(
             identityServiceClient = FakeIdentityServiceClient(
@@ -345,7 +457,7 @@ class AccountRecoveryBannerPresenterTest {
         sessionStore: SessionStore = InMemorySessionStore(
             listOf(aSessionData(sessionId = A_SESSION_ID.value, accessToken = AN_ACCESS_TOKEN)),
         ),
-        systemClock: FakeSystemClock = FakeSystemClock(epochMillisResult = (A_COMPLETABLE_AT_EPOCH_SECONDS - 3600) * 1000),
+        systemClock: SystemClock = FakeSystemClock(epochMillisResult = (A_COMPLETABLE_AT_EPOCH_SECONDS - 3600) * 1000),
         snackbarDispatcher: SnackbarDispatcher = SnackbarDispatcher(),
     ) = AccountRecoveryBannerPresenter(
         matrixClient = FakeMatrixClient(sessionId = A_SESSION_ID),

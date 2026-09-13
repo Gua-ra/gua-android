@@ -33,15 +33,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * GUA FORK: tells the owner, on every signed-in device, that someone has started a delayed account
  * recovery, and lets them cancel it.
  *
  * The status is read when the screen resumes, which covers the first start and every return to the
- * app, and again every [REFRESH_INTERVAL] while it stays resumed. A failed read changes nothing: it
- * neither raises a warning without evidence nor takes down one that is up.
+ * app, and again every [REFRESH_INTERVAL] while it stays resumed, or sooner when the recovery becomes
+ * finishable or runs out before then, so the wording and the banner follow those moments. A failed
+ * read changes nothing: it neither raises a warning without evidence nor takes down one that is up.
  */
 @Inject
 class AccountRecoveryBannerPresenter(
@@ -57,14 +61,16 @@ class AccountRecoveryBannerPresenter(
         val coroutineScope = rememberCoroutineScope()
         var pendingRecovery by remember { mutableStateOf<PendingAccountRecovery?>(null) }
         var cancelAction by remember { mutableStateOf<AsyncAction<Unit>>(AsyncAction.Uninitialized) }
-        // One read at a time, so a periodic read that started before a cancel cannot land after the
-        // read that follows the cancel and put the banner back.
-        val refreshMutex = remember { Mutex() }
+        val statusReads = remember { StatusReads() }
 
-        suspend fun refresh() = refreshMutex.withLock {
-            fetchStatus()?.let { status ->
-                pendingRecovery = status.toPendingRecovery()
-            }
+        suspend fun refresh() = statusReads.mutex.withLock {
+            val generation = statusReads.generation
+            val status = fetchStatus() ?: return@withLock
+            // A cancel went through while this read was out, so its answer may predate the cancel.
+            // Dropping it keeps a read that fails after the cancel from leaving the banner up.
+            if (generation != statusReads.generation) return@withLock
+            statusReads.latest = status
+            pendingRecovery = status.toPendingRecovery()
         }
 
         var isResumed by remember { mutableStateOf(false) }
@@ -80,7 +86,7 @@ class AccountRecoveryBannerPresenter(
             if (!resumed) return@LaunchedEffect
             while (true) {
                 refresh()
-                delay(REFRESH_INTERVAL)
+                delay(nextReadDelay(statusReads.latest))
             }
         }
 
@@ -92,7 +98,8 @@ class AccountRecoveryBannerPresenter(
                 AccountRecoveryBannerEvent.DismissCancelConfirmation -> if (cancelAction.isConfirming()) {
                     cancelAction = AsyncAction.Uninitialized
                 }
-                AccountRecoveryBannerEvent.ConfirmCancelRecovery -> if (cancelAction !is AsyncAction.Loading) {
+                // Only from the confirmation dialog: a cancel is never sent without asking first.
+                AccountRecoveryBannerEvent.ConfirmCancelRecovery -> if (cancelAction.isConfirming()) {
                     cancelAction = AsyncAction.Loading
                     coroutineScope.launch {
                         val result = accessToken()
@@ -102,6 +109,8 @@ class AccountRecoveryBannerPresenter(
                             .onSuccess {
                                 // The server clears a live recovery on every successful cancel, so
                                 // there is nothing left to warn about even if the read below fails.
+                                statusReads.generation++
+                                statusReads.latest = null
                                 pendingRecovery = null
                                 refresh()
                                 snackbarDispatcher.post(SnackbarMessage(R.string.gua_account_recovery_cancelled))
@@ -132,6 +141,25 @@ class AccountRecoveryBannerPresenter(
             .getOrNull()
     }
 
+    /**
+     * [REFRESH_INTERVAL], or less when the live recovery in [status] becomes finishable or runs out
+     * before then. Moments already past are ignored, so a server that still reports the recovery
+     * after its expiry on this device's clock falls back to the periodic read.
+     */
+    private fun nextReadDelay(status: AccountFactorStatus?): Duration {
+        if (status?.accountRecoveryPending != true) return REFRESH_INTERVAL
+        val nowMillis = systemClock.epochMillis()
+        val nextMomentMillis = listOfNotNull(
+            status.accountRecoveryCompletableAtEpochSeconds,
+            status.accountRecoveryExpiresAtEpochSeconds,
+        )
+            .map { it * MILLIS_PER_SECOND }
+            .filter { it > nowMillis }
+            .minOrNull()
+            ?: return REFRESH_INTERVAL
+        return minOf(REFRESH_INTERVAL, (nextMomentMillis - nowMillis).milliseconds + MOMENT_SLACK)
+    }
+
     private fun AccountFactorStatus.toPendingRecovery(): PendingAccountRecovery? {
         if (!accountRecoveryPending) return null
         val completableAtMillis = accountRecoveryCompletableAtEpochSeconds?.times(MILLIS_PER_SECOND)
@@ -142,8 +170,23 @@ class AccountRecoveryBannerPresenter(
         )
     }
 
+    /** The bookkeeping behind the reads. Only touched from the composition's coroutines. */
+    private class StatusReads {
+        /** One read at a time, so reads land in the order they started. */
+        val mutex = Mutex()
+
+        /** Moves on every successful cancel; a read that started before that is not applied. */
+        var generation = 0
+
+        /** The last status applied, which schedules the next read. */
+        var latest: AccountFactorStatus? = null
+    }
+
     companion object {
         val REFRESH_INTERVAL = 15.minutes
+
+        /** Reads a moment later than the recovery's own times, so the server has passed them too. */
+        private val MOMENT_SLACK = 1.seconds
         private const val MILLIS_PER_SECOND = 1_000L
     }
 }
