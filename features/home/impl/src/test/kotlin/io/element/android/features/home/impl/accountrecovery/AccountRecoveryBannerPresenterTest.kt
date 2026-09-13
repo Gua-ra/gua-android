@@ -257,6 +257,176 @@ class AccountRecoveryBannerPresenterTest {
     }
 
     @Test
+    fun `a failed read is tried again 30 seconds later, with the token the session holds by then`() = runTest {
+        val statusReads = mutableListOf<String>()
+        val sessionStore = InMemorySessionStore(
+            listOf(aSessionData(sessionId = A_SESSION_ID.value, accessToken = AN_ACCESS_TOKEN)),
+        )
+        val presenter = createAccountRecoveryBannerPresenter(
+            identityServiceClient = FakeIdentityServiceClient(
+                accountFactorStatusResult = { token, _ ->
+                    statusReads += token
+                    // The token expired while the app was in the background.
+                    if (token == AN_ACCESS_TOKEN) {
+                        Result.failure(ResolverError.Server(401))
+                    } else {
+                        Result.success(aRecoveryStatus(pending = true))
+                    }
+                },
+            ),
+            sessionStore = sessionStore,
+        )
+        presenter.testWithLifecycleOwner(FakeLifecycleOwner(Lifecycle.State.RESUMED)) {
+            runCurrent()
+            assertThat(statusReads).containsExactly(AN_ACCESS_TOKEN)
+            assertThat(expectMostRecentItem().pendingRecovery).isNull()
+            sessionStore.updateData(aSessionData(sessionId = A_SESSION_ID.value, accessToken = A_REFRESHED_ACCESS_TOKEN))
+
+            advanceTimeBy(29.seconds)
+            runCurrent()
+            assertThat(statusReads).hasSize(1)
+            advanceTimeBy(1.seconds)
+            runCurrent()
+            assertThat(statusReads).containsExactly(AN_ACCESS_TOKEN, A_REFRESHED_ACCESS_TOKEN).inOrder()
+            assertThat(consumeItemsUntilPredicate { it.pendingRecovery != null }.last().pendingRecovery).isNotNull()
+
+            // The retry read fine, so the next read is the periodic one.
+            advanceTimeBy(14.minutes)
+            runCurrent()
+            assertThat(statusReads).hasSize(2)
+            advanceTimeBy(1.minutes)
+            runCurrent()
+            assertThat(statusReads).hasSize(3)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a retry that fails too waits for the periodic read, and the next failure gets its own retry`() = runTest {
+        var statusReads = 0
+        val presenter = createAccountRecoveryBannerPresenter(
+            identityServiceClient = FakeIdentityServiceClient(
+                accountFactorStatusResult = { _, _ ->
+                    statusReads++
+                    Result.failure(ResolverError.Server(503))
+                },
+            ),
+        )
+        presenter.testWithLifecycleOwner(FakeLifecycleOwner(Lifecycle.State.RESUMED)) {
+            runCurrent()
+            assertThat(statusReads).isEqualTo(1)
+
+            advanceTimeBy(30.seconds)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(2)
+
+            // No retry of the retry.
+            advanceTimeBy(14.minutes)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(2)
+            advanceTimeBy(1.minutes)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(3)
+
+            advanceTimeBy(30.seconds)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(4)
+            advanceTimeBy(14.minutes)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(4)
+            assertThat(expectMostRecentItem().pendingRecovery).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a resume while a retry is waiting replaces it instead of adding a second one`() = runTest {
+        var statusReads = 0
+        val presenter = createAccountRecoveryBannerPresenter(
+            identityServiceClient = FakeIdentityServiceClient(
+                accountFactorStatusResult = { _, _ ->
+                    statusReads++
+                    Result.failure(ResolverError.Server(401))
+                },
+            ),
+        )
+        val lifecycleOwner = FakeLifecycleOwner(Lifecycle.State.RESUMED)
+        presenter.testWithLifecycleOwner(lifecycleOwner) {
+            runCurrent()
+            assertThat(statusReads).isEqualTo(1)
+
+            advanceTimeBy(10.seconds)
+            lifecycleOwner.givenState(Lifecycle.State.STARTED)
+            runCurrent()
+            lifecycleOwner.givenState(Lifecycle.State.RESUMED)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(2)
+
+            // The retry of the first read is gone; only the resume read's own retry is left.
+            advanceTimeBy(20.seconds)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(2)
+            advanceTimeBy(10.seconds)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(3)
+            advanceTimeBy(14.minutes)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(3)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a retry does not wait past a moment of the recovery that comes sooner`() = runTest {
+        val startMillis = A_COMPLETABLE_AT_EPOCH_SECONDS * 1000
+        // Finishable 20 seconds in, and runs out 40 seconds in.
+        val liveRecovery = aRecoveryStatus(pending = true).copy(
+            accountRecoveryCompletableAtEpochSeconds = A_COMPLETABLE_AT_EPOCH_SECONDS + 20,
+            accountRecoveryExpiresAtEpochSeconds = A_COMPLETABLE_AT_EPOCH_SECONDS + 40,
+        )
+        val results = ArrayDeque<Result<AccountFactorStatus>>(
+            listOf(
+                Result.success(liveRecovery),
+                Result.failure(ResolverError.Server(503)),
+                Result.success(aRecoveryStatus(pending = false)),
+            )
+        )
+        var statusReads = 0
+        val presenter = createAccountRecoveryBannerPresenter(
+            identityServiceClient = FakeIdentityServiceClient(
+                accountFactorStatusResult = { _, _ ->
+                    statusReads++
+                    results.removeFirst()
+                },
+            ),
+            systemClock = object : SystemClock {
+                override fun epochMillis() = startMillis + testScheduler.currentTime
+            },
+        )
+        presenter.testWithLifecycleOwner(FakeLifecycleOwner(Lifecycle.State.RESUMED)) {
+            consumeItemsUntilPredicate { it.pendingRecovery != null }
+            assertThat(statusReads).isEqualTo(1)
+
+            // The read at the finishable moment fails, and the warning stays up.
+            advanceTimeBy(21.seconds)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(2)
+            // Nothing moves, so the warning that is up stays up.
+            expectNoEvents()
+
+            // Its retry comes at the expiry, 20 seconds later, not 30.
+            advanceTimeBy(19.seconds)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(2)
+            advanceTimeBy(1.seconds)
+            runCurrent()
+            assertThat(statusReads).isEqualTo(3)
+            assertThat(consumeItemsUntilPredicate { it.pendingRecovery == null }.last().pendingRecovery).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `without an access token nothing is sent and nothing is shown`() = runTest {
         val presenter = createAccountRecoveryBannerPresenter(
             sessionStore = InMemorySessionStore(),
@@ -470,5 +640,6 @@ class AccountRecoveryBannerPresenterTest {
 
     private companion object {
         const val AN_ACCESS_TOKEN = "an-access-token"
+        const val A_REFRESHED_ACCESS_TOKEN = "a-refreshed-access-token"
     }
 }
