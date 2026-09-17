@@ -94,6 +94,25 @@ sealed class ResolverError(message: String, cause: Throwable? = null) : Exceptio
     data object PinAlreadySet : ResolverError("That account already has a PIN.")
 
     /**
+     * Enrollment of a passkey was started for an account that already holds one
+     * (identity-service `code: "passkey_already_registered"`, HTTP 409). The twin of
+     * [PinAlreadySet], and like it not the user's mistake: the screen's view of the account's
+     * factors is stale, which is the ordinary outcome of registering the passkey in a Custom Tab
+     * and coming back to a screen that has not read the account since.
+     */
+    data object PasskeyAlreadyRegistered : ResolverError("That account already has a passkey.")
+
+    /**
+     * The account's only factor is a passkey and this deployment cannot run a passkey ceremony, so
+     * there is no proof it can produce for a step-up at all (identity-service
+     * `code: "step_up_unavailable"`, HTTP 409).
+     *
+     * A dead end rather than something to retry: no factor can be added here until passkeys work
+     * again, and the way back to a usable account is the delayed account recovery.
+     */
+    data object StepUpUnavailable : ResolverError("This account cannot confirm it is you right now.")
+
+    /**
      * The operation demands a step-up factor and the account has NEITHER a PIN nor a passkey
      * registered (identity-service `code: "step_up_required"`, HTTP 403).
      *

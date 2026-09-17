@@ -59,6 +59,8 @@
     <string name="screen_two_step_verification_rate_limited">Trop de tentatives. Patientez un instant puis réessayez.</string>
     <string name="screen_two_step_verification_updated">Validation en deux étapes mise à jour</string>
     <string name="screen_two_step_verification_pin_already_set">Vous avez déjà un code PIN. Vous pouvez le modifier à la place.</string>
+    <string name="screen_two_step_verification_passkey_already_registered">Vous avez déjà une clé d\'accès sur ce compte.</string>
+    <string name="screen_two_step_verification_step_up_unavailable">Votre clé d\'accès ne peut pas confirmer cette action pour le moment. Si vous devez changer votre façon de vous connecter, utilisez la récupération de compte.</string>
     <string name="screen_change_phone_needs_step_up_pin_action">Configurer un code PIN</string>
     <string name="screen_change_phone_cooldown_header">Pas tout de suite</string>
     <string name="screen_change_phone_cooldown_message">Pour votre sécurité, vous pourrez changer de numéro dans %1$s.</string>

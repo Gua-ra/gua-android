@@ -41,6 +41,10 @@
     <string name="screen_two_step_verification_rate_limited">Too many attempts. Please wait a moment and try again.</string>
     <string name="screen_two_step_verification_updated">Two-step verification updated</string>
     <string name="screen_two_step_verification_pin_already_set">You already have a PIN. You can change it instead.</string>
+    <string name="screen_two_step_verification_passkey_already_registered">You already have a passkey on this account.</string>
+    <!-- The account's only factor is a passkey and passkeys cannot be used here, so nothing can
+         confirm it is the owner. The delayed account recovery is the only way forward. -->
+    <string name="screen_two_step_verification_step_up_unavailable">Your passkey can\'t be used to confirm this right now. If you need to change how you sign in, use account recovery.</string>
     <string name="screen_change_phone_title">Change phone number</string>
     <string name="screen_change_phone_intro_header">Change your number</string>
     <string name="screen_change_phone_intro_message">We\'ll confirm your PIN, then text a code to your new number. Your account, chats, and messages stay the same.</string>

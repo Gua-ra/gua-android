@@ -290,6 +290,11 @@ class DefaultIdentityServiceClient(
             "reauth_phone_mismatch" -> ResolverError.ReauthPhoneMismatch
             "invalid_phone_number" -> ResolverError.InvalidPhoneNumber
             "pin_already_set" -> ResolverError.PinAlreadySet
+            // The enrollment refusals that are not the caller's fault. Left unnamed they became the
+            // generic "Something went wrong", which is exactly wrong for the one account that
+            // genuinely cannot enroll here and for the one that already finished enrolling.
+            "passkey_already_registered" -> ResolverError.PasskeyAlreadyRegistered
+            "step_up_unavailable" -> ResolverError.StepUpUnavailable
             // The account holds neither a PIN nor a passkey. A hard block, mapped to its own case so
             // no caller can mistake it for one of the retryable PIN failures below.
             "step_up_required" -> ResolverError.StepUpRequired

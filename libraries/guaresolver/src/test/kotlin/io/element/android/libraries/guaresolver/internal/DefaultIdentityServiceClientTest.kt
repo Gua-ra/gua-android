@@ -161,6 +161,38 @@ class DefaultIdentityServiceClientTest {
         server.shutdown()
     }
 
+    @Test
+    fun `a passkey the account already holds is its own case, not a phone conflict`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setResponseCode(409).setBody("""{ "code": "passkey_already_registered" }""")
+        )
+        val client = createClient(server)
+
+        val error = client.startPasskeyEnrollment("secret-token").exceptionOrNull()
+
+        // The twin of pin_already_set: 409 alone fell through to PhoneAlreadyLinked, and unnamed it
+        // reached the screen as "Something went wrong" for a screen that was merely out of date.
+        assertThat(error).isInstanceOf(ResolverError.PasskeyAlreadyRegistered::class.java)
+        server.shutdown()
+    }
+
+    @Test
+    fun `an account with no proof this deployment can run is named, not left as a server failure`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setResponseCode(409).setBody("""{ "code": "step_up_unavailable" }""")
+        )
+        val client = createClient(server)
+
+        val error = client.startPasskeyEnrollment("secret-token").exceptionOrNull()
+
+        // The one account that genuinely cannot enroll anything here. It needs to be told why, and
+        // pointed at the delayed recovery, rather than invited to try again.
+        assertThat(error).isInstanceOf(ResolverError.StepUpUnavailable::class.java)
+        server.shutdown()
+    }
+
     // GUA FORK: the account factor signal and the real phone-change contract.
 
     @Test

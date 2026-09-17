@@ -299,13 +299,25 @@ class TwoStepVerificationPresenter(
                         factorEnrollUrl = enrollUrl
                     }
                     .onFailure { error ->
-                        if (error is ResolverError.PinAlreadySet) {
+                        when (error) {
                             // Our view of the account was stale rather than the user being wrong.
                             // Correct the row so it offers the change they actually want.
-                            factors = factors?.copy(hasPin = true)
-                            errorMessage = R.string.screen_two_step_verification_pin_already_set
-                        } else {
-                            errorMessage = CommonStrings.error_unknown
+                            is ResolverError.PinAlreadySet -> {
+                                factors = factors?.copy(hasPin = true)
+                                errorMessage = R.string.screen_two_step_verification_pin_already_set
+                            }
+                            // The same staleness on the passkey row. There is no "change passkey"
+                            // to offer, so correcting the row is what withdraws the dead button.
+                            is ResolverError.PasskeyAlreadyRegistered -> {
+                                factors = factors?.copy(passkeyRegistered = true)
+                                errorMessage = R.string.screen_two_step_verification_passkey_already_registered
+                            }
+                            // The account holds only a passkey and no passkey ceremony can run on
+                            // this deployment, so no factor can be enrolled here at all. Say that,
+                            // and point at the delayed recovery, which is the only way out.
+                            is ResolverError.StepUpUnavailable ->
+                                errorMessage = R.string.screen_two_step_verification_step_up_unavailable
+                            else -> errorMessage = CommonStrings.error_unknown
                         }
                     }
             }

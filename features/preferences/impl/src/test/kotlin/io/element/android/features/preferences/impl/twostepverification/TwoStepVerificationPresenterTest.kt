@@ -182,6 +182,44 @@ class TwoStepVerificationPresenterTest {
     }
 
     @Test
+    fun `present - an account that turns out to already have a passkey has its row corrected`() = runTest {
+        val client = FakeIdentityServiceClient(
+            factorStatusResult = { Result.success(aFactorStatus(hasPin = true, passkeyRegistered = false)) },
+            passkeyEnrollmentResult = { Result.failure(ResolverError.PasskeyAlreadyRegistered) },
+        )
+        val presenter = createTwoStepVerificationPresenter(client = client)
+        presenter.test {
+            awaitFirst { it.phase == TwoStepVerificationPhase.Overview }.eventSink(TwoStepVerificationEvent.SetUpPasskey)
+
+            val state = awaitFirst { it.errorMessage != null }
+            // Stale view, not a server failure. There is no passkey change to offer, so correcting
+            // the row is what takes away the button that could only be refused again.
+            assertThat(state.errorMessage).isEqualTo(R.string.screen_two_step_verification_passkey_already_registered)
+            assertThat(state.passkeyRegistered).isTrue()
+            assertThat(state.factorEnrollUrl).isNull()
+        }
+    }
+
+    @Test
+    fun `present - an account that can produce no proof here is pointed at recovery`() = runTest {
+        val client = FakeIdentityServiceClient(
+            // A passkey and nothing else, on a deployment where the passkey ceremony cannot run.
+            factorStatusResult = { Result.success(aFactorStatus(hasPin = false, passkeyRegistered = true)) },
+            pinEnrollmentResult = { Result.failure(ResolverError.StepUpUnavailable) },
+        )
+        val presenter = createTwoStepVerificationPresenter(client = client)
+        presenter.test {
+            awaitFirst { it.phase == TwoStepVerificationPhase.Overview }.eventSink(TwoStepVerificationEvent.StartSetup)
+
+            val state = awaitFirst { it.errorMessage != null }
+            // Nothing this account holds can settle the step-up on this deployment, so no factor can
+            // be added here at all. Saying "Something went wrong" invited a retry that cannot work.
+            assertThat(state.errorMessage).isEqualTo(R.string.screen_two_step_verification_step_up_unavailable)
+            assertThat(state.factorEnrollUrl).isNull()
+        }
+    }
+
+    @Test
     fun `present - enrolling a passkey opens the same kind of ceremony`() = runTest {
         val client = FakeIdentityServiceClient(
             factorStatusResult = { Result.success(aFactorStatus(hasPin = true, passkeyRegistered = false)) },
