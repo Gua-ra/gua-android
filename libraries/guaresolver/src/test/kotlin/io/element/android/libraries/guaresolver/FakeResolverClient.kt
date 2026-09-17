@@ -56,11 +56,11 @@ class FakeIdentityServiceClient(
         Result.success(anAccountFactorStatus())
     },
     private val cancelAccountRecoveryResult: (String) -> Result<Unit> = { _ -> Result.success(Unit) },
-    private val setInitialPinResult: (String, String, String) -> Result<Unit> = { _, _, _ -> Result.success(Unit) },
+    private val startPinEnrollmentResult: (String) -> Result<String> = { _ -> Result.success("https://idp.gua.global/pin/enroll?token=fake") },
     private val startPinChangeResult: (String, String, String) -> Result<String> = { _, _, _ -> Result.success("challenge-id") },
     private val completePinChangeResult: (String, String, String, String) -> Result<Unit> = { _, _, _, _ -> Result.success(Unit) },
-    private val startPhoneChangeReauthResult: (String, String?) -> Result<Unit> = { _, _ -> Result.success(Unit) },
-    private val verifyPhoneChangeReauthResult: (String, String) -> Result<String> = { _, _ -> Result.success(A_FAKE_REAUTH_TOKEN) },
+    private val startPhoneChangeReauthResult: (String, String, String?) -> Result<Unit> = { _, _, _ -> Result.success(Unit) },
+    private val verifyPhoneChangeReauthResult: (String, String, String) -> Result<String> = { _, _, _ -> Result.success(A_FAKE_REAUTH_TOKEN) },
     private val startPhoneChangeResult: (PhoneChangeStartCall) -> Result<PhoneChangeChallenge> = { _ ->
         Result.success(PhoneChangeChallenge(challengeId = A_FAKE_CHALLENGE_ID, otpExpiresInSeconds = 300))
     },
@@ -76,8 +76,11 @@ class FakeIdentityServiceClient(
     /** Every [startPhoneChange] the fake saw, so tests can assert on ordering and on what was sent. */
     val startPhoneChangeCalls: MutableList<PhoneChangeStartCall> = mutableListOf()
 
-    /** Every [startPhoneChangeReauth] the fake saw, so tests can assert no SMS fired too early. */
-    val startPhoneChangeReauthCalls: MutableList<String?> = mutableListOf()
+    /**
+     * Every [startPhoneChangeReauth] the fake saw, as (current number, language), so tests can
+     * assert no SMS fired too early and that the number the user typed is what was submitted.
+     */
+    val startPhoneChangeReauthCalls: MutableList<Pair<String, String?>> = mutableListOf()
 
     override suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus> =
         accountFactorStatusResult(accessToken, userId)
@@ -85,8 +88,8 @@ class FakeIdentityServiceClient(
     override suspend fun cancelAccountRecovery(accessToken: String): Result<Unit> =
         cancelAccountRecoveryResult(accessToken)
 
-    override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> =
-        setInitialPinResult(accessToken, userId, newPin)
+    override suspend fun startPinEnrollment(accessToken: String): Result<String> =
+        startPinEnrollmentResult(accessToken)
 
     override suspend fun startPinChange(accessToken: String, phone: String, currentPin: String): Result<String> =
         startPinChangeResult(accessToken, phone, currentPin)
@@ -94,13 +97,13 @@ class FakeIdentityServiceClient(
     override suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit> =
         completePinChangeResult(accessToken, challengeId, otpCode, newPin)
 
-    override suspend fun startPhoneChangeReauth(accessToken: String, language: String?): Result<Unit> {
-        startPhoneChangeReauthCalls += language
-        return startPhoneChangeReauthResult(accessToken, language)
+    override suspend fun startPhoneChangeReauth(accessToken: String, phone: String, language: String?): Result<Unit> {
+        startPhoneChangeReauthCalls += phone to language
+        return startPhoneChangeReauthResult(accessToken, phone, language)
     }
 
-    override suspend fun verifyPhoneChangeReauth(accessToken: String, code: String): Result<String> =
-        verifyPhoneChangeReauthResult(accessToken, code)
+    override suspend fun verifyPhoneChangeReauth(accessToken: String, phone: String, code: String): Result<String> =
+        verifyPhoneChangeReauthResult(accessToken, phone, code)
 
     override suspend fun startPhoneChange(
         accessToken: String,

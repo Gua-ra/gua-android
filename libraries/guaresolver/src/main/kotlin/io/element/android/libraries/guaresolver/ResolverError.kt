@@ -68,6 +68,32 @@ sealed class ResolverError(message: String, cause: Throwable? = null) : Exceptio
     data object PhoneChangeChallengeInvalid : ResolverError("Your phone change session expired. Please start over.")
 
     /**
+     * The number submitted to reauthenticate is not the one bound to the signed-in account
+     * (identity-service `code: "reauth_phone_mismatch"`, HTTP 403).
+     *
+     * Deliberately one case for three situations: the number belongs to nobody, it belongs to
+     * someone else, or it is simply not this account's. The server answers all three identically so
+     * a stolen session cannot use the reauth step to find out who owns a number, and the client must
+     * keep it that way: never say anything about another account.
+     */
+    data object ReauthPhoneMismatch : ResolverError("That is not the number on your account.")
+
+    /**
+     * The number could not be read as a phone number at all (identity-service
+     * `code: "invalid_phone_number"`, HTTP 400). It says nothing about who holds it, which is why it
+     * is safe to distinguish from [ReauthPhoneMismatch].
+     */
+    data object InvalidPhoneNumber : ResolverError("That does not look like a phone number.")
+
+    /**
+     * Enrollment of a first PIN was started for an account that already has one
+     * (identity-service `code: "pin_already_set"`, HTTP 409). Not a failure of the user's: the
+     * client's view of the account's factors was simply stale, and changing the PIN is the operation
+     * they actually want.
+     */
+    data object PinAlreadySet : ResolverError("That account already has a PIN.")
+
+    /**
      * The operation demands a step-up factor and the account has NEITHER a PIN nor a passkey
      * registered (identity-service `code: "step_up_required"`, HTTP 403).
      *

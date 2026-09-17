@@ -132,12 +132,9 @@ class DefaultIdentityServiceClient(
             api.cancelAccountRecovery(authorization = "Bearer $accessToken")
         }
 
-    override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> =
+    override suspend fun startPinEnrollment(accessToken: String): Result<String> =
         runPinCall { api ->
-            api.setInitialPin(
-                authorization = "Bearer $accessToken",
-                body = SetInitialPinRequest(userId = userId, newPin = newPin),
-            )
+            api.startPinEnrollment(authorization = "Bearer $accessToken").enrollUrl
         }
 
     override suspend fun startPinChange(accessToken: String, phone: String, currentPin: String): Result<String> =
@@ -161,24 +158,29 @@ class DefaultIdentityServiceClient(
             )
         }
 
-    // GUA FORK: Change phone number, against the real `/account` contract: reauth OTP to the CURRENT
-    // number, then a token, then a step-up factor plus the new number, then the new-number OTP. The
-    // SMS to the new number is sent by `startPhoneChange`, which the server only reaches once it has
-    // accepted a step-up factor, so nothing earlier in this sequence can text the new number.
+    // GUA FORK: Change phone number, against the real `/account` contract: the current number, then
+    // a reauth OTP to it, then a token, then a step-up factor plus the new number, then the
+    // new-number OTP. The SMS to the new number is sent by `startPhoneChange`, which the server only
+    // reaches once it has accepted a step-up factor, so nothing earlier in this sequence can text
+    // the new number.
 
-    override suspend fun startPhoneChangeReauth(accessToken: String, language: String?): Result<Unit> =
+    override suspend fun startPhoneChangeReauth(accessToken: String, phone: String, language: String?): Result<Unit> =
         runPinCall { api ->
-            api.startAccountReauth(authorization = "Bearer $accessToken", acceptLanguage = language)
+            api.startAccountReauth(
+                authorization = "Bearer $accessToken",
+                acceptLanguage = language,
+                body = AccountReauthStartRequest(phone = phone),
+            )
         }
 
-    override suspend fun verifyPhoneChangeReauth(accessToken: String, code: String): Result<String> =
+    override suspend fun verifyPhoneChangeReauth(accessToken: String, phone: String, code: String): Result<String> =
         runPinCall { api ->
             api.verifyAccountReauth(
                 authorization = "Bearer $accessToken",
                 // Always scoped. The server binds the token to this operation and refuses to spend a
                 // token minted for another one, so leaving the default (DEACTIVATE) in place would
                 // hand back a token that the phone change cannot use.
-                body = AccountReauthVerifyRequest(code = code, operation = PHONE_CHANGE_OPERATION),
+                body = AccountReauthVerifyRequest(phone = phone, code = code, operation = PHONE_CHANGE_OPERATION),
             ).reauthToken
         }
 
@@ -283,6 +285,11 @@ class DefaultIdentityServiceClient(
             "phone_change_challenge_invalid" -> ResolverError.PhoneChangeChallengeInvalid
             "phone_already_linked" -> ResolverError.PhoneAlreadyLinked
             "invalid_reauth_token" -> ResolverError.InvalidReauthToken
+            // The submitted number is not the account's. One case for "unknown", "someone else's"
+            // and "not this one", because the server answers all three the same way on purpose.
+            "reauth_phone_mismatch" -> ResolverError.ReauthPhoneMismatch
+            "invalid_phone_number" -> ResolverError.InvalidPhoneNumber
+            "pin_already_set" -> ResolverError.PinAlreadySet
             // The account holds neither a PIN nor a passkey. A hard block, mapped to its own case so
             // no caller can mistake it for one of the retryable PIN failures below.
             "step_up_required" -> ResolverError.StepUpRequired

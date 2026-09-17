@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">新 PIN 码必须与当前 PIN 码不同。</string>
     <string name="screen_two_step_verification_rate_limited">尝试次数过多，请稍候再试。</string>
     <string name="screen_two_step_verification_updated">已更新两步验证</string>
+    <string name="screen_two_step_verification_pin_already_set">你已经设置了 PIN 码。你可以改为更改它。</string>
     <string name="screen_change_phone_title">更改手机号码</string>
     <string name="screen_change_phone_intro_header">更改你的号码</string>
     <string name="screen_change_phone_intro_message">我们会先确认你的 PIN 码，然后向新号码发送验证码短信。你的账号、聊天和消息保持不变。</string>
@@ -61,4 +62,7 @@
     <string name="screen_change_phone_needs_step_up_pin_action">设置 PIN 码</string>
     <string name="screen_change_phone_cooldown_header">还不能更改</string>
     <string name="screen_change_phone_cooldown_message">出于安全考虑，你可以在 %1$s 后更改号码。</string>
+    <string name="screen_change_phone_current_header">确认你当前的号码</string>
+    <string name="screen_change_phone_current_footer">请输入你的账号目前使用的号码。我们会向该号码发送验证码。</string>
+    <string name="screen_change_phone_current_mismatch">这不是你账号上的号码。</string>
 </resources>

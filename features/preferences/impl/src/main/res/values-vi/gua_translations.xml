@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Mã PIN mới phải khác mã PIN hiện tại.</string>
     <string name="screen_two_step_verification_rate_limited">Quá nhiều lần thử. Vui lòng đợi một lát rồi thử lại.</string>
     <string name="screen_two_step_verification_updated">Đã cập nhật xác minh hai bước</string>
+    <string name="screen_two_step_verification_pin_already_set">Bạn đã có mã PIN. Thay vào đó, bạn có thể đổi mã PIN.</string>
     <string name="screen_change_phone_title">Đổi số điện thoại</string>
     <string name="screen_change_phone_intro_header">Đổi số của bạn</string>
     <string name="screen_change_phone_intro_message">Chúng tôi sẽ xác nhận mã PIN của bạn, sau đó gửi mã qua SMS đến số mới. Tài khoản, cuộc trò chuyện và tin nhắn của bạn vẫn giữ nguyên.</string>
@@ -61,4 +62,7 @@
     <string name="screen_change_phone_needs_step_up_pin_action">Thiết lập mã PIN</string>
     <string name="screen_change_phone_cooldown_header">Chưa được</string>
     <string name="screen_change_phone_cooldown_message">Vì sự an toàn của bạn, bạn có thể đổi số sau %1$s.</string>
+    <string name="screen_change_phone_current_header">Xác nhận số hiện tại của bạn</string>
+    <string name="screen_change_phone_current_footer">Nhập số mà tài khoản của bạn đang dùng. Chúng tôi sẽ gửi mã đến số đó.</string>
+    <string name="screen_change_phone_current_mismatch">Đó không phải là số trên tài khoản của bạn.</string>
 </resources>

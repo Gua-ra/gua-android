@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">O seu novo PIN tem de ser diferente do atual.</string>
     <string name="screen_two_step_verification_rate_limited">Demasiadas tentativas. Aguarde um momento e tente novamente.</string>
     <string name="screen_two_step_verification_updated">Verificação em dois passos atualizada</string>
+    <string name="screen_two_step_verification_pin_already_set">Já tem um PIN. Em vez disso, pode alterá-lo.</string>
     <string name="screen_change_phone_title">Alterar número de telemóvel</string>
     <string name="screen_change_phone_intro_header">Altere o seu número</string>
     <string name="screen_change_phone_intro_message">Vamos confirmar o seu PIN e depois enviar um código por SMS para o seu novo número. A sua conta, conversas e mensagens mantêm-se.</string>
@@ -61,4 +62,7 @@
     <string name="screen_change_phone_needs_step_up_pin_action">Configurar PIN</string>
     <string name="screen_change_phone_cooldown_header">Ainda não</string>
     <string name="screen_change_phone_cooldown_message">Por segurança, poderá alterar o seu número dentro de %1$s.</string>
+    <string name="screen_change_phone_current_header">Confirme o seu número atual</string>
+    <string name="screen_change_phone_current_footer">Introduza o número que a sua conta usa agora. Vamos enviar um código para esse número.</string>
+    <string name="screen_change_phone_current_mismatch">Esse não é o número da sua conta.</string>
 </resources>

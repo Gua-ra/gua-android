@@ -12,6 +12,7 @@ import app.cash.molecule.moleculeFlow
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.preferences.impl.R
 import io.element.android.features.preferences.impl.fixtures.FakeIdentityServiceClient
 import io.element.android.features.preferences.impl.fixtures.aFactorStatus
 import io.element.android.libraries.guaresolver.AuthFactor
@@ -29,15 +30,18 @@ import io.element.android.tests.testutils.WarmUpRule
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
+import java.util.Locale
 
 /**
  * GUA FORK: the change-phone-number flow against the real `/account` contract.
  *
- * Two things these tests hold down. First the ordering: nothing may ask the identity service to text
- * the NEW number before a step-up factor has been offered, and `startPhoneChange` is the only call
- * that can. Second the factor branch: it reads the server's factor signal, so an account with a
+ * Three things these tests hold down. First the ordering: nothing may ask the identity service to
+ * text the NEW number before a step-up factor has been offered, and `startPhoneChange` is the only
+ * call that can. Second the factor branch: it reads the server's factor signal, so an account with a
  * passkey and no PIN is not told to create a PIN, and a status that could not be read is treated as
- * unknown rather than as "no factor".
+ * unknown rather than as "no factor". Third the reauthentication: the user says which number is on
+ * the account, that number is what both reauth calls carry, and a number that is not the account's
+ * is refused with one wording that says nothing about who else might hold it.
  */
 class ChangePhoneNumberPresenterTest {
     @get:Rule
@@ -64,11 +68,73 @@ class ChangePhoneNumberPresenterTest {
         presenter.test {
             awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
 
+            // The current number is asked for first, and asking for it costs nothing.
+            val currentStep = awaitPhase(ChangePhoneNumberPhase.EnteringCurrentPhone)
+            assertThat(client.startReauthCalls).isEmpty()
+            currentStep.eventSink(ChangePhoneNumberEvents.PhoneChanged(A_CURRENT_LOCAL_DIGITS))
+            awaitFirst { it.localPhoneNumber == A_CURRENT_LOCAL_DIGITS }.eventSink(ChangePhoneNumberEvents.Continue)
+
             val state = awaitPhase(ChangePhoneNumberPhase.EnteringReauthOtp)
             // The OTP went to the number already on file, not to a new one.
-            assertThat(client.startReauthCalls).hasSize(1)
+            assertThat(client.startReauthCalls).containsExactly(A_CURRENT_PHONE to A_LANGUAGE_TAG)
             assertThat(client.startPhoneChangeCalls).isEmpty()
             assertThat(state.errorMessage).isNull()
+            // The field is handed to the new-number step empty, never pre-filled with the number
+            // being replaced.
+            assertThat(state.localPhoneNumber).isEmpty()
+        }
+    }
+
+    @Test
+    fun `present - a number that is not the account's is refused without saying whose it is`() = runTest {
+        val client = FakeIdentityServiceClient(
+            startReauthResult = { Result.failure(ResolverError.ReauthPhoneMismatch) },
+        )
+        val presenter = createChangePhoneNumberPresenter(client = client)
+        presenter.test {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            submitCurrentNumber()
+
+            val state = awaitFirst { it.errorMessage != null }
+            // Back on the same step to try again, with the one neutral reason. Nothing here can say
+            // that the number is unknown, or that somebody else holds it.
+            assertThat(state.phase).isEqualTo(ChangePhoneNumberPhase.EnteringCurrentPhone)
+            assertThat(state.errorMessage).isEqualTo(R.string.screen_change_phone_current_mismatch)
+            // The refusal is the end of it: no token, and no code to type.
+            assertThat(client.verifyReauthCalls).isEmpty()
+            assertThat(client.startPhoneChangeCalls).isEmpty()
+        }
+    }
+
+    @Test
+    fun `present - the attempt cap on the account's own number is surfaced as a rate limit`() = runTest {
+        val client = FakeIdentityServiceClient(
+            startReauthResult = { Result.failure(ResolverError.RateLimited) },
+        )
+        val presenter = createChangePhoneNumberPresenter(client = client)
+        presenter.test {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            submitCurrentNumber()
+
+            val state = awaitFirst { it.errorMessage != null }
+            assertThat(state.phase).isEqualTo(ChangePhoneNumberPhase.EnteringCurrentPhone)
+            assertThat(state.errorMessage).isEqualTo(R.string.screen_two_step_verification_rate_limited)
+        }
+    }
+
+    @Test
+    fun `present - the same current number is submitted to start and to verify`() = runTest {
+        val client = FakeIdentityServiceClient()
+        val presenter = createChangePhoneNumberPresenter(client = client)
+        presenter.test {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            submitCurrentNumber()
+            awaitPhase(ChangePhoneNumberPhase.EnteringReauthOtp).eventSink(ChangePhoneNumberEvents.CodeChanged("111111"))
+
+            awaitPhase(ChangePhoneNumberPhase.EnteringPin)
+            // The server keeps no pending record between the two calls, so verify has to carry the
+            // number again, and it must be the same one that was checked to send the code.
+            assertThat(client.verifyReauthCalls).containsExactly(A_CURRENT_PHONE to "111111")
         }
     }
 
@@ -172,6 +238,7 @@ class ChangePhoneNumberPresenterTest {
         val presenter = createChangePhoneNumberPresenter(client = client)
         presenter.test {
             awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            submitCurrentNumber()
             awaitPhase(ChangePhoneNumberPhase.EnteringReauthOtp).eventSink(ChangePhoneNumberEvents.CodeChanged("111111"))
 
             // The step-up is collected next, and it still costs the new number nothing.
@@ -288,6 +355,7 @@ class ChangePhoneNumberPresenterTest {
         val presenter = createChangePhoneNumberPresenter(client = client)
         presenter.test {
             awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            submitCurrentNumber()
 
             awaitPhase(ChangePhoneNumberPhase.EnteringReauthOtp)
             assertThat(client.startReauthCalls).hasSize(1)
@@ -299,11 +367,19 @@ class ChangePhoneNumberPresenterTest {
         client: FakeIdentityServiceClient,
     ) {
         awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+        submitCurrentNumber()
         awaitPhase(ChangePhoneNumberPhase.EnteringReauthOtp).eventSink(ChangePhoneNumberEvents.CodeChanged("111111"))
         awaitPhase(ChangePhoneNumberPhase.EnteringPin).eventSink(ChangePhoneNumberEvents.CodeChanged("246813"))
         awaitPhase(ChangePhoneNumberPhase.EnteringNewPhone).eventSink(ChangePhoneNumberEvents.PhoneChanged("5551234567"))
         awaitFirst { it.localPhoneNumber.isNotEmpty() }.eventSink(ChangePhoneNumberEvents.Continue)
         assertThat(client.startReauthCalls).hasSize(1)
+    }
+
+    /** Types the number the account is bound to and submits it, which is what sends the reauth OTP. */
+    private suspend fun ReceiveTurbine<ChangePhoneNumberState>.submitCurrentNumber() {
+        awaitPhase(ChangePhoneNumberPhase.EnteringCurrentPhone)
+            .eventSink(ChangePhoneNumberEvents.PhoneChanged(A_CURRENT_LOCAL_DIGITS))
+        awaitFirst { it.localPhoneNumber == A_CURRENT_LOCAL_DIGITS }.eventSink(ChangePhoneNumberEvents.Continue)
     }
 
     private suspend fun ReceiveTurbine<ChangePhoneNumberState>.awaitPhase(
@@ -341,5 +417,12 @@ class ChangePhoneNumberPresenterTest {
 
     private companion object {
         const val MAX_EMISSIONS = 20
+
+        /** Typed as national digits on the US device country the tests run with. */
+        const val A_CURRENT_LOCAL_DIGITS = "5559876543"
+        const val A_CURRENT_PHONE = "+15559876543"
+
+        /** What the presenter sends as Accept-Language; the tests run under the default locale. */
+        val A_LANGUAGE_TAG: String = Locale.getDefault().toLanguageTag()
     }
 }

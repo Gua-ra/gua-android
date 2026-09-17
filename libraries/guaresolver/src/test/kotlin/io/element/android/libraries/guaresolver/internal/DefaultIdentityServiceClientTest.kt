@@ -125,6 +125,42 @@ class DefaultIdentityServiceClientTest {
         server.shutdown()
     }
 
+    @Test
+    fun `startPinEnrollment asks for the same kind of web ceremony as a passkey`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setBody("""{ "enrollUrl": "https://idp.gua.global/login/enroll/abc" }""")
+        )
+        val client = createClient(server)
+
+        val enrollUrl = client.startPinEnrollment("secret-token").getOrThrow()
+
+        assertThat(enrollUrl).isEqualTo("https://idp.gua.global/login/enroll/abc")
+        val request = server.takeRequest()
+        assertThat(request.method).isEqualTo("POST")
+        // The first PIN is enrolled here, not at `security/pin`, which now refuses every bearer
+        // caller. The access token is the whole input; there is no body.
+        assertThat(request.path).isEqualTo("/security/pin/enroll/start")
+        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer secret-token")
+        server.shutdown()
+    }
+
+    @Test
+    fun `an account that already has a PIN is its own case, not a phone conflict`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setResponseCode(409).setBody("""{ "code": "pin_already_set" }""")
+        )
+        val client = createClient(server)
+
+        val error = client.startPinEnrollment("secret-token").exceptionOrNull()
+
+        // 409 alone would have fallen through to PhoneAlreadyLinked, which is a different account's
+        // number rather than this account's own PIN.
+        assertThat(error).isInstanceOf(ResolverError.PinAlreadySet::class.java)
+        server.shutdown()
+    }
+
     // GUA FORK: the account factor signal and the real phone-change contract.
 
     @Test
@@ -272,24 +308,73 @@ class DefaultIdentityServiceClientTest {
     @Test
     fun `the reauth OTP goes to the account endpoint and the token is scoped to the phone change`() = runTest {
         val server = MockWebServer()
-        server.enqueue(MockResponse().setResponseCode(204))
+        server.enqueue(MockResponse().setResponseCode(202))
         server.enqueue(MockResponse().setBody("""{ "reauthToken": "tok-1", "expiresInSeconds": 300 }"""))
         val client = createClient(server)
 
-        client.startPhoneChangeReauth("secret-token", language = "pt-BR").getOrThrow()
-        val token = client.verifyPhoneChangeReauth("secret-token", code = "123456").getOrThrow()
+        client.startPhoneChangeReauth("secret-token", phone = "+15551234567", language = "pt-BR").getOrThrow()
+        val token = client.verifyPhoneChangeReauth("secret-token", phone = "+15551234567", code = "123456").getOrThrow()
 
         assertThat(token).isEqualTo("tok-1")
         val startRequest = server.takeRequest()
         assertThat(startRequest.method).isEqualTo("POST")
         assertThat(startRequest.path).isEqualTo("/account/reauth/start")
         assertThat(startRequest.getHeader("Accept-Language")).isEqualTo("pt-BR")
+        // The number the user typed is what decides whether an SMS goes out at all.
+        assertThat(startRequest.body.readUtf8()).contains("\"phone\":\"+15551234567\"")
         val verifyRequest = server.takeRequest()
         assertThat(verifyRequest.path).isEqualTo("/account/reauth/verify")
         val body = verifyRequest.body.readUtf8()
         assertThat(body).contains("\"code\":\"123456\"")
+        // Sent again: the server keeps no pending record between start and verify.
+        assertThat(body).contains("\"phone\":\"+15551234567\"")
         // Never left to the server default: a token scoped elsewhere cannot be spent here.
         assertThat(body).contains("\"operation\":\"PHONE_CHANGE\"")
+        server.shutdown()
+    }
+
+    @Test
+    fun `a number that is not the account's is one refusal, whoever else may hold it`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setResponseCode(403).setBody(
+                """{ "code": "reauth_phone_mismatch", "message": "That is not the number on your account." }"""
+            )
+        )
+        val client = createClient(server)
+
+        val error = client.startPhoneChangeReauth("secret-token", phone = "+15550000000", language = null).exceptionOrNull()
+
+        // Its own case so no caller can render it as one of the retryable PIN failures, and so the
+        // one thing it is allowed to say stays the one thing the server said.
+        assertThat(error).isInstanceOf(ResolverError.ReauthPhoneMismatch::class.java)
+        server.shutdown()
+    }
+
+    @Test
+    fun `an unreadable number is told apart from one that is simply not the account's`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setResponseCode(400).setBody("""{ "code": "invalid_phone_number" }""")
+        )
+        val client = createClient(server)
+
+        val error = client.startPhoneChangeReauth("secret-token", phone = "nonsense", language = null).exceptionOrNull()
+
+        // Safe to distinguish: it says the input was not a phone number, never who holds one.
+        assertThat(error).isInstanceOf(ResolverError.InvalidPhoneNumber::class.java)
+        server.shutdown()
+    }
+
+    @Test
+    fun `the per-account reauth attempt cap surfaces as a rate limit`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(429).setBody("""{ "code": "rate_limited" }"""))
+        val client = createClient(server)
+
+        val error = client.startPhoneChangeReauth("secret-token", phone = "+15550000000", language = null).exceptionOrNull()
+
+        assertThat(error).isInstanceOf(ResolverError.RateLimited::class.java)
         server.shutdown()
     }
 

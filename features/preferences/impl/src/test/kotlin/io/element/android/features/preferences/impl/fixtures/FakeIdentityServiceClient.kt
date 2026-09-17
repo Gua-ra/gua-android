@@ -28,9 +28,16 @@ class FakeIdentityServiceClient(
     },
     private val completePhoneChangeResult: () -> Result<Unit> = { Result.success(Unit) },
     private val passkeyEnrollmentResult: () -> Result<String> = { Result.success(AN_ENROLL_URL) },
+    private val pinEnrollmentResult: () -> Result<String> = { Result.success(A_PIN_ENROLL_URL) },
 ) : IdentityServiceClient {
-    /** The reauth OTPs requested, in order. Each one is an SMS to the number already on file. */
-    val startReauthCalls: MutableList<String?> = mutableListOf()
+    /**
+     * The reauth OTPs requested, as (submitted current number, language), in order. Each one is an
+     * SMS to the number already on file, and only when what was submitted matches it.
+     */
+    val startReauthCalls: MutableList<Pair<String, String?>> = mutableListOf()
+
+    /** Every reauth verify, as (submitted current number, code), in order. */
+    val verifyReauthCalls: MutableList<Pair<String, String>> = mutableListOf()
 
     /** Every phone-change start, in order. This is the only call that can text the NEW number. */
     val startPhoneChangeCalls: MutableList<StartCall> = mutableListOf()
@@ -39,8 +46,8 @@ class FakeIdentityServiceClient(
 
     val passkeyEnrollmentCalls: MutableList<String> = mutableListOf()
 
-    /** Every initial-PIN call, in order. The server refuses this one when a PIN already exists. */
-    val setInitialPinCalls: MutableList<String> = mutableListOf()
+    /** Every first-PIN enrollment start, in order. This is the only way to set a first PIN now. */
+    val pinEnrollmentCalls: MutableList<String> = mutableListOf()
 
     data class StartCall(
         val reauthToken: String,
@@ -58,9 +65,9 @@ class FakeIdentityServiceClient(
 
     override suspend fun cancelAccountRecovery(accessToken: String): Result<Unit> = Result.success(Unit)
 
-    override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> {
-        setInitialPinCalls += newPin
-        return Result.success(Unit)
+    override suspend fun startPinEnrollment(accessToken: String): Result<String> {
+        pinEnrollmentCalls += accessToken
+        return pinEnrollmentResult()
     }
 
     override suspend fun startPinChange(accessToken: String, phone: String, currentPin: String): Result<String> =
@@ -69,13 +76,15 @@ class FakeIdentityServiceClient(
     override suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit> =
         Result.success(Unit)
 
-    override suspend fun startPhoneChangeReauth(accessToken: String, language: String?): Result<Unit> {
-        startReauthCalls += language
+    override suspend fun startPhoneChangeReauth(accessToken: String, phone: String, language: String?): Result<Unit> {
+        startReauthCalls += phone to language
         return startReauthResult()
     }
 
-    override suspend fun verifyPhoneChangeReauth(accessToken: String, code: String): Result<String> =
-        verifyReauthResult()
+    override suspend fun verifyPhoneChangeReauth(accessToken: String, phone: String, code: String): Result<String> {
+        verifyReauthCalls += phone to code
+        return verifyReauthResult()
+    }
 
     override suspend fun startPhoneChange(
         accessToken: String,
@@ -113,6 +122,7 @@ class FakeIdentityServiceClient(
         const val A_REAUTH_TOKEN = "a-reauth-token"
         const val A_CHALLENGE_ID = "a-phone-change-challenge"
         const val AN_ENROLL_URL = "https://idp.example.org/passkey/enroll?token=abc"
+        const val A_PIN_ENROLL_URL = "https://idp.example.org/login/enroll/abc"
     }
 }
 

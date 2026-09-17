@@ -7,6 +7,7 @@
 
 package io.element.android.features.preferences.impl.changephonenumber
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -80,7 +81,21 @@ fun ChangePhoneNumberView(
             ChangePhoneNumberPhase.Intro -> IntroSection(state = state, eventSink = eventSink)
             ChangePhoneNumberPhase.NeedsStepUp -> NeedsStepUpSection(state = state, eventSink = eventSink)
             ChangePhoneNumberPhase.Cooldown -> CooldownSection(state = state)
-            ChangePhoneNumberPhase.EnteringNewPhone -> PhoneEntrySection(state = state, eventSink = eventSink)
+            // GUA FORK: the same field twice, once for the number the account already has and once
+            // for the one replacing it. Only the labels differ; the first is the reauth check, and
+            // it is deliberately not pre-filled, since the point is for the user to produce it.
+            ChangePhoneNumberPhase.EnteringCurrentPhone -> PhoneEntrySection(
+                state = state,
+                eventSink = eventSink,
+                labelRes = R.string.screen_change_phone_current_header,
+                footerRes = R.string.screen_change_phone_current_footer,
+            )
+            ChangePhoneNumberPhase.EnteringNewPhone -> PhoneEntrySection(
+                state = state,
+                eventSink = eventSink,
+                labelRes = R.string.screen_change_phone_new_header,
+                footerRes = R.string.screen_change_phone_new_footer,
+            )
             ChangePhoneNumberPhase.EnteringReauthOtp,
             ChangePhoneNumberPhase.EnteringPin,
             ChangePhoneNumberPhase.EnteringOtp -> CodeEntrySection(state = state, eventSink = eventSink)
@@ -266,11 +281,13 @@ private fun CooldownSection(
 private fun PhoneEntrySection(
     state: ChangePhoneNumberState,
     eventSink: (ChangePhoneNumberEvents) -> Unit,
+    @StringRes labelRes: Int,
+    @StringRes footerRes: Int,
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         // Header label above the whole row, reading over both the selector and the field.
         Text(
-            text = stringResource(id = R.string.screen_change_phone_new_header),
+            text = stringResource(id = labelRes),
             style = ElementTheme.typography.fontBodyMdMedium,
             color = ElementTheme.colors.textSecondary,
             modifier = Modifier.padding(start = 4.dp, top = 16.dp, bottom = 8.dp),
@@ -285,7 +302,7 @@ private fun PhoneEntrySection(
         )
         FooterOrError(
             state = state,
-            footerRes = R.string.screen_change_phone_new_footer,
+            footerRes = footerRes,
         )
         ContinueButton(state = state, eventSink = eventSink)
     }
@@ -411,6 +428,7 @@ internal fun humanizeDuration(totalSeconds: Long): String {
 }
 
 private fun ChangePhoneNumberPhase.isEnteringFlow(): Boolean = when (this) {
+    ChangePhoneNumberPhase.EnteringCurrentPhone,
     ChangePhoneNumberPhase.EnteringNewPhone,
     ChangePhoneNumberPhase.EnteringReauthOtp,
     ChangePhoneNumberPhase.EnteringPin,
@@ -424,6 +442,7 @@ private fun ChangePhoneNumberPhase.titleRes(): Int = when (this) {
     ChangePhoneNumberPhase.NeedsStepUp,
     ChangePhoneNumberPhase.Cooldown,
     ChangePhoneNumberPhase.Submitting -> R.string.screen_change_phone_title
+    ChangePhoneNumberPhase.EnteringCurrentPhone -> R.string.screen_change_phone_current_header
     ChangePhoneNumberPhase.EnteringNewPhone -> R.string.screen_change_phone_new_header
     ChangePhoneNumberPhase.EnteringReauthOtp -> R.string.screen_change_phone_reauth_header
     ChangePhoneNumberPhase.EnteringPin -> R.string.screen_change_phone_pin_header
@@ -432,6 +451,7 @@ private fun ChangePhoneNumberPhase.titleRes(): Int = when (this) {
 }
 
 private fun ChangePhoneNumberPhase.footerRes(): Int? = when (this) {
+    ChangePhoneNumberPhase.EnteringCurrentPhone -> R.string.screen_change_phone_current_footer
     ChangePhoneNumberPhase.EnteringNewPhone -> R.string.screen_change_phone_new_footer
     ChangePhoneNumberPhase.EnteringReauthOtp -> R.string.screen_change_phone_reauth_footer
     ChangePhoneNumberPhase.EnteringPin -> R.string.screen_change_phone_pin_footer

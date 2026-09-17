@@ -47,9 +47,10 @@ class TwoStepVerificationNode(
             state = state,
             onBackClick = ::navigateUp,
             // GUA FORK: the enrollUrl is self-authenticating (like iOS' ASWebAuthenticationSession),
-            // so we open it in a private Custom Tab for the user to complete WebAuthn registration.
-            // It needs no browser session, and must not pick up one that belongs to someone else.
-            onOpenPasskeyEnrollUrl = { url ->
+            // so we open it in a private Custom Tab for the user to settle the step-up and register
+            // the factor, passkey or first PIN. It needs no browser session, and must not pick up
+            // one that belongs to someone else.
+            onOpenEnrollUrl = { url ->
                 activity.openUrlInChromeCustomTab(session = null, darkTheme = isDark, url = url, ephemeral = true)
             },
             modifier = modifier,

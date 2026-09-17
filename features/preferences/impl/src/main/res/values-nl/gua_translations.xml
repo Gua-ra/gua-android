@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Je nieuwe pincode moet anders zijn dan je huidige.</string>
     <string name="screen_two_step_verification_rate_limited">Te veel pogingen. Wacht even en probeer het opnieuw.</string>
     <string name="screen_two_step_verification_updated">Verificatie in twee stappen bijgewerkt</string>
+    <string name="screen_two_step_verification_pin_already_set">Je hebt al een pincode. Je kunt die in plaats daarvan wijzigen.</string>
     <string name="screen_change_phone_title">Telefoonnummer wijzigen</string>
     <string name="screen_change_phone_intro_header">Wijzig je nummer</string>
     <string name="screen_change_phone_intro_message">We bevestigen je pincode en sturen daarna een code per sms naar je nieuwe nummer. Je account, chats en berichten blijven hetzelfde.</string>
@@ -61,4 +62,7 @@
     <string name="screen_change_phone_needs_step_up_pin_action">Pincode instellen</string>
     <string name="screen_change_phone_cooldown_header">Nog even niet</string>
     <string name="screen_change_phone_cooldown_message">Uit veiligheidsoverwegingen kun je je nummer over %1$s wijzigen.</string>
+    <string name="screen_change_phone_current_header">Bevestig je huidige nummer</string>
+    <string name="screen_change_phone_current_footer">Voer het nummer in dat je account nu gebruikt. We sturen er een code naartoe.</string>
+    <string name="screen_change_phone_current_mismatch">Dat is niet het nummer van je account.</string>
 </resources>

@@ -37,11 +37,14 @@ internal interface IdentityServiceApi {
         @Header("Authorization") authorization: String,
     ): PinStatusResponse
 
-    @POST("security/pin")
-    suspend fun setInitialPin(
+    // GUA FORK: the first PIN is no longer set from a bearer session. `POST /security/pin` now
+    // answers 403 `step_up_required` for every caller, because a stolen access token alone must not
+    // be able to add a durable factor. The first PIN is enrolled through the same authenticated web
+    // ceremony as a passkey, which is the only place a step-up can be asked for on every platform.
+    @POST("security/pin/enroll/start")
+    suspend fun startPinEnrollment(
         @Header("Authorization") authorization: String,
-        @Body body: SetInitialPinRequest,
-    )
+    ): FactorEnrollStartResponse
 
     @POST("security/pin/change/start")
     suspend fun startPinChange(
@@ -67,17 +70,25 @@ internal interface IdentityServiceApi {
     // An earlier revision of this file called `security/pin/reauth`, `otp/change-number/request` and
     // `otp/change-number`. The identity service has never served any of those three, so every phone
     // change failed at the first call. The real sequence is:
-    //   1. account/reauth/start   sends an OTP to the CURRENT number (proof of possession only),
-    //   2. account/reauth/verify  exchanges that OTP for a single-use, PHONE_CHANGE-scoped token,
+    //   1. account/reauth/start   takes the number the signed-in user says is theirs and, only if it
+    //      matches the one bound to the account, sends an OTP to it (proof of possession only),
+    //   2. account/reauth/verify  takes that number again with the OTP and exchanges them for a
+    //      single-use, PHONE_CHANGE-scoped token,
     //   3. account/phone/change/start   spends the token AND a step-up factor (a passkey assertion,
     //      else the account PIN), and only then sends the OTP to the NEW number,
     //   4. account/phone/change/complete   redeems the challenge with that OTP.
     // No SMS reaches the new number before step 3 has accepted a step-up factor.
+    //
+    // The number is submitted rather than read back from the server: identity-service compares its
+    // digest against the account's own directory binding and never reveals whose number it is, so a
+    // wrong one is refused with the same `reauth_phone_mismatch` whether it is unknown or someone
+    // else's. Nothing is stored between the two calls, which is why both of them carry it.
 
     @POST("account/reauth/start")
     suspend fun startAccountReauth(
         @Header("Authorization") authorization: String,
         @Header("Accept-Language") acceptLanguage: String?,
+        @Body body: AccountReauthStartRequest,
     )
 
     @POST("account/reauth/verify")
@@ -110,7 +121,7 @@ internal interface IdentityServiceApi {
     @POST("security/passkey/enroll/start")
     suspend fun startPasskeyEnrollment(
         @Header("Authorization") authorization: String,
-    ): PasskeyEnrollStartResponse
+    ): FactorEnrollStartResponse
 
     // GUA FORK: account genesis registration (ADM-008 decision 6, step 1). Deliberately unauthenticated:
     // it runs before any OIDC flow exists to authenticate against, and the body carries its own
@@ -172,12 +183,6 @@ internal data class PinStatusResponse(
 )
 
 @Serializable
-internal data class SetInitialPinRequest(
-    val userId: String,
-    val newPin: String,
-)
-
-@Serializable
 internal data class StartPinChangeRequest(
     val phone: String,
     val currentPin: String,
@@ -197,7 +202,19 @@ internal data class CompletePinChangeRequest(
 )
 
 @Serializable
+internal data class AccountReauthStartRequest(
+    /**
+     * The number the signed-in user says is theirs. The server normalizes and digests it and only
+     * texts it when it matches the account's own binding, so nothing here can send an SMS to a
+     * number the account does not already hold.
+     */
+    val phone: String,
+)
+
+@Serializable
 internal data class AccountReauthVerifyRequest(
+    /** The same number that was submitted to start, re-checked here rather than remembered there. */
+    val phone: String,
     /** OTP delivered by SMS to the number currently on file. */
     val code: String,
     /**
@@ -264,9 +281,14 @@ internal data class AccountGenesisRegisterResponse(
     val expiresAt: String? = null,
 )
 
+/**
+ * What both factor-enrollment start endpoints return. Passkey and PIN enrollment share one shape
+ * because they share one ceremony: the URL parks a session at the step-up, and only once that is
+ * settled does the web move on to registering the factor.
+ */
 @Serializable
-internal data class PasskeyEnrollStartResponse(
-    /** Authenticated web-ceremony URL to open at the IdP to complete passkey registration. */
+internal data class FactorEnrollStartResponse(
+    /** Authenticated web-ceremony URL to open at the IdP to complete the enrollment. */
     val enrollUrl: String,
 )
 

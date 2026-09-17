@@ -32,7 +32,7 @@ interface IdentityServiceClient {
     suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>>
 
     // GUA FORK: Two-step verification factors. Android counterpart of iOS
-    // `IdentityServiceClientProtocol.accountFactorStatus / setInitialPin / startPinChange /
+    // `IdentityServiceClientProtocol.accountFactorStatus / startPinEnrollment / startPinChange /
     // completePinChange`.
 
     /**
@@ -63,12 +63,22 @@ interface IdentityServiceClient {
     suspend fun cancelAccountRecovery(accessToken: String): Result<Unit>
 
     /**
-     * Set the initial account PIN (no existing PIN). Mirrors iOS `setInitialPin`.
+     * Start enrollment of the account's FIRST PIN and obtain the authenticated web-ceremony URL to
+     * open at the IdP (`POST /security/pin/enroll/start`), exactly as
+     * [startPasskeyEnrollment] does for a passkey.
      *
-     * @return [Result.success] on success, or [Result.failure] with a [ResolverError] (notably
-     * [ResolverError.InvalidPin] when the PIN is rejected).
+     * There is no native path for this any more. A bearer session on its own must never be able to
+     * add a durable factor, and the step-up that proves the account holder is present (their
+     * passkey, else their PIN, else their current number plus an OTP) can only run in the IdP web
+     * session, which is the one place a passkey assertion works on every platform. The old
+     * `POST /security/pin` now answers 403 for everyone.
+     *
+     * Changing an existing PIN is unaffected: that flow already proves the current PIN first.
+     *
+     * @return [Result.success] with the enrollment URL, or [Result.failure] with a [ResolverError]
+     * (notably [ResolverError.PinAlreadySet] when the account already holds a PIN).
      */
-    suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit>
+    suspend fun startPinEnrollment(accessToken: String): Result<String>
 
     /**
      * Start an OTP-protected PIN change: verifies the current PIN and triggers an OTP to [phone].
@@ -100,23 +110,36 @@ interface IdentityServiceClient {
      * single-use reauth token every privileged account operation needs
      * (`POST /account/reauth/start`). The optional BCP-47 [language] tag localises the message.
      *
+     * [phone] is the number the signed-in user typed as their current one. The server digests it and
+     * compares it against the account's own directory binding, and texts it only on a match, so this
+     * call can never send an SMS to a number the account does not already hold. It is submitted
+     * rather than looked up because the server does not hand out the number it holds.
+     *
      * This proves possession of the CURRENT number and nothing more, which is exactly why it is not
      * sufficient on its own: a SIM-swap attacker holds that number too. The step-up factor demanded
      * by [startPhoneChange] is the other half.
      *
-     * @return [Result.success] on success, or [Result.failure] with a [ResolverError] (notably
-     * [ResolverError.RateLimited]).
+     * @return [Result.success] on success, or [Result.failure] with a [ResolverError]:
+     * [ResolverError.ReauthPhoneMismatch] when the number is not this account's (which must be
+     * surfaced without ever suggesting whose it might be), [ResolverError.InvalidPhoneNumber] when
+     * it is not a phone number at all, or [ResolverError.RateLimited] once the per-account attempt
+     * cap is reached.
      */
-    suspend fun startPhoneChangeReauth(accessToken: String, language: String?): Result<Unit>
+    suspend fun startPhoneChangeReauth(accessToken: String, phone: String, language: String?): Result<Unit>
 
     /**
      * Exchange the reauth OTP for a single-use token scoped to the phone-change operation
      * (`POST /account/reauth/verify`). No SMS is sent here.
      *
+     * [phone] is the same current number that was sent to [startPhoneChangeReauth]: the server keeps
+     * no pending record between the two calls and re-derives the digest from what arrives here, so
+     * it has to be sent again.
+     *
      * @return [Result.success] with the opaque reauth token, or [Result.failure] with a
-     * [ResolverError] (notably [ResolverError.InvalidOtp]).
+     * [ResolverError] (notably [ResolverError.InvalidOtp] and the same refusals as
+     * [startPhoneChangeReauth]).
      */
-    suspend fun verifyPhoneChangeReauth(accessToken: String, code: String): Result<String>
+    suspend fun verifyPhoneChangeReauth(accessToken: String, phone: String, code: String): Result<String>
 
     /**
      * Start the phone-number change (`POST /account/phone/change/start`): spends [reauthToken] and a

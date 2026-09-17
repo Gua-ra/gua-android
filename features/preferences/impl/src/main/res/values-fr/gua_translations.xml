@@ -58,7 +58,11 @@
     <string name="screen_two_step_verification_same_as_current">Votre nouveau code PIN doit être différent de l\'actuel.</string>
     <string name="screen_two_step_verification_rate_limited">Trop de tentatives. Patientez un instant puis réessayez.</string>
     <string name="screen_two_step_verification_updated">Validation en deux étapes mise à jour</string>
+    <string name="screen_two_step_verification_pin_already_set">Vous avez déjà un code PIN. Vous pouvez le modifier à la place.</string>
     <string name="screen_change_phone_needs_step_up_pin_action">Configurer un code PIN</string>
     <string name="screen_change_phone_cooldown_header">Pas tout de suite</string>
     <string name="screen_change_phone_cooldown_message">Pour votre sécurité, vous pourrez changer de numéro dans %1$s.</string>
+    <string name="screen_change_phone_current_header">Confirmez votre numéro actuel</string>
+    <string name="screen_change_phone_current_footer">Saisissez le numéro que votre compte utilise actuellement. Nous y enverrons un code.</string>
+    <string name="screen_change_phone_current_mismatch">Ce n\'est pas le numéro de votre compte.</string>
 </resources>

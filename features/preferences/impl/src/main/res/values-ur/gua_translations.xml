@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">آپ کا نیا پن موجودہ پن سے مختلف ہونا چاہیے۔</string>
     <string name="screen_two_step_verification_rate_limited">بہت زیادہ کوششیں۔ ذرا انتظار کریں اور دوبارہ کوشش کریں۔</string>
     <string name="screen_two_step_verification_updated">دو مرحلوں والی تصدیق اپ ڈیٹ ہو گئی</string>
+    <string name="screen_two_step_verification_pin_already_set">آپ کے پاس پہلے سے پن موجود ہے۔ اس کے بجائے آپ اسے تبدیل کر سکتے ہیں۔</string>
     <string name="screen_change_phone_title">فون نمبر تبدیل کریں</string>
     <string name="screen_change_phone_intro_header">اپنا نمبر تبدیل کریں</string>
     <string name="screen_change_phone_intro_message">ہم آپ کے پن کی تصدیق کریں گے، پھر آپ کے نئے نمبر پر پیغام کے ذریعے کوڈ بھیجیں گے۔ آپ کا اکاؤنٹ، گفتگوئیں اور پیغامات ویسے ہی رہیں گے۔</string>
@@ -61,4 +62,7 @@
     <string name="screen_change_phone_needs_step_up_pin_action">پن ترتیب دیں</string>
     <string name="screen_change_phone_cooldown_header">ابھی نہیں</string>
     <string name="screen_change_phone_cooldown_message">اپنی حفاظت کے لیے آپ %1$s بعد اپنا نمبر تبدیل کر سکتے ہیں۔</string>
+    <string name="screen_change_phone_current_header">اپنے موجودہ نمبر کی تصدیق کریں</string>
+    <string name="screen_change_phone_current_footer">وہ نمبر درج کریں جو آپ کا اکاؤنٹ اس وقت استعمال کرتا ہے۔ ہم اس پر ایک کوڈ بھیجیں گے۔</string>
+    <string name="screen_change_phone_current_mismatch">یہ آپ کے اکاؤنٹ کا نمبر نہیں ہے۔</string>
 </resources>

@@ -31,16 +31,16 @@ class FakeIdentityServiceClient(
 
     override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> = lambdaError()
 
-    override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> = lambdaError()
+    override suspend fun startPinEnrollment(accessToken: String): Result<String> = lambdaError()
 
     override suspend fun startPinChange(accessToken: String, phone: String, currentPin: String): Result<String> = lambdaError()
 
     override suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit> =
         lambdaError()
 
-    override suspend fun startPhoneChangeReauth(accessToken: String, language: String?): Result<Unit> = lambdaError()
+    override suspend fun startPhoneChangeReauth(accessToken: String, phone: String, language: String?): Result<Unit> = lambdaError()
 
-    override suspend fun verifyPhoneChangeReauth(accessToken: String, code: String): Result<String> = lambdaError()
+    override suspend fun verifyPhoneChangeReauth(accessToken: String, phone: String, code: String): Result<String> = lambdaError()
 
     override suspend fun startPhoneChange(
         accessToken: String,

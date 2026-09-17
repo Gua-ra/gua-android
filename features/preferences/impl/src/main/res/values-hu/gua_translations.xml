@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Az új PIN-kódnak különböznie kell a jelenlegitől.</string>
     <string name="screen_two_step_verification_rate_limited">Túl sok próbálkozás. Várjon egy kicsit, majd próbálja újra.</string>
     <string name="screen_two_step_verification_updated">A kétlépcsős azonosítás frissítve</string>
+    <string name="screen_two_step_verification_pin_already_set">Már van PIN-kódja. Ehelyett módosíthatja.</string>
     <string name="screen_change_phone_title">Telefonszám módosítása</string>
     <string name="screen_change_phone_intro_header">Módosítsa a számát</string>
     <string name="screen_change_phone_intro_message">Megerősítjük a PIN-kódját, majd SMS-ben kódot küldünk az új számára. A fiókja, beszélgetései és üzenetei változatlanok maradnak.</string>
@@ -61,4 +62,7 @@
     <string name="screen_change_phone_needs_step_up_pin_action">PIN-kód beállítása</string>
     <string name="screen_change_phone_cooldown_header">Még nem</string>
     <string name="screen_change_phone_cooldown_message">Biztonsága érdekében %1$s múlva módosíthatja a számát.</string>
+    <string name="screen_change_phone_current_header">Erősítse meg a jelenlegi számát</string>
+    <string name="screen_change_phone_current_footer">Adja meg azt a számot, amelyet a fiókja most használ. Kódot küldünk rá.</string>
+    <string name="screen_change_phone_current_mismatch">Ez nem a fiókjához tartozó szám.</string>
 </resources>

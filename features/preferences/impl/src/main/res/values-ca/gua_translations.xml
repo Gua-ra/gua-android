@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">El PIN nou ha de ser diferent de l\'actual.</string>
     <string name="screen_two_step_verification_rate_limited">Massa intents. Espera un moment i torna-ho a provar.</string>
     <string name="screen_two_step_verification_updated">Verificació en dos passos actualitzada</string>
+    <string name="screen_two_step_verification_pin_already_set">Ja teniu un PIN. En lloc d\'això, el podeu canviar.</string>
     <string name="screen_change_phone_title">Canvia el número de telèfon</string>
     <string name="screen_change_phone_intro_header">Canvia el teu número</string>
     <string name="screen_change_phone_intro_message">Confirmarem el teu PIN i després enviarem un codi per SMS al número nou. El compte, els xats i els missatges no canvien.</string>
@@ -61,4 +62,7 @@
     <string name="screen_change_phone_needs_step_up_pin_action">Configura el PIN</string>
     <string name="screen_change_phone_cooldown_header">Encara no</string>
     <string name="screen_change_phone_cooldown_message">Per seguretat, podràs canviar de número d\'aquí a %1$s.</string>
+    <string name="screen_change_phone_current_header">Confirmeu el vostre número actual</string>
+    <string name="screen_change_phone_current_footer">Introduïu el número que el vostre compte utilitza ara. Hi enviarem un codi.</string>
+    <string name="screen_change_phone_current_mismatch">Aquest no és el número del vostre compte.</string>
 </resources>

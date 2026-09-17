@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Uuden PIN-koodin on erottava nykyisestä.</string>
     <string name="screen_two_step_verification_rate_limited">Liian monta yritystä. Odota hetki ja yritä uudelleen.</string>
     <string name="screen_two_step_verification_updated">Kaksivaiheinen vahvistus päivitetty</string>
+    <string name="screen_two_step_verification_pin_already_set">Sinulla on jo PIN-koodi. Voit sen sijaan vaihtaa sen.</string>
     <string name="screen_change_phone_title">Vaihda puhelinnumero</string>
     <string name="screen_change_phone_intro_header">Vaihda numerosi</string>
     <string name="screen_change_phone_intro_message">Vahvistamme PIN-koodisi ja lähetämme sitten koodin tekstiviestillä uuteen numeroosi. Tilisi, keskustelusi ja viestisi pysyvät samoina.</string>
@@ -61,4 +62,7 @@
     <string name="screen_change_phone_needs_step_up_pin_action">Aseta PIN-koodi</string>
     <string name="screen_change_phone_cooldown_header">Ei vielä</string>
     <string name="screen_change_phone_cooldown_message">Turvallisuutesi vuoksi voit vaihtaa numerosi %1$s kuluttua.</string>
+    <string name="screen_change_phone_current_header">Vahvista nykyinen numerosi</string>
+    <string name="screen_change_phone_current_footer">Anna numero, jota tilisi käyttää nyt. Lähetämme siihen koodin.</string>
+    <string name="screen_change_phone_current_mismatch">Tämä ei ole tilisi numero.</string>
 </resources>

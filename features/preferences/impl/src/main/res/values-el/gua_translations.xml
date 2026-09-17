@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Το νέο PIN πρέπει να διαφέρει από το τρέχον.</string>
     <string name="screen_two_step_verification_rate_limited">Πάρα πολλές προσπάθειες. Περιμένετε λίγο και δοκιμάστε ξανά.</string>
     <string name="screen_two_step_verification_updated">Η επαλήθευση δύο βημάτων ενημερώθηκε</string>
+    <string name="screen_two_step_verification_pin_already_set">Έχετε ήδη PIN. Μπορείτε να το αλλάξετε αντί για αυτό.</string>
     <string name="screen_change_phone_title">Αλλαγή αριθμού τηλεφώνου</string>
     <string name="screen_change_phone_intro_header">Αλλάξτε τον αριθμό σας</string>
     <string name="screen_change_phone_intro_message">Θα επιβεβαιώσουμε το PIN σας και έπειτα θα στείλουμε κωδικό με SMS στον νέο σας αριθμό. Ο λογαριασμός, οι συνομιλίες και τα μηνύματά σας παραμένουν ίδια.</string>
@@ -61,4 +62,7 @@
     <string name="screen_change_phone_needs_step_up_pin_action">Ρύθμιση PIN</string>
     <string name="screen_change_phone_cooldown_header">Όχι ακόμη</string>
     <string name="screen_change_phone_cooldown_message">Για την ασφάλειά σας, μπορείτε να αλλάξετε αριθμό σε %1$s.</string>
+    <string name="screen_change_phone_current_header">Επιβεβαιώστε τον τρέχοντα αριθμό σας</string>
+    <string name="screen_change_phone_current_footer">Εισαγάγετε τον αριθμό που χρησιμοποιεί τώρα ο λογαριασμός σας. Θα στείλουμε έναν κωδικό σε αυτόν.</string>
+    <string name="screen_change_phone_current_mismatch">Αυτός δεν είναι ο αριθμός του λογαριασμού σας.</string>
 </resources>

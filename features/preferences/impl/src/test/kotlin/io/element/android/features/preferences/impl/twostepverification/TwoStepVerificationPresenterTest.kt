@@ -12,6 +12,7 @@ import app.cash.molecule.moleculeFlow
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.preferences.impl.R
 import io.element.android.features.preferences.impl.fixtures.FakeIdentityServiceClient
 import io.element.android.features.preferences.impl.fixtures.aFactorStatus
 import io.element.android.libraries.guaresolver.IdentityServiceClient
@@ -35,6 +36,10 @@ import org.junit.Test
  * A passkey holder with no PIN has two-step verification on, and a status that could not be read is
  * unknown rather than off. Both used to render as "off", which is what put a "Set up PIN" call to
  * action in front of people who already held the stronger factor.
+ *
+ * They also hold down where a FIRST PIN can come from: the authenticated web ceremony and nowhere
+ * else. A bearer session on its own must not be able to add a durable factor, so no path on this
+ * screen may reach a native first-PIN call again.
  */
 class TwoStepVerificationPresenterTest {
     @get:Rule
@@ -129,26 +134,64 @@ class TwoStepVerificationPresenterTest {
             state.eventSink(TwoStepVerificationEvent.StartChange)
             state.eventSink(TwoStepVerificationEvent.SetUpPasskey)
 
-            // Nothing moved. Setting up a PIN on an account that already holds one is refused by the
+            // Nothing moved. Enrolling a PIN on an account that already holds one is refused by the
             // server, and enrolling a passkey it already holds is refused by the authenticator, so
             // guessing either from a status we could not read only buys a dead end.
             expectNoEvents()
-            assertThat(client.setInitialPinCalls).isEmpty()
+            assertThat(client.pinEnrollmentCalls).isEmpty()
             assertThat(client.passkeyEnrollmentCalls).isEmpty()
         }
     }
 
     @Test
-    fun `present - a known account with no PIN still starts setup`() = runTest {
-        val presenter = createTwoStepVerificationPresenter(
-            client = FakeIdentityServiceClient(
-                factorStatusResult = { Result.success(aFactorStatus(hasPin = false, passkeyRegistered = false)) },
-            ),
+    fun `present - a known account with no PIN enrolls its first PIN in the web ceremony`() = runTest {
+        val client = FakeIdentityServiceClient(
+            factorStatusResult = { Result.success(aFactorStatus(hasPin = false, passkeyRegistered = false)) },
         )
+        val presenter = createTwoStepVerificationPresenter(client = client)
         presenter.test {
             awaitFirst { it.phase == TwoStepVerificationPhase.Overview }.eventSink(TwoStepVerificationEvent.StartSetup)
 
-            assertThat(awaitFirst { it.phase == TwoStepVerificationPhase.EnteringNew }.hasPin).isFalse()
+            val state = awaitFirst { it.factorEnrollUrl != null }
+            assertThat(state.factorEnrollUrl).isEqualTo(FakeIdentityServiceClient.A_PIN_ENROLL_URL)
+            assertThat(client.pinEnrollmentCalls).hasSize(1)
+            // No native PIN steps at all: the step-up that has to come first can only run in the
+            // browser, so the screen never collects a first PIN itself.
+            assertThat(state.phase).isEqualTo(TwoStepVerificationPhase.Overview)
+        }
+    }
+
+    @Test
+    fun `present - an account that turns out to already have a PIN is offered the change instead`() = runTest {
+        val client = FakeIdentityServiceClient(
+            factorStatusResult = { Result.success(aFactorStatus(hasPin = false, passkeyRegistered = false)) },
+            pinEnrollmentResult = { Result.failure(ResolverError.PinAlreadySet) },
+        )
+        val presenter = createTwoStepVerificationPresenter(client = client)
+        presenter.test {
+            awaitFirst { it.phase == TwoStepVerificationPhase.Overview }.eventSink(TwoStepVerificationEvent.StartSetup)
+
+            val state = awaitFirst { it.errorMessage != null }
+            // Our view of the account was stale, not the user's request. The row corrects itself so
+            // the next tap is the change flow rather than the same refusal again.
+            assertThat(state.errorMessage).isEqualTo(R.string.screen_two_step_verification_pin_already_set)
+            assertThat(state.hasPin).isTrue()
+            assertThat(state.factorEnrollUrl).isNull()
+        }
+    }
+
+    @Test
+    fun `present - enrolling a passkey opens the same kind of ceremony`() = runTest {
+        val client = FakeIdentityServiceClient(
+            factorStatusResult = { Result.success(aFactorStatus(hasPin = true, passkeyRegistered = false)) },
+        )
+        val presenter = createTwoStepVerificationPresenter(client = client)
+        presenter.test {
+            awaitFirst { it.phase == TwoStepVerificationPhase.Overview }.eventSink(TwoStepVerificationEvent.SetUpPasskey)
+
+            val state = awaitFirst { it.factorEnrollUrl != null }
+            assertThat(state.factorEnrollUrl).isEqualTo(FakeIdentityServiceClient.AN_ENROLL_URL)
+            assertThat(client.pinEnrollmentCalls).isEmpty()
         }
     }
 

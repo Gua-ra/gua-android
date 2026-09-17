@@ -15,7 +15,8 @@ import io.element.android.libraries.phonenumberentry.Country
  * GUA FORK: drives the two-step-verification (account PIN) screen between the overview state and the
  * multi-step PIN flows. Android counterpart of iOS `TwoStepVerificationScreenPhase`.
  *
- * Setup flow (no existing PIN):  [EnteringNew] -> [ConfirmingNew] -> [Submitting].
+ * Setting the FIRST PIN has no phase here at all: it leaves for the authenticated web ceremony,
+ * like a passkey, so the step-up that proves the account holder is present can be asked for.
  *
  * Change flow (existing PIN, PIN-FIRST then OTP-protected): we verify the current PIN BEFORE any SMS
  * is sent, so identity is proven before the phone is confirmed:
@@ -58,12 +59,15 @@ data class TwoStepVerificationState(
     /** Set after a PIN was successfully set or changed, so the View can show a confirmation. */
     val showSuccess: Boolean,
     /**
-     * Set to the authenticated passkey-enrollment URL once [TwoStepVerificationEvent.SetUpPasskey]
-     * resolves, so the View can open it in a Chrome Custom Tab (the authenticated web ceremony,
-     * mirroring iOS' ASWebAuthenticationSession). Cleared via
-     * [TwoStepVerificationEvent.ClearPasskeyEnrollUrl] once opened.
+     * Set to the authenticated enrollment URL once [TwoStepVerificationEvent.SetUpPasskey] or
+     * [TwoStepVerificationEvent.StartSetup] resolves, so the View can open it in a Chrome Custom Tab
+     * (the authenticated web ceremony, mirroring iOS' ASWebAuthenticationSession). Cleared via
+     * [TwoStepVerificationEvent.ClearFactorEnrollUrl] once opened.
+     *
+     * One field for both factors because both are enrolled the same way: the ceremony asks for a
+     * step-up first, and a bearer session alone can no longer establish either.
      */
-    val passkeyEnrollUrl: String?,
+    val factorEnrollUrl: String?,
     val eventSink: (TwoStepVerificationEvent) -> Unit,
 ) {
     val isWorking: Boolean = phase == TwoStepVerificationPhase.Submitting

@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">新しい PIN は現在の PIN と異なる必要があります。</string>
     <string name="screen_two_step_verification_rate_limited">試行回数が多すぎます。しばらく待ってからお試しください。</string>
     <string name="screen_two_step_verification_updated">2 段階認証を更新しました</string>
+    <string name="screen_two_step_verification_pin_already_set">すでに PIN が設定されています。代わりに変更できます。</string>
     <string name="screen_change_phone_title">電話番号を変更</string>
     <string name="screen_change_phone_intro_header">電話番号を変更する</string>
     <string name="screen_change_phone_intro_message">PIN を確認したうえで、新しい番号にコードを SMS で送信します。アカウント、チャット、メッセージはそのままです。</string>
@@ -61,4 +62,7 @@
     <string name="screen_change_phone_needs_step_up_pin_action">PIN を設定</string>
     <string name="screen_change_phone_cooldown_header">まだ変更できません</string>
     <string name="screen_change_phone_cooldown_message">安全のため、番号の変更は %1$s 後に可能になります。</string>
+    <string name="screen_change_phone_current_header">現在の番号を確認</string>
+    <string name="screen_change_phone_current_footer">アカウントが現在使用している番号を入力してください。その番号にコードを送信します。</string>
+    <string name="screen_change_phone_current_mismatch">これはアカウントの番号ではありません。</string>
 </resources>

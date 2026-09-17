@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">新的 PIN 碼必須與目前的 PIN 碼不同。</string>
     <string name="screen_two_step_verification_rate_limited">嘗試次數過多，請稍候再試。</string>
     <string name="screen_two_step_verification_updated">已更新兩步驟驗證</string>
+    <string name="screen_two_step_verification_pin_already_set">你已經設定了 PIN 碼。你可以改為變更它。</string>
     <string name="screen_change_phone_title">變更手機號碼</string>
     <string name="screen_change_phone_intro_header">變更你的號碼</string>
     <string name="screen_change_phone_intro_message">我們會先確認你的 PIN 碼，然後向新號碼傳送驗證碼簡訊。你的帳號、聊天與訊息維持不變。</string>
@@ -61,4 +62,7 @@
     <string name="screen_change_phone_needs_step_up_pin_action">設定 PIN 碼</string>
     <string name="screen_change_phone_cooldown_header">還不能變更</string>
     <string name="screen_change_phone_cooldown_message">基於安全考量，你可以在 %1$s 後變更號碼。</string>
+    <string name="screen_change_phone_current_header">確認你目前的號碼</string>
+    <string name="screen_change_phone_current_footer">請輸入你的帳號目前使用的號碼。我們會向該號碼傳送驗證碼。</string>
+    <string name="screen_change_phone_current_mismatch">這不是你帳號上的號碼。</string>
 </resources>

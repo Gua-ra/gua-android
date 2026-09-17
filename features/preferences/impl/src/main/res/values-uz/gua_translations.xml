@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Yangi PIN joriy PIN\'dan farq qilishi kerak.</string>
     <string name="screen_two_step_verification_rate_limited">Juda ko\'p urinish. Biroz kuting va qayta urinib ko\'ring.</string>
     <string name="screen_two_step_verification_updated">Ikki bosqichli tasdiqlash yangilandi</string>
+    <string name="screen_two_step_verification_pin_already_set">Sizda allaqachon PIN bor. Buning o\'rniga uni o\'zgartirishingiz mumkin.</string>
     <string name="screen_change_phone_title">Telefon raqamini o\'zgartirish</string>
     <string name="screen_change_phone_intro_header">Raqamingizni o\'zgartiring</string>
     <string name="screen_change_phone_intro_message">PIN kodingizni tasdiqlaymiz, so\'ng yangi raqamingizga SMS orqali kod yuboramiz. Hisobingiz, suhbatlaringiz va xabarlaringiz o\'zgarmaydi.</string>
@@ -61,4 +62,7 @@
     <string name="screen_change_phone_needs_step_up_pin_action">PIN o\'rnatish</string>
     <string name="screen_change_phone_cooldown_header">Hali emas</string>
     <string name="screen_change_phone_cooldown_message">Xavfsizligingiz uchun raqamingizni %1$s dan keyin o\'zgartira olasiz.</string>
+    <string name="screen_change_phone_current_header">Joriy raqamingizni tasdiqlang</string>
+    <string name="screen_change_phone_current_footer">Hisobingiz hozir ishlatayotgan raqamni kiriting. Unga kod yuboramiz.</string>
+    <string name="screen_change_phone_current_mismatch">Bu sizning hisobingizdagi raqam emas.</string>
 </resources>

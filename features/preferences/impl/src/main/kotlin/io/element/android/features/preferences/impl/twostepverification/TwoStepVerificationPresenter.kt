@@ -21,7 +21,6 @@ import dev.zacsweers.metro.AssistedInject
 import io.element.android.features.preferences.impl.R
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.guaresolver.AccountFactorStatus
-import io.element.android.libraries.guaresolver.AuthFactor
 import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.matrix.api.MatrixClient
@@ -34,14 +33,19 @@ import kotlinx.coroutines.launch
 
 /**
  * GUA FORK: presenter for the two-step-verification (account PIN) screen. Mirrors the iOS
- * `TwoStepVerificationScreenViewModel` state machine: it loads the PIN status, then drives the
- * setup flow ([TwoStepVerificationPhase.EnteringNew] -> confirm -> submit) and the PIN-first change
- * flow, translating typed [ResolverError]s into per-error phase transitions.
+ * `TwoStepVerificationScreenViewModel` state machine: it loads the factor status, then drives the
+ * PIN-first change flow, translating typed [ResolverError]s into per-error phase transitions.
+ *
+ * Setting the FIRST PIN is not one of those flows any more. It leaves the app for the same
+ * authenticated web ceremony a passkey uses ([IdentityServiceClient.startPinEnrollment]), because a
+ * bearer session alone must never be able to add a durable factor: the ceremony asks for a step-up
+ * first, and a passkey assertion only works in the browser. The native path it replaces called an
+ * endpoint that now refuses every caller.
  *
  * The change flow is PIN-FIRST so identity is proven before any SMS goes out: the user enters their
  * current PIN, then confirms their on-file number (which is what actually fires the OTP via
  * [IdentityServiceClient.startPinChange]), then enters that OTP and chooses a new PIN. The captured
- * current PIN gates the SMS — `startPinChange` only runs once a PIN has been supplied, and a wrong
+ * current PIN gates the SMS: `startPinChange` only runs once a PIN has been supplied, and a wrong
  * PIN routes the user back to the PIN step with no further SMS.
  */
 @AssistedInject
@@ -72,8 +76,8 @@ class TwoStepVerificationPresenter(
         var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
         var showSuccess by remember { mutableStateOf(false) }
-        // The authenticated passkey-enrollment URL to hand to the View for the web ceremony.
-        var passkeyEnrollUrl by remember { mutableStateOf<String?>(null) }
+        // The authenticated enrollment URL to hand to the View for the web ceremony, passkey or PIN.
+        var factorEnrollUrl by remember { mutableStateOf<String?>(null) }
 
         // Apply any country picked in the shared CountryPicker child screen, then clear it.
         val pickedCountry by selectedCountryStore.flow.collectAsState()
@@ -194,40 +198,26 @@ class TwoStepVerificationPresenter(
                     errorMessage = CommonStrings.error_unknown
                     return@launch
                 }
-                if (userHasPin == null) {
-                    // Belt-and-suspenders: the overview withholds both PIN rows while the status is
-                    // unknown, so this flow cannot be entered. If it ever is, stop rather than guess
-                    // which of setInitialPin / completePinChange the account needs.
+                val activeChallengeId = challengeId
+                if (userHasPin != true || activeChallengeId == null) {
+                    // Belt-and-suspenders: only the change flow reaches this, and it starts from a
+                    // known PIN and an OTP challenge. Setting a first PIN never gets here at all now
+                    // that it is enrolled in the web ceremony.
                     errorMessage = CommonStrings.error_unknown
                     phase = TwoStepVerificationPhase.Overview
                     return@launch
                 }
                 phase = TwoStepVerificationPhase.Submitting
-                val result = if (userHasPin) {
-                    val activeChallengeId = challengeId
-                    if (activeChallengeId == null) {
-                        errorMessage = CommonStrings.error_unknown
-                        phase = TwoStepVerificationPhase.Overview
-                        return@launch
-                    }
-                    identityServiceClient.completePinChange(
-                        accessToken = accessToken,
-                        challengeId = activeChallengeId,
-                        otpCode = otpCode,
-                        newPin = newPin,
-                    )
-                } else {
-                    identityServiceClient.setInitialPin(
-                        accessToken = accessToken,
-                        userId = matrixClient.sessionId.value,
-                        newPin = newPin,
-                    )
-                }
-                result
+                identityServiceClient.completePinChange(
+                    accessToken = accessToken,
+                    challengeId = activeChallengeId,
+                    otpCode = otpCode,
+                    newPin = newPin,
+                )
                     .onSuccess {
-                        // The account now definitely holds a PIN; keep whatever else the server said
-                        // it holds rather than dropping back to an unknown status.
-                        factors = (factors ?: anAccountWithOnlyAPin()).copy(hasPin = true)
+                        // The account still holds a PIN; keep whatever else the server said it holds
+                        // rather than dropping back to an unknown status.
+                        factors = factors?.copy(hasPin = true)
                         resetFlowState()
                         phase = TwoStepVerificationPhase.Overview
                         showSuccess = true
@@ -247,7 +237,7 @@ class TwoStepVerificationPresenter(
                             is ResolverError.InvalidPin -> {
                                 errorMessage = R.string.screen_two_step_verification_current_incorrect
                                 code = ""
-                                phase = if (userHasPin == true) TwoStepVerificationPhase.EnteringCurrent else TwoStepVerificationPhase.EnteringNew
+                                phase = TwoStepVerificationPhase.EnteringCurrent
                             }
                             is ResolverError.PinLocked -> {
                                 errorMessage = R.string.screen_two_step_verification_locked
@@ -260,31 +250,39 @@ class TwoStepVerificationPresenter(
                             else -> {
                                 errorMessage = CommonStrings.error_unknown
                                 code = ""
-                                phase = if (userHasPin == true) TwoStepVerificationPhase.EnteringCurrent else TwoStepVerificationPhase.EnteringNew
+                                phase = TwoStepVerificationPhase.EnteringCurrent
                             }
                         }
                     }
             }
         }
 
-        // GUA FORK: passkey enrollment. Mirrors iOS' coordinator action: fetch the authenticated
-        // web-ceremony URL from the identity-service and hand it to the View to open in a Chrome
-        // Custom Tab (the Android counterpart of iOS' ASWebAuthenticationSession). The URL is
-        // self-authenticating, so the user completes WebAuthn registration in-browser at the IdP.
-        fun startPasskeyEnrollment() {
+        // GUA FORK: factor enrollment, passkey or first PIN. Mirrors iOS' coordinator action: fetch
+        // the authenticated web-ceremony URL from the identity-service and hand it to the View to
+        // open in a Chrome Custom Tab (the Android counterpart of iOS' ASWebAuthenticationSession).
+        // The URL is self-authenticating, so the user settles the step-up and registers the factor
+        // in-browser at the IdP.
+        fun startFactorEnrollment(start: suspend (String) -> Result<String>) {
             coroutineScope.launch {
                 val accessToken = accessToken()
                 if (accessToken == null) {
                     errorMessage = CommonStrings.error_unknown
                     return@launch
                 }
-                identityServiceClient.startPasskeyEnrollment(accessToken)
+                start(accessToken)
                     .onSuccess { enrollUrl ->
                         errorMessage = null
-                        passkeyEnrollUrl = enrollUrl
+                        factorEnrollUrl = enrollUrl
                     }
-                    .onFailure {
-                        errorMessage = CommonStrings.error_unknown
+                    .onFailure { error ->
+                        if (error is ResolverError.PinAlreadySet) {
+                            // Our view of the account was stale rather than the user being wrong.
+                            // Correct the row so it offers the change they actually want.
+                            factors = factors?.copy(hasPin = true)
+                            errorMessage = R.string.screen_two_step_verification_pin_already_set
+                        } else {
+                            errorMessage = CommonStrings.error_unknown
+                        }
                     }
             }
         }
@@ -336,10 +334,9 @@ class TwoStepVerificationPresenter(
             when (event) {
                 TwoStepVerificationEvent.StartSetup -> {
                     // Only on a KNOWN "no PIN". The row that emits this is withheld otherwise, and
-                    // an unknown status must not be guessed into the initial-PIN call.
+                    // an unknown status must not be guessed into an enrollment the server refuses.
                     if (userHasPin == false) {
-                        resetFlowState()
-                        phase = TwoStepVerificationPhase.EnteringNew
+                        startFactorEnrollment(identityServiceClient::startPinEnrollment)
                     }
                 }
                 TwoStepVerificationEvent.StartChange -> {
@@ -404,9 +401,11 @@ class TwoStepVerificationPresenter(
                 }
                 // Only on a KNOWN "no passkey", matching the row: enrollment excludes credentials the
                 // account already holds, so an unknown status would send the user to a refusal.
-                TwoStepVerificationEvent.SetUpPasskey -> if (factors?.passkeyRegistered == false) startPasskeyEnrollment()
-                TwoStepVerificationEvent.ClearPasskeyEnrollUrl -> {
-                    passkeyEnrollUrl = null
+                TwoStepVerificationEvent.SetUpPasskey -> if (factors?.passkeyRegistered == false) {
+                    startFactorEnrollment(identityServiceClient::startPasskeyEnrollment)
+                }
+                TwoStepVerificationEvent.ClearFactorEnrollUrl -> {
+                    factorEnrollUrl = null
                 }
             }
         }
@@ -419,7 +418,7 @@ class TwoStepVerificationPresenter(
             localPhoneNumber = localPhoneNumber,
             errorMessage = errorMessage,
             showSuccess = showSuccess,
-            passkeyEnrollUrl = passkeyEnrollUrl,
+            factorEnrollUrl = factorEnrollUrl,
             eventSink = ::handleEvent,
         )
     }
@@ -428,20 +427,6 @@ class TwoStepVerificationPresenter(
         sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
 
     private fun isWeakPin(pin: String): Boolean = pin in WEAK_PINS
-
-    /**
-     * The factor status of an account that has just set its first PIN and whose earlier status read
-     * failed. Conservative on purpose: it claims only the PIN we watched succeed. Unreachable now
-     * that neither PIN flow starts on an unknown status, and kept only so the success path can never
-     * be the thing that invents a factor.
-     */
-    private fun anAccountWithOnlyAPin() = AccountFactorStatus(
-        hasPin = true,
-        passkeyRegistered = false,
-        preferredFactor = AuthFactor.PIN,
-        phoneChangeStepUpFactors = listOf(AuthFactor.PASSKEY, AuthFactor.PIN),
-        changePhoneCooldownRemainingSeconds = 0,
-    )
 
     private companion object {
         val WEAK_PINS = setOf(

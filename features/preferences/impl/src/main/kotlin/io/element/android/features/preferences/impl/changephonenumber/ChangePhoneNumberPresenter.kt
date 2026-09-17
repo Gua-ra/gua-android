@@ -43,13 +43,17 @@ import java.util.Locale
  * Security shape, in the order it runs:
  *  1. The account's FACTORS are read first. An account that holds no factor a phone change accepts
  *     is blocked outright, and one still inside a cooldown is held; neither goes any further.
- *  2. An OTP to the number CURRENTLY on file proves possession of it and buys a token. That proof
- *     alone is not enough to re-point the number, since a SIM-swapper holds that number too.
- *  3. The step-up factor is collected and spent together with the new number. Only that call texts
+ *  2. The user says which number is on the account. The server never publishes that number, so this
+ *     is the only way to check it: identity-service digests what arrives and compares it against the
+ *     account's own binding, and only a match is texted. A miss is refused with one wording for
+ *     "unknown", "someone else's" and "not this one", and this screen adds nothing to it.
+ *  3. The OTP that number received proves possession of it and buys a token. That proof alone is not
+ *     enough to re-point the number, since a SIM-swapper holds that number too.
+ *  4. The step-up factor is collected and spent together with the new number. Only that call texts
  *     the NEW number, so no SMS reaches it until the server has accepted the factor.
  *
  * The token is single-use and the server spends it BEFORE it weighs the step-up, so it is gone on
- * every outcome of step 3. Any failure there therefore restarts at step 2 rather than retrying, and
+ * every outcome of step 4. Any failure there therefore restarts the flow rather than retrying, and
  * a `step_up_required` refusal terminates the operation instead of falling back to the token alone.
  */
 @AssistedInject
@@ -76,8 +80,9 @@ class ChangePhoneNumberPresenter(
 
         var phase by remember { mutableStateOf(ChangePhoneNumberPhase.Intro) }
         var code by remember { mutableStateOf("") }
-        // The NEW number, held as (country, RAW national digits) like the welcome PhoneEntry screen.
-        // The national mask is applied purely visually by PhoneNumberEntryField.
+        // Whichever number is being typed, current or new, held as (country, RAW national digits)
+        // like the welcome PhoneEntry screen. The national mask is applied purely visually by
+        // PhoneNumberEntryField.
         var selectedCountry by remember { mutableStateOf(deviceCountryProvider.current()) }
         var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
@@ -96,6 +101,9 @@ class ChangePhoneNumberPresenter(
         }
 
         // Flow scratch state.
+        // The number the user says is on the account, in E.164. Both reauth calls carry it: the
+        // server stores nothing between them and re-derives the digest from what arrives each time.
+        var currentPhone by remember { mutableStateOf("") }
         // Single-use token from /account/reauth/verify, scoped to PHONE_CHANGE. The server spends it
         // on the first /start attempt whether or not the step-up that follows is accepted, so it is
         // cleared on every outcome and a retry always mints a fresh one.
@@ -109,6 +117,7 @@ class ChangePhoneNumberPresenter(
             errorMessage = null
             code = ""
             localPhoneNumber = ""
+            currentPhone = ""
             reauthToken = ""
             stepUpPin = ""
             challengeId = ""
@@ -123,6 +132,7 @@ class ChangePhoneNumberPresenter(
          * a deliberate restart, not a silent SMS.
          */
         fun abortSpentReauth(@StringRes errorRes: Int) {
+            currentPhone = ""
             reauthToken = ""
             stepUpPin = ""
             challengeId = ""
@@ -134,6 +144,7 @@ class ChangePhoneNumberPresenter(
         fun blockOnStepUp(block: StepUpBlock) {
             // Hard block. Everything the flow was carrying is dropped, and the only ways forward are
             // registering a factor or leaving. There is no branch from here into the change itself.
+            currentPhone = ""
             reauthToken = ""
             stepUpPin = ""
             challengeId = ""
@@ -144,6 +155,7 @@ class ChangePhoneNumberPresenter(
         }
 
         fun showCooldown(remainingSeconds: Long?) {
+            currentPhone = ""
             reauthToken = ""
             stepUpPin = ""
             code = ""
@@ -152,24 +164,47 @@ class ChangePhoneNumberPresenter(
             phase = ChangePhoneNumberPhase.Cooldown
         }
 
-        /** Sends the reauth OTP to the number CURRENTLY on file. Never touches the new number. */
-        suspend fun requestReauthOtp(accessToken: String) {
-            identityServiceClient.startPhoneChangeReauth(
-                accessToken = accessToken,
-                language = Locale.getDefault().toLanguageTag(),
-            )
-                .onSuccess {
-                    code = ""
-                    errorMessage = null
-                    phase = ChangePhoneNumberPhase.EnteringReauthOtp
+        /**
+         * Sends the reauth OTP, but only if [enteredPhone] is the number the account is bound to.
+         * Never touches the new number.
+         *
+         * A refusal keeps the user on the current-number step with the server's own neutral reason.
+         * Nothing here distinguishes a number nobody holds from one somebody else holds, because the
+         * server does not either, and inventing that distinction on the client would hand a stolen
+         * session an oracle over who owns which number.
+         */
+        fun requestReauthOtp(enteredPhone: String) {
+            coroutineScope.launch {
+                val accessToken = accessToken()
+                if (accessToken == null) {
+                    errorMessage = CommonStrings.error_unknown
+                    return@launch
                 }
-                .onFailure { error ->
-                    errorMessage = when (error) {
-                        is ResolverError.RateLimited -> R.string.screen_two_step_verification_rate_limited
-                        else -> CommonStrings.error_unknown
+                phase = ChangePhoneNumberPhase.Submitting
+                identityServiceClient.startPhoneChangeReauth(
+                    accessToken = accessToken,
+                    phone = enteredPhone,
+                    language = Locale.getDefault().toLanguageTag(),
+                )
+                    .onSuccess {
+                        currentPhone = enteredPhone
+                        code = ""
+                        errorMessage = null
+                        // The new-number step reuses the same field, so it starts empty rather than
+                        // pre-filled with the number being replaced.
+                        localPhoneNumber = ""
+                        phase = ChangePhoneNumberPhase.EnteringReauthOtp
                     }
-                    phase = ChangePhoneNumberPhase.Intro
-                }
+                    .onFailure { error ->
+                        errorMessage = when (error) {
+                            is ResolverError.ReauthPhoneMismatch -> R.string.screen_change_phone_current_mismatch
+                            is ResolverError.InvalidPhoneNumber -> R.string.screen_two_step_verification_phone_invalid
+                            is ResolverError.RateLimited -> R.string.screen_two_step_verification_rate_limited
+                            else -> CommonStrings.error_unknown
+                        }
+                        phase = ChangePhoneNumberPhase.EnteringCurrentPhone
+                    }
+            }
         }
 
         /**
@@ -198,7 +233,14 @@ class ChangePhoneNumberPresenter(
                                 showCooldown(status.changePhoneCooldownRemainingSeconds)
                             producibleStepUpFactors(status).isEmpty() ->
                                 blockOnStepUp(StepUpBlock.PasskeyNotUsableHere)
-                            else -> requestReauthOtp(accessToken)
+                            else -> {
+                                // Still nothing sent: the user has to say which number is on the
+                                // account before anything is texted anywhere.
+                                code = ""
+                                localPhoneNumber = ""
+                                errorMessage = null
+                                phase = ChangePhoneNumberPhase.EnteringCurrentPhone
+                            }
                         }
                     }
                     .onFailure { error ->
@@ -230,7 +272,11 @@ class ChangePhoneNumberPresenter(
                     return@launch
                 }
                 phase = ChangePhoneNumberPhase.Submitting
-                identityServiceClient.verifyPhoneChangeReauth(accessToken = accessToken, code = enteredOtp)
+                identityServiceClient.verifyPhoneChangeReauth(
+                    accessToken = accessToken,
+                    phone = currentPhone,
+                    code = enteredOtp,
+                )
                     .onSuccess { token ->
                         reauthToken = token
                         code = ""
@@ -239,12 +285,24 @@ class ChangePhoneNumberPresenter(
                         phase = ChangePhoneNumberPhase.EnteringPin
                     }
                     .onFailure { error ->
-                        errorMessage = when (error) {
-                            is ResolverError.RateLimited -> R.string.screen_two_step_verification_rate_limited
-                            else -> R.string.screen_change_phone_reauth_invalid
-                        }
                         code = ""
-                        phase = ChangePhoneNumberPhase.EnteringReauthOtp
+                        when (error) {
+                            // The number stopped matching between the two calls, so there is no code
+                            // left to retry: the current-number step is where this can be fixed.
+                            is ResolverError.ReauthPhoneMismatch -> {
+                                errorMessage = R.string.screen_change_phone_current_mismatch
+                                currentPhone = ""
+                                phase = ChangePhoneNumberPhase.EnteringCurrentPhone
+                            }
+                            is ResolverError.RateLimited -> {
+                                errorMessage = R.string.screen_two_step_verification_rate_limited
+                                phase = ChangePhoneNumberPhase.EnteringReauthOtp
+                            }
+                            else -> {
+                                errorMessage = R.string.screen_change_phone_reauth_invalid
+                                phase = ChangePhoneNumberPhase.EnteringReauthOtp
+                            }
+                        }
                     }
             }
         }
@@ -433,6 +491,15 @@ class ChangePhoneNumberPresenter(
                             code = ""
                             stepUpBlock = null
                             checkFactorsAndProceed()
+                        }
+                        ChangePhoneNumberPhase.EnteringCurrentPhone -> {
+                            val digits = localPhoneNumber.filter { it.isDigit() }
+                            if (!ChangePhoneNumberState.isValidNumber(localDigits = digits, dialCode = selectedCountry.dialCode)) {
+                                errorMessage = R.string.screen_two_step_verification_phone_invalid
+                                return
+                            }
+                            errorMessage = null
+                            requestReauthOtp("+" + selectedCountry.dialCode + digits)
                         }
                         ChangePhoneNumberPhase.EnteringNewPhone -> {
                             val digits = localPhoneNumber.filter { it.isDigit() }

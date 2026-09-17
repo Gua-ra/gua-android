@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Din nya PIN-kod måste skilja sig från den nuvarande.</string>
     <string name="screen_two_step_verification_rate_limited">För många försök. Vänta en stund och försök igen.</string>
     <string name="screen_two_step_verification_updated">Tvåstegsverifiering uppdaterad</string>
+    <string name="screen_two_step_verification_pin_already_set">Du har redan en PIN-kod. Du kan ändra den i stället.</string>
     <string name="screen_change_phone_title">Byt telefonnummer</string>
     <string name="screen_change_phone_intro_header">Byt ditt nummer</string>
     <string name="screen_change_phone_intro_message">Vi bekräftar din PIN-kod och skickar sedan en kod via sms till ditt nya nummer. Ditt konto, dina chattar och dina meddelanden är oförändrade.</string>
@@ -61,4 +62,7 @@
     <string name="screen_change_phone_needs_step_up_pin_action">Ställ in PIN-kod</string>
     <string name="screen_change_phone_cooldown_header">Inte än</string>
     <string name="screen_change_phone_cooldown_message">För din säkerhet kan du byta nummer om %1$s.</string>
+    <string name="screen_change_phone_current_header">Bekräfta ditt nuvarande nummer</string>
+    <string name="screen_change_phone_current_footer">Ange numret som ditt konto använder nu. Vi skickar en kod till det.</string>
+    <string name="screen_change_phone_current_mismatch">Det är inte numret på ditt konto.</string>
 </resources>

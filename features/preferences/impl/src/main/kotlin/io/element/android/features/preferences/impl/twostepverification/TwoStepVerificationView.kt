@@ -44,7 +44,7 @@ fun TwoStepVerificationView(
     state: TwoStepVerificationState,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onOpenPasskeyEnrollUrl: (String) -> Unit = {},
+    onOpenEnrollUrl: (String) -> Unit = {},
 ) {
     val eventSink = state.eventSink
     val snackbarHostState = remember { SnackbarHostState() }
@@ -55,13 +55,14 @@ fun TwoStepVerificationView(
             eventSink(TwoStepVerificationEvent.ClearSuccess)
         }
     }
-    // GUA FORK: once the presenter resolves the authenticated passkey-enrollment URL, open it in a
-    // Chrome Custom Tab (the web ceremony), then clear it so re-entering the screen doesn't reopen it.
-    val currentOnOpenPasskeyEnrollUrl by rememberUpdatedState(onOpenPasskeyEnrollUrl)
-    LaunchedEffect(state.passkeyEnrollUrl) {
-        state.passkeyEnrollUrl?.let { url ->
-            currentOnOpenPasskeyEnrollUrl(url)
-            eventSink(TwoStepVerificationEvent.ClearPasskeyEnrollUrl)
+    // GUA FORK: once the presenter resolves the authenticated enrollment URL, passkey or first PIN,
+    // open it in a Chrome Custom Tab (the web ceremony), then clear it so re-entering the screen
+    // doesn't reopen it.
+    val currentOnOpenEnrollUrl by rememberUpdatedState(onOpenEnrollUrl)
+    LaunchedEffect(state.factorEnrollUrl) {
+        state.factorEnrollUrl?.let { url ->
+            currentOnOpenEnrollUrl(url)
+            eventSink(TwoStepVerificationEvent.ClearFactorEnrollUrl)
         }
     }
 
@@ -148,8 +149,8 @@ private fun OverviewSection(
             },
             leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Lock())),
         )
-        // Only once the status is known: "set up" against an account that already holds a PIN is
-        // refused by the server, so offering it on an unreadable status buys a dead end and a
+        // Only once the status is known: enrolling a first PIN on an account that already holds one
+        // is refused by the server, so offering it on an unreadable status buys a dead end and a
         // generic error, not a PIN.
         if (hasPin != null) {
             HorizontalDivider()
