@@ -270,13 +270,16 @@ class ChangePhoneNumberPresenter(
 
         /** Exchanges the reauth OTP for the single-use, phone-change-scoped token. No SMS here. */
         fun verifyReauthOtp(enteredOtp: String) {
+            // Claimed before suspending, like requestReauthOtp: reading the token suspends, and a
+            // second tap in that window spent the same code twice and burned an OTP attempt.
+            phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
                 val accessToken = accessToken()
                 if (accessToken == null) {
                     errorMessage = CommonStrings.error_unknown
+                    phase = ChangePhoneNumberPhase.EnteringReauthOtp
                     return@launch
                 }
-                phase = ChangePhoneNumberPhase.Submitting
                 identityServiceClient.verifyPhoneChangeReauth(
                     accessToken = accessToken,
                     phone = currentPhone,
@@ -377,13 +380,15 @@ class ChangePhoneNumberPresenter(
         }
 
         fun completePhoneChange(enteredOtp: String) {
+            // Claimed before suspending, for the same reason as the steps above.
+            phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
                 val accessToken = accessToken()
                 if (accessToken == null) {
                     errorMessage = CommonStrings.error_unknown
+                    phase = ChangePhoneNumberPhase.EnteringOtp
                     return@launch
                 }
-                phase = ChangePhoneNumberPhase.Submitting
                 identityServiceClient.completePhoneChange(
                     accessToken = accessToken,
                     challengeId = challengeId,
