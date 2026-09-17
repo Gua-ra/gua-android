@@ -174,13 +174,18 @@ class ChangePhoneNumberPresenter(
          * session an oracle over who owns which number.
          */
         fun requestReauthOtp(enteredPhone: String) {
+            // Claim the screen BEFORE suspending. Reading the session token suspends, and until this
+            // moved the button stayed enabled across that wait, so a double tap sent two reauth
+            // starts: two texts to the account's own number, and two of the wrong-number attempts
+            // the server meters per account instead of one.
+            phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
                 val accessToken = accessToken()
                 if (accessToken == null) {
                     errorMessage = CommonStrings.error_unknown
+                    phase = ChangePhoneNumberPhase.EnteringCurrentPhone
                     return@launch
                 }
-                phase = ChangePhoneNumberPhase.Submitting
                 identityServiceClient.startPhoneChangeReauth(
                     accessToken = accessToken,
                     phone = enteredPhone,
@@ -312,10 +317,14 @@ class ChangePhoneNumberPresenter(
          * new number. Every failure leaves the token spent, so each one restarts the flow.
          */
         fun startPhoneChange(enteredPhone: String) {
+            // Claimed before the suspending token read, for the same reason as the current-number
+            // step: this is the call that texts the NEW number, and it spends the reauth token.
+            phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
                 val accessToken = accessToken()
                 if (accessToken == null) {
                     errorMessage = CommonStrings.error_unknown
+                    phase = ChangePhoneNumberPhase.EnteringNewPhone
                     return@launch
                 }
                 val token = reauthToken
@@ -324,7 +333,6 @@ class ChangePhoneNumberPresenter(
                     abortSpentReauth(CommonStrings.error_unknown)
                     return@launch
                 }
-                phase = ChangePhoneNumberPhase.Submitting
                 val result = identityServiceClient.startPhoneChange(
                     accessToken = accessToken,
                     reauthToken = token,

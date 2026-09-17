@@ -16,7 +16,10 @@ sealed interface ChangePhoneNumberEvents {
     /** The user edited the 6-digit code field (account PIN or OTP). */
     data class CodeChanged(val code: String) : ChangePhoneNumberEvents
 
-    /** The local digits in the new-number field changed; triggers auto-detect + national masking. */
+    /**
+     * The local digits in whichever phone field is on screen changed, the current number or the
+     * new one; triggers auto-detect + national masking. Both steps reuse the one field.
+     */
     data class PhoneChanged(val value: String) : ChangePhoneNumberEvents
 
     /** The user tapped the country-selector pill; the Node opens the shared country picker. */

@@ -23,10 +23,13 @@ import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.phonenumberentry.Country
 import io.element.android.libraries.phonenumberentry.FakeDeviceCountryProvider
 import io.element.android.libraries.phonenumberentry.SelectedCountryStore
+import io.element.android.libraries.sessionstorage.api.SessionData
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
 import io.element.android.tests.testutils.WarmUpRule
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -103,6 +106,36 @@ class ChangePhoneNumberPresenterTest {
             // The refusal is the end of it: no token, and no code to type.
             assertThat(client.verifyReauthCalls).isEmpty()
             assertThat(client.startPhoneChangeCalls).isEmpty()
+        }
+    }
+
+    @Test
+    fun `present - a double tap on the current number sends one reauth OTP, not two`() = runTest {
+        val client = FakeIdentityServiceClient()
+        val sessionStore = GatedSessionStore(InMemorySessionStore(listOf(aSessionData(sessionId = A_USER_ID.value))))
+        val presenter = createChangePhoneNumberPresenter(client = client, sessionStore = sessionStore)
+        presenter.test {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            awaitPhase(ChangePhoneNumberPhase.EnteringCurrentPhone)
+                .eventSink(ChangePhoneNumberEvents.PhoneChanged(A_CURRENT_LOCAL_DIGITS))
+            val filled = awaitFirst { it.localPhoneNumber == A_CURRENT_LOCAL_DIGITS }
+
+            // The real store reads a database, so the token read is still in flight while the user
+            // can go on tapping. That wait is the whole window this guards, and an in-memory store
+            // answers without ever leaving it, so the test holds the read open itself.
+            val tokenRead = CompletableDeferred<Unit>()
+            sessionStore.gate = tokenRead
+
+            // Both taps land before the session token has even been read. A second one getting
+            // through is a second text to the account's own number and a second of the five hourly
+            // wrong-number attempts the server meters per account.
+            filled.eventSink(ChangePhoneNumberEvents.Continue)
+            filled.eventSink(ChangePhoneNumberEvents.Continue)
+            tokenRead.complete(Unit)
+            advanceUntilIdle()
+
+            assertThat(client.startReauthCalls).containsExactly(A_CURRENT_PHONE to A_LANGUAGE_TAG)
+            assertThat(expectMostRecentItem().phase).isEqualTo(ChangePhoneNumberPhase.EnteringReauthOtp)
         }
     }
 
@@ -414,6 +447,17 @@ class ChangePhoneNumberPresenterTest {
         selectedCountryStore = SelectedCountryStore(),
         deviceCountryProvider = FakeDeviceCountryProvider(Country(isoCode = "US", dialCode = "1")),
     )
+
+    /** A [SessionStore] whose read can be held in flight, the way the database-backed one lags. */
+    private class GatedSessionStore(private val delegate: SessionStore) : SessionStore by delegate {
+        /** While this is set, a read waits on it, so a test can tap again during one. */
+        var gate: CompletableDeferred<Unit>? = null
+
+        override suspend fun getSession(sessionId: String): SessionData? {
+            gate?.await()
+            return delegate.getSession(sessionId)
+        }
+    }
 
     private companion object {
         const val MAX_EMISSIONS = 20
