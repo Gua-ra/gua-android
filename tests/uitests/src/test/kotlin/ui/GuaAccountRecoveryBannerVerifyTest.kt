@@ -19,9 +19,9 @@ import org.junit.Test
 
 /**
  * GUA FORK verification: records the delayed account recovery warning shown on the room list, once
- * with the DATE it can be finished and once when it can be finished now. Dates only: the waits run
- * in days, so no recovery screen or banner shows a time of day. The banner has no close button by
- * design.
+ * with the DATE it can be finished from, once when it can be finished now, and once for a recovery
+ * the server named no moment for. Dates only, with the year: the waits run in days, so no recovery
+ * screen or banner shows a time of day. The banner has no close button by design.
  *
  * Like [GuaFindFriendsVerifyTest], this records to its own snapshot files and adds no preview, so the
  * shared preview-driven golden set is not re-sharded.
@@ -40,7 +40,7 @@ class GuaAccountRecoveryBannerVerifyTest {
     fun guaAccountRecoveryBannerFinishableLater() {
         paparazzi.snapshot {
             ElementPreview {
-                AccountRecoveryBanner(state = aState(finishableAfter = "Tuesday 6 April"))
+                AccountRecoveryBanner(state = aState(PendingAccountRecovery.FinishableFrom("6 April 2026")))
             }
         }
     }
@@ -49,13 +49,22 @@ class GuaAccountRecoveryBannerVerifyTest {
     fun guaAccountRecoveryBannerFinishableNow() {
         paparazzi.snapshot {
             ElementPreview {
-                AccountRecoveryBanner(state = aState(finishableAfter = null))
+                AccountRecoveryBanner(state = aState(PendingAccountRecovery.FinishableNow))
             }
         }
     }
 
-    private fun aState(finishableAfter: String?) = AccountRecoveryBannerState(
-        pendingRecovery = PendingAccountRecovery(finishableAfter = finishableAfter),
+    @Test
+    fun guaAccountRecoveryBannerFinishableUnknown() {
+        paparazzi.snapshot {
+            ElementPreview {
+                AccountRecoveryBanner(state = aState(PendingAccountRecovery.FinishableUnknown))
+            }
+        }
+    }
+
+    private fun aState(pendingRecovery: PendingAccountRecovery) = AccountRecoveryBannerState(
+        pendingRecovery = pendingRecovery,
         cancelAction = AsyncAction.Uninitialized,
         eventSink = {},
     )

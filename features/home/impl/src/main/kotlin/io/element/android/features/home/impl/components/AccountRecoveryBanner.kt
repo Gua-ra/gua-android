@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import io.element.android.features.home.impl.R
 import io.element.android.features.home.impl.accountrecovery.AccountRecoveryBannerEvent
 import io.element.android.features.home.impl.accountrecovery.AccountRecoveryBannerState
+import io.element.android.features.home.impl.accountrecovery.PendingAccountRecovery
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.designsystem.components.Announcement
 import io.element.android.libraries.designsystem.components.AnnouncementType
@@ -32,14 +33,18 @@ fun AccountRecoveryBanner(
     modifier: Modifier = Modifier,
 ) {
     val pendingRecovery = state.pendingRecovery ?: return
-    val finishableAfter = pendingRecovery.finishableAfter
     Announcement(
         modifier = modifier.roomListBannerPadding(),
         title = stringResource(R.string.gua_account_recovery_banner_title),
-        description = if (finishableAfter != null) {
-            stringResource(R.string.gua_account_recovery_banner_message_later, finishableAfter)
-        } else {
-            stringResource(R.string.gua_account_recovery_banner_message_now)
+        // "It can be finished now" is said only for a moment the server named and that has passed.
+        // A recovery whose moment is missing gets the wording that makes no claim about timing.
+        description = when (pendingRecovery) {
+            is PendingAccountRecovery.FinishableFrom ->
+                stringResource(R.string.gua_account_recovery_banner_message_later, pendingRecovery.date)
+            PendingAccountRecovery.FinishableNow ->
+                stringResource(R.string.gua_account_recovery_banner_message_now)
+            PendingAccountRecovery.FinishableUnknown ->
+                stringResource(R.string.gua_account_recovery_banner_message_generic)
         },
         type = AnnouncementType.Actionable(
             actionText = stringResource(R.string.gua_account_recovery_banner_action),

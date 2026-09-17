@@ -13,6 +13,7 @@
     <string name="gua_account_recovery_banner_title">Quelqu\'un a commencé à récupérer votre compte</string>
     <string name="gua_account_recovery_banner_message_later">La récupération pourra être finalisée à partir du %1$s. Si c\'était vous, vous pouvez ignorer ce message. Sinon, annulez-la depuis un appareil sur lequel vous êtes encore connecté.</string>
     <string name="gua_account_recovery_banner_message_now">La récupération peut être finalisée dès maintenant. Si c\'était vous, vous pouvez ignorer ce message. Sinon, annulez-la depuis un appareil sur lequel vous êtes encore connecté.</string>
+    <string name="gua_account_recovery_banner_message_generic">Si c\'était vous, vous pouvez ignorer ce message. Sinon, annulez-la depuis un appareil sur lequel vous êtes encore connecté.</string>
     <string name="gua_account_recovery_banner_action">Annuler la récupération</string>
     <string name="gua_account_recovery_cancel_title">Annuler la récupération ?</string>
     <string name="gua_account_recovery_cancel_message">Annulez-la si vous ne l\'avez pas lancée. Sinon, vous devrez tout recommencer.</string>

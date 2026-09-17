@@ -19,8 +19,6 @@ import dev.zacsweers.metro.Inject
 import io.element.android.features.home.impl.R
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.Presenter
-import io.element.android.libraries.dateformatter.api.DateFormatter
-import io.element.android.libraries.dateformatter.api.DateFormatterMode
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.guaresolver.AccountFactorStatus
@@ -33,6 +31,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
@@ -54,7 +57,6 @@ class AccountRecoveryBannerPresenter(
     private val matrixClient: MatrixClient,
     private val sessionStore: SessionStore,
     private val identityServiceClient: IdentityServiceClient,
-    private val dateFormatter: DateFormatter,
     private val systemClock: SystemClock,
     private val snackbarDispatcher: SnackbarDispatcher,
 ) : Presenter<AccountRecoveryBannerState> {
@@ -178,16 +180,35 @@ class AccountRecoveryBannerPresenter(
      * recovery becomes finishable tells the owner nothing they can act on, and a clock time reads
      * like a deadline that is far more precise than the decision it informs. A whole date is also
      * what the web shows on the same recovery, so the two agree.
+     *
+     * A recovery the server reported with no completable moment is its own case. It was previously
+     * folded into "can be finished now", which told the owner their remaining time was gone when
+     * nothing had said so, on the one surface whose job is to get them to cancel in time.
      */
     private fun AccountFactorStatus.toPendingRecovery(): PendingAccountRecovery? {
         if (!accountRecoveryPending) return null
         val completableAtMillis = accountRecoveryCompletableAtEpochSeconds?.times(MILLIS_PER_SECOND)
-        return PendingAccountRecovery(
-            finishableAfter = completableAtMillis
-                ?.takeIf { it > systemClock.epochMillis() }
-                ?.let { dateFormatter.format(it, DateFormatterMode.Day, useRelative = false) },
-        )
+            ?: return PendingAccountRecovery.FinishableUnknown
+        return if (completableAtMillis > systemClock.epochMillis()) {
+            PendingAccountRecovery.FinishableFrom(longDate(completableAtMillis))
+        } else {
+            PendingAccountRecovery.FinishableNow
+        }
     }
+
+    /**
+     * The localised long date the moment falls on, in the reader's own zone, with the year and no
+     * time of day. The year is kept so the banner reads the same on both apps and so a deadline that
+     * crosses new year cannot be read as a date already past.
+     *
+     * Not the shared [io.element.android.libraries.dateformatter.api.DateFormatter]: its Day mode
+     * drops the year for any date inside the current year and its Full mode adds a clock time, and
+     * neither can be asked for this shape.
+     */
+    private fun longDate(epochMillis: Long): String =
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)
+            .withLocale(Locale.getDefault())
+            .format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
 
     /** The bookkeeping behind the reads. Only touched from the composition's coroutines. */
     private class StatusReads {

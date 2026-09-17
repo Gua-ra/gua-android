@@ -11,7 +11,6 @@ import androidx.lifecycle.Lifecycle
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.home.impl.R
 import io.element.android.libraries.architecture.AsyncAction
-import io.element.android.libraries.dateformatter.test.FakeDateFormatter
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.guaresolver.AccountFactorStatus
 import io.element.android.libraries.guaresolver.ResolverError
@@ -32,14 +31,35 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import java.util.Locale
+import java.util.TimeZone
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class AccountRecoveryBannerPresenterTest {
     @get:Rule
     val warmUpRule = WarmUpRule()
+
+    private val defaultLocale = Locale.getDefault()
+    private val defaultTimeZone = TimeZone.getDefault()
+
+    // The banner formats the date in the reader's own locale and zone, so both are pinned here:
+    // the assertions below are on the real formatted string, not on a fake formatter's echo.
+    @Before
+    fun pinLocaleAndZone() {
+        Locale.setDefault(Locale.US)
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+    }
+
+    @After
+    fun restoreLocaleAndZone() {
+        Locale.setDefault(defaultLocale)
+        TimeZone.setDefault(defaultTimeZone)
+    }
 
     @Test
     fun `nothing is read before the screen resumes, and a live recovery then shows with its date`() = runTest {
@@ -62,9 +82,10 @@ class AccountRecoveryBannerPresenterTest {
 
             lifecycleOwner.givenState(Lifecycle.State.RESUMED)
             val shownState = consumeItemsUntilPredicate { it.pendingRecovery != null }.last()
-            // Day, not Full: the banner names a date and never a time of day.
+            // A localised long date with the year, and never a time of day: the server's instant is
+            // 2026-09-21T14:13:20Z, and only the date it falls on reaches the banner.
             assertThat(shownState.pendingRecovery).isEqualTo(
-                PendingAccountRecovery(finishableAfter = "${A_COMPLETABLE_AT_EPOCH_SECONDS * 1000} Day false")
+                PendingAccountRecovery.FinishableFrom("September 21, 2026")
             )
             assertThat(statusReads).containsExactly(AN_ACCESS_TOKEN to A_SESSION_ID.value)
             cancelAndIgnoreRemainingEvents()
@@ -81,7 +102,27 @@ class AccountRecoveryBannerPresenterTest {
         )
         presenter.testWithLifecycleOwner(FakeLifecycleOwner(Lifecycle.State.RESUMED)) {
             val shownState = consumeItemsUntilPredicate { it.pendingRecovery != null }.last()
-            assertThat(shownState.pendingRecovery).isEqualTo(PendingAccountRecovery(finishableAfter = null))
+            assertThat(shownState.pendingRecovery).isEqualTo(PendingAccountRecovery.FinishableNow)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `a live recovery the server gave no completable moment claims nothing about timing`() = runTest {
+        val presenter = createAccountRecoveryBannerPresenter(
+            identityServiceClient = FakeIdentityServiceClient(
+                // What an identity service too old to publish the field answers, which the client
+                // decodes as null rather than refusing.
+                accountFactorStatusResult = { _, _ ->
+                    Result.success(aRecoveryStatus(pending = true, completableAtEpochSeconds = null))
+                },
+            ),
+        )
+        presenter.testWithLifecycleOwner(FakeLifecycleOwner(Lifecycle.State.RESUMED)) {
+            val shownState = consumeItemsUntilPredicate { it.pendingRecovery != null }.last()
+            // Not FinishableNow: nothing said the moment had passed, and saying so would tell the
+            // owner the time they have to cancel is already gone.
+            assertThat(shownState.pendingRecovery).isEqualTo(PendingAccountRecovery.FinishableUnknown)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -191,7 +232,7 @@ class AccountRecoveryBannerPresenterTest {
         )
         presenter.testWithLifecycleOwner(FakeLifecycleOwner(Lifecycle.State.RESUMED)) {
             val waitingState = consumeItemsUntilPredicate { it.pendingRecovery != null }.last()
-            assertThat(waitingState.pendingRecovery?.finishableAfter).isNotNull()
+            assertThat(waitingState.pendingRecovery).isInstanceOf(PendingAccountRecovery.FinishableFrom::class.java)
             assertThat(statusReads).isEqualTo(1)
 
             advanceTimeBy(5.minutes)
@@ -200,8 +241,8 @@ class AccountRecoveryBannerPresenterTest {
             advanceTimeBy(1.seconds)
             runCurrent()
             assertThat(statusReads).isEqualTo(2)
-            val finishableState = consumeItemsUntilPredicate { it.pendingRecovery?.finishableAfter == null }.last()
-            assertThat(finishableState.pendingRecovery).isEqualTo(PendingAccountRecovery(finishableAfter = null))
+            val finishableState = consumeItemsUntilPredicate { it.pendingRecovery == PendingAccountRecovery.FinishableNow }.last()
+            assertThat(finishableState.pendingRecovery).isEqualTo(PendingAccountRecovery.FinishableNow)
 
             advanceTimeBy(5.minutes)
             runCurrent()
@@ -634,7 +675,6 @@ class AccountRecoveryBannerPresenterTest {
         matrixClient = FakeMatrixClient(sessionId = A_SESSION_ID),
         sessionStore = sessionStore,
         identityServiceClient = identityServiceClient,
-        dateFormatter = FakeDateFormatter(),
         systemClock = systemClock,
         snackbarDispatcher = snackbarDispatcher,
     )

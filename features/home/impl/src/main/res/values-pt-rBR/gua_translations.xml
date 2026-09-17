@@ -13,6 +13,7 @@
     <string name="gua_account_recovery_banner_title">Alguém começou a recuperar sua conta</string>
     <string name="gua_account_recovery_banner_message_later">A recuperação poderá ser concluída a partir de %1$s. Se foi você, pode ignorar este aviso. Se não foi, cancele em um dispositivo onde você ainda está conectado.</string>
     <string name="gua_account_recovery_banner_message_now">A recuperação já pode ser concluída. Se foi você, pode ignorar este aviso. Se não foi, cancele em um dispositivo onde você ainda está conectado.</string>
+    <string name="gua_account_recovery_banner_message_generic">Se foi você, pode ignorar este aviso. Se não foi, cancele em um dispositivo onde você ainda está conectado.</string>
     <string name="gua_account_recovery_banner_action">Cancelar recuperação</string>
     <string name="gua_account_recovery_cancel_title">Cancelar a recuperação?</string>
     <string name="gua_account_recovery_cancel_message">Cancele se não foi você quem iniciou. Se foi, será preciso começar de novo.</string>

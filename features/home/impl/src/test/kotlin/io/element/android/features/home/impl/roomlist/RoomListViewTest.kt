@@ -69,7 +69,7 @@ class RoomListViewTest : RobolectricTest() {
             state = aRoomListState(
                 contentState = aRoomsContentState(),
                 accountRecoveryBannerState = anAccountRecoveryBannerState(
-                    pendingRecovery = PendingAccountRecovery(finishableAfter = "Tuesday 6 April"),
+                    pendingRecovery = PendingAccountRecovery.FinishableFrom("6 April 2026"),
                     eventSink = recoveryEvents,
                 ),
                 eventSink = EventsRecorder(expectEvents = true),
@@ -77,7 +77,7 @@ class RoomListViewTest : RobolectricTest() {
         )
 
         onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_title)).assertExists()
-        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_later, "Tuesday 6 April")).assertExists()
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_later, "6 April 2026")).assertExists()
         onNodeWithContentDescription(activity!!.getString(CommonStrings.action_close)).assertDoesNotExist()
         clickOn(R.string.gua_account_recovery_banner_action)
         recoveryEvents.assertSingle(AccountRecoveryBannerEvent.CancelRecovery)
@@ -90,13 +90,31 @@ class RoomListViewTest : RobolectricTest() {
             state = aRoomListState(
                 contentState = anEmptyContentState(securityBannerState = SecurityBannerState.None),
                 accountRecoveryBannerState = anAccountRecoveryBannerState(
-                    pendingRecovery = PendingAccountRecovery(finishableAfter = null),
+                    pendingRecovery = PendingAccountRecovery.FinishableNow,
                     eventSink = EventsRecorder(expectEvents = false),
                 ),
             )
         )
 
         onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_now)).assertExists()
+    }
+
+    @Config(qualifiers = "h1024dp")
+    @Test
+    fun `a recovery with no completable moment warns without claiming it can be finished now`() = runAndroidComposeUiTest<ComponentActivity> {
+        setRoomListView(
+            state = aRoomListState(
+                contentState = aRoomsContentState(),
+                accountRecoveryBannerState = anAccountRecoveryBannerState(
+                    pendingRecovery = PendingAccountRecovery.FinishableUnknown,
+                    eventSink = EventsRecorder(expectEvents = false),
+                ),
+                eventSink = EventsRecorder(expectEvents = true),
+            )
+        )
+
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_generic)).assertExists()
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_now)).assertDoesNotExist()
     }
 
     @Config(qualifiers = "h1024dp")
