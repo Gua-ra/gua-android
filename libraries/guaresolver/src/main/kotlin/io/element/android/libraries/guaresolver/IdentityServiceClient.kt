@@ -75,6 +75,10 @@ interface IdentityServiceClient {
      *
      * Changing an existing PIN is unaffected: that flow already proves the current PIN first.
      *
+     * The call names this build's own [EnrollmentRedirectProvider] redirect, so the ceremony returns
+     * to the app it was opened from. A deployment that refuses it is asked again without one; see
+     * the implementation for why that retry exists.
+     *
      * @return [Result.success] with the enrollment URL, or [Result.failure] with a [ResolverError]
      * (notably [ResolverError.PinAlreadySet] when the account already holds a PIN).
      */
@@ -190,6 +194,9 @@ interface IdentityServiceClient {
      * The returned URL is self-authenticating (it carries a short-lived enrollment token), so the
      * client just opens it in an authenticated web ceremony, on Android a Chrome Custom Tab, and
      * the user completes the WebAuthn registration in-browser at the IdP.
+     *
+     * Like [startPinEnrollment] it names this build's own [EnrollmentRedirectProvider] redirect and
+     * falls back to naming none when the deployment refuses it.
      *
      * @return [Result.success] with the enrollment URL, or [Result.failure] with a [ResolverError].
      */

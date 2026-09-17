@@ -10,6 +10,8 @@ package io.element.android.libraries.guaresolver.internal
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.androidutils.json.DefaultJsonProvider
 import io.element.android.libraries.guaresolver.AuthFactor
+import io.element.android.libraries.guaresolver.EnrollmentRedirectProvider
+import io.element.android.libraries.guaresolver.FakeEnrollmentRedirectProvider
 import io.element.android.libraries.guaresolver.FakeGuaDeployment
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.network.RetrofitFactory
@@ -71,6 +73,7 @@ class DefaultIdentityServiceClientTest {
     fun `empty input short-circuits without a network call`() = runTest {
         val client = DefaultIdentityServiceClient(
             retrofitFactory = retrofitFactory(),
+            enrollmentRedirectProvider = FakeEnrollmentRedirectProvider(),
             deployment = FakeGuaDeployment(identityServiceBaseUrl = null),
         )
 
@@ -97,6 +100,7 @@ class DefaultIdentityServiceClientTest {
     fun `unconfigured identity-service returns NotConfigured`() = runTest {
         val client = DefaultIdentityServiceClient(
             retrofitFactory = retrofitFactory(),
+            enrollmentRedirectProvider = FakeEnrollmentRedirectProvider(),
             deployment = FakeGuaDeployment(identityServiceBaseUrl = null),
         )
 
@@ -122,6 +126,9 @@ class DefaultIdentityServiceClientTest {
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.path).isEqualTo("/security/passkey/enroll/start")
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer secret-token")
+        // This build's own redirect, so the ceremony comes back to the app it was opened from
+        // rather than to whichever variant the deployment has configured.
+        assertThat(request.body.readUtf8()).isEqualTo("""{"redirectUri":"global.gua.dev:/oidc"}""")
         server.shutdown()
     }
 
@@ -139,9 +146,97 @@ class DefaultIdentityServiceClientTest {
         val request = server.takeRequest()
         assertThat(request.method).isEqualTo("POST")
         // The first PIN is enrolled here, not at `security/pin`, which now refuses every bearer
-        // caller. The access token is the whole input; there is no body.
+        // caller. The access token is the credential; the body carries nothing but the redirect.
         assertThat(request.path).isEqualTo("/security/pin/enroll/start")
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer secret-token")
+        assertThat(request.body.readUtf8()).isEqualTo("""{"redirectUri":"global.gua.dev:/oidc"}""")
+        server.shutdown()
+    }
+
+    @Test
+    fun `a build that names no redirect sends an empty body, exactly as it did before the field existed`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setBody("""{ "enrollUrl": "https://idp.gua.global/login/enroll/abc" }""")
+        )
+        val client = createClient(server, enrollmentRedirectProvider = FakeEnrollmentRedirectProvider(redirectUri = null))
+
+        client.startPinEnrollment("secret-token").getOrThrow()
+
+        // `{}`, not `{"redirectUri":null}`: the server is left to its own configured default.
+        assertThat(server.takeRequest().body.readUtf8()).isEqualTo("{}")
+        server.shutdown()
+    }
+
+    @Test
+    fun `a PIN enrollment whose redirect the deployment refuses is started again without one`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(400).setBody("""{ "code": "invalid_redirect_uri" }"""))
+        server.enqueue(
+            MockResponse().setBody("""{ "enrollUrl": "https://idp.gua.global/login/enroll/abc" }""")
+        )
+        val client = createClient(server)
+
+        val enrollUrl = client.startPinEnrollment("secret-token").getOrThrow()
+
+        // The ceremony still opens. An older server and a deployment that has not allowlisted this
+        // variant both land here, and QA meeting a dead end is worse than returning to production's
+        // scheme.
+        assertThat(enrollUrl).isEqualTo("https://idp.gua.global/login/enroll/abc")
+        assertThat(server.takeRequest().body.readUtf8()).isEqualTo("""{"redirectUri":"global.gua.dev:/oidc"}""")
+        val retry = server.takeRequest()
+        assertThat(retry.path).isEqualTo("/security/pin/enroll/start")
+        assertThat(retry.body.readUtf8()).isEqualTo("{}")
+        assertThat(server.requestCount).isEqualTo(2)
+        server.shutdown()
+    }
+
+    @Test
+    fun `a passkey enrollment whose redirect the deployment refuses is started again without one`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(400).setBody("""{ "code": "invalid_redirect_uri" }"""))
+        server.enqueue(
+            MockResponse().setBody("""{ "enrollUrl": "https://idp.gua.global/passkey/enroll?token=abc" }""")
+        )
+        val client = createClient(server)
+
+        val enrollUrl = client.startPasskeyEnrollment("secret-token").getOrThrow()
+
+        assertThat(enrollUrl).isEqualTo("https://idp.gua.global/passkey/enroll?token=abc")
+        assertThat(server.takeRequest().body.readUtf8()).isEqualTo("""{"redirectUri":"global.gua.dev:/oidc"}""")
+        val retry = server.takeRequest()
+        assertThat(retry.path).isEqualTo("/security/passkey/enroll/start")
+        assertThat(retry.body.readUtf8()).isEqualTo("{}")
+        assertThat(server.requestCount).isEqualTo(2)
+        server.shutdown()
+    }
+
+    @Test
+    fun `the retry runs once, so a second refusal is surfaced rather than looped on`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(400).setBody("""{ "code": "invalid_redirect_uri" }"""))
+        server.enqueue(MockResponse().setResponseCode(400).setBody("""{ "code": "invalid_redirect_uri" }"""))
+        val client = createClient(server)
+
+        val error = client.startPinEnrollment("secret-token").exceptionOrNull()
+
+        assertThat(error).isInstanceOf(ResolverError.InvalidRedirectUri::class.java)
+        assertThat(server.requestCount).isEqualTo(2)
+        server.shutdown()
+    }
+
+    @Test
+    fun `an enrollment refused for any other reason is not retried`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(409).setBody("""{ "code": "pin_already_set" }"""))
+        val client = createClient(server)
+
+        val error = client.startPinEnrollment("secret-token").exceptionOrNull()
+
+        // The retry is for the redirect and nothing else: spending a second call on a refusal that
+        // has nothing to do with it would only ask the account to be told off twice.
+        assertThat(error).isInstanceOf(ResolverError.PinAlreadySet::class.java)
+        assertThat(server.requestCount).isEqualTo(1)
         server.shutdown()
     }
 
@@ -625,6 +720,7 @@ class DefaultIdentityServiceClientTest {
     fun `an unconfigured deployment never reaches the network`() = runTest {
         val client = DefaultIdentityServiceClient(
             retrofitFactory = retrofitFactory(),
+            enrollmentRedirectProvider = FakeEnrollmentRedirectProvider(),
             deployment = FakeGuaDeployment(identityServiceBaseUrl = null),
         )
 
@@ -633,8 +729,12 @@ class DefaultIdentityServiceClientTest {
         assertThat(error).isInstanceOf(ResolverError.NotConfigured::class.java)
     }
 
-    private fun createClient(server: MockWebServer) = DefaultIdentityServiceClient(
+    private fun createClient(
+        server: MockWebServer,
+        enrollmentRedirectProvider: EnrollmentRedirectProvider = FakeEnrollmentRedirectProvider(),
+    ) = DefaultIdentityServiceClient(
         retrofitFactory = retrofitFactory(),
+        enrollmentRedirectProvider = enrollmentRedirectProvider,
         deployment = FakeGuaDeployment(identityServiceBaseUrl = server.url("/").toString()),
     )
 

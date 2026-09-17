@@ -46,6 +46,16 @@ data class FakeGuaDeployment(
 ) : GuaDeployment
 
 /**
+ * GUA FORK: test-only [EnrollmentRedirectProvider]. Defaults to the QA build's scheme, which is the
+ * variant the field exists for; pass null for a build that names no redirect.
+ */
+class FakeEnrollmentRedirectProvider(
+    private val redirectUri: String? = "global.gua.dev:/oidc",
+) : EnrollmentRedirectProvider {
+    override fun provide(): String? = redirectUri
+}
+
+/**
  * GUA FORK: lambda-overridable fake [IdentityServiceClient] for downstream presenter tests.
  */
 class FakeIdentityServiceClient(

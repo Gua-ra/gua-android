@@ -16,6 +16,7 @@ import io.element.android.libraries.guaresolver.AccountFactorStatus
 import io.element.android.libraries.guaresolver.AccountGenesisRegistration
 import io.element.android.libraries.guaresolver.AuthFactor
 import io.element.android.libraries.guaresolver.ContactMatch
+import io.element.android.libraries.guaresolver.EnrollmentRedirectProvider
 import io.element.android.libraries.guaresolver.GuaDeployment
 import io.element.android.libraries.guaresolver.GuaResolverConfig
 import io.element.android.libraries.guaresolver.IdentityServiceClient
@@ -39,6 +40,7 @@ import timber.log.Timber
 @ContributesBinding(AppScope::class)
 class DefaultIdentityServiceClient(
     private val retrofitFactory: RetrofitFactory,
+    private val enrollmentRedirectProvider: EnrollmentRedirectProvider,
     private val deployment: GuaDeployment = GuaResolverConfig.current,
 ) : IdentityServiceClient {
     override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> {
@@ -133,8 +135,8 @@ class DefaultIdentityServiceClient(
         }
 
     override suspend fun startPinEnrollment(accessToken: String): Result<String> =
-        runPinCall { api ->
-            api.startPinEnrollment(authorization = "Bearer $accessToken").enrollUrl
+        startFactorEnrollment { api, body ->
+            api.startPinEnrollment(authorization = "Bearer $accessToken", body = body).enrollUrl
         }
 
     override suspend fun startPinChange(accessToken: String, phone: String, currentPin: String): Result<String> =
@@ -222,9 +224,36 @@ class DefaultIdentityServiceClient(
     // GUA FORK: Passkey enrollment. Mirrors iOS `IdentityServiceClient.startPasskeyEnrollment`.
 
     override suspend fun startPasskeyEnrollment(accessToken: String): Result<String> =
-        runPinCall { api ->
-            api.startPasskeyEnrollment(authorization = "Bearer $accessToken").enrollUrl
+        startFactorEnrollment { api, body ->
+            api.startPasskeyEnrollment(authorization = "Bearer $accessToken", body = body).enrollUrl
         }
+
+    /**
+     * Runs a factor-enrollment start, naming this build's own redirect so the ceremony comes back to
+     * the app it was opened from rather than to whichever variant the deployment happens to have
+     * configured.
+     *
+     * The named value is only ever a request. A server that predates the field ignores it, and one
+     * that has not allowlisted this variant refuses the whole call with 400 `invalid_redirect_uri`,
+     * so that refusal is answered once by asking again with no redirect at all. Enrollment then
+     * proceeds exactly as it did before this existed, which is what keeps a QA build off a dead end
+     * on a deployment nobody has updated yet. The retry runs at most once: a second refusal is
+     * surfaced rather than looped on.
+     */
+    private inline fun startFactorEnrollment(
+        call: (IdentityServiceApi, FactorEnrollStartRequest) -> String,
+    ): Result<String> {
+        val redirectUri = enrollmentRedirectProvider.provide()?.takeIf { it.isNotBlank() }
+            ?: return runPinCall { api -> call(api, FactorEnrollStartRequest()) }
+
+        val named = runPinCall { api -> call(api, FactorEnrollStartRequest(redirectUri = redirectUri)) }
+        if (named.exceptionOrNull() !is ResolverError.InvalidRedirectUri) return named
+
+        // Never log the value itself: it names the build, and the server deliberately does not echo
+        // it back either.
+        Timber.w("The identity service refused this build's enrollment redirect, starting again without one")
+        return runPinCall { api -> call(api, FactorEnrollStartRequest()) }
+    }
 
     // GUA FORK: account genesis registration (ADM-008 Phase 3). No access token: the request carries its
     // own possession proof, because it runs before any login session exists.
@@ -295,6 +324,10 @@ class DefaultIdentityServiceClient(
             // genuinely cannot enroll here and for the one that already finished enrolling.
             "passkey_already_registered" -> ResolverError.PasskeyAlreadyRegistered
             "step_up_unavailable" -> ResolverError.StepUpUnavailable
+            // Named so `startFactorEnrollment` can tell this refusal apart from every other 400 and
+            // start again without a redirect. Left as a bare server error it would have dead-ended
+            // the one flow it exists to keep open.
+            "invalid_redirect_uri" -> ResolverError.InvalidRedirectUri
             // The account holds neither a PIN nor a passkey. A hard block, mapped to its own case so
             // no caller can mistake it for one of the retryable PIN failures below.
             "step_up_required" -> ResolverError.StepUpRequired

@@ -113,6 +113,17 @@ sealed class ResolverError(message: String, cause: Throwable? = null) : Exceptio
     data object StepUpUnavailable : ResolverError("This account cannot confirm it is you right now.")
 
     /**
+     * The redirect this build named on a factor-enrollment start is not one the deployment permits
+     * (identity-service `code: "invalid_redirect_uri"`, HTTP 400).
+     *
+     * Not a case a screen is meant to render: the client answers it by asking again without naming
+     * a redirect, which is what an older server and a deployment that has not allowlisted this
+     * variant both accept, so the ceremony still opens and returns to the configured default. It
+     * only ever reaches a caller if that second attempt is refused as well.
+     */
+    data object InvalidRedirectUri : ResolverError("This app cannot be returned to after enrolling.")
+
+    /**
      * The operation demands a step-up factor and the account has NEITHER a PIN nor a passkey
      * registered (identity-service `code: "step_up_required"`, HTTP 403).
      *

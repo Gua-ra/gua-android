@@ -44,6 +44,7 @@ internal interface IdentityServiceApi {
     @POST("security/pin/enroll/start")
     suspend fun startPinEnrollment(
         @Header("Authorization") authorization: String,
+        @Body body: FactorEnrollStartRequest,
     ): FactorEnrollStartResponse
 
     @POST("security/pin/change/start")
@@ -116,11 +117,12 @@ internal interface IdentityServiceApi {
     // POST, not GET: the identity service maps this as @PostMapping("/passkey/enroll/start"), and
     // iOS reaches it through a helper that always sends POST. An earlier comment here described it
     // as a GET, which is what the declaration was written to match, so every tap was answered with
-    // 405 before any ceremony could start. The request carries no body; the access token in the
-    // Authorization header is the whole input.
+    // 405 before any ceremony could start. The access token in the Authorization header is the
+    // whole input apart from the optional redirect in the body.
     @POST("security/passkey/enroll/start")
     suspend fun startPasskeyEnrollment(
         @Header("Authorization") authorization: String,
+        @Body body: FactorEnrollStartRequest,
     ): FactorEnrollStartResponse
 
     // GUA FORK: account genesis registration (ADM-008 decision 6, step 1). Deliberately unauthenticated:
@@ -279,6 +281,23 @@ internal data class AccountGenesisRegisterResponse(
     val attachHandle: String,
     /** When the handle stops being attachable, ISO-8601. Absent on builds that do not send it. */
     val expiresAt: String? = null,
+)
+
+/**
+ * What both factor-enrollment start endpoints accept. The body is optional on the wire and the only
+ * field in it is optional too: [redirectUri] is left out of the JSON entirely when it is null,
+ * because kotlinx-serialization does not encode a property that still holds its default, so an
+ * enrollment that names nothing sends `{}` and the server keeps its configured default.
+ */
+@Serializable
+internal data class FactorEnrollStartRequest(
+    /**
+     * Where the ceremony returns to when it is finished: this build's own custom scheme, which the
+     * deployment has to have allowlisted. A value it has not is refused with 400
+     * `invalid_redirect_uri` and never stamped on the session, which is what the client's single
+     * retry without one is for.
+     */
+    val redirectUri: String? = null,
 )
 
 /**
