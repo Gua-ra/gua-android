@@ -46,6 +46,9 @@ class FakeIdentityServiceClient(
 
     val passkeyEnrollmentCalls: MutableList<String> = mutableListOf()
 
+    /** Every factor-status read, in order, so a test can see the screen read it again on resume. */
+    val factorStatusCalls: MutableList<String> = mutableListOf()
+
     /** Every first-PIN enrollment start, in order. This is the only way to set a first PIN now. */
     val pinEnrollmentCalls: MutableList<String> = mutableListOf()
 
@@ -60,8 +63,10 @@ class FakeIdentityServiceClient(
     override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> =
         Result.success(emptyList())
 
-    override suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus> =
-        factorStatusResult()
+    override suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus> {
+        factorStatusCalls += accessToken
+        return factorStatusResult()
+    }
 
     override suspend fun cancelAccountRecovery(accessToken: String): Result<Unit> = Result.success(Unit)
 

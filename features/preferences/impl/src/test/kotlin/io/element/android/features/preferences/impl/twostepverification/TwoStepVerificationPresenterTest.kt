@@ -7,10 +7,8 @@
 
 package io.element.android.features.preferences.impl.twostepverification
 
-import app.cash.molecule.RecompositionMode
-import app.cash.molecule.moleculeFlow
+import androidx.lifecycle.Lifecycle
 import app.cash.turbine.ReceiveTurbine
-import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.preferences.impl.R
 import io.element.android.features.preferences.impl.fixtures.FakeIdentityServiceClient
@@ -25,7 +23,10 @@ import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
+import io.element.android.tests.testutils.FakeLifecycleOwner
 import io.element.android.tests.testutils.WarmUpRule
+import io.element.android.tests.testutils.testWithLifecycleOwner
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -210,6 +211,63 @@ class TwoStepVerificationPresenterTest {
         }
     }
 
+    @Test
+    fun `present - the factor status is read again when the screen comes back`() = runTest {
+        var hasPin = false
+        val client = FakeIdentityServiceClient(
+            factorStatusResult = { Result.success(aFactorStatus(hasPin = hasPin, passkeyRegistered = false)) },
+        )
+        val lifecycleOwner = FakeLifecycleOwner(Lifecycle.State.RESUMED)
+        val presenter = createTwoStepVerificationPresenter(client = client)
+        presenter.test(lifecycleOwner) {
+            assertThat(awaitFirst { it.phase == TwoStepVerificationPhase.Overview }.hasPin).isFalse()
+
+            // The PIN was set in the enrollment Custom Tab, so the account changed while this screen
+            // was in the background. Without a second read it would still say "Set up PIN" to
+            // someone who had just finished setting one up.
+            hasPin = true
+            lifecycleOwner.givenState(Lifecycle.State.STARTED)
+            lifecycleOwner.givenState(Lifecycle.State.RESUMED)
+
+            val state = awaitFirst { it.hasPin == true }
+            assertThat(state.twoStepVerificationOn).isTrue()
+            assertThat(client.factorStatusCalls).hasSize(2)
+        }
+    }
+
+    @Test
+    fun `present - a refresh that fails keeps the status already on screen`() = runTest {
+        var readable = true
+        val client = FakeIdentityServiceClient(
+            factorStatusResult = {
+                if (readable) {
+                    Result.success(aFactorStatus(hasPin = false, passkeyRegistered = true))
+                } else {
+                    Result.failure(ResolverError.Transport(RuntimeException("offline")))
+                }
+            },
+        )
+        val lifecycleOwner = FakeLifecycleOwner(Lifecycle.State.RESUMED)
+        val presenter = createTwoStepVerificationPresenter(client = client)
+        presenter.test(lifecycleOwner) {
+            assertThat(awaitFirst { it.phase == TwoStepVerificationPhase.Overview }.passkeyRegistered).isTrue()
+
+            readable = false
+            lifecycleOwner.givenState(Lifecycle.State.STARTED)
+            lifecycleOwner.givenState(Lifecycle.State.RESUMED)
+            advanceUntilIdle()
+
+            // The passkey did not stop existing because one read failed. Dropping back to unknown
+            // here is what withholds both rows from an account that has a factor, and it would do
+            // it on nothing worse than a token refreshed while the app was in the background.
+            val state = expectMostRecentItem()
+            assertThat(client.factorStatusCalls).hasSize(2)
+            assertThat(state.passkeyRegistered).isTrue()
+            assertThat(state.twoStepVerificationOn).isTrue()
+            assertThat(state.phase).isEqualTo(TwoStepVerificationPhase.Overview)
+        }
+    }
+
     private suspend fun ReceiveTurbine<TwoStepVerificationState>.awaitFirst(
         predicate: (TwoStepVerificationState) -> Boolean,
     ): TwoStepVerificationState {
@@ -221,9 +279,10 @@ class TwoStepVerificationPresenterTest {
     }
 
     private suspend fun TwoStepVerificationPresenter.test(
+        lifecycleOwner: FakeLifecycleOwner = FakeLifecycleOwner(Lifecycle.State.RESUMED),
         block: suspend ReceiveTurbine<TwoStepVerificationState>.() -> Unit,
     ) {
-        moleculeFlow(RecompositionMode.Immediate) { present() }.test { block() }
+        testWithLifecycleOwner(lifecycleOwner) { block() }
     }
 
     private fun createTwoStepVerificationPresenter(

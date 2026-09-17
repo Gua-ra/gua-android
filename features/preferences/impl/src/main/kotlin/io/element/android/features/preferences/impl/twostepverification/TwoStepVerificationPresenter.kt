@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -40,7 +41,8 @@ import kotlinx.coroutines.launch
  * authenticated web ceremony a passkey uses ([IdentityServiceClient.startPinEnrollment]), because a
  * bearer session alone must never be able to add a durable factor: the ceremony asks for a step-up
  * first, and a passkey assertion only works in the browser. The native path it replaces called an
- * endpoint that now refuses every caller.
+ * endpoint that now refuses every caller. Because the factor is registered outside the app, the
+ * status is read again every time the screen resumes rather than once when it opens.
  *
  * The change flow is PIN-FIRST so identity is proven before any SMS goes out: the user enters their
  * current PIN, then confirms their on-file number (which is what actually fires the OTP via
@@ -103,12 +105,30 @@ class TwoStepVerificationPresenter(
         // account that already holds a PIN is a call the server refuses.
         val userHasPin: Boolean? = factors?.hasPin
 
-        LaunchedEffect(Unit) {
-            phase = TwoStepVerificationPhase.Loading
+        // Read on every resume, not once. Both factors are now registered in a Custom Tab, so the
+        // account gains one while this screen sits in the background: a screen that only read at
+        // creation went on telling someone who had just set a PIN up that they had none. The
+        // account-recovery banner reads on resume the same way.
+        var isResumed by remember { mutableStateOf(false) }
+        LifecycleResumeEffect(Unit) {
+            isResumed = true
+            onPauseOrDispose { isResumed = false }
+        }
+        // Keyed on the value this composition saw, not on a read inside the effect: the resume
+        // callback can flip the state before the effect starts.
+        val resumed = isResumed
+        LaunchedEffect(resumed) {
+            if (!resumed) return@LaunchedEffect
+            // Only an idle screen refreshes. A read landing mid-flow would drop the user out of the
+            // step they are on, and only the first read has nothing to show while it waits.
+            val isFirstRead = phase == TwoStepVerificationPhase.Loading
+            if (!isFirstRead && phase != TwoStepVerificationPhase.Overview) return@LaunchedEffect
             val accessToken = accessToken()
             if (accessToken == null) {
-                factors = null
-                errorMessage = CommonStrings.error_unknown
+                if (isFirstRead) {
+                    factors = null
+                    errorMessage = CommonStrings.error_unknown
+                }
                 phase = TwoStepVerificationPhase.Overview
                 return@LaunchedEffect
             }
@@ -119,8 +139,12 @@ class TwoStepVerificationPresenter(
                     phase = TwoStepVerificationPhase.Overview
                 }
                 .onFailure {
-                    factors = null
-                    errorMessage = CommonStrings.error_unknown
+                    // A refresh that fails keeps the status the screen already holds: it is still
+                    // the last thing the server said, and only the first read has no fallback.
+                    if (isFirstRead) {
+                        factors = null
+                        errorMessage = CommonStrings.error_unknown
+                    }
                     phase = TwoStepVerificationPhase.Overview
                 }
         }
