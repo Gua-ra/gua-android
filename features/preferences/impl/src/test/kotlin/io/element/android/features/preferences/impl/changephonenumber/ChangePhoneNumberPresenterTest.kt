@@ -140,6 +140,31 @@ class ChangePhoneNumberPresenterTest {
     }
 
     @Test
+    fun `present - typing the last digit and tapping Continue verifies the code once, not twice`() = runTest {
+        val client = FakeIdentityServiceClient()
+        val sessionStore = GatedSessionStore(InMemorySessionStore(listOf(aSessionData(sessionId = A_USER_ID.value))))
+        val presenter = createChangePhoneNumberPresenter(client = client, sessionStore = sessionStore)
+        presenter.test {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            submitCurrentNumber()
+            val typed = awaitPhase(ChangePhoneNumberPhase.EnteringReauthOtp)
+
+            // The sixth digit submits by itself, so the button is still on screen while the token
+            // read suspends. Tapping it there used to spend the same code a second time, which the
+            // server counts as another wrong-code attempt.
+            val tokenRead = CompletableDeferred<Unit>()
+            sessionStore.gate = tokenRead
+            typed.eventSink(ChangePhoneNumberEvents.CodeChanged("111111"))
+            typed.eventSink(ChangePhoneNumberEvents.Continue)
+            tokenRead.complete(Unit)
+            advanceUntilIdle()
+
+            assertThat(client.verifyReauthCalls).hasSize(1)
+            assertThat(expectMostRecentItem().phase).isEqualTo(ChangePhoneNumberPhase.EnteringPin)
+        }
+    }
+
+    @Test
     fun `present - the attempt cap on the account's own number is surfaced as a rate limit`() = runTest {
         val client = FakeIdentityServiceClient(
             startReauthResult = { Result.failure(ResolverError.RateLimited) },
