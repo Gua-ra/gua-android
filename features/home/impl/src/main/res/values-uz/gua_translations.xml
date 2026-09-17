@@ -10,12 +10,4 @@
     <string name="gua_encryption_repair_title">Ushbu qurilma sozlashni yakunlang</string>
     <string name="gua_encryption_repair_message">Ushbu qurilmada mavjud shifrlangan chatlar va xabarlar tarixiga kirish uchun sozlashni yakunlang.</string>
     <string name="gua_encryption_repair_action">Sozlashni yakunlash</string>
-    <string name="gua_account_recovery_banner_title">Kimdir hisobingizni tiklashni boshladi</string>
-    <string name="gua_account_recovery_banner_message_later">Tiklashni %1$s dan keyin yakunlash mumkin. Agar bu siz bo\'lsangiz, bunga e\'tibor bermasangiz ham bo\'ladi.</string>
-    <string name="gua_account_recovery_banner_message_now">Tiklashni hozir yakunlash mumkin. Agar bu siz bo\'lsangiz, bunga e\'tibor bermasangiz ham bo\'ladi.</string>
-    <string name="gua_account_recovery_banner_action">Tiklashni bekor qilish</string>
-    <string name="gua_account_recovery_cancel_title">Tiklash bekor qilinsinmi?</string>
-    <string name="gua_account_recovery_cancel_message">Agar uni siz boshlamagan bo\'lsangiz, bekor qiling. Agar siz boshlagan bo\'lsangiz, qaytadan boshlashingiz kerak bo\'ladi.</string>
-    <string name="gua_account_recovery_cancelled">Tiklash bekor qilindi</string>
-    <string name="gua_account_recovery_cancel_failed">Tiklashni bekor qilib bo\'lmadi. Qayta urinib ko\'ring.</string>
 </resources>

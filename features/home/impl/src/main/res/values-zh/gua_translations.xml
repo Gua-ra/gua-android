@@ -10,12 +10,4 @@
     <string name="gua_encryption_repair_title">完成此设备的设置</string>
     <string name="gua_encryption_repair_message">完成设置即可访问此设备上可用的加密聊天和消息记录。</string>
     <string name="gua_encryption_repair_action">完成设置</string>
-    <string name="gua_account_recovery_banner_title">有人开始恢复你的账号</string>
-    <string name="gua_account_recovery_banner_message_later">可在 %1$s 之后完成恢复。如果是你本人操作，可以忽略此提示。</string>
-    <string name="gua_account_recovery_banner_message_now">现在即可完成恢复。如果是你本人操作，可以忽略此提示。</string>
-    <string name="gua_account_recovery_banner_action">取消恢复</string>
-    <string name="gua_account_recovery_cancel_title">要取消恢复吗？</string>
-    <string name="gua_account_recovery_cancel_message">如果不是你发起的，请取消。如果是你发起的，取消后需要重新开始。</string>
-    <string name="gua_account_recovery_cancelled">已取消恢复</string>
-    <string name="gua_account_recovery_cancel_failed">无法取消恢复。请重试。</string>
 </resources>

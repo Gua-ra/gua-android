@@ -10,12 +10,4 @@
     <string name="gua_encryption_repair_title">Dovršite postavljanje ovog uređaja</string>
     <string name="gua_encryption_repair_message">Dovršite postavljanje kako biste pristupili šifriranim razgovorima i povijesti poruka dostupnoj na ovom uređaju.</string>
     <string name="gua_encryption_repair_action">Dovrši postavljanje</string>
-    <string name="gua_account_recovery_banner_title">Netko je pokrenuo oporavak vašeg računa</string>
-    <string name="gua_account_recovery_banner_message_later">Oporavak će se moći dovršiti nakon %1$s. Ako ste to bili vi, možete ovo zanemariti.</string>
-    <string name="gua_account_recovery_banner_message_now">Oporavak se sada može dovršiti. Ako ste to bili vi, možete ovo zanemariti.</string>
-    <string name="gua_account_recovery_banner_action">Otkaži oporavak</string>
-    <string name="gua_account_recovery_cancel_title">Otkazati oporavak?</string>
-    <string name="gua_account_recovery_cancel_message">Otkažite ga ako ga niste pokrenuli vi. Ako jeste, morat ćete krenuti ispočetka.</string>
-    <string name="gua_account_recovery_cancelled">Oporavak je otkazan</string>
-    <string name="gua_account_recovery_cancel_failed">Oporavak nije moguće otkazati. Pokušajte ponovno.</string>
 </resources>

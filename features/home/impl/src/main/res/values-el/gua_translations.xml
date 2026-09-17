@@ -10,12 +10,4 @@
     <string name="gua_encryption_repair_title">Ολοκληρώστε τη ρύθμιση αυτής της συσκευής</string>
     <string name="gua_encryption_repair_message">Ολοκληρώστε τη ρύθμιση για να αποκτήσετε πρόσβαση στις κρυπτογραφημένες συνομιλίες και στο ιστορικό μηνυμάτων που είναι διαθέσιμο σε αυτή τη συσκευή.</string>
     <string name="gua_encryption_repair_action">Ολοκλήρωση ρύθμισης</string>
-    <string name="gua_account_recovery_banner_title">Κάποιος ξεκίνησε την ανάκτηση του λογαριασμού σας</string>
-    <string name="gua_account_recovery_banner_message_later">Η ανάκτηση θα μπορεί να ολοκληρωθεί μετά τις %1$s. Αν ήσασταν εσείς, μπορείτε να το αγνοήσετε.</string>
-    <string name="gua_account_recovery_banner_message_now">Η ανάκτηση μπορεί πλέον να ολοκληρωθεί. Αν ήσασταν εσείς, μπορείτε να το αγνοήσετε.</string>
-    <string name="gua_account_recovery_banner_action">Ακύρωση ανάκτησης</string>
-    <string name="gua_account_recovery_cancel_title">Ακύρωση της ανάκτησης;</string>
-    <string name="gua_account_recovery_cancel_message">Ακυρώστε την αν δεν την ξεκινήσατε εσείς. Αν την ξεκινήσατε, θα πρέπει να ξεκινήσετε από την αρχή.</string>
-    <string name="gua_account_recovery_cancelled">Η ανάκτηση ακυρώθηκε</string>
-    <string name="gua_account_recovery_cancel_failed">Δεν ήταν δυνατή η ακύρωση της ανάκτησης. Δοκιμάστε ξανά.</string>
 </resources>

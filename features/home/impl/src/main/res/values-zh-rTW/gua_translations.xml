@@ -10,12 +10,4 @@
     <string name="gua_encryption_repair_title">完成這台裝置的設定</string>
     <string name="gua_encryption_repair_message">完成設定即可存取這台裝置上可用的加密聊天與訊息記錄。</string>
     <string name="gua_encryption_repair_action">完成設定</string>
-    <string name="gua_account_recovery_banner_title">有人開始復原你的帳號</string>
-    <string name="gua_account_recovery_banner_message_later">可在 %1$s 之後完成復原。如果是你本人操作，可以忽略此提示。</string>
-    <string name="gua_account_recovery_banner_message_now">現在即可完成復原。如果是你本人操作，可以忽略此提示。</string>
-    <string name="gua_account_recovery_banner_action">取消復原</string>
-    <string name="gua_account_recovery_cancel_title">要取消復原嗎？</string>
-    <string name="gua_account_recovery_cancel_message">如果不是你發起的，請取消。如果是你發起的，取消後需要重新開始。</string>
-    <string name="gua_account_recovery_cancelled">已取消復原</string>
-    <string name="gua_account_recovery_cancel_failed">無法取消復原。請再試一次。</string>
 </resources>

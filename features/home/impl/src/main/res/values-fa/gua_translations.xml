@@ -10,12 +10,4 @@
     <string name="gua_encryption_repair_title">راه‌اندازی این دستگاه را کامل کنید</string>
     <string name="gua_encryption_repair_message">برای دسترسی به گفت‌وگوهای رمزگذاری‌شده و تاریخچهٔ پیام‌های موجود روی این دستگاه، راه‌اندازی را کامل کنید.</string>
     <string name="gua_encryption_repair_action">تکمیل راه‌اندازی</string>
-    <string name="gua_account_recovery_banner_title">شخصی بازیابی حساب شما را آغاز کرده است</string>
-    <string name="gua_account_recovery_banner_message_later">این بازیابی پس از %1$s قابل تکمیل است. اگر خودتان بودید، می‌توانید این پیام را نادیده بگیرید.</string>
-    <string name="gua_account_recovery_banner_message_now">این بازیابی اکنون قابل تکمیل است. اگر خودتان بودید، می‌توانید این پیام را نادیده بگیرید.</string>
-    <string name="gua_account_recovery_banner_action">لغو بازیابی</string>
-    <string name="gua_account_recovery_cancel_title">بازیابی لغو شود؟</string>
-    <string name="gua_account_recovery_cancel_message">اگر آن را خودتان آغاز نکرده‌اید، لغوش کنید. اگر آغاز کرده‌اید، باید از نو شروع کنید.</string>
-    <string name="gua_account_recovery_cancelled">بازیابی لغو شد</string>
-    <string name="gua_account_recovery_cancel_failed">لغو بازیابی ممکن نشد. دوباره تلاش کنید.</string>
 </resources>

@@ -10,12 +10,4 @@
     <string name="gua_encryption_repair_title">Užbaikite šio įrenginio sąranką</string>
     <string name="gua_encryption_repair_message">Užbaikite sąranką, kad pasiektumėte šifruotus pokalbius ir šiame įrenginyje esančią žinučių istoriją.</string>
     <string name="gua_encryption_repair_action">Užbaigti sąranką</string>
-    <string name="gua_account_recovery_banner_title">Kažkas pradėjo jūsų paskyros atkūrimą</string>
-    <string name="gua_account_recovery_banner_message_later">Atkūrimą bus galima užbaigti po %1$s. Jei tai buvote jūs, galite to nepaisyti.</string>
-    <string name="gua_account_recovery_banner_message_now">Atkūrimą jau galima užbaigti. Jei tai buvote jūs, galite to nepaisyti.</string>
-    <string name="gua_account_recovery_banner_action">Atšaukti atkūrimą</string>
-    <string name="gua_account_recovery_cancel_title">Atšaukti atkūrimą?</string>
-    <string name="gua_account_recovery_cancel_message">Atšaukite jį, jei jo nepradėjote jūs. Jei pradėjote, teks pradėti iš naujo.</string>
-    <string name="gua_account_recovery_cancelled">Atkūrimas atšauktas</string>
-    <string name="gua_account_recovery_cancel_failed">Nepavyko atšaukti atkūrimo. Bandykite dar kartą.</string>
 </resources>

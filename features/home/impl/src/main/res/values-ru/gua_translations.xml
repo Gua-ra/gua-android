@@ -10,12 +10,4 @@
     <string name="gua_encryption_repair_title">Завершите настройку этого устройства</string>
     <string name="gua_encryption_repair_message">Завершите настройку, чтобы получить доступ к зашифрованным чатам и истории сообщений, доступной на этом устройстве.</string>
     <string name="gua_encryption_repair_action">Завершить настройку</string>
-    <string name="gua_account_recovery_banner_title">Кто-то начал восстановление вашего аккаунта</string>
-    <string name="gua_account_recovery_banner_message_later">Восстановление можно будет завершить после %1$s. Если это были вы, можете не обращать внимания.</string>
-    <string name="gua_account_recovery_banner_message_now">Восстановление уже можно завершить. Если это были вы, можете не обращать внимания.</string>
-    <string name="gua_account_recovery_banner_action">Отменить восстановление</string>
-    <string name="gua_account_recovery_cancel_title">Отменить восстановление?</string>
-    <string name="gua_account_recovery_cancel_message">Отмените его, если вы его не начинали. Если начинали, придётся начать заново.</string>
-    <string name="gua_account_recovery_cancelled">Восстановление отменено</string>
-    <string name="gua_account_recovery_cancel_failed">Не удалось отменить восстановление. Повторите попытку.</string>
 </resources>

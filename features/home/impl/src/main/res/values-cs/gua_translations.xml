@@ -10,12 +10,4 @@
     <string name="gua_encryption_repair_title">Dokončete nastavení tohoto zařízení</string>
     <string name="gua_encryption_repair_message">Dokončete nastavení, abyste získali přístup k šifrovaným konverzacím a historii zpráv dostupné v tomto zařízení.</string>
     <string name="gua_encryption_repair_action">Dokončit nastavení</string>
-    <string name="gua_account_recovery_banner_title">Někdo zahájil obnovení vašeho účtu</string>
-    <string name="gua_account_recovery_banner_message_later">Obnovení bude možné dokončit po %1$s. Pokud jste to byli vy, můžete toto upozornění ignorovat.</string>
-    <string name="gua_account_recovery_banner_message_now">Obnovení už lze dokončit. Pokud jste to byli vy, můžete toto upozornění ignorovat.</string>
-    <string name="gua_account_recovery_banner_action">Zrušit obnovení</string>
-    <string name="gua_account_recovery_cancel_title">Zrušit obnovení?</string>
-    <string name="gua_account_recovery_cancel_message">Zrušte ho, pokud jste ho nezahájili vy. Pokud ano, budete muset začít znovu.</string>
-    <string name="gua_account_recovery_cancelled">Obnovení zrušeno</string>
-    <string name="gua_account_recovery_cancel_failed">Obnovení se nepodařilo zrušit. Zkuste to znovu.</string>
 </resources>

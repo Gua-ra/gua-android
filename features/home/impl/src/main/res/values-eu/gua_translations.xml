@@ -10,12 +10,4 @@
     <string name="gua_encryption_repair_title">Amaitu gailu hau konfiguratzen</string>
     <string name="gua_encryption_repair_message">Osatu konfigurazioa gailu honetan eskuragarri dauden zifratutako txatetara eta mezuen historiara sartzeko.</string>
     <string name="gua_encryption_repair_action">Amaitu konfigurazioa</string>
-    <string name="gua_account_recovery_banner_title">Norbait zure kontua berreskuratzen hasi da</string>
-    <string name="gua_account_recovery_banner_message_later">Berreskurapena %1$s ondoren amaitu ahal izango da. Zu izan bazara, ez egin kasurik.</string>
-    <string name="gua_account_recovery_banner_message_now">Berreskurapena orain amai daiteke. Zu izan bazara, ez egin kasurik.</string>
-    <string name="gua_account_recovery_banner_action">Ezeztatu berreskurapena</string>
-    <string name="gua_account_recovery_cancel_title">Berreskurapena ezeztatu nahi duzu?</string>
-    <string name="gua_account_recovery_cancel_message">Ezeztatu zuk hasi ez baduzu. Zuk hasi baduzu, berriro hasi beharko duzu.</string>
-    <string name="gua_account_recovery_cancelled">Berreskurapena ezeztatu da</string>
-    <string name="gua_account_recovery_cancel_failed">Ezin izan da berreskurapena ezeztatu. Saiatu berriro.</string>
 </resources>
