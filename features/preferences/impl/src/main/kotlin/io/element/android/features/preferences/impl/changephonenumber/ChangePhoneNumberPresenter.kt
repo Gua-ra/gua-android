@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -213,11 +214,33 @@ class ChangePhoneNumberPresenter(
         }
 
         /**
-         * Gate on the server's factor signal BEFORE anything is sent. The branch is over the factors
-         * a phone change accepts and the account actually holds, never over a lone `hasPin`: an
-         * account with a passkey and no PIN already has two-step verification and must not be sent
-         * to set up a PIN as though it had nothing.
+         * The single branch over the server's factor signal. The branch is over the factors a phone
+         * change accepts and the account actually holds, never over a lone `hasPin`: an account with
+         * a passkey and no PIN already has two-step verification and must not be sent to set up a
+         * PIN as though it had nothing.
          */
+        fun applyFactorStatus(status: AccountFactorStatus) {
+            when {
+                status.phoneChangeStepUpOptions.isEmpty() ->
+                    blockOnStepUp(StepUpBlock.NoFactorRegistered)
+                status.changePhoneCooldownRemainingSeconds > 0 ->
+                    showCooldown(status.changePhoneCooldownRemainingSeconds)
+                producibleStepUpFactors(status).isEmpty() ->
+                    blockOnStepUp(StepUpBlock.PasskeyNotUsableHere)
+                else -> {
+                    // Still nothing sent: the user has to say which number is on the account before
+                    // anything is texted anywhere.
+                    code = ""
+                    localPhoneNumber = ""
+                    errorMessage = null
+                    stepUpBlock = null
+                    cooldownRemainingSeconds = 0L
+                    phase = ChangePhoneNumberPhase.EnteringCurrentPhone
+                }
+            }
+        }
+
+        /** Gate on the server's factor signal BEFORE anything is sent. */
         fun checkFactorsAndProceed() {
             coroutineScope.launch {
                 val accessToken = accessToken()
@@ -230,24 +253,7 @@ class ChangePhoneNumberPresenter(
                     accessToken = accessToken,
                     userId = matrixClient.sessionId.value,
                 )
-                    .onSuccess { status ->
-                        when {
-                            status.phoneChangeStepUpOptions.isEmpty() ->
-                                blockOnStepUp(StepUpBlock.NoFactorRegistered)
-                            status.changePhoneCooldownRemainingSeconds > 0 ->
-                                showCooldown(status.changePhoneCooldownRemainingSeconds)
-                            producibleStepUpFactors(status).isEmpty() ->
-                                blockOnStepUp(StepUpBlock.PasskeyNotUsableHere)
-                            else -> {
-                                // Still nothing sent: the user has to say which number is on the
-                                // account before anything is texted anywhere.
-                                code = ""
-                                localPhoneNumber = ""
-                                errorMessage = null
-                                phase = ChangePhoneNumberPhase.EnteringCurrentPhone
-                            }
-                        }
-                    }
+                    .onSuccess { status -> applyFactorStatus(status) }
                     .onFailure { error ->
                         when (error) {
                             // The account can settle no step-up: the same hard block, whichever
@@ -266,6 +272,46 @@ class ChangePhoneNumberPresenter(
                         }
                     }
             }
+        }
+
+        /**
+         * Re-decides the interstitial the user is looking at from a fresh read, and lets the flow
+         * carry on once nothing is blocking it any more.
+         *
+         * A read that fails changes nothing. The interstitial on screen is still the last thing the
+         * server said, and unlike the screen's first read it has something to show meanwhile.
+         */
+        suspend fun refreshBlockingPhase() {
+            val accessToken = accessToken() ?: return
+            identityServiceClient.accountFactorStatus(
+                accessToken = accessToken,
+                userId = matrixClient.sessionId.value,
+            )
+                .onSuccess { status -> applyFactorStatus(status) }
+        }
+
+        // Both step-up factors are registered away from this screen, a passkey in a Custom Tab and a
+        // PIN on the two-step verification screen, so the block the user is looking at can be out of
+        // date by the time they come back to it. Without this, someone who went and registered a
+        // passkey returned to a screen still saying their account had no factor, and tapping the
+        // button again only got the server's "you already have one". The two-step verification
+        // screen re-reads on every resume for the same reason.
+        var isResumed by remember { mutableStateOf(false) }
+        LifecycleResumeEffect(Unit) {
+            isResumed = true
+            onPauseOrDispose { isResumed = false }
+        }
+        // Keyed on the value this composition saw, not on a read inside the effect: the resume
+        // callback can flip the state before the effect starts.
+        val resumed = isResumed
+        LaunchedEffect(resumed) {
+            if (!resumed) return@LaunchedEffect
+            // Only the two interstitials, which this one read decides in full and which send
+            // nothing. A read landing on any other phase would drop the user out of the step they
+            // are on, and on the intro Continue makes the same read anyway.
+            val isBlocked = phase == ChangePhoneNumberPhase.NeedsStepUp || phase == ChangePhoneNumberPhase.Cooldown
+            if (!isBlocked) return@LaunchedEffect
+            refreshBlockingPhase()
         }
 
         /** Exchanges the reauth OTP for the single-use, phone-change-scoped token. No SMS here. */
@@ -299,6 +345,14 @@ class ChangePhoneNumberPresenter(
                             // left to retry: the current-number step is where this can be fixed.
                             is ResolverError.ReauthPhoneMismatch -> {
                                 errorMessage = R.string.screen_change_phone_current_mismatch
+                                currentPhone = ""
+                                phase = ChangePhoneNumberPhase.EnteringCurrentPhone
+                            }
+                            // Not a wrong code: the number itself stopped parsing, so there is
+                            // nothing to retry here either. iOS sends both refusals back to the
+                            // number step, and the two apps must explain one refusal one way.
+                            is ResolverError.InvalidPhoneNumber -> {
+                                errorMessage = R.string.screen_two_step_verification_phone_invalid
                                 currentPhone = ""
                                 phase = ChangePhoneNumberPhase.EnteringCurrentPhone
                             }
@@ -440,8 +494,19 @@ class ChangePhoneNumberPresenter(
                         errorMessage = null
                         passkeyEnrollUrl = enrollUrl
                     }
-                    .onFailure {
-                        errorMessage = CommonStrings.error_unknown
+                    .onFailure { error ->
+                        errorMessage = when (error) {
+                            // The block was stale rather than the user being wrong: they already
+                            // registered the passkey it is asking for. The resume re-read normally
+                            // clears the block first, so this is the race, not the common path.
+                            is ResolverError.PasskeyAlreadyRegistered ->
+                                R.string.screen_two_step_verification_passkey_already_registered
+                            // Nothing this account can produce settles a step-up here, so there is
+                            // no factor to register and the way forward is the delayed recovery.
+                            is ResolverError.StepUpUnavailable ->
+                                R.string.screen_two_step_verification_step_up_unavailable
+                            else -> CommonStrings.error_unknown
+                        }
                     }
             }
         }

@@ -7,6 +7,7 @@
 
 package io.element.android.features.preferences.impl.changephonenumber
 
+import androidx.lifecycle.Lifecycle
 import app.cash.molecule.RecompositionMode
 import app.cash.molecule.moleculeFlow
 import app.cash.turbine.ReceiveTurbine
@@ -15,6 +16,7 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.features.preferences.impl.R
 import io.element.android.features.preferences.impl.fixtures.FakeIdentityServiceClient
 import io.element.android.features.preferences.impl.fixtures.aFactorStatus
+import io.element.android.libraries.guaresolver.AccountFactorStatus
 import io.element.android.libraries.guaresolver.AuthFactor
 import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.ResolverError
@@ -27,7 +29,9 @@ import io.element.android.libraries.sessionstorage.api.SessionData
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
+import io.element.android.tests.testutils.FakeLifecycleOwner
 import io.element.android.tests.testutils.WarmUpRule
+import io.element.android.tests.testutils.withFakeLifecycleOwner
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -420,6 +424,163 @@ class ChangePhoneNumberPresenterTest {
         }
     }
 
+    @Test
+    fun `a PIN registered while the block was up lets the flow carry on when the screen comes back`() = runTest {
+        val results = ArrayDeque(
+            listOf(
+                aFactorStatus(hasPin = false, passkeyRegistered = false),
+                aFactorStatus(hasPin = true, passkeyRegistered = false),
+            )
+        )
+        val client = FakeIdentityServiceClient(
+            factorStatusResult = { Result.success(results.removeFirstOrNull() ?: aFactorStatus(hasPin = true)) },
+        )
+        val presenter = createChangePhoneNumberPresenter(client = client)
+        val lifecycleOwner = FakeLifecycleOwner()
+        presenter.test(lifecycleOwner) {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            val blocked = awaitPhase(ChangePhoneNumberPhase.NeedsStepUp)
+            assertThat(blocked.stepUpBlock).isEqualTo(StepUpBlock.NoFactorRegistered)
+            assertThat(client.factorStatusCalls).hasSize(1)
+
+            // The PIN was set up elsewhere, on the two-step verification screen, and this screen
+            // sees it only because coming back re-reads.
+            lifecycleOwner.givenState(Lifecycle.State.RESUMED)
+            val unblocked = awaitPhase(ChangePhoneNumberPhase.EnteringCurrentPhone)
+            assertThat(unblocked.stepUpBlock).isNull()
+            assertThat(client.factorStatusCalls).hasSize(2)
+            // Carrying on is not sending: the user still has to say which number is on the account.
+            assertThat(client.startReauthCalls).isEmpty()
+        }
+    }
+
+    @Test
+    fun `a passkey registered while the block was up withdraws the button that would be refused`() = runTest {
+        val results = ArrayDeque(
+            listOf(
+                aFactorStatus(hasPin = false, passkeyRegistered = false),
+                aFactorStatus(hasPin = false, passkeyRegistered = true),
+            )
+        )
+        val client = FakeIdentityServiceClient(
+            factorStatusResult = { Result.success(results.removeFirstOrNull() ?: aFactorStatus(passkeyRegistered = true)) },
+        )
+        val presenter = createChangePhoneNumberPresenter(client = client)
+        val lifecycleOwner = FakeLifecycleOwner()
+        presenter.test(lifecycleOwner) {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            assertThat(awaitPhase(ChangePhoneNumberPhase.NeedsStepUp).canSetUpPasskey).isTrue()
+
+            lifecycleOwner.givenState(Lifecycle.State.RESUMED)
+            // Still blocked, because this build cannot assert a passkey, but blocked for the reason
+            // that is now true. The passkey button is gone: pressing it again could only be refused.
+            val restated = awaitFirst { it.stepUpBlock == StepUpBlock.PasskeyNotUsableHere }
+            assertThat(restated.phase).isEqualTo(ChangePhoneNumberPhase.NeedsStepUp)
+            assertThat(restated.canSetUpPasskey).isFalse()
+            assertThat(restated.canSetUpPin).isTrue()
+        }
+    }
+
+    @Test
+    fun `a re-read that fails leaves the block exactly as it was`() = runTest {
+        val results = ArrayDeque<Result<AccountFactorStatus>>(
+            listOf(
+                Result.success(aFactorStatus(hasPin = false, passkeyRegistered = false)),
+                Result.failure(ResolverError.Server(500)),
+            )
+        )
+        val client = FakeIdentityServiceClient(
+            factorStatusResult = { results.removeFirstOrNull() ?: Result.failure(ResolverError.Server(500)) },
+        )
+        val presenter = createChangePhoneNumberPresenter(client = client)
+        val lifecycleOwner = FakeLifecycleOwner()
+        presenter.test(lifecycleOwner) {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            awaitPhase(ChangePhoneNumberPhase.NeedsStepUp)
+
+            lifecycleOwner.givenState(Lifecycle.State.RESUMED)
+            advanceUntilIdle()
+            assertThat(client.factorStatusCalls).hasSize(2)
+            val state = expectMostRecentItem()
+            assertThat(state.phase).isEqualTo(ChangePhoneNumberPhase.NeedsStepUp)
+            assertThat(state.stepUpBlock).isEqualTo(StepUpBlock.NoFactorRegistered)
+        }
+    }
+
+    @Test
+    fun `a resume in the middle of the flow reads nothing and moves nobody`() = runTest {
+        val client = FakeIdentityServiceClient()
+        val presenter = createChangePhoneNumberPresenter(client = client)
+        val lifecycleOwner = FakeLifecycleOwner()
+        presenter.test(lifecycleOwner) {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            submitCurrentNumber()
+            awaitPhase(ChangePhoneNumberPhase.EnteringReauthOtp)
+            assertThat(client.factorStatusCalls).hasSize(1)
+
+            lifecycleOwner.givenState(Lifecycle.State.RESUMED)
+            advanceUntilIdle()
+            // The re-read is for the interstitials only. Landing here would throw the user out of
+            // the code step they are on, holding a code that was already texted to them.
+            assertThat(client.factorStatusCalls).hasSize(1)
+            assertThat(expectMostRecentItem().phase).isEqualTo(ChangePhoneNumberPhase.EnteringReauthOtp)
+        }
+    }
+
+    @Test
+    fun `a passkey the account already holds is named, not reported as a server failure`() = runTest {
+        val client = FakeIdentityServiceClient(
+            factorStatusResult = { Result.success(aFactorStatus(hasPin = false, passkeyRegistered = false)) },
+            passkeyEnrollmentResult = { Result.failure(ResolverError.PasskeyAlreadyRegistered) },
+        )
+        val presenter = createChangePhoneNumberPresenter(client = client)
+        presenter.test {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            awaitPhase(ChangePhoneNumberPhase.NeedsStepUp).eventSink(ChangePhoneNumberEvents.SetUpPasskey)
+
+            val state = awaitFirst { it.errorMessage != null }
+            assertThat(state.errorMessage).isEqualTo(R.string.screen_two_step_verification_passkey_already_registered)
+            assertThat(state.phase).isEqualTo(ChangePhoneNumberPhase.NeedsStepUp)
+            assertThat(state.passkeyEnrollUrl).isNull()
+        }
+    }
+
+    @Test
+    fun `an account that can settle no step-up here is pointed at recovery`() = runTest {
+        val client = FakeIdentityServiceClient(
+            factorStatusResult = { Result.success(aFactorStatus(hasPin = false, passkeyRegistered = false)) },
+            passkeyEnrollmentResult = { Result.failure(ResolverError.StepUpUnavailable) },
+        )
+        val presenter = createChangePhoneNumberPresenter(client = client)
+        presenter.test {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            awaitPhase(ChangePhoneNumberPhase.NeedsStepUp).eventSink(ChangePhoneNumberEvents.SetUpPasskey)
+
+            val state = awaitFirst { it.errorMessage != null }
+            assertThat(state.errorMessage).isEqualTo(R.string.screen_two_step_verification_step_up_unavailable)
+        }
+    }
+
+    @Test
+    fun `a number that stops parsing at verify goes back to the number step, not the code step`() = runTest {
+        val client = FakeIdentityServiceClient(
+            verifyReauthResult = { Result.failure(ResolverError.InvalidPhoneNumber) },
+        )
+        val presenter = createChangePhoneNumberPresenter(client = client)
+        presenter.test {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            submitCurrentNumber()
+            awaitPhase(ChangePhoneNumberPhase.EnteringReauthOtp).eventSink(ChangePhoneNumberEvents.CodeChanged("111111"))
+
+            val state = awaitFirst { it.errorMessage != null }
+            // The code was fine; the number was not, so there is nothing to retry on the code step.
+            // iOS routes both this and the mismatch back here, and one refusal gets one explanation.
+            assertThat(state.phase).isEqualTo(ChangePhoneNumberPhase.EnteringCurrentPhone)
+            assertThat(state.errorMessage).isEqualTo(R.string.screen_two_step_verification_phone_invalid)
+            assertThat(client.startPhoneChangeCalls).isEmpty()
+        }
+    }
+
     /** Drives the flow to the point where the new number has been submitted. */
     private suspend fun ReceiveTurbine<ChangePhoneNumberState>.runToNewPhoneStep(
         client: FakeIdentityServiceClient,
@@ -454,8 +615,18 @@ class ChangePhoneNumberPresenterTest {
         error("No matching state after $MAX_EMISSIONS emissions")
     }
 
-    private suspend fun ChangePhoneNumberPresenter.test(block: suspend ReceiveTurbine<ChangePhoneNumberState>.() -> Unit) {
-        moleculeFlow(RecompositionMode.Immediate) { present() }.test { block() }
+    /**
+     * The screen re-reads the account's factors on every resume, so the composition needs a
+     * lifecycle. It starts un-resumed by default, which is what keeps that read out of the tests
+     * that are not about it.
+     */
+    private suspend fun ChangePhoneNumberPresenter.test(
+        lifecycleOwner: FakeLifecycleOwner = FakeLifecycleOwner(),
+        block: suspend ReceiveTurbine<ChangePhoneNumberState>.() -> Unit,
+    ) {
+        moleculeFlow(RecompositionMode.Immediate) {
+            withFakeLifecycleOwner(lifecycleOwner) { present() }
+        }.test { block() }
     }
 
     private fun createChangePhoneNumberPresenter(
