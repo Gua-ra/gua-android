@@ -69,7 +69,7 @@ class RoomListViewTest : RobolectricTest() {
             state = aRoomListState(
                 contentState = aRoomsContentState(),
                 accountRecoveryBannerState = anAccountRecoveryBannerState(
-                    pendingRecovery = PendingAccountRecovery(finishableAfter = "April 6, 2027 at 6:35 PM"),
+                    pendingRecovery = PendingAccountRecovery(finishableAfter = "Tuesday 6 April"),
                     eventSink = recoveryEvents,
                 ),
                 eventSink = EventsRecorder(expectEvents = true),
@@ -77,7 +77,7 @@ class RoomListViewTest : RobolectricTest() {
         )
 
         onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_title)).assertExists()
-        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_later, "April 6, 2027 at 6:35 PM")).assertExists()
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_later, "Tuesday 6 April")).assertExists()
         onNodeWithContentDescription(activity!!.getString(CommonStrings.action_close)).assertDoesNotExist()
         clickOn(R.string.gua_account_recovery_banner_action)
         recoveryEvents.assertSingle(AccountRecoveryBannerEvent.CancelRecovery)

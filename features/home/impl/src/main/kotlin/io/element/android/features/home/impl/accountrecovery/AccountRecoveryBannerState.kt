@@ -25,14 +25,15 @@ data class AccountRecoveryBannerState(
 
 data class PendingAccountRecovery(
     /**
-     * The localised date and time after which the recovery can be finished, or null when it can
-     * already be finished.
+     * The localised DATE after which the recovery can be finished, with no time of day, or null when
+     * it can already be finished. The waits run in days, so an exact moment would be more precision
+     * than the owner can use and more than the server should publish.
      */
     val finishableAfter: String?,
 )
 
 internal fun anAccountRecoveryBannerState(
-    pendingRecovery: PendingAccountRecovery? = PendingAccountRecovery(finishableAfter = "April 6, 2027 at 6:35 PM"),
+    pendingRecovery: PendingAccountRecovery? = PendingAccountRecovery(finishableAfter = "Tuesday 6 April"),
     cancelAction: AsyncAction<Unit> = AsyncAction.Uninitialized,
     eventSink: (AccountRecoveryBannerEvent) -> Unit = {},
 ) = AccountRecoveryBannerState(

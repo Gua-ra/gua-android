@@ -42,7 +42,7 @@ class AccountRecoveryBannerPresenterTest {
     val warmUpRule = WarmUpRule()
 
     @Test
-    fun `nothing is read before the screen resumes, and a live recovery then shows with its time`() = runTest {
+    fun `nothing is read before the screen resumes, and a live recovery then shows with its date`() = runTest {
         val statusReads = mutableListOf<Pair<String, String>>()
         val presenter = createAccountRecoveryBannerPresenter(
             identityServiceClient = FakeIdentityServiceClient(
@@ -62,8 +62,9 @@ class AccountRecoveryBannerPresenterTest {
 
             lifecycleOwner.givenState(Lifecycle.State.RESUMED)
             val shownState = consumeItemsUntilPredicate { it.pendingRecovery != null }.last()
+            // Day, not Full: the banner names a date and never a time of day.
             assertThat(shownState.pendingRecovery).isEqualTo(
-                PendingAccountRecovery(finishableAfter = "${A_COMPLETABLE_AT_EPOCH_SECONDS * 1000} Full false")
+                PendingAccountRecovery(finishableAfter = "${A_COMPLETABLE_AT_EPOCH_SECONDS * 1000} Day false")
             )
             assertThat(statusReads).containsExactly(AN_ACCESS_TOKEN to A_SESSION_ID.value)
             cancelAndIgnoreRemainingEvents()

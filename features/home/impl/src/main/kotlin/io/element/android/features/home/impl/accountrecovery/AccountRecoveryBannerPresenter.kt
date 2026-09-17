@@ -173,13 +173,19 @@ class AccountRecoveryBannerPresenter(
         return minOf(REFRESH_INTERVAL, (nextMomentMillis - nowMillis).milliseconds + MOMENT_SLACK)
     }
 
+    /**
+     * The date only, never the time of day. The waiting periods here run in days, so the minute a
+     * recovery becomes finishable tells the owner nothing they can act on, and a clock time reads
+     * like a deadline that is far more precise than the decision it informs. A whole date is also
+     * what the web shows on the same recovery, so the two agree.
+     */
     private fun AccountFactorStatus.toPendingRecovery(): PendingAccountRecovery? {
         if (!accountRecoveryPending) return null
         val completableAtMillis = accountRecoveryCompletableAtEpochSeconds?.times(MILLIS_PER_SECOND)
         return PendingAccountRecovery(
             finishableAfter = completableAtMillis
                 ?.takeIf { it > systemClock.epochMillis() }
-                ?.let { dateFormatter.format(it, DateFormatterMode.Full, useRelative = false) },
+                ?.let { dateFormatter.format(it, DateFormatterMode.Day, useRelative = false) },
         )
     }
 

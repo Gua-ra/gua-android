@@ -15,7 +15,8 @@
     <!-- GUA FORK: shown on every signed-in device while someone is recovering this account with the
          delayed recovery, so the owner can stop it. Not dismissible. -->
     <string name="gua_account_recovery_banner_title">Someone started recovering your account</string>
-    <!-- %1$s is a localised date and time, for example "April 6, 2027 at 6:35 PM". -->
+    <!-- %1$s is a localised date with no time of day, for example "Tuesday 6 April". The waits
+         run in days, so an exact moment would say more than the owner can act on. -->
     <string name="gua_account_recovery_banner_message_later">It can be finished after %1$s. If this was you, you can ignore this.</string>
     <string name="gua_account_recovery_banner_message_now">It can be finished now. If this was you, you can ignore this.</string>
     <string name="gua_account_recovery_banner_action">Cancel recovery</string>
