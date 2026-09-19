@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <!-- Gua onboarding/welcome copy. English source of truth lives here (temporary.xml);
+         the obsolete Element values were removed from localazy.xml to avoid a duplicate-resource
+         collision. Mirrors Element X iOS (screen_onboarding_welcome_title + the end-to-end
+         encrypted trust pill shown below it). -->
+    <string name="gua_onboarding_welcome_title">Welcome to Gua</string>
+    <string name="gua_onboarding_welcome_message">Private messaging, made simple.</string>
+    <string name="screen_onboarding_trust_encrypted">End-to-end encrypted</string>
+
+    <!-- Gua phone-first entry (Stage 3). Mirrors Element X iOS PhoneEntryScreen. -->
+    <string name="screen_phone_entry_welcome_title">Welcome to Gua</string>
+    <string name="screen_phone_entry_title">What\'s your number?</string>
+    <string name="screen_phone_entry_message">Enter your phone number</string>
+    <string name="screen_phone_entry_footer">We\'ll text a verification code to this number.</string>
+    <string name="screen_phone_entry_phone_number_label">Phone number</string>
+    <string name="screen_phone_entry_country_picker_a11y">Select country</string>
+
+    <!-- Gua sign in with a passkey. Button on the phone-entry screen; the passkey is a discoverable
+         credential, so it identifies the account on its own: choosing this sends no code. Same key as
+         iOS Untranslated.strings. -->
+    <string name="gua_sign_in_with_passkey">Sign in with a passkey</string>
+
+    <!-- Gua account genesis (ADM-008 Phase 3). Shown only when the device meant to register its own
+         account key and could not: the signup stops rather than quietly creating an account without
+         one. Deliberately says nothing about keys or genesis, which are not user-facing ideas. -->
+    <string name="gua_account_setup_failed">We could not finish setting up your account on this device. Please try again.</string>
+</resources>

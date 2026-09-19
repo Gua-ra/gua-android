@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ro translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_signout_last_device_title">Deconectarea îți va elimina mesajele de pe acest dispozitiv</string>
+    <string name="gua_signout_last_device_subtitle">Acesta este singurul tău dispozitiv. Mesajele păstrate doar aici nu vor fi disponibile când te vei conecta din nou.</string>
+</resources>

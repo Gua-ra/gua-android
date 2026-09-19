@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: uz translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Do\'stlarni topish</string>
+    <string name="screen_find_friends_action">Do\'stlarni topish</string>
+    <string name="screen_find_friends_action_description">Kontaktlaringizdan kimlar Gua\'da ekanini ko\'ring</string>
+    <string name="screen_find_friends_loading">Kontaktlaringiz Gua\'da qidirilmoqda…</string>
+    <string name="screen_find_friends_permission_title">Kontaktlarga ruxsat berish</string>
+    <string name="screen_find_friends_permission_message">Gua kimlar allaqachon bu yerda ekanini bilish uchun kontaktlaringizni maxfiy tarzda tekshiradi. Kontaktlaringiz hech qachon saqlanmaydi.</string>
+    <string name="screen_find_friends_permission_action">Ruxsat berish</string>
+    <string name="screen_find_friends_permission_denied_action">Sozlamalarni ochish</string>
+    <string name="screen_find_friends_empty_title">Gua\'da hali kontaktlar yo\'q</string>
+    <string name="screen_find_friends_empty_message">Kontaktlaringizdan hech kim hali Gua\'da emas. Ularni taklif qiling va ular shu yerda paydo bo\'ladi.</string>
+    <string name="screen_find_friends_empty_action">Qayta tekshirish</string>
+    <string name="screen_find_friends_error_title">Nimadir noto\'g\'ri ketdi</string>
+    <string name="screen_find_friends_error_message">Hozir kontaktlaringizni tekshira olmadik. Qayta urinib ko\'ring.</string>
+    <string name="screen_find_friends_error_action">Qayta urinish</string>
+    <string name="a11y_find_friends_view_profile">%1$s profilini ko\'rish</string>
+    <string name="a11y_find_friends_start_chat">%1$s bilan suhbatni boshlash</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d kontakt Gua\'da</item>
+        <item quantity="other">%1$d kontakt Gua\'da</item>
+    </plurals>
+</resources>

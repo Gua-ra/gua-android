@@ -102,7 +102,8 @@ fun UserListView(
                             data = CheckableUserRowData.Resolved(
                                 avatarData = recentDirectRoom.matrixUser.getAvatarData(AvatarSize.UserListItem),
                                 name = recentDirectRoom.matrixUser.getBestName(),
-                                subtext = recentDirectRoom.matrixUser.userId.value,
+                                // GUA FORK: hide the homeserver suffix in the user handle.
+                                subtext = recentDirectRoom.matrixUser.userId.displayHandle,
                             ),
                         )
                         if (index < state.recentDirectRooms.lastIndex) {

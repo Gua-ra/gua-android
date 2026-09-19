@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: nb translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Finn venner</string>
+    <string name="screen_find_friends_action">Finn venner</string>
+    <string name="screen_find_friends_action_description">Se hvem av kontaktene dine som er på Gua</string>
+    <string name="screen_find_friends_loading">Søker etter kontaktene dine på Gua…</string>
+    <string name="screen_find_friends_permission_title">Tillat tilgang til kontakter</string>
+    <string name="screen_find_friends_permission_message">Gua sjekker kontaktene dine privat for å se hvem som allerede er her. Kontaktene dine lagres aldri.</string>
+    <string name="screen_find_friends_permission_action">Tillat tilgang</string>
+    <string name="screen_find_friends_permission_denied_action">Åpne innstillinger</string>
+    <string name="screen_find_friends_empty_title">Ingen kontakter på Gua ennå</string>
+    <string name="screen_find_friends_empty_message">Ingen av kontaktene dine er på Gua ennå. Inviter dem, så dukker de opp her.</string>
+    <string name="screen_find_friends_empty_action">Sjekk på nytt</string>
+    <string name="screen_find_friends_error_title">Noe gikk galt</string>
+    <string name="screen_find_friends_error_message">Vi kunne ikke sjekke kontaktene dine akkurat nå. Prøv igjen.</string>
+    <string name="screen_find_friends_error_action">Prøv igjen</string>
+    <string name="a11y_find_friends_view_profile">Se profilen til %1$s</string>
+    <string name="a11y_find_friends_start_chat">Start en chat med %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d kontakt er på Gua</item>
+        <item quantity="other">%1$d kontakter er på Gua</item>
+    </plurals>
+</resources>

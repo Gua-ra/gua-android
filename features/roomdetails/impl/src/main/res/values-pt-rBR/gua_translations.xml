@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+  <!-- GUA FORK: replaces upstream's "%1$s's digital identity was reset."
+       Same plain wording as the conversation banner. %1$s is the display name. -->
+  <string name="gua_identity_change_member_list">Os dados de segurança de %1$s mudaram</string>
+</resources>

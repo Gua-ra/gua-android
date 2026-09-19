@@ -11,6 +11,12 @@ package io.element.android.appconfig
 object PushConfig {
     /**
      * Note: pusher_app_id cannot exceed 64 chars.
+     *
+     * GUA FORK: this is the key Sygnal looks the notification up under, so it has to
+     * match the app_id in the gateway's config exactly; a mismatch is answered with a
+     * 404 the user never sees. One value covers the production, QA and debug packages,
+     * which share a Firebase project: the device's token decides which app a push
+     * reaches, not this string.
      */
-    const val PUSHER_APP_ID: String = "im.vector.app.android"
+    const val PUSHER_APP_ID: String = "global.gua.android"
 }

@@ -43,6 +43,8 @@ class PreferencesRootNode(
         fun navigateToDeveloperSettings()
         fun navigateToNotificationSettings()
         fun navigateToLockScreenSettings()
+        fun navigateToTwoStepVerification()
+        fun navigateToChangePhoneNumber()
         fun navigateToAdvancedSettings()
         fun navigateToLabs()
         fun navigateToLinkNewDevice()
@@ -60,6 +62,8 @@ class PreferencesRootNode(
         isDark: Boolean,
     ) {
         url?.let {
+            // GUA FORK: deliberately the shared tab, not a private one, so account management keeps
+            // its browser session between visits. The URL names this account (see the presenter).
             activity.openUrlInChromeCustomTab(
                 null,
                 darkTheme = isDark,
@@ -89,6 +93,8 @@ class PreferencesRootNode(
             onManageAccountClick = { onManageAccountClick(activity, it, isDark) },
             onOpenNotificationSettings = callback::navigateToNotificationSettings,
             onOpenLockScreenSettings = callback::navigateToLockScreenSettings,
+            onSetupTwoStepVerification = callback::navigateToTwoStepVerification,
+            onChangePhoneNumber = callback::navigateToChangePhoneNumber,
             onOpenUserProfile = callback::navigateToUserProfile,
             onOpenBlockedUsers = callback::navigateToBlockedUsers,
             onSignOutClick = {

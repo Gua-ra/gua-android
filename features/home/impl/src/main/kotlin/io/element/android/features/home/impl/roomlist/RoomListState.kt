@@ -9,6 +9,7 @@
 package io.element.android.features.home.impl.roomlist
 
 import androidx.compose.runtime.Immutable
+import io.element.android.features.home.impl.accountrecovery.AccountRecoveryBannerState
 import io.element.android.features.home.impl.filters.RoomListFiltersState
 import io.element.android.features.home.impl.model.RoomListRoomSummary
 import io.element.android.features.home.impl.search.RoomListSearchState
@@ -32,6 +33,8 @@ data class RoomListState(
     val acceptDeclineInviteState: AcceptDeclineInviteState,
     val hideInvitesAvatars: Boolean,
     val canReportRoom: Boolean,
+    /** GUA FORK: the delayed account recovery warning. Separate from the encryption banner. */
+    val accountRecoveryBannerState: AccountRecoveryBannerState,
     val eventSink: (RoomListEvent) -> Unit,
 ) {
     val displayFilters = contentState is RoomListContentState.Rooms
@@ -62,13 +65,33 @@ enum class SecurityBannerState {
 
 @Immutable
 sealed interface RoomListContentState {
-    data class Skeleton(val count: Int) : RoomListContentState
+    /**
+     * GUA FORK: set once the repair has established only a reset can finish this device.
+     *
+     * Declared here, not just on the states that carry it, so the navigation effect can be written
+     * once against the interface. It used to be duplicated into each state's own composable, and
+     * RoomsView -- the branch every account with chats takes -- navigated without ever sending
+     * EncryptionResetNavigated back. The flag latched true, its LaunchedEffect key never changed
+     * again, and from then on every tap of Finish setup did nothing at all.
+     */
+    val encryptionSetupNeedsReset: Boolean
+
+    data class Skeleton(val count: Int) : RoomListContentState {
+        override val encryptionSetupNeedsReset = false
+    }
+
     data class Empty(
         val securityBannerState: SecurityBannerState,
+        /** GUA FORK: true while the encryption setup banner's repair is running. */
+        val isFinishingEncryptionSetup: Boolean = false,
+        override val encryptionSetupNeedsReset: Boolean = false,
     ) : RoomListContentState
 
     data class Rooms(
         val securityBannerState: SecurityBannerState,
+        /** GUA FORK: true while the encryption setup banner's repair is running. */
+        val isFinishingEncryptionSetup: Boolean = false,
+        override val encryptionSetupNeedsReset: Boolean = false,
         val fullScreenIntentPermissionsState: FullScreenIntentPermissionsState,
         val batteryOptimizationState: BatteryOptimizationState,
         val showNewNotificationSoundBanner: Boolean,

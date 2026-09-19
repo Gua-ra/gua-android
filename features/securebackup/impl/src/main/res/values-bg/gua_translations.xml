@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: bg translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_encryption_reset_required_title">Някои предишни съобщения не могат да бъдат възстановени</string>
+    <string name="gua_encryption_reset_required_message">За да завършите настройката на шифрованите чатове на това устройство, шифрованото ви резервно копие трябва да бъде нулирано. Съобщенията, съхранявани само в него, ще бъдат загубени. Съобщенията, които вече са на устройствата ви, няма да бъдат засегнати.</string>
+    <string name="gua_encryption_reset_required_action">Нулиране и завършване</string>
+    <string name="gua_encryption_reset_finishing">Завършване на настройката…</string>
+    <string name="gua_encryption_reset_failed">Настройката не беше завършена. Докоснете „Нулиране и завършване“, за да опитате отново.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Възстановете предишните си съобщения</string>
+    <string name="gua_encryption_recover_from_other_device_message">Използвайте другото си устройство, за да възстановите съобщенията, които още не са налични на това устройство.\n\nАко нямате достъп до него, можете да нулирате и да завършите настройката, но съобщенията, запазени само в резервното ви копие, ще бъдат загубени завинаги.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Другото ми устройство</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Съобщенията ви не бяха получени от другото устройство. Уверете се, че приложението там е отворено, и опитайте отново или нулирайте.</string>
+</resources>

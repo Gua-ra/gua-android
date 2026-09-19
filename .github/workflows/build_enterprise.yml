@@ -1,11 +1,8 @@
 name: Enterprise APK Build
 
+# GUA FORK: disabled — needs the private element-hq enterprise submodule + deploy key. Manual only.
 on:
   workflow_dispatch:
-  pull_request:
-  merge_group:
-  push:
-    branches: [ develop ]
 
 permissions: {}
 

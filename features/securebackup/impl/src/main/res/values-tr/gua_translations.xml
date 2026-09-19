@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: tr translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_encryption_reset_required_title">Bazı önceki mesajlar kurtarılamaz</string>
+    <string name="gua_encryption_reset_required_message">Bu cihazda şifreli sohbetlerin kurulumunu tamamlamak için şifreli yedeğinizin sıfırlanması gerekir. Yalnızca o yedekte saklanan mesajlar kaybolur. Cihazlarınızda zaten bulunan mesajlar etkilenmez.</string>
+    <string name="gua_encryption_reset_required_action">Sıfırla ve tamamla</string>
+    <string name="gua_encryption_reset_finishing">Kurulum tamamlanıyor…</string>
+    <string name="gua_encryption_reset_failed">Kurulum tamamlanamadı. Tekrar denemek için “Sıfırla ve tamamla”ya dokunun.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Önceki mesajlarınızı geri getirin</string>
+    <string name="gua_encryption_recover_from_other_device_message">Bu cihazda henüz bulunmayan mesajları geri getirmek için diğer cihazınızı kullanın.\n\nO cihaza erişiminiz yoksa sıfırlayıp kurulumu tamamlayabilirsiniz, ancak yalnızca yedeğinizde saklanan mesajlar kalıcı olarak kaybolur.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Diğer cihazımı kullan</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Mesajlarınız diğer cihazdan alınamadı. Gua\'nın o cihazda açık olduğundan emin olup tekrar deneyin veya sıfırlayın.</string>
+</resources>

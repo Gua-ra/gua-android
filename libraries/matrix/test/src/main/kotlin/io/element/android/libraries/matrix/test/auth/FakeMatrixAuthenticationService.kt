@@ -36,6 +36,7 @@ class FakeMatrixAuthenticationService(
     private val setHomeserverResult: (String) -> Result<MatrixHomeServerDetails> = { lambdaError() },
     private val setElementClassicSessionResult: (ElementClassicSession?) -> Unit = { lambdaError() },
     private val doSecretsContainBackupKeyResult: (UserId, String, String) -> Boolean = { _, _, _ -> lambdaError() },
+    private val getOAuthUrlResult: ((OAuthPrompt, String?) -> Result<OAuthDetails>)? = null,
 ) : MatrixAuthenticationService {
     private var oAuthError: Throwable? = null
     private var oAuthCancelError: Throwable? = null
@@ -74,7 +75,9 @@ class FakeMatrixAuthenticationService(
         prompt: OAuthPrompt,
         loginHint: String?,
     ): Result<OAuthDetails> = simulateLongTask {
-        oAuthError?.let { Result.failure(it) } ?: Result.success(AN_OAUTH_DATA)
+        getOAuthUrlResult?.invoke(prompt, loginHint)
+            ?: oAuthError?.let { Result.failure(it) }
+            ?: Result.success(AN_OAUTH_DATA)
     }
 
     override suspend fun cancelOAuthLogin(): Result<Unit> {

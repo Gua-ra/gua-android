@@ -462,7 +462,8 @@ private fun InvitedByView(
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            text = sender.userId.value,
+            // GUA FORK: hide the homeserver suffix in the user handle.
+            text = sender.userId.displayHandle,
             style = ElementTheme.typography.fontBodySmRegular,
             color = ElementTheme.colors.textSecondary
         )

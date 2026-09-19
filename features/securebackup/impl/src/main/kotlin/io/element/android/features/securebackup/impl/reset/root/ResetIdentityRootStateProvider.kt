@@ -15,10 +15,17 @@ class ResetIdentityRootStateProvider : PreviewParameterProvider<ResetIdentityRoo
         get() = sequenceOf(
             ResetIdentityRootState(
                 displayConfirmationDialog = false,
+                canRecoverFromOtherDevice = false,
                 eventSink = {}
             ),
             ResetIdentityRootState(
                 displayConfirmationDialog = true,
+                canRecoverFromOtherDevice = false,
+                eventSink = {}
+            ),
+            ResetIdentityRootState(
+                displayConfirmationDialog = false,
+                canRecoverFromOtherDevice = true,
                 eventSink = {}
             )
         )

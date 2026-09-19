@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,7 +24,9 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -33,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.home.impl.R
+import io.element.android.features.home.impl.accountrecovery.AccountRecoveryBannerState
+import io.element.android.features.home.impl.accountrecovery.aHiddenAccountRecoveryBannerState
 import io.element.android.features.home.impl.contentType
 import io.element.android.features.home.impl.filters.RoomListFilter
 import io.element.android.features.home.impl.filters.RoomListFiltersEmptyStateResources
@@ -60,23 +65,44 @@ import kotlinx.collections.immutable.ImmutableList
 @Composable
 fun RoomListContentView(
     contentState: RoomListContentState,
+    // GUA FORK: shown above every other banner, whatever the content state, and not dismissible.
+    accountRecoveryBannerState: AccountRecoveryBannerState,
     filtersState: RoomListFiltersState,
     spaceFiltersState: SpaceFiltersState,
     lazyListState: LazyListState,
     hideInvitesAvatars: Boolean,
     eventSink: (RoomListEvent) -> Unit,
-    onSetUpRecoveryClick: () -> Unit,
     onConfirmRecoveryKeyClick: () -> Unit,
     onRoomClick: (RoomListRoomSummary) -> Unit,
     onCreateRoomClick: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
+    // GUA FORK: navigation is driven by the repair's verdict, not by the tap, and it lives HERE --
+    // once, above the branch -- rather than inside each state's own composable.
+    //
+    // It used to be written twice. EmptyView consumed the flag by sending EncryptionResetNavigated;
+    // RoomsView, the branch every account with any chats takes, navigated and never sent it. The
+    // flag stayed true, so its LaunchedEffect key never changed again, and every later tap of
+    // Finish setup set an already-true flag and did nothing. That is the dead button.
+    val onNeedsReset by rememberUpdatedState(onConfirmRecoveryKeyClick)
+    val onNavigated by rememberUpdatedState(eventSink)
+    LaunchedEffect(contentState.encryptionSetupNeedsReset) {
+        if (contentState.encryptionSetupNeedsReset) {
+            // Consume first: the flag is one-shot, and leaving it set is what wedged the button.
+            onNavigated(RoomListEvent.EncryptionResetNavigated)
+            onNeedsReset()
+        }
+    }
+
+    AccountRecoveryCancelConfirmation(state = accountRecoveryBannerState)
+
     when (contentState) {
         is RoomListContentState.Skeleton -> {
             SkeletonView(
                 modifier = modifier,
                 count = contentState.count,
+                accountRecoveryBannerState = accountRecoveryBannerState,
                 contentPadding = contentPadding,
             )
         }
@@ -84,9 +110,8 @@ fun RoomListContentView(
             EmptyView(
                 modifier = modifier.padding(contentPadding),
                 state = contentState,
+                accountRecoveryBannerState = accountRecoveryBannerState,
                 eventSink = eventSink,
-                onSetUpRecoveryClick = onSetUpRecoveryClick,
-                onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
                 onCreateRoomClick = onCreateRoomClick,
             )
         }
@@ -94,12 +119,11 @@ fun RoomListContentView(
             RoomsView(
                 modifier = modifier,
                 state = contentState,
+                accountRecoveryBannerState = accountRecoveryBannerState,
                 hideInvitesAvatars = hideInvitesAvatars,
                 filtersState = filtersState,
                 spaceFiltersState = spaceFiltersState,
                 eventSink = eventSink,
-                onSetUpRecoveryClick = onSetUpRecoveryClick,
-                onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
                 onRoomClick = onRoomClick,
                 lazyListState = lazyListState,
                 contentPadding = contentPadding,
@@ -111,6 +135,7 @@ fun RoomListContentView(
 @Composable
 private fun SkeletonView(
     count: Int,
+    accountRecoveryBannerState: AccountRecoveryBannerState,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
@@ -118,6 +143,12 @@ private fun SkeletonView(
         modifier = modifier,
         contentPadding = contentPadding,
     ) {
+        // GUA FORK: the first sync can take a while, and this warning should not wait for it.
+        if (accountRecoveryBannerState.pendingRecovery != null) {
+            item {
+                AccountRecoveryBanner(state = accountRecoveryBannerState)
+            }
+        }
         repeat(count) { index ->
             item {
                 RoomSummaryPlaceholderRow()
@@ -132,9 +163,8 @@ private fun SkeletonView(
 @Composable
 private fun EmptyView(
     state: RoomListContentState.Empty,
+    accountRecoveryBannerState: AccountRecoveryBannerState,
     eventSink: (RoomListEvent) -> Unit,
-    onSetUpRecoveryClick: () -> Unit,
-    onConfirmRecoveryKeyClick: () -> Unit,
     onCreateRoomClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -151,18 +181,18 @@ private fun EmptyView(
             },
             modifier = Modifier.align(Alignment.Center),
         )
-        Box {
+        Column {
+            AccountRecoveryBanner(state = accountRecoveryBannerState)
             when (state.securityBannerState) {
-                SecurityBannerState.SetUpRecovery -> {
-                    SetUpRecoveryKeyBanner(
-                        onContinueClick = onSetUpRecoveryClick,
-                        onDismissClick = { eventSink(RoomListEvent.DismissBanner) },
-                    )
-                }
+                SecurityBannerState.SetUpRecovery,
+                // GUA FORK: the presenter no longer produces SetUpRecovery, but render the same
+                // silent-repair banner here rather than upstream's, so no future path can reach
+                // the flow that hands a user a recovery key to write down.
                 SecurityBannerState.RecoveryKeyConfirmation -> {
                     ConfirmRecoveryKeyBanner(
-                        onContinueClick = onConfirmRecoveryKeyClick,
+                        onContinueClick = { eventSink(RoomListEvent.FinishEncryptionSetup) },
                         onDismissClick = { eventSink(RoomListEvent.DismissBanner) },
+                        isWorking = state.isFinishingEncryptionSetup,
                     )
                 }
                 SecurityBannerState.None -> Unit
@@ -174,12 +204,11 @@ private fun EmptyView(
 @Composable
 private fun RoomsView(
     state: RoomListContentState.Rooms,
+    accountRecoveryBannerState: AccountRecoveryBannerState,
     hideInvitesAvatars: Boolean,
     filtersState: RoomListFiltersState,
     spaceFiltersState: SpaceFiltersState,
     eventSink: (RoomListEvent) -> Unit,
-    onSetUpRecoveryClick: () -> Unit,
-    onConfirmRecoveryKeyClick: () -> Unit,
     onRoomClick: (RoomListRoomSummary) -> Unit,
     contentPadding: PaddingValues,
     lazyListState: LazyListState,
@@ -188,18 +217,31 @@ private fun RoomsView(
     val isSpaceFilterSelected = spaceFiltersState is SpaceFiltersState.Selected
     val hasAnyFilterSelected = filtersState.hasAnyFilterSelected || isSpaceFilterSelected
     if (state.summaries.isEmpty() && hasAnyFilterSelected) {
-        EmptyViewForFilterStates(
-            selectedFilters = filtersState.selectedFilters(),
-            isSpaceFilterSelected = isSpaceFilterSelected,
-            modifier = modifier.fillMaxSize()
-        )
+        if (accountRecoveryBannerState.pendingRecovery != null) {
+            // GUA FORK: a filter with no matches must not hide the recovery warning.
+            Column(modifier = modifier.fillMaxSize()) {
+                AccountRecoveryBanner(state = accountRecoveryBannerState)
+                EmptyViewForFilterStates(
+                    selectedFilters = filtersState.selectedFilters(),
+                    isSpaceFilterSelected = isSpaceFilterSelected,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                )
+            }
+        } else {
+            EmptyViewForFilterStates(
+                selectedFilters = filtersState.selectedFilters(),
+                isSpaceFilterSelected = isSpaceFilterSelected,
+                modifier = modifier.fillMaxSize()
+            )
+        }
     } else {
         RoomsViewList(
             state = state,
+            accountRecoveryBannerState = accountRecoveryBannerState,
             hideInvitesAvatars = hideInvitesAvatars,
             eventSink = eventSink,
-            onSetUpRecoveryClick = onSetUpRecoveryClick,
-            onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
             onRoomClick = onRoomClick,
             contentPadding = contentPadding,
             lazyListState = lazyListState,
@@ -211,10 +253,9 @@ private fun RoomsView(
 @Composable
 private fun RoomsViewList(
     state: RoomListContentState.Rooms,
+    accountRecoveryBannerState: AccountRecoveryBannerState,
     hideInvitesAvatars: Boolean,
     eventSink: (RoomListEvent) -> Unit,
-    onSetUpRecoveryClick: () -> Unit,
-    onConfirmRecoveryKeyClick: () -> Unit,
     onRoomClick: (RoomListRoomSummary) -> Unit,
     contentPadding: PaddingValues,
     lazyListState: LazyListState,
@@ -228,20 +269,24 @@ private fun RoomsViewList(
         modifier = modifier,
         contentPadding = contentPadding,
     ) {
-        when (state.securityBannerState) {
-            SecurityBannerState.SetUpRecovery -> {
-                item {
-                    SetUpRecoveryKeyBanner(
-                        onContinueClick = onSetUpRecoveryClick,
-                        onDismissClick = { eventSink(RoomListEvent.DismissBanner) },
-                    )
-                }
+        // GUA FORK: above the other banners and independent of them, so neither the encryption
+        // banner nor any dismissal can push it out.
+        if (accountRecoveryBannerState.pendingRecovery != null) {
+            item {
+                AccountRecoveryBanner(state = accountRecoveryBannerState)
             }
+        }
+        when (state.securityBannerState) {
+            SecurityBannerState.SetUpRecovery,
+            // GUA FORK: the presenter no longer produces SetUpRecovery, but render the same
+            // silent-repair banner here rather than upstream's, so no future path can reach
+            // the flow that hands a user a recovery key to write down.
             SecurityBannerState.RecoveryKeyConfirmation -> {
                 item {
                     ConfirmRecoveryKeyBanner(
-                        onContinueClick = onConfirmRecoveryKeyClick,
+                        onContinueClick = { eventSink(RoomListEvent.FinishEncryptionSetup) },
                         onDismissClick = { eventSink(RoomListEvent.DismissBanner) },
+                        isWorking = state.isFinishingEncryptionSetup,
                     )
                 }
             }
@@ -339,6 +384,7 @@ private fun EmptyScaffold(
 internal fun RoomListContentViewPreview(@PreviewParameter(RoomListContentStateProvider::class) state: RoomListContentState) = ElementPreview {
     RoomListContentView(
         contentState = state,
+        accountRecoveryBannerState = aHiddenAccountRecoveryBannerState(),
         filtersState = aRoomListFiltersState(
             filterSelectionStates = RoomListFilter.entries.map {
                 FilterSelectionState(
@@ -350,7 +396,6 @@ internal fun RoomListContentViewPreview(@PreviewParameter(RoomListContentStatePr
         spaceFiltersState = anUnselectedSpaceFiltersState(),
         hideInvitesAvatars = false,
         eventSink = {},
-        onSetUpRecoveryClick = {},
         onConfirmRecoveryKeyClick = {},
         onRoomClick = {},
         onCreateRoomClick = {},

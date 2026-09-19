@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: tr translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Arkadaş bul</string>
+    <string name="screen_find_friends_action">Arkadaş bul</string>
+    <string name="screen_find_friends_action_description">Kişilerinizden hangilerinin Gua\'da olduğunu görün</string>
+    <string name="screen_find_friends_loading">Kişileriniz Gua\'da aranıyor…</string>
+    <string name="screen_find_friends_permission_title">Kişilere erişime izin ver</string>
+    <string name="screen_find_friends_permission_message">Gua, hangilerinin burada olduğunu bulmak için kişilerinizi gizlilik içinde kontrol eder. Kişileriniz asla saklanmaz.</string>
+    <string name="screen_find_friends_permission_action">Erişime izin ver</string>
+    <string name="screen_find_friends_permission_denied_action">Ayarları aç</string>
+    <string name="screen_find_friends_empty_title">Gua\'da henüz kişi yok</string>
+    <string name="screen_find_friends_empty_message">Kişilerinizden hiçbiri henüz Gua\'da değil. Onları davet edin, burada görünsünler.</string>
+    <string name="screen_find_friends_empty_action">Tekrar kontrol et</string>
+    <string name="screen_find_friends_error_title">Bir şeyler ters gitti</string>
+    <string name="screen_find_friends_error_message">Kişilerinizi şu anda kontrol edemedik. Lütfen tekrar deneyin.</string>
+    <string name="screen_find_friends_error_action">Tekrar dene</string>
+    <string name="a11y_find_friends_view_profile">%1$s kişisinin profilini gör</string>
+    <string name="a11y_find_friends_start_chat">%1$s ile sohbet başlat</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d kişi Gua\'da</item>
+        <item quantity="other">%1$d kişi Gua\'da</item>
+    </plurals>
+</resources>

@@ -24,12 +24,14 @@ import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.preferences.impl.R
 import io.element.android.features.preferences.impl.user.UserPreferences
 import io.element.android.libraries.architecture.coverage.ExcludeFromCoverage
+import io.element.android.libraries.designsystem.atomic.molecules.ComposerAlertMolecule
 import io.element.android.libraries.designsystem.components.avatar.AvatarSize
 import io.element.android.libraries.designsystem.components.list.ListItemContent
 import io.element.android.libraries.designsystem.components.preferences.PreferencePage
 import io.element.android.libraries.designsystem.preview.ElementPreviewDark
 import io.element.android.libraries.designsystem.preview.ElementPreviewLight
 import io.element.android.libraries.designsystem.preview.PreviewWithLargeHeight
+import io.element.android.libraries.designsystem.text.toAnnotatedString
 import io.element.android.libraries.designsystem.theme.components.HorizontalDivider
 import io.element.android.libraries.designsystem.theme.components.IconSource
 import io.element.android.libraries.designsystem.theme.components.ListItem
@@ -54,6 +56,8 @@ fun PreferencesRootView(
     onOpenAnalytics: () -> Unit,
     onOpenRageShake: () -> Unit,
     onOpenLockScreenSettings: () -> Unit,
+    onSetupTwoStepVerification: () -> Unit,
+    onChangePhoneNumber: () -> Unit,
     onOpenAbout: () -> Unit,
     onOpenDeveloperSettings: () -> Unit,
     onOpenAdvancedSettings: () -> Unit,
@@ -80,6 +84,13 @@ fun PreferencesRootView(
             },
             matrixUser = state.myUser,
         )
+        // GUA FORK: the nudge sets up two-step verification, not the local app-lock, so it is gated on
+        // the account's factors rather than isLockScreenPinSetup. Only an explicit "no strong factor"
+        // shows it: a null means the status is unknown, and nagging on unknown is how a passkey
+        // holder ends up being told to create a PIN.
+        if (state.hasAccountStrongFactor == false) {
+            SetupPinBanner(onSetupTwoStepVerification)
+        }
         if (state.isMultiAccountEnabled) {
             MultiAccountSection(
                 state = state,
@@ -101,6 +112,8 @@ fun PreferencesRootView(
             state = state,
             onOpenNotificationSettings = onOpenNotificationSettings,
             onOpenLockScreenSettings = onOpenLockScreenSettings,
+            onSetupTwoStepVerification = onSetupTwoStepVerification,
+            onChangePhoneNumber = onChangePhoneNumber,
             onSecureBackupClick = onSecureBackupClick,
         )
 
@@ -168,6 +181,8 @@ private fun ColumnScope.ManageAppSection(
     state: PreferencesRootState,
     onOpenNotificationSettings: () -> Unit,
     onOpenLockScreenSettings: () -> Unit,
+    onSetupTwoStepVerification: () -> Unit,
+    onChangePhoneNumber: () -> Unit,
     onSecureBackupClick: () -> Unit,
 ) {
     ListItem(
@@ -176,9 +191,29 @@ private fun ColumnScope.ManageAppSection(
         onClick = onOpenNotificationSettings,
     )
     ListItem(
-        headlineContent = { Text(stringResource(id = CommonStrings.common_screen_lock)) },
+        headlineContent = {
+            Text(
+                stringResource(
+                    id = if (state.isLockScreenPinSetup) {
+                        CommonStrings.common_screen_lock
+                    } else {
+                        R.string.screen_preferences_set_up_pin_title
+                    }
+                )
+            )
+        },
+        // GUA FORK: no subtitle — 2SV is more than a PIN, so we don't advertise a "6-digit PIN" here.
+        supportingContent = null,
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Lock())),
-        onClick = onOpenLockScreenSettings,
+        // GUA FORK: when no PIN is set this row offers account 2SV (6-digit), not the
+        // local 4-digit app-lock. When an app-lock PIN exists it manages the screen lock.
+        onClick = if (state.isLockScreenPinSetup) onOpenLockScreenSettings else onSetupTwoStepVerification,
+    )
+    // GUA FORK: Change phone number — re-bind the account to a new number.
+    ListItem(
+        headlineContent = { Text(stringResource(id = R.string.screen_change_phone_title)) },
+        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Edit())),
+        onClick = onChangePhoneNumber,
     )
     if (state.showSecureBackup) {
         ListItem(
@@ -189,6 +224,20 @@ private fun ColumnScope.ManageAppSection(
         )
     }
     HorizontalDivider()
+}
+
+@Composable
+private fun SetupPinBanner(
+    onSetupTwoStepVerification: () -> Unit,
+) {
+    ComposerAlertMolecule(
+        avatar = null,
+        content = stringResource(id = R.string.screen_preferences_pin_nudge_message).toAnnotatedString(),
+        onSubmitClick = onSetupTwoStepVerification,
+        showIcon = true,
+        submitText = stringResource(id = R.string.screen_preferences_pin_nudge_action),
+        modifier = Modifier.padding(top = 8.dp),
+    )
 }
 
 @Composable
@@ -358,6 +407,8 @@ private fun ContentToPreview(state: PreferencesRootState) {
         onLinkNewDeviceClick = {},
         onOpenNotificationSettings = {},
         onOpenLockScreenSettings = {},
+        onSetupTwoStepVerification = {},
+        onChangePhoneNumber = {},
         onOpenUserProfile = {},
         onOpenBlockedUsers = {},
         onSignOutClick = {},

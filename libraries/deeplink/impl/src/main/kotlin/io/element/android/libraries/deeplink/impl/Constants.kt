@@ -8,5 +8,7 @@
 
 package io.element.android.libraries.deeplink.impl
 
-internal const val SCHEME = "elementx"
+// GUA FORK: notification deep-link scheme rebranded from "elementx" to "gua"; must stay in
+// sync with the intent-filter data scheme in app/src/main/AndroidManifest.xml.
+internal const val SCHEME = "gua"
 internal const val HOST = "open"

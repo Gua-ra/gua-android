@@ -24,7 +24,31 @@ import extension.buildConfigFieldStr
 import extension.locales
 import extension.setupDependencyInjection
 import extension.testCommonDependencies
+import org.sonarqube.gradle.SonarResolverTask
 import java.util.Locale
+import java.util.Properties
+
+// GUA FORK: release signing material is supplied by CI/the environment and is NEVER committed.
+// Resolution order for each value: environment variable -> gitignored `app/keystore.properties`.
+// When nothing is configured (e.g. local debug builds, CI unit tests) the release build falls
+// back to the shared debug keystore so the pipeline stays green without any secrets present.
+val guaKeystoreProperties = Properties().apply {
+    val propsFile = rootProject.file("app/keystore.properties")
+    if (propsFile.exists()) {
+        propsFile.inputStream().use { load(it) }
+    }
+}
+
+fun guaSigningValue(envName: String, propName: String): String? =
+    System.getenv(envName) ?: guaKeystoreProperties.getProperty(propName)
+
+// GUA FORK: Play permanently refuses a versionCode it has already accepted for a package, while
+// Versions.VERSION_CODE is CalVer and only moves when the release script bumps it. Without this,
+// shipping the same branch to the QA app twice would be rejected by Play after a ~35 minute R8
+// build. CI passes the workflow run number here (see .github/workflows/publish-play.yml), so QA
+// uploads are unique and still ordered. Production builds leave it unset: a production release is
+// exactly the CalVer code, and a rejection there correctly means "bump the release number".
+val guaVersionCodeOffset = (project.findProperty("gua.versionCodeOffset") as? String)?.toInt() ?: 0
 
 plugins {
     id("io.element.android-compose-application")
@@ -43,7 +67,7 @@ android {
     defaultConfig {
         applicationId = BuildTimeConfig.APPLICATION_ID
         targetSdk = Versions.TARGET_SDK
-        versionCode = Versions.VERSION_CODE
+        versionCode = Versions.VERSION_CODE + guaVersionCodeOffset
         versionName = Versions.VERSION_NAME
 
         // Keep abiFilter for the universalApk
@@ -95,6 +119,20 @@ android {
             storePassword = System.getenv("ELEMENT_ANDROID_NIGHTLY_STOREPASSWORD")
                 ?: project.property("signing.element.nightly.storePassword") as? String?
         }
+
+        // GUA FORK: production release signing. All material comes from the environment (CI) or a
+        // gitignored `app/keystore.properties`; nothing is ever committed to the repo. The config is
+        // only registered when a keystore path is actually provided, so debug/test pipelines that have
+        // no secrets simply skip it and the release type falls back to debug signing below.
+        val guaReleaseStoreFile = guaSigningValue("GUA_RELEASE_KEYSTORE", "storeFile")
+        if (guaReleaseStoreFile != null) {
+            register("release") {
+                storeFile = file(guaReleaseStoreFile)
+                storePassword = guaSigningValue("GUA_RELEASE_KEYSTORE_PASSWORD", "storePassword")
+                keyAlias = guaSigningValue("GUA_RELEASE_KEY_ALIAS", "keyAlias")
+                keyPassword = guaSigningValue("GUA_RELEASE_KEY_PASSWORD", "keyPassword")
+            }
+        }
     }
 
     val baseAppName = BuildTimeConfig.APPLICATION_NAME
@@ -115,13 +153,31 @@ android {
         }
 
         getByName("release") {
-            resValue("string", "app_name", baseAppName)
-            resValue(
-                "string",
-                "login_redirect_scheme",
-                oAuthRedirectSchemeBase,
-            )
-            signingConfig = signingConfigs.getByName("debug")
+            // GUA FORK: `-Pgua.deployment=dev` builds the QA app — the Android mirror of the iOS
+            // dev variant (Variants/Dev/dev.yml): applicationId global.gua.dev, display name
+            // "Gua QA", OIDC redirect scheme global.gua.dev (which MAS pairs with client_uri
+            // https://gua.global, same as iOS), talking to the dev deployment (see the
+            // guaresolver module). Without the property this stays the production app.
+            val useDevDeployment = (project.findProperty("gua.deployment") as? String) == "dev"
+            if (useDevDeployment) {
+                applicationIdSuffix = ".dev"
+                resValue("string", "app_name", "Gua QA")
+                resValue(
+                    "string",
+                    "login_redirect_scheme",
+                    "$oAuthRedirectSchemeBase.dev",
+                )
+            } else {
+                resValue("string", "app_name", baseAppName)
+                resValue(
+                    "string",
+                    "login_redirect_scheme",
+                    oAuthRedirectSchemeBase,
+                )
+            }
+            // GUA FORK: sign with the env/CI-provided release key when available, otherwise fall back
+            // to the shared debug keystore so secret-less builds (local dev, CI tests) still succeed.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
 
             optimization {
                 enable = true
@@ -243,6 +299,11 @@ androidComponents {
 
     val reportingExtension: ReportingExtension = project.extensions.getByType(ReportingExtension::class.java)
     configureLicensesTasks(reportingExtension)
+}
+
+// Configure the SonarQube plugin to wait for the resource generation tasks to complete before running the analysis.
+tasks.withType<SonarResolverTask>().configureEach {
+    dependsOn("generateGplayDebugResValues", "generateGplayDebugAndroidTestResValues")
 }
 
 setupDependencyInjection()

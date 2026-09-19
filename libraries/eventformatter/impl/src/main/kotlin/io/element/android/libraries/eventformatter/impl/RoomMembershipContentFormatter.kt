@@ -27,7 +27,8 @@ class RoomMembershipContentFormatter(
     ): CharSequence? {
         val userId = membershipContent.userId
         val memberIsYou = matrixClient.isMe(userId)
-        val userDisplayNameOrId = membershipContent.userDisplayName ?: userId.value
+        // GUA FORK: fall back to the homeserver-stripped handle, never `@user:server`.
+        val userDisplayNameOrId = membershipContent.userDisplayName ?: userId.displayHandle
         val reason = membershipContent.reason?.takeIf { it.isNotBlank() }
         return when (membershipContent.change) {
             MembershipChange.JOINED -> if (memberIsYou) {

@@ -37,23 +37,25 @@ class ProfileChangeContentFormatter(
                 "$message\n$avatarChangedToo"
             }
             displayNameChanged -> {
+                // GUA FORK: identify the sender by the homeserver-stripped handle, never `@user:server`.
+                val senderHandle = senderId.displayHandle
                 if (displayName != null && prevDisplayName != null) {
                     if (senderIsYou) {
                         sp.getString(R.string.state_event_display_name_changed_from_by_you, prevDisplayName, displayName)
                     } else {
-                        sp.getString(R.string.state_event_display_name_changed_from, senderId.value, prevDisplayName, displayName)
+                        sp.getString(R.string.state_event_display_name_changed_from, senderHandle, prevDisplayName, displayName)
                     }
                 } else if (displayName != null) {
                     if (senderIsYou) {
                         sp.getString(R.string.state_event_display_name_set_by_you, displayName)
                     } else {
-                        sp.getString(R.string.state_event_display_name_set, senderId.value, displayName)
+                        sp.getString(R.string.state_event_display_name_set, senderHandle, displayName)
                     }
                 } else {
                     if (senderIsYou) {
                         sp.getString(R.string.state_event_display_name_removed_by_you, prevDisplayName)
                     } else {
-                        sp.getString(R.string.state_event_display_name_removed, senderId.value, prevDisplayName)
+                        sp.getString(R.string.state_event_display_name_removed, senderHandle, prevDisplayName)
                     }
                 }
             }

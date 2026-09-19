@@ -102,13 +102,14 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
         val info = ImageInfo(null, null, null, null, null, null, null)
         val message = createLatestEvent(false, null, aStickerContent(body, info, aMediaSource(url = "url")))
         val result = formatter.format(message, false)
-        val expectedBody = someoneElseId.value + ": Sticker: a sticker body"
+        // GUA FORK: the sender is rendered by its homeserver-stripped handle, never `@user:server`.
+        val expectedBody = someoneElseId.displayHandle + ": Sticker: a sticker body"
         // Check we have formatting
         assertThat(result is AnnotatedString).isTrue()
         // And there is a bold span for the 'Sticker' part
         val boldSpanStyle = (result as AnnotatedString).spanStyles.lastOrNull { it.item.fontWeight == FontWeight.Bold }
         assertThat(boldSpanStyle).isNotNull()
-        val spanStart = someoneElseId.value.length + 2
+        val spanStart = someoneElseId.displayHandle.length + 2
         assertThat(boldSpanStyle!!.start..boldSpanStyle.end).isEqualTo(spanStart..spanStart + 7)
         assertThat(result.toString()).isEqualTo(expectedBody)
     }
@@ -841,7 +842,8 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
 
         val someoneChangedDisplayNameEvent = createLatestEvent(sentByYou = false, senderDisplayName = otherName, content = changedContent)
         val someoneChangedDisplayName = formatter.format(someoneChangedDisplayNameEvent, false)
-        assertThat(someoneChangedDisplayName).isEqualTo("$someoneElseId changed their display name from $oldDisplayName to $newDisplayName")
+        // GUA FORK: the sender is identified by its homeserver-stripped handle, never `@user:server`.
+        assertThat(someoneChangedDisplayName).isEqualTo("${someoneElseId.displayHandle} changed their display name from $oldDisplayName to $newDisplayName")
 
         val youSetDisplayNameEvent = createLatestEvent(sentByYou = true, senderDisplayName = null, content = setContent)
         val youSetDisplayName = formatter.format(youSetDisplayNameEvent, false)
@@ -849,7 +851,7 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
 
         val someoneSetDisplayNameEvent = createLatestEvent(sentByYou = false, senderDisplayName = otherName, content = setContent)
         val someoneSetDisplayName = formatter.format(someoneSetDisplayNameEvent, false)
-        assertThat(someoneSetDisplayName).isEqualTo("$someoneElseId set their display name to $newDisplayName")
+        assertThat(someoneSetDisplayName).isEqualTo("${someoneElseId.displayHandle} set their display name to $newDisplayName")
 
         val youRemovedDisplayNameEvent = createLatestEvent(sentByYou = true, senderDisplayName = null, content = removedContent)
         val youRemovedDisplayName = formatter.format(youRemovedDisplayNameEvent, false)
@@ -857,7 +859,7 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
 
         val someoneRemovedDisplayNameEvent = createLatestEvent(sentByYou = false, senderDisplayName = otherName, content = removedContent)
         val someoneRemovedDisplayName = formatter.format(someoneRemovedDisplayNameEvent, false)
-        assertThat(someoneRemovedDisplayName).isEqualTo("$someoneElseId removed their display name (it was $oldDisplayName)")
+        assertThat(someoneRemovedDisplayName).isEqualTo("${someoneElseId.displayHandle} removed their display name (it was $oldDisplayName)")
 
         val unchangedEvent = createLatestEvent(sentByYou = true, senderDisplayName = otherName, content = sameContent)
         val unchangedResult = formatter.format(unchangedEvent, false)

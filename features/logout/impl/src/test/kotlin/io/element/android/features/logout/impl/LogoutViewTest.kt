@@ -13,6 +13,7 @@ package io.element.android.features.logout.impl
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.testtags.TestTags
@@ -93,30 +94,29 @@ class LogoutViewTest : RobolectricTest() {
     }
 
     @Test
-    fun `last session setting button invoke onChangeRecoveryKeyClicked`() = runAndroidComposeUiTest {
+    fun `signing out of the only device offers no way into the recovery key screens`() = runAndroidComposeUiTest {
+        // GUA FORK: this screen used to carry a "Settings" button through to the secure-backup
+        // console, which is where a recovery key gets generated and shown, and it did so whatever
+        // the developer gate on the Settings row said. Signing out of your only device is the
+        // moment this fork most needs not to hand someone a key.
         val eventsRecorder = EventsRecorder<LogoutEvents>(expectEvents = false)
-        ensureCalledOnce { callback ->
-            setLogoutView(
-                aLogoutState(
-                    isLastDevice = true,
-                    eventSink = eventsRecorder
-                ),
-                onChangeRecoveryKeyClick = callback,
-            )
-            clickOn(CommonStrings.common_settings)
-        }
+        setLogoutView(
+            aLogoutState(
+                isLastDevice = true,
+                eventSink = eventsRecorder
+            ),
+        )
+        onNodeWithText(activity!!.getString(CommonStrings.common_settings)).assertDoesNotExist()
     }
 }
 
 private fun AndroidComposeUiTest<ComponentActivity>.setLogoutView(
     state: LogoutState,
-    onChangeRecoveryKeyClick: () -> Unit = EnsureNeverCalled(),
     onBackClick: () -> Unit = EnsureNeverCalled(),
 ) {
     setContent {
         LogoutView(
             state = state,
-            onChangeRecoveryKeyClick = onChangeRecoveryKeyClick,
             onBackClick = onBackClick,
         )
     }

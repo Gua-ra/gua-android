@@ -1,6 +1,9 @@
 name: Validate Git LFS
 
-on: [pull_request, merge_group]
+# GUA FORK: disabled — upstream LFS goldens are not pulled in the fork; only Gua record-tests carry
+# real PNGs. Avoids false failures on LFS-pointer files. Manual only.
+on:
+  workflow_dispatch:
 
 permissions: {}
 

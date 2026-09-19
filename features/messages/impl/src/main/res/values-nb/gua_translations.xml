@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: nb translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_identity_change_banner">Sikkerhetsopplysningene til %1$s er endret. Det kan skje når noen installerer Gua på nytt eller får ny telefon. %2$s</string>
+    <string name="gua_identity_change_undecryptable">Denne meldingen kan ikke åpnes fordi avsenderens sikkerhetsopplysninger er endret.</string>
+</resources>

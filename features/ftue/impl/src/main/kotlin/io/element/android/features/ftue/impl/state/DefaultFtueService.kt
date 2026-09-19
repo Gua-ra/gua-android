@@ -19,9 +19,7 @@ import io.element.android.libraries.core.coroutine.mapState
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.verification.SessionVerificationService
-import io.element.android.libraries.matrix.api.verification.SessionVerifiedStatus
 import io.element.android.libraries.permissions.api.PermissionStateProvider
-import io.element.android.libraries.preferences.api.store.SessionPreferencesStore
 import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.toolbox.api.sdk.BuildVersionSdkIntProvider
 import kotlinx.coroutines.CoroutineScope
@@ -30,7 +28,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 @ContributesBinding(SessionScope::class)
@@ -42,7 +39,6 @@ class DefaultFtueService(
     private val permissionStateProvider: PermissionStateProvider,
     private val lockScreenService: LockScreenService,
     private val sessionVerificationService: SessionVerificationService,
-    private val sessionPreferencesStore: SessionPreferencesStore,
 ) : FtueService {
     private val userNeedsToConfirmSessionVerificationSuccess = MutableStateFlow(false)
 
@@ -59,15 +55,16 @@ class DefaultFtueService(
 
     init {
         combine(
-            sessionVerificationService.sessionVerifiedStatus.onEach { sessionVerifiedStatus ->
-                if (sessionVerifiedStatus == SessionVerifiedStatus.NotVerified) {
-                    // Ensure we wait for the user to confirm the session verified screen before going further
-                    userNeedsToConfirmSessionVerificationSuccess.value = true
-                }
-            },
+            // Gua: encryption is set up on first sign-in and restored on re-login entirely in the
+            // background (see SilentSessionEncryptionBootstrapper in the matrix impl module), so we
+            // never gate the user on the identity-confirmation / verify ceremony. We therefore do
+            // NOT flip userNeedsToConfirmSessionVerificationSuccess when the session is not verified;
+            // the FtueStep.SessionVerification step is unreachable below. This mirrors iOS
+            // OnboardingFlowCoordinator.requiresVerification == false exactly.
+            sessionVerificationService.sessionVerifiedStatus,
             userNeedsToConfirmSessionVerificationSuccess,
             analyticsService.didAskUserConsentFlow.distinctUntilChanged(),
-        ) {
+        ) { _, _, _ ->
             updateFtueStep()
         }
             .launchIn(sessionCoroutineScope)
@@ -83,16 +80,17 @@ class DefaultFtueService(
 
     private suspend fun getNextStep(completedStep: FtueStep? = null): FtueStep? =
         when (completedStep) {
-            null -> if (!isSessionVerificationStateReady()) {
-                FtueStep.WaitingForInitialState
-            } else {
-                getNextStep(FtueStep.WaitingForInitialState)
-            }
-            FtueStep.WaitingForInitialState -> if (isSessionNotVerified() || userNeedsToConfirmSessionVerificationSuccess.value) {
-                FtueStep.SessionVerification
-            } else {
-                getNextStep(FtueStep.SessionVerification)
-            }
+            // GUA FORK: never wait for the verification state. The only step that needed it is
+            // the session-verification ceremony below, which this fork does not present, and the
+            // wait held a device whose identity was reset from ANOTHER device on a blank screen
+            // for good (the SDK's encryption set-up never reports ready there). The room list
+            // handles an unverified or incomplete device with its setup banner instead.
+            null -> getNextStep(FtueStep.WaitingForInitialState)
+            // Gua: never gate onboarding on session verification. Encryption is bootstrapped /
+            // restored silently in the background, mirroring iOS requiresVerification == false, so
+            // the ChooseSelfVerificationMode ceremony is never presented. Device verification /
+            // recovery remains reachable from Settings (see SecureBackup / PreferencesRootPresenter).
+            FtueStep.WaitingForInitialState -> getNextStep(FtueStep.SessionVerification)
             FtueStep.SessionVerification -> if (shouldAskNotificationPermissions()) {
                 FtueStep.NotificationsOptIn
             } else {
@@ -110,18 +108,6 @@ class DefaultFtueService(
             }
             FtueStep.AnalyticsOptIn -> null
         }
-
-    private fun isSessionVerificationStateReady(): Boolean {
-        return sessionVerificationService.sessionVerifiedStatus.value != SessionVerifiedStatus.Unknown
-    }
-
-    private suspend fun isSessionNotVerified(): Boolean {
-        return sessionVerificationService.sessionVerifiedStatus.value == SessionVerifiedStatus.NotVerified && !canSkipVerification()
-    }
-
-    private suspend fun canSkipVerification(): Boolean {
-        return sessionPreferencesStore.isSessionVerificationSkipped().first()
-    }
 
     private suspend fun needsAnalyticsOptIn(): Boolean {
         return analyticsService.didAskUserConsentFlow.first().not()

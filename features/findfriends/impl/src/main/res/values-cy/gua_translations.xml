@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: cy translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Dod o hyd i ffrindiau</string>
+    <string name="screen_find_friends_action">Dod o hyd i ffrindiau</string>
+    <string name="screen_find_friends_action_description">Gwelwch pa rai o\'ch cysylltiadau sydd ar Gua</string>
+    <string name="screen_find_friends_loading">Yn chwilio am eich cysylltiadau ar Gua…</string>
+    <string name="screen_find_friends_permission_title">Caniatáu mynediad at gysylltiadau</string>
+    <string name="screen_find_friends_permission_message">Mae Gua yn gwirio\'ch cysylltiadau\'n breifat i weld pwy sydd yma\'n barod. Nid yw eich cysylltiadau byth yn cael eu cadw.</string>
+    <string name="screen_find_friends_permission_action">Caniatáu mynediad</string>
+    <string name="screen_find_friends_permission_denied_action">Agor gosodiadau</string>
+    <string name="screen_find_friends_empty_title">Dim cysylltiadau ar Gua eto</string>
+    <string name="screen_find_friends_empty_message">Nid oes yr un o\'ch cysylltiadau ar Gua eto. Gwahoddwch nhw ac fe fyddan nhw\'n ymddangos yma.</string>
+    <string name="screen_find_friends_empty_action">Gwirio eto</string>
+    <string name="screen_find_friends_error_title">Aeth rhywbeth o\'i le</string>
+    <string name="screen_find_friends_error_message">Doedden ni ddim yn gallu gwirio\'ch cysylltiadau nawr. Rhowch gynnig arall arni.</string>
+    <string name="screen_find_friends_error_action">Ceisio eto</string>
+    <string name="a11y_find_friends_view_profile">Gweld proffil %1$s</string>
+    <string name="a11y_find_friends_start_chat">Dechrau sgwrs gyda %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">Mae %1$d cyswllt ar Gua</item>
+        <item quantity="other">Mae %1$d cyswllt ar Gua</item>
+    </plurals>
+</resources>

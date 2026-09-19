@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ur translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">دوست تلاش کریں</string>
+    <string name="screen_find_friends_action">دوست تلاش کریں</string>
+    <string name="screen_find_friends_action_description">دیکھیں کہ آپ کے کن رابطوں کے پاس Gua ہے</string>
+    <string name="screen_find_friends_loading">Gua پر آپ کے رابطے تلاش کیے جا رہے ہیں…</string>
+    <string name="screen_find_friends_permission_title">رابطوں تک رسائی کی اجازت دیں</string>
+    <string name="screen_find_friends_permission_message">Gua آپ کے رابطے نجی طور پر جانچتا ہے تاکہ معلوم ہو کہ کون پہلے سے یہاں ہے۔ آپ کے رابطے کبھی محفوظ نہیں کیے جاتے۔</string>
+    <string name="screen_find_friends_permission_action">رسائی کی اجازت دیں</string>
+    <string name="screen_find_friends_permission_denied_action">ترتیبات کھولیں</string>
+    <string name="screen_find_friends_empty_title">ابھی Gua پر کوئی رابطہ نہیں</string>
+    <string name="screen_find_friends_empty_message">آپ کے رابطوں میں سے ابھی کوئی Gua پر نہیں ہے۔ انہیں مدعو کریں اور وہ یہاں نظر آئیں گے۔</string>
+    <string name="screen_find_friends_empty_action">دوبارہ جانچیں</string>
+    <string name="screen_find_friends_error_title">کچھ غلط ہو گیا</string>
+    <string name="screen_find_friends_error_message">ہم ابھی آپ کے رابطے نہیں جانچ سکے۔ دوبارہ کوشش کریں۔</string>
+    <string name="screen_find_friends_error_action">دوبارہ کوشش کریں</string>
+    <string name="a11y_find_friends_view_profile">%1$s کا پروفائل دیکھیں</string>
+    <string name="a11y_find_friends_start_chat">%1$s کے ساتھ گفتگو شروع کریں</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d رابطہ Gua پر ہے</item>
+        <item quantity="other">%1$d رابطے Gua پر ہیں</item>
+    </plurals>
+</resources>

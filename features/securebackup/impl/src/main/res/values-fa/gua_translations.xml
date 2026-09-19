@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: fa translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_encryption_reset_required_title">برخی پیام‌های پیشین قابل بازیابی نیستند</string>
+    <string name="gua_encryption_reset_required_message">برای تکمیل راه‌اندازی گفت‌وگوهای رمزگذاری‌شده روی این دستگاه، پشتیبان رمزگذاری‌شدهٔ شما باید بازنشانی شود. پیام‌هایی که فقط در آن پشتیبان ذخیره شده‌اند از دست می‌روند. پیام‌هایی که همین حالا روی دستگاه‌های شما هستند تحت تأثیر قرار نمی‌گیرند.</string>
+    <string name="gua_encryption_reset_required_action">بازنشانی و تکمیل</string>
+    <string name="gua_encryption_reset_finishing">در حال تکمیل راه‌اندازی…</string>
+    <string name="gua_encryption_reset_failed">راه‌اندازی تکمیل نشد. برای تلاش دوباره، «بازنشانی و تکمیل» را بزنید.</string>
+    <string name="gua_encryption_recover_from_other_device_title">پیام‌های پیشین خود را بازیابی کنید</string>
+    <string name="gua_encryption_recover_from_other_device_message">با دستگاه دیگر خود، پیام‌هایی را که هنوز روی این دستگاه در دسترس نیستند بازیابی کنید.\n\nاگر به آن دسترسی ندارید، می‌توانید بازنشانی کنید و راه‌اندازی را تکمیل کنید، اما پیام‌هایی که فقط در پشتیبان شما ذخیره شده‌اند برای همیشه از دست می‌روند.</string>
+    <string name="gua_encryption_recover_from_other_device_action">استفاده از دستگاه دیگرم</string>
+    <string name="gua_encryption_recover_from_other_device_failed">پیام‌های شما از دستگاه دیگر دریافت نشد. مطمئن شوید که Gua روی آن باز است و دوباره تلاش کنید، یا بازنشانی کنید.</string>
+</resources>

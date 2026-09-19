@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: vi translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Tìm bạn bè</string>
+    <string name="screen_find_friends_action">Tìm bạn bè</string>
+    <string name="screen_find_friends_action_description">Xem ai trong danh bạ của bạn đang dùng Gua</string>
+    <string name="screen_find_friends_loading">Đang tìm danh bạ của bạn trên Gua…</string>
+    <string name="screen_find_friends_permission_title">Cho phép truy cập danh bạ</string>
+    <string name="screen_find_friends_permission_message">Gua đối chiếu danh bạ của bạn một cách riêng tư để biết ai đã có mặt ở đây. Danh bạ của bạn không bao giờ được lưu lại.</string>
+    <string name="screen_find_friends_permission_action">Cho phép truy cập</string>
+    <string name="screen_find_friends_permission_denied_action">Mở cài đặt</string>
+    <string name="screen_find_friends_empty_title">Chưa có liên hệ nào trên Gua</string>
+    <string name="screen_find_friends_empty_message">Chưa ai trong danh bạ của bạn dùng Gua. Hãy mời họ và họ sẽ xuất hiện ở đây.</string>
+    <string name="screen_find_friends_empty_action">Kiểm tra lại</string>
+    <string name="screen_find_friends_error_title">Đã xảy ra lỗi</string>
+    <string name="screen_find_friends_error_message">Hiện chưa thể kiểm tra danh bạ của bạn. Vui lòng thử lại.</string>
+    <string name="screen_find_friends_error_action">Thử lại</string>
+    <string name="a11y_find_friends_view_profile">Xem hồ sơ của %1$s</string>
+    <string name="a11y_find_friends_start_chat">Bắt đầu trò chuyện với %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d liên hệ đang dùng Gua</item>
+        <item quantity="other">%1$d liên hệ đang dùng Gua</item>
+    </plurals>
+</resources>

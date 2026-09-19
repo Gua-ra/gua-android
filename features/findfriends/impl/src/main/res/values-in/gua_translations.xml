@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: in translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Temukan teman</string>
+    <string name="screen_find_friends_action">Temukan teman</string>
+    <string name="screen_find_friends_action_description">Lihat siapa saja dari kontak Anda yang ada di Gua</string>
+    <string name="screen_find_friends_loading">Mencari kontak Anda di Gua…</string>
+    <string name="screen_find_friends_permission_title">Izinkan akses ke kontak</string>
+    <string name="screen_find_friends_permission_message">Gua memeriksa kontak Anda secara privat untuk mengetahui siapa yang sudah ada di sini. Kontak Anda tidak pernah disimpan.</string>
+    <string name="screen_find_friends_permission_action">Izinkan akses</string>
+    <string name="screen_find_friends_permission_denied_action">Buka pengaturan</string>
+    <string name="screen_find_friends_empty_title">Belum ada kontak di Gua</string>
+    <string name="screen_find_friends_empty_message">Belum ada kontak Anda yang menggunakan Gua. Undang mereka dan mereka akan muncul di sini.</string>
+    <string name="screen_find_friends_empty_action">Periksa lagi</string>
+    <string name="screen_find_friends_error_title">Terjadi kesalahan</string>
+    <string name="screen_find_friends_error_message">Kami tidak dapat memeriksa kontak Anda saat ini. Coba lagi.</string>
+    <string name="screen_find_friends_error_action">Coba lagi</string>
+    <string name="a11y_find_friends_view_profile">Lihat profil %1$s</string>
+    <string name="a11y_find_friends_start_chat">Mulai obrolan dengan %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d kontak ada di Gua</item>
+        <item quantity="other">%1$d kontak ada di Gua</item>
+    </plurals>
+</resources>

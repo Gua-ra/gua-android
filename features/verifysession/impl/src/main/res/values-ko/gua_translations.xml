@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_verification_other_device_title">다른 기기에서 Gua를 여세요</string>
+    <string name="gua_verification_other_device_subtitle">앱을 계속 열어 두세요. 두 기기에 표시되는 이모지 몇 개를 비교해 본인인지 확인합니다.</string>
+    <string name="gua_verification_waiting_other_device_title">다른 기기를 기다리고 있습니다</string>
+    <string name="gua_verification_compare_emojis_subtitle">아래 이모지가 다른 기기에 표시된 이모지와 일치하는지 확인하세요.</string>
+</resources>

@@ -33,4 +33,17 @@ value class UserId(val value: String) : Serializable {
 
     val domainName: String?
         get() = value.substringAfter(":").takeIf { it.isNotEmpty() }
+
+    /**
+     * GUA FORK: A display-only handle that hides the ":homeserver" suffix
+     * (e.g. `@alice:dev.local` -> `@alice`). Mirrors the iOS `guaDisplayHandle`.
+     * Gua's frictionless UX never surfaces the homeserver to end users. The raw
+     * [value] is still used for any logic, avatars, routing, and logging.
+     */
+    val displayHandle: String
+        get() = if (value.startsWith("@")) {
+            "@" + extractedDisplayName
+        } else {
+            value
+        }
 }

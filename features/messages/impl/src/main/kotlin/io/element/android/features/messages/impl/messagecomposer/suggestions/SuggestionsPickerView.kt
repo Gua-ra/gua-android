@@ -126,7 +126,8 @@ private fun SuggestionItemView(
         }
         val subtitle = when (suggestion) {
             is ResolvedSuggestion.AtRoom -> "@room"
-            is ResolvedSuggestion.Member -> suggestion.roomMember.userId.value
+            // GUA FORK: hide the homeserver suffix in the user handle.
+            is ResolvedSuggestion.Member -> suggestion.roomMember.userId.displayHandle
             is ResolvedSuggestion.Alias -> suggestion.roomAlias.value
             is ResolvedSuggestion.Command -> suggestion.command.description
         }

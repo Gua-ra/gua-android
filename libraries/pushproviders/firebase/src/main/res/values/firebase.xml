@@ -1,10 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  GUA FORK: the upstream file committed Element's live Firebase project (vector-alpha) and a real
+  Google API key. Those third-party credentials must never ship in the Gua binary, so they are
+  removed here. Empty api-key/app-id values make FirebaseApp skip auto-initialization (no crash,
+  no push) until Gua's own Firebase project is wired in.
+
+  These are Gua's own, from project "Gua Global" (gua-global, 511804071315). They are
+  project-wide: one Android API key serves all three packages, and which app a push reaches
+  is decided by google_app_id, which BuildTimeConfig.GOOGLE_APP_ID_* sets per build.
+
+  google_api_key is not a secret in the usual sense: it ships inside every APK, and Google
+  restricts it by package name and signing certificate rather than by keeping it hidden.
+
+  Left empty on purpose: default_web_client_id (no Google Sign-In), firebase_database_url
+  (no Realtime Database), google_crash_reporting_api_key (Crashlytics is not used).
+-->
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="default_web_client_id" translatable="false">912726360885-e87n3jva9uoj4vbidvijq78ebg02asv2.apps.googleusercontent.com</string>
-    <string name="firebase_database_url" translatable="false">https://vector-alpha.firebaseio.com</string>
-    <string name="gcm_defaultSenderId" translatable="false">912726360885</string>
-    <string name="google_api_key" translatable="false">AIzaSyAFZX8IhIfgzdOZvxDP_ISO5WYoU7jmQ5c</string>
-    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyAFZX8IhIfgzdOZvxDP_ISO5WYoU7jmQ5c</string>
-    <string name="google_storage_bucket" translatable="false">vector-alpha.appspot.com</string>
-    <string name="project_id" translatable="false" tools:ignore="UnusedResources">vector-alpha</string>
+    <string name="default_web_client_id" translatable="false"></string>
+    <string name="firebase_database_url" translatable="false"></string>
+    <string name="gcm_defaultSenderId" translatable="false">511804071315</string>
+    <string name="google_api_key" translatable="false">AIzaSyB2RTAWSf9v5lqoXILeoc7wzgfImvv1Pxs</string>
+    <string name="google_crash_reporting_api_key" translatable="false"></string>
+    <string name="google_storage_bucket" translatable="false">gua-global.firebasestorage.app</string>
+    <string name="project_id" translatable="false" tools:ignore="UnusedResources">gua-global</string>
 </resources>

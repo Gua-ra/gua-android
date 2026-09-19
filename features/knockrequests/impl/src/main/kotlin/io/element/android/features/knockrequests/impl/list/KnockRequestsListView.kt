@@ -350,7 +350,8 @@ private fun KnockRequestItem(
             // UserId
             if (!knockRequest.displayName.isNullOrEmpty()) {
                 Text(
-                    text = knockRequest.userId.value,
+                    // GUA FORK: hide the homeserver suffix in the user handle.
+                    text = knockRequest.userId.displayHandle,
                     color = ElementTheme.colors.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

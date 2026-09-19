@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ka translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">მეგობრების პოვნა</string>
+    <string name="screen_find_friends_action">მეგობრების პოვნა</string>
+    <string name="screen_find_friends_action_description">ნახეთ, თქვენი კონტაქტებიდან ვინ არის Gua-ზე</string>
+    <string name="screen_find_friends_loading">მიმდინარეობს თქვენი კონტაქტების ძებნა Gua-ზე…</string>
+    <string name="screen_find_friends_permission_title">კონტაქტებზე წვდომის დაშვება</string>
+    <string name="screen_find_friends_permission_message">Gua თქვენს კონტაქტებს კონფიდენციალურად ამოწმებს, რომ გაიგოს ვინ არის უკვე აქ. თქვენი კონტაქტები არასდროს ინახება.</string>
+    <string name="screen_find_friends_permission_action">წვდომის დაშვება</string>
+    <string name="screen_find_friends_permission_denied_action">პარამეტრების გახსნა</string>
+    <string name="screen_find_friends_empty_title">Gua-ზე ჯერ კონტაქტები არ არის</string>
+    <string name="screen_find_friends_empty_message">თქვენი კონტაქტებიდან ჯერ არავინ არის Gua-ზე. მოიწვიეთ ისინი და აქ გამოჩნდებიან.</string>
+    <string name="screen_find_friends_empty_action">ხელახლა შემოწმება</string>
+    <string name="screen_find_friends_error_title">რაღაც ვერ მოხერხდა</string>
+    <string name="screen_find_friends_error_message">ამჟამად ვერ შევამოწმეთ თქვენი კონტაქტები. სცადეთ ხელახლა.</string>
+    <string name="screen_find_friends_error_action">ხელახლა ცდა</string>
+    <string name="a11y_find_friends_view_profile">%1$s-ის პროფილის ნახვა</string>
+    <string name="a11y_find_friends_start_chat">ჩატის დაწყება %1$s-თან</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d კონტაქტი არის Gua-ზე</item>
+        <item quantity="other">%1$d კონტაქტი არის Gua-ზე</item>
+    </plurals>
+</resources>

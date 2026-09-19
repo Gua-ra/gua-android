@@ -25,8 +25,10 @@ import io.element.android.tests.testutils.ensureCalledOnce
 import io.element.android.tests.testutils.pressBackKey
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.Test
+import org.robolectric.annotation.Config
 
 class ScanQrCodeViewTest : RobolectricTest() {
+    @Config(qualifiers = "h1024dp")
     @Test
     fun `on back pressed - calls the expected callback`() = runAndroidComposeUiTest {
         val eventRecorder = EventsRecorder<ScanQrCodeEvent>(expectEvents = false)
@@ -41,6 +43,7 @@ class ScanQrCodeViewTest : RobolectricTest() {
         }
     }
 
+    @Config(qualifiers = "h1024dp")
     @Test
     fun `try again button clicked - emits the expected event`() = runAndroidComposeUiTest {
         val eventRecorder = EventsRecorder<ScanQrCodeEvent>()

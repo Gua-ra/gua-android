@@ -1,11 +1,9 @@
 name: APK Build
 
+# GUA FORK: disabled — replaced by gua-ci.yml (assembleGplayDebug) and relies on upstream
+# Maptiler/Sentry/Diawi/Firebase secrets the fork does not have. Kept for reference; manual only.
 on:
   workflow_dispatch:
-  pull_request:
-  merge_group:
-  push:
-    branches: [ develop ]
 
 permissions: {}
 

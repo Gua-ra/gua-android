@@ -30,6 +30,12 @@ data class PreferencesRootState(
     val canDeactivateAccount: Boolean,
     val nbOfBlockedUsers: Int,
     val showLabsItem: Boolean,
+    val isLockScreenPinSetup: Boolean,
+    // GUA FORK: whether the account holds any strong factor (a passkey or the 2SV PIN), per
+    // identityServiceClient.accountFactorStatus(). Distinct from isLockScreenPinSetup, the local
+    // app-lock PIN. Null means not known yet or unreadable, which is NOT the same as "none": the
+    // nudge banner only appears on an explicit false.
+    val hasAccountStrongFactor: Boolean?,
     val directLogoutState: DirectLogoutState,
     val snackbarMessage: SnackbarMessage?,
     val eventSink: (PreferencesRootEvent) -> Unit,

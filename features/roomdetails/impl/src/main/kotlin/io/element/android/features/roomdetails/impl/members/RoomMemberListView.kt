@@ -50,6 +50,7 @@ import io.element.android.libraries.designsystem.theme.components.SegmentedButto
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.designsystem.theme.components.TextButton
 import io.element.android.libraries.designsystem.theme.components.TopAppBar
+import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.encryption.identity.IdentityState
 import io.element.android.libraries.matrix.api.room.RoomMember
 import io.element.android.libraries.matrix.api.room.getBestName
@@ -306,12 +307,13 @@ private fun RoomMemberListItem(
                     IdentityState.VerificationViolation -> {
                         Icon(
                             modifier = Modifier.size(20.dp),
-                            imageVector = CompoundIcons.ErrorSolid(),
+                            // GUA FORK: an informational marker, not an error badge.
+                            imageVector = CompoundIcons.InfoSolid(),
                             contentDescription = stringResource(
-                                CommonStrings.crypto_identity_change_profile_pin_violation,
+                                R.string.gua_identity_change_member_list,
                                 roomMemberWithIdentity.roomMember.getBestName()
                             ),
-                            tint = ElementTheme.colors.iconCriticalPrimary
+                            tint = ElementTheme.colors.iconSecondary
                         )
                     }
                     else -> Unit
@@ -355,6 +357,10 @@ private fun RoomMemberListTopBar(
 internal fun RoomMemberListViewPreview(@PreviewParameter(RoomMemberListStateProvider::class) state: RoomMemberListState) = ElementPreview {
     RoomMemberListView(
         state = state,
-        navigator = object : RoomMemberListNavigator {},
+        navigator = object : RoomMemberListNavigator {
+            override fun exitRoomMemberList() {}
+            override fun openRoomMemberDetails(roomMemberId: UserId) {}
+            override fun openInviteMembers() {}
+        },
     )
 }

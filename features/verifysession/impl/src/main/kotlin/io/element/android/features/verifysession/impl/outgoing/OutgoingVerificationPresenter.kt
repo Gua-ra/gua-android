@@ -39,6 +39,7 @@ import io.element.android.features.verifysession.impl.outgoing.OutgoingVerificat
 class OutgoingVerificationPresenter(
     @Assisted private val showDeviceVerifiedScreen: Boolean,
     @Assisted private val verificationRequest: VerificationRequest.Outgoing,
+    @Assisted private val forceVerification: Boolean,
     private val sessionVerificationService: SessionVerificationService,
     private val encryptionService: EncryptionService,
 ) : Presenter<OutgoingVerificationState> {
@@ -47,6 +48,7 @@ class OutgoingVerificationPresenter(
         fun create(
             verificationRequest: VerificationRequest.Outgoing,
             showDeviceVerifiedScreen: Boolean,
+            forceVerification: Boolean,
         ): OutgoingVerificationPresenter
     }
 
@@ -63,6 +65,17 @@ class OutgoingVerificationPresenter(
         val step by remember {
             derivedStateOf {
                 when (verificationRequest) {
+                    // GUA FORK: when asked to, verify regardless of the verified status. Being
+                    // verified says nothing about holding the keys, and a retry must run the
+                    // emoji step again rather than exit at once.
+                    is VerificationRequest.Outgoing.CurrentSession if forceVerification -> {
+                        val step = stateAndDispatch.state.value.toVerificationStep()
+                        if (step == OutgoingVerificationState.Step.Completed && !showDeviceVerifiedScreen) {
+                            OutgoingVerificationState.Step.Exit
+                        } else {
+                            step
+                        }
+                    }
                     is VerificationRequest.Outgoing.CurrentSession -> {
                         when (sessionVerifiedStatus) {
                             SessionVerifiedStatus.Unknown -> OutgoingVerificationState.Step.Loading

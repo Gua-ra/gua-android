@@ -205,7 +205,7 @@ class RustEncryptionService(
         }
     }
 
-    private suspend fun hasDevicesToVerifyAgainst(): Result<Boolean> = withContext(dispatchers.io) {
+    override suspend fun hasDevicesToVerifyAgainst(): Result<Boolean> = withContext(dispatchers.io) {
         runCatchingExceptions {
             service.hasDevicesToVerifyAgainst()
         }.mapFailure {

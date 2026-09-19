@@ -44,6 +44,14 @@ interface EncryptionService {
     suspend fun doesBackupExistOnServer(): Result<Boolean>
 
     /**
+     * Whether another signed-in device exists that could hand this one its missing secrets.
+     *
+     * GUA FORK: used to decide whether a broken key storage can be repaired for free by another
+     * device, or whether an unreachable backup may be replaced.
+     */
+    suspend fun hasDevicesToVerifyAgainst(): Result<Boolean>
+
+    /**
      * Note: accept both recoveryKey and passphrase.
      */
     suspend fun recover(recoveryKey: String): Result<Unit>

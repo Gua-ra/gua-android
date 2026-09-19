@@ -22,8 +22,6 @@ import io.element.android.libraries.matrix.api.verification.SessionVerifiedStatu
 import io.element.android.libraries.matrix.test.verification.FakeSessionVerificationService
 import io.element.android.libraries.permissions.api.PermissionStateProvider
 import io.element.android.libraries.permissions.test.FakePermissionStateProvider
-import io.element.android.libraries.preferences.api.store.SessionPreferencesStore
-import io.element.android.libraries.preferences.test.InMemorySessionPreferencesStore
 import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.analytics.noop.NoopAnalyticsService
 import io.element.android.services.analytics.test.FakeAnalyticsService
@@ -116,11 +114,9 @@ class DefaultFtueServiceTest {
 
         service.ftueStepStateFlow.test {
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Unknown)
-            // Session verification
-            assertThat(awaitItem()).isEqualTo(InternalFtueState.Incomplete(FtueStep.SessionVerification))
-            sessionVerificationService.emitVerifiedStatus(SessionVerifiedStatus.Verified)
-            // User completes verification
-            service.onUserCompletedSessionVerification()
+            // Gua: the session verification ceremony is never gated on (mirrors iOS
+            // requiresVerification == false). Even though the session is NotVerified, onboarding
+            // skips straight to the first non-verification step that is required.
             // Notifications opt in
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Incomplete(FtueStep.NotificationsOptIn))
             permissionStateProvider.setPermissionGranted()
@@ -135,6 +131,34 @@ class DefaultFtueServiceTest {
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Incomplete(FtueStep.AnalyticsOptIn))
             analyticsService.setDidAskUserConsent()
             // Final step
+            assertThat(awaitItem()).isEqualTo(InternalFtueState.Complete)
+        }
+    }
+
+    @Test
+    fun `Gua - session verification ceremony is never shown even when the session is NotVerified`() = runTest {
+        val sessionVerificationService = FakeSessionVerificationService()
+        val analyticsService = FakeAnalyticsService()
+        // Grant everything else so the only candidate gate would be SessionVerification.
+        val permissionStateProvider = FakePermissionStateProvider(permissionGranted = true)
+        val lockScreenService = FakeLockScreenService().apply { setIsPinSetup(true) }
+        val service = createDefaultFtueService(
+            sessionVerificationService = sessionVerificationService,
+            analyticsService = analyticsService,
+            permissionStateProvider = permissionStateProvider,
+            lockScreenService = lockScreenService,
+        )
+
+        // Session is explicitly NotVerified (returning user on a new device).
+        sessionVerificationService.emitVerifiedStatus(SessionVerifiedStatus.NotVerified)
+        permissionStateProvider.setPermissionGranted()
+
+        service.ftueStepStateFlow.test {
+            assertThat(awaitItem()).isEqualTo(InternalFtueState.Unknown)
+            // We jump straight to AnalyticsOptIn: SessionVerification is never produced.
+            assertThat(awaitItem()).isEqualTo(InternalFtueState.Incomplete(FtueStep.AnalyticsOptIn))
+            analyticsService.setDidAskUserConsent()
+            // ...and onboarding completes without ever surfacing the verification step.
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Complete)
         }
     }
@@ -197,7 +221,6 @@ internal fun TestScope.createDefaultFtueService(
     analyticsService: AnalyticsService = FakeAnalyticsService(),
     permissionStateProvider: PermissionStateProvider = FakePermissionStateProvider(permissionGranted = false),
     lockScreenService: LockScreenService = FakeLockScreenService(),
-    sessionPreferencesStore: SessionPreferencesStore = InMemorySessionPreferencesStore(),
     // First version where notification permission is required
     sdkIntVersion: Int = Build.VERSION_CODES.TIRAMISU,
 ) = DefaultFtueService(
@@ -207,5 +230,4 @@ internal fun TestScope.createDefaultFtueService(
     analyticsService = analyticsService,
     permissionStateProvider = permissionStateProvider,
     lockScreenService = lockScreenService,
-    sessionPreferencesStore = sessionPreferencesStore,
 )

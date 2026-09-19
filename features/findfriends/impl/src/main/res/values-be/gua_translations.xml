@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: be translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Знайсці сяброў</string>
+    <string name="screen_find_friends_action">Знайсці сяброў</string>
+    <string name="screen_find_friends_action_description">Паглядзіце, хто з вашых кантактаў ужо ў Gua</string>
+    <string name="screen_find_friends_loading">Шукаем вашы кантакты ў Gua…</string>
+    <string name="screen_find_friends_permission_title">Дазволіць доступ да кантактаў</string>
+    <string name="screen_find_friends_permission_message">Gua прыватна зверае вашы кантакты, каб даведацца, хто ўжо тут. Вашы кантакты ніколі не захоўваюцца.</string>
+    <string name="screen_find_friends_permission_action">Дазволіць доступ</string>
+    <string name="screen_find_friends_permission_denied_action">Адкрыць налады</string>
+    <string name="screen_find_friends_empty_title">У Gua пакуль няма кантактаў</string>
+    <string name="screen_find_friends_empty_message">Ніхто з вашых кантактаў пакуль не ў Gua. Запрасіце іх, і яны з\'явяцца тут.</string>
+    <string name="screen_find_friends_empty_action">Праверыць зноў</string>
+    <string name="screen_find_friends_error_title">Нешта пайшло не так</string>
+    <string name="screen_find_friends_error_message">Зараз не ўдалося праверыць вашы кантакты. Паспрабуйце зноў.</string>
+    <string name="screen_find_friends_error_action">Паспрабаваць зноў</string>
+    <string name="a11y_find_friends_view_profile">Паглядзець профіль %1$s</string>
+    <string name="a11y_find_friends_start_chat">Пачаць чат з %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d кантакт у Gua</item>
+        <item quantity="other">%1$d кантактаў у Gua</item>
+    </plurals>
+</resources>

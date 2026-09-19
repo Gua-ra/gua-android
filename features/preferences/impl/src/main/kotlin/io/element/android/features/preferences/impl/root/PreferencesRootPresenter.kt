@@ -20,19 +20,23 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import dev.zacsweers.metro.Inject
 import io.element.android.features.enterprise.api.SessionEnterpriseService
+import io.element.android.features.lockscreen.api.LockScreenService
 import io.element.android.features.logout.api.direct.DirectLogoutState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
+import io.element.android.libraries.androidutils.browser.withMxidLoginHint
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.designsystem.utils.snackbar.collectSnackbarMessageAsState
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
+import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.indicator.api.IndicatorService
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.user.MatrixUser
-import io.element.android.libraries.matrix.api.verification.SessionVerificationService
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.services.analytics.api.AnalyticsService
 import kotlinx.collections.immutable.persistentListOf
@@ -46,7 +50,6 @@ import kotlinx.coroutines.launch
 @Inject
 class PreferencesRootPresenter(
     private val matrixClient: MatrixClient,
-    private val sessionVerificationService: SessionVerificationService,
     private val analyticsService: AnalyticsService,
     private val versionFormatter: VersionFormatter,
     private val snackbarDispatcher: SnackbarDispatcher,
@@ -57,6 +60,9 @@ class PreferencesRootPresenter(
     private val featureFlagService: FeatureFlagService,
     private val sessionStore: SessionStore,
     private val sessionEnterpriseService: SessionEnterpriseService,
+    private val lockScreenService: LockScreenService,
+    private val identityServiceClient: IdentityServiceClient,
+    private val buildMeta: BuildMeta,
 ) : Presenter<PreferencesRootState> {
     @Composable
     override fun present(): PreferencesRootState {
@@ -93,7 +99,6 @@ class PreferencesRootPresenter(
         val hasAnalyticsProviders = remember { analyticsService.getAvailableAnalyticsProviders().isNotEmpty() }
 
         // We should display the 'complete verification' option if the current session can be verified
-        val canVerifyUserSession by sessionVerificationService.needsSessionVerification.collectAsState(false)
 
         val showSecureBackupIndicator by indicatorService.showSettingChatBackupIndicator()
 
@@ -115,6 +120,24 @@ class PreferencesRootPresenter(
         }
 
         val showLabsItem = remember { featureFlagService.getAvailableFeatures(isInLabs = true).isNotEmpty() }
+        val isLockScreenPinSetup by remember {
+            lockScreenService.isPinSetup()
+        }.collectAsState(initial = true)
+
+        // GUA FORK: the nudge banner advertises two-step verification, so gate it on the account's
+        // FACTORS from the identity service (mirrors TwoStepVerificationPresenter), not the local
+        // app-lock and not a lone hasPin: a passkey holder already has two-step verification and
+        // must not be nudged to add a PIN.
+        //
+        // Null is "not known yet, or could not be read", and the banner shows only on an explicit
+        // false. The old initial value of false with no failure handler meant a slow or failing
+        // status read rendered as "no two-step verification" and nagged people who already had it.
+        val hasAccountStrongFactor by produceState<Boolean?>(initialValue = null) {
+            val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken ?: return@produceState
+            identityServiceClient.accountFactorStatus(accessToken, matrixClient.sessionId.value)
+                .onSuccess { value = it.hasStrongFactor }
+                .onFailure { value = null }
+        }
 
         val directLogoutState = directLogoutPresenter.present()
 
@@ -141,7 +164,15 @@ class PreferencesRootPresenter(
             deviceId = matrixClient.deviceId,
             isMultiAccountEnabled = isMultiAccountEnabled,
             otherSessions = otherSessions,
-            showSecureBackup = !canVerifyUserSession,
+            // GUA FORK: hidden from users, developer-only.
+            //
+            // This screen is upstream's recovery-key console: a key-storage toggle, "set up
+            // recovery", "change recovery key", "confirm recovery key". Every one of those is a
+            // thing Gua promises never to put in front of anyone. An earlier version of this fork
+            // forced it visible on the grounds that it was the only way back from broken key
+            // storage; that is no longer true, because the setup banner now repairs the account
+            // silently and escalates to a reset on its own when it has to.
+            showSecureBackup = buildMeta.buildType != BuildType.RELEASE,
             showSecureBackupBadge = showSecureBackupIndicator,
             accountManagementUrl = accountManagementUrl.value,
             showAnalyticsSettings = hasAnalyticsProviders,
@@ -151,6 +182,8 @@ class PreferencesRootPresenter(
             canDeactivateAccount = canDeactivateAccount,
             nbOfBlockedUsers = nbOfBlockedUsers,
             showLabsItem = showLabsItem,
+            isLockScreenPinSetup = isLockScreenPinSetup,
+            hasAccountStrongFactor = hasAccountStrongFactor,
             directLogoutState = directLogoutState,
             snackbarMessage = snackbarMessage,
             eventSink = ::handleEvent,
@@ -165,5 +198,9 @@ class PreferencesRootPresenter(
             ?.let {
                 sessionEnterpriseService.tweakMasUrl(it)
             }
+            // GUA FORK: account management opens in the browser's shared tab, so it can meet a
+            // browser session for another account. Naming this one lets the page refuse that
+            // session instead of showing someone else's account.
+            ?.withMxidLoginHint(matrixClient.sessionId.value)
     }
 }

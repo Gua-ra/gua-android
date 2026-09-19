@@ -1,9 +1,8 @@
 name: Update Gradle Wrapper
 
+# GUA FORK: scheduled wrapper auto-update disabled to keep the wrapper pinned. Manual only.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 0 * * *"
 
 permissions: {}
 

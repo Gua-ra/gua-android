@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ko translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_encryption_repair_title">이 기기 설정을 완료하세요</string>
+    <string name="gua_encryption_repair_message">설정을 완료하면 이 기기에서 사용할 수 있는 암호화된 대화와 메시지 기록에 접근할 수 있습니다.</string>
+    <string name="gua_encryption_repair_action">설정 완료</string>
+</resources>

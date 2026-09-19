@@ -14,15 +14,21 @@ import app.cash.turbine.ReceiveTurbine
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.enterprise.api.SessionEnterpriseService
 import io.element.android.features.enterprise.test.FakeSessionEnterpriseService
+import io.element.android.features.lockscreen.test.FakeLockScreenService
 import io.element.android.features.logout.api.direct.aDirectLogoutState
+import io.element.android.features.preferences.impl.fixtures.FakeIdentityServiceClient
+import io.element.android.features.preferences.impl.fixtures.aFactorStatus
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
+import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.featureflag.test.FakeFeature
 import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
+import io.element.android.libraries.guaresolver.IdentityServiceClient
+import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.indicator.api.IndicatorService
 import io.element.android.libraries.indicator.test.FakeIndicatorService
 import io.element.android.libraries.matrix.api.oauth.AccountManagementAction
@@ -35,7 +41,6 @@ import io.element.android.libraries.matrix.test.A_USER_ID_2
 import io.element.android.libraries.matrix.test.A_USER_NAME
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.core.aBuildMeta
-import io.element.android.libraries.matrix.test.verification.FakeSessionVerificationService
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
@@ -55,6 +60,10 @@ import org.junit.Test
 class PreferencesRootPresenterTest {
     @get:Rule
     val warmUpRule = WarmUpRule()
+
+    private companion object {
+        const val MAX_EMISSIONS = 10
+    }
 
     @Test
     fun `present - initial state`() = runTest {
@@ -91,7 +100,13 @@ class PreferencesRootPresenterTest {
                     avatarUrl = AN_AVATAR_URL
                 )
             )
-            assertThat(loadedState.showSecureBackup).isFalse()
+            // GUA FORK: Encryption is always reachable now. Upstream hid it whenever the session
+            // still needed verifying, but Gua never presents that ceremony, so the row would have
+            // been hidden forever, taking recovery-key entry with it.
+            // GUA FORK: the Encryption screen is upstream's recovery-key console, so it now
+            // tracks developer settings, which this default (debug) fixture has on. The
+            // user-facing case is covered by `the encryption screen is hidden from users`.
+            assertThat(loadedState.showSecureBackup).isTrue()
             assertThat(loadedState.showSecureBackupBadge).isFalse()
             assertThat(loadedState.accountManagementUrl).isNull()
             assertThat(loadedState.showAnalyticsSettings).isFalse()
@@ -105,7 +120,10 @@ class PreferencesRootPresenterTest {
             val finalState = awaitItem()
             accountManagementUrlResult.assertions().isCalledOnce()
                 .with(value(null))
-            assertThat(finalState.accountManagementUrl).isEqualTo("tweaked null url")
+            // GUA FORK: the shared browser tab can hold another account's session, so the URL names
+            // this account for the page to refuse any other.
+            assertThat(finalState.accountManagementUrl)
+                .isEqualTo("tweaked null url?org.matrix.msc4198.login_hint=mxid%3A%40alice%3Aserver.org")
         }
     }
 
@@ -172,6 +190,23 @@ class PreferencesRootPresenterTest {
         ).test {
             val loadedState = awaitFirstItem()
             assertThat(loadedState.canDeactivateAccount).isFalse()
+        }
+    }
+
+    @Test
+    fun `present - the encryption screen is hidden from users and shown to developers`() = runTest {
+        createPresenter(
+            matrixClient = FakeMatrixClient(
+                canDeactivateAccountResult = { true },
+                accountManagementUrlResult = { Result.success(null) },
+            ),
+            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.RELEASE)),
+            buildMeta = aBuildMeta(BuildType.RELEASE),
+        ).test {
+            // GUA FORK: gated on build TYPE, not the seven-tap developer unlock. That unlock
+            // works in any build, so gating on it would still let a release user reach the
+            // recovery-key console.
+            assertThat(awaitFirstItem().showSecureBackup).isFalse()
         }
     }
 
@@ -324,18 +359,82 @@ class PreferencesRootPresenterTest {
         return awaitItem()
     }
 
+    // GUA FORK: the two-step-verification nudge is gated on the account's FACTORS. It used to start
+    // at false with no failure handler, so a passkey holder, and anyone whose status read was slow
+    // or failed, was told to set up a PIN they did not need.
+
+    @Test
+    fun `present - the nudge is shown to an account with no strong factor`() = runTest {
+        createPresenter(
+            matrixClient = FakeMatrixClient(canDeactivateAccountResult = { false }),
+            sessionStore = InMemorySessionStore(listOf(aSessionData(sessionId = A_SESSION_ID.value))),
+            identityServiceClient = FakeIdentityServiceClient(
+                factorStatusResult = { Result.success(aFactorStatus(hasPin = false, passkeyRegistered = false)) },
+            ),
+        ).test {
+            val state = awaitFactorStatus { it == false }
+            assertThat(state).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - a passkey holder with no PIN is not nudged to set up a PIN`() = runTest {
+        createPresenter(
+            matrixClient = FakeMatrixClient(canDeactivateAccountResult = { false }),
+            sessionStore = InMemorySessionStore(listOf(aSessionData(sessionId = A_SESSION_ID.value))),
+            identityServiceClient = FakeIdentityServiceClient(
+                factorStatusResult = { Result.success(aFactorStatus(hasPin = false, passkeyRegistered = true)) },
+            ),
+        ).test {
+            val state = awaitFactorStatus { it == true }
+            assertThat(state).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - a factor status that cannot be read leaves the nudge hidden`() = runTest {
+        createPresenter(
+            matrixClient = FakeMatrixClient(canDeactivateAccountResult = { false }),
+            sessionStore = InMemorySessionStore(listOf(aSessionData(sessionId = A_SESSION_ID.value))),
+            identityServiceClient = FakeIdentityServiceClient(
+                factorStatusResult = { Result.failure(ResolverError.Transport(RuntimeException("offline"))) },
+            ),
+        ).test {
+            // Unknown stays null: nothing writes a value on the failure path, and the View only
+            // shows the banner on an explicit false, so nobody is nagged on a failed read.
+            assertThat(awaitItem().hasAccountStrongFactor).isNull()
+            assertThat(awaitItem().hasAccountStrongFactor).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    private suspend fun ReceiveTurbine<PreferencesRootState>.awaitFactorStatus(
+        predicate: (Boolean?) -> Boolean,
+    ): Boolean? {
+        repeat(MAX_EMISSIONS) {
+            val value = awaitItem().hasAccountStrongFactor
+            if (predicate(value)) return value
+        }
+        error("No matching factor status after $MAX_EMISSIONS emissions")
+    }
+
     private fun createPresenter(
         matrixClient: FakeMatrixClient = FakeMatrixClient(),
-        sessionVerificationService: FakeSessionVerificationService = FakeSessionVerificationService(),
         showDeveloperSettingsProvider: ShowDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.DEBUG)),
         rageshakeFeatureAvailability: RageshakeFeatureAvailability = RageshakeFeatureAvailability { flowOf(true) },
         indicatorService: IndicatorService = FakeIndicatorService(),
         featureFlagService: FeatureFlagService = FakeFeatureFlagService(),
         sessionStore: SessionStore = InMemorySessionStore(),
         sessionEnterpriseService: SessionEnterpriseService = FakeSessionEnterpriseService(),
+        lockScreenService: FakeLockScreenService = FakeLockScreenService().apply { setIsPinSetup(true) },
+        identityServiceClient: IdentityServiceClient = FakeIdentityServiceClient(
+            factorStatusResult = { Result.success(aFactorStatus(hasPin = false)) },
+        ),
+        buildMeta: BuildMeta = aBuildMeta(),
     ) = PreferencesRootPresenter(
         matrixClient = matrixClient,
-        sessionVerificationService = sessionVerificationService,
         analyticsService = FakeAnalyticsService(),
         versionFormatter = FakeVersionFormatter(),
         snackbarDispatcher = SnackbarDispatcher(),
@@ -346,5 +445,8 @@ class PreferencesRootPresenterTest {
         featureFlagService = featureFlagService,
         sessionStore = sessionStore,
         sessionEnterpriseService = sessionEnterpriseService,
+        lockScreenService = lockScreenService,
+        identityServiceClient = identityServiceClient,
+        buildMeta = buildMeta,
     )
 }

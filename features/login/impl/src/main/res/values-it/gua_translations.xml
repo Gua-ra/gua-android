@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: it translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_onboarding_welcome_title">Ti diamo il benvenuto su Gua</string>
+    <string name="gua_onboarding_welcome_message">Messaggi privati, in modo semplice.</string>
+    <string name="screen_onboarding_trust_encrypted">Cifrato end-to-end</string>
+    <string name="screen_phone_entry_welcome_title">Ti diamo il benvenuto su Gua</string>
+    <string name="screen_phone_entry_title">Qual è il tuo numero?</string>
+    <string name="screen_phone_entry_message">Inserisci il tuo numero di telefono</string>
+    <string name="screen_phone_entry_footer">Invieremo un codice di verifica via SMS a questo numero.</string>
+    <string name="screen_phone_entry_phone_number_label">Numero di telefono</string>
+    <string name="screen_phone_entry_country_picker_a11y">Seleziona il paese</string>
+</resources>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+
+    <!-- GUA FORK: this screen is only reached once every non-destructive repair has failed, so it
+         names the consequence plainly instead of leading with jargon about identities. -->
+    <string name="gua_encryption_reset_required_title">Some previous messages can\'t be recovered</string>
+    <string name="gua_encryption_reset_required_message">To finish setting up encrypted chats on this device, your encrypted backup needs to be reset. Messages stored only in that backup will be lost. Messages already on your devices won\'t be affected.</string>
+    <string name="gua_encryption_reset_required_action">Reset and finish setup</string>
+
+    <!-- GUA FORK: the wait between the approval page handing control back and the setup being
+         confirmed, and the honest outcome when it could not be. -->
+    <string name="gua_encryption_reset_finishing">Finishing setup…</string>
+    <!-- GUA FORK: getting the keys from another device of the account instead of resetting. Shown
+         only when such a device exists. -->
+    <string name="gua_encryption_recover_from_other_device_title">Restore your previous messages</string>
+    <string name="gua_encryption_recover_from_other_device_message">Use your other device to restore messages that aren\'t available on this device yet.\n\nIf you don\'t have access to it, you can reset and finish setup, but messages saved only in your backup will be permanently lost.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Use my other device</string>
+    <string name="gua_encryption_recover_from_other_device_failed">Couldn\'t get your messages from the other device. Make sure it\'s open and try again, or reset.</string>
+    <string name="gua_encryption_reset_failed">Couldn\'t finish setup. Tap Reset and finish setup to try again.</string>
+</resources>

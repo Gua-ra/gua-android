@@ -58,7 +58,8 @@ class StartChatNode(
             },
             onJoinByAddressClick = navigator::onShowJoinRoomByAddress,
             onInviteFriendsClick = { invitePeople(activity) },
-            onRoomDirectorySearchClick = navigator::onOpenRoomDirectory
+            onRoomDirectorySearchClick = navigator::onOpenRoomDirectory,
+            onFindFriendsClick = navigator::onShowFindFriends,
         )
     }
 

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+
+    <!-- GUA FORK: shown when signing out of the only device on the account. Upstream's copy here
+         tells the user to make sure they have their recovery key, and offers a button through to
+         the screen that generates one. Gua shows nobody a recovery key, so the warning names the
+         real consequence instead: messages that live only on this device go with it. -->
+    <string name="gua_signout_last_device_title">Signing out will remove your messages from this device</string>
+    <string name="gua_signout_last_device_subtitle">This is your only device. Messages kept only here will not be available when you sign back in.</string>
+</resources>

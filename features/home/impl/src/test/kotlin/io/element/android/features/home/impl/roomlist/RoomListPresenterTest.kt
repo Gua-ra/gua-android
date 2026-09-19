@@ -13,6 +13,9 @@ import im.vector.app.features.analytics.plan.Interaction
 import io.element.android.features.announcement.api.Announcement
 import io.element.android.features.announcement.api.AnnouncementService
 import io.element.android.features.home.impl.FakeDateTimeObserver
+import io.element.android.features.home.impl.accountrecovery.AccountRecoveryBannerState
+import io.element.android.features.home.impl.accountrecovery.aHiddenAccountRecoveryBannerState
+import io.element.android.features.home.impl.accountrecovery.anAccountRecoveryBannerState
 import io.element.android.features.home.impl.datasource.RoomListDataSource
 import io.element.android.features.home.impl.datasource.aRoomListRoomSummaryFactory
 import io.element.android.features.home.impl.filters.RoomListFiltersState
@@ -34,6 +37,7 @@ import io.element.android.features.rageshake.test.logs.FakeAnnouncementService
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.dateformatter.api.DateFormatter
 import io.element.android.libraries.dateformatter.test.FakeDateFormatter
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.eventformatter.api.RoomLatestEventFormatter
 import io.element.android.libraries.eventformatter.test.FakeRoomLatestEventFormatter
 import io.element.android.libraries.featureflag.api.FeatureFlagService
@@ -163,6 +167,35 @@ class RoomListPresenterTest {
     }
 
     @Test
+    fun `the account recovery banner is not hidden by dismissing the security banner`() = runTest {
+        val roomList = FakeDynamicRoomList(
+            loadingState = MutableStateFlow(RoomList.LoadingState.Loaded(1))
+        )
+        val roomListService = FakeRoomListService(
+            createRoomListLambda = { roomList }
+        )
+        val encryptionService = FakeEncryptionService().apply {
+            emitRecoveryState(RecoveryState.INCOMPLETE)
+        }
+        val syncService = FakeSyncService(initialSyncState = SyncState.Running)
+        val accountRecoveryBannerState = anAccountRecoveryBannerState()
+        val presenter = createRoomListPresenter(
+            client = FakeMatrixClient(roomListService = roomListService, encryptionService = encryptionService, syncService = syncService),
+            accountRecoveryBannerPresenter = { accountRecoveryBannerState },
+        )
+        presenter.test {
+            val roomsState = consumeItemsUntilPredicate {
+                it.contentState is RoomListContentState.Rooms
+            }.last()
+            assertThat(roomsState.accountRecoveryBannerState).isEqualTo(accountRecoveryBannerState)
+            roomsState.eventSink(RoomListEvent.DismissBanner)
+            val dismissedState = awaitItem()
+            assertThat(dismissedState.contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.None)
+            assertThat(dismissedState.accountRecoveryBannerState).isEqualTo(accountRecoveryBannerState)
+        }
+    }
+
+    @Test
     fun `present - handle DismissRecoveryKeyPrompt`() = runTest {
         val encryptionService = FakeEncryptionService().apply {
             recoveryStateStateFlow.emit(RecoveryState.DISABLED)
@@ -188,21 +221,21 @@ class RoomListPresenterTest {
             val initialState = consumeItemsUntilPredicate {
                 it.contentState is RoomListContentState.Rooms
             }.last()
-            assertThat(initialState.contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.SetUpRecovery)
+            // GUA FORK: DISABLED and INCOMPLETE both show the same "finish setting up this
+            // device" banner, which repairs silently. DISABLED used to show SetUpRecovery, whose
+            // flow hands the user a recovery key to write down, and DISABLED is the state an
+            // identity reset leaves behind. Because the two now map to one banner, moving between
+            // them emits nothing, so this walks through ENABLED in between to force a change.
+            assertThat(initialState.contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.RecoveryKeyConfirmation)
+            encryptionService.emitRecoveryState(RecoveryState.ENABLED)
+            assertThat(awaitItem().contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.None)
             encryptionService.emitRecoveryState(RecoveryState.INCOMPLETE)
             val nextState = awaitItem()
             assertThat(nextState.contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.RecoveryKeyConfirmation)
-            // Also check other states
-            encryptionService.emitRecoveryState(RecoveryState.DISABLED)
-            assertThat(awaitItem().contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.SetUpRecovery)
             encryptionService.emitRecoveryState(RecoveryState.WAITING_FOR_SYNC)
             assertThat(awaitItem().contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.None)
             encryptionService.emitRecoveryState(RecoveryState.DISABLED)
-            assertThat(awaitItem().contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.SetUpRecovery)
-            encryptionService.emitRecoveryState(RecoveryState.ENABLED)
-            assertThat(awaitItem().contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.None)
-            encryptionService.emitRecoveryState(RecoveryState.DISABLED)
-            assertThat(awaitItem().contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.SetUpRecovery)
+            assertThat(awaitItem().contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.RecoveryKeyConfirmation)
             nextState.eventSink(RoomListEvent.DismissBanner)
             val finalState = awaitItem()
             assertThat(finalState.contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.None)
@@ -672,6 +705,7 @@ class RoomListPresenterTest {
         seenInvitesStore: SeenInvitesStore = InMemorySeenInvitesStore(),
         announcementService: AnnouncementService = FakeAnnouncementService(),
         featureFlagService: FeatureFlagService = FakeFeatureFlagService(),
+        accountRecoveryBannerPresenter: Presenter<AccountRecoveryBannerState> = Presenter { aHiddenAccountRecoveryBannerState() },
     ) = RoomListPresenter(
         client = client,
         leaveRoomPresenter = { leaveRoomState },
@@ -701,5 +735,9 @@ class RoomListPresenterTest {
         announcementService = announcementService,
         coldStartWatcher = FakeAnalyticsColdStartWatcher(),
         featureFlagService = featureFlagService,
+        snackbarDispatcher = SnackbarDispatcher(),
+        keyStorageProvisioner = FakeKeyStorageProvisioner(),
+        identityResetPendingStore = FakeIdentityResetPendingStore(),
+        accountRecoveryBannerPresenter = accountRecoveryBannerPresenter,
     )
 }

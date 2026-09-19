@@ -18,6 +18,8 @@ import io.element.android.libraries.usersearch.api.UserListDataSource
 import io.element.android.libraries.usersearch.api.UserRepository
 import io.element.android.libraries.usersearch.api.UserSearchResult
 import io.element.android.libraries.usersearch.api.UserSearchResultState
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -25,7 +27,9 @@ import kotlinx.coroutines.flow.flow
 @ContributesBinding(SessionScope::class)
 class MatrixUserRepository(
     private val client: MatrixClient,
-    private val dataSource: UserListDataSource
+    private val dataSource: UserListDataSource,
+    // GUA FORK: fan-out for bare-handle queries across the federation roster.
+    private val federatedDataSource: FederatedUserSearchDataSource,
 ) : UserRepository {
     override fun search(query: String): Flow<UserSearchResultState> = flow {
         val shouldQueryProfile = MatrixPatterns.isUserId(query) && !client.isMe(UserId(query))
@@ -45,9 +49,12 @@ class MatrixUserRepository(
         }
     }
 
-    private suspend fun fetchSearchResults(query: String, shouldQueryProfile: Boolean): UserSearchResultState {
+    private suspend fun fetchSearchResults(query: String, shouldQueryProfile: Boolean): UserSearchResultState = coroutineScope {
         // Debounce
         delay(DEBOUNCE_TIME_MILLIS)
+        // GUA FORK: if the query is a bare handle, fan out an exact-match lookup to the other
+        // federation servers in parallel with the local directory search.
+        val federatedUsers = async { federatedDataSource.search(query) }
         val results = dataSource
             .search(query, MAXIMUM_SEARCH_RESULTS)
             .filter { !client.isMe(it.userId) }
@@ -64,7 +71,13 @@ class MatrixUserRepository(
             )
         }
 
-        return UserSearchResultState(results = results, isSearching = false)
+        // GUA FORK: local results first, then the federated exact matches that aren't already present.
+        val knownUserIds = results.map { it.matrixUser.userId }.toHashSet()
+        federatedUsers.await()
+            .filter { knownUserIds.add(it.userId) }
+            .mapTo(results) { UserSearchResult(it) }
+
+        UserSearchResultState(results = results, isSearching = false)
     }
 
     companion object {

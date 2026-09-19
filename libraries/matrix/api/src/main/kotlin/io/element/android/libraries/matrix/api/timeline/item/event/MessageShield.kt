@@ -34,6 +34,40 @@ sealed interface MessageShield {
     data class MismatchedSender(val isCritical: Boolean) : MessageShield
 }
 
+/**
+ * GUA FORK: whether this shield warrants alarm colour in the timeline.
+ *
+ * The timestamp slot is shared with "failed to send", and red on an outgoing message means
+ * "did not send" in every messenger, so red is reserved for the states that genuinely mean
+ * this may not be who you think, plus an unencrypted message in an encrypted room. An unsigned
+ * or unknown device is a statement about the sender's setup, not a risk to the reader.
+ */
+val MessageShield.isAlarming: Boolean
+    get() = when (this) {
+        is MessageShield.VerificationViolation,
+        is MessageShield.MismatchedSender,
+        is MessageShield.SentInClear -> true
+        is MessageShield.AuthenticityNotGuaranteed,
+        is MessageShield.UnknownDevice,
+        is MessageShield.UnsignedDevice,
+        is MessageShield.UnverifiedIdentity -> false
+    }
+
+/**
+ * GUA FORK: shields that describe the *sender's own* setup rather than a risk to the reader.
+ * On your own message these say nothing you can act on, so they are not shown at all.
+ */
+val MessageShield.describesOwnSetup: Boolean
+    get() = when (this) {
+        is MessageShield.UnsignedDevice,
+        is MessageShield.UnknownDevice,
+        is MessageShield.AuthenticityNotGuaranteed -> true
+        is MessageShield.UnverifiedIdentity,
+        is MessageShield.VerificationViolation,
+        is MessageShield.MismatchedSender,
+        is MessageShield.SentInClear -> false
+    }
+
 val MessageShield.isCritical: Boolean
     get() = when (this) {
         is MessageShield.AuthenticityNotGuaranteed -> isCritical

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: el translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_signout_last_device_title">Η αποσύνδεση θα αφαιρέσει τα μηνύματά σας από αυτή τη συσκευή</string>
+    <string name="gua_signout_last_device_subtitle">Αυτή είναι η μοναδική σας συσκευή. Τα μηνύματα που φυλάσσονται μόνο εδώ δεν θα είναι διαθέσιμα όταν συνδεθείτε ξανά.</string>
+</resources>

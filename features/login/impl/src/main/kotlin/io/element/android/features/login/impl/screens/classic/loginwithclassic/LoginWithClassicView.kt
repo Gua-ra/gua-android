@@ -105,7 +105,7 @@ fun LoginWithClassicView(
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = stringResource(id = R.string.screen_onboarding_welcome_title),
+                    text = stringResource(id = R.string.gua_onboarding_welcome_title),
                     color = ElementTheme.colors.textPrimary,
                     style = ElementTheme.typography.fontHeadingMdBold,
                     textAlign = TextAlign.Center,
@@ -150,7 +150,8 @@ fun LoginWithClassicView(
                 }
                 // UserId
                 Text(
-                    text = state.userId.value,
+                    // GUA FORK: hide the homeserver suffix in the user handle.
+                    text = state.userId.displayHandle,
                     style = if (state.displayName == null) ElementTheme.typography.fontHeadingLgBold else ElementTheme.typography.fontBodyLgRegular,
                     color = ElementTheme.colors.textPrimary,
                     textAlign = TextAlign.Center,

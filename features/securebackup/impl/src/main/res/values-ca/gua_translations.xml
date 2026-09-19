@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ca translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_encryption_reset_required_title">Alguns missatges anteriors no es poden recuperar</string>
+    <string name="gua_encryption_reset_required_message">Per acabar de configurar els xats xifrats en aquest dispositiu, cal restablir la teva còpia de seguretat xifrada. Els missatges desats només en aquesta còpia es perdran. Els missatges que ja són als teus dispositius no es veuran afectats.</string>
+    <string name="gua_encryption_reset_required_action">Restableix i acaba</string>
+    <string name="gua_encryption_reset_finishing">Acabant la configuració…</string>
+    <string name="gua_encryption_reset_failed">No s’ha pogut acabar la configuració. Toca “Restableix i acaba” per tornar-ho a provar.</string>
+    <string name="gua_encryption_recover_from_other_device_title">Recupera els teus missatges anteriors</string>
+    <string name="gua_encryption_recover_from_other_device_message">Fes servir l’altre dispositiu per recuperar els missatges que encara no tens en aquest dispositiu.\n\nSi no hi tens accés, pots restablir i acabar la configuració, però els missatges desats només a la teva còpia de seguretat es perdran per sempre.</string>
+    <string name="gua_encryption_recover_from_other_device_action">Usa l’altre dispositiu</string>
+    <string name="gua_encryption_recover_from_other_device_failed">No s’han pogut recuperar els teus missatges de l’altre dispositiu. Assegura’t que el tens obert i torna-ho a provar, o restableix.</string>
+</resources>

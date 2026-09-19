@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: ja translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">友だちを探す</string>
+    <string name="screen_find_friends_action">友だちを探す</string>
+    <string name="screen_find_friends_action_description">連絡先の中で Gua を使っている人を確認できます</string>
+    <string name="screen_find_friends_loading">Gua で連絡先を検索しています…</string>
+    <string name="screen_find_friends_permission_title">連絡先へのアクセスを許可</string>
+    <string name="screen_find_friends_permission_message">Gua は誰がすでに利用しているかを調べるため、連絡先を非公開で照合します。連絡先が保存されることはありません。</string>
+    <string name="screen_find_friends_permission_action">アクセスを許可</string>
+    <string name="screen_find_friends_permission_denied_action">設定を開く</string>
+    <string name="screen_find_friends_empty_title">Gua を使っている連絡先はまだありません</string>
+    <string name="screen_find_friends_empty_message">連絡先の中に Gua を使っている人はまだいません。招待するとここに表示されます。</string>
+    <string name="screen_find_friends_empty_action">もう一度確認</string>
+    <string name="screen_find_friends_error_title">問題が発生しました</string>
+    <string name="screen_find_friends_error_message">現在、連絡先を確認できませんでした。もう一度お試しください。</string>
+    <string name="screen_find_friends_error_action">再試行</string>
+    <string name="a11y_find_friends_view_profile">%1$s のプロフィールを表示</string>
+    <string name="a11y_find_friends_start_chat">%1$s とのチャットを開始</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">連絡先 %1$d 人が Gua を使っています</item>
+        <item quantity="other">連絡先 %1$d 人が Gua を使っています</item>
+    </plurals>
+</resources>

@@ -61,6 +61,8 @@ fun StartChatView(
     onInviteFriendsClick: () -> Unit,
     onJoinByAddressClick: () -> Unit,
     onRoomDirectorySearchClick: () -> Unit,
+    // GUA FORK: open the Find friends contact-discovery screen.
+    onFindFriendsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -104,6 +106,7 @@ fun StartChatView(
                     onInvitePeopleClick = onInviteFriendsClick,
                     onJoinByAddressClick = onJoinByAddressClick,
                     onRoomDirectorySearchClick = onRoomDirectorySearchClick,
+                    onFindFriendsClick = onFindFriendsClick,
                     onDmClick = onOpenDM,
                 )
             }
@@ -166,9 +169,19 @@ private fun CreateRoomActionButtonsList(
     onInvitePeopleClick: () -> Unit,
     onJoinByAddressClick: () -> Unit,
     onRoomDirectorySearchClick: () -> Unit,
+    onFindFriendsClick: () -> Unit,
     onDmClick: (RoomId) -> Unit,
 ) {
     LazyColumn {
+        // GUA FORK: Discover which phone contacts are already on Gua. Mirrors iOS' top-of-list
+        // "Find friends" entry in the new-chat / "+" screen.
+        item {
+            CreateRoomActionButton(
+                iconRes = CompoundDrawables.ic_compound_user_add,
+                text = stringResource(id = R.string.screen_find_friends_action),
+                onClick = onFindFriendsClick,
+            )
+        }
         item {
             CreateRoomActionButton(
                 iconRes = CompoundDrawables.ic_compound_plus,
@@ -260,5 +273,6 @@ internal fun StartChatViewPreview(@PreviewParameter(StartChatStateProvider::clas
             onJoinByAddressClick = {},
             onInviteFriendsClick = {},
             onRoomDirectorySearchClick = {},
+            onFindFriendsClick = {},
         )
     }

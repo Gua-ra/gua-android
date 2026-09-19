@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: et translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Leia sõpru</string>
+    <string name="screen_find_friends_action">Leia sõpru</string>
+    <string name="screen_find_friends_action_description">Vaata, kes sinu kontaktidest on Guas</string>
+    <string name="screen_find_friends_loading">Otsime sinu kontakte Guast…</string>
+    <string name="screen_find_friends_permission_title">Luba juurdepääs kontaktidele</string>
+    <string name="screen_find_friends_permission_message">Gua kontrollib sinu kontakte privaatselt, et näha, kes juba siin on. Sinu kontakte ei salvestata kunagi.</string>
+    <string name="screen_find_friends_permission_action">Luba juurdepääs</string>
+    <string name="screen_find_friends_permission_denied_action">Ava seaded</string>
+    <string name="screen_find_friends_empty_title">Guas pole veel kontakte</string>
+    <string name="screen_find_friends_empty_message">Ükski sinu kontakt pole veel Guas. Kutsu nad ja nad ilmuvad siia.</string>
+    <string name="screen_find_friends_empty_action">Kontrolli uuesti</string>
+    <string name="screen_find_friends_error_title">Midagi läks valesti</string>
+    <string name="screen_find_friends_error_message">Praegu ei õnnestunud sinu kontakte kontrollida. Proovi uuesti.</string>
+    <string name="screen_find_friends_error_action">Proovi uuesti</string>
+    <string name="a11y_find_friends_view_profile">Vaata kasutaja %1$s profiili</string>
+    <string name="a11y_find_friends_start_chat">Alusta vestlust kasutajaga %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d kontakt on Guas</item>
+        <item quantity="other">%1$d kontakti on Guas</item>
+    </plurals>
+</resources>

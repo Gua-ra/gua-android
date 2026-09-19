@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: zh-rTW translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_onboarding_welcome_title">歡迎使用 Gua</string>
+    <string name="gua_onboarding_welcome_message">私密聊天，簡單好用。</string>
+    <string name="screen_onboarding_trust_encrypted">端對端加密</string>
+    <string name="screen_phone_entry_welcome_title">歡迎使用 Gua</string>
+    <string name="screen_phone_entry_title">你的號碼是多少？</string>
+    <string name="screen_phone_entry_message">請輸入你的手機號碼</string>
+    <string name="screen_phone_entry_footer">我們會向該號碼傳送一則含驗證碼的簡訊。</string>
+    <string name="screen_phone_entry_phone_number_label">手機號碼</string>
+    <string name="screen_phone_entry_country_picker_a11y">選擇國家/地區</string>
+</resources>

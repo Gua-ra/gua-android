@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_verification_other_device_title">Agorwch Gua ar eich dyfais arall</string>
+    <string name="gua_verification_other_device_subtitle">Gadewch hi ar agor. Byddwch yn cymharu ychydig o emojis ar y ddwy ddyfais i gadarnhau mai chi sydd yno.</string>
+    <string name="gua_verification_waiting_other_device_title">Yn aros am eich dyfais arall</string>
+    <string name="gua_verification_compare_emojis_subtitle">Gwnewch yn siŵr bod yr emojis isod yn cyd-fynd â’r rhai ar eich dyfais arall.</string>
+</resources>

@@ -36,6 +36,8 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSendState
+import io.element.android.libraries.matrix.api.timeline.item.event.describesOwnSetup
+import io.element.android.libraries.matrix.api.timeline.item.event.isAlarming
 import io.element.android.libraries.ui.strings.CommonStrings
 
 @Composable
@@ -46,12 +48,16 @@ fun TimelineEventTimestampView(
 ) {
     val formattedTime = event.sentTime
     val hasError = event.failedToSend
-    val hasEncryptionCritical = event.messageShield?.isCritical.orFalse()
+    // GUA FORK: a shield about the sender's own setup says nothing actionable on your own
+    // message, and sitting in the delivery-status slot it reads as "this failed to send".
+    val shield = event.messageShield?.takeUnless { event.isMine && it.shield.describesOwnSetup }
+    // GUA FORK: only genuinely alarming shields borrow the critical colour, which this slot
+    // otherwise uses to mean "did not send".
+    val hasEncryptionCritical = shield?.let { it.isCritical && it.shield.isAlarming }.orFalse()
     val isMessageEdited = event.content.isEdited()
     val isMessageRedacted = event.content.isRedacted()
     val tint = if (hasError || hasEncryptionCritical && !isMessageRedacted) ElementTheme.colors.textCriticalPrimary else ElementTheme.colors.textSecondary
 
-    val shield = event.messageShield
     val isVerifiedUserSendFailure = event.localSendState is LocalEventSendState.Failed.VerifiedUser
     val onClickLabel = when {
         shield != null -> stringResource(CommonStrings.a11y_view_details)

@@ -22,9 +22,13 @@ import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.features.home.impl.HomeView
 import io.element.android.features.home.impl.R
 import io.element.android.features.home.impl.aHomeState
+import io.element.android.features.home.impl.accountrecovery.AccountRecoveryBannerEvent
+import io.element.android.features.home.impl.accountrecovery.PendingAccountRecovery
+import io.element.android.features.home.impl.accountrecovery.anAccountRecoveryBannerState
 import io.element.android.features.home.impl.components.RoomListMenuAction
 import io.element.android.features.home.impl.model.RoomListRoomSummary
 import io.element.android.features.home.impl.model.RoomSummaryDisplayType
+import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureNeverCalled
@@ -53,6 +57,90 @@ class RoomListViewTest : RobolectricTest() {
         eventsRecorder.assertList(
             listOf(
                 RoomListEvent.UpdateVisibleRange(0..5),
+            )
+        )
+    }
+
+    @Config(qualifiers = "h1024dp")
+    @Test
+    fun `the account recovery warning shows above the rooms, has no close button, and asks to cancel`() = runAndroidComposeUiTest<ComponentActivity> {
+        val recoveryEvents = EventsRecorder<AccountRecoveryBannerEvent>()
+        setRoomListView(
+            state = aRoomListState(
+                contentState = aRoomsContentState(),
+                accountRecoveryBannerState = anAccountRecoveryBannerState(
+                    pendingRecovery = PendingAccountRecovery.FinishableFrom("6 April 2026"),
+                    eventSink = recoveryEvents,
+                ),
+                eventSink = EventsRecorder(expectEvents = true),
+            )
+        )
+
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_title)).assertExists()
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_later, "6 April 2026")).assertExists()
+        onNodeWithContentDescription(activity!!.getString(CommonStrings.action_close)).assertDoesNotExist()
+        clickOn(R.string.gua_account_recovery_banner_action)
+        recoveryEvents.assertSingle(AccountRecoveryBannerEvent.CancelRecovery)
+    }
+
+    @Config(qualifiers = "h1024dp")
+    @Test
+    fun `on an empty chat list the account recovery warning says it can be finished now`() = runAndroidComposeUiTest<ComponentActivity> {
+        setRoomListView(
+            state = aRoomListState(
+                contentState = anEmptyContentState(securityBannerState = SecurityBannerState.None),
+                accountRecoveryBannerState = anAccountRecoveryBannerState(
+                    pendingRecovery = PendingAccountRecovery.FinishableNow,
+                    eventSink = EventsRecorder(expectEvents = false),
+                ),
+            )
+        )
+
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_now)).assertExists()
+    }
+
+    @Config(qualifiers = "h1024dp")
+    @Test
+    fun `a recovery with no completable moment warns without claiming it can be finished now`() = runAndroidComposeUiTest<ComponentActivity> {
+        setRoomListView(
+            state = aRoomListState(
+                contentState = aRoomsContentState(),
+                accountRecoveryBannerState = anAccountRecoveryBannerState(
+                    pendingRecovery = PendingAccountRecovery.FinishableUnknown,
+                    eventSink = EventsRecorder(expectEvents = false),
+                ),
+                eventSink = EventsRecorder(expectEvents = true),
+            )
+        )
+
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_generic)).assertExists()
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_now)).assertDoesNotExist()
+    }
+
+    @Config(qualifiers = "h1024dp")
+    @Test
+    fun `the cancel confirmation sends the confirmation or goes back`() = runAndroidComposeUiTest<ComponentActivity> {
+        val recoveryEvents = EventsRecorder<AccountRecoveryBannerEvent>()
+        setRoomListView(
+            state = aRoomListState(
+                contentState = aRoomsContentState(),
+                accountRecoveryBannerState = anAccountRecoveryBannerState(
+                    // The banner's own button carries the same label, so leave it out here.
+                    pendingRecovery = null,
+                    cancelAction = AsyncAction.ConfirmingNoParams,
+                    eventSink = recoveryEvents,
+                ),
+                eventSink = EventsRecorder(expectEvents = true),
+            )
+        )
+
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_cancel_title)).assertExists()
+        clickOn(R.string.gua_account_recovery_banner_action)
+        clickOn(CommonStrings.action_go_back)
+        recoveryEvents.assertList(
+            listOf(
+                AccountRecoveryBannerEvent.ConfirmCancelRecovery,
+                AccountRecoveryBannerEvent.DismissCancelConfirmation,
             )
         )
     }
@@ -94,42 +182,45 @@ class RoomListViewTest : RobolectricTest() {
     }
 
     @Test
-    fun `clicking on continue recovery key banner invokes the expected callback`() = runAndroidComposeUiTest {
+    fun `clicking the finish setup banner asks the presenter to repair`() = runAndroidComposeUiTest {
+        // GUA FORK: the tap no longer navigates. It asks the presenter to run the silent repair,
+        // which owns the button's progress state and only navigates if a reset turns out to be
+        // genuinely required.
         val eventsRecorder = EventsRecorder<RoomListEvent>()
-        ensureCalledOnce { callback ->
-            setRoomListView(
-                state = aRoomListState(
-                    contentState = aRoomsContentState(securityBannerState = SecurityBannerState.RecoveryKeyConfirmation),
-                    eventSink = eventsRecorder,
-                ),
-                onConfirmRecoveryKeyClick = callback,
-            )
+        setRoomListView(
+            state = aRoomListState(
+                contentState = aRoomsContentState(securityBannerState = SecurityBannerState.RecoveryKeyConfirmation),
+                eventSink = eventsRecorder,
+            ),
+        )
 
-            // Remove automatic initial events
-            eventsRecorder.clear()
+        // Remove automatic initial events
+        eventsRecorder.clear()
 
-            clickOn(CommonStrings.action_continue)
+        clickOn(R.string.gua_encryption_repair_action)
 
-            eventsRecorder.assertEmpty()
-        }
+        eventsRecorder.assertSingle(RoomListEvent.FinishEncryptionSetup)
     }
 
     @Test
-    fun `clicking on continue setup key banner invokes the expected callback`() = runAndroidComposeUiTest {
+    fun `the set up recovery state shows the silent repair banner, never the key one`() = runAndroidComposeUiTest {
+        // GUA FORK: the presenter no longer produces SetUpRecovery, but if anything ever did, the
+        // user must still get the banner that finishes setup silently rather than upstream's,
+        // which walks them into a screen that hands out a recovery key.
         val eventsRecorder = EventsRecorder<RoomListEvent>()
-        ensureCalledOnce { callback ->
-            setRoomListView(
-                state = aRoomListState(
-                    contentState = aRoomsContentState(securityBannerState = SecurityBannerState.SetUpRecovery),
-                    eventSink = eventsRecorder,
-                ),
-                onSetUpRecoveryClick = callback,
-            )
-            // Remove automatic initial events
-            eventsRecorder.clear()
-            clickOn(R.string.banner_set_up_recovery_submit)
-            eventsRecorder.assertEmpty()
-        }
+        setRoomListView(
+            state = aRoomListState(
+                contentState = aRoomsContentState(securityBannerState = SecurityBannerState.SetUpRecovery),
+                eventSink = eventsRecorder,
+            ),
+        )
+
+        // Remove automatic initial events
+        eventsRecorder.clear()
+
+        clickOn(R.string.gua_encryption_repair_action)
+
+        eventsRecorder.assertSingle(RoomListEvent.FinishEncryptionSetup)
     }
 
     @Test
@@ -265,7 +356,6 @@ private fun AndroidComposeUiTest<ComponentActivity>.setRoomListView(
     state: RoomListState,
     onRoomClick: (RoomId) -> Unit = EnsureNeverCalledWithParam(),
     onSettingsClick: () -> Unit = EnsureNeverCalled(),
-    onSetUpRecoveryClick: () -> Unit = EnsureNeverCalled(),
     onConfirmRecoveryKeyClick: () -> Unit = EnsureNeverCalled(),
     onCreateRoomClick: () -> Unit = EnsureNeverCalled(),
     onCreateSpaceClick: () -> Unit = EnsureNeverCalled(),
@@ -279,7 +369,6 @@ private fun AndroidComposeUiTest<ComponentActivity>.setRoomListView(
             homeState = aHomeState(roomListState = state),
             onRoomClick = onRoomClick,
             onSettingsClick = onSettingsClick,
-            onSetUpRecoveryClick = onSetUpRecoveryClick,
             onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
             onStartChatClick = onCreateRoomClick,
             onCreateSpaceClick = onCreateSpaceClick,

@@ -29,11 +29,13 @@ import io.element.android.features.preferences.impl.about.AboutNode
 import io.element.android.features.preferences.impl.advanced.AdvancedSettingsNode
 import io.element.android.features.preferences.impl.analytics.AnalyticsSettingsNode
 import io.element.android.features.preferences.impl.blockedusers.BlockedUsersNode
+import io.element.android.features.preferences.impl.changephonenumber.ChangePhoneNumberNode
 import io.element.android.features.preferences.impl.developer.DeveloperSettingsNode
 import io.element.android.features.preferences.impl.labs.LabsNode
 import io.element.android.features.preferences.impl.notifications.NotificationSettingsNode
 import io.element.android.features.preferences.impl.notifications.edit.EditDefaultNotificationSettingNode
 import io.element.android.features.preferences.impl.root.PreferencesRootNode
+import io.element.android.features.preferences.impl.twostepverification.TwoStepVerificationNode
 import io.element.android.features.preferences.impl.user.editprofile.EditUserProfileNode
 import io.element.android.libraries.architecture.BackstackView
 import io.element.android.libraries.architecture.BaseFlowNode
@@ -44,6 +46,7 @@ import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.user.MatrixUser
+import io.element.android.libraries.phonenumberentry.CountryPickerNode
 import io.element.android.libraries.troubleshoot.api.NotificationTroubleShootEntryPoint
 import io.element.android.libraries.troubleshoot.api.PushHistoryEntryPoint
 import kotlinx.parcelize.Parcelize
@@ -97,6 +100,18 @@ class PreferencesFlowNode(
 
         @Parcelize
         data object LockScreenSettings : NavTarget
+
+        // GUA FORK: Two-step verification (account PIN), distinct from the local 4-digit app-lock above.
+        @Parcelize
+        data object TwoStepVerification : NavTarget
+
+        // GUA FORK: Change phone number (OTP to the new number, account PIN as the second factor).
+        @Parcelize
+        data object ChangePhoneNumber : NavTarget
+
+        // GUA FORK: shared country picker for the change-phone new-number field.
+        @Parcelize
+        data object CountryPicker : NavTarget
 
         @Parcelize
         data class EditDefaultNotificationSetting(val isOneToOne: Boolean) : NavTarget
@@ -153,6 +168,14 @@ class PreferencesFlowNode(
 
                     override fun navigateToLockScreenSettings() {
                         backstack.push(NavTarget.LockScreenSettings)
+                    }
+
+                    override fun navigateToTwoStepVerification() {
+                        backstack.push(NavTarget.TwoStepVerification)
+                    }
+
+                    override fun navigateToChangePhoneNumber() {
+                        backstack.push(NavTarget.ChangePhoneNumber)
                     }
 
                     override fun navigateToAdvancedSettings() {
@@ -303,15 +326,39 @@ class PreferencesFlowNode(
                     }
                 )
             }
+            NavTarget.TwoStepVerification -> {
+                val twoStepVerificationCallback = object : TwoStepVerificationNode.Callback {
+                    override fun navigateToCountryPicker() {
+                        backstack.push(NavTarget.CountryPicker)
+                    }
+                }
+                createNode<TwoStepVerificationNode>(buildContext, listOf(twoStepVerificationCallback))
+            }
+            NavTarget.ChangePhoneNumber -> {
+                val changePhoneCallback = object : ChangePhoneNumberNode.Callback {
+                    override fun navigateToCountryPicker() {
+                        backstack.push(NavTarget.CountryPicker)
+                    }
+
+                    override fun navigateToPinSetup() {
+                        backstack.push(NavTarget.TwoStepVerification)
+                    }
+                }
+                createNode<ChangePhoneNumberNode>(buildContext, listOf(changePhoneCallback))
+            }
+            NavTarget.CountryPicker -> {
+                val countryPickerCallback = object : CountryPickerNode.Callback {
+                    override fun onDone() {
+                        backstack.pop()
+                    }
+                }
+                createNode<CountryPickerNode>(buildContext, listOf(countryPickerCallback))
+            }
             NavTarget.BlockedUsers -> {
                 createNode<BlockedUsersNode>(buildContext)
             }
             NavTarget.SignOut -> {
-                val callBack: LogoutEntryPoint.Callback = object : LogoutEntryPoint.Callback {
-                    override fun navigateToSecureBackup() {
-                        callback.navigateToSecureBackup()
-                    }
-                }
+                val callBack: LogoutEntryPoint.Callback = object : LogoutEntryPoint.Callback {}
                 logoutEntryPoint.createNode(
                     parentNode = this,
                     buildContext = buildContext,

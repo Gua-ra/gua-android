@@ -1,0 +1,353 @@
+/*
+ * Copyright 2026 Gua
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+ * Please see LICENSE files in the repository root for full details.
+ */
+
+package io.element.android.features.login.impl.screens.phoneentry
+
+import com.google.common.truth.Truth.assertThat
+import io.element.android.features.login.impl.error.ChangeServerError
+import io.element.android.features.login.impl.login.FakeGuaDeployment
+import io.element.android.features.login.impl.login.FakeResolverClient
+import io.element.android.features.login.impl.login.LoginHelper
+import io.element.android.features.login.impl.login.LoginMode
+import io.element.android.features.login.impl.login.PasskeySignInError
+import io.element.android.features.login.impl.screens.onboarding.createLoginHelper
+import io.element.android.libraries.architecture.AsyncData
+import io.element.android.libraries.guaresolver.HomeserverResolution
+import io.element.android.libraries.guaresolver.ResolvedHomeserver
+import io.element.android.libraries.guaresolver.ResolverError
+import io.element.android.libraries.matrix.api.auth.OAuthDetails
+import io.element.android.libraries.matrix.api.auth.OAuthPrompt
+import io.element.android.libraries.matrix.test.auth.AN_OAUTH_DATA
+import io.element.android.libraries.matrix.test.auth.FakeMatrixAuthenticationService
+import io.element.android.libraries.matrix.test.auth.aMatrixHomeServerDetails
+import io.element.android.libraries.phonenumberentry.DeviceCountryProvider
+import io.element.android.libraries.phonenumberentry.FakeDeviceCountryProvider
+import io.element.android.libraries.phonenumberentry.SelectedCountryStore
+import io.element.android.tests.testutils.WarmUpRule
+import io.element.android.tests.testutils.lambda.lambdaRecorder
+import io.element.android.tests.testutils.test
+import kotlinx.coroutines.test.runTest
+import org.junit.Rule
+import org.junit.Test
+
+class PhoneEntryPresenterTest {
+    @get:Rule
+    val warmUpRule = WarmUpRule()
+
+    @Test
+    fun `present - initial state seeds device default and is not submittable`() = runTest {
+        val presenter = createPhoneEntryPresenter()
+        presenter.test {
+            val initialState = awaitItem()
+            assertThat(initialState.localPhoneNumber).isEmpty()
+            assertThat(initialState.canContinue).isFalse()
+            assertThat(initialState.loginMode).isEqualTo(AsyncData.Uninitialized)
+        }
+    }
+
+    @Test
+    fun `present - typing stores raw digits and validates`() = runTest {
+        val presenter = createPhoneEntryPresenter()
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("2015550123"))
+            val state = awaitItem()
+            // Raw digits only; the US mask "(201) 555-0123" is applied visually in the field.
+            assertThat(state.localPhoneNumber).isEqualTo("2015550123")
+            assertThat(state.localDigits).isEqualTo("2015550123")
+            assertThat(state.e164PhoneNumber).isEqualTo("+12015550123")
+            assertThat(state.canContinue).isTrue()
+        }
+    }
+
+    @Test
+    fun `present - a length-plausible but invalid number keeps continue disabled`() = runTest {
+        val presenter = createPhoneEntryPresenter()
+        presenter.test {
+            val initialState = awaitItem()
+            // 10 digits, so the old length-only heuristic would have accepted it, but 555 is not a
+            // diallable NANP area code, so libphonenumber (and the backend, which runs the same
+            // isValidNumber check) rejects it.
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("5551234567"))
+            val state = awaitItem()
+            // Raw digits only; the US mask "(555) 123-4567" is applied visually in the field.
+            assertThat(state.localPhoneNumber).isEqualTo("5551234567")
+            assertThat(state.localDigits).isEqualTo("5551234567")
+            assertThat(state.canContinue).isFalse()
+        }
+    }
+
+    @Test
+    fun `present - typing a Canadian area code flips the country`() = runTest {
+        val presenter = createPhoneEntryPresenter()
+        presenter.test {
+            val initialState = awaitItem()
+            assertThat(initialState.selectedCountry.isoCode).isEqualTo("US")
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("604"))
+            val state = awaitItem()
+            assertThat(state.selectedCountry.isoCode).isEqualTo("CA")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - pasting a plus-prefixed number with country code strips the code and enables continue`() = runTest {
+        val presenter = createPhoneEntryPresenter()
+        presenter.test {
+            val initialState = awaitItem()
+            assertThat(initialState.selectedCountry.isoCode).isEqualTo("US")
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("+12015550123"))
+            val state = awaitItem()
+            assertThat(state.selectedCountry.isoCode).isEqualTo("US")
+            assertThat(state.localPhoneNumber).isEqualTo("2015550123")
+            assertThat(state.localDigits).isEqualTo("2015550123")
+            assertThat(state.e164PhoneNumber).isEqualTo("+12015550123")
+            assertThat(state.canContinue).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - autofilling a number with a redundant country code and no plus strips it`() = runTest {
+        val presenter = createPhoneEntryPresenter()
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("12015550123"))
+            val state = awaitItem()
+            assertThat(state.selectedCountry.isoCode).isEqualTo("US")
+            assertThat(state.localPhoneNumber).isEqualTo("2015550123")
+            assertThat(state.localDigits).isEqualTo("2015550123")
+            assertThat(state.canContinue).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - pasting a Brazil number with plus switches the country and strips the code`() = runTest {
+        val presenter = createPhoneEntryPresenter()
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("+5511912345678"))
+            // The country switch (US -> BR) recomposes more than once; drain to the settled frame.
+            val state = awaitSettledNonEmpty()
+            assertThat(state.selectedCountry.isoCode).isEqualTo("BR")
+            assertThat(state.localDigits).isEqualTo("11912345678")
+            assertThat(state.localPhoneNumber).isEqualTo("11912345678")
+            assertThat(state.canContinue).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - pasting a plus-prefixed Canadian number auto-switches to Canada`() = runTest {
+        val presenter = createPhoneEntryPresenter()
+        presenter.test {
+            val initialState = awaitItem()
+            assertThat(initialState.selectedCountry.isoCode).isEqualTo("US")
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("+14165551234"))
+            // The country switch (US -> CA) recomposes more than once; drain to the settled frame.
+            val state = awaitSettledNonEmpty()
+            assertThat(state.selectedCountry.isoCode).isEqualTo("CA")
+            assertThat(state.localDigits).isEqualTo("4165551234")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - typing a normal local number is not mis-stripped`() = runTest {
+        val presenter = createPhoneEntryPresenter()
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("2015550123"))
+            val state = awaitItem()
+            assertThat(state.selectedCountry.isoCode).isEqualTo("US")
+            assertThat(state.localDigits).isEqualTo("2015550123")
+            assertThat(state.localPhoneNumber).isEqualTo("2015550123")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - continue resolves homeserver then produces an OIDC login mode`() = runTest {
+        val resolveRecorder = lambdaRecorder<String, Result<HomeserverResolution>> { phone ->
+            assertThat(phone).isEqualTo("+12015550123")
+            Result.success(
+                HomeserverResolution(
+                    exists = true,
+                    homeserver = ResolvedHomeserver(
+                        serverName = "gua.global",
+                        baseUrl = "https://matrix.gua.global",
+                        masIssuer = "https://mas.gua.global",
+                        region = "us",
+                    ),
+                )
+            )
+        }
+        val setHomeserverRecorder = lambdaRecorder<String, Result<io.element.android.libraries.matrix.api.auth.MatrixHomeServerDetails>> { homeserver ->
+            assertThat(homeserver).isEqualTo("https://matrix.gua.global")
+            Result.success(aMatrixHomeServerDetails(supportsOAuthLogin = true))
+        }
+        val authenticationService = FakeMatrixAuthenticationService(
+            setHomeserverResult = setHomeserverRecorder,
+        )
+        val presenter = createPhoneEntryPresenter(
+            loginHelper = createLoginHelper(
+                authenticationService = authenticationService,
+                resolverClient = FakeResolverClient(resolveResult = resolveRecorder),
+            ),
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("2015550123"))
+            val typedState = awaitItem()
+            assertThat(typedState.canContinue).isTrue()
+            typedState.eventSink(PhoneEntryEvents.Continue)
+            // Drain to the terminal OIDC success state (resolve -> configure -> getOAuthUrl).
+            val successState = awaitTerminalLoginMode()
+            assertThat(successState.loginMode).isInstanceOf(AsyncData.Success::class.java)
+            assertThat(successState.loginMode.dataOrNull()).isInstanceOf(LoginMode.OAuth::class.java)
+        }
+        resolveRecorder.assertions().isCalledOnce()
+        setHomeserverRecorder.assertions().isCalledOnce()
+    }
+
+    @Test
+    fun `present - resolver failure surfaces an error`() = runTest {
+        val presenter = createPhoneEntryPresenter(
+            loginHelper = createLoginHelper(
+                resolverClient = FakeResolverClient(resolveResult = { Result.failure(ResolverError.NotConfigured) }),
+            ),
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("2015550123"))
+            val typedState = awaitItem()
+            typedState.eventSink(PhoneEntryEvents.Continue)
+            val failureState = awaitTerminalLoginMode()
+            assertThat(failureState.loginMode).isInstanceOf(AsyncData.Failure::class.java)
+        }
+    }
+
+    @Test
+    fun `present - sign in with passkey configures the default account provider and sends the passkey hint`() = runTest {
+        // No number is involved, so the resolver must never be consulted.
+        val resolveRecorder = lambdaRecorder<String, Result<HomeserverResolution>> { error("resolver must not be called") }
+        val setHomeserverRecorder = lambdaRecorder<String, Result<io.element.android.libraries.matrix.api.auth.MatrixHomeServerDetails>> { homeserver ->
+            assertThat(homeserver).isEqualTo("gua.global")
+            Result.success(aMatrixHomeServerDetails(supportsOAuthLogin = true))
+        }
+        val getOAuthUrlRecorder = lambdaRecorder<OAuthPrompt, String?, Result<OAuthDetails>> { prompt, loginHint ->
+            // The prompt stays `login`; only the reserved hint tells the sign-in page to lead with the passkey.
+            assertThat(prompt).isEqualTo(OAuthPrompt.Login)
+            assertThat(loginHint).isEqualTo(LoginHelper.PASSKEY_LOGIN_HINT)
+            assertThat(loginHint).isEqualTo("passkey")
+            Result.success(AN_OAUTH_DATA)
+        }
+        val presenter = createPhoneEntryPresenter(
+            loginHelper = createLoginHelper(
+                authenticationService = FakeMatrixAuthenticationService(
+                    setHomeserverResult = setHomeserverRecorder,
+                    getOAuthUrlResult = getOAuthUrlRecorder,
+                ),
+                resolverClient = FakeResolverClient(resolveResult = resolveRecorder),
+                deployment = FakeGuaDeployment(defaultAccountProvider = "gua.global"),
+            ),
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            // Works with an empty phone field: the passkey identifies the account by itself.
+            assertThat(initialState.canContinue).isFalse()
+            initialState.eventSink(PhoneEntryEvents.SignInWithPasskey)
+            val successState = awaitTerminalLoginMode()
+            assertThat(successState.loginMode.dataOrNull()).isEqualTo(LoginMode.OAuth(AN_OAUTH_DATA))
+        }
+        resolveRecorder.assertions().isNeverCalled()
+        setHomeserverRecorder.assertions().isCalledOnce()
+        getOAuthUrlRecorder.assertions().isCalledOnce()
+    }
+
+    @Test
+    fun `present - sign in with passkey without a configured account provider fails closed`() = runTest {
+        val resolveRecorder = lambdaRecorder<String, Result<HomeserverResolution>> { error("resolver must not be called") }
+        val presenter = createPhoneEntryPresenter(
+            loginHelper = createLoginHelper(
+                // setHomeserver is left at its lambdaError default: nothing may be configured.
+                authenticationService = FakeMatrixAuthenticationService(),
+                resolverClient = FakeResolverClient(resolveResult = resolveRecorder),
+                deployment = FakeGuaDeployment(defaultAccountProvider = null),
+            ),
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(PhoneEntryEvents.SignInWithPasskey)
+            val failureState = awaitTerminalLoginMode()
+            val error = (failureState.loginMode as AsyncData.Failure).error
+            assertThat(error).isEqualTo(ChangeServerError.Error(messageStr = PasskeySignInError.NotConfigured.message))
+        }
+        resolveRecorder.assertions().isNeverCalled()
+    }
+
+    @Test
+    fun `present - sign in with passkey on a server without OIDC surfaces the unsupported error`() = runTest {
+        val presenter = createPhoneEntryPresenter(
+            loginHelper = createLoginHelper(
+                authenticationService = FakeMatrixAuthenticationService(
+                    setHomeserverResult = { Result.success(aMatrixHomeServerDetails(supportsOAuthLogin = false)) },
+                ),
+                resolverClient = FakeResolverClient(resolveResult = { error("resolver must not be called") }),
+            ),
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(PhoneEntryEvents.SignInWithPasskey)
+            val failureState = awaitTerminalLoginMode()
+            assertThat((failureState.loginMode as AsyncData.Failure).error).isEqualTo(ChangeServerError.UnsupportedServer)
+        }
+    }
+}
+
+/**
+ * Drains intermediate emissions (typed-state re-emissions + the Loading frame) until the login mode
+ * settles into a terminal Success/Failure. The exact intermediate emission ordering is a Molecule
+ * recomposition detail; the wiring contract is that the pipeline reaches a terminal state.
+ */
+private suspend fun app.cash.turbine.ReceiveTurbine<PhoneEntryState>.awaitTerminalLoginMode(): PhoneEntryState {
+    while (true) {
+        val state = awaitItem()
+        if (state.loginMode is AsyncData.Success || state.loginMode is AsyncData.Failure) {
+            return state
+        }
+    }
+}
+
+/**
+ * Drains intermediate recomposition frames after a country switch until the local number has settled
+ * (non-empty). A country change updates two pieces of `rememberSaveable` state, so Molecule may emit a
+ * frame with the new country before the normalised digits land; the settled frame is the contract.
+ */
+private suspend fun app.cash.turbine.ReceiveTurbine<PhoneEntryState>.awaitSettledNonEmpty(): PhoneEntryState {
+    while (true) {
+        val state = awaitItem()
+        if (state.localDigits.isNotEmpty()) {
+            return state
+        }
+    }
+}
+
+private fun createPhoneEntryPresenter(
+    params: PhoneEntryNode.Params = PhoneEntryNode.Params(initialPhoneNumber = null),
+    loginHelper: io.element.android.features.login.impl.login.LoginHelper = createLoginHelper(
+        resolverClient = FakeResolverClient(),
+    ),
+    selectedCountryStore: SelectedCountryStore = SelectedCountryStore(),
+    deviceCountryProvider: DeviceCountryProvider = FakeDeviceCountryProvider(),
+) = PhoneEntryPresenter(
+    params = params,
+    loginHelper = loginHelper,
+    selectedCountryStore = selectedCountryStore,
+    deviceCountryProvider = deviceCountryProvider,
+)

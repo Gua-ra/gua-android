@@ -41,6 +41,12 @@ class DefaultOAuthUrlParserTest {
     }
 
     @Test
+    fun `test identity reset return url`() {
+        val sut = createDefaultOAuthUrlParser()
+        assertThat(sut.parse("${FAKE_REDIRECT_URL}reset-cross-signing-done")).isEqualTo(OAuthAction.IdentityResetApproved)
+    }
+
+    @Test
     fun `test unknown url`() {
         val sut = createDefaultOAuthUrlParser()
         val anUnknownUrl = "$FAKE_REDIRECT_URL?state=IFF1UETGye2ZA8pO&goat=y6X1GZeqA3xxOWcTeShgv8nkgFJXyzWB"

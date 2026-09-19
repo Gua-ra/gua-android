@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="gua_identity_change_banner">"Os dados de segurança de %1$s mudaram. Isso acontece quando a pessoa reinstala o Gua ou troca de celular. %2$s"</string>
+  <!-- GUA FORK: replaces upstream's "Sender's verified digital identity was reset".
+       Says what the reader can and cannot do, in plain language. -->
+  <string name="gua_identity_change_undecryptable">Não é possível abrir esta mensagem porque os dados de segurança de quem enviou mudaram.</string>
+</resources>

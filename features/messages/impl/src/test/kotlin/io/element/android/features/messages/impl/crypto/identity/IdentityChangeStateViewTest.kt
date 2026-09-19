@@ -42,11 +42,11 @@ class IdentityChangeStateViewTest : RobolectricTest() {
             ),
         )
 
-        onNodeWithText("identity was reset", substring = true).assertExists("should display pin violation warning")
-        onNodeWithText("@alice:localhost", substring = true).assertExists("should display user mxid")
+        onNodeWithText("security details changed", substring = true).assertExists("should display the identity change notice")
+        onNodeWithText("@alice:localhost", substring = true).assertDoesNotExist()
         onNodeWithText("Alice", substring = true).assertExists("should display user displayname")
 
-        clickOn(res = CommonStrings.action_dismiss)
+        clickOn(res = CommonStrings.action_ok)
         eventsRecorder.assertSingle(IdentityChangeEvent.PinIdentity(UserId("@alice:localhost")))
     }
 
@@ -65,11 +65,11 @@ class IdentityChangeStateViewTest : RobolectricTest() {
             ),
         )
 
-        onNodeWithText("identity was reset", substring = true).assertExists("should display verification violation warning")
-        onNodeWithText("@alice:localhost", substring = true).assertExists("should display user mxid")
+        onNodeWithText("security details changed", substring = true).assertExists("should display the identity change notice")
+        onNodeWithText("@alice:localhost", substring = true).assertDoesNotExist()
         onNodeWithText("Alice", substring = true).assertExists("should display user displayname")
 
-        clickOn(res = CommonStrings.crypto_identity_change_withdraw_verification_action)
+        clickOn(res = CommonStrings.action_ok)
         eventsRecorder.assertSingle(IdentityChangeEvent.WithdrawVerification(UserId("@alice:localhost")))
     }
 
@@ -90,7 +90,7 @@ class IdentityChangeStateViewTest : RobolectricTest() {
             ),
         )
 
-        onNodeWithText("identity was reset", substring = true).assertDoesNotExist()
+        onNodeWithText("security details changed", substring = true).assertDoesNotExist()
     }
 
     private fun AndroidComposeUiTest<ComponentActivity>.setIdentityChangeStateView(

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: sk translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_onboarding_welcome_title">Vitajte na Gua</string>
+    <string name="gua_onboarding_welcome_message">Súkromné správy, jednoducho.</string>
+    <string name="screen_onboarding_trust_encrypted">Koncové šifrovanie</string>
+    <string name="screen_phone_entry_welcome_title">Vitajte na Gua</string>
+    <string name="screen_phone_entry_title">Aké je vaše číslo?</string>
+    <string name="screen_phone_entry_message">Zadajte svoje telefónne číslo</string>
+    <string name="screen_phone_entry_footer">Na toto číslo pošleme overovací kód SMS správou.</string>
+    <string name="screen_phone_entry_phone_number_label">Telefónne číslo</string>
+    <string name="screen_phone_entry_country_picker_a11y">Vyberte krajinu</string>
+</resources>

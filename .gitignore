@@ -82,6 +82,15 @@ captures/
 #*.jks
 #*.keystore
 
+# GUA FORK: release signing material must never be committed. The debug keystore
+# (app/signature/debug.keystore) is intentionally still tracked; everything else is ignored.
+keystore.properties
+*.jks
+*.p12
+release.keystore
+nightly.keystore
+*.keystore.properties
+
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild
 .cxx/

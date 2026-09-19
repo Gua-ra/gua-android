@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: zh-rTW translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">尋找好友</string>
+    <string name="screen_find_friends_action">尋找好友</string>
+    <string name="screen_find_friends_action_description">看看你的聯絡人中有誰在使用 Gua</string>
+    <string name="screen_find_friends_loading">正在 Gua 中尋找你的聯絡人…</string>
+    <string name="screen_find_friends_permission_title">允許存取通訊錄</string>
+    <string name="screen_find_friends_permission_message">Gua 會以私密方式核對你的聯絡人，看看誰已經在這裡。你的聯絡人不會被保存。</string>
+    <string name="screen_find_friends_permission_action">允許存取</string>
+    <string name="screen_find_friends_permission_denied_action">開啟設定</string>
+    <string name="screen_find_friends_empty_title">還沒有聯絡人在 Gua 上</string>
+    <string name="screen_find_friends_empty_message">你的聯絡人中還沒有人在使用 Gua。邀請他們後就會顯示在這裡。</string>
+    <string name="screen_find_friends_empty_action">重新檢查</string>
+    <string name="screen_find_friends_error_title">出了點問題</string>
+    <string name="screen_find_friends_error_message">暫時無法核對你的聯絡人，請重試。</string>
+    <string name="screen_find_friends_error_action">重試</string>
+    <string name="a11y_find_friends_view_profile">檢視 %1$s 的個人檔案</string>
+    <string name="a11y_find_friends_start_chat">與 %1$s 開始聊天</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d 位聯絡人在 Gua 上</item>
+        <item quantity="other">%1$d 位聯絡人在 Gua 上</item>
+    </plurals>
+</resources>

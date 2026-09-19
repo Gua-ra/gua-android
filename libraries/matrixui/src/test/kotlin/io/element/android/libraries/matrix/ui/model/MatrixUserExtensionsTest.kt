@@ -58,7 +58,9 @@ class MatrixUserExtensionsTest : RobolectricTest() {
             userId = A_USER_ID,
             displayName = null,
         )
-        assertThat(matrixUser.getBestName()).isEqualTo(A_USER_ID.value)
+        // GUA FORK: the handle, never `@user:server`. See MatrixUserExtensions.getBestName.
+        assertThat(matrixUser.getBestName()).isEqualTo(A_USER_ID.displayHandle)
+        assertThat(matrixUser.getBestName()).isNotEqualTo(A_USER_ID.value)
     }
 
     @Test
@@ -67,7 +69,8 @@ class MatrixUserExtensionsTest : RobolectricTest() {
             userId = A_USER_ID,
             displayName = "",
         )
-        assertThat(matrixUser.getBestName()).isEqualTo(A_USER_ID.value)
+        // GUA FORK: as above, an empty display name falls back to the handle.
+        assertThat(matrixUser.getBestName()).isEqualTo(A_USER_ID.displayHandle)
     }
 
     @Test
@@ -81,7 +84,7 @@ class MatrixUserExtensionsTest : RobolectricTest() {
                 matrixUser.getFullName()
             }
         }.test {
-            assertThat(awaitItem()).isEqualTo("displayName (@alice:server.org)")
+            assertThat(awaitItem()).isEqualTo("displayName (@alice)")
         }
     }
 
@@ -94,7 +97,8 @@ class MatrixUserExtensionsTest : RobolectricTest() {
         moleculeFlow(RecompositionMode.Immediate) {
             matrixUser.getFullName()
         }.test {
-            assertThat(awaitItem()).isEqualTo(A_USER_ID.value)
+            // GUA FORK: handle only, no homeserver.
+            assertThat(awaitItem()).isEqualTo(A_USER_ID.displayHandle)
         }
     }
 }

@@ -29,7 +29,7 @@ class DefaultOutgoingVerificationEntryPointTest {
             OutgoingVerificationNode(
                 buildContext = buildContext,
                 plugins = plugins,
-                presenterFactory = { _, _ ->
+                presenterFactory = { _, _, _ ->
                     createOutgoingVerificationPresenter()
                 }
             )

@@ -32,8 +32,10 @@ import io.element.android.libraries.designsystem.theme.components.Text
  *
  * Ref: https://www.figma.com/file/o9p34zmiuEpZRyvZXJZAYL/FTUE?type=design&node-id=133-5427&t=5SHVppfYzjvkEywR-0
  * @param modifier Classical modifier.
- * @param renderBackground whether to render the background image or not.
+ * @param renderBackground whether to render the default background image or not.
  * @param contentAlignment horizontal alignment of the contents.
+ * @param background optional full-bleed background drawn behind the (system-bar-padded) content
+ * and footer. Takes precedence over [renderBackground] when provided.
  * @param footer optional footer.
  * @param content main content.
  */
@@ -42,6 +44,7 @@ fun OnBoardingPage(
     modifier: Modifier = Modifier,
     renderBackground: Boolean = true,
     contentAlignment: Alignment.Horizontal = Alignment.CenterHorizontally,
+    background: (@Composable () -> Unit)? = null,
     footer: @Composable () -> Unit = {},
     content: @Composable () -> Unit = {},
 ) {
@@ -50,7 +53,9 @@ fun OnBoardingPage(
             .fillMaxSize()
     ) {
         // BG
-        if (renderBackground) {
+        if (background != null) {
+            background()
+        } else if (renderBackground) {
             Image(
                 modifier = Modifier
                     .fillMaxSize(),

@@ -11,6 +11,8 @@ package io.element.android.features.home.impl.di
 import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.Binds
 import dev.zacsweers.metro.ContributesTo
+import io.element.android.features.home.impl.accountrecovery.AccountRecoveryBannerPresenter
+import io.element.android.features.home.impl.accountrecovery.AccountRecoveryBannerState
 import io.element.android.features.home.impl.filters.RoomListFiltersPresenter
 import io.element.android.features.home.impl.filters.RoomListFiltersState
 import io.element.android.features.home.impl.roomlist.RoomListPresenter
@@ -36,4 +38,7 @@ interface RoomListModule {
 
     @Binds
     fun bindSpaceFiltersPresenter(presenter: SpaceFiltersPresenter): Presenter<SpaceFiltersState>
+
+    @Binds
+    fun bindAccountRecoveryBannerPresenter(presenter: AccountRecoveryBannerPresenter): Presenter<AccountRecoveryBannerState>
 }

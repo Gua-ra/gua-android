@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -20,109 +19,88 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
-import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.securebackup.impl.R
-import io.element.android.libraries.designsystem.atomic.organisms.InfoListItem
-import io.element.android.libraries.designsystem.atomic.organisms.InfoListOrganism
 import io.element.android.libraries.designsystem.atomic.pages.FlowStepPage
 import io.element.android.libraries.designsystem.components.BigIcon
-import io.element.android.libraries.designsystem.components.dialogs.ConfirmationDialog
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Button
-import io.element.android.libraries.designsystem.theme.components.Icon
+import io.element.android.libraries.designsystem.theme.components.OutlinedButton
 import io.element.android.libraries.designsystem.theme.components.Text
-import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 fun ResetIdentityRootView(
     state: ResetIdentityRootState,
     onContinue: () -> Unit,
+    onRecoverFromOtherDevice: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     FlowStepPage(
         modifier = modifier,
         iconStyle = BigIcon.Style.AlertSolid,
-        title = stringResource(R.string.screen_encryption_reset_title),
+        // GUA FORK: when the keys can come from another device, this screen is about
+        // getting them back, not about what is lost.
+        title = stringResource(
+            if (state.canRecoverFromOtherDevice) {
+                R.string.gua_encryption_recover_from_other_device_title
+            } else {
+                R.string.gua_encryption_reset_required_title
+            }
+        ),
         isScrollable = true,
-        content = { Content() },
+        content = { Content(canRecoverFromOtherDevice = state.canRecoverFromOtherDevice) },
         buttons = {
-            Button(
-                modifier = Modifier.fillMaxWidth(),
-                text = stringResource(id = R.string.screen_encryption_reset_action_continue_reset),
-                onClick = { state.eventSink(ResetIdentityRootEvent.Continue) },
-                destructive = true,
-            )
+            // GUA FORK: offered only when another device of this account holds the keys. It
+            // brings the messages here without resetting anything; otherwise the reset is the
+            // only way forward and the sole option shown. The reset goes straight through: this
+            // screen already names what is lost and its button is destructive.
+            if (state.canRecoverFromOtherDevice) {
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(id = R.string.gua_encryption_recover_from_other_device_action),
+                    onClick = onRecoverFromOtherDevice,
+                )
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(id = R.string.gua_encryption_reset_required_action),
+                    onClick = onContinue,
+                    destructive = true,
+                )
+            } else {
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    text = stringResource(id = R.string.gua_encryption_reset_required_action),
+                    onClick = onContinue,
+                    destructive = true,
+                )
+            }
         },
         onBackClick = onBack,
     )
-
-    if (state.displayConfirmationDialog) {
-        ConfirmationDialog(
-            title = stringResource(R.string.screen_reset_encryption_confirmation_alert_title),
-            content = stringResource(R.string.screen_reset_encryption_confirmation_alert_subtitle),
-            submitText = stringResource(R.string.screen_reset_encryption_confirmation_alert_action),
-            onSubmitClick = {
-                state.eventSink(ResetIdentityRootEvent.DismissDialog)
-                onContinue()
-            },
-            destructiveSubmit = true,
-            onDismiss = { state.eventSink(ResetIdentityRootEvent.DismissDialog) }
-        )
-    }
 }
 
 @Composable
-private fun Content() {
+private fun Content(canRecoverFromOtherDevice: Boolean) {
     Column(
         modifier = Modifier.padding(top = 8.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        InfoListOrganism(
-            modifier = Modifier.fillMaxWidth(),
-            items = persistentListOf(
-                InfoListItem(
-                    message = stringResource(R.string.screen_encryption_reset_bullet_1),
-                    iconComposable = {
-                        Icon(
-                            modifier = Modifier.size(20.dp),
-                            imageVector = CompoundIcons.Check(),
-                            contentDescription = null,
-                            tint = ElementTheme.colors.iconSuccessPrimary,
-                        )
-                    },
-                ),
-                InfoListItem(
-                    message = stringResource(R.string.screen_encryption_reset_bullet_2),
-                    iconComposable = {
-                        Icon(
-                            modifier = Modifier.size(20.dp),
-                            imageVector = CompoundIcons.Info(),
-                            contentDescription = null,
-                            tint = ElementTheme.colors.iconSecondary,
-                        )
-                    },
-                ),
-                InfoListItem(
-                    message = stringResource(R.string.screen_encryption_reset_bullet_3),
-                    iconComposable = {
-                        Icon(
-                            modifier = Modifier.size(20.dp),
-                            imageVector = CompoundIcons.Info(),
-                            contentDescription = null,
-                            tint = ElementTheme.colors.iconSecondary,
-                        )
-                    },
-                ),
-            ),
-        )
-
+        // GUA FORK: one plain sentence about what is lost, instead of three bullets of
+        // upstream jargon about identities and recovery keys the user has never seen. When the
+        // keys can be fetched from another device, saying the backup must be reset would be
+        // untrue, and the button below offers the other way out.
         Text(
             modifier = Modifier.fillMaxWidth(),
-            text = stringResource(R.string.screen_encryption_reset_footer),
-            style = ElementTheme.typography.fontBodyMdMedium,
-            color = ElementTheme.colors.textActionPrimary,
+            text = stringResource(
+                if (canRecoverFromOtherDevice) {
+                    R.string.gua_encryption_recover_from_other_device_message
+                } else {
+                    R.string.gua_encryption_reset_required_message
+                }
+            ),
+            style = ElementTheme.typography.fontBodyMdRegular,
+            color = ElementTheme.colors.textSecondary,
             textAlign = TextAlign.Center,
         )
     }
@@ -135,6 +113,7 @@ internal fun ResetIdentityRootViewPreview(@PreviewParameter(ResetIdentityRootSta
         ResetIdentityRootView(
             state = state,
             onContinue = {},
+            onRecoverFromOtherDevice = {},
             onBack = {},
         )
     }

@@ -30,7 +30,8 @@ fun MatrixUserRow(
 ) = UserRow(
     avatarData = matrixUser.getAvatarData(avatarSize),
     name = matrixUser.getBestName(),
-    subtext = if (matrixUser.displayName.isNullOrEmpty()) null else matrixUser.userId.value,
+    // GUA FORK: show the homeserver-stripped handle, never `@user:server`.
+    subtext = if (matrixUser.displayName.isNullOrEmpty()) null else matrixUser.userId.displayHandle,
     modifier = modifier,
     verticalSpaceWidth = verticalSpaceWidth,
     trailingContent = trailingContent,

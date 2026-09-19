@@ -20,7 +20,8 @@ interface LogoutEntryPoint : FeatureEntryPoint {
         callback: Callback,
     ): Node
 
-    interface Callback : Plugin {
-        fun navigateToSecureBackup()
-    }
+    // GUA FORK: empty. It carried navigateToSecureBackup, whose only caller was a "Settings"
+    // button on the sign-out screen that opened the recovery-key console. Kept as a marker so the
+    // createNode signature does not churn.
+    interface Callback : Plugin
 }

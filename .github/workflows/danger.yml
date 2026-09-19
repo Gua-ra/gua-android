@@ -1,6 +1,8 @@
 name: Danger CI
 
-on: [pull_request, merge_group]
+# GUA FORK: disabled — Danger already self-skips on forks; convert to manual to avoid noise.
+on:
+  workflow_dispatch:
 
 permissions: {}
 

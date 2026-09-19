@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: pl translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_find_friends_title">Znajdź znajomych</string>
+    <string name="screen_find_friends_action">Znajdź znajomych</string>
+    <string name="screen_find_friends_action_description">Zobacz, którzy z Twoich kontaktów są w Gua</string>
+    <string name="screen_find_friends_loading">Szukanie Twoich kontaktów w Gua…</string>
+    <string name="screen_find_friends_permission_title">Zezwól na dostęp do kontaktów</string>
+    <string name="screen_find_friends_permission_message">Gua prywatnie sprawdza Twoje kontakty, aby ustalić, kto już tu jest. Twoje kontakty nigdy nie są przechowywane.</string>
+    <string name="screen_find_friends_permission_action">Zezwól na dostęp</string>
+    <string name="screen_find_friends_permission_denied_action">Otwórz ustawienia</string>
+    <string name="screen_find_friends_empty_title">Nie ma jeszcze kontaktów w Gua</string>
+    <string name="screen_find_friends_empty_message">Żaden z Twoich kontaktów nie jest jeszcze w Gua. Zaproś ich, a pojawią się tutaj.</string>
+    <string name="screen_find_friends_empty_action">Sprawdź ponownie</string>
+    <string name="screen_find_friends_error_title">Coś poszło nie tak</string>
+    <string name="screen_find_friends_error_message">Nie udało się teraz sprawdzić Twoich kontaktów. Spróbuj ponownie.</string>
+    <string name="screen_find_friends_error_action">Spróbuj ponownie</string>
+    <string name="a11y_find_friends_view_profile">Zobacz profil użytkownika %1$s</string>
+    <string name="a11y_find_friends_start_chat">Rozpocznij czat z %1$s</string>
+    <plurals name="screen_find_friends_results_header_plural">
+        <item quantity="one">%1$d kontakt jest w Gua</item>
+        <item quantity="other">%1$d kontaktów jest w Gua</item>
+    </plurals>
+</resources>
