@@ -866,6 +866,12 @@ class RustMatrixClient(
     override fun homeserverCapabilities(): HomeserverCapabilitiesProvider {
         return RustHomeserverCapabilitiesProvider(innerClient.homeserverCapabilities())
     }
+
+    // GUA FORK: see MatrixClient.accessToken. The refresh that MatrixClient.refreshAccessTokenIfExpired
+    // performs is the interface's own, because the request it makes is one this client already offers.
+    override fun accessToken(): String? = runCatchingExceptions { innerClient.session().accessToken }
+        .onFailure { Timber.w(it, "Could not read the session's access token") }
+        .getOrNull()
 }
 
 private fun defaultRoomCreationPowerLevels(isPublic: Boolean, isSpace: Boolean) = PowerLevels(

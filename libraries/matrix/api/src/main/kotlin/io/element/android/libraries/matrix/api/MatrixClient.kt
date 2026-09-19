@@ -234,6 +234,40 @@ interface MatrixClient {
     suspend fun resetWellKnownConfig(): Result<Unit>
 
     fun homeserverCapabilities(): HomeserverCapabilitiesProvider
+
+    /**
+     * GUA FORK: the access token this session is authenticating with right now, as the SDK itself
+     * holds it, or null when the SDK cannot report a session.
+     *
+     * Anything that authenticates its own HTTP call (the Gua identity service) must read the token
+     * here rather than out of the session store. The store is a persisted copy that the SDK writes
+     * back after it has refreshed, so it can only ever be as fresh as the last write, and a MAS
+     * access token lives five minutes. This is the same read iOS makes through
+     * `ClientProxy.accessToken`.
+     */
+    fun accessToken(): String?
+
+    /**
+     * GUA FORK: gives the SDK the chance to refresh an expired access token, then returns the token
+     * it holds afterwards, which is the same value as [accessToken] when nothing was refreshed.
+     *
+     * Called when a request authenticated with [accessToken] was refused, to find out whether a fresh
+     * credential exists before giving up on the user's action.
+     *
+     * The SDK exposes no "refresh the token now" call, so the only honest way to make it refresh is to
+     * hand it an authenticated request of its own to run. Automatic token refresh is on (nothing in
+     * this app disables it), so a request the homeserver refuses as an unknown token makes the SDK
+     * spend the refresh token and retry, after which [accessToken] reports the new credential.
+     *
+     * [MediaPreviewService.fetchMediaPreviewConfig] is that request: a global account-data read, which
+     * the homeserver always demands a token for and which changes nothing on the account. Its own
+     * answer is discarded, so a refresh that happened alongside a failure for some other reason still
+     * counts. It cannot loop, being one request that never comes back through here.
+     */
+    suspend fun refreshAccessTokenIfExpired(): String? {
+        mediaPreviewService.fetchMediaPreviewConfig()
+        return accessToken()
+    }
 }
 
 /**
