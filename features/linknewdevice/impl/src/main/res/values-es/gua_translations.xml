@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: es translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_link_grant_authority_header">¿Dar autoridad a este dispositivo?</string>
+    <string name="screen_link_grant_authority_message">%1$s ya inició sesión. También puedes dejar que apruebe dispositivos nuevos y acciones iniciadas en un navegador. De todos modos ya puede leer y enviar tus mensajes.</string>
+    <string name="screen_link_grant_authority_quarantine_notice">Primero hay un periodo de espera: hasta que pase, el dispositivo nuevo no puede aprobar nada y todavía puedes oponerte.</string>
+    <string name="screen_link_grant_authority_action">Darle autoridad</string>
+    <string name="screen_link_grant_authority_skip_action">Ahora no</string>
+    <string name="screen_link_grant_authority_pin_header">Confirma que eres tú</string>
+    <string name="screen_link_grant_authority_pin_footer">Introduce tu PIN de 6 dígitos de la cuenta para dar autoridad a este dispositivo.</string>
+    <string name="screen_link_grant_authority_error_step_up_required">Para esto hace falta tu PIN de 6 dígitos de la cuenta. Si tu cuenta solo tiene una clave de acceso, todavía no se puede usar aquí.</string>
+    <string name="screen_link_grant_authority_error_too_recent">Algo en tu cuenta cambió hace muy poco para esto. Inténtalo de nuevo en unos días.</string>
+    <string name="screen_link_grant_authority_error_quarantined">Este teléfono todavía está en su periodo de espera, así que aún no puede dar autoridad a otro dispositivo.</string>
+    <string name="screen_link_grant_authority_error_signer_refused">Este teléfono no puede hacer eso por tu cuenta.</string>
+    <string name="screen_link_grant_authority_error_conflict">Algo cambió en tu cuenta mientras estabas aquí. Abre Autoridad de la cuenta en Ajustes para intentarlo de nuevo.</string>
+    <string name="screen_link_grant_authority_error_generic">Algo salió mal. Inténtalo de nuevo.</string>
+</resources>

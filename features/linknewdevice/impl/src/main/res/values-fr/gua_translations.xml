@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: fr translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_link_grant_authority_header">Donner l\'autorité à cet appareil ?</string>
+    <string name="screen_link_grant_authority_message">%1$s est maintenant connecté. Vous pouvez aussi l\'autoriser à approuver de nouveaux appareils et des actions lancées dans un navigateur. Il peut déjà lire et envoyer vos messages dans tous les cas.</string>
+    <string name="screen_link_grant_authority_quarantine_notice">Un délai d\'attente s\'applique d\'abord : jusqu\'à son terme, le nouvel appareil ne peut rien approuver et vous pouvez encore vous y opposer.</string>
+    <string name="screen_link_grant_authority_action">Lui donner l\'autorité</string>
+    <string name="screen_link_grant_authority_skip_action">Pas maintenant</string>
+    <string name="screen_link_grant_authority_pin_header">Confirmez que c\'est bien vous</string>
+    <string name="screen_link_grant_authority_pin_footer">Saisissez le code PIN à 6 chiffres de votre compte pour donner l\'autorité à cet appareil.</string>
+    <string name="screen_link_grant_authority_error_step_up_required">Votre code PIN de compte à 6 chiffres est nécessaire. Si votre compte ne possède qu\'une clé d\'accès, elle ne peut pas encore être utilisée ici.</string>
+    <string name="screen_link_grant_authority_error_too_recent">Un élément de votre compte a changé trop récemment pour cela. Réessayez dans quelques jours.</string>
+    <string name="screen_link_grant_authority_error_quarantined">Ce téléphone est encore dans son propre délai d\'attente et ne peut donc pas encore donner l\'autorité à un autre appareil.</string>
+    <string name="screen_link_grant_authority_error_signer_refused">Ce téléphone ne peut pas faire cela pour votre compte.</string>
+    <string name="screen_link_grant_authority_error_conflict">Quelque chose a changé sur votre compte pendant que vous étiez ici. Ouvrez Autorité du compte dans les Réglages pour réessayer.</string>
+    <string name="screen_link_grant_authority_error_generic">Une erreur est survenue. Veuillez réessayer.</string>
+</resources>

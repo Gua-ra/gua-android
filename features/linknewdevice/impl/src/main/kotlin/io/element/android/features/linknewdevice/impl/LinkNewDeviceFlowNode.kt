@@ -32,6 +32,7 @@ import io.element.android.features.linknewdevice.impl.screens.confirmation.CodeC
 import io.element.android.features.linknewdevice.impl.screens.desktop.DesktopNoticeNode
 import io.element.android.features.linknewdevice.impl.screens.error.ErrorNode
 import io.element.android.features.linknewdevice.impl.screens.error.ErrorScreenType
+import io.element.android.features.linknewdevice.impl.screens.grantauthority.GrantAuthorityNode
 import io.element.android.features.linknewdevice.impl.screens.number.EnterNumberNode
 import io.element.android.features.linknewdevice.impl.screens.qrcode.ShowQrCodeNode
 import io.element.android.features.linknewdevice.impl.screens.root.LinkNewDeviceRootNode
@@ -44,11 +45,17 @@ import io.element.android.libraries.architecture.createNode
 import io.element.android.libraries.core.log.logger.LoggerTag
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
+import io.element.android.libraries.featureflag.api.FeatureFlagService
+import io.element.android.libraries.featureflag.api.FeatureFlags
+import io.element.android.libraries.guaresolver.authority.AccountAuthorityManager
+import io.element.android.libraries.guaresolver.authority.DeviceGrantCandidate
+import io.element.android.libraries.guaresolver.authority.LinkedDeviceAuthorityKeySource
 import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.api.linknewdevice.ErrorType
 import io.element.android.libraries.matrix.api.linknewdevice.LinkDesktopStep
 import io.element.android.libraries.matrix.api.linknewdevice.LinkMobileStep
 import io.element.android.libraries.matrix.api.logs.LoggerTags
+import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.launchIn
@@ -69,6 +76,13 @@ class LinkNewDeviceFlowNode(
     private val linkNewDesktopHandler: LinkNewDesktopHandler,
     private val sessionEnterpriseService: SessionEnterpriseService,
     private val sessionId: SessionId,
+    // GUA FORK: ADM-009 decision 5. Everything below is inert while the account-authority flag is off,
+    // which is every build today: the grant offer is never pushed and this flow ends exactly where it
+    // ended before.
+    private val featureFlagService: FeatureFlagService,
+    private val sessionStore: SessionStore,
+    private val authorityManager: AccountAuthorityManager,
+    private val linkedDeviceAuthorityKeySource: LinkedDeviceAuthorityKeySource,
 ) : BaseFlowNode<LinkNewDeviceFlowNode.NavTarget>(
     backstack = BackStack(
         initialElement = NavTarget.Root,
@@ -130,6 +144,18 @@ class LinkNewDeviceFlowNode(
         data class Error(
             val errorScreenType: ErrorScreenType,
         ) : NavTarget
+
+        /**
+         * GUA FORK: the offer to give the device that was just linked authority over the account
+         * (ADM-009 decision 5). Only reachable from the mobile flow, which is the one direction the
+         * record permits: this phone generated the QR and its user typed the check code the new device
+         * displayed.
+         */
+        @Parcelize
+        data class GrantAuthority(
+            val granteeDeviceKey: String,
+            val granteeLabel: String,
+        ) : NavTarget
     }
 
     private fun observeLinkNewMobileHandler(): Job {
@@ -140,7 +166,17 @@ class LinkNewDeviceFlowNode(
                 when (linkMobileStep) {
                     LinkMobileStep.Uninitialized -> Unit
                     LinkMobileStep.Done -> {
-                        callback.onDone()
+                        val candidate = grantCandidate()
+                        if (candidate == null) {
+                            callback.onDone()
+                        } else {
+                            backstack.push(
+                                NavTarget.GrantAuthority(
+                                    granteeDeviceKey = candidate.deviceKeyB64Url,
+                                    granteeLabel = candidate.label,
+                                )
+                            )
+                        }
                     }
                     is LinkMobileStep.Error -> {
                         navigateToError(linkMobileStep.errorType)
@@ -194,6 +230,20 @@ class LinkNewDeviceFlowNode(
             }
         }
             .launchIn(sessionCoroutineScope)
+    }
+
+    /**
+     * GUA FORK: whether there is a grant to offer, which needs all three of a feature that is on, an
+     * authority key on THIS phone, and a key the new device published for itself.
+     *
+     * The third is the one that is null on every deployment today, for the reason
+     * [LinkedDeviceAuthorityKeySource] states, so this returns null and the flow finishes as it always has.
+     */
+    internal suspend fun grantCandidate(): DeviceGrantCandidate? {
+        if (!featureFlagService.isFeatureEnabled(FeatureFlags.AccountAuthority)) return null
+        if (!authorityManager.holdsAuthority()) return null
+        val accessToken = sessionStore.getSession(sessionId.value)?.accessToken ?: return null
+        return linkedDeviceAuthorityKeySource.candidate(accessToken)
     }
 
     private fun navigateToError(errorType: ErrorType) {
@@ -288,6 +338,20 @@ class LinkNewDeviceFlowNode(
                     data = navTarget.data,
                 )
                 createNode<ShowQrCodeNode>(buildContext, listOf(inputs, callback))
+            }
+            is NavTarget.GrantAuthority -> {
+                val grantCallback = object : GrantAuthorityNode.Callback {
+                    override fun onDone() {
+                        callback.onDone()
+                    }
+                }
+                val inputs = GrantAuthorityNode.Inputs(
+                    candidate = DeviceGrantCandidate(
+                        deviceKeyB64Url = navTarget.granteeDeviceKey,
+                        label = navTarget.granteeLabel,
+                    )
+                )
+                createNode<GrantAuthorityNode>(buildContext, listOf(inputs, grantCallback))
             }
             is NavTarget.Error -> {
                 val callback = object : ErrorNode.Callback {
