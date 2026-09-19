@@ -23,6 +23,7 @@ import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatch
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.guaresolver.AccountFactorStatus
 import io.element.android.libraries.guaresolver.IdentityServiceClient
+import io.element.android.libraries.guaresolver.withFreshAccessToken
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.services.toolbox.api.systemclock.SystemClock
@@ -115,10 +116,7 @@ class AccountRecoveryBannerPresenter(
                 AccountRecoveryBannerEvent.ConfirmCancelRecovery -> if (cancelAction.isConfirming()) {
                     cancelAction = AsyncAction.Loading
                     coroutineScope.launch {
-                        val result = accessToken()
-                            ?.let { identityServiceClient.cancelAccountRecovery(it) }
-                            ?: Result.failure(IllegalStateException("No access token for this session"))
-                        result
+                        identityServiceCall { identityServiceClient.cancelAccountRecovery(it) }
                             .onSuccess {
                                 // The server clears a live recovery on every successful cancel, so
                                 // there is nothing left to warn about even if the read below fails.
@@ -147,14 +145,18 @@ class AccountRecoveryBannerPresenter(
         )
     }
 
-    private suspend fun accessToken(): String? = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
+    /**
+     * Every identity-service call here goes through the shared accessor. A MAS access token lives
+     * five minutes, so the read this banner makes on every resume is the one most likely to be
+     * holding an expired one, and a 401 must cost a silent retry rather than a wrong verdict.
+     */
+    private suspend fun <T> identityServiceCall(call: suspend (String) -> Result<T>): Result<T> =
+        matrixClient.withFreshAccessToken(sessionStore, call)
 
-    private suspend fun fetchStatus(): AccountFactorStatus? {
-        val accessToken = accessToken() ?: return null
-        return identityServiceClient.accountFactorStatus(accessToken, matrixClient.sessionId.value)
+    private suspend fun fetchStatus(): AccountFactorStatus? =
+        identityServiceCall { identityServiceClient.accountFactorStatus(it, matrixClient.sessionId.value) }
             .onFailure { Timber.w(it, "Could not read the account recovery status") }
             .getOrNull()
-    }
 
     /**
      * [REFRESH_INTERVAL], or less when the live recovery in [status] becomes finishable or runs out
