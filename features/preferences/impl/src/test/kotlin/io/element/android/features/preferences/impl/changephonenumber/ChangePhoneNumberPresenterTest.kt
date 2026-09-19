@@ -29,6 +29,7 @@ import io.element.android.libraries.sessionstorage.api.SessionData
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
+import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.FakeLifecycleOwner
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.withFakeLifecycleOwner
@@ -615,6 +616,54 @@ class ChangePhoneNumberPresenterTest {
         error("No matching state after $MAX_EMISSIONS emissions")
     }
 
+    @Test
+    fun `present - a token that expired between screens costs a retry the user never sees`() = runTest {
+        // What QA hit: the first reauth start answered 401 for a five-minute MAS token that had
+        // expired, and the same action worked a minute later once something had refreshed it.
+        var attempts = 0
+        val client = FakeIdentityServiceClient(
+            startReauthResult = {
+                attempts++
+                if (attempts == 1) Result.failure(ResolverError.Server(401)) else Result.success(Unit)
+            },
+        )
+        val presenter = createChangePhoneNumberPresenter(
+            client = client,
+            matrixClient = FakeMatrixClient(sessionId = A_USER_ID, refreshAccessTokenLambda = { A_REFRESHED_TOKEN }),
+        )
+        presenter.test {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            submitCurrentNumber()
+
+            // The user sees the OTP step, not an error: the refusal was spent on a retry.
+            val state = awaitPhase(ChangePhoneNumberPhase.EnteringReauthOtp)
+            assertThat(state.errorMessage).isNull()
+            assertThat(attempts).isEqualTo(2)
+        }
+    }
+
+    @Test
+    fun `present - a session still refused after the refresh says so, instead of the generic error`() = runTest {
+        val client = FakeIdentityServiceClient(
+            startReauthResult = { Result.failure(ResolverError.Server(401)) },
+        )
+        val presenter = createChangePhoneNumberPresenter(
+            client = client,
+            matrixClient = FakeMatrixClient(sessionId = A_USER_ID, refreshAccessTokenLambda = { A_REFRESHED_TOKEN }),
+        )
+        presenter.test {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            submitCurrentNumber()
+
+            val state = awaitFirst { it.errorMessage != null }
+            // The one message that tells the user the action is worth repeating.
+            assertThat(state.errorMessage).isEqualTo(CommonStrings.gua_error_session_refresh_needed)
+            assertThat(state.phase).isEqualTo(ChangePhoneNumberPhase.EnteringCurrentPhone)
+            // Exactly one retry: nothing here loops on a session the server keeps refusing.
+            assertThat(client.startReauthCalls).hasSize(2)
+        }
+    }
+
     /**
      * The screen re-reads the account's factors on every resume, so the composition needs a
      * lifecycle. It starts un-resumed by default, which is what keeps that read out of the tests
@@ -632,12 +681,13 @@ class ChangePhoneNumberPresenterTest {
     private fun createChangePhoneNumberPresenter(
         client: IdentityServiceClient = FakeIdentityServiceClient(),
         sessionStore: SessionStore = InMemorySessionStore(listOf(aSessionData(sessionId = A_USER_ID.value))),
+        matrixClient: FakeMatrixClient = FakeMatrixClient(sessionId = A_USER_ID),
         navigateToCountryPicker: () -> Unit = {},
         navigateToPinSetup: () -> Unit = {},
     ) = ChangePhoneNumberPresenter(
         navigateToCountryPicker = navigateToCountryPicker,
         navigateToPinSetup = navigateToPinSetup,
-        matrixClient = FakeMatrixClient(sessionId = A_USER_ID),
+        matrixClient = matrixClient,
         sessionStore = sessionStore,
         identityServiceClient = client,
         selectedCountryStore = SelectedCountryStore(),
@@ -664,5 +714,7 @@ class ChangePhoneNumberPresenterTest {
 
         /** What the presenter sends as Accept-Language; the tests run under the default locale. */
         val A_LANGUAGE_TAG: String = Locale.getDefault().toLanguageTag()
+
+        const val A_REFRESHED_TOKEN = "aRefreshedAccessToken"
     }
 }

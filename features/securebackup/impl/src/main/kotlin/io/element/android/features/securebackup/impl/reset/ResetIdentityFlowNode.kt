@@ -49,6 +49,8 @@ import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatch
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
+import io.element.android.libraries.guaresolver.ResolverError
+import io.element.android.libraries.guaresolver.withFreshAccessToken
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.auth.OAuthRedirectUrlProvider
 import io.element.android.libraries.matrix.api.encryption.IdentityOAuthResetHandle
@@ -277,28 +279,35 @@ class ResetIdentityFlowNode(
      * deployment) or refuses, in which case the approval page is the fallback.
      */
     private suspend fun approveFromApp(approvalUrl: String): Boolean = withContext(dispatchers.io) {
-        val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
-        if (accessToken.isNullOrEmpty()) return@withContext false
         val endpoint = runCatchingExceptions {
             Uri.parse(approvalUrl).buildUpon().path(APP_APPROVAL_PATH).clearQuery().fragment(null).build().toString()
         }.getOrNull() ?: return@withContext false
-        val request = Request.Builder()
-            .url(endpoint)
-            .header("Authorization", "Bearer $accessToken")
-            .post(ByteArray(0).toRequestBody(null))
-            .build()
-        runCatchingExceptions { okHttpClient().newCall(request).execute().use { it.code } }
+        // Through the shared accessor like every other identity-service call: this one is authenticated
+        // by hand, so a 401 is reported as the server error it is and the accessor decides whether a
+        // refreshed token is worth another attempt. Falling straight back to the approval page for an
+        // expired token would put a browser ceremony in front of someone who did not need one.
+        matrixClient.withFreshAccessToken(sessionStore) { accessToken ->
+            val request = Request.Builder()
+                .url(endpoint)
+                .header("Authorization", "Bearer $accessToken")
+                .post(ByteArray(0).toRequestBody(null))
+                .build()
+            runCatchingExceptions { okHttpClient().newCall(request).execute().use { it.code } }
+                .fold(
+                    onSuccess = { code ->
+                        if (code in 200..299) {
+                            Timber.d("Reset approved from the app's own session")
+                            Result.success(Unit)
+                        } else {
+                            Timber.w("App-side approval answered $code")
+                            Result.failure(ResolverError.Server(code))
+                        }
+                    },
+                    onFailure = { Result.failure(ResolverError.Transport(it)) },
+                )
+        }
             .onFailure { Timber.w(it, "App-side approval failed; falling back to the approval page.") }
-            .map { code ->
-                if (code in 200..299) {
-                    Timber.d("Reset approved from the app's own session")
-                    true
-                } else {
-                    Timber.w("App-side approval answered $code; falling back to the approval page.")
-                    false
-                }
-            }
-            .getOrDefault(false)
+            .isSuccess
     }
 
     /**

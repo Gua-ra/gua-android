@@ -27,6 +27,8 @@ import io.element.android.libraries.guaresolver.AccountFactorStatus
 import io.element.android.libraries.guaresolver.AuthFactor
 import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.ResolverError
+import io.element.android.libraries.guaresolver.identityServiceMessage
+import io.element.android.libraries.guaresolver.withFreshAccessToken
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.phonenumberentry.Country
 import io.element.android.libraries.phonenumberentry.DeviceCountryProvider
@@ -181,17 +183,13 @@ class ChangePhoneNumberPresenter(
             // the server meters per account instead of one.
             phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
-                val accessToken = accessToken()
-                if (accessToken == null) {
-                    errorMessage = CommonStrings.error_unknown
-                    phase = ChangePhoneNumberPhase.EnteringCurrentPhone
-                    return@launch
+                identityServiceCall { accessToken ->
+                    identityServiceClient.startPhoneChangeReauth(
+                        accessToken = accessToken,
+                        phone = enteredPhone,
+                        language = Locale.getDefault().toLanguageTag(),
+                    )
                 }
-                identityServiceClient.startPhoneChangeReauth(
-                    accessToken = accessToken,
-                    phone = enteredPhone,
-                    language = Locale.getDefault().toLanguageTag(),
-                )
                     .onSuccess {
                         currentPhone = enteredPhone
                         code = ""
@@ -206,7 +204,7 @@ class ChangePhoneNumberPresenter(
                             is ResolverError.ReauthPhoneMismatch -> R.string.screen_change_phone_current_mismatch
                             is ResolverError.InvalidPhoneNumber -> R.string.screen_two_step_verification_phone_invalid
                             is ResolverError.RateLimited -> R.string.screen_two_step_verification_rate_limited
-                            else -> CommonStrings.error_unknown
+                            else -> error.identityServiceMessage()
                         }
                         phase = ChangePhoneNumberPhase.EnteringCurrentPhone
                     }
@@ -243,16 +241,13 @@ class ChangePhoneNumberPresenter(
         /** Gate on the server's factor signal BEFORE anything is sent. */
         fun checkFactorsAndProceed() {
             coroutineScope.launch {
-                val accessToken = accessToken()
-                if (accessToken == null) {
-                    errorMessage = CommonStrings.error_unknown
-                    return@launch
-                }
                 phase = ChangePhoneNumberPhase.Submitting
-                identityServiceClient.accountFactorStatus(
-                    accessToken = accessToken,
-                    userId = matrixClient.sessionId.value,
-                )
+                identityServiceCall { accessToken ->
+                    identityServiceClient.accountFactorStatus(
+                        accessToken = accessToken,
+                        userId = matrixClient.sessionId.value,
+                    )
+                }
                     .onSuccess { status -> applyFactorStatus(status) }
                     .onFailure { error ->
                         when (error) {
@@ -266,7 +261,7 @@ class ChangePhoneNumberPresenter(
                                 // The factors are UNKNOWN, not absent. Stop on the intro with an
                                 // error rather than guessing, because guessing "no factor" is how a
                                 // passkey holder gets told to create a PIN.
-                                errorMessage = CommonStrings.error_unknown
+                                errorMessage = error.identityServiceMessage()
                                 phase = ChangePhoneNumberPhase.Intro
                             }
                         }
@@ -282,11 +277,12 @@ class ChangePhoneNumberPresenter(
          * server said, and unlike the screen's first read it has something to show meanwhile.
          */
         suspend fun refreshBlockingPhase() {
-            val accessToken = accessToken() ?: return
-            identityServiceClient.accountFactorStatus(
-                accessToken = accessToken,
-                userId = matrixClient.sessionId.value,
-            )
+            identityServiceCall { accessToken ->
+                identityServiceClient.accountFactorStatus(
+                    accessToken = accessToken,
+                    userId = matrixClient.sessionId.value,
+                )
+            }
                 .onSuccess { status -> applyFactorStatus(status) }
         }
 
@@ -320,17 +316,13 @@ class ChangePhoneNumberPresenter(
             // second tap in that window spent the same code twice and burned an OTP attempt.
             phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
-                val accessToken = accessToken()
-                if (accessToken == null) {
-                    errorMessage = CommonStrings.error_unknown
-                    phase = ChangePhoneNumberPhase.EnteringReauthOtp
-                    return@launch
+                identityServiceCall { accessToken ->
+                    identityServiceClient.verifyPhoneChangeReauth(
+                        accessToken = accessToken,
+                        phone = currentPhone,
+                        code = enteredOtp,
+                    )
                 }
-                identityServiceClient.verifyPhoneChangeReauth(
-                    accessToken = accessToken,
-                    phone = currentPhone,
-                    code = enteredOtp,
-                )
                     .onSuccess { token ->
                         reauthToken = token
                         code = ""
@@ -360,6 +352,14 @@ class ChangePhoneNumberPresenter(
                                 errorMessage = R.string.screen_two_step_verification_rate_limited
                                 phase = ChangePhoneNumberPhase.EnteringReauthOtp
                             }
+                            // The session's own credential was stale, so the code the user typed was
+                            // never weighed. Calling it an invalid code would send them to ask for a
+                            // new one for no reason.
+                            is ResolverError.SessionRefreshNeeded,
+                            is ResolverError.NoSession -> {
+                                errorMessage = error.identityServiceMessage()
+                                phase = ChangePhoneNumberPhase.EnteringReauthOtp
+                            }
                             else -> {
                                 errorMessage = R.string.screen_change_phone_reauth_invalid
                                 phase = ChangePhoneNumberPhase.EnteringReauthOtp
@@ -378,30 +378,26 @@ class ChangePhoneNumberPresenter(
             // step: this is the call that texts the NEW number, and it spends the reauth token.
             phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
-                val accessToken = accessToken()
-                if (accessToken == null) {
-                    errorMessage = CommonStrings.error_unknown
-                    phase = ChangePhoneNumberPhase.EnteringNewPhone
-                    return@launch
-                }
                 val token = reauthToken
                 if (token.isEmpty()) {
                     // Should never happen: the token is minted before this step.
                     abortSpentReauth(CommonStrings.error_unknown)
                     return@launch
                 }
-                val result = identityServiceClient.startPhoneChange(
-                    accessToken = accessToken,
-                    reauthToken = token,
-                    newPhone = enteredPhone,
-                    pin = stepUpPin,
-                    // No passkey assertion is produced on Android yet; the PIN is this client's
-                    // step-up factor. The server ranks the passkey above it and still accepts one
-                    // from any client that can assert it.
-                    passkeyStepUpId = null,
-                    passkeyCredentialJson = null,
-                    language = Locale.getDefault().toLanguageTag(),
-                )
+                val result = identityServiceCall { accessToken ->
+                    identityServiceClient.startPhoneChange(
+                        accessToken = accessToken,
+                        reauthToken = token,
+                        newPhone = enteredPhone,
+                        pin = stepUpPin,
+                        // No passkey assertion is produced on Android yet; the PIN is this client's
+                        // step-up factor. The server ranks the passkey above it and still accepts one
+                        // from any client that can assert it.
+                        passkeyStepUpId = null,
+                        passkeyCredentialJson = null,
+                        language = Locale.getDefault().toLanguageTag(),
+                    )
+                }
                 // Spent by the server before it weighed the step-up, so it is gone either way.
                 reauthToken = ""
                 stepUpPin = ""
@@ -427,6 +423,11 @@ class ChangePhoneNumberPresenter(
                             is ResolverError.PhoneAlreadyLinked -> abortSpentReauth(R.string.screen_change_phone_already_linked)
                             is ResolverError.InvalidReauthToken -> abortSpentReauth(R.string.screen_change_phone_reauth_expired)
                             is ResolverError.RateLimited -> abortSpentReauth(R.string.screen_two_step_verification_rate_limited)
+                            // Named so the restart is not blamed on the number the user typed. The
+                            // reauth token is treated as spent either way, which is the safe reading
+                            // of a call whose outcome the server never reported.
+                            is ResolverError.SessionRefreshNeeded,
+                            is ResolverError.NoSession -> abortSpentReauth(error.identityServiceMessage())
                             else -> abortSpentReauth(R.string.screen_change_phone_new_invalid)
                         }
                     }
@@ -437,17 +438,13 @@ class ChangePhoneNumberPresenter(
             // Claimed before suspending, for the same reason as the steps above.
             phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
-                val accessToken = accessToken()
-                if (accessToken == null) {
-                    errorMessage = CommonStrings.error_unknown
-                    phase = ChangePhoneNumberPhase.EnteringOtp
-                    return@launch
+                identityServiceCall { accessToken ->
+                    identityServiceClient.completePhoneChange(
+                        accessToken = accessToken,
+                        challengeId = challengeId,
+                        code = enteredOtp,
+                    )
                 }
-                identityServiceClient.completePhoneChange(
-                    accessToken = accessToken,
-                    challengeId = challengeId,
-                    code = enteredOtp,
-                )
                     .onSuccess {
                         errorMessage = null
                         code = ""
@@ -473,7 +470,7 @@ class ChangePhoneNumberPresenter(
                             is ResolverError.PhoneAlreadyLinked ->
                                 abortSpentReauth(R.string.screen_change_phone_already_linked)
                             else -> {
-                                errorMessage = CommonStrings.error_unknown
+                                errorMessage = error.identityServiceMessage()
                                 code = ""
                                 phase = ChangePhoneNumberPhase.EnteringOtp
                             }
@@ -484,12 +481,9 @@ class ChangePhoneNumberPresenter(
 
         fun startPasskeyEnrollment() {
             coroutineScope.launch {
-                val accessToken = accessToken()
-                if (accessToken == null) {
-                    errorMessage = CommonStrings.error_unknown
-                    return@launch
+                identityServiceCall { accessToken ->
+                    identityServiceClient.startPasskeyEnrollment(accessToken)
                 }
-                identityServiceClient.startPasskeyEnrollment(accessToken)
                     .onSuccess { enrollUrl ->
                         errorMessage = null
                         passkeyEnrollUrl = enrollUrl
@@ -505,7 +499,7 @@ class ChangePhoneNumberPresenter(
                             // no factor to register and the way forward is the delayed recovery.
                             is ResolverError.StepUpUnavailable ->
                                 R.string.screen_two_step_verification_step_up_unavailable
-                            else -> CommonStrings.error_unknown
+                            else -> error.identityServiceMessage()
                         }
                     }
             }
@@ -620,8 +614,12 @@ class ChangePhoneNumberPresenter(
         )
     }
 
-    private suspend fun accessToken(): String? =
-        sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
+    /**
+     * Every identity-service call on this screen goes through the shared accessor, so a token that
+     * expired between screens costs the user a retry they never see instead of the generic error.
+     */
+    private suspend fun <T> identityServiceCall(call: suspend (String) -> Result<T>): Result<T> =
+        matrixClient.withFreshAccessToken(sessionStore, call)
 
     private companion object {
         /**
