@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: the English source of truth for this module's Gua strings. Translations live in the
+     values-<lang>/gua_translations.xml files. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_link_grant_authority_header">Give this device authority?</string>
+    <string name="screen_link_grant_authority_message">%1$s is signed in now. You can also let it approve new devices and approve actions started in a browser. It is already able to read and send your messages either way.</string>
+    <string name="screen_link_grant_authority_quarantine_notice">There is a waiting period first: until it passes, the new device cannot approve anything and you can still object.</string>
+    <string name="screen_link_grant_authority_action">Give it authority</string>
+    <string name="screen_link_grant_authority_skip_action">Not now</string>
+    <string name="screen_link_grant_authority_pin_header">Confirm it\'s you</string>
+    <string name="screen_link_grant_authority_pin_footer">Enter your 6-digit account PIN to give this device authority.</string>
+    <string name="screen_link_grant_authority_error_step_up_required">Your 6-digit account PIN is needed for this. If your account has only a passkey, it cannot be used here yet.</string>
+    <string name="screen_link_grant_authority_error_too_recent">Something on your account changed too recently for this. Try again in a few days.</string>
+    <string name="screen_link_grant_authority_error_quarantined">This phone is still in its own waiting period, so it cannot give authority to another device yet.</string>
+    <string name="screen_link_grant_authority_error_signer_refused">This phone cannot do that for your account.</string>
+    <string name="screen_link_grant_authority_error_conflict">Something changed on your account while you were here. Open Account authority in Settings to try again.</string>
+    <string name="screen_link_grant_authority_error_generic">Something went wrong. Please try again.</string>
+</resources>

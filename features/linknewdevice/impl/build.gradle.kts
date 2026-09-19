@@ -35,6 +35,8 @@ dependencies {
     implementation(projects.libraries.androidutils)
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.featureflag.api)
+    // GUA FORK: ADM-009 decision 5, the grant offer that follows a link in the one permitted direction.
+    implementation(projects.libraries.guaresolver)
     implementation(projects.libraries.matrix.api)
     implementation(projects.libraries.matrix.api)
     implementation(projects.libraries.designsystem)
