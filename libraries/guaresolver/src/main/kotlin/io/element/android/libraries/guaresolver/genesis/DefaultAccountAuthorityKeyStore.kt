@@ -17,6 +17,7 @@ import dev.zacsweers.metro.SingleIn
 import io.element.android.libraries.cryptography.api.EncryptionDecryptionService
 import io.element.android.libraries.cryptography.api.EncryptionResult
 import io.element.android.libraries.cryptography.api.SecretKeyRepository
+import io.element.android.libraries.guaresolver.authority.RecoveryArtifact
 import io.element.android.libraries.preferences.api.store.PreferenceDataStoreFactory
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
@@ -118,10 +119,96 @@ class DefaultAccountAuthorityKeyStore(
                 preferences.remove(sealedAuthoritySeedKey)
                 preferences.remove(sealedRecoverySeedKey)
             }
-            if (dataStore.data.first()[attachedAccountIdKey] == null) {
+            val remaining = dataStore.data.first()
+            // GUA FORK: ADM-009. An adopted pair counts as much as an attached one here: deleting the
+            // keystore key while either is stored would leave a blob nothing can open, which is the same
+            // thing as losing the account's authority.
+            if (remaining[attachedAccountIdKey] == null && remaining[adoptedAccountIdKey] == null) {
                 secretKeyRepository.deleteKey(SECRET_KEY_ALIAS)
             }
         }
+    }
+
+    // GUA FORK: ADM-009, the authority chain's own slots. Sealed under the same keystore key as the genesis
+    // slots, for the reason the interface gives.
+
+    override suspend fun createAdoptionKeys(): AdoptionKeys = mutex.withLock {
+        val device = Ed25519Sign.KeyPair.newKeyPair()
+        val recovery = Ed25519Sign.KeyPair.newKeyPair()
+        // ADM-009 decision 2: a record whose recovery key equals its device key is refused, so the two draws
+        // are checked rather than assumed, exactly as the genesis pair is.
+        check(!device.privateKey.contentEquals(recovery.privateKey)) {
+            "the recovery authority key must differ from the device key"
+        }
+        val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
+        val sealedDevice = encryptionDecryptionService.encrypt(secretKey, device.privateKey).toBase64()
+        val sealedRecovery = encryptionDecryptionService.encrypt(secretKey, recovery.privateKey).toBase64()
+        dataStore.edit { preferences ->
+            // The adoption slot only. The adopted entries are never written from here.
+            preferences[adoptionDeviceSeedKey] = sealedDevice
+            preferences[adoptionRecoverySeedKey] = sealedRecovery
+        }
+        AdoptionKeys(
+            device = device.publicKey,
+            recovery = recovery.publicKey,
+            recoveryArtifact = RecoveryArtifact.encode(recovery.privateKey),
+        )
+    }
+
+    override suspend fun adoptionKeys(): AdoptionKeys? {
+        val deviceSeed = readSeed(adoptionDeviceSeedKey) ?: return null
+        val recoverySeed = readSeed(adoptionRecoverySeedKey) ?: return null
+        return AdoptionKeys(
+            device = Ed25519Sign.KeyPair.newKeyPairFromSeed(deviceSeed).publicKey,
+            recovery = Ed25519Sign.KeyPair.newKeyPairFromSeed(recoverySeed).publicKey,
+            recoveryArtifact = RecoveryArtifact.encode(recoverySeed),
+        )
+    }
+
+    override suspend fun markAdopted(accountId: String) {
+        mutex.withLock {
+            val preferences = dataStore.data.first()
+            val alreadyAdopted = preferences[adoptedAccountIdKey]
+            if (alreadyAdopted != null && alreadyAdopted != accountId) {
+                error("Another account already holds this device's authority")
+            }
+            if (alreadyAdopted == accountId && preferences[adoptedDeviceSeedKey] != null) {
+                // Already recorded, so a resubmitted or retried adoption is a no-op rather than a second
+                // promotion over the pair the chain accepted.
+                return@withLock
+            }
+            val sealedDevice = preferences[adoptionDeviceSeedKey]
+                ?: error("No device authority key is stored on this device")
+            val sealedRecovery = preferences[adoptionRecoverySeedKey]
+                ?: error("No recovery authority key is stored on this device")
+            dataStore.edit { edited ->
+                edited[adoptedAccountIdKey] = accountId
+                edited[adoptedDeviceSeedKey] = sealedDevice
+                edited[adoptedRecoverySeedKey] = sealedRecovery
+                edited.remove(adoptionDeviceSeedKey)
+                edited.remove(adoptionRecoverySeedKey)
+            }
+        }
+    }
+
+    override suspend fun adoptedAccountId(): String? = dataStore.data.first()[adoptedAccountIdKey]
+
+    override suspend fun authorityDevicePublicKey(): ByteArray? {
+        val seed = readSeed(adoptedDeviceSeedKey) ?: readSeed(attachedAuthoritySeedKey) ?: return null
+        return Ed25519Sign.KeyPair.newKeyPairFromSeed(seed).publicKey
+    }
+
+    override suspend fun signWithAdoptionKey(message: ByteArray): ByteArray {
+        val seed = readSeed(adoptionDeviceSeedKey)
+            ?: error("No device authority key is stored for an adoption on this device")
+        return Ed25519Sign(seed).sign(message)
+    }
+
+    override suspend fun signAsAuthorityDevice(message: ByteArray): ByteArray {
+        val seed = readSeed(adoptedDeviceSeedKey)
+            ?: readSeed(attachedAuthoritySeedKey)
+            ?: error("This device holds no account authority key")
+        return Ed25519Sign(seed).sign(message)
     }
 
     private suspend fun publicKeysOf(
@@ -161,5 +248,14 @@ class DefaultAccountAuthorityKeyStore(
         private val attachedAccountIdKey = stringPreferencesKey("attached_account_id")
         private val attachedAuthoritySeedKey = stringPreferencesKey("attached_authority_seed")
         private val attachedRecoverySeedKey = stringPreferencesKey("attached_recovery_seed")
+
+        // GUA FORK: ADM-009. The authority chain's slots. Separate entries from the genesis ones, because an
+        // adopted account holds authority its accountId does not commit and the two must never be mistaken
+        // for each other.
+        private val adoptionDeviceSeedKey = stringPreferencesKey("adoption_device_seed")
+        private val adoptionRecoverySeedKey = stringPreferencesKey("adoption_recovery_seed")
+        private val adoptedAccountIdKey = stringPreferencesKey("adopted_account_id")
+        private val adoptedDeviceSeedKey = stringPreferencesKey("adopted_device_seed")
+        private val adoptedRecoverySeedKey = stringPreferencesKey("adopted_recovery_seed")
     }
 }
