@@ -139,6 +139,18 @@ enum class FeatureFlags(
         defaultValue = { false },
         isFinished = false,
     ),
+    AccountAuthority(
+        key = "feature.account_authority",
+        title = "Account authority",
+        description = "GUA FORK: let an existing account gain an on-device authority key, list the devices that hold" +
+            " authority, give a newly linked device authority, and approve from a phone an action a browser cannot" +
+            " grant itself (ADM-009)." +
+            "\n\nOff by default, and off on every deployment: with it off nothing on this screen or in the" +
+            " link-a-device flow changes, and no request is made. Adoption is permanent and asks the user to store a" +
+            " recovery artifact first.",
+        defaultValue = { false },
+        isFinished = false,
+    ),
     UnreadIndicatorCount(
         key = "feature.unread_indicator_count",
         title = "Unread indicator count",

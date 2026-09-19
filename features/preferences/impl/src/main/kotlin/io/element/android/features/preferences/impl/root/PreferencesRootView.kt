@@ -53,6 +53,7 @@ fun PreferencesRootView(
     onSecureBackupClick: () -> Unit,
     onManageAccountClick: (url: String) -> Unit,
     onLinkNewDeviceClick: () -> Unit,
+    onAccountAuthorityClick: () -> Unit,
     onOpenAnalytics: () -> Unit,
     onOpenRageShake: () -> Unit,
     onOpenLockScreenSettings: () -> Unit,
@@ -105,6 +106,7 @@ fun PreferencesRootView(
             state = state,
             onManageAccountClick = onManageAccountClick,
             onLinkNewDeviceClick = onLinkNewDeviceClick,
+            onAccountAuthorityClick = onAccountAuthorityClick,
             onOpenBlockedUsers = onOpenBlockedUsers
         )
         // 'Manage my app' section
@@ -245,6 +247,7 @@ private fun ColumnScope.ManageAccountSection(
     state: PreferencesRootState,
     onManageAccountClick: (url: String) -> Unit,
     onLinkNewDeviceClick: () -> Unit,
+    onAccountAuthorityClick: () -> Unit,
     onOpenBlockedUsers: () -> Unit,
 ) {
     state.accountManagementUrl?.let { url ->
@@ -262,6 +265,15 @@ private fun ColumnScope.ManageAccountSection(
             onClick = onLinkNewDeviceClick,
         )
     }
+    // GUA FORK: ADM-009. Which devices can act for this account, and the approvals only a phone can grant.
+    if (state.showAccountAuthority) {
+        ListItem(
+            headlineContent = { Text(stringResource(id = R.string.screen_account_authority_title)) },
+            supportingContent = { Text(stringResource(id = R.string.screen_account_authority_settings_footer)) },
+            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Key())),
+            onClick = onAccountAuthorityClick,
+        )
+    }
     if (state.showBlockedUsersItem) {
         ListItem(
             headlineContent = { Text(stringResource(id = CommonStrings.common_blocked_users)) },
@@ -270,7 +282,8 @@ private fun ColumnScope.ManageAccountSection(
             trailingContent = ListItemContent.Text(state.nbOfBlockedUsers.toString()),
         )
     }
-    if (state.accountManagementUrl != null || state.showLinkNewDevice || state.showBlockedUsersItem) {
+    val hasAnyAccountRow = state.accountManagementUrl != null || state.showLinkNewDevice
+    if (hasAnyAccountRow || state.showAccountAuthority || state.showBlockedUsersItem) {
         HorizontalDivider()
     }
 }
@@ -405,6 +418,7 @@ private fun ContentToPreview(state: PreferencesRootState) {
         onSecureBackupClick = {},
         onManageAccountClick = {},
         onLinkNewDeviceClick = {},
+        onAccountAuthorityClick = {},
         onOpenNotificationSettings = {},
         onOpenLockScreenSettings = {},
         onSetupTwoStepVerification = {},
