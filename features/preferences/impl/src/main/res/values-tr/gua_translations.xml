@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Yeni PIN\'iniz mevcut PIN\'inizden farklı olmalı.</string>
     <string name="screen_two_step_verification_rate_limited">Çok fazla deneme. Lütfen biraz bekleyip tekrar deneyin.</string>
     <string name="screen_two_step_verification_updated">İki adımlı doğrulama güncellendi</string>
+    <string name="screen_two_step_verification_pin_already_set">Zaten bir PIN\'iniz var. Bunun yerine onu değiştirebilirsiniz.</string>
     <string name="screen_change_phone_title">Telefon numarasını değiştir</string>
     <string name="screen_change_phone_intro_header">Numaranızı değiştirin</string>
     <string name="screen_change_phone_intro_message">PIN\'inizi onaylayacak, ardından yeni numaranıza SMS ile bir kod göndereceğiz. Hesabınız, sohbetleriniz ve mesajlarınız aynı kalır.</string>
@@ -58,9 +59,10 @@
     <string name="screen_change_phone_updated">Telefon numaranız güncellendi.</string>
     <string name="screen_change_phone_done_header">Hazır</string>
     <string name="screen_change_phone_done_message">Telefon numaranız güncellendi. Bundan sonra giriş için yeni numaranızı kullanacaksınız.</string>
-    <string name="screen_change_phone_needs_pin_header">Numaranızı değiştirmek için bir PIN gerekir</string>
-    <string name="screen_change_phone_needs_pin_message">Güvenliğiniz için 6 haneli bir hesap PIN\'i belirleyin. Numaranızı değiştirmeden önce onaylayacaksınız.</string>
-    <string name="screen_change_phone_needs_pin_action">PIN kur</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">PIN kur</string>
     <string name="screen_change_phone_cooldown_header">Henüz değil</string>
     <string name="screen_change_phone_cooldown_message">Güvenliğiniz için numaranızı %1$s sonra değiştirebilirsiniz.</string>
+    <string name="screen_change_phone_current_header">Mevcut numaranızı doğrulayın</string>
+    <string name="screen_change_phone_current_footer">Hesabınızın şu anda kullandığı numarayı girin. Bu numaraya bir kod göndereceğiz.</string>
+    <string name="screen_change_phone_current_mismatch">Bu, hesabınızdaki numara değil.</string>
 </resources>

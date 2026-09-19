@@ -16,6 +16,8 @@ import io.element.android.features.enterprise.api.SessionEnterpriseService
 import io.element.android.features.enterprise.test.FakeSessionEnterpriseService
 import io.element.android.features.lockscreen.test.FakeLockScreenService
 import io.element.android.features.logout.api.direct.aDirectLogoutState
+import io.element.android.features.preferences.impl.fixtures.FakeIdentityServiceClient
+import io.element.android.features.preferences.impl.fixtures.aFactorStatus
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
 import io.element.android.libraries.core.meta.BuildMeta
@@ -25,10 +27,8 @@ import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.featureflag.test.FakeFeature
 import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
-import io.element.android.libraries.guaresolver.AccountGenesisRegistration
-import io.element.android.libraries.guaresolver.ContactMatch
 import io.element.android.libraries.guaresolver.IdentityServiceClient
-import io.element.android.libraries.guaresolver.PinStatus
+import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.indicator.api.IndicatorService
 import io.element.android.libraries.indicator.test.FakeIndicatorService
 import io.element.android.libraries.matrix.api.oauth.AccountManagementAction
@@ -60,6 +60,10 @@ import org.junit.Test
 class PreferencesRootPresenterTest {
     @get:Rule
     val warmUpRule = WarmUpRule()
+
+    private companion object {
+        const val MAX_EMISSIONS = 10
+    }
 
     @Test
     fun `present - initial state`() = runTest {
@@ -116,7 +120,10 @@ class PreferencesRootPresenterTest {
             val finalState = awaitItem()
             accountManagementUrlResult.assertions().isCalledOnce()
                 .with(value(null))
-            assertThat(finalState.accountManagementUrl).isEqualTo("tweaked null url")
+            // GUA FORK: the shared browser tab can hold another account's session, so the URL names
+            // this account for the page to refuse any other.
+            assertThat(finalState.accountManagementUrl)
+                .isEqualTo("tweaked null url?org.matrix.msc4198.login_hint=mxid%3A%40alice%3Aserver.org")
         }
     }
 
@@ -352,6 +359,67 @@ class PreferencesRootPresenterTest {
         return awaitItem()
     }
 
+    // GUA FORK: the two-step-verification nudge is gated on the account's FACTORS. It used to start
+    // at false with no failure handler, so a passkey holder, and anyone whose status read was slow
+    // or failed, was told to set up a PIN they did not need.
+
+    @Test
+    fun `present - the nudge is shown to an account with no strong factor`() = runTest {
+        createPresenter(
+            matrixClient = FakeMatrixClient(canDeactivateAccountResult = { false }),
+            sessionStore = InMemorySessionStore(listOf(aSessionData(sessionId = A_SESSION_ID.value))),
+            identityServiceClient = FakeIdentityServiceClient(
+                factorStatusResult = { Result.success(aFactorStatus(hasPin = false, passkeyRegistered = false)) },
+            ),
+        ).test {
+            val state = awaitFactorStatus { it == false }
+            assertThat(state).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - a passkey holder with no PIN is not nudged to set up a PIN`() = runTest {
+        createPresenter(
+            matrixClient = FakeMatrixClient(canDeactivateAccountResult = { false }),
+            sessionStore = InMemorySessionStore(listOf(aSessionData(sessionId = A_SESSION_ID.value))),
+            identityServiceClient = FakeIdentityServiceClient(
+                factorStatusResult = { Result.success(aFactorStatus(hasPin = false, passkeyRegistered = true)) },
+            ),
+        ).test {
+            val state = awaitFactorStatus { it == true }
+            assertThat(state).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - a factor status that cannot be read leaves the nudge hidden`() = runTest {
+        createPresenter(
+            matrixClient = FakeMatrixClient(canDeactivateAccountResult = { false }),
+            sessionStore = InMemorySessionStore(listOf(aSessionData(sessionId = A_SESSION_ID.value))),
+            identityServiceClient = FakeIdentityServiceClient(
+                factorStatusResult = { Result.failure(ResolverError.Transport(RuntimeException("offline"))) },
+            ),
+        ).test {
+            // Unknown stays null: nothing writes a value on the failure path, and the View only
+            // shows the banner on an explicit false, so nobody is nagged on a failed read.
+            assertThat(awaitItem().hasAccountStrongFactor).isNull()
+            assertThat(awaitItem().hasAccountStrongFactor).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    private suspend fun ReceiveTurbine<PreferencesRootState>.awaitFactorStatus(
+        predicate: (Boolean?) -> Boolean,
+    ): Boolean? {
+        repeat(MAX_EMISSIONS) {
+            val value = awaitItem().hasAccountStrongFactor
+            if (predicate(value)) return value
+        }
+        error("No matching factor status after $MAX_EMISSIONS emissions")
+    }
+
     private fun createPresenter(
         matrixClient: FakeMatrixClient = FakeMatrixClient(),
         showDeveloperSettingsProvider: ShowDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.DEBUG)),
@@ -361,7 +429,9 @@ class PreferencesRootPresenterTest {
         sessionStore: SessionStore = InMemorySessionStore(),
         sessionEnterpriseService: SessionEnterpriseService = FakeSessionEnterpriseService(),
         lockScreenService: FakeLockScreenService = FakeLockScreenService().apply { setIsPinSetup(true) },
-        identityServiceClient: IdentityServiceClient = NoopIdentityServiceClient(),
+        identityServiceClient: IdentityServiceClient = FakeIdentityServiceClient(
+            factorStatusResult = { Result.success(aFactorStatus(hasPin = false)) },
+        ),
         buildMeta: BuildMeta = aBuildMeta(),
     ) = PreferencesRootPresenter(
         matrixClient = matrixClient,
@@ -379,42 +449,4 @@ class PreferencesRootPresenterTest {
         identityServiceClient = identityServiceClient,
         buildMeta = buildMeta,
     )
-}
-
-/** Minimal no-op [IdentityServiceClient] for tests that don't exercise the account-PIN status. */
-private class NoopIdentityServiceClient : IdentityServiceClient {
-    override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> =
-        Result.success(emptyList())
-
-    override suspend fun pinStatus(accessToken: String, userId: String): Result<PinStatus> =
-        Result.success(PinStatus(hasPin = false, changePhoneCooldownRemainingSeconds = 0))
-
-    override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> = Result.success(Unit)
-
-    override suspend fun startPinChange(accessToken: String, phone: String, currentPin: String): Result<String> = Result.success("challenge-id")
-
-    override suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit> = Result.success(Unit)
-
-    override suspend fun verifyPinReauth(accessToken: String, userId: String, pin: String): Result<String> = Result.success("reauth-token")
-
-    override suspend fun requestPhoneChangeOtp(
-        accessToken: String,
-        userId: String,
-        newPhone: String,
-        reauthToken: String,
-        language: String?,
-    ): Result<Unit> = Result.success(Unit)
-
-    override suspend fun startPasskeyEnrollment(accessToken: String): Result<String> = Result.success("enrollment-challenge")
-
-    override suspend fun registerAccountGenesis(genesisB64Url: String, proofB64Url: String): Result<AccountGenesisRegistration> =
-        Result.success(AccountGenesisRegistration(accountId = "ga1-test-account-id", attachHandle = "test-attach-handle"))
-
-    override suspend fun changePhoneNumber(
-        accessToken: String,
-        userId: String,
-        newPhone: String,
-        code: String,
-        reauthToken: String,
-    ): Result<Unit> = Result.success(Unit)
 }

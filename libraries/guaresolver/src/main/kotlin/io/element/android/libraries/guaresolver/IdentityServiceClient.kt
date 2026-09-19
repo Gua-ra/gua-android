@@ -31,26 +31,58 @@ interface IdentityServiceClient {
      */
     suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>>
 
-    // GUA FORK: Two-step verification (account PIN). Android counterpart of iOS
-    // `IdentityServiceClientProtocol.pinStatus / setInitialPin / startPinChange / completePinChange`.
+    // GUA FORK: Two-step verification factors. Android counterpart of iOS
+    // `IdentityServiceClientProtocol.accountFactorStatus / startPinEnrollment / startPinChange /
+    // completePinChange`.
 
     /**
-     * The account two-step-verification (PIN) status, including the change-phone fresh-2FA cooldown.
+     * The factors the account holds, per the server: whether a PIN is set, whether a passkey is
+     * registered, which factor to offer first, which ones a phone change accepts, and any remaining
+     * fresh-2FA hold on the PIN.
+     *
+     * This is the signal every factor decision branches on. Nothing in the client may decide from a
+     * lone `hasPin` boolean: an account with a passkey and no PIN already has two-step verification,
+     * and telling that user to create a PIN is telling them to add a weaker factor they do not need.
      *
      * @param accessToken the caller's access token, sent as the bearer credential.
      * @param userId the caller's Matrix id (mirrors iOS, which scopes the status to the user).
-     * @return [Result.success] with the [PinStatus] (whether a PIN is set and any remaining
-     * change-phone cooldown), or [Result.failure] with a [ResolverError].
+     * @return [Result.success] with the [AccountFactorStatus], or [Result.failure] with a
+     * [ResolverError]. A failure means the factors are UNKNOWN; callers must not read it as
+     * "no factors", which is how a passkey holder ends up nagged to set up a PIN.
      */
-    suspend fun pinStatus(accessToken: String, userId: String): Result<PinStatus>
+    suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus>
 
     /**
-     * Set the initial account PIN (no existing PIN). Mirrors iOS `setInitialPin`.
+     * Cancel a live delayed account recovery on the caller's own account
+     * (`POST /security/recovery/cancel`). Succeeds whether or not one was live, so a retry is safe.
+     * The server also counts it as account activity, so whoever started the recovery cannot simply
+     * start another one straight away.
      *
-     * @return [Result.success] on success, or [Result.failure] with a [ResolverError] (notably
-     * [ResolverError.InvalidPin] when the PIN is rejected).
+     * @return [Result.success] on success, or [Result.failure] with a [ResolverError].
      */
-    suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit>
+    suspend fun cancelAccountRecovery(accessToken: String): Result<Unit>
+
+    /**
+     * Start enrollment of the account's FIRST PIN and obtain the authenticated web-ceremony URL to
+     * open at the IdP (`POST /security/pin/enroll/start`), exactly as
+     * [startPasskeyEnrollment] does for a passkey.
+     *
+     * There is no native path for this any more. A bearer session on its own must never be able to
+     * add a durable factor, and the step-up that proves the account holder is present (their
+     * passkey, else their PIN, else their current number plus an OTP) can only run in the IdP web
+     * session, which is the one place a passkey assertion works on every platform. The old
+     * `POST /security/pin` now answers 403 for everyone.
+     *
+     * Changing an existing PIN is unaffected: that flow already proves the current PIN first.
+     *
+     * The call names this build's own [EnrollmentRedirectProvider] redirect, so the ceremony returns
+     * to the app it was opened from. A deployment that refuses it is asked again without one; see
+     * the implementation for why that retry exists.
+     *
+     * @return [Result.success] with the enrollment URL, or [Result.failure] with a [ResolverError]
+     * (notably [ResolverError.PinAlreadySet] when the account already holds a PIN).
+     */
+    suspend fun startPinEnrollment(accessToken: String): Result<String>
 
     /**
      * Start an OTP-protected PIN change: verifies the current PIN and triggers an OTP to [phone].
@@ -69,38 +101,87 @@ interface IdentityServiceClient {
      */
     suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit>
 
-    // GUA FORK: Change phone number (PIN-first). Android counterpart of iOS
-    // `IdentityServiceClientProtocol.verifyPinReauth / requestPhoneChangeOtp / changePhoneNumber`.
-    // The PIN step-up runs FIRST and yields a short-lived reauth token; the SMS is only sent from
-    // [requestPhoneChangeOtp] and the token gates both the request and the completion.
+    // GUA FORK: Change phone number, against the real `/account` contract. Android counterpart of iOS
+    // `IdentityServiceClientProtocol.startPhoneChangeReauth / verifyPhoneChangeReauth /
+    // startPhoneChange / completePhoneChange`.
+    //
+    // Ordering is the security property: the OTP that reaches the NEW number is sent by
+    // [startPhoneChange], which the server only reaches after it has spent the reauth token AND
+    // accepted a step-up factor. Nothing before that point can text the new number.
 
     /**
-     * Verify the account PIN as an up-front step-up and obtain a short-lived reauth token. Mirrors
-     * iOS `verifyPinReauth`. No SMS is sent here.
+     * Send a reauthentication OTP to the number currently on file, as the first half of the
+     * single-use reauth token every privileged account operation needs
+     * (`POST /account/reauth/start`). The optional BCP-47 [language] tag localises the message.
+     *
+     * [phone] is the number the signed-in user typed as their current one. The server digests it and
+     * compares it against the account's own directory binding, and texts it only on a match, so this
+     * call can never send an SMS to a number the account does not already hold. It is submitted
+     * rather than looked up because the server does not hand out the number it holds.
+     *
+     * This proves possession of the CURRENT number and nothing more, which is exactly why it is not
+     * sufficient on its own: a SIM-swap attacker holds that number too. The step-up factor demanded
+     * by [startPhoneChange] is the other half.
+     *
+     * @return [Result.success] on success, or [Result.failure] with a [ResolverError]:
+     * [ResolverError.ReauthPhoneMismatch] when the number is not this account's (which must be
+     * surfaced without ever suggesting whose it might be), [ResolverError.InvalidPhoneNumber] when
+     * it is not a phone number at all, or [ResolverError.RateLimited] once the per-account attempt
+     * cap is reached.
+     */
+    suspend fun startPhoneChangeReauth(accessToken: String, phone: String, language: String?): Result<Unit>
+
+    /**
+     * Exchange the reauth OTP for a single-use token scoped to the phone-change operation
+     * (`POST /account/reauth/verify`). No SMS is sent here.
+     *
+     * [phone] is the same current number that was sent to [startPhoneChangeReauth]: the server keeps
+     * no pending record between the two calls and re-derives the digest from what arrives here, so
+     * it has to be sent again.
      *
      * @return [Result.success] with the opaque reauth token, or [Result.failure] with a
-     * [ResolverError] (notably [ResolverError.InvalidPin], [ResolverError.PinLocked]).
+     * [ResolverError] (notably [ResolverError.InvalidOtp] and the same refusals as
+     * [startPhoneChangeReauth]).
      */
-    suspend fun verifyPinReauth(accessToken: String, userId: String, pin: String): Result<String>
+    suspend fun verifyPhoneChangeReauth(accessToken: String, phone: String, code: String): Result<String>
 
     /**
-     * Request an OTP to be sent to the [newPhone] the user wants to switch to, gated by the
-     * previously-obtained [reauthToken]. Mirrors iOS `requestPhoneChangeOtp`. The SMS fires here.
-     * The optional BCP-47 [language] tag (e.g. "en-US") localises the code message.
+     * Start the phone-number change (`POST /account/phone/change/start`): spends [reauthToken] and a
+     * step-up factor, and only then sends an OTP to [newPhone]. Returns the challenge to redeem at
+     * [completePhoneChange].
      *
-     * @return [Result.success] on success, or [Result.failure] with a [ResolverError] (notably
-     * [ResolverError.InvalidReauthToken], [ResolverError.PhoneAlreadyLinked], [ResolverError.RateLimited]).
+     * The server spends [reauthToken] BEFORE it weighs the step-up factor, so the token is gone on
+     * every outcome, success or failure. Callers must treat it as spent and mint a fresh one through
+     * [startPhoneChangeReauth] rather than retrying with the same token.
+     *
+     * [pin] is the fallback factor, offered when the account holds a PIN. A verified passkey
+     * assertion is the preferred one and settles the step-up on its own; see [passkeyStepUpId].
+     *
+     * @return [Result.success] with the [PhoneChangeChallenge], or [Result.failure] with a
+     * [ResolverError]: [ResolverError.StepUpRequired] when the account holds neither factor (a hard
+     * block, never a fallthrough), [ResolverError.InvalidPin], [ResolverError.TwoFactorCooldown],
+     * [ResolverError.PhoneChangeCooldown], [ResolverError.PhoneAlreadyLinked],
+     * [ResolverError.InvalidReauthToken].
      */
-    suspend fun requestPhoneChangeOtp(accessToken: String, userId: String, newPhone: String, reauthToken: String, language: String?): Result<Unit>
+    suspend fun startPhoneChange(
+        accessToken: String,
+        reauthToken: String,
+        newPhone: String,
+        pin: String?,
+        passkeyStepUpId: String?,
+        passkeyCredentialJson: String?,
+        language: String?,
+    ): Result<PhoneChangeChallenge>
 
     /**
-     * Complete the phone-number change: verifies the OTP [code] sent to the new number, consumes the
-     * [reauthToken], then re-points the account to [newPhone]. Mirrors iOS `changePhoneNumber`.
+     * Complete the phone-number change (`POST /account/phone/change/complete`): redeems the
+     * challenge from [startPhoneChange] with the OTP delivered to the new number.
      *
      * @return [Result.success] on success, or [Result.failure] with a [ResolverError] (e.g.
-     * [ResolverError.InvalidOtp], [ResolverError.InvalidReauthToken], [ResolverError.PhoneAlreadyLinked]).
+     * [ResolverError.InvalidOtp], [ResolverError.PhoneChangeChallengeInvalid],
+     * [ResolverError.PhoneAlreadyLinked]).
      */
-    suspend fun changePhoneNumber(accessToken: String, userId: String, newPhone: String, code: String, reauthToken: String): Result<Unit>
+    suspend fun completePhoneChange(accessToken: String, challengeId: String, code: String): Result<Unit>
 
     // GUA FORK: Passkey enrollment. Android counterpart of iOS
     // `IdentityServiceClientProtocol.startPasskeyEnrollment`.
@@ -113,6 +194,9 @@ interface IdentityServiceClient {
      * The returned URL is self-authenticating (it carries a short-lived enrollment token), so the
      * client just opens it in an authenticated web ceremony, on Android a Chrome Custom Tab, and
      * the user completes the WebAuthn registration in-browser at the IdP.
+     *
+     * Like [startPinEnrollment] it names this build's own [EnrollmentRedirectProvider] redirect and
+     * falls back to naming none when the deployment refuses it.
      *
      * @return [Result.success] with the enrollment URL, or [Result.failure] with a [ResolverError].
      */
@@ -136,6 +220,17 @@ interface IdentityServiceClient {
      */
     suspend fun registerAccountGenesis(genesisB64Url: String, proofB64Url: String): Result<AccountGenesisRegistration>
 }
+
+/**
+ * GUA FORK: what `POST /account/phone/change/start` returned once the step-up was accepted and the
+ * OTP went out to the new number. The challenge is the proof that both happened; it is what
+ * `complete` redeems.
+ */
+data class PhoneChangeChallenge(
+    val challengeId: String,
+    /** Seconds before the new-number OTP expires, or null when the server did not say. */
+    val otpExpiresInSeconds: Long?,
+)
 
 /**
  * GUA FORK: what `POST /account/genesis` returned. The handle is a routing hint, not a capability: a

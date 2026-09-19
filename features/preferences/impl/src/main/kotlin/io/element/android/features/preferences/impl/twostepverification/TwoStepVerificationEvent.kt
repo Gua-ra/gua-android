@@ -12,7 +12,11 @@ package io.element.android.features.preferences.impl.twostepverification
  * `TwoStepVerificationScreenViewAction`.
  */
 sealed interface TwoStepVerificationEvent {
-    /** Start the setup flow (no existing PIN). */
+    /**
+     * Start enrollment of the first PIN (no existing PIN): fetches the authenticated web-ceremony
+     * URL, exactly as [SetUpPasskey] does. There is no native first-PIN path any more, because a
+     * bearer session on its own must not be able to add a durable factor.
+     */
     data object StartSetup : TwoStepVerificationEvent
 
     /** Start the OTP-protected change flow (existing PIN). */
@@ -39,6 +43,6 @@ sealed interface TwoStepVerificationEvent {
     /** Start passkey enrollment: fetches the authenticated web-ceremony URL to open at the IdP. */
     data object SetUpPasskey : TwoStepVerificationEvent
 
-    /** The passkey enrollment URL has been opened (in a Chrome Custom Tab); clear it. */
-    data object ClearPasskeyEnrollUrl : TwoStepVerificationEvent
+    /** The enrollment URL has been opened (in a Chrome Custom Tab); clear it. */
+    data object ClearFactorEnrollUrl : TwoStepVerificationEvent
 }

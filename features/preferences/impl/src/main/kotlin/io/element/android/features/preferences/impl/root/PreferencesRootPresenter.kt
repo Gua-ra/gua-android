@@ -24,6 +24,7 @@ import io.element.android.features.lockscreen.api.LockScreenService
 import io.element.android.features.logout.api.direct.DirectLogoutState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
+import io.element.android.libraries.androidutils.browser.withMxidLoginHint
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.core.meta.BuildType
@@ -123,12 +124,19 @@ class PreferencesRootPresenter(
             lockScreenService.isPinSetup()
         }.collectAsState(initial = true)
 
-        // GUA FORK: the nudge banner advertises the account (2SV) PIN, so gate it on the account PIN
-        // status from the identity service (mirrors TwoStepVerificationPresenter), not the local app-lock.
-        val isAccountPinSetup by produceState(initialValue = false) {
+        // GUA FORK: the nudge banner advertises two-step verification, so gate it on the account's
+        // FACTORS from the identity service (mirrors TwoStepVerificationPresenter), not the local
+        // app-lock and not a lone hasPin: a passkey holder already has two-step verification and
+        // must not be nudged to add a PIN.
+        //
+        // Null is "not known yet, or could not be read", and the banner shows only on an explicit
+        // false. The old initial value of false with no failure handler meant a slow or failing
+        // status read rendered as "no two-step verification" and nagged people who already had it.
+        val hasAccountStrongFactor by produceState<Boolean?>(initialValue = null) {
             val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken ?: return@produceState
-            identityServiceClient.pinStatus(accessToken, matrixClient.sessionId.value)
-                .onSuccess { value = it.hasPin }
+            identityServiceClient.accountFactorStatus(accessToken, matrixClient.sessionId.value)
+                .onSuccess { value = it.hasStrongFactor }
+                .onFailure { value = null }
         }
 
         val directLogoutState = directLogoutPresenter.present()
@@ -175,7 +183,7 @@ class PreferencesRootPresenter(
             nbOfBlockedUsers = nbOfBlockedUsers,
             showLabsItem = showLabsItem,
             isLockScreenPinSetup = isLockScreenPinSetup,
-            isAccountPinSetup = isAccountPinSetup,
+            hasAccountStrongFactor = hasAccountStrongFactor,
             directLogoutState = directLogoutState,
             snackbarMessage = snackbarMessage,
             eventSink = ::handleEvent,
@@ -190,5 +198,9 @@ class PreferencesRootPresenter(
             ?.let {
                 sessionEnterpriseService.tweakMasUrl(it)
             }
+            // GUA FORK: account management opens in the browser's shared tab, so it can meet a
+            // browser session for another account. Naming this one lets the page refuse that
+            // session instead of showing someone else's account.
+            ?.withMxidLoginHint(matrixClient.sessionId.value)
     }
 }

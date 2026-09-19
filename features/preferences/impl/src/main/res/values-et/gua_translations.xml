@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Uus PIN-kood peab erinema praegusest.</string>
     <string name="screen_two_step_verification_rate_limited">Liiga palju katseid. Oota hetk ja proovi uuesti.</string>
     <string name="screen_two_step_verification_updated">Kaheastmeline kinnitamine uuendatud</string>
+    <string name="screen_two_step_verification_pin_already_set">Sul on juba PIN-kood. Selle asemel saad seda muuta.</string>
     <string name="screen_change_phone_title">Muuda telefoninumbrit</string>
     <string name="screen_change_phone_intro_header">Muuda oma numbrit</string>
     <string name="screen_change_phone_intro_message">Kinnitame sinu PIN-koodi ja saadame siis SMS-iga koodi uuele numbrile. Sinu konto, vestlused ja sõnumid jäävad samaks.</string>
@@ -58,9 +59,10 @@
     <string name="screen_change_phone_updated">Sinu telefoninumber on uuendatud.</string>
     <string name="screen_change_phone_done_header">Valmis</string>
     <string name="screen_change_phone_done_message">Sinu telefoninumber on uuendatud. Edaspidi logid sisse uue numbriga.</string>
-    <string name="screen_change_phone_needs_pin_header">Numbri muutmiseks on vaja PIN-koodi</string>
-    <string name="screen_change_phone_needs_pin_message">Turvalisuse huvides seadista 6-kohaline konto PIN-kood. Kinnitad selle enne numbri muutmist.</string>
-    <string name="screen_change_phone_needs_pin_action">Seadista PIN-kood</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Seadista PIN-kood</string>
     <string name="screen_change_phone_cooldown_header">Veel mitte</string>
     <string name="screen_change_phone_cooldown_message">Turvalisuse huvides saad numbrit muuta %1$s pärast.</string>
+    <string name="screen_change_phone_current_header">Kinnita oma praegune number</string>
+    <string name="screen_change_phone_current_footer">Sisesta number, mida sinu konto praegu kasutab. Saadame sellele koodi.</string>
+    <string name="screen_change_phone_current_mismatch">See ei ole sinu konto number.</string>
 </resources>

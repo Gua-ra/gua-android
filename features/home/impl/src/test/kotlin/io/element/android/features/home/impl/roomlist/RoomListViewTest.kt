@@ -22,9 +22,13 @@ import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.features.home.impl.HomeView
 import io.element.android.features.home.impl.R
 import io.element.android.features.home.impl.aHomeState
+import io.element.android.features.home.impl.accountrecovery.AccountRecoveryBannerEvent
+import io.element.android.features.home.impl.accountrecovery.PendingAccountRecovery
+import io.element.android.features.home.impl.accountrecovery.anAccountRecoveryBannerState
 import io.element.android.features.home.impl.components.RoomListMenuAction
 import io.element.android.features.home.impl.model.RoomListRoomSummary
 import io.element.android.features.home.impl.model.RoomSummaryDisplayType
+import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureNeverCalled
@@ -53,6 +57,90 @@ class RoomListViewTest : RobolectricTest() {
         eventsRecorder.assertList(
             listOf(
                 RoomListEvent.UpdateVisibleRange(0..5),
+            )
+        )
+    }
+
+    @Config(qualifiers = "h1024dp")
+    @Test
+    fun `the account recovery warning shows above the rooms, has no close button, and asks to cancel`() = runAndroidComposeUiTest<ComponentActivity> {
+        val recoveryEvents = EventsRecorder<AccountRecoveryBannerEvent>()
+        setRoomListView(
+            state = aRoomListState(
+                contentState = aRoomsContentState(),
+                accountRecoveryBannerState = anAccountRecoveryBannerState(
+                    pendingRecovery = PendingAccountRecovery.FinishableFrom("6 April 2026"),
+                    eventSink = recoveryEvents,
+                ),
+                eventSink = EventsRecorder(expectEvents = true),
+            )
+        )
+
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_title)).assertExists()
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_later, "6 April 2026")).assertExists()
+        onNodeWithContentDescription(activity!!.getString(CommonStrings.action_close)).assertDoesNotExist()
+        clickOn(R.string.gua_account_recovery_banner_action)
+        recoveryEvents.assertSingle(AccountRecoveryBannerEvent.CancelRecovery)
+    }
+
+    @Config(qualifiers = "h1024dp")
+    @Test
+    fun `on an empty chat list the account recovery warning says it can be finished now`() = runAndroidComposeUiTest<ComponentActivity> {
+        setRoomListView(
+            state = aRoomListState(
+                contentState = anEmptyContentState(securityBannerState = SecurityBannerState.None),
+                accountRecoveryBannerState = anAccountRecoveryBannerState(
+                    pendingRecovery = PendingAccountRecovery.FinishableNow,
+                    eventSink = EventsRecorder(expectEvents = false),
+                ),
+            )
+        )
+
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_now)).assertExists()
+    }
+
+    @Config(qualifiers = "h1024dp")
+    @Test
+    fun `a recovery with no completable moment warns without claiming it can be finished now`() = runAndroidComposeUiTest<ComponentActivity> {
+        setRoomListView(
+            state = aRoomListState(
+                contentState = aRoomsContentState(),
+                accountRecoveryBannerState = anAccountRecoveryBannerState(
+                    pendingRecovery = PendingAccountRecovery.FinishableUnknown,
+                    eventSink = EventsRecorder(expectEvents = false),
+                ),
+                eventSink = EventsRecorder(expectEvents = true),
+            )
+        )
+
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_generic)).assertExists()
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_banner_message_now)).assertDoesNotExist()
+    }
+
+    @Config(qualifiers = "h1024dp")
+    @Test
+    fun `the cancel confirmation sends the confirmation or goes back`() = runAndroidComposeUiTest<ComponentActivity> {
+        val recoveryEvents = EventsRecorder<AccountRecoveryBannerEvent>()
+        setRoomListView(
+            state = aRoomListState(
+                contentState = aRoomsContentState(),
+                accountRecoveryBannerState = anAccountRecoveryBannerState(
+                    // The banner's own button carries the same label, so leave it out here.
+                    pendingRecovery = null,
+                    cancelAction = AsyncAction.ConfirmingNoParams,
+                    eventSink = recoveryEvents,
+                ),
+                eventSink = EventsRecorder(expectEvents = true),
+            )
+        )
+
+        onNodeWithText(activity!!.getString(R.string.gua_account_recovery_cancel_title)).assertExists()
+        clickOn(R.string.gua_account_recovery_banner_action)
+        clickOn(CommonStrings.action_go_back)
+        recoveryEvents.assertList(
+            listOf(
+                AccountRecoveryBannerEvent.ConfirmCancelRecovery,
+                AccountRecoveryBannerEvent.DismissCancelConfirmation,
             )
         )
     }

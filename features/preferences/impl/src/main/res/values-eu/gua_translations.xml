@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Zure PIN berriak oraingoaren desberdina izan behar du.</string>
     <string name="screen_two_step_verification_rate_limited">Saiakera gehiegi. Itxaron pixka bat eta saiatu berriro.</string>
     <string name="screen_two_step_verification_updated">Bi urratseko egiaztapena eguneratu da</string>
+    <string name="screen_two_step_verification_pin_already_set">Dagoeneko baduzu PIN bat. Horren ordez, alda dezakezu.</string>
     <string name="screen_change_phone_title">Aldatu telefono zenbakia</string>
     <string name="screen_change_phone_intro_header">Aldatu zure zenbakia</string>
     <string name="screen_change_phone_intro_message">Zure PINa berretsiko dugu eta ondoren kode bat bidaliko dugu SMS bidez zure zenbaki berrira. Zure kontua, txatak eta mezuak berdin mantenduko dira.</string>
@@ -58,9 +59,10 @@
     <string name="screen_change_phone_updated">Zure telefono zenbakia eguneratu da.</string>
     <string name="screen_change_phone_done_header">Dena prest</string>
     <string name="screen_change_phone_done_message">Zure telefono zenbakia eguneratu da. Hemendik aurrera zenbaki berriarekin hasiko duzu saioa.</string>
-    <string name="screen_change_phone_needs_pin_header">PIN bat behar duzu zenbakia aldatzeko</string>
-    <string name="screen_change_phone_needs_pin_message">Zure segurtasunerako, ezarri 6 digituko kontu PIN bat. Zenbakia aldatu aurretik berretsiko duzu.</string>
-    <string name="screen_change_phone_needs_pin_action">Konfiguratu PINa</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Konfiguratu PINa</string>
     <string name="screen_change_phone_cooldown_header">Oraindik ez</string>
     <string name="screen_change_phone_cooldown_message">Zure segurtasunerako, %1$s barru alda dezakezu zenbakia.</string>
+    <string name="screen_change_phone_current_header">Berretsi zure uneko zenbakia</string>
+    <string name="screen_change_phone_current_footer">Sartu zure kontuak orain erabiltzen duen zenbakia. Kode bat bidaliko dugu hara.</string>
+    <string name="screen_change_phone_current_mismatch">Hori ez da zure kontuko zenbakia.</string>
 </resources>

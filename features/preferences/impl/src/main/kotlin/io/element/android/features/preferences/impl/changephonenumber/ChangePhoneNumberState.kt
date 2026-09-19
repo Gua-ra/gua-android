@@ -11,23 +11,35 @@ import androidx.annotation.StringRes
 import io.element.android.libraries.phonenumberentry.Country
 
 /**
- * GUA FORK: drives the change-phone-number screen. This is the real backend flow, PIN-first: the
- * user confirms their account PIN up front (yielding a short-lived reauth token), then enters the
- * NEW number (which triggers the OTP), then enters that OTP to complete the change. The SMS does NOT
- * fire until a valid reauth token exists.
+ * GUA FORK: drives the change-phone-number screen against the real identity-service contract
+ * (the `/account/reauth` and `/account/phone/change` endpoints).
  *
- * On [Intro] Continue we FIRST fetch the PIN status (a WhatsApp belt-and-suspenders gate):
- *  - no PIN set -> [NeedsPinSetup] interstitial (route to the 2SV PIN-setup flow), never proceed.
- *  - a fresh-2FA cooldown is active -> [Cooldown] interstitial, never proceed.
- *  - otherwise -> [EnteringPin] (step-up, no SMS) -> [EnteringNewPhone] (sends the OTP) ->
- *    [EnteringOtp] (submits the change) -> [Done].
+ * On [Intro] Continue the account's FACTORS are fetched first and the flow branches before anything
+ * is sent:
+ *  - no factor a phone change accepts -> [NeedsStepUp], a hard block, never proceed.
+ *  - a fresh-2FA hold or a phone-change cooldown -> [Cooldown], never proceed.
+ *  - otherwise -> [EnteringCurrentPhone].
+ *
+ * [EnteringCurrentPhone] asks the user which number is on the account. The server never hands that
+ * number back, so the only way to check it is to have the user say it: identity-service digests what
+ * is submitted and compares it against the account's own binding, and only a match is texted. A
+ * wrong number is refused identically whether it is unknown, someone else's or simply not this
+ * account's, and the screen must not add anything to that.
+ *
+ * Then [EnteringReauthOtp] takes the code that number received, proving possession of it and buying
+ * a single-use token scoped to this operation, [EnteringPin] captures the step-up factor,
+ * [EnteringNewPhone] takes the new number, and submitting the pair spends the token AND the factor
+ * in one call. Only that call texts the NEW number, which is why the step-up is collected first:
+ * nothing reaches the new number until the server has accepted a factor a SIM-swapper does not hold.
  *
  * [Submitting] is shown while the async identity-service calls are in flight.
  */
 enum class ChangePhoneNumberPhase {
     Intro,
-    NeedsPinSetup,
+    NeedsStepUp,
     Cooldown,
+    EnteringCurrentPhone,
+    EnteringReauthOtp,
     EnteringPin,
     EnteringNewPhone,
     EnteringOtp,
@@ -35,35 +47,81 @@ enum class ChangePhoneNumberPhase {
     Done,
 }
 
+/**
+ * GUA FORK: why the flow stopped at [ChangePhoneNumberPhase.NeedsStepUp], and therefore which way
+ * out to offer. Both are hard: neither lets the change continue, and there is no self-attested
+ * downgrade that turns either into a fallthrough.
+ */
+enum class StepUpBlock {
+    /**
+     * The account holds neither a passkey nor a PIN, so it can settle no step-up at all. This is the
+     * client-side twin of the server's `step_up_required` (403). The way out is to register a
+     * factor, and the user chooses which: a passkey (preferred) or a PIN (the fallback).
+     */
+    NoFactorRegistered,
+
+    /**
+     * The account's only accepted factor is a passkey, and this build has no WebAuthn ceremony to
+     * assert it with. The server would still accept that passkey from a client that can produce
+     * one; nothing here tells the server otherwise, and the PIN is offered only as the account's own
+     * fallback factor, exactly as the server ranks it.
+     */
+    PasskeyNotUsableHere,
+}
+
 data class ChangePhoneNumberState(
     val phase: ChangePhoneNumberPhase,
-    /** The 6-digit code currently being typed (the account PIN or the OTP). */
+    /** The 6-digit code currently being typed (a reauth OTP, the account PIN, or the new-number OTP). */
     val code: String,
-    /** The country selected for the NEW number (drives the dial code, flag and national mask). */
+    /**
+     * The country selected in whichever phone step is on screen, the current number or the new one
+     * (drives the dial code, flag and national mask). One field because only one of those steps is
+     * ever showing, and the shared country picker writes into one place.
+     */
     val selectedCountry: Country,
-    /** The local (national-format) digits the user typed for the NEW number, e.g. "(555) 123-4567". */
+    /** The local (national-format) digits typed in that step, e.g. "(555) 123-4567". */
     val localPhoneNumber: String,
     /** Resource id of the error to surface under the field, or null. */
     @StringRes val errorMessage: Int?,
     /**
-     * Remaining seconds of the fresh-2FA cooldown, surfaced (humanised) on the [ChangePhoneNumberPhase.Cooldown]
-     * interstitial. 0 outside that phase.
+     * Remaining seconds of the active cooldown, surfaced (humanised) on the
+     * [ChangePhoneNumberPhase.Cooldown] interstitial. 0 outside that phase.
      */
     val cooldownRemainingSeconds: Long,
+    /** Why the flow is blocked, set only in [ChangePhoneNumberPhase.NeedsStepUp]. */
+    val stepUpBlock: StepUpBlock?,
+    /**
+     * Set to the authenticated passkey-enrollment URL once [ChangePhoneNumberEvents.SetUpPasskey]
+     * resolves, so the View can open it in a Chrome Custom Tab. Cleared via
+     * [ChangePhoneNumberEvents.ClearPasskeyEnrollUrl] once opened.
+     */
+    val passkeyEnrollUrl: String?,
     val eventSink: (ChangePhoneNumberEvents) -> Unit,
 ) {
     val isWorking: Boolean = phase == ChangePhoneNumberPhase.Submitting
 
-    /** New-number digits, stripped of any formatting. */
+    /** Typed digits, stripped of any formatting. */
     val localDigits: String get() = localPhoneNumber.filter { it.isDigit() }
 
     /** Full E.164 number to send to the backend (e.g. "+15551234567"). */
     val e164PhoneNumber: String get() = "+" + selectedCountry.dialCode + localDigits
 
+    /**
+     * Whether to offer registering a passkey as the way out of the block. Only when the account has
+     * no factor at all: an account that already holds a passkey cannot enroll a second one, the
+     * ceremony excludes the credentials it already has, so offering it there would be a dead end.
+     */
+    val canSetUpPasskey: Boolean = stepUpBlock == StepUpBlock.NoFactorRegistered
+
+    /** Whether to offer setting up a PIN as the way out of the block. Both blocks allow it. */
+    val canSetUpPin: Boolean = stepUpBlock != null
+
     val canContinue: Boolean = when (phase) {
         ChangePhoneNumberPhase.Intro -> true
+        ChangePhoneNumberPhase.EnteringCurrentPhone,
         ChangePhoneNumberPhase.EnteringNewPhone ->
             isValidNumber(localDigits = localPhoneNumber.filter { it.isDigit() }, dialCode = selectedCountry.dialCode) && !isWorking
+        ChangePhoneNumberPhase.EnteringReauthOtp,
         ChangePhoneNumberPhase.EnteringPin,
         ChangePhoneNumberPhase.EnteringOtp -> code.length == CODE_LENGTH && !isWorking
         else -> false

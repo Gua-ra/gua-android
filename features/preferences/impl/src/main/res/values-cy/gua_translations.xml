@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Rhaid i\'ch PIN newydd fod yn wahanol i\'ch PIN presennol.</string>
     <string name="screen_two_step_verification_rate_limited">Gormod o ymgeisiadau. Arhoswch eiliad a rhowch gynnig arall arni.</string>
     <string name="screen_two_step_verification_updated">Diweddarwyd dilysu dau gam</string>
+    <string name="screen_two_step_verification_pin_already_set">Mae gennych PIN yn barod. Yn lle hynny, gallwch ei newid.</string>
     <string name="screen_change_phone_title">Newid rhif ffôn</string>
     <string name="screen_change_phone_intro_header">Newidiwch eich rhif</string>
     <string name="screen_change_phone_intro_message">Byddwn yn cadarnhau eich PIN, yna\'n anfon cod drwy neges destun at eich rhif newydd. Mae eich cyfrif, eich sgyrsiau a\'ch negeseuon yn aros yr un fath.</string>
@@ -58,9 +59,10 @@
     <string name="screen_change_phone_updated">Mae eich rhif ffôn wedi\'i ddiweddaru.</string>
     <string name="screen_change_phone_done_header">Popeth yn barod</string>
     <string name="screen_change_phone_done_message">Mae eich rhif ffôn wedi\'i ddiweddaru. O hyn ymlaen byddwch yn defnyddio\'ch rhif newydd i fewngofnodi.</string>
-    <string name="screen_change_phone_needs_pin_header">Bydd angen PIN arnoch i newid eich rhif</string>
-    <string name="screen_change_phone_needs_pin_message">Er eich diogelwch, sefydlwch PIN cyfrif 6 digid. Byddwch yn ei gadarnhau cyn newid eich rhif.</string>
-    <string name="screen_change_phone_needs_pin_action">Sefydlu PIN</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Sefydlu PIN</string>
     <string name="screen_change_phone_cooldown_header">Ddim eto</string>
     <string name="screen_change_phone_cooldown_message">Er eich diogelwch, gallwch newid eich rhif ymhen %1$s.</string>
+    <string name="screen_change_phone_current_header">Cadarnhewch eich rhif presennol</string>
+    <string name="screen_change_phone_current_footer">Rhowch y rhif y mae eich cyfrif yn ei ddefnyddio nawr. Byddwn yn anfon cod ato.</string>
+    <string name="screen_change_phone_current_mismatch">Nid dyna\'r rhif ar eich cyfrif.</string>
 </resources>

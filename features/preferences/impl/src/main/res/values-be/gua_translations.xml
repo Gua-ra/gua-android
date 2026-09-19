@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Новы PIN мусіць адрознівацца ад бягучага.</string>
     <string name="screen_two_step_verification_rate_limited">Занадта шмат спроб. Пачакайце крыху і паспрабуйце зноў.</string>
     <string name="screen_two_step_verification_updated">Двухэтапная праверка абноўлена</string>
+    <string name="screen_two_step_verification_pin_already_set">У вас ужо ёсць PIN. Замест гэтага вы можаце змяніць яго.</string>
     <string name="screen_change_phone_title">Змяніць нумар тэлефона</string>
     <string name="screen_change_phone_intro_header">Змяніце свой нумар</string>
     <string name="screen_change_phone_intro_message">Мы пацвердзім ваш PIN, потым дашлём SMS з кодам на новы нумар. Ваш уліковы запіс, чаты і паведамленні застануцца ранейшымі.</string>
@@ -58,9 +59,10 @@
     <string name="screen_change_phone_updated">Ваш нумар тэлефона абноўлены.</string>
     <string name="screen_change_phone_done_header">Гатова</string>
     <string name="screen_change_phone_done_message">Ваш нумар тэлефона абноўлены. Далей для ўваходу карыстайцеся новым нумарам.</string>
-    <string name="screen_change_phone_needs_pin_header">Каб змяніць нумар, патрэбны PIN</string>
-    <string name="screen_change_phone_needs_pin_message">Дзеля бяспекі задайце 6-значны PIN уліковага запісу. Вы пацвердзіце яго перад зменай нумара.</string>
-    <string name="screen_change_phone_needs_pin_action">Наладзіць PIN</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Наладзіць PIN</string>
     <string name="screen_change_phone_cooldown_header">Пакуль нельга</string>
     <string name="screen_change_phone_cooldown_message">Дзеля бяспекі вы зможаце змяніць нумар праз %1$s.</string>
+    <string name="screen_change_phone_current_header">Пацвердзіце свой бягучы нумар</string>
+    <string name="screen_change_phone_current_footer">Увядзіце нумар, які зараз выкарыстоўвае ваш уліковы запіс. Мы дашлём на яго код.</string>
+    <string name="screen_change_phone_current_mismatch">Гэта не нумар вашага ўліковага запісу.</string>
 </resources>

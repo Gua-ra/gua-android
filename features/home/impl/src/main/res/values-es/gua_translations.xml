@@ -10,4 +10,13 @@
     <string name="gua_encryption_repair_title">Termina de configurar este dispositivo</string>
     <string name="gua_encryption_repair_message">Completa la configuración para acceder a los chats cifrados y al historial de mensajes disponibles en este dispositivo.</string>
     <string name="gua_encryption_repair_action">Completar configuración</string>
+    <string name="gua_account_recovery_banner_title">Alguien ha empezado a recuperar tu cuenta</string>
+    <string name="gua_account_recovery_banner_message_later">Se podrá completar a partir del %1$s. Si fuiste tú, puedes ignorar este aviso. Si no fuiste tú, cancélala desde un dispositivo en el que sigas con la sesión iniciada.</string>
+    <string name="gua_account_recovery_banner_message_now">Ya se puede completar. Si fuiste tú, puedes ignorar este aviso. Si no fuiste tú, cancélala desde un dispositivo en el que sigas con la sesión iniciada.</string>
+    <string name="gua_account_recovery_banner_message_generic">Si fuiste tú, puedes ignorar este aviso. Si no fuiste tú, cancélala desde un dispositivo en el que sigas con la sesión iniciada.</string>
+    <string name="gua_account_recovery_banner_action">Cancelar recuperación</string>
+    <string name="gua_account_recovery_cancel_title">¿Cancelar la recuperación?</string>
+    <string name="gua_account_recovery_cancel_message">Cancélala si no la iniciaste tú. Si fuiste tú, tendrás que empezar de nuevo.</string>
+    <string name="gua_account_recovery_cancelled">Recuperación cancelada</string>
+    <string name="gua_account_recovery_cancel_failed">No se pudo cancelar la recuperación. Inténtalo de nuevo.</string>
 </resources>

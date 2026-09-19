@@ -251,10 +251,12 @@ class ResetIdentityFlowNode(
                         }
                         finishing.value = false
 
-                        // Older servers: fall back to the approval page in a Custom Tab.
+                        // Older servers: fall back to the approval page in a Custom Tab. A private
+                        // one where the browser supports it, so the page cannot open under a
+                        // browser session that belongs to another account.
                         Timber.d("Launching reset confirmation in MAS")
                         val url = sessionEnterpriseService.tweakMasUrl(handle.url).withAppIdentity()
-                        activity.openUrlInChromeCustomTab(null, darkTheme, url)
+                        activity.openUrlInChromeCustomTab(null, darkTheme, url, ephemeral = true)
 
                         // Nothing runs while the tab is open. The approval page hands control
                         // back once the user has approved, and that is the moment to upload;

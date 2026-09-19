@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Новий PIN має відрізнятися від поточного.</string>
     <string name="screen_two_step_verification_rate_limited">Забагато спроб. Зачекайте трохи й спробуйте ще раз.</string>
     <string name="screen_two_step_verification_updated">Двоетапну перевірку оновлено</string>
+    <string name="screen_two_step_verification_pin_already_set">У вас уже є PIN. Замість цього ви можете змінити його.</string>
     <string name="screen_change_phone_title">Змінити номер телефону</string>
     <string name="screen_change_phone_intro_header">Змініть свій номер</string>
     <string name="screen_change_phone_intro_message">Ми підтвердимо ваш PIN, а потім надішлемо SMS з кодом на новий номер. Обліковий запис, чати та повідомлення залишаться тими самими.</string>
@@ -58,9 +59,10 @@
     <string name="screen_change_phone_updated">Ваш номер телефону оновлено.</string>
     <string name="screen_change_phone_done_header">Готово</string>
     <string name="screen_change_phone_done_message">Ваш номер телефону оновлено. Надалі для входу використовуйте новий номер.</string>
-    <string name="screen_change_phone_needs_pin_header">Щоб змінити номер, потрібен PIN</string>
-    <string name="screen_change_phone_needs_pin_message">Задля безпеки встановіть 6-значний PIN облікового запису. Ви підтвердите його перед зміною номера.</string>
-    <string name="screen_change_phone_needs_pin_action">Налаштувати PIN</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Налаштувати PIN</string>
     <string name="screen_change_phone_cooldown_header">Ще не зараз</string>
     <string name="screen_change_phone_cooldown_message">Задля безпеки ви зможете змінити номер через %1$s.</string>
+    <string name="screen_change_phone_current_header">Підтвердьте свій поточний номер</string>
+    <string name="screen_change_phone_current_footer">Введіть номер, який зараз використовує ваш обліковий запис. Ми надішлемо на нього код.</string>
+    <string name="screen_change_phone_current_mismatch">Це не номер вашого облікового запису.</string>
 </resources>

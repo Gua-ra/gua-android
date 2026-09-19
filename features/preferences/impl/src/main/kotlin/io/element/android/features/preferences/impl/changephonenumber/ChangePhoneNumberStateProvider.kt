@@ -17,19 +17,34 @@ private val BR = Country(isoCode = "BR", dialCode = "55")
 open class ChangePhoneNumberStateProvider : PreviewParameterProvider<ChangePhoneNumberState> {
     override val values: Sequence<ChangePhoneNumberState>
         get() = sequenceOf(
+            // GUA FORK: exactly as many entries as before. Paparazzi shards @PreviewsDayNight by
+            // index, so adding or removing one re-shards the whole list and churns dozens of
+            // unrelated goldens; states that only matter to the state machine are covered by
+            // ChangePhoneNumberPresenterTest instead.
             aChangePhoneNumberState(phase = ChangePhoneNumberPhase.Intro),
-            aChangePhoneNumberState(phase = ChangePhoneNumberPhase.NeedsPinSetup),
+            // A spent reauth token drops the user back on the intro, with the reason.
+            aChangePhoneNumberState(
+                phase = ChangePhoneNumberPhase.Intro,
+                errorMessage = R.string.screen_change_phone_pin_incorrect,
+            ),
+            // The hard block, in both of its shapes: no factor at all (passkey or PIN), and a
+            // passkey this build cannot assert (PIN only, since a second passkey cannot be enrolled).
+            aChangePhoneNumberState(
+                phase = ChangePhoneNumberPhase.NeedsStepUp,
+                stepUpBlock = StepUpBlock.NoFactorRegistered,
+            ),
+            aChangePhoneNumberState(
+                phase = ChangePhoneNumberPhase.NeedsStepUp,
+                stepUpBlock = StepUpBlock.PasskeyNotUsableHere,
+            ),
             aChangePhoneNumberState(
                 phase = ChangePhoneNumberPhase.Cooldown,
                 // 6 days, 3 hours -> exercises the multi-unit humaniser.
                 cooldownRemainingSeconds = 6L * 24 * 3600 + 3 * 3600,
             ),
+            // The OTP to the number already on file, then the step-up factor (masked).
+            aChangePhoneNumberState(phase = ChangePhoneNumberPhase.EnteringReauthOtp, code = "123"),
             aChangePhoneNumberState(phase = ChangePhoneNumberPhase.EnteringPin, code = "123"),
-            aChangePhoneNumberState(
-                phase = ChangePhoneNumberPhase.EnteringPin,
-                code = "12",
-                errorMessage = R.string.screen_change_phone_pin_incorrect,
-            ),
             // New-number step: empty (shows the placeholder) and a filled US number.
             aChangePhoneNumberState(phase = ChangePhoneNumberPhase.EnteringNewPhone),
             aChangePhoneNumberState(
@@ -49,13 +64,11 @@ open class ChangePhoneNumberStateProvider : PreviewParameterProvider<ChangePhone
                 localPhoneNumber = "5",
                 errorMessage = R.string.screen_change_phone_new_invalid,
             ),
-            aChangePhoneNumberState(phase = ChangePhoneNumberPhase.EnteringOtp, code = "1234"),
             aChangePhoneNumberState(
                 phase = ChangePhoneNumberPhase.EnteringOtp,
                 code = "12",
                 errorMessage = R.string.screen_change_phone_otp_invalid,
             ),
-            aChangePhoneNumberState(phase = ChangePhoneNumberPhase.Submitting, code = "123456"),
             aChangePhoneNumberState(phase = ChangePhoneNumberPhase.Done),
         )
 }
@@ -67,6 +80,8 @@ fun aChangePhoneNumberState(
     localPhoneNumber: String = "",
     errorMessage: Int? = null,
     cooldownRemainingSeconds: Long = 0,
+    stepUpBlock: StepUpBlock? = null,
+    passkeyEnrollUrl: String? = null,
     eventSink: (ChangePhoneNumberEvents) -> Unit = {},
 ) = ChangePhoneNumberState(
     phase = phase,
@@ -75,5 +90,7 @@ fun aChangePhoneNumberState(
     localPhoneNumber = localPhoneNumber,
     errorMessage = errorMessage,
     cooldownRemainingSeconds = cooldownRemainingSeconds,
+    stepUpBlock = stepUpBlock,
+    passkeyEnrollUrl = passkeyEnrollUrl,
     eventSink = eventSink,
 )

@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Новият PIN трябва да е различен от текущия.</string>
     <string name="screen_two_step_verification_rate_limited">Твърде много опити. Изчакайте малко и опитайте отново.</string>
     <string name="screen_two_step_verification_updated">Двустепенната проверка е обновена</string>
+    <string name="screen_two_step_verification_pin_already_set">Вече имате PIN. Вместо това можете да го промените.</string>
     <string name="screen_change_phone_title">Промяна на телефонния номер</string>
     <string name="screen_change_phone_intro_header">Променете номера си</string>
     <string name="screen_change_phone_intro_message">Ще потвърдим PIN, след което ще изпратим код чрез SMS на новия ви номер. Профилът, чатовете и съобщенията ви остават същите.</string>
@@ -58,9 +59,10 @@
     <string name="screen_change_phone_updated">Телефонният ви номер е обновен.</string>
     <string name="screen_change_phone_done_header">Готово</string>
     <string name="screen_change_phone_done_message">Телефонният ви номер е обновен. Отсега нататък ще влизате с новия си номер.</string>
-    <string name="screen_change_phone_needs_pin_header">Нужен ви е PIN, за да смените номера си</string>
-    <string name="screen_change_phone_needs_pin_message">За вашата сигурност задайте 6-цифрен PIN на профила. Ще го потвърдите, преди да смените номера.</string>
-    <string name="screen_change_phone_needs_pin_action">Настройване на PIN</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Настройване на PIN</string>
     <string name="screen_change_phone_cooldown_header">Още не</string>
     <string name="screen_change_phone_cooldown_message">За вашата сигурност ще можете да смените номера си след %1$s.</string>
+    <string name="screen_change_phone_current_header">Потвърдете текущия си номер</string>
+    <string name="screen_change_phone_current_footer">Въведете номера, който профилът ви използва сега. Ще изпратим код до него.</string>
+    <string name="screen_change_phone_current_mismatch">Това не е номерът на вашия профил.</string>
 </resources>

@@ -266,7 +266,7 @@ class PreferencesRootViewTest : RobolectricTest() {
         ensureCalledOnce { callback ->
             setView(
                 aPreferencesRootState(
-                    isAccountPinSetup = false,
+                    hasAccountStrongFactor = false,
                     eventSink = eventsRecorder,
                 ),
                 onSetupTwoStepVerification = callback,

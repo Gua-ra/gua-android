@@ -46,21 +46,35 @@ data class FakeGuaDeployment(
 ) : GuaDeployment
 
 /**
+ * GUA FORK: test-only [EnrollmentRedirectProvider]. Defaults to the QA build's scheme, which is the
+ * variant the field exists for; pass null for a build that names no redirect.
+ */
+class FakeEnrollmentRedirectProvider(
+    private val redirectUri: String? = "global.gua.dev:/oidc",
+) : EnrollmentRedirectProvider {
+    override fun provide(): String? = redirectUri
+}
+
+/**
  * GUA FORK: lambda-overridable fake [IdentityServiceClient] for downstream presenter tests.
  */
 class FakeIdentityServiceClient(
     private val lookupResult: (String, List<String>) -> Result<List<ContactMatch>> = { _, _ ->
         Result.success(emptyList())
     },
-    private val pinStatusResult: (String, String) -> Result<PinStatus> = { _, _ ->
-        Result.success(PinStatus(hasPin = false, changePhoneCooldownRemainingSeconds = 0))
+    private val accountFactorStatusResult: (String, String) -> Result<AccountFactorStatus> = { _, _ ->
+        Result.success(anAccountFactorStatus())
     },
-    private val setInitialPinResult: (String, String, String) -> Result<Unit> = { _, _, _ -> Result.success(Unit) },
+    private val cancelAccountRecoveryResult: (String) -> Result<Unit> = { _ -> Result.success(Unit) },
+    private val startPinEnrollmentResult: (String) -> Result<String> = { _ -> Result.success("https://idp.gua.global/pin/enroll?token=fake") },
     private val startPinChangeResult: (String, String, String) -> Result<String> = { _, _, _ -> Result.success("challenge-id") },
     private val completePinChangeResult: (String, String, String, String) -> Result<Unit> = { _, _, _, _ -> Result.success(Unit) },
-    private val verifyPinReauthResult: (String, String, String) -> Result<String> = { _, _, _ -> Result.success("reauth-token") },
-    private val requestPhoneChangeOtpResult: (String, String, String, String, String?) -> Result<Unit> = { _, _, _, _, _ -> Result.success(Unit) },
-    private val changePhoneNumberResult: (String, String, String, String, String) -> Result<Unit> = { _, _, _, _, _ -> Result.success(Unit) },
+    private val startPhoneChangeReauthResult: (String, String, String?) -> Result<Unit> = { _, _, _ -> Result.success(Unit) },
+    private val verifyPhoneChangeReauthResult: (String, String, String) -> Result<String> = { _, _, _ -> Result.success(A_FAKE_REAUTH_TOKEN) },
+    private val startPhoneChangeResult: (PhoneChangeStartCall) -> Result<PhoneChangeChallenge> = { _ ->
+        Result.success(PhoneChangeChallenge(challengeId = A_FAKE_CHALLENGE_ID, otpExpiresInSeconds = 300))
+    },
+    private val completePhoneChangeResult: (String, String, String) -> Result<Unit> = { _, _, _ -> Result.success(Unit) },
     private val startPasskeyEnrollmentResult: (String) -> Result<String> = { _ -> Result.success("https://idp.gua.global/passkey/enroll?token=fake") },
     private val registerAccountGenesisResult: (String, String) -> Result<AccountGenesisRegistration> = { _, _ ->
         Result.success(AccountGenesisRegistration(accountId = A_FAKE_ACCOUNT_ID, attachHandle = A_FAKE_ATTACH_HANDLE))
@@ -69,11 +83,23 @@ class FakeIdentityServiceClient(
     override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> =
         lookupResult(accessToken, hashedPhones)
 
-    override suspend fun pinStatus(accessToken: String, userId: String): Result<PinStatus> =
-        pinStatusResult(accessToken, userId)
+    /** Every [startPhoneChange] the fake saw, so tests can assert on ordering and on what was sent. */
+    val startPhoneChangeCalls: MutableList<PhoneChangeStartCall> = mutableListOf()
 
-    override suspend fun setInitialPin(accessToken: String, userId: String, newPin: String): Result<Unit> =
-        setInitialPinResult(accessToken, userId, newPin)
+    /**
+     * Every [startPhoneChangeReauth] the fake saw, as (current number, language), so tests can
+     * assert no SMS fired too early and that the number the user typed is what was submitted.
+     */
+    val startPhoneChangeReauthCalls: MutableList<Pair<String, String?>> = mutableListOf()
+
+    override suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus> =
+        accountFactorStatusResult(accessToken, userId)
+
+    override suspend fun cancelAccountRecovery(accessToken: String): Result<Unit> =
+        cancelAccountRecoveryResult(accessToken)
+
+    override suspend fun startPinEnrollment(accessToken: String): Result<String> =
+        startPinEnrollmentResult(accessToken)
 
     override suspend fun startPinChange(accessToken: String, phone: String, currentPin: String): Result<String> =
         startPinChangeResult(accessToken, phone, currentPin)
@@ -81,20 +107,37 @@ class FakeIdentityServiceClient(
     override suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit> =
         completePinChangeResult(accessToken, challengeId, otpCode, newPin)
 
-    override suspend fun verifyPinReauth(accessToken: String, userId: String, pin: String): Result<String> =
-        verifyPinReauthResult(accessToken, userId, pin)
+    override suspend fun startPhoneChangeReauth(accessToken: String, phone: String, language: String?): Result<Unit> {
+        startPhoneChangeReauthCalls += phone to language
+        return startPhoneChangeReauthResult(accessToken, phone, language)
+    }
 
-    override suspend fun requestPhoneChangeOtp(
+    override suspend fun verifyPhoneChangeReauth(accessToken: String, phone: String, code: String): Result<String> =
+        verifyPhoneChangeReauthResult(accessToken, phone, code)
+
+    override suspend fun startPhoneChange(
         accessToken: String,
-        userId: String,
-        newPhone: String,
         reauthToken: String,
+        newPhone: String,
+        pin: String?,
+        passkeyStepUpId: String?,
+        passkeyCredentialJson: String?,
         language: String?,
-    ): Result<Unit> =
-        requestPhoneChangeOtpResult(accessToken, userId, newPhone, reauthToken, language)
+    ): Result<PhoneChangeChallenge> {
+        val call = PhoneChangeStartCall(
+            reauthToken = reauthToken,
+            newPhone = newPhone,
+            pin = pin,
+            passkeyStepUpId = passkeyStepUpId,
+            passkeyCredentialJson = passkeyCredentialJson,
+            language = language,
+        )
+        startPhoneChangeCalls += call
+        return startPhoneChangeResult(call)
+    }
 
-    override suspend fun changePhoneNumber(accessToken: String, userId: String, newPhone: String, code: String, reauthToken: String): Result<Unit> =
-        changePhoneNumberResult(accessToken, userId, newPhone, code, reauthToken)
+    override suspend fun completePhoneChange(accessToken: String, challengeId: String, code: String): Result<Unit> =
+        completePhoneChangeResult(accessToken, challengeId, code)
 
     override suspend fun startPasskeyEnrollment(accessToken: String): Result<String> =
         startPasskeyEnrollmentResult(accessToken)
@@ -108,8 +151,48 @@ class FakeIdentityServiceClient(
 
         /** Shaped like what identity-service issues: 32 CSPRNG bytes as unpadded base64url. */
         const val A_FAKE_ATTACH_HANDLE = "Zm9vYmFyYmF6cXV1eGNvcmdlZ3JhdWx0"
+
+        const val A_FAKE_REAUTH_TOKEN = "reauth-token"
+
+        const val A_FAKE_CHALLENGE_ID = "phone-change-challenge"
     }
 }
+
+/**
+ * GUA FORK: one recorded `account/phone/change/start` call, so tests can assert which step-up factor
+ * was offered and that the call only happened once a reauth token existed.
+ */
+data class PhoneChangeStartCall(
+    val reauthToken: String,
+    val newPhone: String,
+    val pin: String?,
+    val passkeyStepUpId: String?,
+    val passkeyCredentialJson: String?,
+    val language: String?,
+)
+
+/**
+ * GUA FORK: an [AccountFactorStatus] with the server's own defaults. Overriding [hasPin] or
+ * [passkeyRegistered] alone keeps [preferredFactor] and [phoneChangeStepUpFactors] consistent with
+ * them, which is what the real endpoint does.
+ */
+fun anAccountFactorStatus(
+    hasPin: Boolean = false,
+    passkeyRegistered: Boolean = false,
+    preferredFactor: AuthFactor = when {
+        passkeyRegistered -> AuthFactor.PASSKEY
+        hasPin -> AuthFactor.PIN
+        else -> AuthFactor.PHONE_OTP
+    },
+    phoneChangeStepUpFactors: List<AuthFactor> = listOf(AuthFactor.PASSKEY, AuthFactor.PIN),
+    changePhoneCooldownRemainingSeconds: Long = 0,
+) = AccountFactorStatus(
+    hasPin = hasPin,
+    passkeyRegistered = passkeyRegistered,
+    preferredFactor = preferredFactor,
+    phoneChangeStepUpFactors = phoneChangeStepUpFactors,
+    changePhoneCooldownRemainingSeconds = changePhoneCooldownRemainingSeconds,
+)
 
 fun aContactMatch(
     hashedPhone: String = "deadbeef",

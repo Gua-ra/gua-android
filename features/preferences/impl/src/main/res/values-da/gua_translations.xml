@@ -42,6 +42,7 @@
     <string name="screen_two_step_verification_same_as_current">Din nye pinkode skal være forskellig fra den nuværende.</string>
     <string name="screen_two_step_verification_rate_limited">For mange forsøg. Vent et øjeblik, og prøv igen.</string>
     <string name="screen_two_step_verification_updated">Totrinsbekræftelse opdateret</string>
+    <string name="screen_two_step_verification_pin_already_set">Du har allerede en pinkode. Du kan ændre den i stedet.</string>
     <string name="screen_change_phone_title">Skift telefonnummer</string>
     <string name="screen_change_phone_intro_header">Skift dit nummer</string>
     <string name="screen_change_phone_intro_message">Vi bekræfter din pinkode og sender derefter en kode via sms til dit nye nummer. Din konto, dine chats og dine beskeder er uændrede.</string>
@@ -58,9 +59,10 @@
     <string name="screen_change_phone_updated">Dit telefonnummer er opdateret.</string>
     <string name="screen_change_phone_done_header">Så er det klaret</string>
     <string name="screen_change_phone_done_message">Dit telefonnummer er opdateret. Fremover logger du ind med dit nye nummer.</string>
-    <string name="screen_change_phone_needs_pin_header">Du skal bruge en pinkode for at skifte nummer</string>
-    <string name="screen_change_phone_needs_pin_message">Af hensyn til din sikkerhed skal du oprette en 6-cifret kontopinkode. Du bekræfter den, før du skifter nummer.</string>
-    <string name="screen_change_phone_needs_pin_action">Opret pinkode</string>
+    <string name="screen_change_phone_needs_step_up_pin_action">Opret pinkode</string>
     <string name="screen_change_phone_cooldown_header">Ikke lige nu</string>
     <string name="screen_change_phone_cooldown_message">Af hensyn til din sikkerhed kan du skifte nummer om %1$s.</string>
+    <string name="screen_change_phone_current_header">Bekræft dit nuværende nummer</string>
+    <string name="screen_change_phone_current_footer">Indtast det nummer, din konto bruger nu. Vi sender en kode til det.</string>
+    <string name="screen_change_phone_current_mismatch">Det er ikke nummeret på din konto.</string>
 </resources>

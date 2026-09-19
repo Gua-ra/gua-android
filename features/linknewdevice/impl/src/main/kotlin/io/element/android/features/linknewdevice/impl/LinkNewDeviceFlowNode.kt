@@ -44,6 +44,7 @@ import io.element.android.libraries.architecture.createNode
 import io.element.android.libraries.core.log.logger.LoggerTag
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
+import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.api.linknewdevice.ErrorType
 import io.element.android.libraries.matrix.api.linknewdevice.LinkDesktopStep
 import io.element.android.libraries.matrix.api.linknewdevice.LinkMobileStep
@@ -67,6 +68,7 @@ class LinkNewDeviceFlowNode(
     private val linkNewMobileHandler: LinkNewMobileHandler,
     private val linkNewDesktopHandler: LinkNewDesktopHandler,
     private val sessionEnterpriseService: SessionEnterpriseService,
+    private val sessionId: SessionId,
 ) : BaseFlowNode<LinkNewDeviceFlowNode.NavTarget>(
     backstack = BackStack(
         initialElement = NavTarget.Root,
@@ -310,7 +312,11 @@ class LinkNewDeviceFlowNode(
         activity?.openUrlInChromeCustomTab(
             session = null,
             darkTheme = darkTheme,
-            url = sessionEnterpriseService.tweakMasUrl(url),
+            // GUA FORK: name this account, so the approval page refuses to approve the new device
+            // under a browser session that belongs to someone else.
+            url = sessionEnterpriseService.linkNewDeviceBrowserUrl(url, sessionId),
+            // GUA FORK: and a private tab, so there is no such session to pick up in the first place.
+            ephemeral = true,
         )
     }
 
