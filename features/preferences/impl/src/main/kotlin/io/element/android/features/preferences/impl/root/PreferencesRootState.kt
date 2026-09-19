@@ -25,6 +25,11 @@ data class PreferencesRootState(
     val accountManagementUrl: String?,
     val canReportBug: Boolean,
     val showLinkNewDevice: Boolean,
+    /**
+     * GUA FORK: the account authority row (ADM-009), behind its own off-by-default flag. False on every
+     * build today, and with it false this screen is exactly what it was before the feature existed.
+     */
+    val showAccountAuthority: Boolean,
     val showAnalyticsSettings: Boolean,
     val showDeveloperSettings: Boolean,
     val canDeactivateAccount: Boolean,
