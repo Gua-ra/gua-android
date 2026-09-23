@@ -13,6 +13,7 @@ import io.element.android.libraries.guaresolver.FakeGuaDeployment
 import io.element.android.libraries.guaresolver.authority.AuthorityError
 import io.element.android.libraries.guaresolver.authority.AuthorityPurpose
 import io.element.android.libraries.guaresolver.authority.AuthorityRecordSubmission
+import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
 import io.element.android.libraries.network.RetrofitFactory
 import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
@@ -33,7 +34,9 @@ class DefaultAccountAuthorityClientTest {
         server.enqueue(MockResponse().setBody("""{ "challenge": "Y2hhbGxlbmdl", "expiresInSeconds": 900 }"""))
         val client = createClient(server)
 
-        val challenge = client.challenge("a-token", AuthorityPurpose.ADOPT, pin = "123456").getOrThrow()
+        val challenge = client
+            .challenge("a-token", AuthorityPurpose.ADOPT, AuthorityStepUp.Pin("123456"))
+            .getOrThrow()
 
         assertThat(challenge.challengeB64Url).isEqualTo("Y2hhbGxlbmdl")
         assertThat(challenge.expiresInSeconds).isEqualTo(900)

@@ -19,6 +19,7 @@ import io.element.android.features.preferences.impl.fixtures.anAuthorityDevice
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
 import io.element.android.libraries.guaresolver.authority.AuthorityError
+import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
 import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.sessionstorage.api.SessionStore
@@ -135,7 +136,7 @@ class AccountAuthorityPresenterTest {
                 // showed it has done its job.
                 assertThat(done.recoveryArtifact).isNull()
                 val call = manager.adoptCalls.single()
-                assertThat(call.pin).isEqualTo("123456")
+                assertThat(call.stepUp).isEqualTo(AuthorityStepUp.Pin("123456"))
                 assertThat(call.artifactConfirmed).isTrue()
                 assertThat(call.deviceLabel).isNotEmpty()
                 cancelAndIgnoreRemainingEvents()

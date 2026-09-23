@@ -16,14 +16,21 @@ import io.element.android.libraries.guaresolver.GuaDeployment
 import io.element.android.libraries.guaresolver.GuaResolverConfig
 import io.element.android.libraries.guaresolver.authority.AccountAuthorityClient
 import io.element.android.libraries.guaresolver.authority.AuthorityApproval
+import io.element.android.libraries.guaresolver.authority.AuthorityCandidate
 import io.element.android.libraries.guaresolver.authority.AuthorityChainState
 import io.element.android.libraries.guaresolver.authority.AuthorityChallenge
 import io.element.android.libraries.guaresolver.authority.AuthorityDevice
 import io.element.android.libraries.guaresolver.authority.AuthorityError
+import io.element.android.libraries.guaresolver.authority.AuthorityFingerprint
 import io.element.android.libraries.guaresolver.authority.AuthorityPendingTransition
 import io.element.android.libraries.guaresolver.authority.AuthorityPurpose
 import io.element.android.libraries.guaresolver.authority.AuthorityRecordSubmission
+import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
 import io.element.android.libraries.guaresolver.authority.AuthoritySubmission
+import io.element.android.libraries.guaresolver.authority.SecurityNotificationRegistration
+import io.element.android.libraries.guaresolver.authority.SecurityNotificationRemoval
+import io.element.android.libraries.guaresolver.authority.SecurityNotificationView
+import io.element.android.libraries.guaresolver.genesis.Base64Url
 import io.element.android.libraries.network.RetrofitFactory
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
@@ -45,11 +52,19 @@ class DefaultAccountAuthorityClient(
     override suspend fun challenge(
         accessToken: String,
         purpose: AuthorityPurpose,
-        pin: String?,
+        stepUp: AuthorityStepUp,
     ): Result<AuthorityChallenge> = runAuthorityCall { api ->
         val response = api.challenge(
             authorization = bearer(accessToken),
-            body = AuthorityChallengeRequest(purpose = purpose.name, pin = pin?.takeIf { it.isNotEmpty() }),
+            body = AuthorityChallengeRequest(
+                purpose = purpose.name,
+                pin = (stepUp as? AuthorityStepUp.Pin)?.pin?.takeIf { it.isNotEmpty() },
+                passkeyStepUpId = (stepUp as? AuthorityStepUp.Passkey)?.stepUpId,
+                // Parsed rather than forwarded as a string, because the field is a JSON object on the wire and
+                // a client that sent it quoted would have the server refuse an assertion that was fine.
+                passkeyCredential = (stepUp as? AuthorityStepUp.Passkey)
+                    ?.let { requestBodyJson.parseToJsonElement(it.credentialJson) },
+            ),
         )
         AuthorityChallenge(
             challengeB64Url = response.challenge,
@@ -69,6 +84,94 @@ class DefaultAccountAuthorityClient(
         submission: AuthorityRecordSubmission,
     ): Result<AuthoritySubmission> = runAuthorityCall { api ->
         api.grantDevice(authorization = bearer(accessToken), body = submission.toRequest()).toSubmission()
+    }
+
+    override suspend fun revokeDevice(
+        accessToken: String,
+        submission: AuthorityRecordSubmission,
+    ): Result<AuthoritySubmission> = runAuthorityCall { api ->
+        api.revokeDevice(authorization = bearer(accessToken), body = submission.toRequest()).toSubmission()
+    }
+
+    override suspend fun recoverAuthority(
+        accessToken: String,
+        submission: AuthorityRecordSubmission,
+    ): Result<AuthoritySubmission> = runAuthorityCall { api ->
+        api.recoverAuthority(authorization = bearer(accessToken), body = submission.toRequest()).toSubmission()
+    }
+
+    override suspend fun offerCandidate(
+        accessToken: String,
+        deviceKeyB64Url: String,
+        label: String?,
+    ): Result<AuthorityCandidate> = runAuthorityCall { api ->
+        api.offerCandidate(
+            authorization = bearer(accessToken),
+            body = AuthorityCandidateRequest(deviceKeyB64 = deviceKeyB64Url, label = label),
+        ).toCandidate()
+    }
+
+    override suspend fun candidates(accessToken: String): Result<List<AuthorityCandidate>> =
+        runAuthorityCall { api ->
+            api.candidates(authorization = bearer(accessToken)).map { it.toCandidate() }
+        }
+
+    override suspend fun registerSecurityNotification(
+        accessToken: String,
+        registration: SecurityNotificationRegistration,
+    ): Result<Unit> = runAuthorityCall { api ->
+        // The response names the row and its token fingerprint; the caller registers rather than asks, so it
+        // is read for its status and dropped.
+        api.registerSecurityNotification(
+            authorization = bearer(accessToken),
+            body = SecurityNotificationRegisterRequest(
+                installationId = registration.installationId,
+                platform = registration.platform,
+                token = registration.token,
+                appId = registration.appId,
+                deviceLabel = registration.deviceLabel,
+                authorityDeviceKeyB64 = registration.authorityDeviceKeyB64Url,
+                challenge = registration.challengeB64Url,
+                signature = registration.signatureB64Url,
+            ),
+        )
+    }
+
+    override suspend fun securityNotifications(accessToken: String): Result<List<SecurityNotificationView>> =
+        runAuthorityCall { api ->
+            api.securityNotifications(authorization = bearer(accessToken)).map { response ->
+                SecurityNotificationView(
+                    installationId = response.installationId,
+                    platform = response.platform,
+                    deviceLabel = response.deviceLabel,
+                    tokenFingerprint = response.tokenFingerprint,
+                    boundToAnAuthorityDevice = response.boundToAnAuthorityDevice,
+                    lastSeenAtEpochSeconds = response.lastSeenAtEpochSeconds,
+                )
+            }
+        }
+
+    override suspend fun removeSecurityNotification(
+        accessToken: String,
+        removal: SecurityNotificationRemoval,
+    ): Result<Unit> = runAuthorityCall { api ->
+        api.removeSecurityNotification(
+            authorization = bearer(accessToken),
+            body = SecurityNotificationRemoveRequest(
+                installationId = removal.installationId,
+                callerInstallationId = removal.callerInstallationId,
+                pin = removal.pin?.takeIf { it.isNotEmpty() },
+                challenge = removal.challengeB64Url,
+                signature = removal.signatureB64Url,
+            ),
+        )
+    }
+
+    override suspend fun opposeWithRecord(
+        accessToken: String,
+        submission: AuthorityRecordSubmission,
+    ): Result<Unit> = runAuthorityCall { api ->
+        api.opposeWithRecord(authorization = bearer(accessToken), body = submission.toRequest())
     }
 
     override suspend fun oppose(accessToken: String, recordHash: String?, pin: String?): Result<Unit> =
@@ -142,6 +245,21 @@ class DefaultAccountAuthorityClient(
         recoveryArtifactConfirmed = recoveryArtifactConfirmed,
     )
 
+    /**
+     * The fingerprint is recomputed from the key rather than read from the response.
+     *
+     * The comparison a person makes is only worth making if both phones derived it from the same 32 bytes; a
+     * string this client simply displayed would let whoever answered the request choose what the user compares.
+     * A key that does not decode gets no fingerprint at all, and the screen shows the candidate as unusable
+     * rather than showing eight characters of nothing.
+     */
+    private fun AuthorityCandidateResponse.toCandidate() = AuthorityCandidate(
+        deviceKeyB64Url = deviceKeyB64,
+        fingerprint = tryOrNull { AuthorityFingerprint.of(Base64Url.decode(deviceKeyB64)) }.orEmpty(),
+        label = label.orEmpty(),
+        expiresAtEpochSeconds = expiresAtEpochSeconds,
+    )
+
     private fun AuthoritySubmissionResponse.toSubmission() = AuthoritySubmission(
         seq = seq,
         state = state,
@@ -197,6 +315,15 @@ class DefaultAccountAuthorityClient(
             "authority_signer_refused",
             "authority_challenge_invalid" -> AuthorityError.SignerRefused
             "authority_device_quarantined" -> AuthorityError.DeviceQuarantined
+            "authority_unknown_candidate" -> AuthorityError.UnknownCandidate
+            "authority_no_notification_channel" -> AuthorityError.NoNotificationChannel
+            "authority_opposition_stale" -> AuthorityError.OppositionStale
+            "authority_notifications_disabled" -> AuthorityError.NotificationsDisabled
+            "authority_notification_unknown",
+            "authority_notification_unknown_device" -> AuthorityError.NotificationUnknown
+            "authority_notification_invalid",
+            "authority_notification_invalid_key",
+            "authority_notification_invalid_signature" -> AuthorityError.InvalidRecord(body.message)
             "authority_backoff" -> AuthorityError.Backoff(retryAfter)
             "authority_cooldown" -> AuthorityError.Cooldown(retryAfter)
             "authority_no_account" -> AuthorityError.NoAccount
@@ -217,5 +344,8 @@ class DefaultAccountAuthorityClient(
 
     private companion object {
         private val errorBodyJson = Json { ignoreUnknownKeys = true }
+
+        /** Only ever used to reparse an assertion the platform produced, never to build one. */
+        private val requestBodyJson = Json { ignoreUnknownKeys = true }
     }
 }

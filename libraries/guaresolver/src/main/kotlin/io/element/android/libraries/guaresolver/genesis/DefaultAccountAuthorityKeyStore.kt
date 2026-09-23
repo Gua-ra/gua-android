@@ -22,6 +22,7 @@ import io.element.android.libraries.preferences.api.store.PreferenceDataStoreFac
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.UUID
 
 /**
  * GUA FORK: default [AccountAuthorityKeyStore].
@@ -122,8 +123,13 @@ class DefaultAccountAuthorityKeyStore(
             val remaining = dataStore.data.first()
             // GUA FORK: ADM-009. An adopted pair counts as much as an attached one here: deleting the
             // keystore key while either is stored would leave a blob nothing can open, which is the same
-            // thing as losing the account's authority.
-            if (remaining[attachedAccountIdKey] == null && remaining[adoptedAccountIdKey] == null) {
+            // thing as losing the account's authority. The installation id counts too, for a smaller reason
+            // that matters just as much: a sealed id nothing can open is an id that changes, and the
+            // registration keyed on the old one could then never be removed by the install that made it.
+            if (remaining[attachedAccountIdKey] == null &&
+                remaining[adoptedAccountIdKey] == null &&
+                remaining[installationIdKey] == null
+            ) {
                 secretKeyRepository.deleteKey(SECRET_KEY_ALIAS)
             }
         }
@@ -211,6 +217,77 @@ class DefaultAccountAuthorityKeyStore(
         return Ed25519Sign(seed).sign(message)
     }
 
+    override suspend fun createCandidateKey(): ByteArray = mutex.withLock {
+        val device = Ed25519Sign.KeyPair.newKeyPair()
+        val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
+        val sealed = encryptionDecryptionService.encrypt(secretKey, device.privateKey).toBase64()
+        dataStore.edit { preferences ->
+            // The candidate slot only. An offer the chain never granted is replaceable by definition.
+            preferences[candidateDeviceSeedKey] = sealed
+        }
+        device.publicKey
+    }
+
+    override suspend fun candidateDevicePublicKey(): ByteArray? {
+        val seed = readSeed(candidateDeviceSeedKey) ?: return null
+        return Ed25519Sign.KeyPair.newKeyPairFromSeed(seed).publicKey
+    }
+
+    override suspend fun markGranted(accountId: String) {
+        mutex.withLock {
+            val preferences = dataStore.data.first()
+            val alreadyAdopted = preferences[adoptedAccountIdKey]
+            if (alreadyAdopted != null && alreadyAdopted != accountId) {
+                error("Another account already holds this device's authority")
+            }
+            val sealedCandidate = preferences[candidateDeviceSeedKey]
+                ?: error("No candidate key is stored on this device")
+            dataStore.edit { edited ->
+                edited[adoptedAccountIdKey] = accountId
+                edited[adoptedDeviceSeedKey] = sealedCandidate
+                edited.remove(candidateDeviceSeedKey)
+                // No recovery seed is written: a granted device holds none, and writing an empty one would
+                // make a later artifact look as though it had come from this device.
+            }
+        }
+    }
+
+    override suspend fun markRecovered(accountId: String) {
+        mutex.withLock {
+            val preferences = dataStore.data.first()
+            val alreadyAdopted = preferences[adoptedAccountIdKey]
+            if (alreadyAdopted != null && alreadyAdopted != accountId) {
+                error("Another account already holds this device's authority")
+            }
+            val sealedDevice = preferences[adoptionDeviceSeedKey]
+                ?: error("No device authority key is stored on this device")
+            val sealedRecovery = preferences[adoptionRecoverySeedKey]
+                ?: error("No recovery authority key is stored on this device")
+            dataStore.edit { edited ->
+                // Overwrites the adopted pair on purpose: an AuthorityRecovery replaces the device set with
+                // one device, so keeping the old pair would leave this device holding a key the chain will
+                // not recognise once the record takes effect.
+                edited[adoptedAccountIdKey] = accountId
+                edited[adoptedDeviceSeedKey] = sealedDevice
+                edited[adoptedRecoverySeedKey] = sealedRecovery
+                edited.remove(adoptionDeviceSeedKey)
+                edited.remove(adoptionRecoverySeedKey)
+            }
+        }
+    }
+
+    override suspend fun installationId(): String = mutex.withLock {
+        readInstallationId()?.let { return@withLock it }
+        val minted = UUID.randomUUID().toString()
+        val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
+        val sealed = encryptionDecryptionService.encrypt(secretKey, minted.toByteArray(Charsets.UTF_8)).toBase64()
+        dataStore.edit { preferences -> preferences[installationIdKey] = sealed }
+        minted
+    }
+
+    private suspend fun readInstallationId(): String? =
+        readSeed(installationIdKey)?.toString(Charsets.UTF_8)?.takeIf { it.isNotEmpty() }
+
     private suspend fun publicKeysOf(
         authorityKey: Preferences.Key<String>,
         recoveryKey: Preferences.Key<String>,
@@ -257,5 +334,13 @@ class DefaultAccountAuthorityKeyStore(
         private val adoptedAccountIdKey = stringPreferencesKey("adopted_account_id")
         private val adoptedDeviceSeedKey = stringPreferencesKey("adopted_device_seed")
         private val adoptedRecoverySeedKey = stringPreferencesKey("adopted_recovery_seed")
+
+        // GUA FORK: ADM-009 decision 5, revision 4. The key this device offered for a grant, before any
+        // chain accepted it.
+        private val candidateDeviceSeedKey = stringPreferencesKey("candidate_device_seed")
+
+        // GUA FORK: ADM-009 gate 2. Sealed under the same keystore key as everything else here, and never
+        // removed on sign-out, because the registration it keys has to outlive a session.
+        private val installationIdKey = stringPreferencesKey("security_notification_installation_id")
     }
 }

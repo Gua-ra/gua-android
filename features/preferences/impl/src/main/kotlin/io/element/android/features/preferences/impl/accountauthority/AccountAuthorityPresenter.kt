@@ -23,6 +23,7 @@ import io.element.android.libraries.guaresolver.authority.AccountAuthorityManage
 import io.element.android.libraries.guaresolver.authority.AuthorityApproval
 import io.element.android.libraries.guaresolver.authority.AuthorityChainState
 import io.element.android.libraries.guaresolver.authority.AuthorityError
+import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.launch
@@ -160,7 +161,7 @@ class AccountAuthorityPresenter(
                                 accessToken = accessToken,
                                 chain = currentChain,
                                 deviceLabel = AuthorityDeviceLabel.current(),
-                                pin = pin,
+                                stepUp = AuthorityStepUp.Pin(pin),
                                 artifactConfirmed = artifactConfirmed,
                             )
                                 .onSuccess {
