@@ -10,6 +10,7 @@ package io.element.android.libraries.guaresolver.authority
 import com.google.common.truth.Truth.assertThat
 import com.google.crypto.tink.subtle.Ed25519Sign
 import com.google.crypto.tink.subtle.Ed25519Verify
+import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.guaresolver.genesis.AccountId
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -120,7 +121,9 @@ class AuthorityVectorsTest {
         assertThat(rejections).hasSize(16)
         rejections.forEach { entry ->
             val rejection = entry.jsonObject
-            val thrown = runCatching { AuthorityRecordCodec.parse(hex(rejection.string("hex"))) }.exceptionOrNull()
+            val thrown = runCatchingExceptions {
+                AuthorityRecordCodec.parse(hex(rejection.string("hex")))
+            }.exceptionOrNull()
             assertThat(thrown).isInstanceOf(InvalidAuthorityRecordException::class.java)
             assertThat((thrown as InvalidAuthorityRecordException).reason)
                 .isEqualTo(rejection.string("reason"))

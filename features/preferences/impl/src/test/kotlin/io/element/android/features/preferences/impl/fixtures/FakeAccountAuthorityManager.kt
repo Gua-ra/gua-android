@@ -10,8 +10,8 @@ package io.element.android.features.preferences.impl.fixtures
 import io.element.android.libraries.guaresolver.authority.AccountAuthorityManager
 import io.element.android.libraries.guaresolver.authority.AdoptionOffer
 import io.element.android.libraries.guaresolver.authority.AuthorityApproval
-import io.element.android.libraries.guaresolver.authority.AuthorityChainState
 import io.element.android.libraries.guaresolver.authority.AuthorityCandidate
+import io.element.android.libraries.guaresolver.authority.AuthorityChainState
 import io.element.android.libraries.guaresolver.authority.AuthorityDevice
 import io.element.android.libraries.guaresolver.authority.AuthorityPendingTransition
 import io.element.android.libraries.guaresolver.authority.AuthorityStepUp

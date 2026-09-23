@@ -160,7 +160,6 @@ object AuthorityRecordCodec {
         )
     }
 
-
     /**
      * The canonical bytes of a `DeviceRevoke` (`GUAX`, 145 bytes).
      *
@@ -170,10 +169,9 @@ object AuthorityRecordCodec {
      * from whether the named key is the signing key, so a client cannot ask for the immediate path by
      * labelling a record differently.
      *
-     * @param deviceKey the key being removed.
-     * @param reason one of [AuthorityRecord.REVOCATION_REASONS]. It is not a free-text field, so nothing the
-     * owner typed can end up in a notification.
-     * @param authorizingKey the signing device's own authority key.
+     * `deviceKey` is the key being removed, `reason` is one of [AuthorityRecord.REVOCATION_REASONS] (not a
+     * free-text field, so nothing the owner typed can end up in a notification), and `authorizingKey` is the
+     * signing device's own authority key.
      */
     fun deviceRevoke(
         accountReference: ByteArray,
@@ -201,11 +199,12 @@ object AuthorityRecordCodec {
      * The canonical bytes of an `AuthorityRecovery` (`GUAR`, 209 bytes), which replaces the whole device set
      * and the recovery authority key in one record.
      *
-     * @param authorization [AuthorityRecord.AUTHORIZATION_RECOVERY_KEY] when the record is signed by the
+     * `authorization` is [AuthorityRecord.AUTHORIZATION_RECOVERY_KEY] when the record is signed by the
      * recovery authority key the account committed, which is rank 2 and the one record an intruder holding
      * every device cannot cancel, or [AuthorityRecord.AUTHORIZATION_ACCOUNT_RECOVERY] for the weaker path,
      * which is rank 0 and any active device may veto immediately.
-     * @param authorizingKey the recovery authority public key under authorization 0x01, and null under 0x02,
+     *
+     * `authorizingKey` is the recovery authority public key under authorization 0x01, and null under 0x02,
      * where the field is 32 zero bytes. The pairing is enforced in both directions here and again by the
      * server's decoder: a record that named a key under the account-recovery path would be claiming an
      * authorization it does not have.
@@ -241,12 +240,11 @@ object AuthorityRecordCodec {
     /**
      * The canonical bytes of an `Oppose` (`GUAO`, 144 bytes).
      *
-     * @param prevHash the prevHash of the record being opposed, which is the chain head the pending record was
+     * `prevHash` is the prevHash of the record being opposed, which is the chain head the pending record was
      * accepted against: a pending record holds its seq without being appended, so the head the client reads is
-     * still the one it names.
-     * @param seq the pending record's own seq. An Oppose takes no position of its own, so it carries the
-     * position of what it cancels and the server refuses it as stale when either half does not match.
-     * @param opposedRecordHash the 32 bytes of the pending record's hash.
+     * still the one it names. `seq` is the pending record's own seq, because an Oppose takes no position of its
+     * own, and the server refuses it as stale when either half does not match. `opposedRecordHash` is the 32
+     * bytes of the pending record's hash.
      */
     fun oppose(
         accountReference: ByteArray,
@@ -539,8 +537,11 @@ object AuthorityRecordCodec {
  *
  * Deliberately not a mutable view and deliberately not re-encoded: what a caller does with this is decide
  * whether to submit the bytes it already holds, and the bytes the server hashes are the bytes it received.
+ *
+ * Nothing compares two of these, which is why the array fields are not a problem: the comparison that matters
+ * is over canonical bytes, and that is what the callers hold.
  */
-class ParsedAuthorityRecord(
+data class ParsedAuthorityRecord(
     val type: AuthorityRecordType,
     val accountReference: ByteArray,
     val prevHash: ByteArray,

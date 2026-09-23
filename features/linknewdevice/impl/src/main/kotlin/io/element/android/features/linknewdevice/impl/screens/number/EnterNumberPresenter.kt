@@ -16,9 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import dev.zacsweers.metro.Assisted
-import dev.zacsweers.metro.AssistedFactory
-import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.Inject
 import io.element.android.features.linknewdevice.impl.LinkNewMobileHandler
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.Presenter
@@ -31,16 +29,17 @@ import timber.log.Timber
 
 private val tag = LoggerTag("EnterNumberPresenter", LoggerTags.linkNewDevice)
 
-@AssistedInject
+/**
+ * GUA FORK: no navigator.
+ *
+ * This screen had one destination of its own, the wrong-code error, and it was reachable only from a local
+ * check that always said yes. The code is compared inside the ceremony, so a wrong one arrives on the step flow
+ * and the flow node maps it to the mismatch screen.
+ */
+@Inject
 class EnterNumberPresenter(
-    @Assisted private val navigator: EnterNumberNavigator,
     private val linkNewMobileHandler: LinkNewMobileHandler,
 ) : Presenter<EnterNumberState> {
-    @AssistedFactory
-    interface Factory {
-        fun create(navigator: EnterNumberNavigator): EnterNumberPresenter
-    }
-
     @Composable
     override fun present(): EnterNumberState {
         val coroutineScope = rememberCoroutineScope()

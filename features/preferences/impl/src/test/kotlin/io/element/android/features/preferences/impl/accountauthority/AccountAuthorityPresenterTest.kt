@@ -10,16 +10,24 @@ package io.element.android.features.preferences.impl.accountauthority
 import app.cash.turbine.ReceiveTurbine
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.preferences.impl.R
+import io.element.android.features.preferences.impl.fixtures.A_DEVICE_KEY
+import io.element.android.features.preferences.impl.fixtures.A_RECOVERY_ARTIFACT
 import io.element.android.features.preferences.impl.fixtures.FakeAccountAuthorityManager
+import io.element.android.features.preferences.impl.fixtures.FakeIdentityServiceClient
 import io.element.android.features.preferences.impl.fixtures.aBootstrapChain
+import io.element.android.features.preferences.impl.fixtures.aCandidate
+import io.element.android.features.preferences.impl.fixtures.aFactorStatus
 import io.element.android.features.preferences.impl.fixtures.aPendingAdoption
 import io.element.android.features.preferences.impl.fixtures.aRootedChain
 import io.element.android.features.preferences.impl.fixtures.anApproval
 import io.element.android.features.preferences.impl.fixtures.anAuthorityDevice
+import io.element.android.features.preferences.impl.fixtures.anAuthorityLostChain
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
 import io.element.android.libraries.guaresolver.authority.AuthorityError
+import io.element.android.libraries.guaresolver.authority.AuthorityRecord
 import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
+import io.element.android.libraries.guaresolver.authority.InvalidAuthorityRecordException
 import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.sessionstorage.api.SessionStore
@@ -280,6 +288,283 @@ class AccountAuthorityPresenterTest {
         assertThat(manager.beginAdoptionCalls).hasSize(1)
     }
 
+    /**
+     * The whole point of C3: the lifecycle is not adoption alone.
+     *
+     * A rooted account's screen offers the transitions the chain actually permits, each one drawn in the
+     * chain's own terms, and offers no second adoption.
+     */
+    @Test
+    fun `present - a rooted account can grant, revoke and recover, and cannot adopt again`() = runTest {
+        val manager = FakeAccountAuthorityManager(
+            stateResult = { Result.success(aRootedChain(listOf(anAuthorityDevice()))) },
+            holdsAuthorityResult = { true },
+            candidatesResult = { Result.success(listOf(aCandidate())) },
+        )
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            val state = awaitFirst { it.chain != null }
+            assertThat(state.canAdopt).isFalse()
+            assertThat(state.canRecover).isTrue()
+            assertThat(state.candidates).hasSize(1)
+            assertThat(state.devices).hasSize(1)
+            assertThat(state.thisDeviceKeyB64Url).isNotNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - a grant needs the fingerprint compared, and carries that it was`() = runTest {
+        val manager = FakeAccountAuthorityManager(
+            stateResult = { Result.success(aRootedChain(listOf(anAuthorityDevice()))) },
+            holdsAuthorityResult = { true },
+            candidatesResult = { Result.success(listOf(aCandidate())) },
+        )
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            awaitFirst { it.candidates.isNotEmpty() }
+                .eventSink(AccountAuthorityEvent.SelectCandidate(aCandidate().deviceKeyB64Url))
+            val compare = awaitFirst { it.phase == AccountAuthorityPhase.Compare }
+            assertThat(compare.canContinueFromCompare).isFalse()
+            // The comparison is the gate: continuing without it changes nothing and sends nothing.
+            compare.eventSink(AccountAuthorityEvent.ContinueFromCompare)
+            compare.eventSink(AccountAuthorityEvent.ConfirmFingerprint(true))
+            awaitFirst { it.canContinueFromCompare }
+                .eventSink(AccountAuthorityEvent.ContinueFromCompare)
+            awaitFirst { it.phase == AccountAuthorityPhase.StepUp && it.stepUp == AccountAuthorityStepUp.Grant }
+                .eventSink(AccountAuthorityEvent.PinChanged("123456"))
+            awaitFirst { it.canSubmit }.eventSink(AccountAuthorityEvent.Submit)
+
+            awaitFirst { it.successMessage != null }
+            val call = manager.grantCalls.single()
+            assertThat(call.candidate.deviceKeyB64Url).isEqualTo(aCandidate().deviceKeyB64Url)
+            assertThat(call.fingerprintConfirmed).isTrue()
+            assertThat(call.stepUp).isEqualTo(AuthorityStepUp.Pin("123456"))
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - revoking this device is a different transition from revoking another`() = runTest {
+        val manager = FakeAccountAuthorityManager(
+            stateResult = {
+                Result.success(
+                    aRootedChain(
+                        listOf(
+                            anAuthorityDevice(deviceKeyB64Url = A_DEVICE_KEY),
+                            anAuthorityDevice(deviceKeyB64Url = "another-device-key", label = "Pixel Tablet"),
+                        )
+                    )
+                )
+            },
+            holdsAuthorityResult = { true },
+        )
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            awaitFirst { it.devices.size == 2 }
+                .eventSink(AccountAuthorityEvent.StartRevocation("another-device-key"))
+            val stepUp = awaitFirst { it.revocationTarget != null && it.phase == AccountAuthorityPhase.StepUp }
+            assertThat(stepUp.revocationTarget?.isThisDevice).isFalse()
+            // Two active devices, so the one being removed may object: decision 5's carve-out, which the copy
+            // has to state before the owner starts a standoff.
+            assertThat(stepUp.revocationTarget?.targetMayObject).isTrue()
+            stepUp.eventSink(AccountAuthorityEvent.PinChanged("123456"))
+            awaitFirst { it.canSubmit }.eventSink(AccountAuthorityEvent.Submit)
+
+            awaitFirst { it.successMessage != null }
+            val call = manager.revokeCalls.single()
+            assertThat(call.deviceKeyB64Url).isEqualTo("another-device-key")
+            assertThat(call.reason).isEqualTo(AuthorityRecord.REASON_UNSPECIFIED)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - a device that holds authority objects with a record, not with its session`() = runTest {
+        val pending = aPendingAdoption(type = "DEVICE_REVOKE", seq = 3)
+        val manager = FakeAccountAuthorityManager(
+            stateResult = { Result.success(aRootedChain(listOf(anAuthorityDevice()), pending = pending)) },
+            holdsAuthorityResult = { true },
+        )
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            awaitFirst { it.pendingTransition != null }.eventSink(AccountAuthorityEvent.Oppose)
+
+            awaitFirst { it.successMessage != null }
+            // The signed record, because a session's word is only accepted against an adoption: a stolen
+            // bearer token must not be able to veto the owner's own revocation of the thief's device.
+            assertThat(manager.opposeRecordCalls).hasSize(1)
+            assertThat(manager.opposeCalls).isEmpty()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - a recovery validates the artifact locally and shows the new one once`() = runTest {
+        val manager = FakeAccountAuthorityManager(
+            stateResult = { Result.success(aRootedChain(listOf(anAuthorityDevice()))) },
+            holdsAuthorityResult = { true },
+        )
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            awaitFirst { it.chain != null }.eventSink(AccountAuthorityEvent.StartRecovery)
+            awaitFirst { it.phase == AccountAuthorityPhase.RecoveryEntry }
+                .eventSink(AccountAuthorityEvent.RecoveryArtifactChanged(A_RECOVERY_ARTIFACT))
+            awaitFirst { it.canContinueFromRecoveryEntry }
+                .eventSink(AccountAuthorityEvent.ContinueFromRecoveryEntry)
+            val artifact = awaitFirst { it.phase == AccountAuthorityPhase.Artifact }
+            // The NEW artifact this record commits, shown once and confirmed, exactly as adoption does.
+            assertThat(artifact.recoveryArtifact).isNotNull()
+            assertThat(artifact.canContinueFromArtifact).isFalse()
+            artifact.eventSink(AccountAuthorityEvent.ConfirmArtifactStored(true))
+            awaitFirst { it.canContinueFromArtifact }
+                .eventSink(AccountAuthorityEvent.ContinueFromArtifact)
+            awaitFirst { it.stepUp == AccountAuthorityStepUp.Recover }
+                .eventSink(AccountAuthorityEvent.PinChanged("123456"))
+            awaitFirst { it.canSubmit }.eventSink(AccountAuthorityEvent.Submit)
+
+            awaitFirst { it.successMessage != null }
+            assertThat(manager.beginRecoveryCalls).containsExactly(A_RECOVERY_ARTIFACT)
+            val call = manager.recoverCalls.single()
+            assertThat(call.artifact).isEqualTo(A_RECOVERY_ARTIFACT)
+            assertThat(call.artifactConfirmed).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - malformed recovery material is refused on this side, with what is wrong`() = runTest {
+        val manager = FakeAccountAuthorityManager(
+            stateResult = { Result.success(aRootedChain(listOf(anAuthorityDevice()))) },
+            holdsAuthorityResult = { true },
+            beginRecoveryResult = {
+                Result.failure(
+                    InvalidAuthorityRecordException("bad_artifact_prefix", "a recovery key starts with the prefix")
+                )
+            },
+        )
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            awaitFirst { it.chain != null }.eventSink(AccountAuthorityEvent.StartRecovery)
+            awaitFirst { it.phase == AccountAuthorityPhase.RecoveryEntry }
+                .eventSink(AccountAuthorityEvent.RecoveryArtifactChanged("please let me in"))
+            awaitFirst { it.canContinueFromRecoveryEntry }
+                .eventSink(AccountAuthorityEvent.ContinueFromRecoveryEntry)
+
+            val refused = awaitFirst { it.recoveryArtifactError != null }
+            assertThat(refused.recoveryArtifactError)
+                .isEqualTo(R.string.screen_account_authority_recovery_artifact_wrong_kind)
+            assertThat(refused.phase).isEqualTo(AccountAuthorityPhase.RecoveryEntry)
+            // Nothing was submitted, so nothing was spent: no challenge and no step-up for a typo.
+            assertThat(manager.recoverCalls).isEmpty()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /**
+     * C4, the line that matters most: a passkey-only account is never told to add a PIN.
+     *
+     * The branch is over what the server says the account holds, and the answer for this account is that the
+     * step-up cannot be produced on this build. That is this app's gap, and the copy says so.
+     */
+    @Test
+    fun `present - a passkey-only account is told the passkey cannot be used, not to add a PIN`() = runTest {
+        val manager = FakeAccountAuthorityManager()
+        val presenter = createPresenter(
+            manager = manager,
+            identityServiceClient = FakeIdentityServiceClient(
+                factorStatusResult = {
+                    Result.success(aFactorStatus(hasPin = false, passkeyRegistered = true))
+                },
+            ),
+        )
+
+        presenter.test {
+            awaitFirst { it.canAdopt }.eventSink(AccountAuthorityEvent.StartAdoption)
+            awaitFirst { it.phase == AccountAuthorityPhase.Artifact }
+                .eventSink(AccountAuthorityEvent.ConfirmArtifactStored(true))
+            awaitFirst { it.canContinueFromArtifact }
+                .eventSink(AccountAuthorityEvent.ContinueFromArtifact)
+
+            val blocked = awaitFirst { it.stepUpBlock != null }
+            assertThat(blocked.stepUpBlock).isEqualTo(AccountAuthorityStepUpBlock.PasskeyNotUsableHere)
+            // No PIN field is offered and nothing can be submitted, so nothing reaches the chain.
+            assertThat(blocked.canSubmit).isFalse()
+            assertThat(manager.adoptCalls).isEmpty()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - an account with no factor at all is told that, and is not offered a PIN field`() = runTest {
+        val presenter = createPresenter(
+            identityServiceClient = FakeIdentityServiceClient(
+                factorStatusResult = {
+                    Result.success(aFactorStatus(hasPin = false, passkeyRegistered = false))
+                },
+            ),
+        )
+
+        presenter.test {
+            awaitFirst { it.canAdopt }.eventSink(AccountAuthorityEvent.StartAdoption)
+            awaitFirst { it.phase == AccountAuthorityPhase.Artifact }
+                .eventSink(AccountAuthorityEvent.ConfirmArtifactStored(true))
+            awaitFirst { it.canContinueFromArtifact }
+                .eventSink(AccountAuthorityEvent.ContinueFromArtifact)
+
+            assertThat(awaitFirst { it.stepUpBlock != null }.stepUpBlock)
+                .isEqualTo(AccountAuthorityStepUpBlock.NoFactorRegistered)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /** The terminal state of decision 7: no adoption, no recovery, and copy that says why. */
+    @Test
+    fun `present - an account that lost its authority is not offered a way back`() = runTest {
+        val manager = FakeAccountAuthorityManager(
+            stateResult = { Result.success(anAuthorityLostChain()) },
+        )
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            val state = awaitFirst { it.chain != null }
+            assertThat(state.authorityLost).isTrue()
+            assertThat(state.canAdopt).isFalse()
+            // The artifact was the way back, and this account has neither it nor a device.
+            state.eventSink(AccountAuthorityEvent.StartAdoption)
+            assertThat(manager.adoptCalls).isEmpty()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - a device with no authority offers its own key and shows its fingerprint`() = runTest {
+        val manager = FakeAccountAuthorityManager(
+            stateResult = { Result.success(aRootedChain(listOf(anAuthorityDevice()))) },
+            holdsAuthorityResult = { false },
+        )
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            val state = awaitFirst { it.chain != null }
+            assertThat(state.canOfferThisDevice).isTrue()
+            // A device with no authority is not shown other devices' candidates: it could do nothing with
+            // them, and the request would be answered for nothing.
+            assertThat(state.candidates).isEmpty()
+            state.eventSink(AccountAuthorityEvent.OfferThisDevice)
+
+            val offered = awaitFirst { it.thisDeviceFingerprint != null }
+            assertThat(offered.thisDeviceFingerprint).isEqualTo("9KDC ZT8A")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     private suspend fun ReceiveTurbine<AccountAuthorityState>.awaitFirst(
         predicate: (AccountAuthorityState) -> Boolean,
     ): AccountAuthorityState {
@@ -294,6 +579,7 @@ class AccountAuthorityPresenterTest {
         manager: FakeAccountAuthorityManager = FakeAccountAuthorityManager(),
         featureEnabled: Boolean = true,
         sessionStore: SessionStore = InMemorySessionStore(listOf(aSessionData(sessionId = A_USER_ID.value))),
+        identityServiceClient: FakeIdentityServiceClient = FakeIdentityServiceClient(),
     ) = AccountAuthorityPresenter(
         matrixClient = FakeMatrixClient(sessionId = A_USER_ID),
         sessionStore = sessionStore,
@@ -301,6 +587,7 @@ class AccountAuthorityPresenterTest {
             initialState = mapOf(FeatureFlags.AccountAuthority.key to featureEnabled),
         ),
         authorityManager = manager,
+        identityServiceClient = identityServiceClient,
     )
 
     private companion object {

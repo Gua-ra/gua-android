@@ -39,6 +39,7 @@ import io.element.android.libraries.matrix.test.verification.FakeSessionVerifica
 import io.element.android.libraries.push.api.PushService
 import io.element.android.libraries.push.api.PusherRegistrationFailure
 import io.element.android.libraries.push.test.FakePushService
+import io.element.android.libraries.pushproviders.api.Config
 import io.element.android.libraries.pushproviders.api.Distributor
 import io.element.android.libraries.pushproviders.api.PushProvider
 import io.element.android.libraries.pushproviders.test.FakePushProvider
@@ -124,6 +125,7 @@ class LoggedInPresenterTest {
             encryptionService = encryptionService,
             buildMeta = buildMeta,
             networkMonitor = networkMonitor,
+            authoritySessionRegistrar = FakeAuthoritySessionRegistrar(),
         ).test {
             encryptionService.emitRecoveryState(RecoveryState.UNKNOWN)
             encryptionService.emitRecoveryState(RecoveryState.INCOMPLETE)
@@ -347,6 +349,55 @@ class LoggedInPresenterTest {
         return awaitItem()
     }
 
+    /**
+     * GUA FORK: ADM-009 gate 2. A session start hands the registrar this install's push destination, and
+     * names the platform only when the server could actually deliver to it.
+     */
+    @Test
+    fun `present - a session start offers its push destination to the authority registrar`() = runTest {
+        val registrar = FakeAuthoritySessionRegistrar()
+        val presenter = createLoggedInPresenter(
+            pushService = FakePushService(
+                currentPushProvider = {
+                    FakePushProvider(name = "Firebase", config = Config(url = A_GATEWAY, pushKey = A_PUSH_KEY))
+                },
+                ensurePusherIsRegisteredResult = { Result.success(Unit) },
+            ),
+            authoritySessionRegistrar = registrar,
+        )
+
+        presenter.test {
+            awaitItem()
+            val call = registrar.calls.single()
+            assertThat(call.pushToken).isEqualTo(A_PUSH_KEY)
+            assertThat(call.platform).isEqualTo("FCM")
+            assertThat(call.deviceLabel).isNotEmpty()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - an install with a provider the channel cannot reach registers no destination`() = runTest {
+        val registrar = FakeAuthoritySessionRegistrar()
+        val presenter = createLoggedInPresenter(
+            pushService = FakePushService(
+                currentPushProvider = {
+                    FakePushProvider(name = "UnifiedPush", config = Config(url = A_GATEWAY, pushKey = A_PUSH_KEY))
+                },
+                ensurePusherIsRegisteredResult = { Result.success(Unit) },
+            ),
+            authoritySessionRegistrar = registrar,
+        )
+
+        presenter.test {
+            awaitItem()
+            // The token is there, but APNs and FCM are the only destinations the server can send to, so the
+            // platform is null and the registrar registers nothing rather than a row nothing could reach.
+            assertThat(registrar.calls.single().platform).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     private fun createLoggedInPresenter(
         syncState: SyncState = SyncState.Running,
         analyticsService: AnalyticsService = FakeAnalyticsService(),
@@ -358,6 +409,7 @@ class LoggedInPresenterTest {
         ),
         buildMeta: BuildMeta = aBuildMeta(),
         networkMonitor: FakeNetworkMonitor = FakeNetworkMonitor(),
+        authoritySessionRegistrar: FakeAuthoritySessionRegistrar = FakeAuthoritySessionRegistrar(),
     ): LoggedInPresenter {
         return LoggedInPresenter(
             matrixClient = matrixClient,
@@ -368,6 +420,12 @@ class LoggedInPresenterTest {
             encryptionService = encryptionService,
             buildMeta = buildMeta,
             networkMonitor = networkMonitor,
+            authoritySessionRegistrar = authoritySessionRegistrar,
         )
+    }
+
+    private companion object {
+        private const val A_PUSH_KEY = "a-push-key"
+        private const val A_GATEWAY = "https://example.org/_matrix/push/v1/notify"
     }
 }

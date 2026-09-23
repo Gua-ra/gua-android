@@ -93,12 +93,13 @@ interface AccountAuthorityManager {
     /**
      * Signs and submits a `DeviceGrant` over a candidate the new device registered itself.
      *
-     * @param candidate the offer as [candidates] reported it. Its fingerprint is recomputed from its key
+     * `candidate` is the offer as [candidates] reported it, and its fingerprint is recomputed from its key
      * before anything is signed, so a fingerprint chosen by whoever answered the request cannot be the one a
      * person compared.
-     * @param fingerprintConfirmed that the person compared the fingerprint against the other phone's screen
-     * and said it matched. The grant is refused without it: the fingerprint is the only thing binding these
-     * 32 bytes to the human holding the other device, and a grant that skipped the comparison is a grant over
+     *
+     * `fingerprintConfirmed` is that the person compared the fingerprint against the other phone's screen and
+     * said it matched. The grant is refused without it: the fingerprint is the only thing binding these 32
+     * bytes to the human holding the other device, and a grant that skipped the comparison is a grant over
      * whatever key arrived.
      */
     suspend fun grantDevice(

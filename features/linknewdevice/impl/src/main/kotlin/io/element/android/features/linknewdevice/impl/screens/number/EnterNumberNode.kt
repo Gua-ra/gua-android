@@ -18,24 +18,13 @@ import io.element.android.annotations.ContributesNode
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.di.SessionScope
 
-/**
- * GUA FORK: no wrong-code destination.
- *
- * The screen cannot tell a wrong code from a right one: the comparison happens inside the ceremony, and its
- * verdict arrives on the step flow as a failed ceremony, which the flow node maps to the mismatch screen. The
- * callback that used to exist here was only ever reachable from a check that always said yes.
- */
-interface EnterNumberNavigator
-
 @ContributesNode(SessionScope::class)
 @AssistedInject
 class EnterNumberNode(
     @Assisted buildContext: BuildContext,
     @Assisted plugins: List<Plugin>,
-    presenterFactory: EnterNumberPresenter.Factory,
-) : Node(buildContext, plugins = plugins), EnterNumberNavigator {
-    private val presenter = presenterFactory.create(this)
-
+    private val presenter: EnterNumberPresenter,
+) : Node(buildContext, plugins = plugins) {
     interface Callback : Plugin {
         fun navigateBack()
     }
@@ -51,5 +40,4 @@ class EnterNumberNode(
             onBackClick = callback::navigateBack,
         )
     }
-
 }

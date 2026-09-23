@@ -5,7 +5,7 @@
  * Please see LICENSE files in the repository root for full details.
  */
 
-package io.element.android.features.preferences.impl.accountauthority
+package io.element.android.libraries.guaresolver.authority
 
 import android.os.Build
 
@@ -16,6 +16,10 @@ import android.os.Build
  * phone this is, and it has to fit: the field is 16 bytes of UTF-8 and a label that overflows is refused
  * rather than truncated, because truncation can cut a character in half and the notification would then name
  * something the owner never saw.
+ *
+ * It lives beside the record code rather than beside a screen because two callers need the same 16 bytes: the
+ * authority screen, which signs records, and the session-start registrar, which tells the notification channel
+ * what a notification may name.
  *
  * The model name is used because it is the one string the user already recognises from their own settings,
  * and it is trimmed to whole characters that fit. It is not an identifier: it carries no serial, no

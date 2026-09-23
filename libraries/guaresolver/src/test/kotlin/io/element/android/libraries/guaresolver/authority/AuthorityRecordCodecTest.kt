@@ -162,7 +162,12 @@ class AuthorityRecordCodecTest {
         assertThat(
             refusalOf {
                 AuthorityRecordCodec.deviceRevoke(
-                    AN_ACCOUNT.rawBytes(), A_HEAD_HASH, 5, GRANTEE_KEY, 0x09, DEVICE_KEY
+                    AN_ACCOUNT.rawBytes(),
+                    A_HEAD_HASH,
+                    5,
+                    GRANTEE_KEY,
+                    0x09,
+                    DEVICE_KEY
                 )
             }?.reason
         ).isEqualTo("unknown_revocation_reason")
@@ -205,16 +210,30 @@ class AuthorityRecordCodecTest {
         assertThat(
             refusalOf {
                 AuthorityRecordCodec.authorityRecovery(
-                    AN_ACCOUNT.rawBytes(), A_HEAD_HASH, 2, GRANTEE_KEY, RECOVERY_KEY, "phone",
-                    AuthorityRecord.AUTHORIZATION_ACCOUNT_RECOVERY, DEVICE_KEY, ENTROPY
+                    AN_ACCOUNT.rawBytes(),
+                    A_HEAD_HASH,
+                    2,
+                    GRANTEE_KEY,
+                    RECOVERY_KEY,
+                    "phone",
+                    AuthorityRecord.AUTHORIZATION_ACCOUNT_RECOVERY,
+                    DEVICE_KEY,
+                    ENTROPY
                 )
             }?.reason
         ).isEqualTo("authorizing_key_not_permitted")
         assertThat(
             refusalOf {
                 AuthorityRecordCodec.authorityRecovery(
-                    AN_ACCOUNT.rawBytes(), A_HEAD_HASH, 2, GRANTEE_KEY, RECOVERY_KEY, "phone",
-                    AuthorityRecord.AUTHORIZATION_RECOVERY_KEY, null, ENTROPY
+                    AN_ACCOUNT.rawBytes(),
+                    A_HEAD_HASH,
+                    2,
+                    GRANTEE_KEY,
+                    RECOVERY_KEY,
+                    "phone",
+                    AuthorityRecord.AUTHORIZATION_RECOVERY_KEY,
+                    null,
+                    ENTROPY
                 )
             }?.reason
         ).isEqualTo("authorizing_key_required")

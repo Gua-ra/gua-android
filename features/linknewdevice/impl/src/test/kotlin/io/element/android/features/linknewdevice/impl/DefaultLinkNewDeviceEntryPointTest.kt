@@ -14,9 +14,9 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.features.enterprise.test.FakeSessionEnterpriseService
 import io.element.android.features.linknewdevice.api.LinkNewDeviceEntryPoint
 import io.element.android.features.linknewdevice.impl.screens.grantauthority.FakeAccountAuthorityManager
+import io.element.android.features.linknewdevice.impl.screens.grantauthority.aCandidate
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
-import io.element.android.features.linknewdevice.impl.screens.grantauthority.aCandidate
 import io.element.android.libraries.matrix.test.A_SESSION_ID
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore

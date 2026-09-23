@@ -32,6 +32,10 @@ dependencies {
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.deeplink.api)
     implementation(projects.libraries.featureflag.api)
+    // GUA FORK: ADM-009 gate 2. A session start registers the security-notification channel the windows
+    // depend on, and offers this device's key when the account holds authority elsewhere.
+    implementation(projects.appconfig)
+    implementation(projects.libraries.guaresolver)
     implementation(projects.libraries.matrix.api)
     implementation(projects.libraries.oauth.api)
     implementation(projects.libraries.preferences.api)

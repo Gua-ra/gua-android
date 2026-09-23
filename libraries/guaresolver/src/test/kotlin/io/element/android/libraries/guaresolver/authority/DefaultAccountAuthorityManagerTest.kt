@@ -307,7 +307,7 @@ class DefaultAccountAuthorityManagerTest {
         val pending = AuthorityPendingTransition(
             type = "DEVICE_REVOKE",
             seq = 4,
-            effectiveAtEpochSeconds = 1800000000,
+            effectiveAtEpochSeconds = 1_800_000_000,
             recordHash = A_PENDING_RECORD_HASH,
         )
         val client = FakeAccountAuthorityClient()
@@ -339,7 +339,7 @@ class DefaultAccountAuthorityManagerTest {
     fun `a device with no authority key cannot sign an objection`() = runTest {
         val client = FakeAccountAuthorityClient()
         val manager = DefaultAccountAuthorityManager(client, createKeyStore())
-        val pending = AuthorityPendingTransition("DEVICE_GRANT", 2, 1800000000, A_PENDING_RECORD_HASH)
+        val pending = AuthorityPendingTransition("DEVICE_GRANT", 2, 1_800_000_000, A_PENDING_RECORD_HASH)
 
         val result = manager.opposeWithRecord(A_TOKEN, aRootedChain(pending = pending))
 
@@ -409,7 +409,12 @@ class DefaultAccountAuthorityManagerTest {
         manager.beginRecovery(artifact).getOrThrow()
 
         val result = manager.recoverAuthority(
-            A_TOKEN, aRootedChain(), artifact, "Pixel 9", A_PIN, artifactConfirmed = false,
+            A_TOKEN,
+            aRootedChain(),
+            artifact,
+            "Pixel 9",
+            A_PIN,
+            artifactConfirmed = false,
         )
 
         assertThat(result.exceptionOrNull()).isInstanceOf(AuthorityError.ArtifactUnconfirmed::class.java)
@@ -451,7 +456,11 @@ class DefaultAccountAuthorityManagerTest {
         val manager = DefaultAccountAuthorityManager(client, keyStore)
 
         manager.registerSecurityNotifications(
-            A_TOKEN, "an-fcm-token", SecurityNotificationRegistration.PLATFORM_FCM, "global.gua.android", "Pixel 9",
+            A_TOKEN,
+            "an-fcm-token",
+            SecurityNotificationRegistration.PLATFORM_FCM,
+            "global.gua.android",
+            "Pixel 9",
         ).getOrThrow()
         val first = manager.installationId()
         // Signing out forgets the signup slot. It must not forget this: the registration has to outlive the
