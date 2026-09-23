@@ -39,7 +39,8 @@ class DefaultAccountAuthorityManager(
     private val client: AccountAuthorityClient,
     private val keyStore: AccountAuthorityKeyStore,
 ) : AccountAuthorityManager {
-    override suspend fun state(accessToken: String): Result<AuthorityChainState> = client.state(accessToken)
+    override suspend fun state(accessToken: String): Result<AuthorityChainState> =
+        client.state(accessToken).onSuccess { chain -> adoptGrantedCandidate(chain) }
 
     override suspend fun holdsAuthority(): Boolean = keyStore.authorityDevicePublicKey() != null
 
@@ -404,6 +405,34 @@ class DefaultAccountAuthorityManager(
     }
 
     override suspend fun installationId(): String = keyStore.installationId()
+
+    /**
+     * Promotes this device's candidate key once the chain says the account activated it.
+     *
+     * A grant is signed by ANOTHER device, so this device never sees the record: what it sees is its own key in
+     * the device set, which is the chain saying the key is this account's authority now. Without this step a
+     * granted device would hold a key it could never sign with, because nothing else would ever move it out of
+     * the candidate slot.
+     *
+     * A quarantined row promotes too. The device holds authority from acceptance; what the window withholds is
+     * what it may sign, and the server enforces that rather than this client pretending the key is not ours.
+     */
+    private suspend fun adoptGrantedCandidate(chain: AuthorityChainState) {
+        runCatchingExceptions {
+            val candidate = keyStore.candidateDevicePublicKey() ?: return@runCatchingExceptions
+            val offered = Base64Url.encode(candidate)
+            val granted = chain.devices.any { device ->
+                device.deviceKeyB64Url == offered && (device.isActive || device.isQuarantined)
+            }
+            if (granted) {
+                keyStore.markGranted(chain.accountId)
+            }
+        }.onFailure { error ->
+            // Never with the value: what failed is key material being moved between slots. The read itself
+            // still succeeded, and the next one tries again.
+            Timber.w("Could not record this device's granted authority: %s", error.javaClass.simpleName)
+        }
+    }
 
     /**
      * One transition, in the order ADM-009 fixes, written once.
