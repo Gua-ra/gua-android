@@ -8,7 +8,7 @@
 package io.element.android.libraries.guaresolver.authority
 
 /**
- * GUA FORK: the shared envelope of the account authority chain (ADM-009 decision 2), and the four record
+ * GUA FORK: the shared envelope of the account authority chain (ADM-009 decision 2), and the five record
  * types that ride in it. Port of the identity-service `AuthorityRecord` and `AuthorityRecordType`.
  *
  * ```
@@ -61,16 +61,18 @@ object AuthorityRecord {
     /** Authorized through a completed account recovery: rank 0, and vetoable by any active device. */
     const val AUTHORIZATION_ACCOUNT_RECOVERY = 0x02
 
+    /** The reasons a `DeviceRevoke` may carry. A decoder refuses anything else rather than storing it. */
+    val REVOCATION_REASONS: Set<Int> = setOf(REASON_UNSPECIFIED, REASON_LOST, REASON_REPLACED, REASON_COMPROMISED)
+
     /** The first record's prevHash. */
     fun genesisPrevHash(): ByteArray = ByteArray(HASH_LENGTH)
 }
 
 /**
- * The four record types, their magic (which is also their signature domain) and their total canonical length.
+ * The five record types, their magic (which is also their signature domain) and their total canonical length.
  *
- * All four are listed even though this client only builds two of them, because the magic table is what makes
- * "no record can be replayed as another type" checkable in one place: a client that knew only its own two
- * magics could not tell a wrong one from an unknown one.
+ * The magic table is what makes "no record can be replayed as another type" checkable in one place: a client
+ * that knew only the magics it writes could not tell a wrong one from an unknown one.
  */
 enum class AuthorityRecordType(val magic: String, val length: Int) {
     /** deviceKey 32 | recoveryFrameworkId 1 | recoveryAuthorityKey 32 | label 16 | entropy 16. */
@@ -83,11 +85,25 @@ enum class AuthorityRecordType(val magic: String, val length: Int) {
     DEVICE_REVOKE("GUAX", 145),
 
     /** deviceKey 32 | recoveryAuthorityKey 32 | label 16 | entropy 16 | authorization 1 | authorizingKey 32. */
-    AUTHORITY_RECOVERY("GUAR", 209);
+    AUTHORITY_RECOVERY("GUAR", 209),
+
+    /**
+     * opposedRecordHash 32 | authorizingKey 32.
+     *
+     * It takes no slot and starts no window: it cancels the record it names, or it is refused. Revision 4 of
+     * ADM-009 adds it because revisions 1 to 3 told an active device to object and gave it nothing to sign,
+     * and the server was right to refuse that claim from a bearer session alone.
+     */
+    OPPOSE("GUAO", 144);
 
     val magicBytes: ByteArray get() = magic.toByteArray(Charsets.US_ASCII)
 
     val bodyLength: Int get() = length - AuthorityRecord.ENVELOPE_LENGTH
+
+    companion object {
+        /** The type whose magic these four ASCII bytes are, or null when no type claims them. */
+        fun ofMagic(magic: String): AuthorityRecordType? = entries.firstOrNull { it.magic == magic }
+    }
 }
 
 /**
