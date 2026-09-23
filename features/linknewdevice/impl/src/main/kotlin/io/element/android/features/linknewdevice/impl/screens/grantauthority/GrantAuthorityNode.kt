@@ -19,7 +19,7 @@ import io.element.android.libraries.architecture.NodeInputs
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.architecture.inputs
 import io.element.android.libraries.di.SessionScope
-import io.element.android.libraries.guaresolver.authority.DeviceGrantCandidate
+import io.element.android.libraries.guaresolver.authority.AuthorityCandidate
 
 /** GUA FORK: the grant offer that follows a link in the one permitted direction (ADM-009 decision 5). */
 @ContributesNode(SessionScope::class)
@@ -29,7 +29,7 @@ class GrantAuthorityNode(
     @Assisted plugins: List<Plugin>,
     presenterFactory: GrantAuthorityPresenter.Factory,
 ) : Node(buildContext, plugins = plugins) {
-    data class Inputs(val candidate: DeviceGrantCandidate) : NodeInputs
+    data class Inputs(val candidate: AuthorityCandidate) : NodeInputs
 
     interface Callback : Plugin {
         /** The user granted or declined. Either way the link flow is finished. */

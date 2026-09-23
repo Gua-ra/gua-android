@@ -20,7 +20,9 @@ import io.element.android.features.linknewdevice.impl.R
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.guaresolver.authority.AccountAuthorityManager
 import io.element.android.libraries.guaresolver.authority.AuthorityError
-import io.element.android.libraries.guaresolver.authority.DeviceGrantCandidate
+import io.element.android.libraries.guaresolver.authority.AuthorityCandidate
+import io.element.android.libraries.guaresolver.authority.AuthorityFingerprint
+import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
 import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.launch
@@ -34,15 +36,17 @@ import kotlinx.coroutines.launch
  * Declining is a real answer and leaves a working, signed-in device behind, which is why the screen offers
  * it as plainly as it offers the grant.
  *
- * WHAT THE CHECK CODE ACTUALLY PROVED. The 2-digit code the user typed is the only anti-tamper check on the
- * linking channel, and on Android `RustCheckCodeSender.validate()` returns true without consulting the SDK,
- * so a wrong code is only caught by the far end. That is the ground this grant stands on, and it is why the
- * grantee is quarantined for a full window afterwards: a device granted in error can do nothing during it,
- * counts for nothing, and can be opposed.
+ * WHAT THE CHECK CODE PROVED, AND WHAT IT DID NOT. The two-digit code the user typed is compared inside the
+ * secure channel's confirm step, and a wrong one fails the whole ceremony, so reaching this screen means the
+ * channel was confirmed. What that does NOT establish is which key came up the channel: the code binds a
+ * channel rather than a peer. That is why the fingerprint comparison is a step of its own here and why the
+ * passing check code is not allowed to stand in for it, and it is why the grantee is quarantined for a full
+ * window afterwards: a device granted in error can do nothing during it, counts for nothing, and can be
+ * opposed.
  */
 @AssistedInject
 class GrantAuthorityPresenter(
-    @Assisted private val candidate: DeviceGrantCandidate,
+    @Assisted private val candidate: AuthorityCandidate,
     @Assisted private val onDone: () -> Unit,
     private val sessionId: SessionId,
     private val sessionStore: SessionStore,
@@ -50,7 +54,7 @@ class GrantAuthorityPresenter(
 ) : Presenter<GrantAuthorityState> {
     @AssistedFactory
     interface Factory {
-        fun create(candidate: DeviceGrantCandidate, onDone: () -> Unit): GrantAuthorityPresenter
+        fun create(candidate: AuthorityCandidate, onDone: () -> Unit): GrantAuthorityPresenter
     }
 
     @Composable
@@ -59,6 +63,7 @@ class GrantAuthorityPresenter(
 
         var phase by remember { mutableStateOf(GrantAuthorityPhase.Prompt) }
         var pin by remember { mutableStateOf("") }
+        var fingerprintConfirmed by remember { mutableStateOf(false) }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
 
         fun handleEvent(event: GrantAuthorityEvent) {
@@ -66,7 +71,20 @@ class GrantAuthorityPresenter(
                 GrantAuthorityEvent.Grant -> {
                     errorMessage = null
                     pin = ""
-                    phase = GrantAuthorityPhase.StepUp
+                    fingerprintConfirmed = false
+                    phase = GrantAuthorityPhase.Compare
+                }
+                is GrantAuthorityEvent.ConfirmFingerprint -> {
+                    fingerprintConfirmed = event.confirmed
+                }
+                GrantAuthorityEvent.ContinueFromCompare -> {
+                    // The gate, not a decoration on the button: an event that arrives without the comparison
+                    // leaves the user on the comparison.
+                    if (fingerprintConfirmed) {
+                        errorMessage = null
+                        pin = ""
+                        phase = GrantAuthorityPhase.StepUp
+                    }
                 }
                 is GrantAuthorityEvent.PinChanged -> {
                     pin = event.pin.filter { it.isDigit() }.take(GrantAuthorityState.PIN_LENGTH)
@@ -89,9 +107,9 @@ class GrantAuthorityPresenter(
                     authorityManager.grantDevice(
                         accessToken = accessToken,
                         chain = chain,
-                        granteeDeviceKeyB64Url = candidate.deviceKeyB64Url,
-                        label = candidate.label,
-                        pin = pin,
+                        candidate = candidate,
+                        stepUp = AuthorityStepUp.Pin(pin),
+                        fingerprintConfirmed = fingerprintConfirmed,
                     )
                         .onSuccess {
                             pin = ""
@@ -114,6 +132,8 @@ class GrantAuthorityPresenter(
         return GrantAuthorityState(
             phase = phase,
             deviceLabel = candidate.label,
+            fingerprint = AuthorityFingerprint.grouped(candidate.fingerprint),
+            fingerprintConfirmed = fingerprintConfirmed,
             pin = pin,
             errorMessage = errorMessage,
             eventSink = ::handleEvent,
@@ -122,6 +142,8 @@ class GrantAuthorityPresenter(
 }
 
 private fun Throwable.toMessageRes(): Int = when (this) {
+    is AuthorityError.UnknownCandidate -> R.string.screen_link_grant_authority_error_unknown_candidate
+    is AuthorityError.NoNotificationChannel -> R.string.screen_link_grant_authority_error_no_channel
     is AuthorityError.StepUpRequired -> R.string.screen_link_grant_authority_error_step_up_required
     is AuthorityError.FactorTooFresh,
     is AuthorityError.RecoveryTooRecent -> R.string.screen_link_grant_authority_error_too_recent

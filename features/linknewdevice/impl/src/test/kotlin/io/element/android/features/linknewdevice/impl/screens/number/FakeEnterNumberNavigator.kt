@@ -7,12 +7,4 @@
 
 package io.element.android.features.linknewdevice.impl.screens.number
 
-import io.element.android.tests.testutils.lambda.lambdaError
-
-class FakeEnterNumberNavigator(
-    private val navigateToWrongNumberErrorLambda: () -> Unit = { lambdaError() },
-) : EnterNumberNavigator {
-    override fun navigateToWrongNumberError() {
-        navigateToWrongNumberErrorLambda()
-    }
-}
+class FakeEnterNumberNavigator : EnterNumberNavigator
