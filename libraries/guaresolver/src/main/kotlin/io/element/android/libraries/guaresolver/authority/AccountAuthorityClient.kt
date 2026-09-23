@@ -30,11 +30,17 @@ interface AccountAuthorityClient {
      *
      * @param accessToken the caller's own session, which the challenge is held against.
      * @param purpose what the challenge may be spent on; one minted for another purpose is refused.
-     * @param pin the account PIN, which is the only step-up factor this build can produce. A passkey
-     * assertion settles it on a client that has a WebAuthn ceremony; this one has none, so an account whose
-     * only factor is a passkey is told that rather than offered an SMS.
+     * @param stepUp the factor that settles it. [AuthorityStepUp.Passkey] is the strong one and the server
+     * ranks it first; [AuthorityStepUp.Pin] is the fallback; [AuthorityStepUp.None] is for the purposes that
+     * ask for no factor at all, which is an `Oppose` and a first opposition. There is no case for a phone
+     * code and no case for saying a factor is unavailable, because a claim like that costs an attacker
+     * nothing.
      */
-    suspend fun challenge(accessToken: String, purpose: AuthorityPurpose, pin: String?): Result<AuthorityChallenge>
+    suspend fun challenge(
+        accessToken: String,
+        purpose: AuthorityPurpose,
+        stepUp: AuthorityStepUp,
+    ): Result<AuthorityChallenge>
 
     /** Submits the signed `AdoptRoot` (`POST /account/authority/adopt`). */
     suspend fun adopt(accessToken: String, submission: AuthorityRecordSubmission): Result<AuthoritySubmission>
@@ -42,12 +48,67 @@ interface AccountAuthorityClient {
     /** Submits the signed `DeviceGrant` (`POST /account/authority/device/grant`). */
     suspend fun grantDevice(accessToken: String, submission: AuthorityRecordSubmission): Result<AuthoritySubmission>
 
+    /** Submits the signed `DeviceRevoke` (`POST /account/authority/device/revoke`). */
+    suspend fun revokeDevice(accessToken: String, submission: AuthorityRecordSubmission): Result<AuthoritySubmission>
+
+    /** Submits the signed `AuthorityRecovery` (`POST /account/authority/recover`). */
+    suspend fun recoverAuthority(
+        accessToken: String,
+        submission: AuthorityRecordSubmission,
+    ): Result<AuthoritySubmission>
+
+    /**
+     * Offers this device's own public key for a grant (`POST /account/authority/device/candidate`).
+     *
+     * The public half only, under this device's own session. A grant over a key that is not a live candidate
+     * of the same account is refused, so this call is what makes the grant nameable at all.
+     */
+    suspend fun offerCandidate(
+        accessToken: String,
+        deviceKeyB64Url: String,
+        label: String?,
+    ): Result<AuthorityCandidate>
+
+    /** The keys this account's new devices have offered (`GET /account/authority/device/candidate`). */
+    suspend fun candidates(accessToken: String): Result<List<AuthorityCandidate>>
+
+    /**
+     * Registers this install as a security-notification destination
+     * (`POST /account/security-notifications`).
+     *
+     * This is the channel every window in ADM-009 depends on: neither the phone number, which a SIM-swap
+     * attacker holds, nor a session, which a completed account recovery revokes in the same transaction that
+     * mints the attacker's factor.
+     */
+    suspend fun registerSecurityNotification(
+        accessToken: String,
+        registration: SecurityNotificationRegistration,
+    ): Result<Unit>
+
+    /** The registrations this account holds, without their destinations (`GET /account/security-notifications`). */
+    suspend fun securityNotifications(accessToken: String): Result<List<SecurityNotificationView>>
+
+    /** Removes one registration (`POST /account/security-notifications/remove`). */
+    suspend fun removeSecurityNotification(
+        accessToken: String,
+        removal: SecurityNotificationRemoval,
+    ): Result<Unit>
+
     /**
      * Objects to the transition holding a slot on this account (`POST /account/authority/oppose`). The first
      * opposition needs no factor beyond the session; the second and later need a step-up on any factor at
      * any age, which is why [pin] is here and is null on the first.
      */
     suspend fun oppose(accessToken: String, recordHash: String?, pin: String?): Result<Unit>
+
+    /**
+     * Objects with a signed `Oppose` record (`POST /account/authority/oppose/record`).
+     *
+     * This is the objection an active device makes, and the only one the server accepts against a grant, a
+     * revocation or a recovery: a session's word there would let a stolen bearer token veto the owner's own
+     * revocation of the thief's device.
+     */
+    suspend fun opposeWithRecord(accessToken: String, submission: AuthorityRecordSubmission): Result<Unit>
 
     /** Reads the chain, the device set and any pending transition (`GET /account/authority`). */
     suspend fun state(accessToken: String): Result<AuthorityChainState>
@@ -66,7 +127,100 @@ enum class AuthorityPurpose {
     REVOKE,
     RECOVER,
     APPROVE,
+
+    /**
+     * A signed `Oppose` record. It asks for no factor: the authorization is a signature by a key the chain
+     * has active, and the fresh-factor hold gates starting a transition and never objecting to one.
+     */
+    OPPOSE,
+
+    /** Binding a security-notification registration to a device key, or removing one that carries a binding. */
+    NOTIFY,
 }
+
+/**
+ * The factor that settles one transition's step-up (ADM-009 decision 4 step 2).
+ *
+ * A sealed type rather than three nullable parameters, so no call site can send a PIN where it meant to send
+ * nothing, and so "there is no phone-code case" is a fact about the type rather than a convention.
+ */
+sealed interface AuthorityStepUp {
+    /** No factor. Only for the purposes that ask for none. */
+    data object None : AuthorityStepUp
+
+    /** The account PIN, which is the fallback factor. */
+    data class Pin(val pin: String) : AuthorityStepUp
+
+    /**
+     * A user-verifying passkey assertion, which the server ranks above the PIN and which settles the step-up
+     * on its own.
+     *
+     * [credentialJson] is the assertion exactly as the platform produced it, passed through rather than
+     * reshaped: the server verifies what the authenticator signed.
+     */
+    data class Passkey(val stepUpId: String, val credentialJson: String) : AuthorityStepUp
+}
+
+/**
+ * A key a new device has offered for a grant, with the fingerprint both devices compute from it.
+ *
+ * [fingerprint] is what the person holding the granting phone compares against the other phone's screen, and
+ * this client recomputes it from [deviceKeyB64Url] rather than showing the one the server sent: a fingerprint
+ * taken on trust is a fingerprint an attacker can choose.
+ */
+data class AuthorityCandidate(
+    val deviceKeyB64Url: String,
+    val fingerprint: String,
+    val label: String,
+    val expiresAtEpochSeconds: Long,
+)
+
+/**
+ * One install registering as a security-notification destination.
+ *
+ * [installationId] is sealed on the device and stable across sign-out, which is the property that matters:
+ * the row has to outlive the sessions a completed account recovery ends.
+ *
+ * [authorityDeviceKeyB64Url] with [challengeB64Url] and [signatureB64Url] is the binding of ADM-009 gate 2's
+ * removal tiers. Without the signature the field would be a claim, and an attacker could plant a row naming a
+ * key the owner's own device would then be unable to remove.
+ */
+data class SecurityNotificationRegistration(
+    val installationId: String,
+    val platform: String,
+    val token: String,
+    val appId: String,
+    val deviceLabel: String?,
+    val authorityDeviceKeyB64Url: String? = null,
+    val challengeB64Url: String? = null,
+    val signatureB64Url: String? = null,
+) {
+    companion object {
+        const val PLATFORM_FCM = "FCM"
+    }
+}
+
+/** One registration as its own account holder may see it: named, never with its destination. */
+data class SecurityNotificationView(
+    val installationId: String,
+    val platform: String,
+    val deviceLabel: String?,
+    val tokenFingerprint: String,
+    val boundToAnAuthorityDevice: Boolean,
+    val lastSeenAtEpochSeconds: Long,
+)
+
+/**
+ * A removal. The tier is decided by what the caller can produce, never by a field it sets: naming this
+ * install's own id in both places is the tier that needs nothing else.
+ */
+data class SecurityNotificationRemoval(
+    val installationId: String,
+    val callerInstallationId: String?,
+    val pin: String? = null,
+    val challengeB64Url: String? = null,
+    val signatureB64Url: String? = null,
+)
 
 /**
  * One signed record, with the challenge inside its signature.
@@ -210,6 +364,27 @@ sealed class AuthorityError(val code: String) : Exception(code) {
 
     /** This device's own grant is still inside its window, so it may not sign for others yet. */
     data object DeviceQuarantined : AuthorityError("authority_device_quarantined")
+
+    /** A grant named a key that is not a live candidate of this account, so there is nothing to grant. */
+    data object UnknownCandidate : AuthorityError("authority_unknown_candidate")
+
+    /**
+     * The account holds no live security-notification registration, so a window would run unwitnessed.
+     *
+     * A legitimate owner can reach this: an install whose registration was removed or whose token rotated
+     * away has to register again before it can start a windowed transition. That is the intended direction,
+     * and the copy beside it has to say what to do about it rather than reading as a server fault.
+     */
+    data object NoNotificationChannel : AuthorityError("authority_no_notification_channel")
+
+    /** The objection named a step that is not the one pending. Read the chain again. */
+    data object OppositionStale : AuthorityError("authority_opposition_stale")
+
+    /** The deployment has the chain on and this channel off, which is its own separate flag. */
+    data object NotificationsDisabled : AuthorityError("authority_notifications_disabled")
+
+    /** No registration with that installation id, or none this account may remove. */
+    data object NotificationUnknown : AuthorityError("authority_notification_unknown")
 
     /** The doubling backoff of ADM-002 D2, paid by the key set that opened a cancelled transition. */
     data class Backoff(val retryAfterSeconds: Long?) : AuthorityError("authority_backoff")

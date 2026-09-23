@@ -132,6 +132,57 @@ interface AccountAuthorityKeyStore {
      * @throws IllegalStateException when this device holds no authority key at all.
      */
     suspend fun signAsAuthorityDevice(message: ByteArray): ByteArray
+
+    // GUA FORK: ADM-009 decision 5, revision 4. A device that wants authority on an account another device
+    // already holds generates its own key and offers the public half as a CANDIDATE. It never receives
+    // another device's key: a copied key makes revocation meaningless, because the revoked device still holds
+    // the key the account is defined by.
+
+    /**
+     * Generates this device's own candidate key, replacing any earlier candidate, and returns its raw 32-byte
+     * public half.
+     *
+     * One key, not a pair: a granted device holds no recovery authority key of its own. The account's
+     * recovery key was committed by whichever device adopted, and the way back from losing every device is
+     * the artifact that device showed.
+     */
+    suspend fun createCandidateKey(): ByteArray
+
+    /** The public half of the candidate this device offered, or null when it has offered none. */
+    suspend fun candidateDevicePublicKey(): ByteArray?
+
+    /**
+     * Records that the chain accepted this device's candidate, moving it to the adopted slot where no later
+     * candidate and no [clear] can reach it.
+     *
+     * @throws IllegalStateException when no candidate is stored, or when a DIFFERENT account already holds
+     * this device's authority.
+     */
+    suspend fun markGranted(accountId: String)
+
+    /**
+     * Records that an `AuthorityRecovery` installed the adoption slot's pair as this account's authority,
+     * REPLACING whatever the adopted slot held.
+     *
+     * This is the one call that overwrites an adopted pair, and it is allowed to because that is exactly what
+     * the record does to the chain: an `AuthorityRecovery` replaces the device set with one device. It still
+     * refuses to cross accounts.
+     *
+     * @throws IllegalStateException when the adoption slot is empty, or when a DIFFERENT account is adopted.
+     */
+    suspend fun markRecovered(accountId: String)
+
+    /**
+     * This install's own id for the security-notification channel (ADM-009 gate 2), minted on first use and
+     * stable afterwards.
+     *
+     * It is deliberately NOT in preferences and deliberately NOT cleared on sign-out. The registration it
+     * keys has to outlive the sessions a completed account recovery revokes in the same transaction that
+     * mints the attacker's factor, which is the whole reason the channel is not a Matrix pusher. The cost is
+     * stated where it is paid: this is a per-install identifier that ties one account to one physical device
+     * over time, which nothing else in this client does.
+     */
+    suspend fun installationId(): String
 }
 
 /**

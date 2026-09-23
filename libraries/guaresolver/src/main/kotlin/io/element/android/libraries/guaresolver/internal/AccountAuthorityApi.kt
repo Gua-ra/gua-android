@@ -8,6 +8,7 @@
 package io.element.android.libraries.guaresolver.internal
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -44,10 +45,65 @@ internal interface AccountAuthorityApi {
         @Body body: AuthorityRecordSubmissionRequest,
     ): AuthoritySubmissionResponse
 
+    @POST("account/authority/device/revoke")
+    suspend fun revokeDevice(
+        @Header("Authorization") authorization: String,
+        @Body body: AuthorityRecordSubmissionRequest,
+    ): AuthoritySubmissionResponse
+
+    @POST("account/authority/recover")
+    suspend fun recoverAuthority(
+        @Header("Authorization") authorization: String,
+        @Body body: AuthorityRecordSubmissionRequest,
+    ): AuthoritySubmissionResponse
+
     @POST("account/authority/oppose")
     suspend fun oppose(
         @Header("Authorization") authorization: String,
         @Body body: AuthorityOpposeRequest,
+    )
+
+    /**
+     * The signed objection of ADM-009 decision 2. A separate path from `oppose` because it is a different
+     * thing: that one is a session saying no to an adoption, this one is a device key the chain has active
+     * saying no to anything else, and the server accepts each only where it is permitted.
+     */
+    @POST("account/authority/oppose/record")
+    suspend fun opposeWithRecord(
+        @Header("Authorization") authorization: String,
+        @Body body: AuthorityRecordSubmissionRequest,
+    )
+
+    @POST("account/authority/device/candidate")
+    suspend fun offerCandidate(
+        @Header("Authorization") authorization: String,
+        @Body body: AuthorityCandidateRequest,
+    ): AuthorityCandidateResponse
+
+    @GET("account/authority/device/candidate")
+    suspend fun candidates(
+        @Header("Authorization") authorization: String,
+    ): List<AuthorityCandidateResponse>
+
+    // GUA FORK: the security notification channel of ADM-009 gate 2. Its own path prefix and its own
+    // off-by-default flag on the server, because it is the only part of this feature that holds a push
+    // credential and a per-install identifier.
+
+    @POST("account/security-notifications")
+    suspend fun registerSecurityNotification(
+        @Header("Authorization") authorization: String,
+        @Body body: SecurityNotificationRegisterRequest,
+    ): SecurityNotificationRegisteredResponse
+
+    @GET("account/security-notifications")
+    suspend fun securityNotifications(
+        @Header("Authorization") authorization: String,
+    ): List<SecurityNotificationResponse>
+
+    @POST("account/security-notifications/remove")
+    suspend fun removeSecurityNotification(
+        @Header("Authorization") authorization: String,
+        @Body body: SecurityNotificationRemoveRequest,
     )
 
     @GET("account/authority")
@@ -77,6 +133,10 @@ internal interface AccountAuthorityApi {
 internal data class AuthorityChallengeRequest(
     val purpose: String,
     val pin: String? = null,
+    /** Id from `POST /security/passkey/stepup/options`, sent with the assertion below. */
+    val passkeyStepUpId: String? = null,
+    /** The user-verifying passkey assertion, which settles the step-up on its own. */
+    val passkeyCredential: JsonElement? = null,
 )
 
 @Serializable
@@ -150,4 +210,71 @@ internal data class AuthorityApprovalResponse(
 @Serializable
 internal data class AuthorityApprovalSignRequest(
     val signature: String,
+)
+
+@Serializable
+internal data class AuthorityCandidateRequest(
+    val deviceKeyB64: String,
+    val label: String? = null,
+)
+
+@Serializable
+internal data class AuthorityCandidateResponse(
+    val deviceKeyB64: String,
+    val fingerprint: String = "",
+    val label: String? = null,
+    val expiresAtEpochSeconds: Long = 0,
+)
+
+/**
+ * One install's security-notification destination.
+ *
+ * The installation id is the upsert key and the whole point of the row: it is client-generated, sealed on the
+ * device rather than kept in preferences, and stable across sign-out, which is what lets the registration
+ * outlive the sessions a completed account recovery ends.
+ */
+@Serializable
+internal data class SecurityNotificationRegisterRequest(
+    val installationId: String,
+    val platform: String,
+    val token: String,
+    val appId: String,
+    val deviceLabel: String? = null,
+    /** Present only when this install holds an authority key, and then with the challenge and signature. */
+    val authorityDeviceKeyB64: String? = null,
+    val challenge: String? = null,
+    val signature: String? = null,
+)
+
+@Serializable
+internal data class SecurityNotificationRegisteredResponse(
+    val installationId: String = "",
+    val tokenFingerprint: String = "",
+    val bound: Boolean = false,
+)
+
+@Serializable
+internal data class SecurityNotificationResponse(
+    val installationId: String,
+    val platform: String = "",
+    val deviceLabel: String? = null,
+    val tokenFingerprint: String = "",
+    val boundToAnAuthorityDevice: Boolean = false,
+    val lastSeenAtEpochSeconds: Long = 0,
+)
+
+/**
+ * A removal, whose tier the server decides from what the caller can produce and never from a field it set.
+ *
+ * Naming your own install in both ids is the tier that needs nothing else. Naming another install needs a
+ * factor past the fresh-factor hold, and a device signature where the row carries a key, which is what stops
+ * an attacker holding a just-minted PIN emptying the channel before starting a transition.
+ */
+@Serializable
+internal data class SecurityNotificationRemoveRequest(
+    val installationId: String,
+    val callerInstallationId: String? = null,
+    val pin: String? = null,
+    val challenge: String? = null,
+    val signature: String? = null,
 )

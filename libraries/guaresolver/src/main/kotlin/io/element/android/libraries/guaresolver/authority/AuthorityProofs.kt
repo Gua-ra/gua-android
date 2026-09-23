@@ -31,13 +31,27 @@ object AuthorityProofs {
     /** The domain a device signs when it approves an action a browser session started (decision 6). */
     const val APPROVAL_DOMAIN = "gua-authority-approval.v1"
 
+    /**
+     * The domain an install signs to bind its security-notification registration to a device key.
+     *
+     * ADM-009 does not define this binding: gate 2's removal tiers need it, and identity-service states it in
+     * its own `AuthorityProofs` so both clients sign the same bytes. It belongs in a revision of the record
+     * rather than only in three implementations, and that is noted rather than left for someone to discover.
+     */
+    const val NOTIFICATION_DOMAIN = "gua-authority-notification.v1"
+
     /** Bytes of a pending-approval id inside the preimage. */
     const val APPROVAL_ID_LENGTH = 16
 
     private val approvalDomainBytes = APPROVAL_DOMAIN.toByteArray(Charsets.US_ASCII)
 
+    private val notificationDomainBytes = NOTIFICATION_DOMAIN.toByteArray(Charsets.US_ASCII)
+
     /** 25 + 34 + 16 + 32 + 32. */
     const val APPROVAL_PREIMAGE_LENGTH = 139
+
+    /** 29 + 34 + 32 + 32 + 32. */
+    const val NOTIFICATION_PREIMAGE_LENGTH = 159
 
     /**
      * The preimage every authority record is signed over.
@@ -79,6 +93,27 @@ object AuthorityProofs {
         require(actionDigest, AuthorityRecord.HASH_LENGTH, "action_digest")
         require(challenge, AuthorityRecord.CHALLENGE_LENGTH, "challenge")
         return approvalDomainBytes + accountReference + approvalId + actionDigest + challenge
+    }
+
+    /**
+     * The preimage an install signs to prove it holds the device key its registration names: the domain, the
+     * 34 accountId bytes, the SHA-256 of the installation id, the device key and a challenge minted for
+     * `NOTIFY`.
+     *
+     * The installation id is hashed rather than carried, so the bytes signed here are a fixed length whatever
+     * the id is, and the id itself is not repeated inside a value that ends up in a log.
+     */
+    fun notificationPreimage(
+        accountReference: ByteArray,
+        installationIdHash: ByteArray,
+        deviceKey: ByteArray,
+        challenge: ByteArray,
+    ): ByteArray {
+        require(accountReference, AuthorityRecord.ACCOUNT_REFERENCE_LENGTH, "account_reference")
+        require(installationIdHash, AuthorityRecord.HASH_LENGTH, "installation_id_hash")
+        require(deviceKey, AuthorityRecord.KEY_LENGTH, "device_key")
+        require(challenge, AuthorityRecord.CHALLENGE_LENGTH, "challenge")
+        return notificationDomainBytes + accountReference + installationIdHash + deviceKey + challenge
     }
 
     private fun require(value: ByteArray, length: Int, field: String) {

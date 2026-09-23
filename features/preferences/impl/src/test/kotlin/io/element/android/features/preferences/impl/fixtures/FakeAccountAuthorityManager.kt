@@ -11,9 +11,12 @@ import io.element.android.libraries.guaresolver.authority.AccountAuthorityManage
 import io.element.android.libraries.guaresolver.authority.AdoptionOffer
 import io.element.android.libraries.guaresolver.authority.AuthorityApproval
 import io.element.android.libraries.guaresolver.authority.AuthorityChainState
+import io.element.android.libraries.guaresolver.authority.AuthorityCandidate
 import io.element.android.libraries.guaresolver.authority.AuthorityDevice
 import io.element.android.libraries.guaresolver.authority.AuthorityPendingTransition
+import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
 import io.element.android.libraries.guaresolver.authority.AuthoritySubmission
+import io.element.android.libraries.guaresolver.authority.SecurityNotificationView
 
 /**
  * GUA FORK: an [AccountAuthorityManager] that records what it was asked, so a test can assert what was sent
@@ -28,17 +31,51 @@ class FakeAccountAuthorityManager(
     private val adoptResult: () -> Result<AuthoritySubmission> = { Result.success(aSubmission()) },
     private val opposeResult: () -> Result<Unit> = { Result.success(Unit) },
     private val grantResult: () -> Result<AuthoritySubmission> = { Result.success(aSubmission()) },
+    private val opposeRecordResult: () -> Result<Unit> = { Result.success(Unit) },
+    private val revokeResult: () -> Result<AuthoritySubmission> = { Result.success(aSubmission()) },
+    private val beginRecoveryResult: (String) -> Result<AdoptionOffer> = {
+        Result.success(AdoptionOffer(recoveryArtifact = A_RECOVERY_ARTIFACT))
+    },
+    private val recoverResult: () -> Result<AuthoritySubmission> = { Result.success(aSubmission()) },
+    private val candidatesResult: () -> Result<List<AuthorityCandidate>> = { Result.success(emptyList()) },
+    private val offerCandidateResult: () -> Result<AuthorityCandidate> = { Result.success(aCandidate()) },
     private val approvalsResult: () -> Result<List<AuthorityApproval>> = { Result.success(emptyList()) },
     private val approveResult: () -> Result<Unit> = { Result.success(Unit) },
+    private val notificationsResult: () -> Result<List<SecurityNotificationView>> = {
+        Result.success(emptyList())
+    },
+    private val registerNotificationsResult: () -> Result<Unit> = { Result.success(Unit) },
+    private val removeNotificationResult: () -> Result<Unit> = { Result.success(Unit) },
 ) : AccountAuthorityManager {
-    data class AdoptCall(val deviceLabel: String, val pin: String?, val artifactConfirmed: Boolean)
+    data class AdoptCall(val deviceLabel: String, val stepUp: AuthorityStepUp, val artifactConfirmed: Boolean)
+
+    data class GrantCall(
+        val candidate: AuthorityCandidate,
+        val stepUp: AuthorityStepUp,
+        val fingerprintConfirmed: Boolean,
+    )
+
+    data class RevokeCall(val deviceKeyB64Url: String, val reason: Int, val stepUp: AuthorityStepUp)
+
+    data class RecoverCall(
+        val artifact: String,
+        val deviceLabel: String,
+        val stepUp: AuthorityStepUp,
+        val artifactConfirmed: Boolean,
+    )
 
     val stateCalls: MutableList<String> = mutableListOf()
     val beginAdoptionCalls: MutableList<Unit> = mutableListOf()
     val adoptCalls: MutableList<AdoptCall> = mutableListOf()
     val opposeCalls: MutableList<Pair<String?, String?>> = mutableListOf()
-    val grantCalls: MutableList<Pair<String, String?>> = mutableListOf()
+    val opposeRecordCalls: MutableList<AuthorityChainState> = mutableListOf()
+    val grantCalls: MutableList<GrantCall> = mutableListOf()
+    val revokeCalls: MutableList<RevokeCall> = mutableListOf()
+    val beginRecoveryCalls: MutableList<String> = mutableListOf()
+    val recoverCalls: MutableList<RecoverCall> = mutableListOf()
     val approveCalls: MutableList<String> = mutableListOf()
+    val registerNotificationCalls: MutableList<String> = mutableListOf()
+    val removeNotificationCalls: MutableList<Pair<String, String?>> = mutableListOf()
 
     override suspend fun state(accessToken: String): Result<AuthorityChainState> {
         stateCalls += accessToken
@@ -46,6 +83,9 @@ class FakeAccountAuthorityManager(
     }
 
     override suspend fun holdsAuthority(): Boolean = holdsAuthorityResult()
+
+    override suspend fun authorityDeviceKeyB64Url(): String? =
+        if (holdsAuthorityResult()) A_DEVICE_KEY else null
 
     override suspend fun beginAdoption(): Result<AdoptionOffer> {
         beginAdoptionCalls += Unit
@@ -56,10 +96,10 @@ class FakeAccountAuthorityManager(
         accessToken: String,
         chain: AuthorityChainState,
         deviceLabel: String,
-        pin: String?,
+        stepUp: AuthorityStepUp,
         artifactConfirmed: Boolean,
     ): Result<AuthoritySubmission> {
-        adoptCalls += AdoptCall(deviceLabel, pin, artifactConfirmed)
+        adoptCalls += AdoptCall(deviceLabel, stepUp, artifactConfirmed)
         return adoptResult()
     }
 
@@ -68,15 +108,58 @@ class FakeAccountAuthorityManager(
         return opposeResult()
     }
 
+    override suspend fun opposeWithRecord(
+        accessToken: String,
+        chain: AuthorityChainState,
+    ): Result<Unit> {
+        opposeRecordCalls += chain
+        return opposeRecordResult()
+    }
+
+    override suspend fun offerThisDeviceForGrant(
+        accessToken: String,
+        label: String,
+    ): Result<AuthorityCandidate> = offerCandidateResult()
+
+    override suspend fun candidates(accessToken: String): Result<List<AuthorityCandidate>> = candidatesResult()
+
     override suspend fun grantDevice(
         accessToken: String,
         chain: AuthorityChainState,
-        granteeDeviceKeyB64Url: String,
-        label: String,
-        pin: String?,
+        candidate: AuthorityCandidate,
+        stepUp: AuthorityStepUp,
+        fingerprintConfirmed: Boolean,
     ): Result<AuthoritySubmission> {
-        grantCalls += granteeDeviceKeyB64Url to pin
+        grantCalls += GrantCall(candidate, stepUp, fingerprintConfirmed)
         return grantResult()
+    }
+
+    override suspend fun revokeDevice(
+        accessToken: String,
+        chain: AuthorityChainState,
+        deviceKeyB64Url: String,
+        reason: Int,
+        stepUp: AuthorityStepUp,
+    ): Result<AuthoritySubmission> {
+        revokeCalls += RevokeCall(deviceKeyB64Url, reason, stepUp)
+        return revokeResult()
+    }
+
+    override suspend fun beginRecovery(recoveryArtifact: String): Result<AdoptionOffer> {
+        beginRecoveryCalls += recoveryArtifact
+        return beginRecoveryResult(recoveryArtifact)
+    }
+
+    override suspend fun recoverAuthority(
+        accessToken: String,
+        chain: AuthorityChainState,
+        recoveryArtifact: String,
+        deviceLabel: String,
+        stepUp: AuthorityStepUp,
+        artifactConfirmed: Boolean,
+    ): Result<AuthoritySubmission> {
+        recoverCalls += RecoverCall(recoveryArtifact, deviceLabel, stepUp, artifactConfirmed)
+        return recoverResult()
     }
 
     override suspend fun approvals(accessToken: String): Result<List<AuthorityApproval>> = approvalsResult()
@@ -89,11 +172,41 @@ class FakeAccountAuthorityManager(
         approveCalls += approval.approvalId
         return approveResult()
     }
+
+    override suspend fun registerSecurityNotifications(
+        accessToken: String,
+        pushToken: String,
+        platform: String,
+        appId: String,
+        deviceLabel: String,
+    ): Result<Unit> {
+        registerNotificationCalls += pushToken
+        return registerNotificationsResult()
+    }
+
+    override suspend fun securityNotifications(
+        accessToken: String,
+    ): Result<List<SecurityNotificationView>> = notificationsResult()
+
+    override suspend fun removeSecurityNotification(
+        accessToken: String,
+        installationId: String,
+        pin: String?,
+    ): Result<Unit> {
+        removeNotificationCalls += installationId to pin
+        return removeNotificationResult()
+    }
+
+    override suspend fun installationId(): String = AN_INSTALLATION_ID
 }
 
 const val A_RECOVERY_ARTIFACT: String = "gua-recovery-1 abcd efgh ijkl mnop"
 
 const val AN_ACCOUNT_ID: String = "ga1zzzz"
+
+const val A_DEVICE_KEY: String = "a-device-key"
+
+const val AN_INSTALLATION_ID: String = "an-installation"
 
 fun aBootstrapChain(pending: AuthorityPendingTransition? = null): AuthorityChainState = AuthorityChainState(
     accountId = AN_ACCOUNT_ID,
@@ -109,22 +222,48 @@ fun aBootstrapChain(pending: AuthorityPendingTransition? = null): AuthorityChain
     pending = pending,
 )
 
-fun aRootedChain(devices: List<AuthorityDevice>): AuthorityChainState = AuthorityChainState(
+fun aRootedChain(
+    devices: List<AuthorityDevice>,
+    pending: AuthorityPendingTransition? = null,
+): AuthorityChainState = AuthorityChainState(
     accountId = AN_ACCOUNT_ID,
     accountClass = "BOOTSTRAP",
     state = AuthorityChainState.STATE_ROOTED,
     headSeq = 2,
     headHash = "11".repeat(32),
     devices = devices,
+    pending = pending,
+)
+
+/** A chain whose account lost every device and its recovery key: terminal, by ADM-009 decision 7. */
+fun anAuthorityLostChain(): AuthorityChainState = AuthorityChainState(
+    accountId = AN_ACCOUNT_ID,
+    accountClass = "BOOTSTRAP",
+    state = AuthorityChainState.STATE_AUTHORITY_LOST,
+    headSeq = 3,
+    headHash = "22".repeat(32),
+    devices = emptyList(),
     pending = null,
+)
+
+fun aCandidate(
+    deviceKeyB64Url: String = "a-candidate-key",
+    fingerprint: String = "9KDCZT8A",
+    label: String = "Pixel Tablet",
+): AuthorityCandidate = AuthorityCandidate(
+    deviceKeyB64Url = deviceKeyB64Url,
+    fingerprint = fingerprint,
+    label = label,
+    expiresAtEpochSeconds = 1_800_000_600,
 )
 
 fun anAuthorityDevice(
     label: String = "Pixel 9",
     state: String = "ACTIVE",
     quarantineUntilEpochSeconds: Long? = null,
+    deviceKeyB64Url: String = A_DEVICE_KEY,
 ): AuthorityDevice = AuthorityDevice(
-    deviceKeyB64Url = "a-device-key",
+    deviceKeyB64Url = deviceKeyB64Url,
     label = label,
     state = state,
     quarantineUntilEpochSeconds = quarantineUntilEpochSeconds,
@@ -134,9 +273,11 @@ fun anAuthorityDevice(
 fun aPendingAdoption(
     effectiveAtEpochSeconds: Long = 1_800_000_000,
     recordHash: String = "a-record-hash",
+    type: String = "ADOPT_ROOT",
+    seq: Long = 1,
 ): AuthorityPendingTransition = AuthorityPendingTransition(
-    type = "ADOPT_ROOT",
-    seq = 1,
+    type = type,
+    seq = seq,
     effectiveAtEpochSeconds = effectiveAtEpochSeconds,
     recordHash = recordHash,
 )
