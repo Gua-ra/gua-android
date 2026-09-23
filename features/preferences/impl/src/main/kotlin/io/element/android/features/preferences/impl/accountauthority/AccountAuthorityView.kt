@@ -32,8 +32,11 @@ import io.element.android.libraries.designsystem.theme.components.IconSource
 import io.element.android.libraries.designsystem.theme.components.ListItem
 import io.element.android.libraries.designsystem.theme.components.ListItemStyle
 import io.element.android.libraries.designsystem.theme.components.Text
+import io.element.android.libraries.designsystem.theme.components.TextField
 import io.element.android.libraries.guaresolver.authority.AuthorityApproval
+import io.element.android.libraries.guaresolver.authority.AuthorityCandidate
 import io.element.android.libraries.guaresolver.authority.AuthorityDevice
+import io.element.android.libraries.guaresolver.authority.AuthorityFingerprint
 import io.element.android.libraries.ui.strings.CommonStrings
 import java.text.DateFormat
 import java.util.Date
@@ -41,11 +44,12 @@ import java.util.Date
 /**
  * GUA FORK: the account authority screen (ADM-009).
  *
- * Three rules shape what is drawn here. A pending transition is shown with the time it completes, because
- * the window IS the security of the transition and a screen that hid it would be hiding the only thing the
- * owner can act on. A quarantined device is shown as quarantined, because it can do nothing and counts for
- * nothing. And the recovery artifact is shown on a screen of its own with the consequence spelled out, once,
- * before anything is submitted.
+ * Four rules shape what is drawn here. A pending transition is shown with the time it completes, because the
+ * window IS the security of the transition and a screen that hid it would be hiding the only thing the owner
+ * can act on. A quarantined device is shown as quarantined, because it can do nothing and counts for nothing.
+ * The recovery artifact is shown on a screen of its own with the consequence spelled out, once, before
+ * anything is submitted. And an account that has lost its authority is told that plainly, with no button that
+ * pretends otherwise.
  */
 @Composable
 fun AccountAuthorityView(
@@ -66,10 +70,10 @@ fun AccountAuthorityView(
     PreferencePage(
         modifier = modifier,
         onBackClick = {
-            if (state.phase == AccountAuthorityPhase.Artifact || state.phase == AccountAuthorityPhase.StepUp) {
-                eventSink(AccountAuthorityEvent.Cancel)
-            } else {
+            if (state.phase == AccountAuthorityPhase.Overview || state.phase == AccountAuthorityPhase.Loading) {
                 onBackClick()
+            } else {
+                eventSink(AccountAuthorityEvent.Cancel)
             }
         },
         title = stringResource(id = R.string.screen_account_authority_title),
@@ -78,6 +82,8 @@ fun AccountAuthorityView(
         when (state.phase) {
             AccountAuthorityPhase.Loading -> AsyncLoading()
             AccountAuthorityPhase.Artifact -> ArtifactSection(state = state, eventSink = eventSink)
+            AccountAuthorityPhase.RecoveryEntry -> RecoveryEntrySection(state = state, eventSink = eventSink)
+            AccountAuthorityPhase.Compare -> CompareSection(state = state, eventSink = eventSink)
             AccountAuthorityPhase.StepUp,
             AccountAuthorityPhase.Submitting -> StepUpSection(state = state, eventSink = eventSink)
             AccountAuthorityPhase.Overview -> OverviewSection(state = state, eventSink = eventSink)
@@ -133,30 +139,82 @@ private fun OverviewSection(
             HorizontalDivider()
         }
 
-        if (state.canAdopt) {
-            Explanation(text = stringResource(id = R.string.screen_account_authority_bootstrap_message))
+        if (state.candidates.isNotEmpty()) {
             ListItem(
-                headlineContent = { Text(stringResource(id = R.string.screen_account_authority_adopt_action)) },
-                leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Key())),
-                style = ListItemStyle.Primary,
-                onClick = { eventSink(AccountAuthorityEvent.StartAdoption) },
+                headlineContent = { Text(stringResource(id = R.string.screen_account_authority_candidates_header)) },
+                supportingContent = {
+                    Text(stringResource(id = R.string.screen_account_authority_candidates_message))
+                },
+                leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.DevicePasskey())),
             )
-        } else if (state.devices.isNotEmpty()) {
-            ListItem(
-                headlineContent = { Text(stringResource(id = R.string.screen_account_authority_devices_header)) },
-                leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Devices())),
-            )
-            state.devices.forEach { device -> DeviceRow(device = device) }
+            state.candidates.forEach { candidate ->
+                CandidateRow(candidate = candidate, enabled = !state.isWorking, eventSink = eventSink)
+            }
+            HorizontalDivider()
         }
 
-        state.errorMessage?.let { message ->
-            Text(
-                text = stringResource(id = message),
-                style = ElementTheme.typography.fontBodySmRegular,
-                color = ElementTheme.colors.textCriticalPrimary,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        when {
+            state.authorityLost -> {
+                // Terminal by decision 7. The account keeps its id, its login and its data; what it never
+                // regains is authority, and no copy here suggests a second adoption would work.
+                Explanation(text = stringResource(id = R.string.screen_account_authority_lost_message))
+            }
+            state.canAdopt -> {
+                Explanation(text = stringResource(id = R.string.screen_account_authority_bootstrap_message))
+                ListItem(
+                    headlineContent = { Text(stringResource(id = R.string.screen_account_authority_adopt_action)) },
+                    leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Key())),
+                    style = ListItemStyle.Primary,
+                    onClick = { eventSink(AccountAuthorityEvent.StartAdoption) },
+                )
+            }
+            state.devices.isNotEmpty() -> {
+                ListItem(
+                    headlineContent = { Text(stringResource(id = R.string.screen_account_authority_devices_header)) },
+                    leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Devices())),
+                )
+                state.devices.forEach { device ->
+                    DeviceRow(
+                        device = device,
+                        isThisDevice = device.deviceKeyB64Url == state.thisDeviceKeyB64Url,
+                        canRevoke = state.deviceHoldsAuthority && !device.isRevoked && !state.isWorking,
+                        eventSink = eventSink,
+                    )
+                }
+            }
+        }
+
+        if (state.canOfferThisDevice) {
+            // The other end of the candidate step: this phone has account access and no authority, so it
+            // offers its own key and another device grants it.
+            HorizontalDivider()
+            ListItem(
+                headlineContent = { Text(stringResource(id = R.string.screen_account_authority_offer_action)) },
+                supportingContent = {
+                    Text(
+                        state.thisDeviceFingerprint?.let { fingerprint ->
+                            stringResource(id = R.string.screen_account_authority_offer_fingerprint, fingerprint)
+                        } ?: stringResource(id = R.string.screen_account_authority_offer_message)
+                    )
+                },
+                leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Share())),
+                onClick = { eventSink(AccountAuthorityEvent.OfferThisDevice) },
             )
         }
+
+        if (state.canRecover) {
+            HorizontalDivider()
+            ListItem(
+                headlineContent = { Text(stringResource(id = R.string.screen_account_authority_recover_action)) },
+                supportingContent = {
+                    Text(stringResource(id = R.string.screen_account_authority_recover_message))
+                },
+                leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.KeySolid())),
+                onClick = { eventSink(AccountAuthorityEvent.StartRecovery) },
+            )
+        }
+
+        state.errorMessage?.let { message -> ErrorText(message) }
     }
 }
 
@@ -167,10 +225,27 @@ private fun OverviewSection(
  * owner they hold two devices when, for every rule that matters, they hold one.
  */
 @Composable
-private fun DeviceRow(device: AuthorityDevice) {
+private fun DeviceRow(
+    device: AuthorityDevice,
+    isThisDevice: Boolean,
+    canRevoke: Boolean,
+    eventSink: (AccountAuthorityEvent) -> Unit,
+) {
     ListItem(
         headlineContent = {
-            Text(device.label.ifEmpty { stringResource(id = R.string.screen_account_authority_device_unlabelled) })
+            Text(
+                buildString {
+                    append(
+                        device.label.ifEmpty {
+                            stringResource(id = R.string.screen_account_authority_device_unlabelled)
+                        }
+                    )
+                    if (isThisDevice) {
+                        append(" ")
+                        append(stringResource(id = R.string.screen_account_authority_device_this_phone))
+                    }
+                }
+            )
         },
         supportingContent = {
             Text(
@@ -188,6 +263,49 @@ private fun DeviceRow(device: AuthorityDevice) {
         leadingContent = ListItemContent.Icon(
             IconSource.Vector(if (device.isActive) CompoundIcons.Devices() else CompoundIcons.Time())
         ),
+        trailingContent = if (canRevoke) {
+            ListItemContent.Custom { contentEnabled ->
+                Button(
+                    text = stringResource(
+                        id = if (isThisDevice) {
+                            R.string.screen_account_authority_revoke_self_action
+                        } else {
+                            R.string.screen_account_authority_revoke_action
+                        }
+                    ),
+                    enabled = contentEnabled,
+                    onClick = { eventSink(AccountAuthorityEvent.StartRevocation(device.deviceKeyB64Url)) },
+                )
+            }
+        } else {
+            null
+        },
+    )
+}
+
+/** A key another device offered. Nothing is signed from this row: it opens the comparison. */
+@Composable
+private fun CandidateRow(
+    candidate: AuthorityCandidate,
+    enabled: Boolean,
+    eventSink: (AccountAuthorityEvent) -> Unit,
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                candidate.label.ifEmpty {
+                    stringResource(id = R.string.screen_account_authority_device_unlabelled)
+                }
+            )
+        },
+        supportingContent = { Text(AuthorityFingerprint.grouped(candidate.fingerprint)) },
+        trailingContent = ListItemContent.Custom { contentEnabled ->
+            Button(
+                text = stringResource(id = R.string.screen_account_authority_candidate_action),
+                enabled = enabled && contentEnabled,
+                onClick = { eventSink(AccountAuthorityEvent.SelectCandidate(candidate.deviceKeyB64Url)) },
+            )
+        },
     )
 }
 
@@ -245,7 +363,8 @@ private fun ArtifactSection(
             textAlign = TextAlign.Center,
         )
         // The consequence, in plain words, on the same screen as the value: whoever holds this, together
-        // with a way into the account, can take it after a wait.
+        // with a way into the account, can take it after a wait, and losing every device and this leaves
+        // the account without authority for good.
         Text(
             text = stringResource(id = R.string.screen_account_authority_artifact_warning),
             style = ElementTheme.typography.fontBodySmRegular,
@@ -269,24 +388,136 @@ private fun ArtifactSection(
     }
 }
 
+/** Typing back the artifact a previous adoption or recovery handed over. */
+@Composable
+private fun RecoveryEntrySection(
+    state: AccountAuthorityState,
+    eventSink: (AccountAuthorityEvent) -> Unit,
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Text(
+            text = stringResource(id = R.string.screen_account_authority_recovery_entry_header),
+            style = ElementTheme.typography.fontHeadingSmMedium,
+            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+        )
+        Text(
+            text = stringResource(id = R.string.screen_account_authority_recovery_entry_message),
+            style = ElementTheme.typography.fontBodyMdRegular,
+            color = ElementTheme.colors.textSecondary,
+        )
+        TextField(
+            value = state.recoveryArtifactInput,
+            onValueChange = { eventSink(AccountAuthorityEvent.RecoveryArtifactChanged(it)) },
+            enabled = !state.isWorking,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+        )
+        state.recoveryArtifactError?.let { message -> ErrorText(message) }
+        Button(
+            text = stringResource(id = CommonStrings.action_continue),
+            enabled = state.canContinueFromRecoveryEntry,
+            onClick = { eventSink(AccountAuthorityEvent.ContinueFromRecoveryEntry) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+        )
+    }
+}
+
+/** The fingerprint comparison, which is the only thing binding a key to the person holding the other phone. */
+@Composable
+private fun CompareSection(
+    state: AccountAuthorityState,
+    eventSink: (AccountAuthorityEvent) -> Unit,
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Text(
+            text = stringResource(id = R.string.screen_account_authority_compare_header),
+            style = ElementTheme.typography.fontHeadingSmMedium,
+            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+        )
+        Text(
+            text = stringResource(
+                id = R.string.screen_account_authority_compare_message,
+                state.selectedCandidate?.label.orEmpty(),
+            ),
+            style = ElementTheme.typography.fontBodyMdRegular,
+            color = ElementTheme.colors.textSecondary,
+        )
+        Text(
+            text = AuthorityFingerprint.grouped(state.selectedCandidate?.fingerprint.orEmpty()),
+            style = ElementTheme.typography.fontHeadingMdBold,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp),
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            text = stringResource(id = R.string.screen_account_authority_compare_warning),
+            style = ElementTheme.typography.fontBodySmRegular,
+            color = ElementTheme.colors.textCriticalPrimary,
+        )
+        ListItem(
+            headlineContent = { Text(stringResource(id = R.string.screen_account_authority_compare_confirm)) },
+            trailingContent = ListItemContent.Switch(checked = state.fingerprintConfirmed),
+            onClick = { eventSink(AccountAuthorityEvent.ConfirmFingerprint(!state.fingerprintConfirmed)) },
+        )
+        Button(
+            text = stringResource(id = CommonStrings.action_continue),
+            enabled = state.canContinueFromCompare,
+            onClick = { eventSink(AccountAuthorityEvent.ContinueFromCompare) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+        )
+    }
+}
+
 @Composable
 private fun StepUpSection(
     state: AccountAuthorityState,
     eventSink: (AccountAuthorityEvent) -> Unit,
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        state.stepUpBlock?.let { block ->
+            // No PIN field, and no suggestion to add one. An account with a passkey already holds a strong
+            // factor; what is missing is a way to assert it here, which is this app's gap and not the
+            // account's.
+            Text(
+                text = stringResource(id = R.string.screen_account_authority_pin_header),
+                style = ElementTheme.typography.fontHeadingSmMedium,
+                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+            )
+            Explanation(
+                text = stringResource(
+                    id = when (block) {
+                        AccountAuthorityStepUpBlock.NoFactorRegistered ->
+                            R.string.screen_account_authority_step_up_none
+                        AccountAuthorityStepUpBlock.PasskeyNotUsableHere ->
+                            R.string.screen_account_authority_step_up_passkey_only
+                    }
+                )
+            )
+            return@Column
+        }
+
         Text(
             text = stringResource(id = R.string.screen_account_authority_pin_header),
             style = ElementTheme.typography.fontHeadingSmMedium,
             modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
         )
         Text(
-            text = stringResource(
-                id = when (state.stepUp) {
-                    AccountAuthorityStepUp.Oppose -> R.string.screen_account_authority_pin_footer_oppose
-                    else -> R.string.screen_account_authority_pin_footer_adopt
-                }
-            ),
+            text = when (state.stepUp) {
+                AccountAuthorityStepUp.Oppose ->
+                    stringResource(id = R.string.screen_account_authority_pin_footer_oppose)
+                AccountAuthorityStepUp.Grant ->
+                    stringResource(id = R.string.screen_account_authority_pin_footer_grant)
+                AccountAuthorityStepUp.Recover ->
+                    stringResource(id = R.string.screen_account_authority_pin_footer_recover)
+                AccountAuthorityStepUp.Revoke -> revocationFooter(state)
+                else -> stringResource(id = R.string.screen_account_authority_pin_footer_adopt)
+            },
             style = ElementTheme.typography.fontBodyMdRegular,
             color = ElementTheme.colors.textSecondary,
         )
@@ -299,13 +530,7 @@ private fun StepUpSection(
             onValueChange = { eventSink(AccountAuthorityEvent.PinChanged(it)) },
             modifier = Modifier.padding(vertical = 24.dp),
         )
-        state.errorMessage?.let { message ->
-            Text(
-                text = stringResource(id = message),
-                style = ElementTheme.typography.fontBodySmRegular,
-                color = ElementTheme.colors.textCriticalPrimary,
-            )
-        }
+        state.errorMessage?.let { message -> ErrorText(message) }
         Button(
             text = stringResource(id = CommonStrings.action_confirm),
             enabled = state.canSubmit,
@@ -315,6 +540,38 @@ private fun StepUpSection(
                 .padding(vertical = 16.dp),
         )
     }
+}
+
+/**
+ * What a revocation about to be signed actually does, which is three different things.
+ *
+ * Removing this device takes effect at once. Removing another one waits out the window and is notified. And on
+ * an account with two active devices the one being removed may object, which is decision 5's carve-out and a
+ * standoff the owner should know about before starting it.
+ */
+@Composable
+private fun revocationFooter(state: AccountAuthorityState): String {
+    val target = state.revocationTarget ?: return stringResource(
+        id = R.string.screen_account_authority_pin_footer_revoke_other
+    )
+    return when {
+        target.isThisDevice -> stringResource(id = R.string.screen_account_authority_pin_footer_revoke_self)
+        target.targetMayObject -> stringResource(
+            id = R.string.screen_account_authority_pin_footer_revoke_two_devices,
+            target.label,
+        )
+        else -> stringResource(id = R.string.screen_account_authority_pin_footer_revoke_other)
+    }
+}
+
+@Composable
+private fun ErrorText(message: Int) {
+    Text(
+        text = stringResource(id = message),
+        style = ElementTheme.typography.fontBodySmRegular,
+        color = ElementTheme.colors.textCriticalPrimary,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+    )
 }
 
 @Composable

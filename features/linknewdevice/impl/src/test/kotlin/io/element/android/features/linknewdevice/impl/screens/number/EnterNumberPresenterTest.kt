@@ -136,10 +136,8 @@ class EnterNumberPresenterTest {
     }
 
     private fun createPresenter(
-        navigator: EnterNumberNavigator = FakeEnterNumberNavigator(),
         linkNewMobileHandler: LinkNewMobileHandler = LinkNewMobileHandler(FakeMatrixClient()),
     ) = EnterNumberPresenter(
-        navigator = navigator,
         linkNewMobileHandler = linkNewMobileHandler,
     )
 }

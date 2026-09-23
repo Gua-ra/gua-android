@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import dev.zacsweers.metro.Inject
 import im.vector.app.features.analytics.plan.CryptoSessionStateChange
 import im.vector.app.features.analytics.plan.UserProperties
+import io.element.android.appconfig.PushConfig
 import io.element.android.features.networkmonitor.api.NetworkMonitor
 import io.element.android.features.networkmonitor.api.NetworkStatus
 import io.element.android.libraries.architecture.AsyncData
@@ -28,6 +29,9 @@ import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.core.log.logger.LoggerTag
 import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.guaresolver.authority.AuthorityDeviceLabel
+import io.element.android.libraries.guaresolver.authority.AuthoritySessionRegistrar
+import io.element.android.libraries.guaresolver.authority.SecurityNotificationRegistration
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.RecoveryState
@@ -48,6 +52,9 @@ import timber.log.Timber
 
 private val pusherTag = LoggerTag("Pusher", LoggerTag.PushLoggerTag)
 
+/** GUA FORK: the provider whose destinations the security-notification channel can deliver to. */
+private const val FIREBASE_PROVIDER_NAME = "Firebase"
+
 @Inject
 class LoggedInPresenter(
     private val matrixClient: MatrixClient,
@@ -58,6 +65,9 @@ class LoggedInPresenter(
     private val encryptionService: EncryptionService,
     private val buildMeta: BuildMeta,
     private val networkMonitor: NetworkMonitor,
+    // GUA FORK: ADM-009. Inert while the account-authority flag is off, which is every build today: the
+    // registrar reads the flag first and makes no request at all until a deployment turns it on.
+    private val authoritySessionRegistrar: AuthoritySessionRegistrar,
 ) : Presenter<LoggedInState> {
     @Composable
     override fun present(): LoggedInState {
@@ -67,6 +77,11 @@ class LoggedInPresenter(
         }.collectAsState(initial = false)
         val pusherRegistrationState = remember<MutableState<AsyncData<Unit>>> { mutableStateOf(AsyncData.Uninitialized) }
         LaunchedEffect(Unit) { preloadAccountManagementUrl() }
+        // GUA FORK: ADM-009 gate 2 and decision 5. A session start is where the security-notification channel
+        // is registered and where a device with no authority offers its own key for a grant. It is deliberately
+        // not chained to the pusher: a pusher dies with the session an account recovery revokes, which is the
+        // one thing this channel must survive.
+        LaunchedEffect(Unit) { registerForAuthorityNotifications() }
         LaunchedEffect(Unit) {
             sessionVerificationService.sessionVerifiedStatus
                 .onEach { sessionVerifiedStatus ->
@@ -144,6 +159,27 @@ class LoggedInPresenter(
             forceNativeSlidingSyncMigration = forceNativeSlidingSyncMigration,
             appName = buildMeta.applicationName,
             eventSink = ::handleEvent,
+        )
+    }
+
+    /**
+     * GUA FORK: hands the registrar this install's current push destination, or nothing when it has none.
+     *
+     * The platform is read from the provider rather than assumed: only APNs and FCM destinations can be
+     * delivered to, so a UnifiedPush install registers nothing here rather than registering a row the server
+     * could never reach.
+     */
+    private suspend fun registerForAuthorityNotifications() {
+        val provider = pushService.getCurrentPushProvider(matrixClient.sessionId)
+        val pushToken = provider?.getPushConfig(matrixClient.sessionId)?.pushKey
+        val platform = SecurityNotificationRegistration.PLATFORM_FCM
+            .takeIf { provider?.name == FIREBASE_PROVIDER_NAME }
+        authoritySessionRegistrar.onSessionStarted(
+            sessionId = matrixClient.sessionId.value,
+            pushToken = pushToken,
+            platform = platform,
+            appId = PushConfig.PUSHER_APP_ID,
+            deviceLabel = AuthorityDeviceLabel.current(),
         )
     }
 

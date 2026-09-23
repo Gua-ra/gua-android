@@ -19,8 +19,8 @@ import dev.zacsweers.metro.AssistedInject
 import io.element.android.features.linknewdevice.impl.R
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.guaresolver.authority.AccountAuthorityManager
-import io.element.android.libraries.guaresolver.authority.AuthorityError
 import io.element.android.libraries.guaresolver.authority.AuthorityCandidate
+import io.element.android.libraries.guaresolver.authority.AuthorityError
 import io.element.android.libraries.guaresolver.authority.AuthorityFingerprint
 import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
 import io.element.android.libraries.matrix.api.core.SessionId
