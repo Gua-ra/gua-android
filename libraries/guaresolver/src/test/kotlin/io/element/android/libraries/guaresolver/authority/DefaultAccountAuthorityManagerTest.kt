@@ -474,6 +474,49 @@ class DefaultAccountAuthorityManagerTest {
         assertThat(manager.installationId()).isEqualTo(first)
     }
 
+    @Test
+    fun `a granted candidate becomes this device's authority the next time the chain is read`() = runTest {
+        val keyStore = createKeyStore()
+        val offered = keyStore.createCandidateKey()
+        val client = FakeAccountAuthorityClient(
+            stateResult = {
+                Result.success(
+                    aRootedChain(
+                        devices = listOf(
+                            anAuthorityDevice(deviceKeyB64Url = encode(offered), state = "QUARANTINED"),
+                        ),
+                    )
+                )
+            },
+        )
+        val manager = DefaultAccountAuthorityManager(client, keyStore)
+        assertThat(manager.holdsAuthority()).isFalse()
+
+        manager.state(A_TOKEN).getOrThrow()
+
+        // A grant is signed by ANOTHER device, so this one never sees the record: what it sees is its own key
+        // in the device set. Quarantined counts, because the window withholds what the device may sign rather
+        // than whether the key is this account's.
+        assertThat(manager.holdsAuthority()).isTrue()
+        assertThat(keyStore.authorityDevicePublicKey()).isEqualTo(offered)
+        assertThat(keyStore.candidateDevicePublicKey()).isNull()
+    }
+
+    @Test
+    fun `a candidate the chain has not granted stays a candidate`() = runTest {
+        val keyStore = createKeyStore()
+        keyStore.createCandidateKey()
+        val client = FakeAccountAuthorityClient(
+            stateResult = { Result.success(aRootedChain(devices = listOf(anAuthorityDevice()))) },
+        )
+        val manager = DefaultAccountAuthorityManager(client, keyStore)
+
+        manager.state(A_TOKEN).getOrThrow()
+
+        assertThat(manager.holdsAuthority()).isFalse()
+        assertThat(keyStore.candidateDevicePublicKey()).isNotNull()
+    }
+
     private fun aCandidate(
         key: ByteArray = A_GRANTEE_KEY,
         fingerprint: String = AuthorityFingerprint.of(A_GRANTEE_KEY),
@@ -496,7 +539,7 @@ class DefaultAccountAuthorityManagerTest {
     private fun sha256(value: ByteArray): ByteArray =
         java.security.MessageDigest.getInstance("SHA-256").digest(value)
 
-    private fun createKeyStore(): AccountAuthorityKeyStore = DefaultAccountAuthorityKeyStore(
+    private fun createKeyStore(): DefaultAccountAuthorityKeyStore = DefaultAccountAuthorityKeyStore(
         secretKeyRepository = SimpleSecretKeyRepository(),
         encryptionDecryptionService = AESEncryptionDecryptionService(),
         preferenceDataStoreFactory = CachingPreferenceDataStoreFactory(),
