@@ -48,8 +48,7 @@ import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.guaresolver.authority.AccountAuthorityManager
-import io.element.android.libraries.guaresolver.authority.DeviceGrantCandidate
-import io.element.android.libraries.guaresolver.authority.LinkedDeviceAuthorityKeySource
+import io.element.android.libraries.guaresolver.authority.AuthorityCandidate
 import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.api.linknewdevice.ErrorType
 import io.element.android.libraries.matrix.api.linknewdevice.LinkDesktopStep
@@ -82,7 +81,6 @@ class LinkNewDeviceFlowNode(
     private val featureFlagService: FeatureFlagService,
     private val sessionStore: SessionStore,
     private val authorityManager: AccountAuthorityManager,
-    private val linkedDeviceAuthorityKeySource: LinkedDeviceAuthorityKeySource,
 ) : BaseFlowNode<LinkNewDeviceFlowNode.NavTarget>(
     backstack = BackStack(
         initialElement = NavTarget.Root,
@@ -95,6 +93,16 @@ class LinkNewDeviceFlowNode(
     private var activity: Activity? = null
     private var darkTheme: Boolean = false
 
+    /**
+     * GUA FORK: whether THIS ceremony got past the secure channel's confirm step.
+     *
+     * `WaitingForAuth` is emitted only after `confirm()` returned Ok, which is the only place the two-digit
+     * check code is compared. It is the load-bearing signal for the grant offer of ADM-009 decision 5, and it
+     * is recorded here rather than inferred from a screen, because the SDK exposes no way to ask afterwards
+     * and the method that appeared to check the code locally always said yes.
+     */
+    private var mobileCeremonyConfirmed: Boolean = false
+
     override fun onBuilt() {
         super.onBuilt()
         var linkMobileHandlerJob: Job? = null
@@ -102,6 +110,8 @@ class LinkNewDeviceFlowNode(
 
         lifecycle.subscribe(
             onCreate = {
+                // GUA FORK: a fresh flow has confirmed nothing yet.
+                mobileCeremonyConfirmed = false
                 linkNewMobileHandler.reset()
                 linkNewDesktopHandler.reset()
                 @Suppress("AssignedValueIsNeverRead")
@@ -155,6 +165,8 @@ class LinkNewDeviceFlowNode(
         data class GrantAuthority(
             val granteeDeviceKey: String,
             val granteeLabel: String,
+            /** The eight characters the user has to see on both phones before anything is signed. */
+            val granteeFingerprint: String,
         ) : NavTarget
     }
 
@@ -174,6 +186,7 @@ class LinkNewDeviceFlowNode(
                                 NavTarget.GrantAuthority(
                                     granteeDeviceKey = candidate.deviceKeyB64Url,
                                     granteeLabel = candidate.label,
+                                    granteeFingerprint = candidate.fingerprint,
                                 )
                             )
                         }
@@ -199,6 +212,9 @@ class LinkNewDeviceFlowNode(
                     }
                     LinkMobileStep.SyncingSecrets -> Unit
                     is LinkMobileStep.WaitingForAuth -> {
+                        // GUA FORK: the ceremony confirmed, which means the code shown on the new device was
+                        // typed here and the channel accepted it.
+                        mobileCeremonyConfirmed = true
                         navigateToBrowser(linkMobileStep.verificationUri)
                     }
                 }
@@ -233,17 +249,26 @@ class LinkNewDeviceFlowNode(
     }
 
     /**
-     * GUA FORK: whether there is a grant to offer, which needs all three of a feature that is on, an
-     * authority key on THIS phone, and a key the new device published for itself.
+     * GUA FORK: whether there is a grant to offer, which needs four things and refuses on any one of them.
      *
-     * The third is the one that is null on every deployment today, for the reason
-     * [LinkedDeviceAuthorityKeySource] states, so this returns null and the flow finishes as it always has.
+     * The feature has to be on. This phone has to hold authority, because only an active device can sign a
+     * grant. THIS ceremony has to have passed the check code, which is what [mobileCeremonyConfirmed] records
+     * and what makes the offer reachable from the mobile handler and never from the desktop one: in the other
+     * direction the code binds a channel rather than a peer, so the key being signed over would be whatever
+     * came up that channel. And the account has to hold a live candidate, which is the new device's own key
+     * offered under its own session.
+     *
+     * A candidate whose fingerprint this client could not recompute is dropped rather than shown: the
+     * comparison is the whole binding, and eight characters nobody derived from those 32 bytes bind nothing.
      */
-    internal suspend fun grantCandidate(): DeviceGrantCandidate? {
+    internal suspend fun grantCandidate(): AuthorityCandidate? {
         if (!featureFlagService.isFeatureEnabled(FeatureFlags.AccountAuthority)) return null
+        if (!mobileCeremonyConfirmed) return null
         if (!authorityManager.holdsAuthority()) return null
         val accessToken = sessionStore.getSession(sessionId.value)?.accessToken ?: return null
-        return linkedDeviceAuthorityKeySource.candidate(accessToken)
+        return authorityManager.candidates(accessToken).getOrNull()
+            .orEmpty()
+            .firstOrNull { it.fingerprint.isNotEmpty() }
     }
 
     private fun navigateToError(errorType: ErrorType) {
@@ -305,10 +330,6 @@ class LinkNewDeviceFlowNode(
             }
             NavTarget.MobileEnterNumber -> {
                 val callback = object : EnterNumberNode.Callback {
-                    override fun navigateToWrongNumberError() {
-                        backstack.push(NavTarget.Error(ErrorScreenType.Mismatch2Digits))
-                    }
-
                     override fun navigateBack() {
                         backstack.pop()
                     }
@@ -346,9 +367,11 @@ class LinkNewDeviceFlowNode(
                     }
                 }
                 val inputs = GrantAuthorityNode.Inputs(
-                    candidate = DeviceGrantCandidate(
+                    candidate = AuthorityCandidate(
                         deviceKeyB64Url = navTarget.granteeDeviceKey,
+                        fingerprint = navTarget.granteeFingerprint,
                         label = navTarget.granteeLabel,
+                        expiresAtEpochSeconds = 0,
                     )
                 )
                 createNode<GrantAuthorityNode>(buildContext, listOf(inputs, grantCallback))
@@ -356,6 +379,8 @@ class LinkNewDeviceFlowNode(
             is NavTarget.Error -> {
                 val callback = object : ErrorNode.Callback {
                     override fun onRetry() {
+                        // GUA FORK: a retry is a new ceremony, and a new ceremony has confirmed nothing.
+                        mobileCeremonyConfirmed = false
                         linkNewMobileHandler.reset()
                         linkNewDesktopHandler.reset()
                         backstack.newRoot(NavTarget.Root)

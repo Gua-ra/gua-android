@@ -20,4 +20,10 @@
     <string name="screen_link_grant_authority_error_signer_refused">Este teléfono no puede hacer eso por tu cuenta.</string>
     <string name="screen_link_grant_authority_error_conflict">Algo cambió en tu cuenta mientras estabas aquí. Abre Autoridad de la cuenta en Ajustes para intentarlo de nuevo.</string>
     <string name="screen_link_grant_authority_error_generic">Algo salió mal. Inténtalo de nuevo.</string>
+    <string name="screen_link_grant_authority_compare_header">Compara el código en los dos teléfonos</string>
+    <string name="screen_link_grant_authority_compare_message">Tu otro teléfono (%1$s) muestra ocho caracteres. Deben ser exactamente los de abajo.</string>
+    <string name="screen_link_grant_authority_compare_warning">Si son distintos, detente. Otra persona podría estar intentando añadir su dispositivo a tu cuenta.</string>
+    <string name="screen_link_grant_authority_compare_confirm">Los caracteres coinciden</string>
+    <string name="screen_link_grant_authority_error_unknown_candidate">La solicitud de tu otro teléfono ha caducado, o no es la que comparaste. Vuelve a empezar en ese teléfono.</string>
+    <string name="screen_link_grant_authority_error_no_channel">Ahora no podemos avisar a tus otros dispositivos. Abre Gua en ellos e inténtalo de nuevo.</string>
 </resources>

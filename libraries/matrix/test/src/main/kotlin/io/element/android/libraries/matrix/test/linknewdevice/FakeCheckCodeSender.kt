@@ -12,13 +12,8 @@ import io.element.android.tests.testutils.lambda.lambdaError
 import io.element.android.tests.testutils.simulateLongTask
 
 class FakeCheckCodeSender(
-    private val validateResult: (UByte) -> Boolean = { lambdaError() },
     private val sendResult: (UByte) -> Result<Unit> = { lambdaError() },
 ) : CheckCodeSender {
-    override suspend fun validate(code: UByte): Boolean = simulateLongTask {
-        validateResult(code)
-    }
-
     override suspend fun send(code: UByte): Result<Unit> = simulateLongTask {
         sendResult(code)
     }

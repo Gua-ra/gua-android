@@ -11,13 +11,14 @@ import app.cash.turbine.ReceiveTurbine
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.linknewdevice.impl.R
 import io.element.android.libraries.guaresolver.authority.AuthorityError
-import io.element.android.libraries.guaresolver.authority.DeviceGrantCandidate
+import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
 import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.test
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -70,6 +71,13 @@ class GrantAuthorityPresenterTest {
 
         presenter.test {
             awaitItem().eventSink(GrantAuthorityEvent.Grant)
+            val compare = awaitFirst { it.phase == GrantAuthorityPhase.Compare }
+            // The fingerprint is shown in the two groups a person reads out.
+            assertThat(compare.fingerprint).isEqualTo("9KDC ZT8A")
+            assertThat(compare.canContinueFromCompare).isFalse()
+            compare.eventSink(GrantAuthorityEvent.ConfirmFingerprint(true))
+            awaitFirst { it.canContinueFromCompare }
+                .eventSink(GrantAuthorityEvent.ContinueFromCompare)
             awaitFirst { it.phase == GrantAuthorityPhase.StepUp }
                 .eventSink(GrantAuthorityEvent.PinChanged("123456"))
             val ready = awaitFirst { it.pin == "123456" }
@@ -81,10 +89,36 @@ class GrantAuthorityPresenterTest {
             // would be refused.
             assertThat(manager.stateCalls).hasSize(1)
             val call = manager.grantCalls.single()
-            assertThat(call.granteeDeviceKeyB64Url).isEqualTo(A_GRANTEE_KEY)
-            assertThat(call.label).isEqualTo("Pixel Tablet")
-            assertThat(call.pin).isEqualTo("123456")
+            assertThat(call.candidate.deviceKeyB64Url).isEqualTo(A_GRANTEE_KEY)
+            assertThat(call.candidate.label).isEqualTo("Pixel Tablet")
+            assertThat(call.stepUp).isEqualTo(AuthorityStepUp.Pin("123456"))
+            assertThat(call.fingerprintConfirmed).isTrue()
             assertThat(done).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /**
+     * The comparison is the binding, so the screen has to be unable to skip it.
+     *
+     * The check code that got the user here bound the channel; it says nothing about which key came up it. A
+     * grant that skipped the fingerprint would be a grant over whatever arrived.
+     */
+    @Test
+    fun `present - the step-up is unreachable until the fingerprint was compared`() = runTest {
+        val manager = FakeAccountAuthorityManager()
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            awaitItem().eventSink(GrantAuthorityEvent.Grant)
+            val compare = awaitFirst { it.phase == GrantAuthorityPhase.Compare }
+            compare.eventSink(GrantAuthorityEvent.ContinueFromCompare)
+            runCurrent()
+
+            // Nothing moved, so there is nothing new to emit, and nothing was sent.
+            expectNoEvents()
+            assertThat(manager.grantCalls).isEmpty()
+            assertThat(manager.stateCalls).isEmpty()
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -99,6 +133,10 @@ class GrantAuthorityPresenterTest {
 
         presenter.test {
             awaitItem().eventSink(GrantAuthorityEvent.Grant)
+            awaitFirst { it.phase == GrantAuthorityPhase.Compare }
+                .eventSink(GrantAuthorityEvent.ConfirmFingerprint(true))
+            awaitFirst { it.canContinueFromCompare }
+                .eventSink(GrantAuthorityEvent.ContinueFromCompare)
             awaitFirst { it.phase == GrantAuthorityPhase.StepUp }
                 .eventSink(GrantAuthorityEvent.PinChanged("123456"))
             awaitFirst { it.canSubmit }.eventSink(GrantAuthorityEvent.Submit)
@@ -120,6 +158,10 @@ class GrantAuthorityPresenterTest {
 
         presenter.test {
             awaitItem().eventSink(GrantAuthorityEvent.Grant)
+            awaitFirst { it.phase == GrantAuthorityPhase.Compare }
+                .eventSink(GrantAuthorityEvent.ConfirmFingerprint(true))
+            awaitFirst { it.canContinueFromCompare }
+                .eventSink(GrantAuthorityEvent.ContinueFromCompare)
             awaitFirst { it.phase == GrantAuthorityPhase.StepUp }
                 .eventSink(GrantAuthorityEvent.PinChanged("12a34567890"))
             val state = awaitFirst { it.pin.isNotEmpty() }
@@ -143,7 +185,7 @@ class GrantAuthorityPresenterTest {
         onDone: () -> Unit = {},
         sessionStore: SessionStore = InMemorySessionStore(listOf(aSessionData(sessionId = A_USER_ID.value))),
     ) = GrantAuthorityPresenter(
-        candidate = DeviceGrantCandidate(deviceKeyB64Url = A_GRANTEE_KEY, label = "Pixel Tablet"),
+        candidate = aCandidate(deviceKeyB64Url = A_GRANTEE_KEY, fingerprint = A_FINGERPRINT),
         onDone = onDone,
         sessionId = A_USER_ID,
         sessionStore = sessionStore,
@@ -153,5 +195,6 @@ class GrantAuthorityPresenterTest {
     private companion object {
         private const val MAX_EMISSIONS = 20
         private const val A_GRANTEE_KEY = "a-new-device-key"
+        private const val A_FINGERPRINT = "9KDCZT8A"
     }
 }

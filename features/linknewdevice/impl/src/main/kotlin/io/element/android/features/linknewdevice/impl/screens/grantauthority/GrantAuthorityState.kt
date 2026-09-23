@@ -20,6 +20,12 @@ enum class GrantAuthorityPhase {
     /** The offer, with the new device named. Declining leaves the link exactly as it was. */
     Prompt,
 
+    /**
+     * The fingerprint comparison, which is the step that binds these 32 bytes to the person holding the other
+     * phone. The check code that just passed bound the channel; it says nothing about which key came up it.
+     */
+    Compare,
+
     /** The scoped step-up the grant's challenge is minted with. */
     StepUp,
     Submitting,
@@ -30,13 +36,19 @@ data class GrantAuthorityState(
     val phase: GrantAuthorityPhase,
     /** The new device's own label, which is what the grant record and its notification will name. */
     val deviceLabel: String,
+    /** The eight characters, in the two groups a person reads out. */
+    val fingerprint: String,
+    val fingerprintConfirmed: Boolean,
     val pin: String,
     @StringRes val errorMessage: Int?,
     val eventSink: (GrantAuthorityEvent) -> Unit,
 ) {
     val isWorking: Boolean = phase == GrantAuthorityPhase.Submitting
 
-    val canSubmit: Boolean = pin.length == PIN_LENGTH && !isWorking
+    /** The comparison is a gate, not a decoration: without it there is nothing to step up for. */
+    val canContinueFromCompare: Boolean = fingerprintConfirmed
+
+    val canSubmit: Boolean = fingerprintConfirmed && pin.length == PIN_LENGTH && !isWorking
 
     companion object {
         const val PIN_LENGTH = 6

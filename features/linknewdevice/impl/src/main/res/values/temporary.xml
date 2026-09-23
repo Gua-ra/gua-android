@@ -20,4 +20,10 @@
     <string name="screen_link_grant_authority_error_signer_refused">This phone cannot do that for your account.</string>
     <string name="screen_link_grant_authority_error_conflict">Something changed on your account while you were here. Open Account authority in Settings to try again.</string>
     <string name="screen_link_grant_authority_error_generic">Something went wrong. Please try again.</string>
+    <string name="screen_link_grant_authority_compare_header">Check the code on both phones</string>
+    <string name="screen_link_grant_authority_compare_message">Your other phone (%1$s) is showing eight characters. They should be exactly the ones below.</string>
+    <string name="screen_link_grant_authority_compare_warning">If they are different, stop. Someone else may be trying to add their own device to your account.</string>
+    <string name="screen_link_grant_authority_compare_confirm">The characters match</string>
+    <string name="screen_link_grant_authority_error_unknown_candidate">Your other phone\'s request has expired, or it is not the one you compared. Start again on that phone.</string>
+    <string name="screen_link_grant_authority_error_no_channel">We can\'t warn your other devices about this right now. Open Gua on them, then try again.</string>
 </resources>

@@ -9,8 +9,14 @@ package io.element.android.features.linknewdevice.impl.screens.grantauthority
 
 /** GUA FORK: UI actions for the grant offer that follows a device link (ADM-009 decision 5). */
 sealed interface GrantAuthorityEvent {
-    /** Accept the offer and go to the step-up. */
+    /** Accept the offer and go to the fingerprint comparison. */
     data object Grant : GrantAuthorityEvent
+
+    /** The user said the eight characters match what the other phone shows, or unsaid it. */
+    data class ConfirmFingerprint(val confirmed: Boolean) : GrantAuthorityEvent
+
+    /** Leave the comparison for the step-up. Refused while the comparison was not confirmed. */
+    data object ContinueFromCompare : GrantAuthorityEvent
 
     data class PinChanged(val pin: String) : GrantAuthorityEvent
 
