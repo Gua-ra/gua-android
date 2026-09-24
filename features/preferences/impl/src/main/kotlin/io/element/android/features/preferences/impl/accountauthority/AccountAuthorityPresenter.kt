@@ -171,19 +171,29 @@ class AccountAuthorityPresenter(
          * Guessing "no factor" is how a passkey holder gets told to create a PIN, and guessing "PIN" is how
          * they get a field they have nothing to type into.
          */
-        suspend fun resolveStepUp(): Pair<AccountAuthorityStepUpMethod?, AccountAuthorityStepUpBlock?> {
-            val accessToken = accessToken()
-                ?: return AccountAuthorityStepUpMethod.WebSheet to null
+        suspend fun resolveStepUp(
+            kind: AccountAuthorityStepUp,
+        ): Pair<AccountAuthorityStepUpMethod?, AccountAuthorityStepUpBlock?> {
+            // An objection has no sheet: the purposes that get one are the ones that ask for a factor, and the
+            // server answers "none required" for an objection, so there would be nothing to record a proof
+            // against. Its factor is therefore the PIN or nothing, which is a fact about that endpoint rather
+            // than about this account.
+            val sheetExists = kind != AccountAuthorityStepUp.Oppose
+            val fallback = if (sheetExists) AccountAuthorityStepUpMethod.WebSheet else AccountAuthorityStepUpMethod.Pin
+            val accessToken = accessToken() ?: return fallback to null
             val status = identityServiceClient.accountFactorStatus(
                 accessToken = accessToken,
                 userId = matrixClient.sessionId.value,
-            ).getOrNull() ?: return AccountAuthorityStepUpMethod.WebSheet to null
+            ).getOrNull() ?: return fallback to null
             return when {
                 // Nothing decision 4 accepts, and decision 9 forbids the code that would stand in. Named
                 // rather than worked around, and without telling the owner which factor to add from here.
                 !status.hasStrongFactor -> null to AccountAuthorityStepUpBlock.NoFactorRegistered
                 // The passkey is the strong factor and the sheet is where it can be asserted.
-                status.passkeyRegistered -> AccountAuthorityStepUpMethod.WebSheet to null
+                status.passkeyRegistered && sheetExists -> AccountAuthorityStepUpMethod.WebSheet to null
+                // An objection from an account that holds a passkey and no PIN. The way out is the signed
+                // objection an active device makes, which asks for no factor at all, so the copy says that.
+                !status.hasPin -> null to AccountAuthorityStepUpBlock.PasskeyNotUsableForObjection
                 else -> AccountAuthorityStepUpMethod.Pin to null
             }
         }
@@ -197,7 +207,7 @@ class AccountAuthorityPresenter(
                 awaitingWebStepUp = false
                 leftForWebStepUp = false
                 stepUp = kind
-                val (method, block) = resolveStepUp()
+                val (method, block) = resolveStepUp(kind)
                 stepUpMethod = method
                 stepUpBlock = block
                 phase = AccountAuthorityPhase.StepUp

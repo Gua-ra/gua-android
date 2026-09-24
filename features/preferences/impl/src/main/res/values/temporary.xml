@@ -148,6 +148,7 @@
     <string name="screen_account_authority_pin_footer_revoke_self">Confirm your 6-digit PIN to remove this phone. It takes effect right away and this phone will no longer approve anything.</string>
     <string name="screen_account_authority_pin_footer_revoke_two_devices">Confirm your 6-digit PIN to remove that phone. Your account has two phones that can approve changes, so %1$s can object to being removed and nothing happens until that is settled.</string>
     <string name="screen_account_authority_step_up_none">Your account has no PIN and no passkey, so there is nothing to confirm this with yet. Set up two-step verification first.</string>
+    <string name="screen_account_authority_step_up_objection_passkey">Objecting a second time needs your account PIN, and your passkey cannot be used for this one step yet. Any of your phones that can approve changes can object instead, without confirming anything.</string>
     <string name="screen_account_authority_error_unknown_candidate">That phone\'s request has expired, or it is not the one you compared. Start again on that phone.</string>
     <string name="screen_account_authority_error_no_channel">We can\'t warn your other devices about this right now. Open Gua on them, then try again.</string>
     <string name="screen_account_authority_web_step_up_message">You will confirm this in your browser with your passkey. Your account keeps that confirmation for this one step, for 15 minutes.</string>

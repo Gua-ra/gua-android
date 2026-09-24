@@ -14,8 +14,10 @@ import io.element.android.features.preferences.impl.R
 import io.element.android.features.preferences.impl.fixtures.A_DEVICE_KEY
 import io.element.android.features.preferences.impl.fixtures.FakeAccountAuthorityManager
 import io.element.android.features.preferences.impl.fixtures.FakeIdentityServiceClient
+import io.element.android.features.preferences.impl.fixtures.aBootstrapChain
 import io.element.android.features.preferences.impl.fixtures.aFactorStatus
 import io.element.android.features.preferences.impl.fixtures.aGenesisRootedChain
+import io.element.android.features.preferences.impl.fixtures.aPendingAdoption
 import io.element.android.features.preferences.impl.fixtures.aRootedChain
 import io.element.android.features.preferences.impl.fixtures.anAuthorityDevice
 import io.element.android.libraries.featureflag.api.FeatureFlags
@@ -227,6 +229,72 @@ class AccountAuthorityStepUpPresenterTest {
             // The proof is spent either way, so the way out is a new sheet rather than a second submission.
             assertThat(refused.awaitingWebStepUp).isFalse()
             assertThat(refused.canConfirmInBrowser).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /**
+     * The one step-up that has no sheet, because the server has no purpose to record a proof against.
+     *
+     * An objection asks for a factor at any age and is not a transition, so there is no sheet for it. A
+     * passkey-only account is therefore told that this one step cannot be confirmed here, and pointed at the
+     * objection an active device makes for free, rather than at a PIN to go and create.
+     */
+    @Test
+    fun `present - a second objection on a passkey-only account is named, and never sent to a sheet`() =
+        runTest {
+            val manager = FakeAccountAuthorityManager(
+                stateResult = { Result.success(aBootstrapChain(pending = aPendingAdoption())) },
+                opposeResult = { Result.failure(AuthorityError.StepUpRequired) },
+            )
+            val presenter = createPresenter(
+                manager = manager,
+                identityServiceClient = FakeIdentityServiceClient(
+                    factorStatusResult = {
+                        Result.success(aFactorStatus(hasPin = false, passkeyRegistered = true))
+                    },
+                ),
+            )
+
+            presenter.test {
+                awaitFirst { it.pendingTransition != null }.eventSink(AccountAuthorityEvent.Oppose)
+
+                val stepUp = awaitFirst { it.phase == AccountAuthorityPhase.StepUp }
+                assertThat(stepUp.stepUp).isEqualTo(AccountAuthorityStepUp.Oppose)
+                assertThat(stepUp.stepUpBlock)
+                    .isEqualTo(AccountAuthorityStepUpBlock.PasskeyNotUsableForObjection)
+                assertThat(stepUp.stepUpMethod).isNull()
+                assertThat(stepUp.canConfirmInBrowser).isFalse()
+                assertThat(stepUp.canSubmit).isFalse()
+                // No sheet is asked for, because there is no purpose one could be scoped to.
+                stepUp.eventSink(AccountAuthorityEvent.ConfirmInBrowser)
+                expectNoEvents()
+                assertThat(manager.webStepUpCalls).isEmpty()
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `present - a second objection from an account that holds a PIN asks for it here`() = runTest {
+        val manager = FakeAccountAuthorityManager(
+            stateResult = { Result.success(aBootstrapChain(pending = aPendingAdoption())) },
+            opposeResult = { Result.failure(AuthorityError.StepUpRequired) },
+        )
+        val presenter = createPresenter(
+            manager = manager,
+            identityServiceClient = FakeIdentityServiceClient(
+                factorStatusResult = { Result.success(aFactorStatus(hasPin = true, passkeyRegistered = true)) },
+            ),
+        )
+
+        presenter.test {
+            awaitFirst { it.pendingTransition != null }.eventSink(AccountAuthorityEvent.Oppose)
+
+            val stepUp = awaitFirst { it.phase == AccountAuthorityPhase.StepUp }
+            assertThat(stepUp.stepUpBlock).isNull()
+            // A passkey account, and still the PIN here: the sheet is not one of this endpoint's options.
+            assertThat(stepUp.stepUpMethod).isEqualTo(AccountAuthorityStepUpMethod.Pin)
+            assertThat(manager.webStepUpCalls).isEmpty()
             cancelAndIgnoreRemainingEvents()
         }
     }

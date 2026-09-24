@@ -138,6 +138,7 @@
     <string name="screen_account_authority_pin_footer_revoke_self">Confirma tu PIN de 6 dígitos para eliminar este teléfono. Es inmediato, y este teléfono ya no aprobará nada.</string>
     <string name="screen_account_authority_pin_footer_revoke_two_devices">Confirma tu PIN de 6 dígitos para eliminar ese teléfono. Tu cuenta tiene dos teléfonos que pueden aprobar cambios, así que %1$s puede oponerse a que lo eliminen y nada ocurre hasta que eso se resuelva.</string>
     <string name="screen_account_authority_step_up_none">Tu cuenta no tiene PIN ni llave de acceso, así que todavía no hay nada con lo que confirmar esto. Configura primero la verificación en dos pasos.</string>
+    <string name="screen_account_authority_step_up_objection_passkey">Oponerse una segunda vez necesita el PIN de tu cuenta, y tu llave de acceso todavía no se puede usar en este paso. Cualquiera de tus teléfonos que pueda aprobar cambios puede oponerse en su lugar, sin confirmar nada.</string>
     <string name="screen_account_authority_error_unknown_candidate">La solicitud de ese teléfono ha caducado, o no es la que comparaste. Vuelve a empezar en ese teléfono.</string>
     <string name="screen_account_authority_error_no_channel">Ahora no podemos avisar a tus otros dispositivos. Abre Gua en ellos e inténtalo de nuevo.</string>
     <string name="screen_account_authority_web_step_up_message">Vas a confirmar esto en tu navegador con tu llave de acceso. Tu cuenta guarda esa confirmación solo para este paso, durante 15 minutos.</string>

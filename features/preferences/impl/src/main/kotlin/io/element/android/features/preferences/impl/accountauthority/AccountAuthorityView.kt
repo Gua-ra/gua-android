@@ -576,6 +576,8 @@ private fun StepUpSection(
                     id = when (block) {
                         AccountAuthorityStepUpBlock.NoFactorRegistered ->
                             R.string.screen_account_authority_step_up_none
+                        AccountAuthorityStepUpBlock.PasskeyNotUsableForObjection ->
+                            R.string.screen_account_authority_step_up_objection_passkey
                     }
                 )
             )

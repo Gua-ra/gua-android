@@ -66,16 +66,27 @@ enum class AccountAuthorityStepUp {
 }
 
 /**
- * Why this account can produce no step-up at all.
+ * Why this account cannot produce the step-up this step asks for.
  *
- * One case, because there is only one honest one: an account holding neither a passkey nor a PIN has nothing
- * ADM-009 decision 4 accepts, and decision 9 forbids the code that would otherwise stand in. A passkey-only
- * account is NOT here: its assertion runs in the web sheet, which is the whole point of
- * [AccountAuthorityStepUpMethod.WebSheet], and it is never told to add a PIN.
+ * A passkey-only account is NOT here for any of the four transitions: its assertion runs in the web sheet,
+ * which is the whole point of [AccountAuthorityStepUpMethod.WebSheet]. It is here for an objection, which is
+ * the one step-up that has no sheet, and even then the copy offers the other way out rather than a weaker
+ * factor to add.
  */
 enum class AccountAuthorityStepUpBlock {
     /** The account holds no factor at all, so no transition here can be authorized. */
     NoFactorRegistered,
+
+    /**
+     * A second or later objection on an account that holds a passkey and no PIN.
+     *
+     * An objection takes a factor at any age and has no web sheet, because the sheet exists for the purposes
+     * that ask for one and an objection is not a transition: the server's own policy answers "no factor
+     * required" for it, so there is nothing to record a proof against. An assertion for it would have to run
+     * natively, which this platform cannot do. The honest out is the other objection, the signed one an active
+     * device makes for free, so that is what the copy says. It still does not say to add a PIN.
+     */
+    PasskeyNotUsableForObjection,
 }
 
 /**
