@@ -14,6 +14,7 @@ import io.element.android.libraries.guaresolver.authority.AuthorityCandidate
 import io.element.android.libraries.guaresolver.authority.AuthorityChainState
 import io.element.android.libraries.guaresolver.authority.AuthorityDevice
 import io.element.android.libraries.guaresolver.authority.AuthorityPendingTransition
+import io.element.android.libraries.guaresolver.authority.AuthorityPurpose
 import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
 import io.element.android.libraries.guaresolver.authority.AuthoritySubmission
 import io.element.android.libraries.guaresolver.authority.SecurityNotificationView
@@ -46,6 +47,13 @@ class FakeAccountAuthorityManager(
     },
     private val registerNotificationsResult: () -> Result<Unit> = { Result.success(Unit) },
     private val removeNotificationResult: () -> Result<Unit> = { Result.success(Unit) },
+    private val webStepUpResult: (AuthorityPurpose) -> Result<String> = { Result.success(A_STEP_UP_URL) },
+    private val beginAccountRecoveryResult: () -> Result<AdoptionOffer> = {
+        Result.success(AdoptionOffer(recoveryArtifact = A_RECOVERY_ARTIFACT))
+    },
+    private val recoverThroughAccountRecoveryResult: () -> Result<AuthoritySubmission> = {
+        Result.success(aSubmission())
+    },
 ) : AccountAuthorityManager {
     data class AdoptCall(val deviceLabel: String, val stepUp: AuthorityStepUp, val artifactConfirmed: Boolean)
 
@@ -76,6 +84,9 @@ class FakeAccountAuthorityManager(
     val approveCalls: MutableList<String> = mutableListOf()
     val registerNotificationCalls: MutableList<String> = mutableListOf()
     val removeNotificationCalls: MutableList<Pair<String, String?>> = mutableListOf()
+    val webStepUpCalls: MutableList<AuthorityPurpose> = mutableListOf()
+    val beginAccountRecoveryCalls: MutableList<Unit> = mutableListOf()
+    val accountRecoveryCalls: MutableList<RecoverCall> = mutableListOf()
 
     override suspend fun state(accessToken: String): Result<AuthorityChainState> {
         stateCalls += accessToken
@@ -101,6 +112,11 @@ class FakeAccountAuthorityManager(
     ): Result<AuthoritySubmission> {
         adoptCalls += AdoptCall(deviceLabel, stepUp, artifactConfirmed)
         return adoptResult()
+    }
+
+    override suspend fun startWebStepUp(accessToken: String, purpose: AuthorityPurpose): Result<String> {
+        webStepUpCalls += purpose
+        return webStepUpResult(purpose)
     }
 
     override suspend fun oppose(accessToken: String, recordHash: String?, pin: String?): Result<Unit> {
@@ -162,6 +178,24 @@ class FakeAccountAuthorityManager(
         return recoverResult()
     }
 
+    override suspend fun beginAccountRecovery(): Result<AdoptionOffer> {
+        beginAccountRecoveryCalls += Unit
+        return beginAccountRecoveryResult()
+    }
+
+    override suspend fun recoverThroughAccountRecovery(
+        accessToken: String,
+        chain: AuthorityChainState,
+        deviceLabel: String,
+        stepUp: AuthorityStepUp,
+        artifactConfirmed: Boolean,
+    ): Result<AuthoritySubmission> {
+        // The artifact a 0x02 record commits is the NEW one, so there is no old artifact in this call. The
+        // field is empty rather than absent so the two routes can be compared in one assertion.
+        accountRecoveryCalls += RecoverCall("", deviceLabel, stepUp, artifactConfirmed)
+        return recoverThroughAccountRecoveryResult()
+    }
+
     override suspend fun approvals(accessToken: String): Result<List<AuthorityApproval>> = approvalsResult()
 
     override suspend fun approve(
@@ -208,6 +242,9 @@ const val A_DEVICE_KEY: String = "a-device-key"
 
 const val AN_INSTALLATION_ID: String = "an-installation"
 
+/** The one-time URL a web step-up runs at, on the sign-in web origin. */
+const val A_STEP_UP_URL: String = "https://auth.example.org/login/enroll/AbCdEf"
+
 fun aBootstrapChain(pending: AuthorityPendingTransition? = null): AuthorityChainState = AuthorityChainState(
     accountId = AN_ACCOUNT_ID,
     accountClass = "BOOTSTRAP",
@@ -243,6 +280,24 @@ fun anAuthorityLostChain(): AuthorityChainState = AuthorityChainState(
     headSeq = 3,
     headHash = "22".repeat(32),
     devices = emptyList(),
+    pending = null,
+)
+
+/**
+ * A chain whose accountId commits its authority (class 0x01), where the account-recovery route is refused.
+ *
+ * The server refuses a 0x02 record on such an account outright: a genesis-committed authority is replaced only
+ * by the key the genesis committed for that purpose. The screen has to withhold the offer rather than send one.
+ */
+fun aGenesisRootedChain(
+    devices: List<AuthorityDevice> = emptyList(),
+): AuthorityChainState = AuthorityChainState(
+    accountId = AN_ACCOUNT_ID,
+    accountClass = "GENESIS",
+    state = AuthorityChainState.STATE_ROOTED,
+    headSeq = 2,
+    headHash = "33".repeat(32),
+    devices = devices,
     pending = null,
 )
 

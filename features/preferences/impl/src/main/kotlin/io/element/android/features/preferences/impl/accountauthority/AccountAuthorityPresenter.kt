@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import dev.zacsweers.metro.Inject
 import io.element.android.features.preferences.impl.R
 import io.element.android.libraries.architecture.Presenter
@@ -28,6 +29,7 @@ import io.element.android.libraries.guaresolver.authority.AuthorityChainState
 import io.element.android.libraries.guaresolver.authority.AuthorityDeviceLabel
 import io.element.android.libraries.guaresolver.authority.AuthorityError
 import io.element.android.libraries.guaresolver.authority.AuthorityFingerprint
+import io.element.android.libraries.guaresolver.authority.AuthorityPurpose
 import io.element.android.libraries.guaresolver.authority.AuthorityRecord
 import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
 import io.element.android.libraries.guaresolver.authority.InvalidAuthorityRecordException
@@ -50,13 +52,21 @@ import kotlinx.coroutines.launch
  * because the settings row that opens it is behind the same flag, so this is the second of two gates rather
  * than the only one.
  *
- * THE STEP-UP, AND WHY A PASSKEY-ONLY ACCOUNT IS NOT SENT TO SET A PIN. Decision 4 accepts a user-verifying
+ * THE STEP-UP, AND WHY A PASSKEY-ONLY ACCOUNT IS NEVER SENT TO SET A PIN. Decision 4 accepts a user-verifying
  * passkey assertion or the PIN, and never a phone code. The branch here is over what the server says the
- * account HOLDS, read before anything is offered, and never over `hasPin` alone. An account with a passkey and
- * no PIN is told that its passkey cannot be asserted on this build, which is this app's gap: the identity
- * service exposes WebAuthn request options for a native ceremony this client does not have, and the web
- * ceremony it does have registers a passkey rather than asserting one. It is never told to add a PIN, because
- * it already has two-step verification and the PIN would be a weaker factor added for our convenience.
+ * account HOLDS, read before anything is offered, and never over `hasPin` alone. An account with a passkey
+ * confirms in the WEB SHEET: `POST /security/authority/step-up/start` mints a one-time URL, it opens in a
+ * Custom Tab exactly as first-PIN enrollment does, the page runs the assertion, and the server records that
+ * this account proved a factor for this one purpose. The app then asks for the challenge with
+ * [AuthorityStepUp.WebSheet], which carries nothing: the proof is a row the server wrote, not a token this
+ * client holds. An account with only a PIN is asked for it here, because a PIN needs no browser. An account
+ * holding neither is told that plainly, and is still never told which one to add by a screen whose job is to
+ * root an account.
+ *
+ * WHAT HAPPENS WHILE THE SHEET IS OPEN. Nothing in this app: the Custom Tab is another activity, and the
+ * transition is submitted when this screen resumes, exactly the way the two-step-verification screen re-reads
+ * its factors on resume. A sheet the user closed without finishing leaves the submission refused with
+ * `authority_step_up_required`, which is the honest outcome and lands back on the step-up.
  */
 @Inject
 class AccountAuthorityPresenter(
@@ -88,6 +98,14 @@ class AccountAuthorityPresenter(
         var revocationTarget by remember { mutableStateOf<AuthorityRevocationTarget?>(null) }
         var stepUp by remember { mutableStateOf<AccountAuthorityStepUp?>(null) }
         var stepUpBlock by remember { mutableStateOf<AccountAuthorityStepUpBlock?>(null) }
+        var stepUpMethod by remember { mutableStateOf<AccountAuthorityStepUpMethod?>(null) }
+        var webStepUpUrl by remember { mutableStateOf<String?>(null) }
+        var awaitingWebStepUp by remember { mutableStateOf(false) }
+        // True once the app has actually been left for the sheet. Without it the resume that follows handing the
+        // URL over, while this activity is still in front, would submit a transition nobody has confirmed yet.
+        var leftForWebStepUp by remember { mutableStateOf(false) }
+        var recoveryRoute by remember { mutableStateOf<AccountAuthorityRecoveryRoute?>(null) }
+        var accountRecoveryAcknowledged by remember { mutableStateOf(false) }
         var pin by remember { mutableStateOf("") }
         var approvals by remember { mutableStateOf<List<AuthorityApproval>>(emptyList()) }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
@@ -145,30 +163,43 @@ class AccountAuthorityPresenter(
         LaunchedEffect(Unit) { load() }
 
         /**
-         * Reads the account's factors before offering a step-up, and answers with the block when this build
-         * cannot produce one. A read that fails leaves the block null: the factors are UNKNOWN, not absent,
-         * and guessing "no factor" is how a passkey holder gets told to create a PIN.
+         * Reads the account's factors and answers WHERE its step-up is produced, or the one block there is.
+         *
+         * A read that fails answers the web sheet rather than a block or a PIN field. The factors are UNKNOWN
+         * then, not absent, and the sheet is the one answer that is right either way: it offers the passkey to
+         * an account that holds one and the PIN to an account that holds one, from what the server knows.
+         * Guessing "no factor" is how a passkey holder gets told to create a PIN, and guessing "PIN" is how
+         * they get a field they have nothing to type into.
          */
-        suspend fun blockingStepUp(): AccountAuthorityStepUpBlock? {
-            val accessToken = accessToken() ?: return null
+        suspend fun resolveStepUp(): Pair<AccountAuthorityStepUpMethod?, AccountAuthorityStepUpBlock?> {
+            val accessToken = accessToken()
+                ?: return AccountAuthorityStepUpMethod.WebSheet to null
             val status = identityServiceClient.accountFactorStatus(
                 accessToken = accessToken,
                 userId = matrixClient.sessionId.value,
-            ).getOrNull() ?: return null
+            ).getOrNull() ?: return AccountAuthorityStepUpMethod.WebSheet to null
             return when {
-                !status.hasStrongFactor -> AccountAuthorityStepUpBlock.NoFactorRegistered
-                !status.hasPin -> AccountAuthorityStepUpBlock.PasskeyNotUsableHere
-                else -> null
+                // Nothing decision 4 accepts, and decision 9 forbids the code that would stand in. Named
+                // rather than worked around, and without telling the owner which factor to add from here.
+                !status.hasStrongFactor -> null to AccountAuthorityStepUpBlock.NoFactorRegistered
+                // The passkey is the strong factor and the sheet is where it can be asserted.
+                status.passkeyRegistered -> AccountAuthorityStepUpMethod.WebSheet to null
+                else -> AccountAuthorityStepUpMethod.Pin to null
             }
         }
 
-        /** Enters the step-up for [kind], or the block that says why this account cannot produce one. */
+        /** Enters the step-up for [kind], resolving where its factor comes from before the screen is drawn. */
         fun askForStepUp(kind: AccountAuthorityStepUp) {
             coroutineScope.launch {
                 pin = ""
                 errorMessage = null
+                webStepUpUrl = null
+                awaitingWebStepUp = false
+                leftForWebStepUp = false
                 stepUp = kind
-                stepUpBlock = blockingStepUp()
+                val (method, block) = resolveStepUp()
+                stepUpMethod = method
+                stepUpBlock = block
                 phase = AccountAuthorityPhase.StepUp
             }
         }
@@ -177,6 +208,12 @@ class AccountAuthorityPresenter(
             pin = ""
             stepUp = null
             stepUpBlock = null
+            stepUpMethod = null
+            webStepUpUrl = null
+            awaitingWebStepUp = false
+            leftForWebStepUp = false
+            recoveryRoute = null
+            accountRecoveryAcknowledged = false
             errorMessage = null
             // The artifact is not shown again on a cancel. The keys it belongs to are still in the adoption
             // slot and a new attempt mints a new pair, so nothing is lost and no secret is held on a screen
@@ -191,7 +228,13 @@ class AccountAuthorityPresenter(
             phase = AccountAuthorityPhase.Overview
         }
 
-        suspend fun submitStepUp() {
+        /**
+         * Submits the transition on screen, authorized by [factor].
+         *
+         * One method for both factors, because everything except the factor is the same and a second copy is
+         * where the artifact gate or the fingerprint gate would go missing for one of them.
+         */
+        suspend fun submitStepUp(factor: AuthorityStepUp) {
             val accessToken = accessToken() ?: return
             val currentChain = chain ?: return
             // Everything the submission needs is resolved before the screen says it is working, so a step
@@ -200,7 +243,6 @@ class AccountAuthorityPresenter(
             val target = revocationTarget
             if (stepUp == AccountAuthorityStepUp.Grant && candidate == null) return
             if (stepUp == AccountAuthorityStepUp.Revoke && target == null) return
-            val factor = AuthorityStepUp.Pin(pin)
             phase = AccountAuthorityPhase.Submitting
             val outcome: Result<Unit> = when (stepUp) {
                 AccountAuthorityStepUp.Adopt -> authorityManager.adopt(
@@ -239,14 +281,27 @@ class AccountAuthorityPresenter(
                         stepUp = factor,
                     ).map { }
                 }
-                AccountAuthorityStepUp.Recover -> authorityManager.recoverAuthority(
-                    accessToken = accessToken,
-                    chain = currentChain,
-                    recoveryArtifact = recoveryArtifactInput,
-                    deviceLabel = AuthorityDeviceLabel.current(),
-                    stepUp = factor,
-                    artifactConfirmed = artifactConfirmed,
-                ).map { }
+                AccountAuthorityStepUp.Recover -> when (recoveryRoute) {
+                    // Authorization 0x02: no artifact is read back, the record names no authorizing key, and
+                    // the devices this account still has can veto it. The route is chosen on the way in and
+                    // never inferred from whether the artifact field happens to be empty.
+                    AccountAuthorityRecoveryRoute.AccountRecovery ->
+                        authorityManager.recoverThroughAccountRecovery(
+                            accessToken = accessToken,
+                            chain = currentChain,
+                            deviceLabel = AuthorityDeviceLabel.current(),
+                            stepUp = factor,
+                            artifactConfirmed = artifactConfirmed,
+                        ).map { }
+                    else -> authorityManager.recoverAuthority(
+                        accessToken = accessToken,
+                        chain = currentChain,
+                        recoveryArtifact = recoveryArtifactInput,
+                        deviceLabel = AuthorityDeviceLabel.current(),
+                        stepUp = factor,
+                        artifactConfirmed = artifactConfirmed,
+                    ).map { }
+                }
                 null -> return
             }
             outcome
@@ -263,8 +318,54 @@ class AccountAuthorityPresenter(
                 .onFailure { error ->
                     errorMessage = error.toMessageRes()
                     pin = ""
+                    // The sheet's proof is spent either way, so the way out of a refusal is a new sheet rather
+                    // than a second submission of the same one.
+                    awaitingWebStepUp = false
+                    leftForWebStepUp = false
                     phase = AccountAuthorityPhase.StepUp
                 }
+        }
+
+        /**
+         * Opens the web step-up for the transition on screen.
+         *
+         * The purpose travels with the request and the proof it leaves behind is scoped to it, so a sheet opened
+         * for an adoption cannot authorize a revocation. The purposes that ask for no factor have no sheet at
+         * all, which is why [AccountAuthorityStepUp.Oppose] maps to none: an objection is authorized by a
+         * signature, and the manager refuses that purpose before anything is requested.
+         */
+        suspend fun openWebStepUp() {
+            val accessToken = accessToken() ?: return
+            val purpose = stepUp?.toPurpose() ?: return
+            errorMessage = null
+            authorityManager.startWebStepUp(accessToken, purpose)
+                .onSuccess { url ->
+                    webStepUpUrl = url
+                    awaitingWebStepUp = true
+                    leftForWebStepUp = false
+                }
+                .onFailure { error -> errorMessage = error.toMessageRes() }
+        }
+
+        // The sheet runs in another activity, so the only signal that it is over is this screen coming back.
+        // Kept as two flags rather than one: handing the URL over does not leave the app, and a resume that
+        // never followed a pause is this screen never having been left.
+        var isResumed by remember { mutableStateOf(false) }
+        LifecycleResumeEffect(Unit) {
+            isResumed = true
+            onPauseOrDispose {
+                isResumed = false
+                if (awaitingWebStepUp) leftForWebStepUp = true
+            }
+        }
+        val resumed = isResumed
+        LaunchedEffect(resumed) {
+            if (!resumed || !awaitingWebStepUp || !leftForWebStepUp) return@LaunchedEffect
+            awaitingWebStepUp = false
+            leftForWebStepUp = false
+            // Nothing is carried back from the page. The challenge request produces no factor of its own, and
+            // the server spends the proof it recorded for this account, this token and this purpose.
+            submitStepUp(AuthorityStepUp.WebSheet)
         }
 
         fun handleEvent(event: AccountAuthorityEvent) {
@@ -301,7 +402,41 @@ class AccountAuthorityPresenter(
                     recoveryArtifactInput = ""
                     recoveryArtifactError = null
                     errorMessage = null
+                    recoveryRoute = AccountAuthorityRecoveryRoute.RecoveryKey
                     phase = AccountAuthorityPhase.RecoveryEntry
+                }
+                AccountAuthorityEvent.StartAccountRecovery -> {
+                    // The offer is withheld where the server would refuse the record: a class 0x01 account's
+                    // authority is replaced only by the key its genesis committed for that purpose.
+                    if (canRecoverThroughAccountRecovery(chain)) {
+                        recoveryArtifactInput = ""
+                        recoveryArtifactError = null
+                        errorMessage = null
+                        accountRecoveryAcknowledged = false
+                        recoveryRoute = AccountAuthorityRecoveryRoute.AccountRecovery
+                        phase = AccountAuthorityPhase.AccountRecoveryNotice
+                    }
+                }
+                is AccountAuthorityEvent.AcknowledgeAccountRecovery -> {
+                    accountRecoveryAcknowledged = event.acknowledged
+                }
+                AccountAuthorityEvent.ContinueFromAccountRecoveryNotice -> coroutineScope.launch {
+                    // The gate, not a decoration on the button, exactly as the artifact confirmation is.
+                    if (!accountRecoveryAcknowledged) return@launch
+                    phase = AccountAuthorityPhase.Submitting
+                    authorityManager.beginAccountRecovery()
+                        .onSuccess { offer ->
+                            // The NEW artifact this record commits, shown once like every other one: an owner
+                            // who came here without an artifact must not leave without one.
+                            recoveryArtifact = offer.recoveryArtifact
+                            artifactConfirmed = false
+                            stepUp = AccountAuthorityStepUp.Recover
+                            phase = AccountAuthorityPhase.Artifact
+                        }
+                        .onFailure {
+                            errorMessage = R.string.screen_account_authority_error_generic
+                            phase = AccountAuthorityPhase.AccountRecoveryNotice
+                        }
                 }
                 is AccountAuthorityEvent.RecoveryArtifactChanged -> {
                     recoveryArtifactInput = event.artifact
@@ -368,7 +503,20 @@ class AccountAuthorityPresenter(
                     pin = event.pin.filter { it.isDigit() }.take(AccountAuthorityState.PIN_LENGTH)
                     errorMessage = null
                 }
-                AccountAuthorityEvent.Submit -> coroutineScope.launch { submitStepUp() }
+                AccountAuthorityEvent.Submit -> coroutineScope.launch {
+                    // The PIN arm only. An account whose step-up runs in the sheet has no PIN to submit, and a
+                    // submission built from an empty field would spend a challenge to be refused.
+                    if (stepUpMethod == AccountAuthorityStepUpMethod.WebSheet) return@launch
+                    submitStepUp(AuthorityStepUp.Pin(pin))
+                }
+                AccountAuthorityEvent.ConfirmInBrowser -> coroutineScope.launch {
+                    if (stepUpMethod != AccountAuthorityStepUpMethod.WebSheet) return@launch
+                    if (awaitingWebStepUp) return@launch
+                    openWebStepUp()
+                }
+                AccountAuthorityEvent.ClearWebStepUpUrl -> {
+                    webStepUpUrl = null
+                }
                 AccountAuthorityEvent.Oppose -> coroutineScope.launch {
                     val accessToken = accessToken() ?: return@launch
                     val currentChain = chain ?: return@launch
@@ -435,6 +583,12 @@ class AccountAuthorityPresenter(
             revocationTarget = revocationTarget,
             stepUp = stepUp,
             stepUpBlock = stepUpBlock,
+            stepUpMethod = stepUpMethod,
+            webStepUpUrl = webStepUpUrl,
+            awaitingWebStepUp = awaitingWebStepUp,
+            recoveryRoute = recoveryRoute,
+            accountRecoveryAcknowledged = accountRecoveryAcknowledged,
+            canRecoverThroughAccountRecovery = canRecoverThroughAccountRecovery(chain),
             pin = pin,
             approvals = approvals,
             errorMessage = errorMessage,
@@ -451,6 +605,36 @@ class AccountAuthorityPresenter(
 private val AccountFactorStatus.hasStrongFactor: Boolean get() = passkeyRegistered || hasPin
 
 /**
+ * The wire purpose one on-screen transition is scoped to, or null where no sheet exists for it.
+ *
+ * An objection is authorized by a signature rather than by a factor, so there is no sheet to open for it and
+ * none is asked for: a proof recorded for a purpose that asks for nothing would be a proof of nothing.
+ */
+private fun AccountAuthorityStepUp.toPurpose(): AuthorityPurpose? = when (this) {
+    AccountAuthorityStepUp.Adopt -> AuthorityPurpose.ADOPT
+    AccountAuthorityStepUp.Grant -> AuthorityPurpose.GRANT
+    AccountAuthorityStepUp.Revoke -> AuthorityPurpose.REVOKE
+    AccountAuthorityStepUp.Recover -> AuthorityPurpose.RECOVER
+    AccountAuthorityStepUp.Oppose -> null
+}
+
+/**
+ * Whether the account-recovery route (authorization 0x02) may be offered for this chain.
+ *
+ * The three conditions the server states: the chain holds a committed authority, so this is not a bootstrap
+ * account's first record; the accountId does NOT commit that authority, because a class 0x01 account's is
+ * replaced only by the key its genesis committed; and nothing is pending, because a rank-0 record cannot take a
+ * slot an equal or higher rank already holds.
+ */
+private fun canRecoverThroughAccountRecovery(chain: AuthorityChainState?): Boolean = chain != null &&
+    chain.state != AuthorityChainState.STATE_BOOTSTRAP &&
+    chain.accountClass != ACCOUNT_CLASS_GENESIS &&
+    chain.pending == null
+
+/** How `GET /account/authority` names an account whose id commits its authority. */
+private const val ACCOUNT_CLASS_GENESIS = "GENESIS"
+
+/**
  * Maps one refusal onto the copy that says what to do about it.
  *
  * Each of these is a different thing for the user, which is why they are not one "something went wrong": a
@@ -459,6 +643,9 @@ private val AccountFactorStatus.hasStrongFactor: Boolean get() = passkeyRegister
  */
 private fun Throwable.toMessageRes(): Int = when (this) {
     is AuthorityError.StepUpRequired -> R.string.screen_account_authority_error_step_up_required
+    // The account holds neither factor, so the page would have nothing to ask. The same copy the block uses,
+    // because it is the same fact arriving from the server instead of from the factor read.
+    is AuthorityError.StepUpUnavailable -> R.string.screen_account_authority_step_up_none
     is AuthorityError.FactorTooFresh -> R.string.screen_account_authority_error_factor_too_fresh
     is AuthorityError.RecoveryTooRecent -> R.string.screen_account_authority_error_recovery_too_recent
     is AuthorityError.ArtifactUnconfirmed -> R.string.screen_account_authority_error_artifact_unconfirmed

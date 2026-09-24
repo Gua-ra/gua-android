@@ -14,7 +14,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -56,6 +58,7 @@ fun AccountAuthorityView(
     state: AccountAuthorityState,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenWebStepUpUrl: (String) -> Unit = {},
 ) {
     val eventSink = state.eventSink
     val snackbarHostState = remember { SnackbarHostState() }
@@ -64,6 +67,16 @@ fun AccountAuthorityView(
         if (successMessage != null) {
             snackbarHostState.showSnackbar(successMessage)
             eventSink(AccountAuthorityEvent.ClearSuccess)
+        }
+    }
+    // GUA FORK: the step-up of an account that holds a passkey runs on the page identity-service serves, so
+    // once the presenter has the one-time URL it is handed to a Custom Tab and forgotten: the URL is single use,
+    // and re-entering this screen must not reopen a sheet whose proof was already spent.
+    val currentOnOpenWebStepUpUrl by rememberUpdatedState(onOpenWebStepUpUrl)
+    LaunchedEffect(state.webStepUpUrl) {
+        state.webStepUpUrl?.let { url ->
+            currentOnOpenWebStepUpUrl(url)
+            eventSink(AccountAuthorityEvent.ClearWebStepUpUrl)
         }
     }
 
@@ -83,6 +96,8 @@ fun AccountAuthorityView(
             AccountAuthorityPhase.Loading -> AsyncLoading()
             AccountAuthorityPhase.Artifact -> ArtifactSection(state = state, eventSink = eventSink)
             AccountAuthorityPhase.RecoveryEntry -> RecoveryEntrySection(state = state, eventSink = eventSink)
+            AccountAuthorityPhase.AccountRecoveryNotice ->
+                AccountRecoveryNoticeSection(state = state, eventSink = eventSink)
             AccountAuthorityPhase.Compare -> CompareSection(state = state, eventSink = eventSink)
             AccountAuthorityPhase.StepUp,
             AccountAuthorityPhase.Submitting -> StepUpSection(state = state, eventSink = eventSink)
@@ -211,6 +226,21 @@ private fun OverviewSection(
                 },
                 leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.KeySolid())),
                 onClick = { eventSink(AccountAuthorityEvent.StartRecovery) },
+            )
+        }
+
+        if (state.canRecoverThroughAccountRecovery) {
+            // The other route, offered second and described as the weaker one, because that is what it is: any
+            // device that still holds this account's authority can stop it while it waits.
+            ListItem(
+                headlineContent = {
+                    Text(stringResource(id = R.string.screen_account_authority_account_recovery_action))
+                },
+                supportingContent = {
+                    Text(stringResource(id = R.string.screen_account_authority_account_recovery_message))
+                },
+                leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Restart())),
+                onClick = { eventSink(AccountAuthorityEvent.StartAccountRecovery) },
             )
         }
 
@@ -474,6 +504,58 @@ private fun CompareSection(
     }
 }
 
+/**
+ * What the account-recovery route costs, before anything is minted (authorization 0x02).
+ *
+ * The acknowledgement is the gate, for the same reason the artifact's is: this route is authorized by the
+ * account's own credentials rather than by a key, so the one thing that keeps it from being a takeover is the
+ * wait and the veto every remaining device holds, and the owner has to know both before starting it.
+ */
+@Composable
+private fun AccountRecoveryNoticeSection(
+    state: AccountAuthorityState,
+    eventSink: (AccountAuthorityEvent) -> Unit,
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Text(
+            text = stringResource(id = R.string.screen_account_authority_account_recovery_header),
+            style = ElementTheme.typography.fontHeadingSmMedium,
+            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+        )
+        Text(
+            text = stringResource(id = R.string.screen_account_authority_account_recovery_notice),
+            style = ElementTheme.typography.fontBodyMdRegular,
+            color = ElementTheme.colors.textSecondary,
+        )
+        Text(
+            text = stringResource(id = R.string.screen_account_authority_account_recovery_warning),
+            style = ElementTheme.typography.fontBodySmRegular,
+            color = ElementTheme.colors.textCriticalPrimary,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+        ListItem(
+            headlineContent = {
+                Text(stringResource(id = R.string.screen_account_authority_account_recovery_confirm))
+            },
+            trailingContent = ListItemContent.Switch(checked = state.accountRecoveryAcknowledged),
+            onClick = {
+                eventSink(
+                    AccountAuthorityEvent.AcknowledgeAccountRecovery(!state.accountRecoveryAcknowledged)
+                )
+            },
+        )
+        state.errorMessage?.let { message -> ErrorText(message) }
+        Button(
+            text = stringResource(id = CommonStrings.action_continue),
+            enabled = state.canContinueFromAccountRecoveryNotice,
+            onClick = { eventSink(AccountAuthorityEvent.ContinueFromAccountRecoveryNotice) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+        )
+    }
+}
+
 @Composable
 private fun StepUpSection(
     state: AccountAuthorityState,
@@ -481,9 +563,9 @@ private fun StepUpSection(
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         state.stepUpBlock?.let { block ->
-            // No PIN field, and no suggestion to add one. An account with a passkey already holds a strong
-            // factor; what is missing is a way to assert it here, which is this app's gap and not the
-            // account's.
+            // No PIN field, and no suggestion to add one. There is one case left here, an account holding
+            // neither factor, and the way out of it is two-step verification rather than anything this screen
+            // can offer.
             Text(
                 text = stringResource(id = R.string.screen_account_authority_pin_header),
                 style = ElementTheme.typography.fontHeadingSmMedium,
@@ -494,11 +576,14 @@ private fun StepUpSection(
                     id = when (block) {
                         AccountAuthorityStepUpBlock.NoFactorRegistered ->
                             R.string.screen_account_authority_step_up_none
-                        AccountAuthorityStepUpBlock.PasskeyNotUsableHere ->
-                            R.string.screen_account_authority_step_up_passkey_only
                     }
                 )
             )
+            return@Column
+        }
+
+        if (state.stepUpMethod == AccountAuthorityStepUpMethod.WebSheet) {
+            WebStepUpSection(state = state, eventSink = eventSink)
             return@Column
         }
 
@@ -535,6 +620,48 @@ private fun StepUpSection(
             text = stringResource(id = CommonStrings.action_confirm),
             enabled = state.canSubmit,
             onClick = { eventSink(AccountAuthorityEvent.Submit) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+        )
+    }
+}
+
+/**
+ * The passkey arm, which runs in a Custom Tab because that is where an assertion can run on this platform.
+ *
+ * The copy says where the confirmation happens and that the passkey is what it asks for, and it does not offer
+ * a PIN: an account holding a passkey already has the stronger of the two factors, and the page itself offers
+ * the PIN to whoever also has one. Nothing comes back through this screen, so there is no field here and no
+ * code to paste: the app asks the server again once it is in front.
+ */
+@Composable
+private fun WebStepUpSection(
+    state: AccountAuthorityState,
+    eventSink: (AccountAuthorityEvent) -> Unit,
+) {
+    Column {
+        Text(
+            text = stringResource(id = R.string.screen_account_authority_pin_header),
+            style = ElementTheme.typography.fontHeadingSmMedium,
+            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+        )
+        Text(
+            text = stringResource(
+                id = if (state.awaitingWebStepUp) {
+                    R.string.screen_account_authority_web_step_up_waiting
+                } else {
+                    R.string.screen_account_authority_web_step_up_message
+                }
+            ),
+            style = ElementTheme.typography.fontBodyMdRegular,
+            color = ElementTheme.colors.textSecondary,
+        )
+        state.errorMessage?.let { message -> ErrorText(message) }
+        Button(
+            text = stringResource(id = R.string.screen_account_authority_web_step_up_action),
+            enabled = state.canConfirmInBrowser,
+            onClick = { eventSink(AccountAuthorityEvent.ConfirmInBrowser) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 16.dp),

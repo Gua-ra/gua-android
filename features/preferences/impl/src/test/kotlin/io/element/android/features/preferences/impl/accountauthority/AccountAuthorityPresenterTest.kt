@@ -7,6 +7,7 @@
 
 package io.element.android.features.preferences.impl.accountauthority
 
+import androidx.lifecycle.Lifecycle
 import app.cash.turbine.ReceiveTurbine
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.preferences.impl.R
@@ -33,8 +34,9 @@ import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
+import io.element.android.tests.testutils.FakeLifecycleOwner
 import io.element.android.tests.testutils.WarmUpRule
-import io.element.android.tests.testutils.test
+import io.element.android.tests.testutils.testWithLifecycleOwner
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -165,8 +167,8 @@ class AccountAuthorityPresenterTest {
             awaitFirst { it.canSubmit }.eventSink(AccountAuthorityEvent.Submit)
 
             val refused = awaitFirst { it.errorMessage != null }
-            // The copy says the account's own factors and says the passkey cannot be used here. There is no
-            // branch in this screen that falls back to a code sent to the phone.
+            // The copy names the two factors the account's own step-up accepts, the passkey and the PIN. There
+            // is no branch in this screen that falls back to a code sent to the phone.
             assertThat(refused.errorMessage)
                 .isEqualTo(R.string.screen_account_authority_error_step_up_required)
             assertThat(refused.phase).isEqualTo(AccountAuthorityPhase.StepUp)
@@ -467,40 +469,6 @@ class AccountAuthorityPresenterTest {
         }
     }
 
-    /**
-     * C4, the line that matters most: a passkey-only account is never told to add a PIN.
-     *
-     * The branch is over what the server says the account holds, and the answer for this account is that the
-     * step-up cannot be produced on this build. That is this app's gap, and the copy says so.
-     */
-    @Test
-    fun `present - a passkey-only account is told the passkey cannot be used, not to add a PIN`() = runTest {
-        val manager = FakeAccountAuthorityManager()
-        val presenter = createPresenter(
-            manager = manager,
-            identityServiceClient = FakeIdentityServiceClient(
-                factorStatusResult = {
-                    Result.success(aFactorStatus(hasPin = false, passkeyRegistered = true))
-                },
-            ),
-        )
-
-        presenter.test {
-            awaitFirst { it.canAdopt }.eventSink(AccountAuthorityEvent.StartAdoption)
-            awaitFirst { it.phase == AccountAuthorityPhase.Artifact }
-                .eventSink(AccountAuthorityEvent.ConfirmArtifactStored(true))
-            awaitFirst { it.canContinueFromArtifact }
-                .eventSink(AccountAuthorityEvent.ContinueFromArtifact)
-
-            val blocked = awaitFirst { it.stepUpBlock != null }
-            assertThat(blocked.stepUpBlock).isEqualTo(AccountAuthorityStepUpBlock.PasskeyNotUsableHere)
-            // No PIN field is offered and nothing can be submitted, so nothing reaches the chain.
-            assertThat(blocked.canSubmit).isFalse()
-            assertThat(manager.adoptCalls).isEmpty()
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
     @Test
     fun `present - an account with no factor at all is told that, and is not offered a PIN field`() = runTest {
         val presenter = createPresenter(
@@ -563,6 +531,15 @@ class AccountAuthorityPresenterTest {
             assertThat(offered.thisDeviceFingerprint).isEqualTo("9KDC ZT8A")
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    private suspend fun AccountAuthorityPresenter.test(
+        lifecycleOwner: FakeLifecycleOwner = FakeLifecycleOwner(Lifecycle.State.RESUMED),
+        block: suspend ReceiveTurbine<AccountAuthorityState>.() -> Unit,
+    ) {
+        // The sheet runs in another activity, so this screen reads its return from the lifecycle, exactly as the
+        // two-step-verification screen reads its factors back.
+        testWithLifecycleOwner(lifecycleOwner) { block() }
     }
 
     private suspend fun ReceiveTurbine<AccountAuthorityState>.awaitFirst(

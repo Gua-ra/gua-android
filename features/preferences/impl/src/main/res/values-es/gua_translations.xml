@@ -95,7 +95,7 @@
     <string name="screen_account_authority_approval_message">Código %1$s</string>
     <string name="screen_account_authority_approval_description">Un navegador con sesión en tu cuenta pidió hacer un cambio que solo este teléfono puede aprobar. Apruébalo solo si el código de arriba coincide con el de esa pantalla y fuiste tú quien lo inició.</string>
     <string name="screen_account_authority_approval_action">Aprobar</string>
-    <string name="screen_account_authority_error_step_up_required">Para esto hace falta tu PIN de 6 dígitos de la cuenta. Si tu cuenta solo tiene una clave de acceso, todavía no se puede usar aquí.</string>
+    <string name="screen_account_authority_error_step_up_required">No recibimos esa confirmación. Confirma que eres tú con tu llave de acceso o con el PIN de 6 dígitos de tu cuenta e inténtalo de nuevo.</string>
     <string name="screen_account_authority_error_factor_too_fresh">Configuraste este PIN o clave de acceso hace muy poco. Inténtalo de nuevo en unos días.</string>
     <string name="screen_account_authority_error_recovery_too_recent">Tu cuenta se recuperó hace poco. Por seguridad, esto tiene que esperar unos días.</string>
     <string name="screen_account_authority_error_artifact_unconfirmed">Guarda primero tu clave de recuperación.</string>
@@ -111,7 +111,7 @@
     <string name="screen_account_authority_error_opposition_refused">La oposición a esto tiene que venir de un dispositivo que tenga la autoridad de tu cuenta.</string>
     <string name="screen_account_authority_error_generic">Algo salió mal. Inténtalo de nuevo.</string>
     <string name="screen_account_authority_revoked">Eliminado.</string>
-    <string name="screen_account_authority_lost_message">Esta cuenta ya no puede aprobar cambios desde ningún dispositivo. Tu cuenta, tus chats y tus mensajes no se ven afectados, y puedes seguir usando Gua con normalidad. Recuperar la aprobación no es posible: permitiría que cualquiera que entrara en tu cuenta se quedara con ella.</string>
+    <string name="screen_account_authority_lost_message">Esta cuenta no tiene ningún dispositivo que pueda aprobar cambios. Tu cuenta, tus chats y tus mensajes no se ven afectados, y puedes seguir usando Gua con normalidad. Tu clave de recuperación le devuelve la aprobación a un teléfono al momento. Sin ella, este teléfono puede pedir la aprobación por su cuenta, y esa petición espera varios días, durante los cuales cualquier dispositivo que aún tenga aprobación puede detenerla.</string>
     <string name="screen_account_authority_device_this_phone">(este teléfono)</string>
     <string name="screen_account_authority_revoke_action">Eliminar</string>
     <string name="screen_account_authority_revoke_self_action">Eliminar este teléfono</string>
@@ -138,7 +138,15 @@
     <string name="screen_account_authority_pin_footer_revoke_self">Confirma tu PIN de 6 dígitos para eliminar este teléfono. Es inmediato, y este teléfono ya no aprobará nada.</string>
     <string name="screen_account_authority_pin_footer_revoke_two_devices">Confirma tu PIN de 6 dígitos para eliminar ese teléfono. Tu cuenta tiene dos teléfonos que pueden aprobar cambios, así que %1$s puede oponerse a que lo eliminen y nada ocurre hasta que eso se resuelva.</string>
     <string name="screen_account_authority_step_up_none">Tu cuenta no tiene PIN ni llave de acceso, así que todavía no hay nada con lo que confirmar esto. Configura primero la verificación en dos pasos.</string>
-    <string name="screen_account_authority_step_up_passkey_only">Tu cuenta está protegida con una llave de acceso. Esta aplicación aún no puede usar una llave de acceso para esto, así que no puedes hacerlo desde este teléfono. No necesitas añadir un PIN: la llave de acceso es la más fuerte de las dos.</string>
     <string name="screen_account_authority_error_unknown_candidate">La solicitud de ese teléfono ha caducado, o no es la que comparaste. Vuelve a empezar en ese teléfono.</string>
     <string name="screen_account_authority_error_no_channel">Ahora no podemos avisar a tus otros dispositivos. Abre Gua en ellos e inténtalo de nuevo.</string>
+    <string name="screen_account_authority_web_step_up_message">Vas a confirmar esto en tu navegador con tu llave de acceso. Tu cuenta guarda esa confirmación solo para este paso, durante 15 minutos.</string>
+    <string name="screen_account_authority_web_step_up_waiting">Termina de confirmar en tu navegador. Vuelve aquí cuando acabes y este paso sigue solo.</string>
+    <string name="screen_account_authority_web_step_up_action">Confirmar en el navegador</string>
+    <string name="screen_account_authority_account_recovery_action">No tengo mi clave de recuperación</string>
+    <string name="screen_account_authority_account_recovery_message">Pide la aprobación con tu inicio de sesión. Espera varios días y cualquier teléfono que aún tenga aprobación puede detenerla.</string>
+    <string name="screen_account_authority_account_recovery_header">Pedir aprobación sin tu clave de recuperación</string>
+    <string name="screen_account_authority_account_recovery_notice">Este teléfono pide ser el único que puede aprobar cambios en tu cuenta. Espera varios días, se avisa a todos los dispositivos que has registrado y, mientras espera, cualquier teléfono que aún tenga aprobación puede detenerlo. Tu clave de recuperación es el camino más rápido, y este es el que hay sin ella.</string>
+    <string name="screen_account_authority_account_recovery_warning">Este es el más débil de los dos caminos. No lo empieces si otra persona puede tener acceso a tu cuenta: usa tu clave de recuperación o quita ese acceso primero.</string>
+    <string name="screen_account_authority_account_recovery_confirm">Entiendo que esto espera y se puede detener</string>
 </resources>

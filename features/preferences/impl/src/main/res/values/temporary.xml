@@ -105,7 +105,7 @@
     <string name="screen_account_authority_approval_message">Code %1$s</string>
     <string name="screen_account_authority_approval_description">A browser signed in to your account asked to make a change only this phone can approve. Approve it only if the code above matches the one on that screen and you started it.</string>
     <string name="screen_account_authority_approval_action">Approve</string>
-    <string name="screen_account_authority_error_step_up_required">Your 6-digit account PIN is needed for this. If your account has only a passkey, it cannot be used here yet.</string>
+    <string name="screen_account_authority_error_step_up_required">We did not get that confirmation. Confirm it\'s you with your passkey, or with your 6-digit account PIN, and try again.</string>
     <string name="screen_account_authority_error_factor_too_fresh">You set this PIN or passkey up too recently. Try again in a few days.</string>
     <string name="screen_account_authority_error_recovery_too_recent">Your account was recovered recently. For your security, this has to wait a few days.</string>
     <string name="screen_account_authority_error_artifact_unconfirmed">Store your recovery key first.</string>
@@ -121,7 +121,7 @@
     <string name="screen_account_authority_error_opposition_refused">Objecting to this has to come from a device that holds your account\'s authority.</string>
     <string name="screen_account_authority_error_generic">Something went wrong. Please try again.</string>
     <string name="screen_account_authority_revoked">Removed.</string>
-    <string name="screen_account_authority_lost_message">This account can no longer approve changes from any device. Your account, your chats and your messages are unaffected, and you can keep using Gua normally. Regaining approval is not possible: it would let anyone who got into your account take it over.</string>
+    <string name="screen_account_authority_lost_message">This account has no device that can approve changes. Your account, your chats and your messages are unaffected, and you can keep using Gua normally. Your recovery key gives approval back to a phone straight away. Without it, this phone can ask for approval on its own, and that request waits several days, during which any device that still holds approval can stop it.</string>
     <string name="screen_account_authority_device_this_phone">(this phone)</string>
     <string name="screen_account_authority_revoke_action">Remove</string>
     <string name="screen_account_authority_revoke_self_action">Remove this phone</string>
@@ -148,7 +148,15 @@
     <string name="screen_account_authority_pin_footer_revoke_self">Confirm your 6-digit PIN to remove this phone. It takes effect right away and this phone will no longer approve anything.</string>
     <string name="screen_account_authority_pin_footer_revoke_two_devices">Confirm your 6-digit PIN to remove that phone. Your account has two phones that can approve changes, so %1$s can object to being removed and nothing happens until that is settled.</string>
     <string name="screen_account_authority_step_up_none">Your account has no PIN and no passkey, so there is nothing to confirm this with yet. Set up two-step verification first.</string>
-    <string name="screen_account_authority_step_up_passkey_only">Your account is protected by a passkey. This app cannot use a passkey for this yet, so you cannot do it from this phone. You do not need to add a PIN: a passkey is the stronger of the two.</string>
     <string name="screen_account_authority_error_unknown_candidate">That phone\'s request has expired, or it is not the one you compared. Start again on that phone.</string>
     <string name="screen_account_authority_error_no_channel">We can\'t warn your other devices about this right now. Open Gua on them, then try again.</string>
+    <string name="screen_account_authority_web_step_up_message">You will confirm this in your browser with your passkey. Your account keeps that confirmation for this one step, for 15 minutes.</string>
+    <string name="screen_account_authority_web_step_up_waiting">Finish confirming in your browser. Come back here when you are done and this step continues on its own.</string>
+    <string name="screen_account_authority_web_step_up_action">Confirm in the browser</string>
+    <string name="screen_account_authority_account_recovery_action">I do not have my recovery key</string>
+    <string name="screen_account_authority_account_recovery_message">Ask for approval with your sign-in instead. It waits several days and any phone that still has approval can stop it.</string>
+    <string name="screen_account_authority_account_recovery_header">Asking for approval without your recovery key</string>
+    <string name="screen_account_authority_account_recovery_notice">This phone asks to become the only one that can approve changes to your account. It waits several days, every device you have registered is told, and while it waits any phone that still has approval can stop it. Your recovery key is the faster way, and this is what there is without it.</string>
+    <string name="screen_account_authority_account_recovery_warning">This is the weaker of the two ways. Do not start it if someone else may have access to your account: use your recovery key instead, or remove that access first.</string>
+    <string name="screen_account_authority_account_recovery_confirm">I understand this waits and can be stopped</string>
 </resources>
