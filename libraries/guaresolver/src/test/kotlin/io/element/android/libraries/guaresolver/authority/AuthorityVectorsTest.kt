@@ -152,6 +152,43 @@ class AuthorityVectorsTest {
         }
     }
 
+    /**
+     * The case an artifact comes back in, which is the divergence these entries were added to close.
+     *
+     * It is written on paper in capitals and typed back through a keyboard that capitalises, and both ports
+     * read it. Until these entries existed both suites passed with gua-ios forgiving case and this one not,
+     * which is the interop failure the artifact exists to avoid reached by the narrowest route there is: the
+     * owner types their own key and one of their two phones says no.
+     */
+    @Test
+    fun `an artifact reads back in whatever case it was typed in`() {
+        val spellings = (recoveryArtifact()["spellings"] as JsonArray).map { it.jsonObject }
+        assertThat(spellings.any { it["key"] != null }).isTrue()
+        assertThat(spellings.any { it["reason"] != null }).isTrue()
+
+        spellings.forEach { spelling ->
+            val expectedKey = spelling["key"]?.jsonPrimitive?.content
+            if (expectedKey != null) {
+                val seed = hex(keys()[expectedKey]!!.jsonObject.string("seedHex"))
+                assertThat(RecoveryArtifact.decode(spelling.string("artifact"))).isEqualTo(seed)
+            } else {
+                // The fold is ASCII and stops there. A character some Unicode mapping would turn into an
+                // alphabet letter is not the case of anything that was printed.
+                val thrown = runCatchingExceptions {
+                    RecoveryArtifact.decode(spelling.string("artifact"))
+                }.exceptionOrNull()
+                assertThat(thrown).isInstanceOf(InvalidAuthorityRecordException::class.java)
+                assertThat((thrown as InvalidAuthorityRecordException).reason)
+                    .isEqualTo(spelling.string("reason"))
+            }
+        }
+
+        // And what is handed out is still lowercase. Only the reader forgives.
+        (recoveryArtifact()["vectors"] as JsonArray).map { it.jsonObject }.forEach { case ->
+            assertThat(case.string("artifact")).isEqualTo(case.string("artifact").lowercase())
+        }
+    }
+
     @Test
     fun `every artifact the vectors reject is refused here, for the rule they name`() {
         val rejections = (recoveryArtifact()["rejections"] as JsonArray).map { it.jsonObject }
