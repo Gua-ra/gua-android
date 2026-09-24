@@ -46,6 +46,9 @@ class FakeAccountAuthorityClient(
         Result.success(emptyList())
     },
     private val removeNotificationResult: () -> Result<Unit> = { Result.success(Unit) },
+    private val webStepUpResult: (AuthorityPurpose) -> Result<String> = {
+        Result.success(A_STEP_UP_URL)
+    },
 ) : AccountAuthorityClient {
     data class ChallengeCall(val purpose: AuthorityPurpose, val stepUp: AuthorityStepUp)
 
@@ -60,6 +63,7 @@ class FakeAccountAuthorityClient(
     val signApprovalCalls: MutableList<Pair<String, String>> = mutableListOf()
     val registerNotificationCalls: MutableList<SecurityNotificationRegistration> = mutableListOf()
     val removeNotificationCalls: MutableList<SecurityNotificationRemoval> = mutableListOf()
+    val webStepUpCalls: MutableList<AuthorityPurpose> = mutableListOf()
 
     override suspend fun challenge(
         accessToken: String,
@@ -68,6 +72,11 @@ class FakeAccountAuthorityClient(
     ): Result<AuthorityChallenge> {
         challengeCalls += ChallengeCall(purpose, stepUp)
         return challengeResult(purpose)
+    }
+
+    override suspend fun startWebStepUp(accessToken: String, purpose: AuthorityPurpose): Result<String> {
+        webStepUpCalls += purpose
+        return webStepUpResult(purpose)
     }
 
     override suspend fun adopt(
@@ -162,5 +171,8 @@ class FakeAccountAuthorityClient(
     companion object {
         /** 32 bytes, base64url without padding, as the server mints them. */
         const val A_CHALLENGE_B64 = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"
+
+        /** The one-time URL a web step-up runs at, on the sign-in web origin. */
+        const val A_STEP_UP_URL = "https://auth.example.org/login/enroll/AbCdEf"
     }
 }

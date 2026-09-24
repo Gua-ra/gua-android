@@ -9,6 +9,7 @@ package io.element.android.libraries.guaresolver.internal
 
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.androidutils.json.DefaultJsonProvider
+import io.element.android.libraries.guaresolver.FakeEnrollmentRedirectProvider
 import io.element.android.libraries.guaresolver.FakeGuaDeployment
 import io.element.android.libraries.guaresolver.authority.AuthorityError
 import io.element.android.libraries.guaresolver.authority.AuthorityPurpose
@@ -80,6 +81,125 @@ class DefaultAccountAuthorityClientTest {
         // No PIN travels with a passkey assertion, and no phone code travels with either.
         assertThat(body).doesNotContain("pin")
         assertThat(body).doesNotContain("otp")
+        server.shutdown()
+    }
+
+    /**
+     * The step-up a passkey account takes: a purpose, this build's redirect, and nothing else.
+     *
+     * Nothing comes back but the URL, because the proof the page leaves behind is a row the server wrote. A
+     * response field the client carried back would be a value a client could be talked into carrying somewhere
+     * else.
+     */
+    @Test
+    fun `a web step-up start carries the purpose and this build's redirect, and never a number`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setBody("""{ "stepUpUrl": "https://auth.example.org/login/enroll/AbCd" }"""))
+        val client = createClient(server)
+
+        val url = client.startWebStepUp("a-token", AuthorityPurpose.ADOPT).getOrThrow()
+
+        assertThat(url).isEqualTo("https://auth.example.org/login/enroll/AbCd")
+        val request = server.takeRequest()
+        assertThat(request.method).isEqualTo("POST")
+        assertThat(request.path).isEqualTo("/security/authority/step-up/start")
+        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer a-token")
+        val body = request.body.readUtf8()
+        assertThat(body).contains("\"purpose\":\"ADOPT\"")
+        assertThat(body).contains("\"redirectUri\":\"global.gua.dev:/oidc\"")
+        // No arm of that page sends a code, and nothing here can ask it to.
+        assertThat(body).doesNotContain("phone")
+        assertThat(body).doesNotContain("otp")
+        server.shutdown()
+    }
+
+    @Test
+    fun `a challenge for a step-up taken in the sheet carries no factor of its own`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setBody("""{ "challenge": "Y2hhbGxlbmdl", "expiresInSeconds": 900 }"""))
+        val client = createClient(server)
+
+        client.challenge("a-token", AuthorityPurpose.ADOPT, AuthorityStepUp.WebSheet).getOrThrow()
+
+        val body = server.takeRequest().body.readUtf8()
+        assertThat(body).contains("\"purpose\":\"ADOPT\"")
+        // The server spends the proof it recorded for this account, this token and this purpose. A request that
+        // carried a factor of its own would never look at the sheet at all.
+        assertThat(body).doesNotContain("pin")
+        assertThat(body).doesNotContain("passkey")
+        assertThat(body).doesNotContain("otp")
+        server.shutdown()
+    }
+
+    /**
+     * A deployment that has not allowlisted this build's scheme must not dead-end the sheet.
+     *
+     * The retry runs once and names nothing, so the deployment parks the sheet at its own configured default,
+     * which is exactly what a factor-enrollment start does with the same refusal.
+     */
+    @Test
+    fun `a refused redirect is answered once by asking again with none`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setResponseCode(400)
+                .setBody("""{ "code": "invalid_redirect_uri", "message": "not allowed" }""")
+        )
+        server.enqueue(MockResponse().setBody("""{ "stepUpUrl": "https://auth.example.org/login/enroll/Ok" }"""))
+        val client = createClient(server)
+
+        val url = client.startWebStepUp("a-token", AuthorityPurpose.REVOKE).getOrThrow()
+
+        assertThat(url).isEqualTo("https://auth.example.org/login/enroll/Ok")
+        assertThat(server.takeRequest().body.readUtf8()).contains("redirectUri")
+        val second = server.takeRequest().body.readUtf8()
+        assertThat(second).contains("\"purpose\":\"REVOKE\"")
+        assertThat(second).doesNotContain("redirectUri")
+        server.shutdown()
+    }
+
+    @Test
+    fun `a second redirect refusal reaches the caller instead of looping`() = runTest {
+        val server = MockWebServer()
+        repeat(2) {
+            server.enqueue(
+                MockResponse().setResponseCode(400)
+                    .setBody("""{ "code": "invalid_redirect_uri", "message": "not allowed" }""")
+            )
+        }
+        val client = createClient(server)
+
+        val error = client.startWebStepUp("a-token", AuthorityPurpose.ADOPT).exceptionOrNull()
+
+        assertThat(error).isEqualTo(AuthorityError.RedirectRefused)
+        assertThat(server.requestCount).isEqualTo(2)
+        server.shutdown()
+    }
+
+    @Test
+    fun `an account with neither factor is told the sheet has nothing to ask`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setResponseCode(409)
+                .setBody("""{ "code": "authority_step_up_unavailable", "message": "no factor" }""")
+        )
+        val client = createClient(server)
+
+        assertThat(client.startWebStepUp("a-token", AuthorityPurpose.ADOPT).exceptionOrNull())
+            .isEqualTo(AuthorityError.StepUpUnavailable)
+        server.shutdown()
+    }
+
+    @Test
+    fun `a purpose that asks for no factor is refused with its own code`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setResponseCode(409)
+                .setBody("""{ "code": "authority_step_up_purpose_refused", "message": "not this way" }""")
+        )
+        val client = createClient(server)
+
+        assertThat(client.startWebStepUp("a-token", AuthorityPurpose.ADOPT).exceptionOrNull())
+            .isEqualTo(AuthorityError.StepUpPurposeRefused)
         server.shutdown()
     }
 
@@ -221,6 +341,7 @@ class DefaultAccountAuthorityClientTest {
     fun `an unconfigured deployment is refused without a request`() = runTest {
         val client = DefaultAccountAuthorityClient(
             retrofitFactory = retrofitFactory(),
+            enrollmentRedirectProvider = FakeEnrollmentRedirectProvider(),
             deployment = FakeGuaDeployment(identityServiceBaseUrl = null),
         )
 
@@ -241,6 +362,7 @@ class DefaultAccountAuthorityClientTest {
 
     private fun createClient(server: MockWebServer) = DefaultAccountAuthorityClient(
         retrofitFactory = retrofitFactory(),
+        enrollmentRedirectProvider = FakeEnrollmentRedirectProvider(),
         deployment = FakeGuaDeployment(identityServiceBaseUrl = server.url("/").toString()),
     )
 

@@ -8,7 +8,8 @@
 package io.element.android.libraries.guaresolver.authority
 
 /**
- * GUA FORK: the identity-service `/account/authority` endpoints (ADM-009).
+ * GUA FORK: the identity-service `/account/authority` endpoints, and the one `/security/` endpoint that only
+ * exists for them ([startWebStepUp], ADM-009).
  *
  * A separate client from [io.element.android.libraries.guaresolver.IdentityServiceClient] on purpose. Every
  * call here is refused with [AuthorityError.Disabled] until a deployment turns the feature on, and none of
@@ -41,6 +42,28 @@ interface AccountAuthorityClient {
         purpose: AuthorityPurpose,
         stepUp: AuthorityStepUp,
     ): Result<AuthorityChallenge>
+
+    /**
+     * Mints the one-time URL of a WEB step-up scoped to one authority purpose
+     * (`POST /security/authority/step-up/start`).
+     *
+     * This is the same handoff first-PIN and passkey enrollment already use: the caller opens the URL in a
+     * Custom Tab, the page runs a user-verifying passkey assertion or asks for the account PIN, and what it
+     * leaves behind is a row the server wrote rather than a token this client carries. The next [challenge]
+     * for that purpose spends it, which is why nothing here comes back except the URL.
+     *
+     * It exists because this platform cannot produce a WebAuthn assertion for a bearer session of its own, and
+     * without it the policy would collapse to the PIN and a passkey-only account would be told to add a weaker
+     * factor to gain authority.
+     *
+     * @param accessToken the caller's own session, which the sheet and its proof are bound to: a proof taken
+     * under one token is not spendable by another session of the same account.
+     * @param purpose the transition the proof is scoped to. A proof taken for one purpose is not a proof for
+     * another, and the purposes that ask for no factor are refused with
+     * [AuthorityError.StepUpPurposeRefused].
+     * @return the absolute one-time URL to open, or [Result.failure] with an [AuthorityError].
+     */
+    suspend fun startWebStepUp(accessToken: String, purpose: AuthorityPurpose): Result<String>
 
     /** Submits the signed `AdoptRoot` (`POST /account/authority/adopt`). */
     suspend fun adopt(accessToken: String, submission: AuthorityRecordSubmission): Result<AuthoritySubmission>
@@ -159,6 +182,20 @@ sealed interface AuthorityStepUp {
      * reshaped: the server verifies what the authenticator signed.
      */
     data class Passkey(val stepUpId: String, val credentialJson: String) : AuthorityStepUp
+
+    /**
+     * The same two factors, taken in the web sheet [AccountAuthorityClient.startWebStepUp] opened.
+     *
+     * Nothing travels with it, and that is the point: the proof is a row the server wrote about a ceremony it
+     * ran, looked up by the account, the acting access token and the purpose. A token a client carried back
+     * would be a token a client could be talked into carrying somewhere else.
+     *
+     * It is a case of its own rather than [None] because the two mean opposite things. [None] is "this purpose
+     * asks for no factor". This is "a factor was proved, and not in this request", which the server accepts
+     * only for a purpose that does ask for one. Collapsing them would let a call site say "no factor needed"
+     * about a transition that needs one.
+     */
+    data object WebSheet : AuthorityStepUp
 }
 
 /**
@@ -334,6 +371,23 @@ sealed class AuthorityError(val code: String) : Exception(code) {
 
     /** No accepted factor was produced. The way out is the account's own passkey or PIN, never an SMS. */
     data object StepUpRequired : AuthorityError("authority_step_up_required")
+
+    /**
+     * The account holds neither a passkey this deployment can assert nor a PIN, so the web step-up has
+     * nothing to ask for. Stated at the entry point rather than on a page whose every button is refused.
+     */
+    data object StepUpUnavailable : AuthorityError("authority_step_up_unavailable")
+
+    /** A web step-up was asked for a purpose that asks for no factor, so the proof would prove nothing. */
+    data object StepUpPurposeRefused : AuthorityError("authority_step_up_purpose_refused")
+
+    /**
+     * The redirect this build named on a web step-up start is not one the deployment allows.
+     *
+     * Answered once by starting again without one, so a deployment that has not allowlisted this variant
+     * parks the sheet at its own default rather than dead-ending it. A second refusal reaches the caller.
+     */
+    data object RedirectRefused : AuthorityError("invalid_redirect_uri")
 
     /** The presented factor is itself inside the fresh-factor hold identity-service enforces. */
     data object FactorTooFresh : AuthorityError("authority_factor_too_fresh")
