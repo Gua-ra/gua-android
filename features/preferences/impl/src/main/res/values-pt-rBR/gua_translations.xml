@@ -138,6 +138,7 @@
     <string name="screen_account_authority_pin_footer_revoke_self">Confirme seu PIN de 6 dígitos para remover este telefone. Vale na hora, e este telefone não vai mais aprovar nada.</string>
     <string name="screen_account_authority_pin_footer_revoke_two_devices">Confirme seu PIN de 6 dígitos para remover esse telefone. Sua conta tem dois telefones que podem aprovar alterações, então %1$s pode se opor à remoção e nada acontece até isso ser resolvido.</string>
     <string name="screen_account_authority_step_up_none">Sua conta não tem PIN nem chave de acesso, então ainda não há como confirmar isso. Configure a verificação em duas etapas primeiro.</string>
+    <string name="screen_account_authority_step_up_objection_passkey">Contestar uma segunda vez precisa do PIN da sua conta, e sua chave de acesso ainda não pode ser usada nesta etapa. Qualquer telefone seu que possa aprovar alterações pode contestar no seu lugar, sem confirmar nada.</string>
     <string name="screen_account_authority_error_unknown_candidate">O pedido daquele telefone expirou, ou não é o que você comparou. Comece de novo naquele telefone.</string>
     <string name="screen_account_authority_error_no_channel">Não conseguimos avisar seus outros dispositivos agora. Abra o Gua neles e tente novamente.</string>
     <string name="screen_account_authority_web_step_up_message">Você vai confirmar isso no navegador com sua chave de acesso. Sua conta guarda essa confirmação para esta etapa apenas, por 15 minutos.</string>
