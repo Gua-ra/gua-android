@@ -128,7 +128,7 @@
     <string name="screen_account_authority_recover_action">Usar mi clave de recuperación</string>
     <string name="screen_account_authority_recover_message">Sustituye todos los teléfonos que pueden aprobar cambios por este. Tarda varios días y tus otros teléfonos son avisados.</string>
     <string name="screen_account_authority_recovery_entry_header">Introduce tu clave de recuperación</string>
-    <string name="screen_account_authority_recovery_entry_message">Las palabras que te mostramos cuando esta cuenta se configuró para aprobaciones. Escríbelas exactamente como se mostraron, en minúsculas.</string>
+    <string name="screen_account_authority_recovery_entry_message">Las palabras que te mostramos cuando esta cuenta se configuró para aprobaciones. Escríbelas exactamente como se mostraron. Mayúsculas o minúsculas funcionan.</string>
     <string name="screen_account_authority_recovery_artifact_wrong_kind">Esa no es una clave de recuperación de Gua. Empieza por gua-recovery-1.</string>
     <string name="screen_account_authority_recovery_artifact_incomplete">Esa clave de recuperación está incompleta. Comprueba que estén todos los grupos de cuatro caracteres.</string>
     <string name="screen_account_authority_recovery_artifact_invalid">No hemos podido leer esa clave de recuperación. Revísala por si hay errores e inténtalo de nuevo.</string>
@@ -150,4 +150,14 @@
     <string name="screen_account_authority_account_recovery_notice">Este teléfono pide ser el único que puede aprobar cambios en tu cuenta. Espera varios días, se avisa a todos los dispositivos que has registrado y, mientras espera, cualquier teléfono que aún tenga aprobación puede detenerlo. Tu clave de recuperación es el camino más rápido, y este es el que hay sin ella.</string>
     <string name="screen_account_authority_account_recovery_warning">Este es el más débil de los dos caminos. No lo empieces si otra persona puede tener acceso a tu cuenta: usa tu clave de recuperación o quita ese acceso primero.</string>
     <string name="screen_account_authority_account_recovery_confirm">Entiendo que esto espera y se puede detener</string>
+    <string name="screen_account_authority_alerts_header">Alertas de seguridad</string>
+    <string name="screen_account_authority_alerts_message">Donde te avisamos cuando algo pide aprobación sobre tu cuenta. Cada teléfono con Gua se registra una vez, y los avisos llegan a todos.</string>
+    <string name="screen_account_authority_alerts_none">Todavía no hay ningún teléfono registrado. Gua registrará este la próxima vez que se inicie.</string>
+    <string name="screen_account_authority_alerts_row_message">Visto por última vez el %1$s</string>
+    <string name="screen_account_authority_alerts_remove_action">Dejar de avisar</string>
+    <string name="screen_account_authority_alerts_remove_self_action">Dejar de avisar a este teléfono</string>
+    <string name="screen_account_authority_alerts_remove_footer">Sea el teléfono que sea el que quites, incluido este, primero te pedimos confirmar que eres tú, y los teléfonos que queden serán avisados.</string>
+    <string name="screen_account_authority_alerts_removed">Quitado. Los teléfonos que quedan fueron avisados.</string>
+    <string name="screen_account_authority_pin_footer_remove_alerts">Confirma tu PIN de 6 dígitos para dejar de avisar a ese teléfono. Los teléfonos que queden serán avisados.</string>
+    <string name="screen_account_authority_step_up_alerts_passkey">Quitar un aviso necesita el PIN de tu cuenta, y tu llave de acceso todavía no se puede usar en este paso.</string>
 </resources>

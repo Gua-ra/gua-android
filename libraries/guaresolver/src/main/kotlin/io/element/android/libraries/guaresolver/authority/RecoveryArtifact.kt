@@ -19,9 +19,9 @@ import io.element.android.libraries.guaresolver.genesis.InvalidGenesisException
  * and this artifact never regains authority, and unrecoverable is a permitted end state. Whoever holds it,
  * together with a way into the account, can take the account after a wait, so the copy beside it says so.
  *
- * The encoding is the base32 alphabet the accountId already uses, lowercase with no padding and no
- * look-alike characters, in groups of four. It is never uppercased: the decoder is case-sensitive, and an
- * artifact a person copied in the case it was shown in has to be the artifact that comes back.
+ * The encoding is the base32 alphabet the accountId already uses, lowercase with no padding, in groups of
+ * four. It is rendered in lowercase and only ever in lowercase; what forgives case is the reader, because
+ * the artifact comes back off paper and off another phone's screen.
  */
 object RecoveryArtifact {
     /** Names the framework and the version, so a future framework 0x02 artifact is not mistaken for this one. */
@@ -49,11 +49,17 @@ object RecoveryArtifact {
      * which is a wrong answer to "I typed it wrong".
      *
      * Whitespace between groups is free-form, because a person retyping four-character groups will not
-     * reproduce the spacing. Case is not: the alphabet is lowercase and the decoder is case-sensitive, so an
-     * artifact copied in the case it was shown in is the artifact that comes back.
+     * reproduce the spacing. So is case, by [foldAsciiCase]: the alphabet is a to z with 2 to 7, so folding an
+     * ASCII capital onto its lowercase names that letter and no other, and reading either case therefore
+     * admits no byte string a lowercase spelling could not already name. Refusing the uppercase transcription
+     * instead would fail exactly the replaced-phone case this artifact exists for, on a key that is written on
+     * paper and read back once, and gua-ios has forgiven case since it was written.
+     *
+     * The accountId decoder keeps its own strictness and is not touched by this: that one is a permanent
+     * identifier a signature covers, so ADM-001 L4 gives it exactly one spelling. An artifact is neither.
      */
     fun decode(artifact: String): ByteArray {
-        val collapsed = artifact.trim().split(WHITESPACE).filter { it.isNotEmpty() }
+        val collapsed = foldAsciiCase(artifact.trim()).split(WHITESPACE).filter { it.isNotEmpty() }
         if (collapsed.isEmpty() || collapsed.first() != PREFIX) {
             throw InvalidAuthorityRecordException(
                 "bad_artifact_prefix",
@@ -77,6 +83,22 @@ object RecoveryArtifact {
             )
         }
         return seed
+    }
+
+    /**
+     * Lowercases A to Z and nothing else.
+     *
+     * Not `lowercase()`: that applies the full Unicode mapping, which folds characters no keyboard on this
+     * path produces onto alphabet letters, the Kelvin sign onto `k` among them. Widening the door past the
+     * case of the printed alphabet would be a second spelling of the same key arriving from somewhere nobody
+     * typed, and the golden vectors pin that refusal rather than leaving it to the two ports to agree by
+     * accident. Locale is not a factor here either, which `lowercase()` would also have to be argued about.
+     */
+    private fun foldAsciiCase(value: String): String = buildString(value.length) {
+        for (character in value) {
+            // The range is the whole of the rule. Inside it `lowercaseChar` is ASCII and nothing else.
+            append(if (character in 'A'..'Z') character.lowercaseChar() else character)
+        }
     }
 
     private val WHITESPACE = Regex("\\s+")

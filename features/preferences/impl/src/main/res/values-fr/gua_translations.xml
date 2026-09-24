@@ -128,7 +128,7 @@
     <string name="screen_account_authority_recover_action">Utiliser ma clé de récupération</string>
     <string name="screen_account_authority_recover_message">Remplace tous les téléphones qui peuvent approuver des modifications par celui-ci. Cela prend plusieurs jours et vos autres téléphones en sont informés.</string>
     <string name="screen_account_authority_recovery_entry_header">Saisissez votre clé de récupération</string>
-    <string name="screen_account_authority_recovery_entry_message">Les mots que nous vous avons montrés quand ce compte a été configuré pour les approbations. Saisissez-les exactement comme ils étaient affichés, en minuscules.</string>
+    <string name="screen_account_authority_recovery_entry_message">Les mots que nous vous avons montrés quand ce compte a été configuré pour les approbations. Saisissez-les exactement comme ils étaient affichés. Les majuscules comme les minuscules fonctionnent.</string>
     <string name="screen_account_authority_recovery_artifact_wrong_kind">Ce n\'est pas une clé de récupération Gua. Elle commence par gua-recovery-1.</string>
     <string name="screen_account_authority_recovery_artifact_incomplete">Cette clé de récupération est incomplète. Vérifiez que tous les groupes de quatre caractères sont là.</string>
     <string name="screen_account_authority_recovery_artifact_invalid">Nous n\'avons pas pu lire cette clé de récupération. Vérifiez les fautes de frappe et réessayez.</string>
@@ -150,4 +150,14 @@
     <string name="screen_account_authority_account_recovery_notice">Ce téléphone demande à devenir le seul à pouvoir approuver des modifications sur votre compte. Cela attend plusieurs jours, tous les appareils que vous avez enregistrés en sont informés et, pendant l\'attente, tout téléphone qui a encore l\'approbation peut l\'arrêter. Votre clé de récupération est la voie la plus rapide, et voici celle qui existe sans elle.</string>
     <string name="screen_account_authority_account_recovery_warning">C\'est la plus faible des deux voies. Ne la commencez pas si quelqu\'un d\'autre a peut-être accès à votre compte : utilisez votre clé de récupération, ou retirez cet accès d\'abord.</string>
     <string name="screen_account_authority_account_recovery_confirm">Je comprends que cela attend et peut être arrêté</string>
+    <string name="screen_account_authority_alerts_header">Alertes de sécurité</string>
+    <string name="screen_account_authority_alerts_message">L\'endroit où nous vous avertissons quand quelque chose demande une approbation sur votre compte. Chaque téléphone avec Gua s\'enregistre une fois, et les avertissements vont à tous.</string>
+    <string name="screen_account_authority_alerts_none">Aucun téléphone n\'est encore enregistré. Gua enregistrera celui-ci au prochain démarrage.</string>
+    <string name="screen_account_authority_alerts_row_message">Vu pour la dernière fois le %1$s</string>
+    <string name="screen_account_authority_alerts_remove_action">Arrêter les avertissements</string>
+    <string name="screen_account_authority_alerts_remove_self_action">Ne plus avertir ce téléphone</string>
+    <string name="screen_account_authority_alerts_remove_footer">Quel que soit le téléphone que vous retirez, celui-ci compris, nous vous demandons d\'abord de confirmer que c\'est bien vous, et les téléphones restants en sont informés.</string>
+    <string name="screen_account_authority_alerts_removed">Retiré. Les téléphones restants ont été informés.</string>
+    <string name="screen_account_authority_pin_footer_remove_alerts">Confirmez votre code PIN à 6 chiffres pour ne plus avertir ce téléphone. Les téléphones restants en sont informés.</string>
+    <string name="screen_account_authority_step_up_alerts_passkey">Retirer un avertissement demande le code PIN de votre compte, et votre clé d\'accès ne peut pas encore servir pour cette étape.</string>
 </resources>

@@ -138,7 +138,7 @@
     <string name="screen_account_authority_recover_action">Use my recovery key</string>
     <string name="screen_account_authority_recover_message">Replaces every phone that can approve changes with this one. It takes several days and your other phones are told about it.</string>
     <string name="screen_account_authority_recovery_entry_header">Enter your recovery key</string>
-    <string name="screen_account_authority_recovery_entry_message">The words we showed you when this account was set up for approvals. Type them exactly as they were shown, in lower case.</string>
+    <string name="screen_account_authority_recovery_entry_message">The words we showed you when this account was set up for approvals. Type them exactly as they were shown. Upper or lower case both work.</string>
     <string name="screen_account_authority_recovery_artifact_wrong_kind">That is not a Gua recovery key. It starts with gua-recovery-1.</string>
     <string name="screen_account_authority_recovery_artifact_incomplete">That recovery key is incomplete. Check that every group of four characters is there.</string>
     <string name="screen_account_authority_recovery_artifact_invalid">We could not read that recovery key. Check it for typos and try again.</string>
@@ -160,4 +160,14 @@
     <string name="screen_account_authority_account_recovery_notice">This phone asks to become the only one that can approve changes to your account. It waits several days, every device you have registered is told, and while it waits any phone that still has approval can stop it. Your recovery key is the faster way, and this is what there is without it.</string>
     <string name="screen_account_authority_account_recovery_warning">This is the weaker of the two ways. Do not start it if someone else may have access to your account: use your recovery key instead, or remove that access first.</string>
     <string name="screen_account_authority_account_recovery_confirm">I understand this waits and can be stopped</string>
+    <string name="screen_account_authority_alerts_header">Security alerts</string>
+    <string name="screen_account_authority_alerts_message">Where we warn you when something asks for approval over your account. Each phone with Gua on it registers once, and the warnings go to all of them.</string>
+    <string name="screen_account_authority_alerts_none">No phone is registered yet. Gua registers this one the next time it starts.</string>
+    <string name="screen_account_authority_alerts_row_message">Last seen %1$s</string>
+    <string name="screen_account_authority_alerts_remove_action">Stop the warnings</string>
+    <string name="screen_account_authority_alerts_remove_self_action">Stop warning this phone</string>
+    <string name="screen_account_authority_alerts_remove_footer">Whichever phone you remove, including this one, we ask you to confirm it is you first, and the phones that are left are told about it.</string>
+    <string name="screen_account_authority_alerts_removed">Removed. The phones that are left were told.</string>
+    <string name="screen_account_authority_pin_footer_remove_alerts">Confirm your 6-digit PIN to stop warning that phone. The phones that are left are told about it.</string>
+    <string name="screen_account_authority_step_up_alerts_passkey">Removing a warning needs your account PIN, and your passkey cannot be used for this one step yet.</string>
 </resources>
