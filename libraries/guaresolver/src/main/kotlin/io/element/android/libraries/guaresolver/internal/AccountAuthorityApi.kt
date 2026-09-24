@@ -33,6 +33,20 @@ internal interface AccountAuthorityApi {
         @Body body: AuthorityChallengeRequest,
     ): AuthorityChallengeResponse
 
+    /**
+     * The web step-up handoff of ADM-009 decision 4 step 2.
+     *
+     * Under `security/`, not `account/authority/`, because it is the same handoff the two factor-enrollment
+     * starts use and the server builds all three from one session builder. It answers 503
+     * `authority_disabled` like every other call here, and 409 `authority_step_up_unavailable` for an account
+     * whose page would have nothing to ask for.
+     */
+    @POST("security/authority/step-up/start")
+    suspend fun startWebStepUp(
+        @Header("Authorization") authorization: String,
+        @Body body: AuthorityStepUpStartRequest,
+    ): AuthorityStepUpStartResponse
+
     @POST("account/authority/adopt")
     suspend fun adopt(
         @Header("Authorization") authorization: String,
@@ -137,6 +151,26 @@ internal data class AuthorityChallengeRequest(
     val passkeyStepUpId: String? = null,
     /** The user-verifying passkey assertion, which settles the step-up on its own. */
     val passkeyCredential: JsonElement? = null,
+)
+
+/**
+ * What a web step-up start carries, and it is two fields.
+ *
+ * There is no field for a phone number, because no arm of that page sends a code, and none for saying which
+ * factor this device can produce: a claim that a factor is unavailable costs an attacker nothing and could
+ * only ever ask for something weaker.
+ */
+@Serializable
+internal data class AuthorityStepUpStartRequest(
+    val purpose: String,
+    /** The app scheme this build answers, checked against the deployment's own allowlist. */
+    val redirectUri: String? = null,
+)
+
+/** One field: what the sheet leaves behind is server state, so there is nothing for this client to carry. */
+@Serializable
+internal data class AuthorityStepUpStartResponse(
+    val stepUpUrl: String,
 )
 
 @Serializable

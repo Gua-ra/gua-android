@@ -93,6 +93,23 @@ class DefaultAccountAuthorityManager(
         }
     }
 
+    /**
+     * The purposes a web step-up may be opened for: exactly the ones that ask for a factor.
+     *
+     * Refused here as well as on the server, before a request is made. A sheet opened for an `Oppose`, an
+     * approval or a notification binding would be a page with nothing to ask, and a proof recorded for one of
+     * them would be a proof of nothing that some later caller could try to spend.
+     */
+    override suspend fun startWebStepUp(
+        accessToken: String,
+        purpose: AuthorityPurpose,
+    ): Result<String> {
+        if (purpose !in WEB_STEP_UP_PURPOSES) {
+            return Result.failure(AuthorityError.StepUpPurposeRefused)
+        }
+        return client.startWebStepUp(accessToken, purpose)
+    }
+
     override suspend fun oppose(accessToken: String, recordHash: String?, pin: String?): Result<Unit> =
         client.oppose(accessToken, recordHash, pin)
 
@@ -296,6 +313,61 @@ class DefaultAccountAuthorityManager(
         }
     }
 
+    override suspend fun beginAccountRecovery(): Result<AdoptionOffer> = runCatchingExceptions {
+        // No artifact to read back, which is the difference between the two routes: this one is authorized by
+        // a recovery the server already completed, and all this device does is mint the pair the record
+        // installs and the new artifact that goes with it.
+        AdoptionOffer(recoveryArtifact = keyStore.createAdoptionKeys().recoveryArtifact)
+    }.onFailure { error ->
+        Timber.w("Could not prepare an account-recovery authority record: %s", error.javaClass.simpleName)
+    }
+
+    override suspend fun recoverThroughAccountRecovery(
+        accessToken: String,
+        chain: AuthorityChainState,
+        deviceLabel: String,
+        stepUp: AuthorityStepUp,
+        artifactConfirmed: Boolean,
+    ): Result<AuthoritySubmission> {
+        if (!artifactConfirmed) {
+            // The NEW artifact this record commits. Skipping it would leave an account that has just spent its
+            // only way back with no way back again.
+            return Result.failure(AuthorityError.ArtifactUnconfirmed)
+        }
+        val accountReference = accountReference(chain) ?: return Result.failure(AuthorityError.NoAccount)
+        val keys = keyStore.adoptionKeys()
+            ?: return Result.failure(IllegalStateException("No recovery keys are stored on this device"))
+
+        return submit(
+            accessToken = accessToken,
+            purpose = AuthorityPurpose.RECOVER,
+            stepUp = stepUp,
+            type = AuthorityRecordType.AUTHORITY_RECOVERY,
+            build = {
+                AuthorityRecordCodec.authorityRecovery(
+                    accountReference = accountReference,
+                    prevHash = AuthorityRecordCodec.prevHashFromHex(chain.headHash),
+                    seq = chain.headSeq + 1,
+                    deviceKey = keys.deviceAuthorityPublicKey(),
+                    recoveryAuthorityKey = keys.recoveryAuthorityPublicKey(),
+                    label = deviceLabel,
+                    // Authorization 0x02, the rank-0 record: it names no authorizing key, so the field is 32
+                    // zero bytes and the signature is by the device key the record installs. The server is what
+                    // weighs it against a recovery it completed itself, and any active device of the account
+                    // can veto it immediately, which is what keeps the weaker route from being a seizure.
+                    authorization = AuthorityRecord.AUTHORIZATION_ACCOUNT_RECOVERY,
+                    authorizingKey = null,
+                )
+            },
+            sign = { preimage -> keyStore.signWithAdoptionKey(preimage) },
+            send = { submission ->
+                client.recoverAuthority(accessToken, submission.copy(recoveryArtifactConfirmed = true))
+            },
+        ).onSuccess {
+            keyStore.markRecovered(chain.accountId)
+        }
+    }
+
     override suspend fun approvals(accessToken: String): Result<List<AuthorityApproval>> =
         client.liveApprovals(accessToken)
 
@@ -478,5 +550,18 @@ class DefaultAccountAuthorityManager(
     private companion object {
         /** What an endpoint that answers 204 gives [submit] to carry. */
         private val NO_SUBMISSION = Unit
+
+        /**
+         * The purposes a web step-up may be scoped to: the four transitions that ask for a factor.
+         *
+         * Written as the permitted set rather than as the refused one, so a purpose added later is refused
+         * until somebody decides it belongs here.
+         */
+        private val WEB_STEP_UP_PURPOSES = setOf(
+            AuthorityPurpose.ADOPT,
+            AuthorityPurpose.GRANT,
+            AuthorityPurpose.REVOKE,
+            AuthorityPurpose.RECOVER,
+        )
     }
 }

@@ -421,6 +421,147 @@ class DefaultAccountAuthorityManagerTest {
         assertThat(client.recoverCalls).isEmpty()
     }
 
+    /**
+     * The account-recovery route, authorization 0x02, for an owner who no longer has the artifact.
+     *
+     * Two things make it that record rather than the other one: the authorization byte, and the authorizing key
+     * field being 32 zero bytes because this route names no key. What signs it is the device key the record
+     * installs, which is the only key anyone can produce here.
+     */
+    @Test
+    fun `an account-recovery record names no authorizing key and is signed by the device it installs`() =
+        runTest {
+            val client = FakeAccountAuthorityClient()
+            val keyStore = createKeyStore()
+            val manager = DefaultAccountAuthorityManager(client, keyStore)
+
+            val offer = manager.beginAccountRecovery().getOrThrow()
+            val installed = checkNotNull(keyStore.adoptionKeys())
+            manager.recoverThroughAccountRecovery(
+                accessToken = A_TOKEN,
+                chain = aRootedChain(headSeq = 1),
+                deviceLabel = "Pixel 9",
+                stepUp = AuthorityStepUp.WebSheet,
+                artifactConfirmed = true,
+            ).getOrThrow()
+
+            assertThat(offer.recoveryArtifact).startsWith(RecoveryArtifact.PREFIX)
+            val challenge = client.challengeCalls.last()
+            assertThat(challenge.purpose).isEqualTo(AuthorityPurpose.RECOVER)
+            // The factor was proved in the sheet, so the challenge request carries none of its own.
+            assertThat(challenge.stepUp).isEqualTo(AuthorityStepUp.WebSheet)
+            val submission = client.recoverCalls.single()
+            val record = decode(submission.recordB64Url)
+            assertThat(record).hasLength(209)
+            assertThat(record.copyOfRange(80, 112)).isEqualTo(installed.deviceAuthorityPublicKey())
+            assertThat(record.copyOfRange(112, 144)).isEqualTo(installed.recoveryAuthorityPublicKey())
+            assertThat(record[176].toInt()).isEqualTo(AuthorityRecord.AUTHORIZATION_ACCOUNT_RECOVERY)
+            // The one pairing rule of this record type: under 0x02 the field is zero, in both directions.
+            assertThat(record.copyOfRange(177, 209)).isEqualTo(ByteArray(32))
+            val preimage = AuthorityProofs.recordPreimage(
+                AuthorityRecordType.AUTHORITY_RECOVERY,
+                decode(FakeAccountAuthorityClient.A_CHALLENGE_B64),
+                record,
+            )
+            assertThat(
+                verify(installed.deviceAuthorityPublicKey(), preimage, decode(submission.signatureB64Url))
+            ).isTrue()
+            assertThat(keyStore.authorityDevicePublicKey()).isEqualTo(installed.deviceAuthorityPublicKey())
+        }
+
+    @Test
+    fun `an account recovery whose new artifact was not confirmed never reaches the server`() = runTest {
+        val client = FakeAccountAuthorityClient()
+        val manager = DefaultAccountAuthorityManager(client, createKeyStore())
+        manager.beginAccountRecovery().getOrThrow()
+
+        val result = manager.recoverThroughAccountRecovery(
+            accessToken = A_TOKEN,
+            chain = aRootedChain(),
+            deviceLabel = "Pixel 9",
+            stepUp = A_PIN,
+            artifactConfirmed = false,
+        )
+
+        assertThat(result.exceptionOrNull()).isInstanceOf(AuthorityError.ArtifactUnconfirmed::class.java)
+        assertThat(client.challengeCalls).isEmpty()
+        assertThat(client.recoverCalls).isEmpty()
+    }
+
+    @Test
+    fun `a web step-up is opened for a transition's own purpose`() = runTest {
+        val client = FakeAccountAuthorityClient()
+        val manager = DefaultAccountAuthorityManager(client, createKeyStore())
+
+        val url = manager.startWebStepUp(A_TOKEN, AuthorityPurpose.REVOKE).getOrThrow()
+
+        assertThat(url).isEqualTo(FakeAccountAuthorityClient.A_STEP_UP_URL)
+        assertThat(client.webStepUpCalls).containsExactly(AuthorityPurpose.REVOKE)
+    }
+
+    /**
+     * The scoping rule, from this side: a sheet exists only for the purposes that ask for a factor.
+     *
+     * Refused before a request is made, because a proof recorded for an objection, an approval or a
+     * notification binding would be a proof of nothing, and the way to make sure nobody can spend one is for it
+     * never to exist.
+     */
+    @Test
+    fun `a purpose that asks for no factor gets no sheet, and no request`() = runTest {
+        val client = FakeAccountAuthorityClient()
+        val manager = DefaultAccountAuthorityManager(client, createKeyStore())
+
+        for (purpose in listOf(AuthorityPurpose.OPPOSE, AuthorityPurpose.APPROVE, AuthorityPurpose.NOTIFY)) {
+            assertThat(manager.startWebStepUp(A_TOKEN, purpose).exceptionOrNull())
+                .isEqualTo(AuthorityError.StepUpPurposeRefused)
+        }
+        assertThat(client.webStepUpCalls).isEmpty()
+    }
+
+    @Test
+    fun `every transition that asks for a factor can take it in the sheet`() = runTest {
+        val client = FakeAccountAuthorityClient()
+        val manager = DefaultAccountAuthorityManager(client, createKeyStore())
+        val purposes = listOf(
+            AuthorityPurpose.ADOPT,
+            AuthorityPurpose.GRANT,
+            AuthorityPurpose.REVOKE,
+            AuthorityPurpose.RECOVER,
+        )
+
+        purposes.forEach { manager.startWebStepUp(A_TOKEN, it).getOrThrow() }
+
+        assertThat(client.webStepUpCalls).containsExactlyElementsIn(purposes)
+    }
+
+    /** The adoption a passkey-only account performs: the same record, with the factor proved in the sheet. */
+    @Test
+    fun `an adoption authorized in the sheet asks for the challenge with no factor of its own`() = runTest {
+        val client = FakeAccountAuthorityClient()
+        val keyStore = createKeyStore()
+        val manager = DefaultAccountAuthorityManager(client, keyStore)
+
+        manager.beginAdoption().getOrThrow()
+        // Read before the submission, because a completed adoption moves the pair out of the adoption slot.
+        val installed = checkNotNull(keyStore.adoptionKeys())
+        manager.startWebStepUp(A_TOKEN, AuthorityPurpose.ADOPT).getOrThrow()
+        manager.adopt(
+            accessToken = A_TOKEN,
+            chain = aBootstrapChain(),
+            deviceLabel = "Pixel 9",
+            stepUp = AuthorityStepUp.WebSheet,
+            artifactConfirmed = true,
+        ).getOrThrow()
+
+        val challenge = client.challengeCalls.single()
+        assertThat(challenge.purpose).isEqualTo(AuthorityPurpose.ADOPT)
+        assertThat(challenge.stepUp).isEqualTo(AuthorityStepUp.WebSheet)
+        val record = decode(client.adoptCalls.single().recordB64Url)
+        assertThat(record).hasLength(177)
+        assertThat(record.copyOfRange(80, 112)).isEqualTo(installed.deviceAuthorityPublicKey())
+        assertThat(keyStore.authorityDevicePublicKey()).isEqualTo(installed.deviceAuthorityPublicKey())
+    }
+
     @Test
     fun `a registration from a device with an authority key is bound to it by a signature`() = runTest {
         val client = FakeAccountAuthorityClient(stateResult = { Result.success(aRootedChain()) })

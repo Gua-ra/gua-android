@@ -62,6 +62,27 @@ interface AccountAuthorityManager {
     ): Result<AuthoritySubmission>
 
     /**
+     * Mints the one-time URL of the WEB step-up for [purpose], to open in a Custom Tab.
+     *
+     * This is how the step-up policy is whole on this platform. ADM-009 decision 4 accepts a user-verifying
+     * passkey assertion or the PIN, and this app cannot produce an assertion for a bearer session of its own,
+     * so the ceremony runs on the page identity-service serves, exactly as first-PIN enrollment already does.
+     * What comes back is a URL and nothing else: the proof the page leaves behind is a row the server wrote,
+     * which the next [state]-driven transition spends by asking for its challenge with
+     * [AuthorityStepUp.WebSheet].
+     *
+     * [purpose] is the transition it is scoped to, and the scoping is the security property: a proof taken for
+     * one purpose is refused for another, here and again on the server. The purposes that ask for no factor
+     * ([AuthorityPurpose.OPPOSE], [AuthorityPurpose.APPROVE], [AuthorityPurpose.NOTIFY]) are refused with
+     * [AuthorityError.StepUpPurposeRefused] before anything is requested, because a proof recorded for one of
+     * them would be a proof of nothing.
+     *
+     * **No arm of that page sends a code to the account's number** (decision 9), and nothing here can ask it
+     * to: the request carries a purpose and at most this build's own redirect.
+     */
+    suspend fun startWebStepUp(accessToken: String, purpose: AuthorityPurpose): Result<String>
+
+    /**
      * Objects to the pending transition as a SESSION, which decision 4 permits against an adoption and
      * nothing else. [pin] is null on an account's first opposition, which is deliberately cheap, and carries
      * the step-up on the second and later.
@@ -149,6 +170,37 @@ interface AccountAuthorityManager {
         accessToken: String,
         chain: AuthorityChainState,
         recoveryArtifact: String,
+        deviceLabel: String,
+        stepUp: AuthorityStepUp,
+        artifactConfirmed: Boolean,
+    ): Result<AuthoritySubmission>
+
+    /**
+     * Prepares an `AuthorityRecovery` authorized through a COMPLETED ACCOUNT RECOVERY (authorization 0x02),
+     * for an owner who no longer has the artifact.
+     *
+     * It mints the pair the record installs and hands back the new artifact, exactly as [beginAdoption] and
+     * [beginRecovery] do, and it reads nothing back: there is no old artifact to validate, which is the whole
+     * difference between the two routes.
+     */
+    suspend fun beginAccountRecovery(): Result<AdoptionOffer>
+
+    /**
+     * Signs and submits the `AuthorityRecovery` prepared by [beginAccountRecovery], under authorization 0x02.
+     *
+     * The weaker of the two recovery routes, and the copy on the way in has to say so. It is rank 0: any
+     * active device of the account may veto it immediately, a rank-1 or rank-2 record cancels it, and the
+     * server refuses it outright on an account whose id commits its authority (class 0x01) and while the
+     * account's last completed recovery is inside the fresh-factor hold. What signs it is the device key the
+     * record installs, because under 0x02 the record names no authorizing key at all.
+     *
+     * It exists because the alternative for an owner who lost every device and the artifact is the terminal
+     * state of decision 7, and the one thing that keeps this route from being a seizure is that the devices
+     * an intruder does not hold can say no to it while it waits.
+     */
+    suspend fun recoverThroughAccountRecovery(
+        accessToken: String,
+        chain: AuthorityChainState,
         deviceLabel: String,
         stepUp: AuthorityStepUp,
         artifactConfirmed: Boolean,

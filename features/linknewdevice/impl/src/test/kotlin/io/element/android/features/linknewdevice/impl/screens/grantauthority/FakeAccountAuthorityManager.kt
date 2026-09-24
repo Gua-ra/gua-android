@@ -12,6 +12,7 @@ import io.element.android.libraries.guaresolver.authority.AdoptionOffer
 import io.element.android.libraries.guaresolver.authority.AuthorityApproval
 import io.element.android.libraries.guaresolver.authority.AuthorityCandidate
 import io.element.android.libraries.guaresolver.authority.AuthorityChainState
+import io.element.android.libraries.guaresolver.authority.AuthorityPurpose
 import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
 import io.element.android.libraries.guaresolver.authority.AuthoritySubmission
 import io.element.android.libraries.guaresolver.authority.SecurityNotificationView
@@ -50,6 +51,20 @@ class FakeAccountAuthorityManager(
 
     override suspend fun beginAdoption(): Result<AdoptionOffer> =
         Result.failure(UnsupportedOperationException("not part of this flow"))
+
+    override suspend fun startWebStepUp(accessToken: String, purpose: AuthorityPurpose): Result<String> =
+        Result.failure(UnsupportedOperationException("not part of this flow"))
+
+    override suspend fun beginAccountRecovery(): Result<AdoptionOffer> =
+        Result.failure(UnsupportedOperationException("not part of this flow"))
+
+    override suspend fun recoverThroughAccountRecovery(
+        accessToken: String,
+        chain: AuthorityChainState,
+        deviceLabel: String,
+        stepUp: AuthorityStepUp,
+        artifactConfirmed: Boolean,
+    ): Result<AuthoritySubmission> = Result.failure(UnsupportedOperationException("not part of this flow"))
 
     override suspend fun adopt(
         accessToken: String,
