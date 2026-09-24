@@ -33,6 +33,7 @@ import io.element.android.libraries.guaresolver.authority.AuthorityPurpose
 import io.element.android.libraries.guaresolver.authority.AuthorityRecord
 import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
 import io.element.android.libraries.guaresolver.authority.InvalidAuthorityRecordException
+import io.element.android.libraries.guaresolver.authority.SecurityNotificationView
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.launch
@@ -108,6 +109,10 @@ class AccountAuthorityPresenter(
         var accountRecoveryAcknowledged by remember { mutableStateOf(false) }
         var pin by remember { mutableStateOf("") }
         var approvals by remember { mutableStateOf<List<AuthorityApproval>>(emptyList()) }
+        var securityNotifications by remember { mutableStateOf<List<SecurityNotificationView>>(emptyList()) }
+        var thisInstallationId by remember { mutableStateOf<String?>(null) }
+        var notificationChannelAvailable by remember { mutableStateOf(false) }
+        var notificationRemovalTarget by remember { mutableStateOf<SecurityNotificationView?>(null) }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
         var successMessage by remember { mutableStateOf<Int?>(null) }
 
@@ -149,6 +154,22 @@ class AccountAuthorityPresenter(
                     } else {
                         emptyList()
                     }
+                    // The channel of ADM-009 gate 2, which every window on this screen depends on. Read for
+                    // any session, not only one holding authority: the rows are what this account would be
+                    // warned at, and an owner has to be able to see one they do not recognise whatever this
+                    // phone holds. A deployment with the chain on and the channel off is its own answer and
+                    // is drawn as nothing rather than as an account with no destinations.
+                    thisInstallationId = authorityManager.installationId()
+                    authorityManager.securityNotifications(accessToken)
+                        .onSuccess { rows ->
+                            securityNotifications = rows
+                            notificationChannelAvailable = true
+                        }
+                        .onFailure { error ->
+                            securityNotifications = emptyList()
+                            notificationChannelAvailable = error !is AuthorityError.NotificationsDisabled &&
+                                error !is AuthorityError.Disabled
+                        }
                 }
                 .onFailure { error ->
                     // "This deployment does not have the feature" is the normal case today and is not an
@@ -178,7 +199,10 @@ class AccountAuthorityPresenter(
             // server answers "none required" for an objection, so there would be nothing to record a proof
             // against. Its factor is therefore the PIN or nothing, which is a fact about that endpoint rather
             // than about this account.
-            val sheetExists = kind != AccountAuthorityStepUp.Oppose
+            // The removal endpoint reads the factor out of the request and never looks for a sheet proof, so
+            // it has no sheet either, for the same reason an objection has none.
+            val sheetExists = kind != AccountAuthorityStepUp.Oppose &&
+                kind != AccountAuthorityStepUp.RemoveNotification
             val fallback = if (sheetExists) AccountAuthorityStepUpMethod.WebSheet else AccountAuthorityStepUpMethod.Pin
             val accessToken = accessToken() ?: return fallback to null
             val status = identityServiceClient.accountFactorStatus(
@@ -193,7 +217,11 @@ class AccountAuthorityPresenter(
                 status.passkeyRegistered && sheetExists -> AccountAuthorityStepUpMethod.WebSheet to null
                 // An objection from an account that holds a passkey and no PIN. The way out is the signed
                 // objection an active device makes, which asks for no factor at all, so the copy says that.
-                !status.hasPin -> null to AccountAuthorityStepUpBlock.PasskeyNotUsableForObjection
+                !status.hasPin -> null to if (kind == AccountAuthorityStepUp.RemoveNotification) {
+                    AccountAuthorityStepUpBlock.PasskeyNotUsableForNotificationRemoval
+                } else {
+                    AccountAuthorityStepUpBlock.PasskeyNotUsableForObjection
+                }
                 else -> AccountAuthorityStepUpMethod.Pin to null
             }
         }
@@ -235,6 +263,7 @@ class AccountAuthorityPresenter(
             selectedCandidate = null
             fingerprintConfirmed = false
             revocationTarget = null
+            notificationRemovalTarget = null
             phase = AccountAuthorityPhase.Overview
         }
 
@@ -251,8 +280,10 @@ class AccountAuthorityPresenter(
             // whose subject went missing leaves the user on the step-up rather than on a spinner.
             val candidate = selectedCandidate
             val target = revocationTarget
+            val removalTarget = notificationRemovalTarget
             if (stepUp == AccountAuthorityStepUp.Grant && candidate == null) return
             if (stepUp == AccountAuthorityStepUp.Revoke && target == null) return
+            if (stepUp == AccountAuthorityStepUp.RemoveNotification && removalTarget == null) return
             phase = AccountAuthorityPhase.Submitting
             val outcome: Result<Unit> = when (stepUp) {
                 AccountAuthorityStepUp.Adopt -> authorityManager.adopt(
@@ -312,6 +343,14 @@ class AccountAuthorityPresenter(
                         artifactConfirmed = artifactConfirmed,
                     ).map { }
                 }
+                AccountAuthorityStepUp.RemoveNotification -> authorityManager.removeSecurityNotification(
+                    accessToken = accessToken,
+                    installationId = requireNotNull(removalTarget).installationId,
+                    // The only factor this platform can produce for this endpoint. It reads no sheet proof,
+                    // and a passkey assertion for it would have to run natively, which is why a passkey-only
+                    // account is told so at the entry point instead of being shown a field.
+                    pin = pin,
+                )
                 null -> return
             }
             outcome
@@ -319,6 +358,8 @@ class AccountAuthorityPresenter(
                     val message = when (stepUp) {
                         AccountAuthorityStepUp.Oppose -> R.string.screen_account_authority_opposed
                         AccountAuthorityStepUp.Revoke -> R.string.screen_account_authority_revoked
+                        AccountAuthorityStepUp.RemoveNotification ->
+                            R.string.screen_account_authority_alerts_removed
                         else -> R.string.screen_account_authority_submitted
                     }
                     resetFlow()
@@ -576,6 +617,15 @@ class AccountAuthorityPresenter(
                         .onFailure { error -> errorMessage = error.toMessageRes() }
                     load()
                 }
+                is AccountAuthorityEvent.RemoveSecurityNotification -> {
+                    // One tier, and this install's own row is not cheaper than any other (decision 13). The
+                    // row is resolved here so a removal cannot be aimed at an id this screen never listed.
+                    val row = securityNotifications.firstOrNull { it.installationId == event.installationId }
+                    if (row != null) {
+                        notificationRemovalTarget = row
+                        askForStepUp(AccountAuthorityStepUp.RemoveNotification)
+                    }
+                }
                 AccountAuthorityEvent.Cancel -> resetFlow()
                 AccountAuthorityEvent.ClearSuccess -> {
                     successMessage = null
@@ -607,6 +657,10 @@ class AccountAuthorityPresenter(
             recoveryRoute = recoveryRoute,
             accountRecoveryAcknowledged = accountRecoveryAcknowledged,
             canRecoverThroughAccountRecovery = canRecoverThroughAccountRecovery(chain),
+            securityNotifications = securityNotifications,
+            thisInstallationId = thisInstallationId,
+            notificationChannelAvailable = notificationChannelAvailable,
+            notificationRemovalTarget = notificationRemovalTarget,
             pin = pin,
             approvals = approvals,
             errorMessage = errorMessage,
@@ -634,6 +688,10 @@ private fun AccountAuthorityStepUp.toPurpose(): AuthorityPurpose? = when (this) 
     AccountAuthorityStepUp.Revoke -> AuthorityPurpose.REVOKE
     AccountAuthorityStepUp.Recover -> AuthorityPurpose.RECOVER
     AccountAuthorityStepUp.Oppose -> null
+    // The removal carries its factor in its own request and spends no challenge of this kind, so there is no
+    // sheet to open for it either. The NOTIFY challenge a bound row's signature needs is minted inside the
+    // manager, against the row's own key, and is not this step-up's business.
+    AccountAuthorityStepUp.RemoveNotification -> null
 }
 
 /**

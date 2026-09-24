@@ -298,16 +298,20 @@ internal data class SecurityNotificationResponse(
 )
 
 /**
- * A removal, whose tier the server decides from what the caller can produce and never from a field it set.
+ * A removal, which has exactly one tier (ADM-009 decision 13).
  *
- * Naming your own install in both ids is the tier that needs nothing else. Naming another install needs a
- * factor past the fresh-factor hold, and a device signature where the row carries a key, which is what stops
- * an attacker holding a just-minted PIN emptying the channel before starting a transition.
+ * Every removal needs a factor past the fresh-factor hold, and a device signature where the row carries a
+ * key. That is the price for whichever row is named, this install's own included: there is deliberately no
+ * cheaper path for "my own install", because a caller-named installation id is a request-body field and one
+ * of a caller's values cannot authenticate another of the same caller's values. That is what stops an
+ * attacker holding a just-minted PIN emptying the channel before starting a transition.
+ *
+ * There is therefore no field here for the caller to name itself with, and the server's own request object
+ * has none either.
  */
 @Serializable
 internal data class SecurityNotificationRemoveRequest(
     val installationId: String,
-    val callerInstallationId: String? = null,
     val pin: String? = null,
     val challenge: String? = null,
     val signature: String? = null,

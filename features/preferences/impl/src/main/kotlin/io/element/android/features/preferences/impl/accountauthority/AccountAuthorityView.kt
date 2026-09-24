@@ -42,6 +42,7 @@ import io.element.android.libraries.guaresolver.authority.AuthorityApproval
 import io.element.android.libraries.guaresolver.authority.AuthorityCandidate
 import io.element.android.libraries.guaresolver.authority.AuthorityDevice
 import io.element.android.libraries.guaresolver.authority.AuthorityFingerprint
+import io.element.android.libraries.guaresolver.authority.SecurityNotificationView
 import io.element.android.libraries.ui.strings.CommonStrings
 import java.text.DateFormat
 import java.util.Date
@@ -247,8 +248,101 @@ private fun OverviewSection(
             )
         }
 
+        if (state.showsSecurityNotifications) {
+            // ADM-009 gate 2's channel, which every window on this screen depends on, as its own holder sees
+            // it. Registration happens on its own at session start; what was missing on this platform was
+            // anywhere to look at the result or take a row off, which is the half that matters when an owner
+            // sees an install they do not recognise.
+            HorizontalDivider()
+            ListItem(
+                headlineContent = { Text(stringResource(id = R.string.screen_account_authority_alerts_header)) },
+                supportingContent = {
+                    Text(stringResource(id = R.string.screen_account_authority_alerts_message))
+                },
+                leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Notifications())),
+            )
+            if (state.securityNotifications.isEmpty()) {
+                Explanation(text = stringResource(id = R.string.screen_account_authority_alerts_none))
+            } else {
+                state.securityNotifications.forEach { registration ->
+                    SecurityNotificationRow(
+                        registration = registration,
+                        isThisInstall = state.isThisInstall(registration),
+                        enabled = !state.isWorking,
+                        eventSink = eventSink,
+                    )
+                }
+                Explanation(text = stringResource(id = R.string.screen_account_authority_alerts_remove_footer))
+            }
+        }
+
         state.errorMessage?.let { message -> ErrorText(message) }
     }
+}
+
+/**
+ * One install that would be warned, with the one removal tier beside it.
+ *
+ * The destination is never drawn, because the server never returns one: the row is named by its device label
+ * and by when it was last seen, which is what lets an owner recognise a phone without the token being on a
+ * screen. The remove button carries the same price on this install's own row as on any other, which is
+ * ADM-009 decision 13 stated rather than a copy of what this screen finds convenient: a cheaper path for
+ * "my own install" is a self-asserted request-body field, and accepting one hands the channel to any session.
+ */
+@Composable
+private fun SecurityNotificationRow(
+    registration: SecurityNotificationView,
+    isThisInstall: Boolean,
+    enabled: Boolean,
+    eventSink: (AccountAuthorityEvent) -> Unit,
+) {
+    ListItem(
+        headlineContent = {
+            Text(
+                buildString {
+                    append(
+                        registration.deviceLabel?.takeIf { it.isNotBlank() }
+                            ?: stringResource(id = R.string.screen_account_authority_device_unlabelled)
+                    )
+                    if (isThisInstall) {
+                        append(" ")
+                        append(stringResource(id = R.string.screen_account_authority_device_this_phone))
+                    }
+                }
+            )
+        },
+        supportingContent = {
+            Text(
+                stringResource(
+                    id = R.string.screen_account_authority_alerts_row_message,
+                    formatTime(registration.lastSeenAtEpochSeconds),
+                )
+            )
+        },
+        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Notifications())),
+    )
+    // A row of its own rather than a button beside the label, because the label is a device name a person
+    // chose and the action names what it does in full. Squeezing the two onto one line is how a phone called
+    // "Pixel 9" ends up wrapped to "Pix el 9" on the screen where recognising it is the whole job.
+    ListItem(
+        headlineContent = {
+            Text(
+                stringResource(
+                    id = if (isThisInstall) {
+                        R.string.screen_account_authority_alerts_remove_self_action
+                    } else {
+                        R.string.screen_account_authority_alerts_remove_action
+                    }
+                )
+            )
+        },
+        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Close())),
+        style = ListItemStyle.Destructive,
+        enabled = enabled,
+        onClick = {
+            eventSink(AccountAuthorityEvent.RemoveSecurityNotification(registration.installationId))
+        },
+    )
 }
 
 /**
@@ -594,6 +688,8 @@ private fun StepUpSection(
                             R.string.screen_account_authority_step_up_none
                         AccountAuthorityStepUpBlock.PasskeyNotUsableForObjection ->
                             R.string.screen_account_authority_step_up_objection_passkey
+                        AccountAuthorityStepUpBlock.PasskeyNotUsableForNotificationRemoval ->
+                            R.string.screen_account_authority_step_up_alerts_passkey
                     }
                 )
             )
@@ -619,6 +715,8 @@ private fun StepUpSection(
                 AccountAuthorityStepUp.Recover ->
                     stringResource(id = R.string.screen_account_authority_pin_footer_recover)
                 AccountAuthorityStepUp.Revoke -> revocationFooter(state)
+                AccountAuthorityStepUp.RemoveNotification ->
+                    stringResource(id = R.string.screen_account_authority_pin_footer_remove_alerts)
                 else -> stringResource(id = R.string.screen_account_authority_pin_footer_adopt)
             },
             style = ElementTheme.typography.fontBodyMdRegular,

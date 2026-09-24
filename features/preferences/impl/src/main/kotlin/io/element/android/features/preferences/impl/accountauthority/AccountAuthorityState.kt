@@ -12,6 +12,7 @@ import io.element.android.libraries.guaresolver.authority.AuthorityApproval
 import io.element.android.libraries.guaresolver.authority.AuthorityCandidate
 import io.element.android.libraries.guaresolver.authority.AuthorityChainState
 import io.element.android.libraries.guaresolver.authority.AuthorityDevice
+import io.element.android.libraries.guaresolver.authority.SecurityNotificationView
 
 /**
  * GUA FORK: where the account authority screen is (ADM-009).
@@ -63,6 +64,14 @@ enum class AccountAuthorityStepUp {
 
     /** Replacing the device set and the recovery key in one record. */
     Recover,
+
+    /**
+     * Removing one security-notification registration (ADM-009 decision 13).
+     *
+     * Not a chain transition and it signs no record, but it takes the same step-up, which is the decision's
+     * point: silencing the channel every window depends on must cost what the windows cost.
+     */
+    RemoveNotification,
 }
 
 /**
@@ -87,6 +96,18 @@ enum class AccountAuthorityStepUpBlock {
      * device makes for free, so that is what the copy says. It still does not say to add a PIN.
      */
     PasskeyNotUsableForObjection,
+
+    /**
+     * Removing a registration from an account that holds a passkey and no PIN.
+     *
+     * The removal endpoint takes the factor in the request and reads no sheet proof, so there is no sheet to
+     * open for it, and an assertion for it would have to run natively, which this platform cannot do. Unlike
+     * the objection there is no second route to the same outcome, so the copy says what is missing and stops
+     * there. It still does not tell the owner to add a PIN, and there is deliberately nothing weaker on
+     * offer: decision 13 has one removal tier, and a cheaper one for "my own install" is exactly what the
+     * code review showed hands the whole channel to any session.
+     */
+    PasskeyNotUsableForNotificationRemoval,
 }
 
 /**
@@ -202,6 +223,20 @@ data class AccountAuthorityState(
      * pending. Read from the chain rather than from a local flag, so the offer follows what the server accepts.
      */
     val canRecoverThroughAccountRecovery: Boolean,
+    /**
+     * The security-notification registrations of this account, which is ADM-009 gate 2's channel as its own
+     * holder sees it. Never their destinations: each row is named by a fingerprint of its token.
+     */
+    val securityNotifications: List<SecurityNotificationView>,
+    /** This install's own id, so its row can be drawn as this phone rather than as a stranger. */
+    val thisInstallationId: String?,
+    /**
+     * Whether this deployment has the channel at all. It sits behind a flag of its own on the server, so an
+     * empty list and a channel that is not there are different answers and only one of them is worth drawing.
+     */
+    val notificationChannelAvailable: Boolean,
+    /** The registration a removal on screen is about, held while its step-up runs. */
+    val notificationRemovalTarget: SecurityNotificationView?,
     val pin: String,
     val approvals: List<AuthorityApproval>,
     @StringRes val errorMessage: Int?,
@@ -234,6 +269,18 @@ data class AccountAuthorityState(
         !canAdopt &&
         chain.state != AuthorityChainState.STATE_BOOTSTRAP &&
         chain.pending == null
+
+    /**
+     * Whether the security-notification section is drawn at all.
+     *
+     * Off where the deployment does not have the channel, because an empty list would then read as "your
+     * account has nowhere to be warned" when the truth is that this server has the feature switched off.
+     */
+    val showsSecurityNotifications: Boolean = notificationChannelAvailable && !unavailable
+
+    /** Whether a registration is this install's own row. It costs the same to remove either way. */
+    fun isThisInstall(registration: SecurityNotificationView): Boolean =
+        thisInstallationId != null && registration.installationId == thisInstallationId
 
     /** A device with no authority can ask the account's other devices to add it. */
     val canOfferThisDevice: Boolean = chain != null &&

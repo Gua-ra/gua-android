@@ -249,8 +249,12 @@ interface AccountAuthorityManager {
     suspend fun securityNotifications(accessToken: String): Result<List<SecurityNotificationView>>
 
     /**
-     * Removes one registration. Naming this install's own id is the tier that needs no extra factor; naming
-     * another install's needs [pin], and the server refuses one inside the fresh-factor hold.
+     * Removes one registration, at the one price every removal pays (ADM-009 decision 13).
+     *
+     * [pin] is not optional in practice: the server asks for a factor past the fresh-factor hold for whichever
+     * row is named, this install's own included, and the PIN is the only factor this platform can produce for
+     * this endpoint, which reads no web-sheet proof. It is nullable only because a caller that has none is
+     * entitled to the server's refusal rather than to a client-side guess at it.
      */
     suspend fun removeSecurityNotification(
         accessToken: String,
