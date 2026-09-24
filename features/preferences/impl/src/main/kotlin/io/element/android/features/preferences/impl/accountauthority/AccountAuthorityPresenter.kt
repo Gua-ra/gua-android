@@ -194,6 +194,12 @@ class AccountAuthorityPresenter(
         suspend fun submitStepUp() {
             val accessToken = accessToken() ?: return
             val currentChain = chain ?: return
+            // Everything the submission needs is resolved before the screen says it is working, so a step
+            // whose subject went missing leaves the user on the step-up rather than on a spinner.
+            val candidate = selectedCandidate
+            val target = revocationTarget
+            if (stepUp == AccountAuthorityStepUp.Grant && candidate == null) return
+            if (stepUp == AccountAuthorityStepUp.Revoke && target == null) return
             val factor = AuthorityStepUp.Pin(pin)
             phase = AccountAuthorityPhase.Submitting
             val outcome: Result<Unit> = when (stepUp) {
@@ -210,24 +216,22 @@ class AccountAuthorityPresenter(
                     pin = pin,
                 )
                 AccountAuthorityStepUp.Grant -> {
-                    val candidate = selectedCandidate ?: return
                     authorityManager.grantDevice(
                         accessToken = accessToken,
                         chain = currentChain,
-                        candidate = candidate,
+                        candidate = requireNotNull(candidate),
                         stepUp = factor,
                         fingerprintConfirmed = fingerprintConfirmed,
                     ).map { }
                 }
                 AccountAuthorityStepUp.Revoke -> {
-                    val target = revocationTarget ?: return
                     authorityManager.revokeDevice(
                         accessToken = accessToken,
                         chain = currentChain,
-                        deviceKeyB64Url = target.deviceKeyB64Url,
+                        deviceKeyB64Url = requireNotNull(target).deviceKeyB64Url,
                         // The reason is a fixed byte, so nothing the owner typed can end up in the
                         // notification the other devices see.
-                        reason = if (target.isThisDevice) {
+                        reason = if (target?.isThisDevice == true) {
                             AuthorityRecord.REASON_REPLACED
                         } else {
                             AuthorityRecord.REASON_UNSPECIFIED
