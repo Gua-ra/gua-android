@@ -531,14 +531,21 @@ class AccountAuthorityPresenter(
                 AccountAuthorityEvent.Oppose -> coroutineScope.launch {
                     val accessToken = accessToken() ?: return@launch
                     val currentChain = chain ?: return@launch
+                    val pending = currentChain.pending ?: return@launch
                     phase = AccountAuthorityPhase.Submitting
-                    // A device that holds authority objects with a signed record, which is the only objection
-                    // the server accepts against a grant, a revocation or a recovery. A session may object to
-                    // an adoption and nothing else, which is the one case where no device can exist yet.
-                    val outcome = if (deviceHoldsAuthority) {
+                    // Routed by WHAT IS PENDING, never by what this phone happens to hold. A session may
+                    // object to an adoption and nothing else, which is the one case where no device can exist
+                    // yet; a grant, a revocation and a recovery take the signed record, because a stolen
+                    // session must not be able to veto the owner's own revocation of the thief's device.
+                    //
+                    // Reading the key instead is how this screen loses the veto it exists for: the phone that
+                    // started the adoption stored its adoption key the moment the record was accepted, so it
+                    // would send a record signed by a key the chain has no device for, and the server refuses
+                    // it. That phone is exactly the one the "I did not start this" row is for.
+                    val outcome = if (pending.needsADeviceToOppose) {
                         authorityManager.opposeWithRecord(accessToken, currentChain)
                     } else {
-                        authorityManager.oppose(accessToken, currentChain.pending?.recordHash, pin = null)
+                        authorityManager.oppose(accessToken, pending.recordHash, pin = null)
                     }
                     outcome
                         .onSuccess {

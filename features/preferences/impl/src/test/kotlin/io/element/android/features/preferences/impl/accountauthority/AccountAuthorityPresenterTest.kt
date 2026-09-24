@@ -406,6 +406,52 @@ class AccountAuthorityPresenterTest {
     }
 
     @Test
+    fun `present - the phone that started the adoption vetoes it with its session, not with a record`() = runTest {
+        // The adopting phone: its adoption key is stored the moment the record is accepted, so this phone
+        // holds a key while the chain holds no device at all. It is the phone the "I did not start this" row
+        // is there for, and decision 4 says any signed-in session may veto an adoption.
+        val manager = FakeAccountAuthorityManager(
+            stateResult = { Result.success(aBootstrapChain(pending = aPendingAdoption())) },
+            holdsAuthorityResult = { true },
+        )
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            awaitFirst { it.pendingTransition != null }.eventSink(AccountAuthorityEvent.Oppose)
+
+            awaitFirst { it.successMessage != null }
+            // Routed by what is pending. A signed record here would name a key the chain has no device for
+            // and come back as authority_signer_refused, which is the window lost.
+            assertThat(manager.opposeCalls.single()).isEqualTo("a-record-hash" to null)
+            assertThat(manager.opposeRecordCalls).isEmpty()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - a grant is objected to with a record even from a phone that holds no key`() = runTest {
+        // The mirror image: only an adoption may be opposed by a session, so a phone with no authority key
+        // must not send a bearer objection against a grant. It asks for the record it cannot sign and is told
+        // so, rather than spending an objection the server refuses for the wrong reason.
+        val pending = aPendingAdoption(type = "DEVICE_GRANT", seq = 2)
+        val manager = FakeAccountAuthorityManager(
+            stateResult = { Result.success(aRootedChain(listOf(anAuthorityDevice()), pending = pending)) },
+            holdsAuthorityResult = { false },
+            opposeRecordResult = { Result.failure(AuthorityError.OppositionDeviceRequired) },
+        )
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            awaitFirst { it.pendingTransition != null }.eventSink(AccountAuthorityEvent.Oppose)
+
+            awaitFirst { it.errorMessage != null }
+            assertThat(manager.opposeRecordCalls).hasSize(1)
+            assertThat(manager.opposeCalls).isEmpty()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `present - a recovery validates the artifact locally and shows the new one once`() = runTest {
         val manager = FakeAccountAuthorityManager(
             stateResult = { Result.success(aRootedChain(listOf(anAuthorityDevice()))) },
