@@ -38,6 +38,10 @@ import java.util.Base64
  * The records are rebuilt from the same inputs the vectors describe rather than sliced back out of the
  * expected bytes, and the chain is rebuilt in order, so the prevHash of each record is this client's own hash
  * of the previous one.
+ *
+ * The file pins the recovery artifact too, and that one has nothing else holding it: the server never sees an
+ * artifact, so two clients that render it differently agree on every byte on the wire and still hand the owner
+ * a key the other one refuses, in exactly the replaced-phone case the artifact exists for.
  */
 class AuthorityVectorsTest {
     private val vectors: JsonObject = Json.parseToJsonElement(
@@ -123,6 +127,38 @@ class AuthorityVectorsTest {
             val rejection = entry.jsonObject
             val thrown = runCatchingExceptions {
                 AuthorityRecordCodec.parse(hex(rejection.string("hex")))
+            }.exceptionOrNull()
+            assertThat(thrown).isInstanceOf(InvalidAuthorityRecordException::class.java)
+            assertThat((thrown as InvalidAuthorityRecordException).reason)
+                .isEqualTo(rejection.string("reason"))
+        }
+    }
+
+    @Test
+    fun `the recovery artifact is rendered and read back exactly as the vectors spell it`() {
+        val artifact = recoveryArtifact()
+        assertThat(RecoveryArtifact.PREFIX).isEqualTo(artifact.string("prefix"))
+        val cases = (artifact["vectors"] as JsonArray).map { it.jsonObject }
+        assertThat(cases).hasSize(3)
+        cases.forEach { case ->
+            val seed = hex(keys()[case.string("key")]!!.jsonObject.string("seedHex"))
+            // The artifact never crosses the wire, so no refused record can ever report a client that spells
+            // it differently: the string this platform hands the user is pinned here or nowhere. The other
+            // client parses THIS, which is what makes an artifact taken on one phone usable on the other.
+            assertThat(RecoveryArtifact.encode(seed)).isEqualTo(case.string("artifact"))
+            // And back, because what this platform accepts has to be what it hands out. A round trip against
+            // itself would pass on either side of a mismatch.
+            assertThat(RecoveryArtifact.decode(case.string("artifact"))).isEqualTo(seed)
+        }
+    }
+
+    @Test
+    fun `every artifact the vectors reject is refused here, for the rule they name`() {
+        val rejections = (recoveryArtifact()["rejections"] as JsonArray).map { it.jsonObject }
+        assertThat(rejections).hasSize(5)
+        rejections.forEach { rejection ->
+            val thrown = runCatchingExceptions {
+                RecoveryArtifact.decode(rejection.string("artifact"))
             }.exceptionOrNull()
             assertThat(thrown).isInstanceOf(InvalidAuthorityRecordException::class.java)
             assertThat((thrown as InvalidAuthorityRecordException).reason)
@@ -230,6 +266,8 @@ class AuthorityVectorsTest {
     private fun records(): List<JsonObject> = (vectors["records"] as JsonArray).map { it.jsonObject }
 
     private fun keys(): JsonObject = vectors["keys"]!!.jsonObject
+
+    private fun recoveryArtifact(): JsonObject = vectors["recoveryArtifact"]!!.jsonObject
 
     private fun publicKey(name: String): ByteArray = hex(keys()[name]!!.jsonObject.string("publicKeyHex"))
 
