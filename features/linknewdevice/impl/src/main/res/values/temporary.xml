@@ -14,7 +14,7 @@
     <string name="screen_link_grant_authority_skip_action">Not now</string>
     <string name="screen_link_grant_authority_pin_header">Confirm it\'s you</string>
     <string name="screen_link_grant_authority_pin_footer">Enter your 6-digit account PIN to give this device authority.</string>
-    <string name="screen_link_grant_authority_error_step_up_required">Your 6-digit account PIN is needed for this. If your account has only a passkey, it cannot be used here yet.</string>
+    <string name="screen_link_grant_authority_error_step_up_required">Your 6-digit account PIN is needed on this screen. If your account uses a passkey, add this phone from Settings, Account authority, where you can confirm with it.</string>
     <string name="screen_link_grant_authority_error_too_recent">Something on your account changed too recently for this. Try again in a few days.</string>
     <string name="screen_link_grant_authority_error_quarantined">This phone is still in its own waiting period, so it cannot give authority to another device yet.</string>
     <string name="screen_link_grant_authority_error_signer_refused">This phone cannot do that for your account.</string>

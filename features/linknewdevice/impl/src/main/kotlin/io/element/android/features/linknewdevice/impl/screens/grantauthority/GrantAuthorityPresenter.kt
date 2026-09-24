@@ -43,6 +43,12 @@ import kotlinx.coroutines.launch
  * passing check code is not allowed to stand in for it, and it is why the grantee is quarantined for a full
  * window afterwards: a device granted in error can do nothing during it, counts for nothing, and can be
  * opposed.
+ *
+ * THE STEP-UP HERE IS THE PIN ONLY, AND THE COPY SAYS WHERE THE OTHER ONE IS. The account-authority screen in
+ * settings takes a passkey through the web sheet identity-service serves; this screen does not open one, because
+ * it runs inside the link flow and a Custom Tab over it is a second handoff nobody has tested there yet. An
+ * account that holds a passkey and no PIN is therefore told to add this phone from that screen, where the same
+ * candidate is listed and the same grant is signed, rather than being told to add a PIN it does not need.
  */
 @AssistedInject
 class GrantAuthorityPresenter(
