@@ -95,7 +95,7 @@
     <string name="screen_account_authority_approval_message">Code %1$s</string>
     <string name="screen_account_authority_approval_description">Un navigateur connecté à votre compte a demandé une modification que seul ce téléphone peut approuver. N\'approuvez que si le code ci-dessus correspond à celui affiché sur cet écran et que vous en êtes à l\'origine.</string>
     <string name="screen_account_authority_approval_action">Approuver</string>
-    <string name="screen_account_authority_error_step_up_required">Votre code PIN de compte à 6 chiffres est nécessaire. Si votre compte ne possède qu\'une clé d\'accès, elle ne peut pas encore être utilisée ici.</string>
+    <string name="screen_account_authority_error_step_up_required">Nous n\'avons pas reçu cette confirmation. Confirmez que c\'est bien vous avec votre clé d\'accès ou avec le code PIN à 6 chiffres de votre compte, puis réessayez.</string>
     <string name="screen_account_authority_error_factor_too_fresh">Vous avez configuré ce code PIN ou cette clé d\'accès trop récemment. Réessayez dans quelques jours.</string>
     <string name="screen_account_authority_error_recovery_too_recent">Votre compte a été récupéré récemment. Par sécurité, cette action doit attendre quelques jours.</string>
     <string name="screen_account_authority_error_artifact_unconfirmed">Conservez d\'abord votre clé de récupération.</string>
@@ -111,7 +111,7 @@
     <string name="screen_account_authority_error_opposition_refused">L\'opposition doit venir d\'un appareil qui détient l\'autorité de votre compte.</string>
     <string name="screen_account_authority_error_generic">Une erreur est survenue. Veuillez réessayer.</string>
     <string name="screen_account_authority_revoked">Supprimé.</string>
-    <string name="screen_account_authority_lost_message">Ce compte ne peut plus approuver de modifications depuis aucun appareil. Votre compte, vos discussions et vos messages ne changent pas, et vous pouvez continuer à utiliser Gua normalement. Retrouver cette approbation est impossible : cela permettrait à quiconque entrerait dans votre compte de le prendre.</string>
+    <string name="screen_account_authority_lost_message">Ce compte n\'a plus aucun appareil capable d\'approuver des modifications. Votre compte, vos discussions et vos messages ne changent pas, et vous pouvez continuer à utiliser Gua normalement. Votre clé de récupération redonne cette approbation à un téléphone tout de suite. Sans elle, ce téléphone peut demander l\'approbation lui-même, et cette demande attend plusieurs jours, pendant lesquels tout appareil qui a encore l\'approbation peut l\'arrêter.</string>
     <string name="screen_account_authority_device_this_phone">(ce téléphone)</string>
     <string name="screen_account_authority_revoke_action">Supprimer</string>
     <string name="screen_account_authority_revoke_self_action">Supprimer ce téléphone</string>
@@ -138,7 +138,15 @@
     <string name="screen_account_authority_pin_footer_revoke_self">Confirmez votre code à 6 chiffres pour supprimer ce téléphone. C\'est immédiat, et ce téléphone n\'approuvera plus rien.</string>
     <string name="screen_account_authority_pin_footer_revoke_two_devices">Confirmez votre code à 6 chiffres pour supprimer ce téléphone. Votre compte a deux téléphones qui peuvent approuver des modifications, donc %1$s peut s\'opposer à sa suppression et rien ne se passe avant que ce soit réglé.</string>
     <string name="screen_account_authority_step_up_none">Votre compte n\'a ni code ni clé d\'accès, il n\'y a donc encore rien pour confirmer ceci. Configurez d\'abord la vérification en deux étapes.</string>
-    <string name="screen_account_authority_step_up_passkey_only">Votre compte est protégé par une clé d\'accès. Cette application ne peut pas encore utiliser une clé d\'accès pour ceci, vous ne pouvez donc pas le faire depuis ce téléphone. Vous n\'avez pas besoin d\'ajouter un code : la clé d\'accès est la plus forte des deux.</string>
     <string name="screen_account_authority_error_unknown_candidate">La demande de ce téléphone a expiré, ou ce n\'est pas celle que vous avez comparée. Recommencez sur ce téléphone.</string>
     <string name="screen_account_authority_error_no_channel">Nous ne pouvons pas prévenir vos autres appareils pour le moment. Ouvrez Gua dessus, puis réessayez.</string>
+    <string name="screen_account_authority_web_step_up_message">Vous allez confirmer ceci dans votre navigateur avec votre clé d\'accès. Votre compte garde cette confirmation pour cette seule étape, pendant 15 minutes.</string>
+    <string name="screen_account_authority_web_step_up_waiting">Terminez la confirmation dans votre navigateur. Revenez ici ensuite et cette étape continue toute seule.</string>
+    <string name="screen_account_authority_web_step_up_action">Confirmer dans le navigateur</string>
+    <string name="screen_account_authority_account_recovery_action">Je n\'ai pas ma clé de récupération</string>
+    <string name="screen_account_authority_account_recovery_message">Demandez l\'approbation avec votre connexion. Cela attend plusieurs jours et tout téléphone qui a encore l\'approbation peut l\'arrêter.</string>
+    <string name="screen_account_authority_account_recovery_header">Demander l\'approbation sans clé de récupération</string>
+    <string name="screen_account_authority_account_recovery_notice">Ce téléphone demande à devenir le seul à pouvoir approuver des modifications sur votre compte. Cela attend plusieurs jours, tous les appareils que vous avez enregistrés en sont informés et, pendant l\'attente, tout téléphone qui a encore l\'approbation peut l\'arrêter. Votre clé de récupération est la voie la plus rapide, et voici celle qui existe sans elle.</string>
+    <string name="screen_account_authority_account_recovery_warning">C\'est la plus faible des deux voies. Ne la commencez pas si quelqu\'un d\'autre a peut-être accès à votre compte : utilisez votre clé de récupération, ou retirez cet accès d\'abord.</string>
+    <string name="screen_account_authority_account_recovery_confirm">Je comprends que cela attend et peut être arrêté</string>
 </resources>

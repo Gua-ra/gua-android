@@ -42,6 +42,20 @@ sealed interface AccountAuthorityEvent {
      */
     data object ContinueFromRecoveryEntry : AccountAuthorityEvent
 
+    /**
+     * Start the account-recovery route (authorization 0x02), for an owner who no longer has the artifact.
+     *
+     * It opens the notice rather than minting anything: this route is the weaker one, every device that still
+     * holds authority can veto it, and that has to be read and acknowledged first.
+     */
+    data object StartAccountRecovery : AccountAuthorityEvent
+
+    /** The user ticked or unticked "I understand" on the account-recovery notice. */
+    data class AcknowledgeAccountRecovery(val acknowledged: Boolean) : AccountAuthorityEvent
+
+    /** Leave the account-recovery notice and mint the pair the record installs. Refused without the tick. */
+    data object ContinueFromAccountRecoveryNotice : AccountAuthorityEvent
+
     /** Offer this device's own key so another device can add it. */
     data object OfferThisDevice : AccountAuthorityEvent
 
@@ -64,8 +78,19 @@ sealed interface AccountAuthorityEvent {
     /** The user edited the PIN field. */
     data class PinChanged(val pin: String) : AccountAuthorityEvent
 
-    /** Submit whatever the step-up was asked for. */
+    /** Submit whatever the step-up was asked for, with the PIN this screen holds. */
     data object Submit : AccountAuthorityEvent
+
+    /**
+     * Ask for the one-time web step-up URL and hand it to the Custom Tab.
+     *
+     * This is the passkey arm of decision 4 on this platform. Nothing is submitted here: the page proves the
+     * factor, the server records that it did, and the transition is submitted when the app is back.
+     */
+    data object ConfirmInBrowser : AccountAuthorityEvent
+
+    /** The view has opened the sheet URL; forget it so re-entering the screen cannot reopen it. */
+    data object ClearWebStepUpUrl : AccountAuthorityEvent
 
     /** Object to the pending transition on this account. */
     data object Oppose : AccountAuthorityEvent
