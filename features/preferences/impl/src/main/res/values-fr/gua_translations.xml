@@ -142,7 +142,7 @@
     <string name="screen_account_authority_error_unknown_candidate">La demande de ce téléphone a expiré, ou ce n\'est pas celle que vous avez comparée. Recommencez sur ce téléphone.</string>
     <string name="screen_account_authority_error_no_channel">Nous ne pouvons pas prévenir vos autres appareils pour le moment. Ouvrez Gua dessus, puis réessayez.</string>
     <string name="screen_account_authority_web_step_up_message">Vous allez confirmer ceci dans votre navigateur avec votre clé d\'accès. Votre compte garde cette confirmation pour cette seule étape, pendant 15 minutes.</string>
-    <string name="screen_account_authority_web_step_up_waiting">Terminez la confirmation dans votre navigateur. Revenez ici ensuite et cette étape continue toute seule.</string>
+    <string name="screen_account_authority_web_step_up_waiting">Terminez la confirmation dans votre navigateur, puis revenez ici et cette étape continue toute seule. Si rien ne s\'est ouvert, réessayez.</string>
     <string name="screen_account_authority_web_step_up_action">Confirmer dans le navigateur</string>
     <string name="screen_account_authority_account_recovery_action">Je n\'ai pas ma clé de récupération</string>
     <string name="screen_account_authority_account_recovery_message">Demandez l\'approbation avec votre connexion. Cela attend plusieurs jours et tout téléphone qui a encore l\'approbation peut l\'arrêter.</string>
