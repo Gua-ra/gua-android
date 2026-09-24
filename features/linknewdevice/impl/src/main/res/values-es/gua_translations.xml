@@ -14,7 +14,7 @@
     <string name="screen_link_grant_authority_skip_action">Ahora no</string>
     <string name="screen_link_grant_authority_pin_header">Confirma que eres tú</string>
     <string name="screen_link_grant_authority_pin_footer">Introduce tu PIN de 6 dígitos de la cuenta para dar autoridad a este dispositivo.</string>
-    <string name="screen_link_grant_authority_error_step_up_required">Para esto hace falta tu PIN de 6 dígitos de la cuenta. Si tu cuenta solo tiene una clave de acceso, todavía no se puede usar aquí.</string>
+    <string name="screen_link_grant_authority_error_step_up_required">En esta pantalla hace falta tu PIN de 6 dígitos de la cuenta. Si tu cuenta usa una llave de acceso, añade este teléfono desde Ajustes, Autoridad de la cuenta, donde puedes confirmar con ella.</string>
     <string name="screen_link_grant_authority_error_too_recent">Algo en tu cuenta cambió hace muy poco para esto. Inténtalo de nuevo en unos días.</string>
     <string name="screen_link_grant_authority_error_quarantined">Este teléfono todavía está en su periodo de espera, así que aún no puede dar autoridad a otro dispositivo.</string>
     <string name="screen_link_grant_authority_error_signer_refused">Este teléfono no puede hacer eso por tu cuenta.</string>
