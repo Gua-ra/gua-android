@@ -142,7 +142,7 @@
     <string name="screen_account_authority_error_unknown_candidate">O pedido daquele telefone expirou, ou não é o que você comparou. Comece de novo naquele telefone.</string>
     <string name="screen_account_authority_error_no_channel">Não conseguimos avisar seus outros dispositivos agora. Abra o Gua neles e tente novamente.</string>
     <string name="screen_account_authority_web_step_up_message">Você vai confirmar isso no navegador com sua chave de acesso. Sua conta guarda essa confirmação para esta etapa apenas, por 15 minutos.</string>
-    <string name="screen_account_authority_web_step_up_waiting">Termine de confirmar no navegador. Volte aqui quando terminar e esta etapa continua sozinha.</string>
+    <string name="screen_account_authority_web_step_up_waiting">Termine de confirmar no navegador e volte aqui, e esta etapa continua sozinha. Se nada abriu, tente de novo.</string>
     <string name="screen_account_authority_web_step_up_action">Confirmar no navegador</string>
     <string name="screen_account_authority_account_recovery_action">Não tenho minha chave de recuperação</string>
     <string name="screen_account_authority_account_recovery_message">Peça a aprovação com o seu login. Espera vários dias e qualquer telefone que ainda tenha aprovação pode impedir.</string>

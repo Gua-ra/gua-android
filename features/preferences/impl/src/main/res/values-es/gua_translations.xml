@@ -142,7 +142,7 @@
     <string name="screen_account_authority_error_unknown_candidate">La solicitud de ese teléfono ha caducado, o no es la que comparaste. Vuelve a empezar en ese teléfono.</string>
     <string name="screen_account_authority_error_no_channel">Ahora no podemos avisar a tus otros dispositivos. Abre Gua en ellos e inténtalo de nuevo.</string>
     <string name="screen_account_authority_web_step_up_message">Vas a confirmar esto en tu navegador con tu llave de acceso. Tu cuenta guarda esa confirmación solo para este paso, durante 15 minutos.</string>
-    <string name="screen_account_authority_web_step_up_waiting">Termina de confirmar en tu navegador. Vuelve aquí cuando acabes y este paso sigue solo.</string>
+    <string name="screen_account_authority_web_step_up_waiting">Termina de confirmar en tu navegador y vuelve aquí, y este paso sigue solo. Si no se abrió nada, inténtalo otra vez.</string>
     <string name="screen_account_authority_web_step_up_action">Confirmar en el navegador</string>
     <string name="screen_account_authority_account_recovery_action">No tengo mi clave de recuperación</string>
     <string name="screen_account_authority_account_recovery_message">Pide la aprobación con tu inicio de sesión. Espera varios días y cualquier teléfono que aún tenga aprobación puede detenerla.</string>

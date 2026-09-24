@@ -276,10 +276,14 @@ data class AccountAuthorityState(
     /**
      * Whether the web sheet may be opened. No PIN in this condition: the page asks for the factor, and this
      * screen's job is to have the transition and its acknowledgement settled before the browser opens.
+     *
+     * Still true while a sheet is outstanding, deliberately. A tab that never opened, on a phone with no
+     * browser or one that refused the intent, would otherwise leave a person looking at a button they can no
+     * longer press. Asking again is safe because the server burns any earlier unspent proof of the same
+     * account, session and purpose, so one transition still ends up with one proof.
      */
     val canConfirmInBrowser: Boolean = stepUpGatesPassed &&
-        stepUpMethod == AccountAuthorityStepUpMethod.WebSheet &&
-        !awaitingWebStepUp
+        stepUpMethod == AccountAuthorityStepUpMethod.WebSheet
 
     companion object {
         const val PIN_LENGTH = 6

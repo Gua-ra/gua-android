@@ -521,7 +521,8 @@ class AccountAuthorityPresenter(
                 }
                 AccountAuthorityEvent.ConfirmInBrowser -> coroutineScope.launch {
                     if (stepUpMethod != AccountAuthorityStepUpMethod.WebSheet) return@launch
-                    if (awaitingWebStepUp) return@launch
+                    // Allowed again while one is outstanding, because a tab that never opened must not be a
+                    // dead end. The server burns the earlier unspent proof, so this stays one proof per step.
                     openWebStepUp()
                 }
                 AccountAuthorityEvent.ClearWebStepUpUrl -> {

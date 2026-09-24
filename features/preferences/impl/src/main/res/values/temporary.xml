@@ -152,7 +152,7 @@
     <string name="screen_account_authority_error_unknown_candidate">That phone\'s request has expired, or it is not the one you compared. Start again on that phone.</string>
     <string name="screen_account_authority_error_no_channel">We can\'t warn your other devices about this right now. Open Gua on them, then try again.</string>
     <string name="screen_account_authority_web_step_up_message">You will confirm this in your browser with your passkey. Your account keeps that confirmation for this one step, for 15 minutes.</string>
-    <string name="screen_account_authority_web_step_up_waiting">Finish confirming in your browser. Come back here when you are done and this step continues on its own.</string>
+    <string name="screen_account_authority_web_step_up_waiting">Finish confirming in your browser, then come back here and this step continues on its own. If nothing opened, try again.</string>
     <string name="screen_account_authority_web_step_up_action">Confirm in the browser</string>
     <string name="screen_account_authority_account_recovery_action">I do not have my recovery key</string>
     <string name="screen_account_authority_account_recovery_message">Ask for approval with your sign-in instead. It waits several days and any phone that still has approval can stop it.</string>

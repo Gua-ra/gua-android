@@ -100,6 +100,41 @@ class AccountAuthorityStepUpPresenterTest {
             }
         }
 
+    /**
+     * A tab that never opened must not be a dead end.
+     *
+     * The button stays live while a sheet is outstanding, and asking again is safe: the server burns the
+     * earlier unspent proof of the same account, session and purpose, so the step still ends up with one.
+     */
+    @Test
+    fun `present - the sheet can be asked for again while one is outstanding`() = runTest {
+        val manager = FakeAccountAuthorityManager()
+        val presenter = createPresenter(
+            manager = manager,
+            identityServiceClient = FakeIdentityServiceClient(
+                factorStatusResult = { Result.success(aFactorStatus(hasPin = false, passkeyRegistered = true)) },
+            ),
+        )
+
+        presenter.test {
+            adoptUpToStepUp(manager)
+            awaitFirst { it.phase == AccountAuthorityPhase.StepUp }
+                .eventSink(AccountAuthorityEvent.ConfirmInBrowser)
+            val waiting = awaitFirst { it.awaitingWebStepUp }
+            assertThat(waiting.canConfirmInBrowser).isTrue()
+            waiting.eventSink(AccountAuthorityEvent.ClearWebStepUpUrl)
+            awaitFirst { it.webStepUpUrl == null }
+                .eventSink(AccountAuthorityEvent.ConfirmInBrowser)
+
+            awaitFirst { it.webStepUpUrl != null }
+            assertThat(manager.webStepUpCalls)
+                .containsExactly(AuthorityPurpose.ADOPT, AuthorityPurpose.ADOPT)
+            // Still nothing submitted: the proof is the page's to record, and the app has not come back yet.
+            assertThat(manager.adoptCalls).isEmpty()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     @Test
     fun `present - the sheet is scoped to the transition on screen`() = runTest {
         val manager = FakeAccountAuthorityManager(
