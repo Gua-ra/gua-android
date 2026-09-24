@@ -345,7 +345,24 @@ data class AuthorityPendingTransition(
     val seq: Long,
     val effectiveAtEpochSeconds: Long,
     val recordHash: String,
-)
+) {
+    /**
+     * Whether objecting to THIS record needs a signature from a device the chain holds active.
+     *
+     * Only an adoption does not: at `seq = 1` the account holds no authority to weigh, so decision 4's veto
+     * is that any signed-in session of the account says no, and it is the one case where no device can exist
+     * yet. Everything else is the claim a session cannot make, because a stolen session could otherwise veto
+     * the owner's own revocation of the thief's device.
+     *
+     * A type this build has not heard of is treated as needing a device, which is the safe way round: it
+     * asks for more rather than sending a bearer objection the server would refuse.
+     */
+    val needsADeviceToOppose: Boolean = type != TYPE_ADOPT_ROOT
+
+    companion object {
+        const val TYPE_ADOPT_ROOT = "ADOPT_ROOT"
+    }
+}
 
 /** A live approval a browser session started and only an authority device can grant. */
 data class AuthorityApproval(
