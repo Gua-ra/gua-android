@@ -248,12 +248,12 @@ data class SecurityNotificationView(
 )
 
 /**
- * A removal. The tier is decided by what the caller can produce, never by a field it sets: naming this
- * install's own id in both places is the tier that needs nothing else.
+ * A removal. There is exactly one tier (ADM-009 decision 13): a factor past the fresh-factor hold, and a
+ * signature by the row's own device key where it carries one. Naming this install's own id is not cheaper,
+ * so there is nothing here for the caller to name itself with.
  */
 data class SecurityNotificationRemoval(
     val installationId: String,
-    val callerInstallationId: String?,
     val pin: String? = null,
     val challengeB64Url: String? = null,
     val signatureB64Url: String? = null,

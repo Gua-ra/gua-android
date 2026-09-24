@@ -98,6 +98,15 @@ sealed interface AccountAuthorityEvent {
     /** Sign one live browser approval as this account's authority device. */
     data class Approve(val approvalId: String) : AccountAuthorityEvent
 
+    /**
+     * Remove one security-notification registration, named by its installation id.
+     *
+     * It opens a step-up rather than acting: ADM-009 decision 13 has exactly one removal tier and the
+     * caller's own install is not cheaper, because a self-asserted installation id is a request-body field
+     * and accepting one would hand the whole channel to any session.
+     */
+    data class RemoveSecurityNotification(val installationId: String) : AccountAuthorityEvent
+
     /** Leave an in-progress step and go back to the overview. */
     data object Cancel : AccountAuthorityEvent
 

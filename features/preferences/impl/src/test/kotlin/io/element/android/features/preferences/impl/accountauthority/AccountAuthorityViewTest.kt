@@ -18,7 +18,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import com.google.common.truth.Truth.assertThat
-import io.element.android.libraries.guaresolver.authority.AuthorityChainState
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.Test
 
@@ -46,8 +45,9 @@ class AccountAuthorityViewTest : RobolectricTest() {
             .isEqualTo(InputType.TYPE_TEXT_VARIATION_PASSWORD)
         // And no autocorrect, which would rewrite base32 groups into words on its own.
         assertThat(editorInfo.inputType and InputType.TYPE_TEXT_FLAG_AUTO_CORRECT).isEqualTo(0)
-        // No capitalisation either: the alphabet is lowercase and the decoder is case-sensitive, so an
-        // auto-capitalised first character is an artifact this app then refuses.
+        // No capitalisation either. The reader forgives ASCII case now, so this is no longer what stands
+        // between an autocapitalised first character and a refusal, but the artifact is shown in lowercase and
+        // a field that quietly disagrees with the screen it was copied from is a difference nobody can see.
         assertThat(editorInfo.inputType and InputType.TYPE_TEXT_FLAG_CAP_SENTENCES).isEqualTo(0)
         assertThat(editorInfo.inputType and InputType.TYPE_TEXT_FLAG_CAP_WORDS).isEqualTo(0)
     }
@@ -72,41 +72,10 @@ class AccountAuthorityViewTest : RobolectricTest() {
 private const val A_TYPED_ARTIFACT = "gua-recovery-1 tvq3 dhpp"
 
 /** The recovery-entry screen, with something typed in so the field can be found by its own value. */
-private fun aRecoveryEntryState(): AccountAuthorityState = AccountAuthorityState(
-    featureEnabled = true,
+private fun aRecoveryEntryState(): AccountAuthorityState = anAccountAuthorityState(
     phase = AccountAuthorityPhase.RecoveryEntry,
-    chain = AuthorityChainState(
-        accountId = "ga1zzzz",
-        accountClass = "BOOTSTRAP",
-        state = AuthorityChainState.STATE_ROOTED,
-        headSeq = 2,
-        headHash = "11".repeat(32),
-        devices = emptyList(),
-        pending = null,
-    ),
-    unavailable = false,
     deviceHoldsAuthority = false,
     thisDeviceKeyB64Url = null,
-    recoveryArtifact = null,
-    artifactConfirmed = false,
     recoveryArtifactInput = A_TYPED_ARTIFACT,
-    recoveryArtifactError = null,
-    candidates = emptyList(),
-    selectedCandidate = null,
-    fingerprintConfirmed = false,
-    thisDeviceFingerprint = null,
-    revocationTarget = null,
-    stepUp = null,
-    stepUpBlock = null,
-    stepUpMethod = null,
-    webStepUpUrl = null,
-    awaitingWebStepUp = false,
     recoveryRoute = AccountAuthorityRecoveryRoute.RecoveryKey,
-    accountRecoveryAcknowledged = false,
-    canRecoverThroughAccountRecovery = false,
-    pin = "",
-    approvals = emptyList(),
-    errorMessage = null,
-    successMessage = null,
-    eventSink = {},
 )

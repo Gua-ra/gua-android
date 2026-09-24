@@ -598,6 +598,133 @@ class AccountAuthorityPresenterTest {
         error("No matching state after $MAX_EMISSIONS emissions")
     }
 
+    // --- The security-notification channel (ADM-009 gate 2, decision 13) -------------------------------
+
+    @Test
+    fun `present - the account's registrations are listed, whatever this phone holds`() = runTest {
+        val manager = FakeAccountAuthorityManager(
+            stateResult = { Result.success(aRootedChain(devices = listOf(anAuthorityDevice()))) },
+            holdsAuthorityResult = { false },
+            notificationsResult = {
+                Result.success(listOf(aSecurityNotificationView(), aSecurityNotificationView(installationId = "other-install", deviceLabel = "Old phone")))
+            },
+        )
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            val state = awaitFirst { it.securityNotifications.size == 2 }
+            // Read for any session: the rows are where THIS ACCOUNT would be warned, and an owner has to be
+            // able to see an install they do not recognise whether or not this phone holds authority.
+            assertThat(state.deviceHoldsAuthority).isFalse()
+            assertThat(state.showsSecurityNotifications).isTrue()
+            assertThat(state.securityNotifications.map { it.installationId })
+                .containsExactly(AN_INSTALL_ID, "other-install").inOrder()
+            assertThat(state.isThisInstall(state.securityNotifications.first())).isTrue()
+            assertThat(state.isThisInstall(state.securityNotifications.last())).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - a deployment with the channel off draws no section rather than an empty one`() = runTest {
+        val manager = FakeAccountAuthorityManager(
+            notificationsResult = { Result.failure(AuthorityError.NotificationsDisabled) },
+        )
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            val state = awaitFirst { it.phase == AccountAuthorityPhase.Overview && it.chain != null }
+            // An empty list and a channel that is not there are different answers, and only one of them is
+            // worth drawing: the other would read as "your account has nowhere to be warned".
+            assertThat(state.securityNotifications).isEmpty()
+            assertThat(state.notificationChannelAvailable).isFalse()
+            assertThat(state.showsSecurityNotifications).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - removing this install's own registration costs the same step-up as any other`() = runTest {
+        val manager = FakeAccountAuthorityManager(
+            notificationsResult = { Result.success(listOf(aSecurityNotificationView())) },
+        )
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            val listed = awaitFirst { it.securityNotifications.isNotEmpty() }
+            listed.eventSink(AccountAuthorityEvent.RemoveSecurityNotification(AN_INSTALL_ID))
+
+            // Decision 13 has exactly one removal tier and this install's own row is deliberately not
+            // cheaper: a self-asserted installation id is a request-body field, so nothing is sent before a
+            // factor has been produced. iOS removes its own row with no factor at all, which the server
+            // answers with authority_step_up_required.
+            val steppingUp = awaitFirst { it.phase == AccountAuthorityPhase.StepUp }
+            assertThat(steppingUp.stepUp).isEqualTo(AccountAuthorityStepUp.RemoveNotification)
+            assertThat(steppingUp.stepUpMethod).isEqualTo(AccountAuthorityStepUpMethod.Pin)
+            assertThat(steppingUp.notificationRemovalTarget?.installationId).isEqualTo(AN_INSTALL_ID)
+            assertThat(manager.removeNotificationCalls).isEmpty()
+
+            steppingUp.eventSink(AccountAuthorityEvent.PinChanged("123456"))
+            val ready = awaitFirst { it.canSubmit }
+            ready.eventSink(AccountAuthorityEvent.Submit)
+
+            val done = awaitFirst { it.successMessage != null }
+            assertThat(done.successMessage).isEqualTo(R.string.screen_account_authority_alerts_removed)
+            assertThat(manager.removeNotificationCalls).containsExactly(AN_INSTALL_ID to "123456")
+            assertThat(done.notificationRemovalTarget).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - a removal is never aimed at a row this screen did not list`() = runTest {
+        val manager = FakeAccountAuthorityManager(
+            notificationsResult = { Result.success(listOf(aSecurityNotificationView())) },
+        )
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            val listed = awaitFirst { it.securityNotifications.isNotEmpty() }
+            listed.eventSink(AccountAuthorityEvent.RemoveSecurityNotification("an-id-nobody-listed"))
+
+            // The row is resolved from what was read, so an event carrying an id from anywhere else leaves the
+            // user where they were rather than opening a step-up for a removal that cannot happen.
+            assertThat(listed.phase).isEqualTo(AccountAuthorityPhase.Overview)
+            assertThat(manager.removeNotificationCalls).isEmpty()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - a passkey-only account is told a removal cannot be confirmed here, and not to add a PIN`() = runTest {
+        val manager = FakeAccountAuthorityManager(
+            notificationsResult = { Result.success(listOf(aSecurityNotificationView())) },
+        )
+        val presenter = createPresenter(
+            manager = manager,
+            identityServiceClient = FakeIdentityServiceClient(
+                factorStatusResult = { Result.success(aFactorStatus(hasPin = false, passkeyRegistered = true)) },
+            ),
+        )
+
+        presenter.test {
+            val listed = awaitFirst { it.securityNotifications.isNotEmpty() }
+            listed.eventSink(AccountAuthorityEvent.RemoveSecurityNotification(AN_INSTALL_ID))
+
+            // The removal endpoint reads the factor out of its own request and looks for no sheet proof, so
+            // there is no sheet to send this account to, and a native assertion is not something this
+            // platform can run. Named rather than worked around, and with no weaker path offered.
+            val blocked = awaitFirst { it.stepUpBlock != null }
+            assertThat(blocked.stepUpBlock)
+                .isEqualTo(AccountAuthorityStepUpBlock.PasskeyNotUsableForNotificationRemoval)
+            assertThat(blocked.stepUpMethod).isNull()
+            assertThat(blocked.webStepUpUrl).isNull()
+            assertThat(manager.webStepUpCalls).isEmpty()
+            assertThat(manager.removeNotificationCalls).isEmpty()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     private fun createPresenter(
         manager: FakeAccountAuthorityManager = FakeAccountAuthorityManager(),
         featureEnabled: Boolean = true,

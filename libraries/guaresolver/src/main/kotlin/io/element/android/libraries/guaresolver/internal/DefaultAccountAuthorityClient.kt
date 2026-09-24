@@ -153,7 +153,6 @@ class DefaultAccountAuthorityClient(
             authorization = bearer(accessToken),
             body = SecurityNotificationRemoveRequest(
                 installationId = removal.installationId,
-                callerInstallationId = removal.callerInstallationId,
                 pin = removal.pin?.takeIf { it.isNotEmpty() },
                 challenge = removal.challengeB64Url,
                 signature = removal.signatureB64Url,

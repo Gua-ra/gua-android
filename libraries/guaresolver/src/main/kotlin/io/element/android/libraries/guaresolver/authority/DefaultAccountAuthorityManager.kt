@@ -399,9 +399,9 @@ class DefaultAccountAuthorityManager(
         val installationId = keyStore.installationId()
         val deviceKey = keyStore.authorityDevicePublicKey()
         val registration = if (deviceKey == null) {
-            // An install with no authority key registers unbound. Its own removal still works, because that
-            // tier is "the caller names itself"; what it cannot do is be removed from another install without
-            // a factor, which is the tier the server enforces.
+            // An install with no authority key registers unbound, which is permitted. What an unbound row
+            // costs to remove is the step-up and nothing more, because there is no key on it to sign for;
+            // a bound row costs that step-up plus a signature by the key it names.
             SecurityNotificationRegistration(
                 installationId = installationId,
                 platform = platform,
@@ -444,7 +444,6 @@ class DefaultAccountAuthorityManager(
         installationId: String,
         pin: String?,
     ): Result<Unit> = runCatchingExceptions {
-        val callerInstallationId = keyStore.installationId()
         val rows = client.securityNotifications(accessToken).getOrNull().orEmpty()
         val bound = rows.firstOrNull { it.installationId == installationId }?.boundToAnAuthorityDevice == true
         // A bound row needs a signature by the key it names. This device can only produce one for the key it
@@ -468,7 +467,6 @@ class DefaultAccountAuthorityManager(
             accessToken,
             SecurityNotificationRemoval(
                 installationId = installationId,
-                callerInstallationId = callerInstallationId,
                 pin = pin,
                 challengeB64Url = signed?.first,
                 signatureB64Url = signed?.second,
