@@ -10,6 +10,7 @@ package io.element.android.features.preferences.impl.accountauthority
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -19,6 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
@@ -439,6 +442,19 @@ private fun RecoveryEntrySection(
             value = state.recoveryArtifactInput,
             onValueChange = { eventSink(AccountAuthorityEvent.RecoveryArtifactChanged(it)) },
             enabled = !state.isWorking,
+            // What is typed here is the PRIVATE recovery authority key, and a field with the defaults hands
+            // it to the IME as ordinary prose: autocorrect and personalised learning are on, and Gboard backs
+            // its learned dictionary up to the signed-in Google account. That is the one property ADM-008
+            // decision 5 and this material's own keystore claim for it, never synced and never backed up, so
+            // the field asks the IME for a password: no learning, no autocorrect, no capitalisation.
+            //
+            // The value stays visible rather than masked, because it is read off paper into this field and a
+            // 52-character key nobody can check while typing is a key typed wrong.
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.None,
+                autoCorrectEnabled = false,
+                keyboardType = KeyboardType.Password,
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 16.dp),
