@@ -51,6 +51,38 @@ class DefaultAccountAuthorityClientTest {
         server.shutdown()
     }
 
+    /**
+     * The assertion is passed through as the object the platform produced, not as a quoted string.
+     *
+     * Nothing in this build can produce one yet, so this is the test that pins the field names and the shape
+     * for the day something can: a client that sent the credential quoted would have the server refuse an
+     * assertion that was fine.
+     */
+    @Test
+    fun `a passkey step-up travels as the assertion object, beside its ceremony id`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setBody("""{ "challenge": "Y2hhbGxlbmdl", "expiresInSeconds": 900 }"""))
+        val client = createClient(server)
+
+        client.challenge(
+            accessToken = "a-token",
+            purpose = AuthorityPurpose.GRANT,
+            stepUp = AuthorityStepUp.Passkey(
+                stepUpId = "a-ceremony",
+                credentialJson = """{ "id": "a-credential", "response": { "signature": "c2ln" } }""",
+            ),
+        ).getOrThrow()
+
+        val body = server.takeRequest().body.readUtf8()
+        assertThat(body).contains("\"passkeyStepUpId\":\"a-ceremony\"")
+        assertThat(body).contains("\"passkeyCredential\":{")
+        assertThat(body).contains("\"id\":\"a-credential\"")
+        // No PIN travels with a passkey assertion, and no phone code travels with either.
+        assertThat(body).doesNotContain("pin")
+        assertThat(body).doesNotContain("otp")
+        server.shutdown()
+    }
+
     @Test
     fun `an adoption submits the record, the signature and the challenge it signed`() = runTest {
         val server = MockWebServer()
