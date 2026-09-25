@@ -2,25 +2,21 @@
 <!--
   GUA FORK: the upstream file committed Element's live Firebase project (vector-alpha) and a real
   Google API key. Those third-party credentials must never ship in the Gua binary, so they are
-  removed here. Empty api-key/app-id values make FirebaseApp skip auto-initialization (no crash,
-  no push) until Gua's own Firebase project is wired in.
+  removed here.
 
-  These are Gua's own, from project "Gua Global" (gua-global, 511804071315). They are
-  project-wide: one Android API key serves all three packages, and which app a push reaches
-  is decided by google_app_id, which BuildTimeConfig.GOOGLE_APP_ID_* sets per build.
+  Gua's own values are not here either, because they differ per build: the store app registers in
+  the production project and the QA and debug apps in a separate dev project, so that a dev
+  server's sending credential cannot address a device running the store build. Every value the
+  Firebase SDK reads is therefore written per build type from config.BuildTimeConfig, in this
+  module's build.gradle.kts. A variant with no Firebase app record gets empty values, which makes
+  FirebaseApp skip auto-initialisation: no push, no crash.
 
-  google_api_key is not a secret in the usual sense: it ships inside every APK, and Google
-  restricts it by package name and signing certificate rather than by keeping it hidden.
-
-  Left empty on purpose: default_web_client_id (no Google Sign-In), firebase_database_url
-  (no Realtime Database), google_crash_reporting_api_key (Crashlytics is not used).
+  What is left here is what is empty in both projects: default_web_client_id (no Google Sign-In),
+  firebase_database_url (no Realtime Database), google_crash_reporting_api_key (Crashlytics is not
+  used).
 -->
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <string name="default_web_client_id" translatable="false"></string>
     <string name="firebase_database_url" translatable="false"></string>
-    <string name="gcm_defaultSenderId" translatable="false">511804071315</string>
-    <string name="google_api_key" translatable="false">AIzaSyB2RTAWSf9v5lqoXILeoc7wzgfImvv1Pxs</string>
     <string name="google_crash_reporting_api_key" translatable="false"></string>
-    <string name="google_storage_bucket" translatable="false">gua-global.firebasestorage.app</string>
-    <string name="project_id" translatable="false" tools:ignore="UnusedResources">gua-global</string>
 </resources>
