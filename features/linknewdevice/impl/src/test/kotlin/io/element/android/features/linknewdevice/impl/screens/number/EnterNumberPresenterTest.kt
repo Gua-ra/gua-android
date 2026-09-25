@@ -66,56 +66,12 @@ class EnterNumberPresenterTest {
     }
 
     @Test
-    fun `present - continue when number is not valid invokes the navigator`() = runTest {
-        val linkMobileHandler = FakeLinkMobileHandler(
-            startResult = {},
-        )
-        val validateResult = lambdaRecorder<UByte, Boolean> { false }
-        val checkCodeSender = FakeCheckCodeSender(
-            validateResult = validateResult,
-        )
-        val matrixClient = FakeMatrixClient(
-            sessionCoroutineScope = backgroundScope,
-            createLinkMobileHandlerResult = { Result.success(linkMobileHandler) }
-        )
-        val linkNewMobileHandler = LinkNewMobileHandler(matrixClient)
-        linkNewMobileHandler.createAndStartNewHandler()
-        val navigateToWrongNumberErrorLambda = lambdaRecorder<Unit> { }
-        val navigator = FakeEnterNumberNavigator(
-            navigateToWrongNumberErrorLambda = navigateToWrongNumberErrorLambda,
-        )
-        createPresenter(
-            navigator = navigator,
-            linkNewMobileHandler = linkNewMobileHandler,
-        ).test {
-            val initialState = awaitItem()
-            linkMobileHandler.emitStep(
-                LinkMobileStep.QrScanned(checkCodeSender)
-            )
-            runCurrent()
-            initialState.eventSink(EnterNumberEvent.UpdateNumber("88"))
-            skipItems(1)
-            initialState.eventSink(EnterNumberEvent.Continue)
-            skipItems(1)
-            val finalState = awaitItem()
-            assertThat(finalState.sendingCode.isLoading()).isTrue()
-            advanceUntilIdle()
-            validateResult.assertions().isCalledOnce().with(value(88.toUByte()))
-            navigateToWrongNumberErrorLambda.assertions().isCalledOnce()
-        }
-    }
-
-    @Test
     fun `present - continue when the number is valid but sending fails`() = runTest {
         val linkMobileHandler = FakeLinkMobileHandler(
             startResult = {},
         )
-        val validateResult = lambdaRecorder<UByte, Boolean> { true }
         val sendResult = lambdaRecorder<UByte, Result<Unit>> { Result.failure(AN_EXCEPTION) }
-        val checkCodeSender = FakeCheckCodeSender(
-            validateResult = validateResult,
-            sendResult = sendResult,
-        )
+        val checkCodeSender = FakeCheckCodeSender(sendResult = sendResult)
         val matrixClient = FakeMatrixClient(
             sessionCoroutineScope = backgroundScope,
             createLinkMobileHandlerResult = { Result.success(linkMobileHandler) }
@@ -138,7 +94,8 @@ class EnterNumberPresenterTest {
             assertThat(loadingState.sendingCode.isLoading()).isTrue()
             val finalState = awaitItem()
             assertThat(finalState.sendingCode.isFailure()).isTrue()
-            validateResult.assertions().isCalledOnce().with(value(88.toUByte()))
+            // Straight into the channel: there is no local pre-check to make first, and the code the user
+            // typed is compared inside the ceremony's confirm step.
             sendResult.assertions().isCalledOnce().with(value(88.toUByte()))
         }
     }
@@ -148,12 +105,8 @@ class EnterNumberPresenterTest {
         val linkMobileHandler = FakeLinkMobileHandler(
             startResult = {},
         )
-        val validateResult = lambdaRecorder<UByte, Boolean> { true }
         val sendResult = lambdaRecorder<UByte, Result<Unit>> { Result.success(Unit) }
-        val checkCodeSender = FakeCheckCodeSender(
-            validateResult = validateResult,
-            sendResult = sendResult,
-        )
+        val checkCodeSender = FakeCheckCodeSender(sendResult = sendResult)
         val matrixClient = FakeMatrixClient(
             sessionCoroutineScope = backgroundScope,
             createLinkMobileHandlerResult = { Result.success(linkMobileHandler) }
@@ -176,16 +129,15 @@ class EnterNumberPresenterTest {
             assertThat(loadingState.sendingCode.isLoading()).isTrue()
             expectNoEvents()
             advanceUntilIdle()
-            validateResult.assertions().isCalledOnce().with(value(88.toUByte()))
+            // Straight into the channel: there is no local pre-check to make first, and the code the user
+            // typed is compared inside the ceremony's confirm step.
             sendResult.assertions().isCalledOnce().with(value(88.toUByte()))
         }
     }
 
     private fun createPresenter(
-        navigator: EnterNumberNavigator = FakeEnterNumberNavigator(),
         linkNewMobileHandler: LinkNewMobileHandler = LinkNewMobileHandler(FakeMatrixClient()),
     ) = EnterNumberPresenter(
-        navigator = navigator,
         linkNewMobileHandler = linkNewMobileHandler,
     )
 }

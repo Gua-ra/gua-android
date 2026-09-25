@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  GUA FORK: the account-authority security alert, which this module has to be able to draw itself.
+
+  Both push services hand a message to a foregrounded app rather than to the notification tray, so the one
+  alert that must be seen is the one the system will not draw while the owner is looking at their phone.
+-->
+<resources>
+    <string name="gua_authority_alert_channel_name">Security alerts</string>
+    <string name="gua_authority_alert_channel_description">Warnings about anything asking for approval over your account.</string>
+</resources>

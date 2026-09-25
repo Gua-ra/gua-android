@@ -79,6 +79,11 @@ class PreferencesRootPresenter(
         val showLinkNewDevice by remember {
             featureFlagService.isFeatureEnabledFlow(FeatureFlags.QrCodeLogin)
         }.collectAsState(initial = false)
+        // GUA FORK: ADM-009. The row is the outer of the two gates on the whole feature; the presenter
+        // behind it reads the same flag before it touches the session or the network.
+        val showAccountAuthority by remember {
+            featureFlagService.isFeatureEnabledFlow(FeatureFlags.AccountAuthority)
+        }.collectAsState(initial = false)
 
         val otherSessions by remember {
             sessionStore.sessionsFlow().map { list ->
@@ -178,6 +183,7 @@ class PreferencesRootPresenter(
             showAnalyticsSettings = hasAnalyticsProviders,
             canReportBug = canReportBug,
             showLinkNewDevice = showLinkNewDevice,
+            showAccountAuthority = showAccountAuthority,
             showDeveloperSettings = showDeveloperSettings,
             canDeactivateAccount = canDeactivateAccount,
             nbOfBlockedUsers = nbOfBlockedUsers,

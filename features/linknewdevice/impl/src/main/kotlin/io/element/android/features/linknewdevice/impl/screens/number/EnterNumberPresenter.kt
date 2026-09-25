@@ -16,9 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import dev.zacsweers.metro.Assisted
-import dev.zacsweers.metro.AssistedFactory
-import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.Inject
 import io.element.android.features.linknewdevice.impl.LinkNewMobileHandler
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.Presenter
@@ -31,23 +29,25 @@ import timber.log.Timber
 
 private val tag = LoggerTag("EnterNumberPresenter", LoggerTags.linkNewDevice)
 
-@AssistedInject
+/**
+ * GUA FORK: no navigator.
+ *
+ * This screen had one destination of its own, the wrong-code error, and it was reachable only from a local
+ * check that always said yes. The code is compared inside the ceremony, so a wrong one arrives on the step flow
+ * and the flow node maps it to the mismatch screen.
+ */
+@Inject
 class EnterNumberPresenter(
-    @Assisted private val navigator: EnterNumberNavigator,
     private val linkNewMobileHandler: LinkNewMobileHandler,
 ) : Presenter<EnterNumberState> {
-    @AssistedFactory
-    interface Factory {
-        fun create(navigator: EnterNumberNavigator): EnterNumberPresenter
-    }
-
     @Composable
     override fun present(): EnterNumberState {
         val coroutineScope = rememberCoroutineScope()
         var number by remember { mutableStateOf("") }
         var sendingCode by remember<MutableState<AsyncAction<Unit>>> { mutableStateOf(AsyncAction.Uninitialized) }
 
-        // Observe the flow to react on ErrorType.InvalidCheckCode
+        // GUA FORK: the flow is what reports a wrong code. It arrives as ErrorType.InvalidCheckCode from the
+        // ceremony's own confirm step, which is the only place the comparison happens.
         val linkMobileStep by linkNewMobileHandler.stepFlow.collectAsState()
 
         var checkCodeSender: CheckCodeSender? by remember { mutableStateOf(null) }
@@ -76,24 +76,20 @@ class EnterNumberPresenter(
                         sendingCode = AsyncAction.Failure(IllegalStateException("No check code sender available"))
                     } else {
                         sendingCode = AsyncAction.Loading
-                        val uByte = number.toUByte()
-                        val isValid = sender.validate(uByte)
-                        if (isValid) {
-                            sender.send(uByte)
-                                .fold(
-                                    onSuccess = {
-                                        Timber.tag(tag.value).d("Code sent successfully")
-                                        // Keep loading, do not set sendingCode to AsyncAction.Success(Unit)
-                                    },
-                                    onFailure = {
-                                        Timber.tag(tag.value).e(it, "Failed to send number code")
-                                        sendingCode = AsyncAction.Failure(it)
-                                    }
-                                )
-                        } else {
-                            // Navigate to the error state
-                            navigator.navigateToWrongNumberError()
-                        }
+                        // GUA FORK: sent straight into the channel. There is no local pre-check to make first,
+                        // and the method that appeared to be one always said yes; a wrong code comes back as a
+                        // failed ceremony, which the flow node maps to the mismatch screen.
+                        sender.send(number.toUByte())
+                            .fold(
+                                onSuccess = {
+                                    Timber.tag(tag.value).d("Code sent successfully")
+                                    // Keep loading, do not set sendingCode to AsyncAction.Success(Unit)
+                                },
+                                onFailure = {
+                                    Timber.tag(tag.value).e(it, "Failed to send number code")
+                                    sendingCode = AsyncAction.Failure(it)
+                                }
+                            )
                     }
                 }
             }

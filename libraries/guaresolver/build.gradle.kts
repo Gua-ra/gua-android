@@ -59,6 +59,11 @@ dependencies {
     // keystore key the Ed25519 seed is sealed under, and the preferences store holds only that sealed blob.
     implementation(projects.libraries.cryptography.api)
     implementation(projects.libraries.preferences.api)
+    // GUA FORK: ADM-009. The session-start registrar reads the account-authority flag and this session's own
+    // token, because the security-notification channel and the candidate offer both belong to a session start
+    // rather than to a screen.
+    implementation(projects.libraries.featureflag.api)
+    implementation(projects.libraries.sessionStorage.api)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.google.tink)
     implementation(libs.serialization.json)
@@ -72,6 +77,8 @@ dependencies {
     testImplementation(projects.libraries.cryptography.impl)
     testImplementation(projects.libraries.cryptography.test)
     testImplementation(projects.libraries.preferences.test)
+    testImplementation(projects.libraries.featureflag.test)
+    testImplementation(projects.libraries.sessionStorage.test)
     testImplementation(platform(libs.network.okhttp.bom))
     testImplementation(libs.network.okhttp)
     testImplementation(libs.network.mockwebserver)

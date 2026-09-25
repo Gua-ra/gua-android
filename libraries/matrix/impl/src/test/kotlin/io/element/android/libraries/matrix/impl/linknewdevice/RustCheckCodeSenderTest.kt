@@ -29,13 +29,24 @@ class RustCheckCodeSenderTest {
         sendResult.assertions().isCalledOnce().with(value(1.toUByte()))
     }
 
+    /**
+     * GUA FORK: there is nothing here that claims to check a code.
+     *
+     * The test this replaces asserted that `validate` always returned true, which is a test pinning a lie in
+     * place. The code is compared inside the secure channel's confirm step, so the only thing this class can
+     * be asked for is that it hands the code over, and a failure from the far end arrives on the step flow.
+     */
     @Test
-    fun `validate always returns true for now`() = runTest {
+    fun `a failure to send is reported rather than swallowed`() = runTest {
         val sut = RustCheckCodeSender(
-            inner = FakeFfiCheckCodeSender(),
+            inner = FakeFfiCheckCodeSender(sendResult = { throw AN_EXCEPTION }),
             sessionDispatcher = StandardTestDispatcher(testScheduler),
         )
-        val result = sut.validate(1.toUByte())
-        assertThat(result).isTrue()
+
+        assertThat(sut.send(1.toUByte()).isFailure).isTrue()
+    }
+
+    private companion object {
+        private val AN_EXCEPTION = IllegalStateException("the channel is gone")
     }
 }

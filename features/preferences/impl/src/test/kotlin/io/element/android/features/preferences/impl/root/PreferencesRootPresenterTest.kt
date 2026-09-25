@@ -111,6 +111,9 @@ class PreferencesRootPresenterTest {
             assertThat(loadedState.accountManagementUrl).isNull()
             assertThat(loadedState.showAnalyticsSettings).isFalse()
             assertThat(loadedState.showLinkNewDevice).isFalse()
+            // GUA FORK: ADM-009 ships disabled, so the row that opens the account authority screen is not
+            // there and the settings page is what it was before the feature existed.
+            assertThat(loadedState.showAccountAuthority).isFalse()
             assertThat(loadedState.showDeveloperSettings).isTrue()
             assertThat(loadedState.canDeactivateAccount).isTrue()
             assertThat(loadedState.canReportBug).isTrue()
