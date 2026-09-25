@@ -52,6 +52,20 @@ class VectorFirebaseMessagingService : FirebaseMessagingService() {
             fetchPushForegroundServiceManager.start()
         }
 
+        // GUA FORK: an account-authority alert, which is not a Matrix push and must not be parsed as one.
+        // FCM hands a message to a foregrounded app instead of drawing it, and everything below would
+        // discard it as invalid data, so the one warning that has to be seen is invisible exactly when the
+        // owner is looking at the screen.
+        if (GuaAuthorityAlert.matches(message.data)) {
+            GuaAuthorityAlert.show(applicationContext, message.data)
+            coroutineScope.launch {
+                if (isHighPriority) {
+                    fetchPushForegroundServiceManager.stop()
+                }
+            }
+            return
+        }
+
         coroutineScope.launch {
             val pushData = pushParser.parse(message.data)
             if (pushData == null) {
