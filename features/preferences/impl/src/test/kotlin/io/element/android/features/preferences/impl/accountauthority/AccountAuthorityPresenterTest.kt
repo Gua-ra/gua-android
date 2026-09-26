@@ -87,6 +87,24 @@ class AccountAuthorityPresenterTest {
     }
 
     @Test
+    fun `present - an account with no account object is not an error either`() = runTest {
+        // What a deployment running the chain with genesis off answers for every account. There is no
+        // account object for a chain to be about, so there is nothing here the owner can retry, and
+        // telling them to try again on the screen the whole feature is reached from is worse than saying
+        // nothing.
+        val manager = FakeAccountAuthorityManager(stateResult = { Result.failure(AuthorityError.NoAccount) })
+        val presenter = createPresenter(manager = manager)
+
+        presenter.test {
+            val state = awaitFirst { it.phase == AccountAuthorityPhase.Overview }
+            assertThat(state.unavailable).isTrue()
+            assertThat(state.errorMessage).isNull()
+            assertThat(state.canAdopt).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `present - a bootstrap account with an empty chain can adopt`() = runTest {
         val presenter = createPresenter()
 

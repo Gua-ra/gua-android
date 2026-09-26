@@ -174,7 +174,14 @@ class AccountAuthorityPresenter(
                 .onFailure { error ->
                     // "This deployment does not have the feature" is the normal case today and is not an
                     // error worth showing anyone, which is what the wire contract asks of a client.
-                    unavailable = error is AuthorityError.Disabled
+                    //
+                    // NoAccount is the same kind of answer and was not treated as one. It means the account
+                    // has no account object, so there is nothing for a chain to be about and nothing this
+                    // screen or the owner can do: a deployment running the chain with genesis off answers it
+                    // for every account. Showing "Something went wrong. Please try again." told the owner to
+                    // retry something that could never succeed, on the one screen the whole feature is
+                    // reached from.
+                    unavailable = error is AuthorityError.Disabled || error is AuthorityError.NoAccount
                     chain = null
                     errorMessage = if (unavailable) null else error.toMessageRes()
                 }
