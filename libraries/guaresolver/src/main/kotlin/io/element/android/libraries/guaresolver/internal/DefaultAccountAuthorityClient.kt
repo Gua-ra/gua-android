@@ -198,6 +198,7 @@ class DefaultAccountAuthorityClient(
                     seq = pending.seq,
                     effectiveAtEpochSeconds = pending.effectiveAtEpochSeconds,
                     recordHash = pending.recordHash,
+                    prevHash = pending.prevHash,
                 )
             },
         )

@@ -309,6 +309,7 @@ class DefaultAccountAuthorityManagerTest {
             seq = 4,
             effectiveAtEpochSeconds = 1_800_000_000,
             recordHash = A_PENDING_RECORD_HASH,
+            prevHash = A_PENDING_PREV_HASH_HEX,
         )
         val client = FakeAccountAuthorityClient()
         val keyStore = createKeyStore()
@@ -325,14 +326,39 @@ class DefaultAccountAuthorityManagerTest {
         val record = decode(client.opposeRecordCalls.single().recordB64Url)
         assertThat(record).hasLength(144)
         assertThat(record.copyOfRange(0, 4)).isEqualTo("GUAO".toByteArray())
-        // The position of the record it cancels, not a place of its own.
-        assertThat(record.copyOfRange(40, 72)).isEqualTo(AuthorityRecordCodec.prevHashFromHex(A_HEAD_HASH_HEX))
+        // The position of the record it cancels, not a place of its own, and the prevHash is that record's
+        // OWN as the chain read reports it. This assertion used to compare against the head hash, which is
+        // the pending record itself once it is placed, so it asserted the bug: the objection went out at the
+        // wrong position and the server could only answer authority_opposition_stale.
+        assertThat(record.copyOfRange(40, 72))
+            .isEqualTo(AuthorityRecordCodec.prevHashFromHex(A_PENDING_PREV_HASH_HEX))
+        assertThat(record.copyOfRange(40, 72))
+            .isNotEqualTo(AuthorityRecordCodec.prevHashFromHex(A_HEAD_HASH_HEX))
         assertThat(record.copyOfRange(72, 80)).isEqualTo(byteArrayOf(0, 0, 0, 0, 0, 0, 0, 4))
         assertThat(record.copyOfRange(80, 112))
             .isEqualTo(AuthorityRecordCodec.prevHashFromHex(A_PENDING_RECORD_HASH))
         assertThat(record.copyOfRange(112, 144)).isEqualTo(ourKey)
         // The session route is untouched: it is the objection to an adoption and nothing else.
         assertThat(client.opposeCalls).isEmpty()
+    }
+
+    @Test
+    fun `an objection is refused rather than built wrong when the server sends no prevHash`() = runTest {
+        val client = FakeAccountAuthorityClient()
+        val manager = adoptedManager(client, createKeyStore())
+        // A server that predates the field. Nothing can derive the value locally and the head is the pending
+        // record itself, so refusing is the honest answer: an objection built at a guessed position is
+        // accepted by nothing and tells the owner their device said no when it did not.
+        val pending = AuthorityPendingTransition("DEVICE_REVOKE", 4, 1_800_000_000, A_PENDING_RECORD_HASH)
+
+        val result = manager.opposeWithRecord(A_TOKEN, aRootedChain(headSeq = 3, pending = pending))
+
+        assertThat(result.exceptionOrNull()).isInstanceOf(AuthorityError.OppositionStale::class.java)
+        assertThat(client.opposeRecordCalls).isEmpty()
+        // No OPPOSE challenge either, so nothing is spent on a record that cannot be built. Asserted on the
+        // purpose rather than on the list being empty: adoptedManager roots the account first, and that
+        // adoption's own ADOPT challenge is in here.
+        assertThat(client.challengeCalls.map { it.purpose }).doesNotContain(AuthorityPurpose.OPPOSE)
     }
 
     @Test

@@ -345,6 +345,16 @@ data class AuthorityPendingTransition(
     val seq: Long,
     val effectiveAtEpochSeconds: Long,
     val recordHash: String,
+    /**
+     * SHA-256 hex of the record before this one, which an `Oppose` carries and the server checks.
+     *
+     * Deliberately not interchangeable with `AuthorityChainState.headHash`, and that confusion is why the
+     * signed objection never worked: placing a pending record makes its OWN hash the head, so while
+     * something is pending the head IS that record and never the one before it. Nothing can derive this
+     * locally, so a server that does not send it leaves an objection unbuildable, which is the honest
+     * outcome next to one built at the wrong position and refused as stale.
+     */
+    val prevHash: String? = null,
 ) {
     /**
      * Whether objecting to THIS record needs a signature from a device the chain holds active.

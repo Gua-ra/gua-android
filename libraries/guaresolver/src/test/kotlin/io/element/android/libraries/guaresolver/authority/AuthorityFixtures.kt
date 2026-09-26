@@ -22,6 +22,15 @@ val A_BOOTSTRAP_ACCOUNT_ID: String =
 /** 32 bytes of hex, which is what the chain head is reported as. */
 const val A_HEAD_HASH_HEX: String = "1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f809"
 
+/**
+ * The prevHash a PENDING record carries, deliberately different from [A_HEAD_HASH_HEX].
+ *
+ * Those two being the same value is what let the objection bug hide. Placing a pending record makes its own
+ * hash the head, so the head while something is pending is that record and not the one before it; a fixture
+ * where the two are interchangeable cannot tell a correct objection from one built at the wrong position.
+ */
+const val A_PENDING_PREV_HASH_HEX: String = "0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0"
+
 const val AN_EMPTY_HEAD_HASH: String = "0000000000000000000000000000000000000000000000000000000000000000"
 
 fun aBootstrapChain(

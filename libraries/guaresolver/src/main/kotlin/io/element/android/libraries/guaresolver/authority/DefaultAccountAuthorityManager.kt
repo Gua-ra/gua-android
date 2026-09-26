@@ -121,6 +121,15 @@ class DefaultAccountAuthorityManager(
         val opposedHash = runCatchingExceptions { AuthorityRecordCodec.prevHashFromHex(pending.recordHash) }
             .getOrNull()
             ?: return Result.failure(AuthorityError.OppositionStale)
+        // The pending record's OWN prevHash, which only the chain read can supply. This used to be
+        // chain.headHash on the assumption that a pending record does not move the head; it does. Placing it
+        // sets the head to that record's own hash, so signing over the head built an objection at the wrong
+        // position and the server could only answer authority_opposition_stale. Refused rather than guessed
+        // when a server does not send it: an objection nothing accepts is worse than one not attempted,
+        // because the owner is told their device said no when it did not.
+        val opposedPrevHash = pending.prevHash
+            ?.let { runCatchingExceptions { AuthorityRecordCodec.prevHashFromHex(it) }.getOrNull() }
+            ?: return Result.failure(AuthorityError.OppositionStale)
 
         return submit(
             accessToken = accessToken,
@@ -132,9 +141,7 @@ class DefaultAccountAuthorityManager(
             build = {
                 AuthorityRecordCodec.oppose(
                     accountReference = accountReference,
-                    // A pending record holds its seq without being appended, so the head this client just
-                    // read is still the one that record names as its own prevHash.
-                    prevHash = AuthorityRecordCodec.prevHashFromHex(chain.headHash),
+                    prevHash = opposedPrevHash,
                     seq = pending.seq,
                     opposedRecordHash = opposedHash,
                     authorizingKey = authorizingKey,

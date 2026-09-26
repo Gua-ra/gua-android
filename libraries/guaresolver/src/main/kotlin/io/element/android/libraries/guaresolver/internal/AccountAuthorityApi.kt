@@ -229,6 +229,13 @@ internal data class AuthorityPendingResponse(
     val seq: Long = 0,
     val effectiveAtEpochSeconds: Long = 0,
     val recordHash: String = "",
+    /**
+     * Hash of the record BEFORE the pending one, which an `Oppose` signs over.
+     *
+     * Nullable so a server that predates the field still decodes; an objection then refuses to be built
+     * rather than being built against a position nothing will accept.
+     */
+    val prevHash: String? = null,
 )
 
 @Serializable
