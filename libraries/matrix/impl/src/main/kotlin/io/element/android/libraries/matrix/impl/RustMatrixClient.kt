@@ -223,6 +223,7 @@ class RustMatrixClient(
         client = innerClient,
         isSyncServiceReady = syncService.syncState.map { it == SyncState.Running },
         sessionCoroutineScope = sessionCoroutineScope,
+        awaitE2eeInitialization = encryptionService::awaitE2eeInitialization,
     )
 
     private val roomInfoMapper = RoomInfoMapper()
