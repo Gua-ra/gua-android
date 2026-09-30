@@ -9,6 +9,8 @@ package io.element.android.libraries.matrix.api.encryption
 
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.matrix.test.encryption.FakeEncryptionService
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
@@ -124,30 +126,239 @@ class EncryptionRepairTest {
     }
 
     @Test
-    fun `after a reset, a store that exported nothing is not reported as repaired`() = runTest {
-        // enableRecovery succeeds for a store it populated with nothing. Trusting that Result is
-        // what put the setup banner back in front of someone who had just finished a reset.
-        // enableRecovery succeeds for a secret store it populated with nothing, because the private
-        // cross-signing keys were not exportable when it ran. Trusting that Result is what put the
-        // setup banner back in front of a user who had just finished a reset, where the only thing
-        // it could offer them was another reset.
+    fun `after a reset, a successful mint the SDK confirms is repaired`() = runTest {
+        var enableCalls = 0
+        var sdkState = RecoveryState.DISABLED
         val service = FakeEncryptionService(
-            enableRecoveryLambda = { _, _ -> Result.success("key") }
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                sdkState = RecoveryState.ENABLED
+                Result.success("key")
+            },
         )
-        service.recoveryStateStateFlow.value = RecoveryState.INCOMPLETE
+        service.recoveryStateLambda = { sdkState }
 
-        assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.ResetRequired)
+        assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.Repaired)
+        assertThat(enableCalls).isEqualTo(1)
     }
 
     @Test
-    fun `after a reset, provisioning is repaired once the state agrees`() = runTest {
+    fun `after a reset, the verdict is the SDK's own read, not the sync-conditioned flow`() = runTest {
+        // The flow is pinned to WAITING_FOR_SYNC whenever the sync is not running, which is how the
+        // account looks if the user leaves the app after approving. That must not turn a mint the
+        // SDK has confirmed into another rotation.
+        var enableCalls = 0
+        var sdkState = RecoveryState.DISABLED
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                sdkState = RecoveryState.ENABLED
+                Result.success("key")
+            },
+        )
+        service.recoveryStateStateFlow.value = RecoveryState.WAITING_FOR_SYNC
+        service.recoveryStateLambda = { sdkState }
+
+        assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.Repaired)
+        assertThat(enableCalls).isEqualTo(1)
+    }
+
+    @Test
+    fun `after a reset, a store that exported nothing ends the loop after exactly one mint`() = runTest {
+        // enableRecovery succeeds for a secret store it populated with nothing, because the private
+        // cross-signing keys were not exportable when it ran. Another store would be missing the
+        // same secrets, and every rotation strands the one before, so the first mint is decisive:
+        // the loop stops with an explicit outcome and no second reset.
+        var enableCalls = 0
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                Result.success("key")
+            }
+        )
+        service.recoveryStateStateFlow.value = RecoveryState.INCOMPLETE
+
+        val before = testScheduler.currentTime
+        assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.IdentityIncompleteAfterReset)
+        assertThat(enableCalls).isEqualTo(1)
+        // No backoff was spent on a verdict the SDK had already given.
+        assertThat(testScheduler.currentTime - before).isLessThan(1_000)
+    }
+
+    @Test
+    fun `after a reset, an unknown state receives one bounded re-read and no more`() = runTest {
+        var enableCalls = 0
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                Result.success("key")
+            }
+        )
+        service.recoveryStateStateFlow.value = RecoveryState.UNKNOWN
+        service.recoveryStateLambda = { RecoveryState.UNKNOWN }
+
+        val before = testScheduler.currentTime
+        assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.IdentityIncompleteAfterReset)
+        assertThat(enableCalls).isEqualTo(1)
+        val waited = testScheduler.currentTime - before
+        // One confirmation wait (two seconds), not the sixty-second backoff.
+        assertThat(waited).isAtLeast(2_000)
+        assertThat(waited).isLessThan(3_000)
+    }
+
+    @Test
+    fun `after a reset, an unknown state that settles within the re-read is repaired`() = runTest {
+        var sdkState = RecoveryState.UNKNOWN
         val service = FakeEncryptionService(
             enableRecoveryLambda = { _, _ -> Result.success("key") }
         )
-        service.recoveryStateStateFlow.value = RecoveryState.DISABLED
-        service.recoveryStateStateFlow.value = RecoveryState.ENABLED
+        service.recoveryStateStateFlow.value = RecoveryState.UNKNOWN
+        service.recoveryStateLambda = { sdkState }
+        backgroundScope.launch {
+            delay(500)
+            sdkState = RecoveryState.ENABLED
+            service.recoveryStateStateFlow.value = RecoveryState.ENABLED
+        }
 
         assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.Repaired)
+    }
+
+    @Test
+    fun `after a reset, an attempt that threw before minting is retried`() = runTest {
+        var enableCalls = 0
+        var sdkState = RecoveryState.DISABLED
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                if (enableCalls == 1) {
+                    Result.failure(IllegalStateException("network"))
+                } else {
+                    sdkState = RecoveryState.ENABLED
+                    Result.success("key")
+                }
+            },
+        )
+        service.recoveryStateLambda = { sdkState }
+
+        assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.Repaired)
+        assertThat(enableCalls).isEqualTo(2)
+    }
+
+    @Test
+    fun `after a reset, a backup that already exists on the server ends the loop at once`() = runTest {
+        var enableCalls = 0
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                Result.failure(RecoveryException.BackupExistsOnServer)
+            },
+        )
+        service.recoveryStateLambda = { RecoveryState.INCOMPLETE }
+
+        val before = testScheduler.currentTime
+        assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.ResetRequired)
+        assertThat(enableCalls).isEqualTo(1)
+        assertThat(testScheduler.currentTime - before).isLessThan(100)
+    }
+
+    @Test
+    fun `after a reset, a mint the SDK reads as DISABLED ends the loop without another rotation`() = runTest {
+        var enableCalls = 0
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                Result.success("key")
+            },
+        )
+        service.recoveryStateLambda = { RecoveryState.DISABLED }
+
+        val before = testScheduler.currentTime
+        assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.IdentityIncompleteAfterReset)
+        assertThat(enableCalls).isEqualTo(1)
+        assertThat(testScheduler.currentTime - before).isLessThan(1_000)
+    }
+
+    @Test
+    fun `after a reset, attempts that keep throwing exhaust the backoff and end at a reset`() = runTest {
+        var enableCalls = 0
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                Result.failure(IllegalStateException("network"))
+            },
+        )
+        service.recoveryStateLambda = { RecoveryState.DISABLED }
+
+        val before = testScheduler.currentTime
+        assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.ResetRequired)
+        assertThat(enableCalls).isEqualTo(5)
+        val waited = testScheduler.currentTime - before
+        assertThat(waited).isAtLeast(58_000)
+        assertThat(waited).isLessThan(60_000)
+    }
+
+    @Test
+    fun `after a reset, a mint that failed only after the SDK reported it done is still decisive`() = runTest {
+        // The store exists; only the SDK's own recomputation after it failed. Retrying would
+        // rotate the store just made, so the one mint is judged like a successful one.
+        var enableCalls = 0
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                Result.failure(RecoveryException.MintedButUnconfirmed(IllegalStateException("network")))
+            },
+        )
+        service.recoveryStateLambda = { RecoveryState.INCOMPLETE }
+
+        assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.IdentityIncompleteAfterReset)
+        assertThat(enableCalls).isEqualTo(1)
+    }
+
+    @Test
+    fun `a banner provision whose store the SDK cannot read is a failure, not a reset`() = runTest {
+        var enableCalls = 0
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                Result.success("key")
+            },
+        )
+        service.recoveryStateStateFlow.value = RecoveryState.DISABLED
+        service.recoveryStateLambda = { RecoveryState.UNKNOWN }
+
+        assertThat(service.repairWithoutReset()).isEqualTo(EncryptionRepairOutcome.Failed)
+        assertThat(enableCalls).isEqualTo(1)
+    }
+
+    @Test
+    fun `provisioning refuses while the encryption initialisation is still pending`() = runTest {
+        // The SDK's own initialisation creates the key backup on a fresh account. A client that has
+        // not seen it finish must not create another; the banner stays and the tap can be repeated.
+        var enableCalls = 0
+        val service = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                Result.success("key")
+            },
+            awaitE2eeInitializationLambda = { false },
+        )
+        service.recoveryStateStateFlow.value = RecoveryState.DISABLED
+
+        assertThat(service.repairWithoutReset()).isEqualTo(EncryptionRepairOutcome.NotYet)
+        assertThat(enableCalls).isEqualTo(0)
+    }
+
+    @Test
+    fun `a banner repair is judged on the SDK's own read`() = runTest {
+        // enableBackups does not recompute inside the call, so the repair waits for the flow to
+        // catch up and then asks the SDK directly rather than trusting the flow's value.
+        val service = FakeEncryptionService()
+        service.recoveryStateStateFlow.value = RecoveryState.INCOMPLETE
+        var sdkState = RecoveryState.INCOMPLETE
+        service.recoveryStateLambda = { sdkState }
+        service.givenEnableBackupsSideEffect { sdkState = RecoveryState.ENABLED }
+
+        assertThat(service.repairWithoutReset()).isEqualTo(EncryptionRepairOutcome.Repaired)
     }
 
     @Test
