@@ -13,6 +13,7 @@ import app.cash.molecule.moleculeFlow
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.matrix.test.encryption.FakeIdentityPasswordResetHandle
+import io.element.android.libraries.matrix.test.encryption.FakeIdentityResetGuard
 import io.element.android.tests.testutils.lambda.lambdaRecorder
 import io.element.android.tests.testutils.testCoroutineDispatchers
 import kotlinx.coroutines.test.TestScope
@@ -83,6 +84,7 @@ class ResetIdentityPasswordPresenterTest {
         identityResetHandle: FakeIdentityPasswordResetHandle = FakeIdentityPasswordResetHandle(),
     ) = ResetIdentityPasswordPresenter(
         identityPasswordResetHandle = identityResetHandle,
+        identityResetGuard = FakeIdentityResetGuard(),
         dispatchers = testCoroutineDispatchers(),
     )
 }

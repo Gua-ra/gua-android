@@ -20,6 +20,7 @@ import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.createroom.CreateRoomParameters
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
+import io.element.android.libraries.matrix.api.encryption.IdentityResetGuard
 import io.element.android.libraries.matrix.api.linknewdevice.LinkDesktopHandler
 import io.element.android.libraries.matrix.api.linknewdevice.LinkMobileHandler
 import io.element.android.libraries.matrix.api.media.MatrixMediaLoader
@@ -45,6 +46,7 @@ import io.element.android.libraries.matrix.api.user.MatrixSearchUserResults
 import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.matrix.api.verification.SessionVerificationService
 import io.element.android.libraries.matrix.test.encryption.FakeEncryptionService
+import io.element.android.libraries.matrix.test.encryption.FakeIdentityResetGuard
 import io.element.android.libraries.matrix.test.media.FakeMatrixMediaLoader
 import io.element.android.libraries.matrix.test.media.FakeMediaPreviewService
 import io.element.android.libraries.matrix.test.notification.FakeNotificationService
@@ -86,6 +88,7 @@ class FakeMatrixClient(
     override val notificationSettingsService: NotificationSettingsService = FakeNotificationSettingsService(),
     override val syncService: SyncService = FakeSyncService(),
     override val encryptionService: EncryptionService = FakeEncryptionService(),
+    override val identityResetGuard: IdentityResetGuard = FakeIdentityResetGuard(),
     override val roomDirectoryService: RoomDirectoryService = FakeRoomDirectoryService(),
     override val mediaPreviewService: MediaPreviewService = FakeMediaPreviewService(),
     override val roomMembershipObserver: RoomMembershipObserver = RoomMembershipObserver(),

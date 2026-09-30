@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Επαναφορά και ολοκλήρωση</string>
     <string name="gua_encryption_reset_finishing">Ολοκλήρωση ρύθμισης…</string>
     <string name="gua_encryption_reset_failed">Δεν ήταν δυνατή η ολοκλήρωση της ρύθμισης. Πατήστε «Επαναφορά και ολοκλήρωση» για να δοκιμάσετε ξανά.</string>
+    <string name="gua_encryption_reset_still_finishing">Η ρύθμιση ολοκληρώνεται ακόμη στο παρασκήνιο. Μπορείτε να συνεχίσετε να χρησιμοποιείτε το Gua.</string>
     <string name="gua_encryption_recover_from_other_device_title">Ανακτήστε τα προηγούμενα μηνύματά σας</string>
     <string name="gua_encryption_recover_from_other_device_message">Χρησιμοποιήστε την άλλη σας συσκευή για να ανακτήσετε τα μηνύματα που δεν είναι ακόμη διαθέσιμα σε αυτή τη συσκευή.\n\nΑν δεν έχετε πρόσβαση σε αυτήν, μπορείτε να κάνετε επαναφορά και να ολοκληρώσετε τη ρύθμιση, αλλά τα μηνύματα που είναι αποθηκευμένα μόνο στο αντίγραφο ασφαλείας σας θα χαθούν οριστικά.</string>
     <string name="gua_encryption_recover_from_other_device_action">Χρήση της άλλης συσκευής</string>

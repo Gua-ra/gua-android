@@ -117,6 +117,7 @@ class MatrixSessionCache(
         val syncOrchestrator = syncOrchestratorFactory.create(
             syncService = matrixClient.syncService,
             sessionCoroutineScope = matrixClient.sessionCoroutineScope,
+            identityResetGuard = matrixClient.identityResetGuard,
         )
         sessionIdsToMatrixSession[matrixClient.sessionId] = InMemoryMatrixSession(
             matrixClient = matrixClient,

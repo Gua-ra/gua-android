@@ -13,10 +13,12 @@ import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.SessionId
+import io.element.android.libraries.matrix.api.encryption.IdentityResetInProgressException
 import io.element.android.libraries.matrix.api.exception.NotificationResolverException
 import io.element.android.libraries.matrix.api.notification.GetNotificationDataResult
 import io.element.android.libraries.matrix.api.notification.NotificationService
 import io.element.android.services.toolbox.api.systemclock.SystemClock
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import org.matrix.rustcomponents.sdk.BatchNotificationResult
 import org.matrix.rustcomponents.sdk.NotificationClient
@@ -30,12 +32,22 @@ class RustNotificationService(
     private val notificationClient: NotificationClient,
     private val dispatchers: CoroutineDispatchers,
     clock: SystemClock,
+    /** GUA FORK: true while an identity reset holds the sync. Owned by the reset guard. */
+    private val identityResetHold: StateFlow<Boolean>,
 ) : NotificationService {
     private val notificationMapper: NotificationMapper = NotificationMapper(clock)
 
     override suspend fun getNotifications(
         ids: Map<RoomId, List<EventId>>
     ): GetNotificationDataResult = withContext(dispatchers.io) {
+        // GUA FORK: with the main sync stopped, the SDK's notification client takes the free
+        // encryption-sync permit and runs its own two-iteration encryption sync, which is the
+        // own-user key query the reset guard exists to keep away. Stand down; the push falls back
+        // to its generic content and the work retries once the reset is over.
+        if (identityResetHold.value) {
+            Timber.w("Not fetching notifications: an identity reset holds the sync")
+            return@withContext Result.failure(IdentityResetInProgressException())
+        }
         runCatchingExceptions {
             val requests = ids.map { (roomId, eventIds) ->
                 NotificationItemsRequest(

@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">重設並完成</string>
     <string name="gua_encryption_reset_finishing">正在完成設定…</string>
     <string name="gua_encryption_reset_failed">無法完成設定。請點選「重設並完成」再試一次。</string>
+    <string name="gua_encryption_reset_still_finishing">仍在背景中完成設定。你可以繼續使用 Gua。</string>
     <string name="gua_encryption_recover_from_other_device_title">復原你先前的訊息</string>
     <string name="gua_encryption_recover_from_other_device_message">使用你的其他裝置，復原這台裝置上還無法使用的訊息。\n\n如果你無法存取該裝置，可以重設並完成設定，但僅儲存在備份中的訊息將永久遺失。</string>
     <string name="gua_encryption_recover_from_other_device_action">使用我的其他裝置</string>

@@ -118,10 +118,16 @@ class ResetIdentityFlowNode(
     private var darkTheme: Boolean = false
     private var resetJob: Job? = null
     private var approvalJob: Job? = null
+
+    /** The attempt started by the last Continue tap, which outlives this node on the session scope. */
+    private var startResetJob: Job? = null
     private var hasFinished = false
 
     /** True from the moment the approved upload starts until it has settled one way or the other. */
     private var resetInFlight = false
+
+    /** Set once this node is gone, so a reset that settles later does not steer a screen that no longer exists. */
+    private var isDestroyed = false
 
     /** True while the approved upload runs, so the screen can say so. */
     private val finishing = MutableStateFlow(false)
@@ -149,8 +155,22 @@ class ResetIdentityFlowNode(
             }
         }
         lifecycle.subscribe(onDestroy = {
+            isDestroyed = true
             approvalJob?.cancel()
             approvalJob = null
+            // GUA FORK: the guard is released only once no attempt owns it. An attempt still
+            // minting the handle or approving from the app runs on the session scope and outlives
+            // this node; releasing under it would let the reset call run with the sync live. So
+            // the release waits for that attempt to end, and the guard itself still declines while
+            // a reset call it started is running: that call releases it when it returns.
+            val attempt = startResetJob
+            if (attempt?.isActive == true) {
+                attempt.invokeOnCompletion {
+                    sessionCoroutineScope.launch { matrixClient.identityResetGuard.releaseIfIdle() }
+                }
+            } else {
+                sessionCoroutineScope.launch { matrixClient.identityResetGuard.releaseIfIdle() }
+            }
         })
     }
 
@@ -159,11 +179,26 @@ class ResetIdentityFlowNode(
             is NavTarget.Root -> {
                 val callback = object : ResetIdentityRootNode.Callback {
                     override fun onContinue() {
-                        sessionCoroutineScope.startReset()
+                        startResetJob = sessionCoroutineScope.startReset()
                     }
 
                     override fun onRecoverFromOtherDevice() {
-                        backstack.push(NavTarget.RecoverFromOtherDevice)
+                        // GUA FORK: the verification needs the sync running. A reset call that
+                        // still holds it (past the UI ceiling) means waiting, like a second
+                        // Continue tap; an abandoned approval means giving the sync back first,
+                        // exactly as backing out does, and dropping its handle so a late approval
+                        // cannot upload with it.
+                        if (resetInFlight) {
+                            snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_reset_still_finishing))
+                            return
+                        }
+                        pendingResetHandle = null
+                        cancelResetJob()
+                        sessionCoroutineScope.launch {
+                            resetIdentityFlowManager.cancel()
+                            matrixClient.identityResetGuard.releaseIfIdle()
+                            backstack.push(NavTarget.RecoverFromOtherDevice)
+                        }
                     }
                 }
                 createNode<ResetIdentityRootNode>(buildContext, listOf(callback))
@@ -210,10 +245,25 @@ class ResetIdentityFlowNode(
         // the MAS tab leaves them looking at this screen.
         if (resetInFlight) {
             Timber.d("A reset is already in flight, ignoring the request.")
+            snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_reset_still_finishing))
             return@launch
         }
         // Instead of cancelling the reset job on every ON_START, we can do it before starting a new attempt
         cancelResetJob()
+
+        // GUA FORK: claim the sync before the SDK mints anything. startIdentityReset() persists a
+        // new private cross-signing identity before its upload lands, and an own-user key query
+        // answered with the old identity in that window makes the SDK clear the new keys while the
+        // upload still succeeds (matrix-rust-sdk#4728). The guard keeps the encryption sync stopped
+        // and notification handling stood down until the upload has returned. It declines while a
+        // reset call from an earlier attempt is still running, for instance one started on a
+        // screen that was left before it returned: minting a second identity under that upload
+        // would race it, so nothing is minted.
+        if (!matrixClient.identityResetGuard.acquire()) {
+            Timber.d("A reset call from an earlier attempt is still running; not starting another.")
+            snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_reset_still_finishing))
+            return@launch
+        }
 
         val handleResult = resetIdentityFlowManager.getResetHandle()
             // We're only interested in the success/failure case, and we need this flow to stop by itself
@@ -224,11 +274,13 @@ class ResetIdentityFlowNode(
             is AsyncData.Failure -> {
                 cancelResetJob()
                 Timber.e(handleResult.error, "Could not load the reset identity handle.")
+                matrixClient.identityResetGuard.releaseIfIdle()
             }
             is AsyncData.Success -> {
                 when (val handle = handleResult.data) {
                     null -> {
                         Timber.d("No reset handle return, the reset is done.")
+                        matrixClient.identityResetGuard.releaseIfIdle()
                     }
                     is IdentityOAuthResetHandle -> {
                         // GUA FORK: from here on this account carries a freshly minted identity
@@ -309,10 +361,11 @@ class ResetIdentityFlowNode(
      * cancelled call returns success without uploading anything, which is exactly the false
      * success this flow must never produce.
      *
-     * The wait is bounded. Cancelling the coroutine drops the SDK's future, so a refused upload
-     * cannot turn into minutes of spinner: the attempt is given up on, the user is told plainly,
-     * and the destructive button comes back. Once approved, a good network settles in a second or
-     * two.
+     * The watch is bounded, the call is not. Once approved, a good network settles in a second or
+     * two; past the ceiling this screen stops waiting, says so, and the call finishes under the
+     * guard, which restarts the sync when it returns. Cancelling it instead would drop the SDK's
+     * future with an upload possibly already on the wire, which is the one thing that cannot be
+     * told apart from success afterwards.
      */
     private fun finishApprovedReset() {
         val handle = pendingResetHandle ?: return
@@ -320,36 +373,52 @@ class ResetIdentityFlowNode(
         pendingResetHandle = null
 
         Timber.d("Approval came back, starting resetOAuth")
+        resetInFlight = true
+        finishing.value = true
+
+        // GUA FORK: the guard owns the call. It runs on the session scope and keeps the sync held
+        // until the SDK has returned, whoever is still waiting for it. The UI ceiling below only
+        // decides how long this screen watches; it never cancels the call, because the bindings
+        // drop the SDK's future on cancellation and an upload already on the wire still lands.
+        val operation = matrixClient.identityResetGuard.runReset {
+            // Off the main thread: the bindings poll the SDK's future on the calling thread.
+            withContext(dispatchers.io) { handle.resetOAuth() }
+        }
+
         // On the SESSION scope, not this node's. whenResetIsDone finishes the node the moment the
         // backup transitions to ENABLED, which happens partway through resetOAuth, and finishing
         // the node cancels its lifecycleScope.
         resetJob = sessionCoroutineScope.launch {
-            resetInFlight = true
-            finishing.value = true
-            val result = withTimeoutOrNull(RESET_CALL_CEILING) {
-                // Off the main thread: the bindings poll the SDK's future on the calling thread.
-                withContext(dispatchers.io) { handle.resetOAuth() }
+            val watched = withTimeoutOrNull(RESET_CALL_CEILING) { operation.await() }
+            if (watched == null) {
+                Timber.w("resetOAuth has not settled within $RESET_CALL_CEILING; it keeps running under the guard.")
+                finishing.value = false
+                snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_reset_still_finishing))
             }
-            finishing.value = false
-            resetInFlight = false
 
-            when {
-                result == null -> {
-                    Timber.w("resetOAuth did not settle within $RESET_CALL_CEILING; giving up on this attempt.")
-                    abandonAttempt()
-                }
-                result.isSuccess -> {
-                    // The new identity is on the server. Only now may the pending marker go and
-                    // key storage be provisioned. Provisioning runs on the session scope and the
-                    // setup banner watches it and says it is working.
-                    identityResetPendingStore.clear()
-                    keyStorageProvisioner.start()
-                    finishOnce()
-                }
-                else -> {
-                    Timber.e(result.exceptionOrNull(), "The identity reset failed after the approval came back.")
-                    abandonAttempt()
-                }
+            val result = watched ?: operation.await()
+            finishing.value = false
+
+            try {
+                result.fold(
+                    onSuccess = {
+                        // The new identity is on the server and the guard has restarted the sync.
+                        // Only now may the pending marker go and key storage be provisioned.
+                        // Provisioning runs on the session scope and the setup banner watches it
+                        // and says it is working.
+                        identityResetPendingStore.clear()
+                        keyStorageProvisioner.start()
+                        finishOnce()
+                    },
+                    onFailure = { error ->
+                        Timber.e(error, "The identity reset failed after the approval came back.")
+                        abandonAttempt()
+                    },
+                )
+            } finally {
+                // Cleared only once the outcome has been handled, so a tap during the failure
+                // clean-up gets the "still finishing" message instead of cancelling that clean-up.
+                resetInFlight = false
             }
         }
         resetJob?.invokeOnCompletion { Timber.d("resetOAuth ended") }
@@ -426,7 +495,7 @@ class ResetIdentityFlowNode(
      * storage is still unprovisioned gets the setup banner on the room list and repairs from there.
      */
     private fun finishOnce() {
-        if (hasFinished) return
+        if (hasFinished || isDestroyed) return
         hasFinished = true
         callback.onDone()
     }
@@ -436,8 +505,15 @@ class ResetIdentityFlowNode(
 
         // This intercepts the back navigation so we only cancel this job when the user actually navigates up
         if (navigatesUp && !resetInFlight) {
-            sessionCoroutineScope.launch { resetIdentityFlowManager.cancel() }
+            // Disarmed here, on this thread: an approval that lands from now on finds no handle to
+            // upload with, so nothing can start a reset call on a handle about to be cancelled.
+            pendingResetHandle = null
             cancelResetJob()
+            sessionCoroutineScope.launch {
+                if (resetInFlight) return@launch
+                resetIdentityFlowManager.cancel()
+                matrixClient.identityResetGuard.releaseIfIdle()
+            }
         }
 
         return navigatesUp

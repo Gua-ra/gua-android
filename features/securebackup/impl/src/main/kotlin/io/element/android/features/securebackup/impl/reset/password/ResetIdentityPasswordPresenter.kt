@@ -18,11 +18,13 @@ import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.architecture.runCatchingUpdatingState
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.matrix.api.encryption.IdentityPasswordResetHandle
+import io.element.android.libraries.matrix.api.encryption.IdentityResetGuard
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 class ResetIdentityPasswordPresenter(
     private val identityPasswordResetHandle: IdentityPasswordResetHandle,
+    private val identityResetGuard: IdentityResetGuard,
     private val dispatchers: CoroutineDispatchers,
 ) : Presenter<ResetIdentityPasswordState> {
     @Composable
@@ -46,7 +48,9 @@ class ResetIdentityPasswordPresenter(
 
     private fun CoroutineScope.reset(password: String, action: MutableState<AsyncAction<Unit>>) = launch(dispatchers.io) {
         suspend {
-            identityPasswordResetHandle.resetPassword(password).getOrThrow()
+            // GUA FORK: the guard owns the call and keeps the sync held until it returns; this
+            // screen only waits on it. The flow node acquired the guard before the handle was minted.
+            identityResetGuard.runReset { identityPasswordResetHandle.resetPassword(password) }.await().getOrThrow()
         }.runCatchingUpdatingState(action)
     }
 }

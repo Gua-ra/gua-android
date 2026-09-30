@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Сбросить и завершить</string>
     <string name="gua_encryption_reset_finishing">Завершение настройки…</string>
     <string name="gua_encryption_reset_failed">Не удалось завершить настройку. Нажмите «Сбросить и завершить», чтобы попробовать ещё раз.</string>
+    <string name="gua_encryption_reset_still_finishing">Настройка всё ещё завершается в фоновом режиме. Вы можете продолжать пользоваться Gua.</string>
     <string name="gua_encryption_recover_from_other_device_title">Восстановите прошлые сообщения</string>
     <string name="gua_encryption_recover_from_other_device_message">Воспользуйтесь другим устройством, чтобы восстановить сообщения, которых пока нет на этом устройстве.\n\nЕсли у вас нет к нему доступа, вы можете сбросить и завершить настройку, но сообщения, хранящиеся только в резервной копии, будут потеряны навсегда.</string>
     <string name="gua_encryption_recover_from_other_device_action">Другое устройство</string>

@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Visszaállítás és befejezés</string>
     <string name="gua_encryption_reset_finishing">Beállítás befejezése…</string>
     <string name="gua_encryption_reset_failed">Nem sikerült befejezni a beállítást. Az újrapróbálkozáshoz koppintson a „Visszaállítás és befejezés” gombra.</string>
+    <string name="gua_encryption_reset_still_finishing">A beállítás befejezése még folyamatban van a háttérben. Addig is használhatja a Gua alkalmazást.</string>
     <string name="gua_encryption_recover_from_other_device_title">Állítsa vissza a korábbi üzeneteit</string>
     <string name="gua_encryption_recover_from_other_device_message">A másik eszközével visszaállíthatja azokat az üzeneteket, amelyek ezen az eszközön még nem érhetők el.\n\nHa nem fér hozzá ahhoz az eszközhöz, visszaállíthatja a biztonsági mentést és befejezheti a beállítást, de véglegesen elvesznek azok az üzenetek, amelyek csak a mentésben vannak meg.</string>
     <string name="gua_encryption_recover_from_other_device_action">Másik eszköz használata</string>

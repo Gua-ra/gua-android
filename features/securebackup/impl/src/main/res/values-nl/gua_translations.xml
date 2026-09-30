@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Opnieuw instellen en voltooien</string>
     <string name="gua_encryption_reset_finishing">Installatie voltooien…</string>
     <string name="gua_encryption_reset_failed">De installatie kon niet worden voltooid. Tik op “Opnieuw instellen en voltooien” om het opnieuw te proberen.</string>
+    <string name="gua_encryption_reset_still_finishing">De installatie wordt nog op de achtergrond voltooid. Je kunt Gua gewoon blijven gebruiken.</string>
     <string name="gua_encryption_recover_from_other_device_title">Herstel je eerdere berichten</string>
     <string name="gua_encryption_recover_from_other_device_message">Gebruik je andere apparaat om berichten te herstellen die nog niet op dit apparaat beschikbaar zijn.\n\nAls je daar geen toegang toe hebt, kun je opnieuw instellen en de installatie voltooien, maar berichten die alleen in je back-up staan, gaan definitief verloren.</string>
     <string name="gua_encryption_recover_from_other_device_action">Gebruik mijn andere apparaat</string>

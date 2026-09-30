@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Zurücksetzen und abschließen</string>
     <string name="gua_encryption_reset_finishing">Einrichtung wird abgeschlossen…</string>
     <string name="gua_encryption_reset_failed">Die Einrichtung konnte nicht abgeschlossen werden. Tippe auf „Zurücksetzen und abschließen“, um es erneut zu versuchen.</string>
+    <string name="gua_encryption_reset_still_finishing">Die Einrichtung wird noch im Hintergrund abgeschlossen. Du kannst Gua weiterhin verwenden.</string>
     <string name="gua_encryption_recover_from_other_device_title">Stelle deine früheren Nachrichten wieder her</string>
     <string name="gua_encryption_recover_from_other_device_message">Verwende dein anderes Gerät, um Nachrichten wiederherzustellen, die auf diesem Gerät noch nicht verfügbar sind.\n\nWenn du keinen Zugriff darauf hast, kannst du zurücksetzen und die Einrichtung abschließen, aber Nachrichten, die nur in deinem Backup liegen, gehen dann dauerhaft verloren.</string>
     <string name="gua_encryption_recover_from_other_device_action">Anderes Gerät verwenden</string>

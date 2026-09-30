@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Repor e concluir</string>
     <string name="gua_encryption_reset_finishing">A concluir a configuração…</string>
     <string name="gua_encryption_reset_failed">Não foi possível concluir a configuração. Toque em Repor e concluir para tentar novamente.</string>
+    <string name="gua_encryption_reset_still_finishing">A configuração ainda está a ser concluída em segundo plano. Pode continuar a utilizar o Gua.</string>
     <string name="gua_encryption_recover_from_other_device_title">Recupere as suas mensagens anteriores</string>
     <string name="gua_encryption_recover_from_other_device_message">Utilize o seu outro dispositivo para recuperar as mensagens que ainda não estão disponíveis neste dispositivo.\n\nSe não tiver acesso a ele, pode repor e concluir a configuração, mas as mensagens guardadas apenas na sua cópia de segurança serão perdidas para sempre.</string>
     <string name="gua_encryption_recover_from_other_device_action">Utilizar outro dispositivo</string>

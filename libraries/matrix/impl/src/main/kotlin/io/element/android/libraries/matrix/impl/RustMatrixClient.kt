@@ -28,6 +28,7 @@ import io.element.android.libraries.matrix.api.core.RoomIdOrAlias
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.createroom.CreateRoomParameters
 import io.element.android.libraries.matrix.api.createroom.RoomPreset
+import io.element.android.libraries.matrix.api.encryption.IdentityResetGuard
 import io.element.android.libraries.matrix.api.linknewdevice.LinkDesktopHandler
 import io.element.android.libraries.matrix.api.linknewdevice.LinkMobileHandler
 import io.element.android.libraries.matrix.api.media.MatrixMediaLoader
@@ -50,6 +51,7 @@ import io.element.android.libraries.matrix.api.sync.SlidingSyncVersion
 import io.element.android.libraries.matrix.api.sync.SyncState
 import io.element.android.libraries.matrix.api.user.MatrixSearchUserResults
 import io.element.android.libraries.matrix.api.user.MatrixUser
+import io.element.android.libraries.matrix.impl.encryption.DefaultIdentityResetGuard
 import io.element.android.libraries.matrix.impl.encryption.RustEncryptionService
 import io.element.android.libraries.matrix.impl.encryption.SilentSessionEncryptionBootstrapper
 import io.element.android.libraries.matrix.impl.exception.mapClientException
@@ -164,18 +166,18 @@ class RustMatrixClient(
 
     override val roomMembershipObserver = RoomMembershipObserver()
 
-    override val syncService = RustSyncService(
-        inner = innerSyncService,
-        dispatcher = sessionDispatcher,
-        sessionCoroutineScope = sessionCoroutineScope
-    )
+    // GUA FORK: written only by the identity reset guard; read before every sync start and
+    // notification fetch. Declared before the services that consult it.
+    private val identityResetHold = MutableStateFlow(false)
+
+    override val syncService = RustSyncService(innerSyncService, sessionDispatcher, sessionCoroutineScope, identityResetHold)
     override val pushersService = RustPushersService(
         client = innerClient,
         dispatchers = dispatchers,
     )
     private val notificationProcessSetup = NotificationProcessSetup.SingleProcess(innerSyncService)
     private val innerNotificationClient = runBlocking { innerClient.notificationClient(notificationProcessSetup) }
-    override val notificationService = RustNotificationService(sessionId, innerNotificationClient, dispatchers, clock)
+    override val notificationService = RustNotificationService(sessionId, innerNotificationClient, dispatchers, clock, identityResetHold)
     override val notificationSettingsService = RustNotificationSettingsService(innerClient, sessionCoroutineScope, dispatchers)
     override val encryptionService = RustEncryptionService(
         client = innerClient,
@@ -183,6 +185,7 @@ class RustMatrixClient(
         sessionCoroutineScope = sessionCoroutineScope,
         dispatchers = dispatchers,
     )
+    override val identityResetGuard: IdentityResetGuard = DefaultIdentityResetGuard(syncService, sessionCoroutineScope, identityResetHold)
 
     override val roomDirectoryService = RustRoomDirectoryService(
         client = innerClient,

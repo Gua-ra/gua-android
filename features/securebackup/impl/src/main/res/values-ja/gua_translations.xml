@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">リセットして完了</string>
     <string name="gua_encryption_reset_finishing">セットアップを完了しています…</string>
     <string name="gua_encryption_reset_failed">セットアップを完了できませんでした。もう一度試すには、「リセットして完了」をタップしてください。</string>
+    <string name="gua_encryption_reset_still_finishing">引き続きバックグラウンドでセットアップを完了しています。そのままGuaをお使いいただけます。</string>
     <string name="gua_encryption_recover_from_other_device_title">過去のメッセージを復元できます</string>
     <string name="gua_encryption_recover_from_other_device_message">他の端末を使って、この端末ではまだ利用できないメッセージを復元してください。\n\nその端末を使用できない場合は、リセットして完了することもできますが、バックアップにのみ保存されているメッセージは完全に失われます。</string>
     <string name="gua_encryption_recover_from_other_device_action">他の端末を使用</string>
