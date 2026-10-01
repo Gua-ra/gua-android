@@ -13,7 +13,7 @@
     <string name="gua_onboarding_welcome_message">Private messaging, made simple.</string>
     <string name="screen_onboarding_trust_encrypted">End-to-end encrypted</string>
 
-    <!-- Gua phone-first entry (Stage 3). Mirrors Element X iOS PhoneEntryScreen. -->
+    <!-- Gua phone-first entry. Mirrors Element X iOS PhoneEntryScreen. -->
     <string name="screen_phone_entry_welcome_title">Welcome to Gua</string>
     <string name="screen_phone_entry_title">What\'s your number?</string>
     <string name="screen_phone_entry_message">Enter your phone number</string>

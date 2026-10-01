@@ -11,9 +11,9 @@ package io.element.android.libraries.guaresolver.genesis
  * GUA FORK: a decoded `BootstrapGenesis` (ADM-008 suite 0x00), together with the exact bytes it was
  * decoded from. Port of the identity-service `BootstrapGenesis`.
  *
- * It commits nothing and makes no ADM-001 L4 claim. Its whole job is to give an account that predates
- * account authority an accountId that is re-derivable and auditable, with the root class byte 0x00
- * marking it as a bootstrap account (L5 path B1). The client never mints one: the server does, for a
+ * It commits nothing and makes no account-genesis claim (ADM-001 L4). Its whole job is to give an
+ * account that predates account authority an accountId that is re-derivable and auditable, with the
+ * root class byte 0x00 marking it as a bootstrap account (ADM-001 L5, path B1). The client never mints one: the server does, for a
  * signup that presented no handle. It is decoded here so this port reproduces every published vector.
  */
 class BootstrapGenesis internal constructor(

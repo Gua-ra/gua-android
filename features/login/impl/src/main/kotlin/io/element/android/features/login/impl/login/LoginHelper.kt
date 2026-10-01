@@ -114,7 +114,7 @@ class LoginHelper(
     /**
      * GUA FORK: phone-first entry. Resolves the E.164 phone number to its homeserver via the Gua
      * resolver, configures the auth service for that homeserver, then builds the MAS OIDC url with the
-     * phone as the OIDC `login_hint` — mirroring iOS `AuthenticationFlowCoordinator.handlePhoneSubmission`
+     * phone as the OIDC `login_hint`, mirroring iOS `AuthenticationFlowCoordinator.handlePhoneSubmission`
      * (resolve -> configure -> urlForOIDCLogin -> continueWithOIDC). The whole pipeline runs as one
      * [loginModeState] Loading -> Success/Failure cycle; the resulting [LoginMode.OAuth] is handed to the
      * navigator (Custom Tab) by the screen, exactly like the legacy account-provider path.
@@ -126,7 +126,7 @@ class LoginHelper(
             val resolution = resolverClient.resolve(e164Phone).getOrThrow()
             val homeserverUrl = resolution.homeserver.baseUrl
             val isAccountCreation = !resolution.exists
-            // GUA FORK: ADM-008 Phase 3. A brand-new account registers its on-device genesis BEFORE the
+            // GUA FORK: account genesis (ADM-008 Phase 3). A new account registers its on-device genesis before the
             // OIDC flow starts and carries the handle in the reserved login_hint grammar. With the
             // feature flag off this is exactly the bare E.164 hint it has always been.
             val loginHint = loginHintFor(e164Phone = e164Phone, isAccountCreation = isAccountCreation)
@@ -147,7 +147,7 @@ class LoginHelper(
             state = loginModeState,
             errorTransform = {
                 // A genesis the device meant to register and could not must reach the user as itself,
-                // not as a generic server error, because it is the one case that stops the signup.
+                // not as a generic server error, because it is the only case that stops the signup.
                 if (it is AccountGenesisSignupError) it else ChangeServerError.from(it)
             }
         )
@@ -159,7 +159,7 @@ class LoginHelper(
      * Returns the bare E.164 number, exactly as before account genesis existed, unless the feature flag
      * is on AND this is a brand-new account AND the deployment issued a handle. A returning user is
      * never given a genesis here: their account already has an accountId, and registering another would
-     * be an attempt to re-point it.
+     * try to replace it.
      *
      * @throws AccountGenesisSignupError.SetupFailed when the device meant to register a genesis and
      * could not, so the signup stops instead of silently creating an account without one.

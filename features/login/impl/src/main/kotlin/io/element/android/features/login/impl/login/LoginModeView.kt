@@ -102,7 +102,7 @@ fun LoginModeView(
                     )
                 }
                 is AccountGenesisSignupError -> {
-                    // GUA FORK: ADM-008 Phase 3. The device meant to register an account genesis and
+                    // GUA FORK: account genesis (ADM-008 Phase 3). The device meant to register one and
                     // could not, so the signup stopped rather than creating an account without one.
                     ErrorDialog(
                         content = stringResource(R.string.gua_account_setup_failed),

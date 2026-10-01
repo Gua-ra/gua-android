@@ -21,8 +21,7 @@ package io.element.android.libraries.guaresolver.genesis
  * `gua-account-attach-proof.v1`, then the 32 server-chosen challenge bytes, then the 34 raw accountId
  * bytes. Every element is fixed length, so no field can be shifted into another: 27 + 32 + 34. A handle
  * alone attaches nothing, because anyone can compose an authorize URL carrying someone else's handle;
- * only this signature shows that the party which registered the genesis held its key and was present in
- * this login session.
+ * only this signature proves that the registrant holds the key and is present in this login session.
  */
 object GenesisProofs {
     /** 28 ASCII bytes. */

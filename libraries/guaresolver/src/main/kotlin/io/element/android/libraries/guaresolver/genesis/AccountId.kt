@@ -32,7 +32,7 @@ class AccountId private constructor(
     /** [CLASS_GENESIS] or [CLASS_BOOTSTRAP]. */
     val rootClass: Byte get() = raw[1]
 
-    /** True for a genesis-rooted account, false for a bootstrap one (ADM-001 L5's audit marker). */
+    /** True for a genesis-rooted account, false for a bootstrap one: the audit marker ADM-001 L5 requires. */
     val isGenesisRooted: Boolean get() = rootClass == CLASS_GENESIS
 
     override fun equals(other: Any?): Boolean = other is AccountId && value == other.value
@@ -50,7 +50,7 @@ class AccountId private constructor(
         /** Root class byte: the account is rooted in an `AccountGenesis`. */
         const val CLASS_GENESIS: Byte = 0x01
 
-        /** Root class byte: the account is a bootstrap account (ADM-001 L5 path B1). */
+        /** Root class byte: a bootstrap account, created without a client genesis (ADM-001 L5, path B1). */
         const val CLASS_BOOTSTRAP: Byte = 0x00
 
         /** Bytes under the base32: format version, root class, then the 32-byte digest. */

@@ -8,7 +8,7 @@
 package io.element.android.libraries.guaresolver.genesis
 
 /**
- * GUA FORK: the client half of ADM-008 Phase 3. Generates the account authority key, registers the
+ * GUA FORK: the client half of account genesis (ADM-008 Phase 3). Generates the account authority key, registers the
  * genesis it commits, and signs the attach proof the sign-in page asks for.
  *
  * Nothing here runs unless the caller has checked the account-genesis feature flag: with the flag off

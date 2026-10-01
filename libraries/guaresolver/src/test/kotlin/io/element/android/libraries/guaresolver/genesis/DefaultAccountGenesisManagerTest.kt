@@ -23,7 +23,7 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
- * GUA FORK: the client half of ADM-008 decision 6, end to end against a recorded identity-service.
+ * GUA FORK: the client half of the attach flow (ADM-008 decision 6), end to end against a recorded identity-service.
  *
  * The two branches that matter are the ones that look alike and are not: a deployment which says it does
  * not do genesis continues silently with no handle, and a client which meant to register one and could

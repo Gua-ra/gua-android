@@ -5,7 +5,7 @@
   ~ Please see LICENSE files in the repository root for full details.
   -->
 <resources>
-    <!-- Gua Find friends (S12 contact discovery). English source of truth lives here (temporary.xml);
+    <!-- Gua Find friends (contact discovery). English source of truth lives here (temporary.xml);
          mirrors Element X iOS FindFriendsScreen copy. -->
     <string name="screen_find_friends_title">Find friends</string>
 

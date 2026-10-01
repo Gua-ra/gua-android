@@ -38,7 +38,7 @@ class DefaultAccountAuthorityKeyStoreTest {
 
         assertThat(keys.authorityPublicKey()).hasLength(32)
         assertThat(keys.recoveryAuthorityPublicKey()).hasLength(32)
-        // ADM-008 decision 4: the recovery key must differ from the authority key.
+        // The recovery key must differ from the authority key (ADM-008 decision 4).
         assertThat(keys.authorityPublicKey()).isNotEqualTo(keys.recoveryAuthorityPublicKey())
         // Both must be genuine curve points, or the server's decoder would refuse the genesis.
         assertThat(Ed25519PublicKeys.isOnCurve(keys.authorityPublicKey())).isTrue()

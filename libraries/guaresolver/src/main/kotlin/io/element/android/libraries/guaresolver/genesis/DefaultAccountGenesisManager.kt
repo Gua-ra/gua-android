@@ -97,9 +97,9 @@ class DefaultAccountGenesisManager(
      * True when the deployment said it does not do account genesis.
      *
      * 503 is the documented answer while `identity.genesis.enabled` is off. 403 is the answer while the
-     * deployment declines to issue under recovery framework 0x01, which ADM-008 decision 4 gates on
-     * ADM-002. Both mean no handle exists to present, which is the no-handle bootstrap branch decision 6
-     * calls "not a failure", so both continue silently rather than blocking the signup.
+     * deployment declines to issue under recovery framework 0x01 (ADM-008 decision 4 gates it on account
+     * recovery, ADM-002). Both mean no handle exists to present, which is the no-handle bootstrap branch
+     * (ADM-008 decision 6 calls it "not a failure"), so both continue silently rather than blocking the signup.
      */
     private fun isGenesisUnsupported(error: Throwable): Boolean =
         error is ResolverError.Server && (error.status == 503 || error.status == 403)
