@@ -9,7 +9,6 @@
 package io.element.android.appconfig
 
 // GUA FORK: "Learn more" help links point at gua.global instead of element.io/help.
-// The gua.global/help anchors below must be published before a public-facing beta.
 object LearnMoreConfig {
     const val ENCRYPTION_URL: String = "https://gua.global/help#encryption"
     const val DEVICE_VERIFICATION_URL: String = "https://gua.global/help#device-verification"

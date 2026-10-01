@@ -124,12 +124,9 @@ fun DependencyHandlerScope.allLibrariesImpl() {
     implementation(project(":libraries:oauth:impl"))
     implementation(project(":libraries:workmanager:impl"))
     implementation(project(":libraries:recentemojis:impl"))
-    // GUA FORK: the Gua federation resolver client (resolver routing). Its
-    // @ContributesBinding(AppScope) DefaultResolverClient is aggregated into the app Metro graph here.
+    // GUA FORK: the Gua resolver client module.
     implementation(project(":libraries:guaresolver"))
-    // GUA FORK: the shared phone-number/country-picker module (welcome + change-phone). Its
-    // @SingleIn(AppScope) SelectedCountryStore and @ContributesNode CountryPickerNode are aggregated
-    // into the app Metro graph here.
+    // GUA FORK: the shared phone-number and country-picker module.
     implementation(project(":libraries:phonenumberentry"))
 }
 

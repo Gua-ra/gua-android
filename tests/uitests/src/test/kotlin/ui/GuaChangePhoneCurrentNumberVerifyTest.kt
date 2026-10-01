@@ -18,17 +18,6 @@ import io.element.android.libraries.phonenumberentry.Country
 import org.junit.Rule
 import org.junit.Test
 
-/**
- * GUA FORK verification: records the step that asks the signed-in user which number is on their
- * account, which now comes before the reauthentication code in the change-phone flow.
- *
- * The third screenshot shows the refusal. The server answers "unknown number", "someone else's
- * number" and "not this account's number" identically, and this screen must not add anything to
- * that, so the recorded wording is the one neutral sentence and nothing more.
- *
- * Like [GuaFindFriendsVerifyTest], this records to its own snapshot files and adds no preview, so
- * the shared preview-driven golden set is not re-sharded.
- */
 class GuaChangePhoneCurrentNumberVerifyTest {
     @get:Rule
     val paparazzi = Paparazzi(

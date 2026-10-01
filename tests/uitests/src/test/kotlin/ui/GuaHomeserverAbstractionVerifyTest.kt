@@ -18,15 +18,6 @@ import io.element.android.libraries.matrix.ui.components.MatrixUserRow
 import org.junit.Rule
 import org.junit.Test
 
-/**
- * GUA FORK: homeserver abstraction verification. Confirms that the homeserver suffix of a Matrix
- * user id (the `:server` part) is NEVER rendered in user-facing UI. The user below
- * intentionally has NO display name, so the rendered handle comes straight from the
- * abstracted [UserId.displayHandle] (mirrors iOS `guaDisplayHandle`). If the
- * abstraction regressed, the screenshot would show `@ana:dev.local` instead of `@ana`.
- *
- * This test records to its own snapshot file and does not touch the shared golden set.
- */
 class GuaHomeserverAbstractionVerifyTest {
     @get:Rule
     val paparazzi = Paparazzi(
@@ -39,7 +30,6 @@ class GuaHomeserverAbstractionVerifyTest {
 
     @Test
     fun guaDisplayHandleHidesHomeserver() {
-        // Raw id carries a homeserver suffix; no display name so the handle IS the visible label.
         val user = MatrixUser(
             userId = UserId("@ana:dev.local"),
             displayName = null,

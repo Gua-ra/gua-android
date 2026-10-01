@@ -28,10 +28,7 @@ import org.sonarqube.gradle.SonarResolverTask
 import java.util.Locale
 import java.util.Properties
 
-// GUA FORK: release signing material is supplied by CI/the environment and is NEVER committed.
-// Resolution order for each value: environment variable -> gitignored `app/keystore.properties`.
-// When nothing is configured (e.g. local debug builds, CI unit tests) the release build falls
-// back to the shared debug keystore so the pipeline stays green without any secrets present.
+// GUA FORK: release signing values come from the environment, then the gitignored `app/keystore.properties`.
 val guaKeystoreProperties = Properties().apply {
     val propsFile = rootProject.file("app/keystore.properties")
     if (propsFile.exists()) {
@@ -42,12 +39,7 @@ val guaKeystoreProperties = Properties().apply {
 fun guaSigningValue(envName: String, propName: String): String? =
     System.getenv(envName) ?: guaKeystoreProperties.getProperty(propName)
 
-// GUA FORK: Play permanently refuses a versionCode it has already accepted for a package, while
-// Versions.VERSION_CODE is CalVer and only moves when the release script bumps it. Without this,
-// shipping the same branch to the QA app twice would be rejected by Play after a ~35 minute R8
-// build. CI passes the workflow run number here (see .github/workflows/publish-play.yml), so QA
-// uploads are unique and still ordered. Production builds leave it unset: a production release is
-// exactly the CalVer code, and a rejection there correctly means "bump the release number".
+// GUA FORK: Play rejects a reused versionCode, so CI adds the run number for QA uploads. Production leaves it unset.
 val guaVersionCodeOffset = (project.findProperty("gua.versionCodeOffset") as? String)?.toInt() ?: 0
 
 plugins {
@@ -120,10 +112,7 @@ android {
                 ?: project.property("signing.element.nightly.storePassword") as? String?
         }
 
-        // GUA FORK: production release signing. All material comes from the environment (CI) or a
-        // gitignored `app/keystore.properties`; nothing is ever committed to the repo. The config is
-        // only registered when a keystore path is actually provided, so debug/test pipelines that have
-        // no secrets simply skip it and the release type falls back to debug signing below.
+        // GUA FORK: registered only when a keystore path is provided.
         val guaReleaseStoreFile = guaSigningValue("GUA_RELEASE_KEYSTORE", "storeFile")
         if (guaReleaseStoreFile != null) {
             register("release") {
@@ -153,11 +142,7 @@ android {
         }
 
         getByName("release") {
-            // GUA FORK: `-Pgua.deployment=dev` builds the QA app — the Android mirror of the iOS
-            // dev variant (Variants/Dev/dev.yml): applicationId global.gua.dev, display name
-            // "Gua QA", OIDC redirect scheme global.gua.dev (which MAS pairs with client_uri
-            // https://gua.global, same as iOS), talking to the dev deployment (see the
-            // guaresolver module). Without the property this stays the production app.
+            // GUA FORK: `-Pgua.deployment=dev` builds the QA app (global.gua.dev) against the dev deployment.
             val useDevDeployment = (project.findProperty("gua.deployment") as? String) == "dev"
             if (useDevDeployment) {
                 applicationIdSuffix = ".dev"
@@ -175,8 +160,7 @@ android {
                     oAuthRedirectSchemeBase,
                 )
             }
-            // GUA FORK: sign with the env/CI-provided release key when available, otherwise fall back
-            // to the shared debug keystore so secret-less builds (local dev, CI tests) still succeed.
+            // GUA FORK: falls back to the debug keystore when no release key is configured.
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
 
             optimization {

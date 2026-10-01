@@ -21,17 +21,6 @@ import sergio.sastre.composable.preview.scanner.android.AndroidComposablePreview
 import sergio.sastre.composable.preview.scanner.android.AndroidPreviewInfo
 import sergio.sastre.composable.preview.scanner.core.preview.ComposablePreview
 
-/**
- * GUA FORK: 1:1 timeline suppression verification. Confirms that in a 1:1 direct chat the timeline suppresses
- * membership/profile/state "room change" events (and never renders a collapsed "N room changes"
- * group), while a group room still renders them. Mirrors the iOS `isDM` guards in
- * `RoomTimelineItemFactory`.
- *
- * The preview ([GuaDmTimelineSuppressionPreview], in the messages impl module) renders both
- * cases over an identical raw item set, routed through the SAME production grouper and the SAME
- * production suppression predicate the timeline factory uses. This test records that single
- * preview to its own snapshot files; it does not touch the shared golden set.
- */
 @RunWith(TestParameterInjector::class)
 class GuaDmTimelineVerifyTest(
     @TestParameter(valuesProvider = GuaDmTimelinePreviewProvider::class)

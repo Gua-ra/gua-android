@@ -22,7 +22,7 @@ class DefaultEnrollmentRedirectProviderTest {
     }
 
     @Test
-    fun `QA and debug builds send their own redirect scheme`() {
+    fun `the QA and debug builds name themselves, which is the whole point of sending it`() {
         val qa = DefaultEnrollmentRedirectProvider(
             oAuthRedirectUrlProvider = FakeOAuthRedirectUrlProvider(provideResult = "global.gua.dev:/"),
         )
@@ -30,8 +30,6 @@ class DefaultEnrollmentRedirectProviderTest {
             oAuthRedirectUrlProvider = FakeOAuthRedirectUrlProvider(provideResult = "global.gua.debug:/"),
         )
 
-        // Without these the enrollment sheet returns to production's scheme, which on a QA device is
-        // an app that is not installed.
         assertThat(qa.provide()).isEqualTo("global.gua.dev:/oidc")
         assertThat(debug.provide()).isEqualTo("global.gua.debug:/oidc")
     }
@@ -42,8 +40,6 @@ class DefaultEnrollmentRedirectProviderTest {
             oAuthRedirectUrlProvider = FakeOAuthRedirectUrlProvider(provideResult = ""),
         )
 
-        // The client then sends no redirect at all and the server keeps its own default, which is
-        // better than asking to be returned to ":/oidc".
         assertThat(sut.provide()).isNull()
     }
 }

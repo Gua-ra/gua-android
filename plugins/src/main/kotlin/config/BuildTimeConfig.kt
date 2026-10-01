@@ -12,18 +12,7 @@ object BuildTimeConfig {
     const val APPLICATION_ID = "global.gua"
     const val APPLICATION_NAME = "Gua"
 
-    // GUA FORK: the mobilesdk_app_id of each Gua Firebase Android app, feeding the
-    // "google_app_id" string resource in the firebase push provider. These replaced
-    // Element's (project vector-alpha, 912726360885), which must never ship in a Gua
-    // binary. An empty value makes FirebaseApp skip initialisation: no push, no crash.
-    //
-    // Project "Gua Global" (gua-global, 511804071315). One per package, because Firebase
-    // keys its app records on the package name.
-    //
-    // RELEASE and DEV are both the release build type: the QA app is the release type
-    // built with -Pgua.deployment=dev, which suffixes the applicationId with ".dev". The
-    // firebase module picks between them on that same property, so QA registers as itself
-    // rather than falling back to production's id and failing.
+    // GUA FORK: the Firebase app id of each Gua Android app. DEV is the release build type built with -Pgua.deployment=dev.
     const val GOOGLE_APP_ID_RELEASE = "1:511804071315:android:7a87ae8499f379204e1c66"
     const val GOOGLE_APP_ID_DEV = "1:511804071315:android:55bc17310919f64c4e1c66"
     const val GOOGLE_APP_ID_DEBUG = "1:511804071315:android:0b8eb92ccf4eaa6a4e1c66"

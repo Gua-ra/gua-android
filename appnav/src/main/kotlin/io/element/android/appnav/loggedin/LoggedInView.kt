@@ -95,9 +95,7 @@ private fun Throwable.getReason(): String? {
             }
         }
         is PusherRegistrationFailure.AccountNotVerified -> null
-        // GUA FORK: a build with no push provider is a known state, not an error the user can act
-        // on. Upstream tells people to install a distributor; Gua offers none, so the dialog only
-        // said that notifications were broken with nothing to do about it.
+        // GUA FORK: Gua offers no push distributor, so a missing provider is not reported to the user.
         is PusherRegistrationFailure.NoDistributorsAvailable,
         is PusherRegistrationFailure.NoProvidersAvailable -> null
         else -> "Other error: $message"

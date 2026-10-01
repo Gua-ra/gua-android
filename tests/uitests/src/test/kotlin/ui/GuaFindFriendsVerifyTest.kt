@@ -20,15 +20,6 @@ import kotlinx.collections.immutable.toImmutableList
 import org.junit.Rule
 import org.junit.Test
 
-/**
- * GUA FORK: Find friends (contact discovery) verification. Records focused screenshots of the
- * screen (Android port of iOS `FindFriendsScreen`) so the visual can be reviewed without recording
- * the whole golden set. Mirrors the precedent of [GuaPhoneEntryVerifyTest].
- *
- * Covers the key states (results / empty / permission-denied) and confirms that only the
- * homeserver-abstracted handle (e.g. "@alice") is shown, never a ":homeserver" suffix. Records to
- * its own snapshot files and does not touch the shared preview-driven golden set.
- */
 class GuaFindFriendsVerifyTest {
     @get:Rule
     val paparazzi = Paparazzi(
