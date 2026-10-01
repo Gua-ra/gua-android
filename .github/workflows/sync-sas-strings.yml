@@ -1,5 +1,5 @@
 name: Sync SAS strings
-# GUA FORK: disabled — upstream SAS-string sync. Manual only.
+# GUA FORK: disabled. Upstream SAS-string sync. Manual only.
 on:
   workflow_dispatch:
 

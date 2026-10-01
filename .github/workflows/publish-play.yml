@@ -112,13 +112,10 @@ jobs:
             workflow_dispatch)
               if [ "$INPUT_APP" = "qa" ]; then
                 qa=true
-                # The QA job runs under the unprotected `dev` environment on purpose: shipping
-                # a branch to internal testers should not need an approver. That only holds
-                # while a QA ship stays a testing artefact. `production` is a public Play
-                # track, so app=qa + track=production would put global.gua.dev in front of the
-                # store with no approval gate at all — precisely the hole this file was split
-                # out of release.yml to close. Anything aimed at a production track goes
-                # through publish-prod and its `production` environment.
+                # QA runs under the unprotected `dev` environment on purpose: shipping a branch
+                # to internal testers needs no approver. Anything aimed at a production track
+                # must go through publish-prod and its `production` environment; otherwise
+                # `global.gua.dev` could reach the store with no approval.
                 if [ "$INPUT_TRACK" = "production" ]; then
                   echo "::error::app=qa cannot publish to the production track: the QA job has no approval gate. Dispatch app=prod (which waits on the production environment), or pick internal/alpha/beta."
                   exit 1
@@ -392,7 +389,7 @@ jobs:
         run: echo "$GUA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/gua-upload.jks"
       # No versionCode offset and no dev hosts: a production build is exactly the CalVer version in
       # Versions.kt, pointing at gua.global. If Play rejects the versionCode as already used, the
-      # release number in Versions.kt needs bumping — that is the intended signal, not a CI bug.
+      # release number in Versions.kt needs bumping. That is the intended signal, not a CI bug.
       - name: Build release-signed App Bundle (prod)
         env:
           GUA_RELEASE_KEYSTORE: ${{ runner.temp }}/gua-upload.jks

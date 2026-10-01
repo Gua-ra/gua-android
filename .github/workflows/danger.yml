@@ -1,6 +1,6 @@
 name: Danger CI
 
-# GUA FORK: disabled — Danger already self-skips on forks; convert to manual to avoid noise.
+# GUA FORK: disabled. Danger already self-skips on forks; convert to manual to avoid noise.
 on:
   workflow_dispatch:
 

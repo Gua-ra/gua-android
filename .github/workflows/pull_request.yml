@@ -1,5 +1,5 @@
 name: Pull Request
-# GUA FORK: disabled — depends on the element-hq org (Vector Core team membership, ELEMENT_BOT_TOKEN).
+# GUA FORK: disabled. Depends on the element-hq org (Vector Core team membership, ELEMENT_BOT_TOKEN).
 # None of these apply to the fork. Manual only.
 on:
   workflow_dispatch:

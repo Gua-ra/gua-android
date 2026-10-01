@@ -1,6 +1,6 @@
 name: Test
 
-# GUA FORK: auto-triggers disabled — unit tests + Paparazzi now run in gua-ci.yml. This upstream
+# GUA FORK: auto-triggers disabled. Unit tests + Paparazzi now run in gua-ci.yml. This upstream
 # pipeline pulls LFS goldens, the enterprise submodule, kover and codecov (upstream secrets). Manual only.
 on:
   workflow_dispatch:

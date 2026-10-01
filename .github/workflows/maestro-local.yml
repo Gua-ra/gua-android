@@ -1,6 +1,6 @@
 name: Maestro (local)
 
-# GUA FORK: auto-trigger disabled — Maestro E2E needs an emulator + secrets not wired for the fork. Manual only.
+# GUA FORK: auto-trigger disabled. Maestro E2E needs an emulator + secrets not wired for the fork. Manual only.
 on:
   workflow_dispatch:
 

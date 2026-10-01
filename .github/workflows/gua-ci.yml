@@ -3,7 +3,7 @@ name: Gua CI
 # GUA FORK: single, self-contained pipeline for the fork.
 #
 # It deliberately does NOT depend on any upstream (element-hq) org secrets, LFS goldens,
-# the enterprise submodule, Localazy, codecov, Diawi, Firebase, or Sonar — those upstream
+# the enterprise submodule, Localazy, codecov, Diawi, Firebase, or Sonar. Those upstream
 # workflows are disabled to workflow_dispatch-only so the fork pipeline is green out of the box.
 #
 # Jobs: constraint guard -> build (assembleGplayDebug) + unit tests + lint/ktlint/detekt +
@@ -32,12 +32,9 @@ jobs:
           # Need full history so the guard can scan commit messages for AI attribution.
           fetch-depth: 0
           persist-credentials: false
-      # The guard exists to stop NEW violations landing, so it only ever scans the commits an
-      # event actually adds. A full-history scan can never pass: the fork descends from upstream
-      # element-x-android, and the fork's own early history carries Co-Authored-By trailers that
-      # cannot be rewritten now that branches are published. Scanning everything meant every push
-      # to develop failed on commits that are already merged, which is what kept develop red.
-      # The tracked-file and keystore scans are unaffected and still cover the whole tree.
+      # Scan only the commits this event adds. A full-history scan cannot pass: upstream history
+      # carries trailers the fork cannot rewrite. The tracked-file and keystore scans still cover
+      # the whole tree.
       - name: Work out which commits this event adds
         id: scan_range
         env:
@@ -99,11 +96,8 @@ jobs:
 
   # --- 3. Unit tests + screenshot verification. -----------------------------
   #
-  # Two different screenshot tools run here. :tests:uitests uses Paparazzi against ~3100 plain
-  # committed PNGs. :libraries:compound uses Roborazzi against 22 goldens that ARE in Git LFS,
-  # which is why this job checks out with lfs: true. An earlier note here claimed pointer files
-  # "simply compare against their pointer files" and are therefore harmless. They are not:
-  # Roborazzi cannot decode a pointer and crashes on it.
+  # Two screenshot tools run here: Paparazzi (:tests:uitests, plain committed PNGs) and Roborazzi
+  # (:libraries:compound, goldens in Git LFS).
   tests:
     name: Unit tests + screenshots
     runs-on: ubuntu-latest
@@ -113,11 +107,8 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
-          # :libraries:compound's screenshot goldens are LFS-tracked (.gitattributes). Without this
-          # they arrive as 130-byte pointer stubs, Roborazzi hands the pointer text to ImageIO,
-          # gets null back, and throws NullPointerException while LOADING the golden, before any
-          # pixel is compared. That is what the ten "screenshots FAILED" results in this job were:
-          # not a rendering regression, just an unreadable file.
+          # :libraries:compound's Roborazzi goldens are LFS-tracked. A pointer stub makes Roborazzi
+          # throw while loading the golden, which reads as a screenshot failure.
           lfs: true
       - name: Use JDK 21
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
@@ -159,17 +150,12 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
       - name: ktlint
-        # --continue so every offending module is reported in one run. Without it Gradle stops at
-        # the first failing ktlint task, which made the job look like a single-file problem when
-        # several modules were affected, and turned fixing lint into one round trip per module.
+        # --continue so every module's findings are reported in one run.
         run: ./gradlew ktlintCheck $CI_GRADLE_ARG_PROPERTIES --continue
       - name: Android lint (gplay debug)
         run: ./gradlew :app:lintGplayDebug $CI_GRADLE_ARG_PROPERTIES --continue
       - name: detekt
-        # --continue for the same reason ktlint has it: without it Gradle stops at the
-        # first failing module, so a fix just moves the failure to the next one. The
-        # ktlint findings were fixed once already and detekt's were still hidden behind
-        # two modules that happened to fail first.
+        # --continue, same reason as ktlint.
         run: ./gradlew detekt $CI_GRADLE_ARG_PROPERTIES --continue
       - name: Upload quality reports
         if: failure()
