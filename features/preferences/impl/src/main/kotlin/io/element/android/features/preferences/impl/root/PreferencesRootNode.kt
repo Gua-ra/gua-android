@@ -46,7 +46,6 @@ class PreferencesRootNode(
         fun navigateToTwoStepVerification()
         fun navigateToChangePhoneNumber()
 
-        /** GUA FORK: ADM-009. The account authority chain and its device set. */
         fun navigateToAccountAuthority()
         fun navigateToAdvancedSettings()
         fun navigateToLabs()

@@ -12,15 +12,8 @@ object BuildTimeConfig {
     const val APPLICATION_ID = "global.gua"
     const val APPLICATION_NAME = "Gua"
 
-    // GUA FORK: the Firebase projects and app records the push provider is built against.
-    // These replaced Element's (project vector-alpha, 912726360885), which must never ship
-    // in a Gua binary.
-    //
-    // Two projects, because dev and QA must not hold production's credentials. Google scopes
-    // a service account to a project and offers nothing narrower, so the only way to keep a
-    // dev server from being able to push to the store app is to put the QA and debug packages
-    // in a project of their own. identity-service's account-authority channel holds a sending
-    // credential for exactly one of these.
+    // GUA FORK: QA and debug builds register in their own Firebase project, so a dev server's
+    // credential cannot push to the store app.
     val FIREBASE_PRODUCTION = FirebaseProject(
         projectId = "gua-global",
         senderId = "511804071315",
@@ -34,19 +27,12 @@ object BuildTimeConfig {
         storageBucket = "gua-dev.firebasestorage.app",
     )
 
-    // One app record per package, because Firebase keys them on the package name.
-    //
-    // RELEASE and DEV are both the release build type: the QA app is the release type built
-    // with -Pgua.deployment=dev, which suffixes the applicationId with ".dev". The firebase
-    // module picks between them on that same property, so QA registers as itself rather than
-    // falling back to production's id and failing.
+    // RELEASE and DEV are both the release build type: DEV is built with -Pgua.deployment=dev.
     val FIREBASE_APP_RELEASE = FirebaseApp("1:511804071315:android:7a87ae8499f379204e1c66", FIREBASE_PRODUCTION)
     val FIREBASE_APP_DEV = FirebaseApp("1:844160046939:android:7a0fd8c65aac441e4a2c7e", FIREBASE_DEV)
     val FIREBASE_APP_DEBUG = FirebaseApp("1:844160046939:android:6387a01892d6abfe4a2c7e", FIREBASE_DEV)
 
-    // Nightly has no Firebase app record: global.gua.nightly is registered in neither project.
-    // Left empty so those builds start with push disabled rather than registering as another
-    // package.
+    // Empty: global.gua.nightly has no Firebase app, so nightly builds start with push disabled.
     val FIREBASE_APP_NIGHTLY = FirebaseApp("", null)
 
     // Reverse-DNS of the brand host gua.global. Drives the OIDC custom-scheme redirect

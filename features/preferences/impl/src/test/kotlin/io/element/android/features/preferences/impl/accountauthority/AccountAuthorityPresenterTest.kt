@@ -41,13 +41,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 
-/**
- * GUA FORK: the account authority screen (ADM-009).
- *
- * The first test is the one the whole feature ships behind: with the flag off nothing is read, nothing is
- * requested, and no event does anything. The rest hold the order decision 4 fixes, which is the security of
- * the transition: keys, then the artifact and its confirmation, then the step-up, then the record.
- */
 class AccountAuthorityPresenterTest {
     @get:Rule
     val warmUpRule = WarmUpRule()
@@ -63,8 +56,6 @@ class AccountAuthorityPresenterTest {
             assertThat(state.chain).isNull()
             state.eventSink(AccountAuthorityEvent.StartAdoption)
             state.eventSink(AccountAuthorityEvent.Refresh)
-            // Not "an empty chain" and not an error: the feature is simply not there, and nothing about the
-            // account was asked for.
             assertThat(manager.stateCalls).isEmpty()
             assertThat(manager.beginAdoptionCalls).isEmpty()
             assertThat(manager.adoptCalls).isEmpty()
@@ -88,10 +79,6 @@ class AccountAuthorityPresenterTest {
 
     @Test
     fun `present - an account with no account object is not an error either`() = runTest {
-        // What a deployment running the chain with genesis off answers for every account. There is no
-        // account object for a chain to be about, so there is nothing here the owner can retry, and
-        // telling them to try again on the screen the whole feature is reached from is worse than saying
-        // nothing.
         val manager = FakeAccountAuthorityManager(stateResult = { Result.failure(AuthorityError.NoAccount) })
         val presenter = createPresenter(manager = manager)
 
@@ -128,7 +115,6 @@ class AccountAuthorityPresenterTest {
             assertThat(artifact.recoveryArtifact).isNotNull()
             assertThat(artifact.canContinueFromArtifact).isFalse()
 
-            // The unconfirmed continue is refused rather than being merely disabled on screen.
             artifact.eventSink(AccountAuthorityEvent.ContinueFromArtifact)
             expectNoEvents()
             artifact.eventSink(AccountAuthorityEvent.ConfirmArtifactStored(true))
@@ -160,8 +146,6 @@ class AccountAuthorityPresenterTest {
 
                 val done = awaitFirst { it.successMessage != null }
                 assertThat(done.successMessage).isEqualTo(R.string.screen_account_authority_submitted)
-                // The artifact is dropped once the record is in: it is a private key, and the screen that
-                // showed it has done its job.
                 assertThat(done.recoveryArtifact).isNull()
                 val call = manager.adoptCalls.single()
                 assertThat(call.stepUp).isEqualTo(AuthorityStepUp.Pin("123456"))
@@ -185,8 +169,6 @@ class AccountAuthorityPresenterTest {
             awaitFirst { it.canSubmit }.eventSink(AccountAuthorityEvent.Submit)
 
             val refused = awaitFirst { it.errorMessage != null }
-            // The copy names the two factors the account's own step-up accepts, the passkey and the PIN. There
-            // is no branch in this screen that falls back to a code sent to the phone.
             assertThat(refused.errorMessage)
                 .isEqualTo(R.string.screen_account_authority_error_step_up_required)
             assertThat(refused.phase).isEqualTo(AccountAuthorityPhase.StepUp)
@@ -237,7 +219,6 @@ class AccountAuthorityPresenterTest {
             val state = awaitFirst { it.devices.isNotEmpty() }
             assertThat(state.devices).hasSize(2)
             assertThat(state.devices[0].isActive).isTrue()
-            // A quarantined device can do nothing and counts for nothing, so it is never drawn as active.
             assertThat(state.devices[1].isQuarantined).isTrue()
             assertThat(state.devices[1].isActive).isFalse()
             assertThat(state.canAdopt).isFalse()
@@ -258,11 +239,9 @@ class AccountAuthorityPresenterTest {
             assertThat(pending.pendingTransition?.effectiveAtEpochSeconds).isEqualTo(1_800_000_000)
             pending.eventSink(AccountAuthorityEvent.Oppose)
 
-            // The first attempt carries no factor at all, which is what makes the honest veto cheap.
             val stepUp = awaitFirst { it.phase == AccountAuthorityPhase.StepUp }
             assertThat(manager.opposeCalls.single()).isEqualTo("a-record-hash" to null)
             assertThat(stepUp.stepUp).isEqualTo(AccountAuthorityStepUp.Oppose)
-            // And the fresh-factor hold never gates an objection, so no age is asked about here.
             assertThat(stepUp.errorMessage).isNull()
             cancelAndIgnoreRemainingEvents()
         }
@@ -297,7 +276,6 @@ class AccountAuthorityPresenterTest {
         }
     }
 
-    /** Walks the artifact screen and its confirmation, which nothing in this feature may skip. */
     private suspend fun ReceiveTurbine<AccountAuthorityState>.adoptUpToStepUp(
         manager: FakeAccountAuthorityManager,
     ) {
@@ -308,12 +286,6 @@ class AccountAuthorityPresenterTest {
         assertThat(manager.beginAdoptionCalls).hasSize(1)
     }
 
-    /**
-     * The whole point of C3: the lifecycle is not adoption alone.
-     *
-     * A rooted account's screen offers the transitions the chain actually permits, each one drawn in the
-     * chain's own terms, and offers no second adoption.
-     */
     @Test
     fun `present - a rooted account can grant, revoke and recover, and cannot adopt again`() = runTest {
         val manager = FakeAccountAuthorityManager(
@@ -348,7 +320,6 @@ class AccountAuthorityPresenterTest {
                 .eventSink(AccountAuthorityEvent.SelectCandidate(aCandidate().deviceKeyB64Url))
             val compare = awaitFirst { it.phase == AccountAuthorityPhase.Compare }
             assertThat(compare.canContinueFromCompare).isFalse()
-            // The comparison is the gate: continuing without it changes nothing and sends nothing.
             compare.eventSink(AccountAuthorityEvent.ContinueFromCompare)
             compare.eventSink(AccountAuthorityEvent.ConfirmFingerprint(true))
             awaitFirst { it.canContinueFromCompare }
@@ -388,8 +359,6 @@ class AccountAuthorityPresenterTest {
                 .eventSink(AccountAuthorityEvent.StartRevocation("another-device-key"))
             val stepUp = awaitFirst { it.revocationTarget != null && it.phase == AccountAuthorityPhase.StepUp }
             assertThat(stepUp.revocationTarget?.isThisDevice).isFalse()
-            // Two active devices, so the one being removed may object: decision 5's carve-out, which the copy
-            // has to state before the owner starts a standoff.
             assertThat(stepUp.revocationTarget?.targetMayObject).isTrue()
             stepUp.eventSink(AccountAuthorityEvent.PinChanged("123456"))
             awaitFirst { it.canSubmit }.eventSink(AccountAuthorityEvent.Submit)
@@ -415,8 +384,6 @@ class AccountAuthorityPresenterTest {
             awaitFirst { it.pendingTransition != null }.eventSink(AccountAuthorityEvent.Oppose)
 
             awaitFirst { it.successMessage != null }
-            // The signed record, because a session's word is only accepted against an adoption: a stolen
-            // bearer token must not be able to veto the owner's own revocation of the thief's device.
             assertThat(manager.opposeRecordCalls).hasSize(1)
             assertThat(manager.opposeCalls).isEmpty()
             cancelAndIgnoreRemainingEvents()
@@ -425,9 +392,6 @@ class AccountAuthorityPresenterTest {
 
     @Test
     fun `present - the phone that started the adoption vetoes it with its session, not with a record`() = runTest {
-        // The adopting phone: its adoption key is stored the moment the record is accepted, so this phone
-        // holds a key while the chain holds no device at all. It is the phone the "I did not start this" row
-        // is there for, and decision 4 says any signed-in session may veto an adoption.
         val manager = FakeAccountAuthorityManager(
             stateResult = { Result.success(aBootstrapChain(pending = aPendingAdoption())) },
             holdsAuthorityResult = { true },
@@ -438,8 +402,6 @@ class AccountAuthorityPresenterTest {
             awaitFirst { it.pendingTransition != null }.eventSink(AccountAuthorityEvent.Oppose)
 
             awaitFirst { it.successMessage != null }
-            // Routed by what is pending. A signed record here would name a key the chain has no device for
-            // and come back as authority_signer_refused, which is the window lost.
             assertThat(manager.opposeCalls.single()).isEqualTo("a-record-hash" to null)
             assertThat(manager.opposeRecordCalls).isEmpty()
             cancelAndIgnoreRemainingEvents()
@@ -448,9 +410,6 @@ class AccountAuthorityPresenterTest {
 
     @Test
     fun `present - a grant is objected to with a record even from a phone that holds no key`() = runTest {
-        // The mirror image: only an adoption may be opposed by a session, so a phone with no authority key
-        // must not send a bearer objection against a grant. It asks for the record it cannot sign and is told
-        // so, rather than spending an objection the server refuses for the wrong reason.
         val pending = aPendingAdoption(type = "DEVICE_GRANT", seq = 2)
         val manager = FakeAccountAuthorityManager(
             stateResult = { Result.success(aRootedChain(listOf(anAuthorityDevice()), pending = pending)) },
@@ -484,7 +443,6 @@ class AccountAuthorityPresenterTest {
             awaitFirst { it.canContinueFromRecoveryEntry }
                 .eventSink(AccountAuthorityEvent.ContinueFromRecoveryEntry)
             val artifact = awaitFirst { it.phase == AccountAuthorityPhase.Artifact }
-            // The NEW artifact this record commits, shown once and confirmed, exactly as adoption does.
             assertThat(artifact.recoveryArtifact).isNotNull()
             assertThat(artifact.canContinueFromArtifact).isFalse()
             artifact.eventSink(AccountAuthorityEvent.ConfirmArtifactStored(true))
@@ -527,7 +485,6 @@ class AccountAuthorityPresenterTest {
             assertThat(refused.recoveryArtifactError)
                 .isEqualTo(R.string.screen_account_authority_recovery_artifact_wrong_kind)
             assertThat(refused.phase).isEqualTo(AccountAuthorityPhase.RecoveryEntry)
-            // Nothing was submitted, so nothing was spent: no challenge and no step-up for a typo.
             assertThat(manager.recoverCalls).isEmpty()
             cancelAndIgnoreRemainingEvents()
         }
@@ -556,7 +513,6 @@ class AccountAuthorityPresenterTest {
         }
     }
 
-    /** The terminal state of decision 7: no adoption, no recovery, and copy that says why. */
     @Test
     fun `present - an account that lost its authority is not offered a way back`() = runTest {
         val manager = FakeAccountAuthorityManager(
@@ -568,7 +524,6 @@ class AccountAuthorityPresenterTest {
             val state = awaitFirst { it.chain != null }
             assertThat(state.authorityLost).isTrue()
             assertThat(state.canAdopt).isFalse()
-            // The artifact was the way back, and this account has neither it nor a device.
             state.eventSink(AccountAuthorityEvent.StartAdoption)
             assertThat(manager.adoptCalls).isEmpty()
             cancelAndIgnoreRemainingEvents()
@@ -586,8 +541,6 @@ class AccountAuthorityPresenterTest {
         presenter.test {
             val state = awaitFirst { it.chain != null }
             assertThat(state.canOfferThisDevice).isTrue()
-            // A device with no authority is not shown other devices' candidates: it could do nothing with
-            // them, and the request would be answered for nothing.
             assertThat(state.candidates).isEmpty()
             state.eventSink(AccountAuthorityEvent.OfferThisDevice)
 
@@ -601,8 +554,6 @@ class AccountAuthorityPresenterTest {
         lifecycleOwner: FakeLifecycleOwner = FakeLifecycleOwner(Lifecycle.State.RESUMED),
         block: suspend ReceiveTurbine<AccountAuthorityState>.() -> Unit,
     ) {
-        // The sheet runs in another activity, so this screen reads its return from the lifecycle, exactly as the
-        // two-step-verification screen reads its factors back.
         testWithLifecycleOwner(lifecycleOwner) { block() }
     }
 
@@ -615,8 +566,6 @@ class AccountAuthorityPresenterTest {
         }
         error("No matching state after $MAX_EMISSIONS emissions")
     }
-
-    // --- The security-notification channel (ADM-009 gate 2, decision 13) -------------------------------
 
     @Test
     fun `present - the account's registrations are listed, whatever this phone holds`() = runTest {
@@ -631,8 +580,6 @@ class AccountAuthorityPresenterTest {
 
         presenter.test {
             val state = awaitFirst { it.securityNotifications.size == 2 }
-            // Read for any session: the rows are where THIS ACCOUNT would be warned, and an owner has to be
-            // able to see an install they do not recognise whether or not this phone holds authority.
             assertThat(state.deviceHoldsAuthority).isFalse()
             assertThat(state.showsSecurityNotifications).isTrue()
             assertThat(state.securityNotifications.map { it.installationId })
@@ -652,8 +599,6 @@ class AccountAuthorityPresenterTest {
 
         presenter.test {
             val state = awaitFirst { it.phase == AccountAuthorityPhase.Overview && it.chain != null }
-            // An empty list and a channel that is not there are different answers, and only one of them is
-            // worth drawing: the other would read as "your account has nowhere to be warned".
             assertThat(state.securityNotifications).isEmpty()
             assertThat(state.notificationChannelAvailable).isFalse()
             assertThat(state.showsSecurityNotifications).isFalse()
@@ -672,10 +617,6 @@ class AccountAuthorityPresenterTest {
             val listed = awaitFirst { it.securityNotifications.isNotEmpty() }
             listed.eventSink(AccountAuthorityEvent.RemoveSecurityNotification(AN_INSTALL_ID))
 
-            // Decision 13 has exactly one removal tier and this install's own row is deliberately not
-            // cheaper: a self-asserted installation id is a request-body field, so nothing is sent before a
-            // factor has been produced. iOS removes its own row with no factor at all, which the server
-            // answers with authority_step_up_required.
             val steppingUp = awaitFirst { it.phase == AccountAuthorityPhase.StepUp }
             assertThat(steppingUp.stepUp).isEqualTo(AccountAuthorityStepUp.RemoveNotification)
             assertThat(steppingUp.stepUpMethod).isEqualTo(AccountAuthorityStepUpMethod.Pin)
@@ -705,8 +646,6 @@ class AccountAuthorityPresenterTest {
             val listed = awaitFirst { it.securityNotifications.isNotEmpty() }
             listed.eventSink(AccountAuthorityEvent.RemoveSecurityNotification("an-id-nobody-listed"))
 
-            // The row is resolved from what was read, so an event carrying an id from anywhere else leaves the
-            // user where they were rather than opening a step-up for a removal that cannot happen.
             assertThat(listed.phase).isEqualTo(AccountAuthorityPhase.Overview)
             assertThat(manager.removeNotificationCalls).isEmpty()
             cancelAndIgnoreRemainingEvents()
@@ -729,9 +668,6 @@ class AccountAuthorityPresenterTest {
             val listed = awaitFirst { it.securityNotifications.isNotEmpty() }
             listed.eventSink(AccountAuthorityEvent.RemoveSecurityNotification(AN_INSTALL_ID))
 
-            // The removal endpoint reads the factor out of its own request and looks for no sheet proof, so
-            // there is no sheet to send this account to, and a native assertion is not something this
-            // platform can run. Named rather than worked around, and with no weaker path offered.
             val blocked = awaitFirst { it.stepUpBlock != null }
             assertThat(blocked.stepUpBlock)
                 .isEqualTo(AccountAuthorityStepUpBlock.PasskeyNotUsableForNotificationRemoval)

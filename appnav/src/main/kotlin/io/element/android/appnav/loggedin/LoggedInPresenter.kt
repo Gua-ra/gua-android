@@ -52,7 +52,6 @@ import timber.log.Timber
 
 private val pusherTag = LoggerTag("Pusher", LoggerTag.PushLoggerTag)
 
-/** GUA FORK: the provider whose destinations the security-notification channel can deliver to. */
 private const val FIREBASE_PROVIDER_NAME = "Firebase"
 
 @Inject
@@ -65,8 +64,6 @@ class LoggedInPresenter(
     private val encryptionService: EncryptionService,
     private val buildMeta: BuildMeta,
     private val networkMonitor: NetworkMonitor,
-    // GUA FORK: ADM-009. Inert while the account-authority flag is off, which is every build today: the
-    // registrar reads the flag first and makes no request at all until a deployment turns it on.
     private val authoritySessionRegistrar: AuthoritySessionRegistrar,
 ) : Presenter<LoggedInState> {
     @Composable
@@ -77,10 +74,7 @@ class LoggedInPresenter(
         }.collectAsState(initial = false)
         val pusherRegistrationState = remember<MutableState<AsyncData<Unit>>> { mutableStateOf(AsyncData.Uninitialized) }
         LaunchedEffect(Unit) { preloadAccountManagementUrl() }
-        // GUA FORK: ADM-009 gate 2 and decision 5. A session start is where the security-notification channel
-        // is registered and where a device with no authority offers its own key for a grant. It is deliberately
-        // not chained to the pusher: a pusher dies with the session an account recovery revokes, which is the
-        // one thing this channel must survive.
+        // GUA FORK: not chained to the pusher registration, which dies with the session an account recovery revokes.
         LaunchedEffect(Unit) { registerForAuthorityNotifications() }
         LaunchedEffect(Unit) {
             sessionVerificationService.sessionVerifiedStatus
@@ -162,13 +156,6 @@ class LoggedInPresenter(
         )
     }
 
-    /**
-     * GUA FORK: hands the registrar this install's current push destination, or nothing when it has none.
-     *
-     * The platform is read from the provider rather than assumed: only APNs and FCM destinations can be
-     * delivered to, so a UnifiedPush install registers nothing here rather than registering a row the server
-     * could never reach.
-     */
     private suspend fun registerForAuthorityNotifications() {
         val provider = pushService.getCurrentPushProvider(matrixClient.sessionId)
         val pushToken = provider?.getPushConfig(matrixClient.sessionId)?.pushKey

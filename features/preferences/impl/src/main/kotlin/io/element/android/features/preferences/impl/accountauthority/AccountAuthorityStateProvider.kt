@@ -15,14 +15,6 @@ import io.element.android.libraries.guaresolver.authority.AuthorityDevice
 import io.element.android.libraries.guaresolver.authority.AuthorityPendingTransition
 import io.element.android.libraries.guaresolver.authority.SecurityNotificationView
 
-/**
- * GUA FORK: sample states of the account authority screen (ADM-009), for previews and screenshot tests.
- *
- * It exists because the view was the one layer of this screen nothing rendered. The presenter has tests and
- * the codec has golden vectors, and the screen itself was read off the composition by eye: the quarantine row,
- * the two-device carve-out footer, the security-alerts rows and the step-up blocks all came from state the
- * view builds itself, and none of it was ever drawn in a test.
- */
 open class AccountAuthorityStateProvider : PreviewParameterProvider<AccountAuthorityState> {
     override val values: Sequence<AccountAuthorityState>
         get() = sequenceOf(
@@ -35,12 +27,6 @@ open class AccountAuthorityStateProvider : PreviewParameterProvider<AccountAutho
         )
 }
 
-/**
- * The overview of a rooted account, with everything the screen can draw on it at once.
- *
- * Defaults deliberately land on the state a reader is most likely to be in, so a preview or a test names only
- * what it is about. Nothing here mints a key or reads a keystore: it is data the presenter would have produced.
- */
 @Suppress("LongParameterList")
 fun anAccountAuthorityState(
     featureEnabled: Boolean = true,
@@ -139,7 +125,6 @@ fun anAuthorityDevice(
     grantedSeq = grantedSeq,
 )
 
-/** A device inside its own grant window, which may sign nothing and counts toward no device requirement. */
 fun aQuarantinedDevice() = anAuthorityDevice(
     deviceKeyB64Url = "another-device-key",
     label = "iPhone 16",
@@ -148,12 +133,6 @@ fun aQuarantinedDevice() = anAuthorityDevice(
     grantedSeq = 2,
 )
 
-/**
- * One install the security-notification channel would warn.
- *
- * The token is not here because the server never returns one: a row is named by the fingerprint it keeps and
- * by when it was last seen, which is what lets an owner recognise a phone without a destination on screen.
- */
 fun aSecurityNotificationView(
     installationId: String = AN_INSTALL_ID,
     platform: String = "FCM",
@@ -170,7 +149,6 @@ fun aSecurityNotificationView(
     lastSeenAtEpochSeconds = lastSeenAtEpochSeconds,
 )
 
-/** A transition inside its window, which already holds its seq. */
 fun aPendingTransition(
     type: String = "DEVICE_GRANT",
     seq: Long = 3,
@@ -183,13 +161,6 @@ fun aPendingTransition(
     recordHash = recordHash,
 )
 
-/**
- * One live browser approval waiting for a signature.
- *
- * The action id is the opaque one the page chose. The screen describes it in its own words and never renders
- * this string, which is the property a rendered test is worth having for: a malicious page can start an
- * approval, and its text must not reach the screen that is supposed to be the independent one.
- */
 fun anAuthorityApproval(
     approvalId: String = "an-approval",
     code: String = "AB7K",
@@ -209,5 +180,4 @@ const val AN_ACCOUNT: String = "ga1zzzz"
 
 const val AN_INSTALL_ID: String = "an-installation"
 
-/** 2026-01-02 03:04:05 UTC, fixed so a screenshot of a date is a screenshot of the same date tomorrow. */
 const val A_FIXED_INSTANT: Long = 1_767_322_845

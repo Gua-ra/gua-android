@@ -25,24 +25,7 @@ import java.security.GeneralSecurityException
 import java.security.MessageDigest
 import java.util.Base64
 
-/**
- * GUA FORK: the cross-platform golden vectors of the authority chain (ADM-009, identity-service
- * `docs/specs/authority-vectors.v1.json`), checked against this client's own codec.
- *
- * WHY THE VECTORS RATHER THAN A ROUND TRIP. The server, this client and gua-ios each encode these records
- * independently, and a byte they disagree on is a signature that verifies on one side and not the other. A
- * round-trip test proves a codec agrees with itself; only a committed file that all three recompute proves
- * they agree with each other. The file is copied verbatim from identity-service, so a change on either side
- * shows up as a failing test rather than as a refused record in production.
- *
- * The records are rebuilt from the same inputs the vectors describe rather than sliced back out of the
- * expected bytes, and the chain is rebuilt in order, so the prevHash of each record is this client's own hash
- * of the previous one.
- *
- * The file pins the recovery artifact too, and that one has nothing else holding it: the server never sees an
- * artifact, so two clients that render it differently agree on every byte on the wire and still hand the owner
- * a key the other one refuses, in exactly the replaced-phone case the artifact exists for.
- */
+/** authority-vectors.v1.json is copied verbatim from identity-service and must stay byte-identical. */
 class AuthorityVectorsTest {
     private val vectors: JsonObject = Json.parseToJsonElement(
         requireNotNull(javaClass.getResourceAsStream("/$VECTORS_RESOURCE")) {
@@ -58,9 +41,6 @@ class AuthorityVectorsTest {
     @Test
     fun `the accountId these records name re-encodes to the same 34 bytes`() {
         val account = vectors["account"]!!.jsonObject
-        // The client never composes an accountId: it parses the one the server reported and signs over the
-        // bytes of what it could re-encode. A vector whose id did not survive that would be signing over
-        // something this client cannot name.
         assertThat(AccountId.parse(account.string("accountId")).rawBytes()).isEqualTo(accountReference)
     }
 
@@ -106,8 +86,6 @@ class AuthorityVectorsTest {
             val record = build(name)
             val signature = Base64.getDecoder().decode(vector.string("signatureB64"))
             val verifier = Ed25519Verify(hex(vector.string("verifyingKeyHex")))
-            // The challenge is inside the signature rather than checked beside it, which is what makes a
-            // captured record useless: this is that property, asserted rather than asserted about.
             verifier.verify(signature, AuthorityProofs.recordPreimage(typeOf(name), challenge, record))
             var refused = false
             try {
@@ -142,24 +120,11 @@ class AuthorityVectorsTest {
         assertThat(cases).hasSize(3)
         cases.forEach { case ->
             val seed = hex(keys()[case.string("key")]!!.jsonObject.string("seedHex"))
-            // The artifact never crosses the wire, so no refused record can ever report a client that spells
-            // it differently: the string this platform hands the user is pinned here or nowhere. The other
-            // client parses THIS, which is what makes an artifact taken on one phone usable on the other.
             assertThat(RecoveryArtifact.encode(seed)).isEqualTo(case.string("artifact"))
-            // And back, because what this platform accepts has to be what it hands out. A round trip against
-            // itself would pass on either side of a mismatch.
             assertThat(RecoveryArtifact.decode(case.string("artifact"))).isEqualTo(seed)
         }
     }
 
-    /**
-     * The case an artifact comes back in, which is the divergence these entries were added to close.
-     *
-     * It is written on paper in capitals and typed back through a keyboard that capitalises, and both ports
-     * read it. Until these entries existed both suites passed with gua-ios forgiving case and this one not,
-     * which is the interop failure the artifact exists to avoid reached by the narrowest route there is: the
-     * owner types their own key and one of their two phones says no.
-     */
     @Test
     fun `an artifact reads back in whatever case it was typed in`() {
         val spellings = (recoveryArtifact()["spellings"] as JsonArray).map { it.jsonObject }
@@ -172,8 +137,6 @@ class AuthorityVectorsTest {
                 val seed = hex(keys()[expectedKey]!!.jsonObject.string("seedHex"))
                 assertThat(RecoveryArtifact.decode(spelling.string("artifact"))).isEqualTo(seed)
             } else {
-                // The fold is ASCII and stops there. A character some Unicode mapping would turn into an
-                // alphabet letter is not the case of anything that was printed.
                 val thrown = runCatchingExceptions {
                     RecoveryArtifact.decode(spelling.string("artifact"))
                 }.exceptionOrNull()
@@ -183,7 +146,6 @@ class AuthorityVectorsTest {
             }
         }
 
-        // And what is handed out is still lowercase. Only the reader forgives.
         (recoveryArtifact()["vectors"] as JsonArray).map { it.jsonObject }.forEach { case ->
             assertThat(case.string("artifact")).isEqualTo(case.string("artifact").lowercase())
         }
@@ -212,15 +174,6 @@ class AuthorityVectorsTest {
         }
     }
 
-    // --- Rebuilding the chain ------------------------------------------------
-
-    /**
-     * The one record each vector describes, built from its inputs.
-     *
-     * The label and entropy constants are the values the vectors' own canonical bytes carry; everything
-     * positional (the prevHash and the seq) comes from rebuilding the chain in order, so a client that hashed
-     * a record differently would fail on the next one rather than on itself.
-     */
     private fun build(name: String): ByteArray = when (name) {
         ADOPT -> adoptRoot()
         GRANT -> deviceGrant()
@@ -283,8 +236,6 @@ class AuthorityVectorsTest {
 
     private fun oppose(): ByteArray = AuthorityRecordCodec.oppose(
         accountReference = accountReference,
-        // An Oppose carries the position of the record it cancels, which is why these two are the revocation's
-        // own prevHash and seq rather than a place of its own.
         prevHash = AuthorityRecordCodec.hash(deviceGrant()),
         seq = 3,
         opposedRecordHash = AuthorityRecordCodec.hash(deviceRevoke()),
@@ -308,7 +259,6 @@ class AuthorityVectorsTest {
 
     private fun publicKey(name: String): ByteArray = hex(keys()[name]!!.jsonObject.string("publicKeyHex"))
 
-    /** The seed whose public half is [publicKeyHex], so a vector names its signer rather than the test. */
     private fun seedOf(publicKeyHex: String): ByteArray {
         val entry = keys().entries.first { it.value.jsonObject.string("publicKeyHex") == publicKeyHex }
         return hex(entry.value.jsonObject.string("seedHex"))
@@ -330,7 +280,6 @@ class AuthorityVectorsTest {
         const val TEST2 = "rfc8032-test2"
         const val TEST3 = "rfc8032-test3"
 
-        /** The 16 entropy bytes the vectors' records carry. */
         const val ENTROPY_HEX = "f0e1d2c3b4a5968778695a4b3c2d1e0f"
 
         const val ADOPT = "AdoptRoot, device test1, recovery test2"

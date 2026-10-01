@@ -47,16 +47,6 @@ import io.element.android.libraries.ui.strings.CommonStrings
 import java.text.DateFormat
 import java.util.Date
 
-/**
- * GUA FORK: the account authority screen (ADM-009).
- *
- * Four rules shape what is drawn here. A pending transition is shown with the time it completes, because the
- * window IS the security of the transition and a screen that hid it would be hiding the only thing the owner
- * can act on. A quarantined device is shown as quarantined, because it can do nothing and counts for nothing.
- * The recovery artifact is shown on a screen of its own with the consequence spelled out, once, before
- * anything is submitted. And an account that has lost its authority is told that plainly, with no button that
- * pretends otherwise.
- */
 @Composable
 fun AccountAuthorityView(
     state: AccountAuthorityState,
@@ -73,9 +63,6 @@ fun AccountAuthorityView(
             eventSink(AccountAuthorityEvent.ClearSuccess)
         }
     }
-    // GUA FORK: the step-up of an account that holds a passkey runs on the page identity-service serves, so
-    // once the presenter has the one-time URL it is handed to a Custom Tab and forgotten: the URL is single use,
-    // and re-entering this screen must not reopen a sheet whose proof was already spent.
     val currentOnOpenWebStepUpUrl by rememberUpdatedState(onOpenWebStepUpUrl)
     LaunchedEffect(state.webStepUpUrl) {
         state.webStepUpUrl?.let { url ->
@@ -117,8 +104,6 @@ private fun OverviewSection(
 ) {
     Column {
         if (state.unavailable) {
-            // Not an error: this is what every deployment answers today, and the wire contract asks a
-            // client to read it as "this build does not have the feature".
             Explanation(text = stringResource(id = R.string.screen_account_authority_unavailable))
             return@Column
         }
@@ -174,8 +159,6 @@ private fun OverviewSection(
 
         when {
             state.authorityLost -> {
-                // Terminal by decision 7. The account keeps its id, its login and its data; what it never
-                // regains is authority, and no copy here suggests a second adoption would work.
                 Explanation(text = stringResource(id = R.string.screen_account_authority_lost_message))
             }
             state.canAdopt -> {
@@ -204,8 +187,6 @@ private fun OverviewSection(
         }
 
         if (state.canOfferThisDevice) {
-            // The other end of the candidate step: this phone has account access and no authority, so it
-            // offers its own key and another device grants it.
             HorizontalDivider()
             ListItem(
                 headlineContent = { Text(stringResource(id = R.string.screen_account_authority_offer_action)) },
@@ -234,8 +215,6 @@ private fun OverviewSection(
         }
 
         if (state.canRecoverThroughAccountRecovery) {
-            // The other route, offered second and described as the weaker one, because that is what it is: any
-            // device that still holds this account's authority can stop it while it waits.
             ListItem(
                 headlineContent = {
                     Text(stringResource(id = R.string.screen_account_authority_account_recovery_action))
@@ -249,10 +228,6 @@ private fun OverviewSection(
         }
 
         if (state.showsSecurityNotifications) {
-            // ADM-009 gate 2's channel, which every window on this screen depends on, as its own holder sees
-            // it. Registration happens on its own at session start; what was missing on this platform was
-            // anywhere to look at the result or take a row off, which is the half that matters when an owner
-            // sees an install they do not recognise.
             HorizontalDivider()
             ListItem(
                 headlineContent = { Text(stringResource(id = R.string.screen_account_authority_alerts_header)) },
@@ -280,15 +255,6 @@ private fun OverviewSection(
     }
 }
 
-/**
- * One install that would be warned, with the one removal tier beside it.
- *
- * The destination is never drawn, because the server never returns one: the row is named by its device label
- * and by when it was last seen, which is what lets an owner recognise a phone without the token being on a
- * screen. The remove button carries the same price on this install's own row as on any other, which is
- * ADM-009 decision 13 stated rather than a copy of what this screen finds convenient: a cheaper path for
- * "my own install" is a self-asserted request-body field, and accepting one hands the channel to any session.
- */
 @Composable
 private fun SecurityNotificationRow(
     registration: SecurityNotificationView,
@@ -321,9 +287,6 @@ private fun SecurityNotificationRow(
         },
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Notifications())),
     )
-    // A row of its own rather than a button beside the label, because the label is a device name a person
-    // chose and the action names what it does in full. Squeezing the two onto one line is how a phone called
-    // "Pixel 9" ends up wrapped to "Pix el 9" on the screen where recognising it is the whole job.
     ListItem(
         headlineContent = {
             Text(
@@ -345,12 +308,6 @@ private fun SecurityNotificationRow(
     )
 }
 
-/**
- * One device the chain has activated, in the chain's own terms.
- *
- * A quarantined device says so and says until when. Drawing it as "active" would be the screen telling the
- * owner they hold two devices when, for every rule that matters, they hold one.
- */
 @Composable
 private fun DeviceRow(
     device: AuthorityDevice,
@@ -410,7 +367,6 @@ private fun DeviceRow(
     )
 }
 
-/** A key another device offered. Nothing is signed from this row: it opens the comparison. */
 @Composable
 private fun CandidateRow(
     candidate: AuthorityCandidate,
@@ -436,14 +392,7 @@ private fun CandidateRow(
     )
 }
 
-/**
- * One live browser approval.
- *
- * The action is described in this screen's own words and the four-character code is repeated from the
- * browser. The opaque action id the page chose is never rendered: a malicious page can start an approval,
- * and the one thing that must not happen is its text appearing on the screen that is supposed to be the
- * independent one.
- */
+/** Never renders the action id the page chose: a malicious page must not put its own text on this screen. */
 @Composable
 private fun ApprovalRow(
     approval: AuthorityApproval,
@@ -489,9 +438,6 @@ private fun ArtifactSection(
                 .padding(vertical = 16.dp),
             textAlign = TextAlign.Center,
         )
-        // The consequence, in plain words, on the same screen as the value: whoever holds this, together
-        // with a way into the account, can take it after a wait, and losing every device and this leaves
-        // the account without authority for good.
         Text(
             text = stringResource(id = R.string.screen_account_authority_artifact_warning),
             style = ElementTheme.typography.fontBodySmRegular,
@@ -504,8 +450,6 @@ private fun ArtifactSection(
         )
         Button(
             text = stringResource(id = CommonStrings.action_continue),
-            // Adoption is unreachable without the confirmation. The same rule is enforced in the presenter
-            // and again in the manager, because this one is only a button.
             enabled = state.canContinueFromArtifact,
             onClick = { eventSink(AccountAuthorityEvent.ContinueFromArtifact) },
             modifier = Modifier
@@ -515,7 +459,6 @@ private fun ArtifactSection(
     }
 }
 
-/** Typing back the artifact a previous adoption or recovery handed over. */
 @Composable
 private fun RecoveryEntrySection(
     state: AccountAuthorityState,
@@ -536,14 +479,7 @@ private fun RecoveryEntrySection(
             value = state.recoveryArtifactInput,
             onValueChange = { eventSink(AccountAuthorityEvent.RecoveryArtifactChanged(it)) },
             enabled = !state.isWorking,
-            // What is typed here is the PRIVATE recovery authority key, and a field with the defaults hands
-            // it to the IME as ordinary prose: autocorrect and personalised learning are on, and Gboard backs
-            // its learned dictionary up to the signed-in Google account. That is the one property ADM-008
-            // decision 5 and this material's own keystore claim for it, never synced and never backed up, so
-            // the field asks the IME for a password: no learning, no autocorrect, no capitalisation.
-            //
-            // The value stays visible rather than masked, because it is read off paper into this field and a
-            // 52-character key nobody can check while typing is a key typed wrong.
+            // Password type stops the IME learning or backing up the recovery key. Unmasked, because it is typed from paper.
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.None,
                 autoCorrectEnabled = false,
@@ -565,7 +501,6 @@ private fun RecoveryEntrySection(
     }
 }
 
-/** The fingerprint comparison, which is the only thing binding a key to the person holding the other phone. */
 @Composable
 private fun CompareSection(
     state: AccountAuthorityState,
@@ -614,13 +549,6 @@ private fun CompareSection(
     }
 }
 
-/**
- * What the account-recovery route costs, before anything is minted (authorization 0x02).
- *
- * The acknowledgement is the gate, for the same reason the artifact's is: this route is authorized by the
- * account's own credentials rather than by a key, so the one thing that keeps it from being a takeover is the
- * wait and the veto every remaining device holds, and the owner has to know both before starting it.
- */
 @Composable
 private fun AccountRecoveryNoticeSection(
     state: AccountAuthorityState,
@@ -673,9 +601,6 @@ private fun StepUpSection(
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         state.stepUpBlock?.let { block ->
-            // No PIN field, and no suggestion to add one. There is one case left here, an account holding
-            // neither factor, and the way out of it is two-step verification rather than anything this screen
-            // can offer.
             Text(
                 text = stringResource(id = R.string.screen_account_authority_pin_header),
                 style = ElementTheme.typography.fontHeadingSmMedium,
@@ -743,14 +668,6 @@ private fun StepUpSection(
     }
 }
 
-/**
- * The passkey arm, which runs in a Custom Tab because that is where an assertion can run on this platform.
- *
- * The copy says where the confirmation happens and that the passkey is what it asks for, and it does not offer
- * a PIN: an account holding a passkey already has the stronger of the two factors, and the page itself offers
- * the PIN to whoever also has one. Nothing comes back through this screen, so there is no field here and no
- * code to paste: the app asks the server again once it is in front.
- */
 @Composable
 private fun WebStepUpSection(
     state: AccountAuthorityState,
@@ -785,13 +702,6 @@ private fun WebStepUpSection(
     }
 }
 
-/**
- * What a revocation about to be signed actually does, which is three different things.
- *
- * Removing this device takes effect at once. Removing another one waits out the window and is notified. And on
- * an account with two active devices the one being removed may object, which is decision 5's carve-out and a
- * standoff the owner should know about before starting it.
- */
 @Composable
 private fun revocationFooter(state: AccountAuthorityState): String {
     val target = state.revocationTarget ?: return stringResource(

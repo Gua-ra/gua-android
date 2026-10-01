@@ -23,12 +23,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 
-/**
- * GUA FORK: the grant offer that follows a link in the one direction ADM-009 decision 5 permits.
- *
- * Declining is a first-class outcome, and the test for it asserts silence: a device that was linked and not
- * granted is a working, signed-in device, and nothing about the account's chain changed.
- */
 class GrantAuthorityPresenterTest {
     @get:Rule
     val warmUpRule = WarmUpRule()
@@ -72,7 +66,6 @@ class GrantAuthorityPresenterTest {
         presenter.test {
             awaitItem().eventSink(GrantAuthorityEvent.Grant)
             val compare = awaitFirst { it.phase == GrantAuthorityPhase.Compare }
-            // The fingerprint is shown in the two groups a person reads out.
             assertThat(compare.fingerprint).isEqualTo("9KDC ZT8A")
             assertThat(compare.canContinueFromCompare).isFalse()
             compare.eventSink(GrantAuthorityEvent.ConfirmFingerprint(true))
@@ -85,8 +78,6 @@ class GrantAuthorityPresenterTest {
             ready.eventSink(GrantAuthorityEvent.Submit)
 
             awaitFirst { it.phase == GrantAuthorityPhase.Done }
-            // The chain is read every time, because a head this screen remembered from before the link
-            // would be refused.
             assertThat(manager.stateCalls).hasSize(1)
             val call = manager.grantCalls.single()
             assertThat(call.candidate.deviceKeyB64Url).isEqualTo(A_GRANTEE_KEY)
@@ -98,12 +89,6 @@ class GrantAuthorityPresenterTest {
         }
     }
 
-    /**
-     * The comparison is the binding, so the screen has to be unable to skip it.
-     *
-     * The check code that got the user here bound the channel; it says nothing about which key came up it. A
-     * grant that skipped the fingerprint would be a grant over whatever arrived.
-     */
     @Test
     fun `present - the step-up is unreachable until the fingerprint was compared`() = runTest {
         val manager = FakeAccountAuthorityManager()
@@ -115,7 +100,6 @@ class GrantAuthorityPresenterTest {
             compare.eventSink(GrantAuthorityEvent.ContinueFromCompare)
             runCurrent()
 
-            // Nothing moved, so there is nothing new to emit, and nothing was sent.
             expectNoEvents()
             assertThat(manager.grantCalls).isEmpty()
             assertThat(manager.stateCalls).isEmpty()
@@ -145,7 +129,6 @@ class GrantAuthorityPresenterTest {
             assertThat(refused.errorMessage)
                 .isEqualTo(R.string.screen_link_grant_authority_error_quarantined)
             assertThat(refused.phase).isEqualTo(GrantAuthorityPhase.StepUp)
-            // The PIN is cleared rather than left on screen for a second attempt to reuse.
             assertThat(refused.pin).isEmpty()
             assertThat(done).isFalse()
             cancelAndIgnoreRemainingEvents()

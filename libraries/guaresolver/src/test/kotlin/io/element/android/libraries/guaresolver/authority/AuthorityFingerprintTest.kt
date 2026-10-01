@@ -12,14 +12,6 @@ import com.google.crypto.tink.subtle.Ed25519Sign
 import io.element.android.libraries.core.extensions.runCatchingExceptions
 import org.junit.Test
 
-/**
- * GUA FORK: the eight characters two people compare across a room (ADM-009 decision 5, revision 4).
- *
- * The expected values are the ones the identity-service implementation produces for the RFC 8032 test keys.
- * They are written out rather than computed a second way here on purpose: this is the one string in the
- * feature whose whole value is that two independent implementations produce it from the same bytes, so the
- * test has to be able to fail if this one drifts.
- */
 class AuthorityFingerprintTest {
     @Test
     fun `the RFC 8032 test keys produce the same eight characters as the server`() {
@@ -34,15 +26,12 @@ class AuthorityFingerprintTest {
             val fingerprint = AuthorityFingerprint.of(Ed25519Sign.KeyPair.newKeyPair().publicKey)
 
             assertThat(fingerprint).hasLength(AuthorityFingerprint.LENGTH)
-            // No I, O, 0, 1, 5 or S: a fingerprint gets read aloud, and it fails at exactly the characters
-            // that sound or look alike.
             assertThat(fingerprint.all { it in "ABCDEFGHJKLMNPQRSTUVWXYZ2346789" }).isTrue()
         }
     }
 
     @Test
     fun `two keys that share a prefix do not look alike`() {
-        // The fingerprint is taken from a digest of the key rather than from the key, so this holds.
         val first = ByteArray(32) { if (it == 31) 1 else 0 }
         val second = ByteArray(32) { if (it == 31) 2 else 0 }
 

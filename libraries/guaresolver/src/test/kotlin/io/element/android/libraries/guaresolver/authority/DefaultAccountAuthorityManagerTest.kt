@@ -23,14 +23,6 @@ import java.security.spec.X509EncodedKeySpec
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
-/**
- * GUA FORK: the three steps every authority transition takes, and the order they take them in (ADM-009).
- *
- * The key store is the real one over a real AES service, so the signatures asserted here are signatures a
- * JDK verifier accepts under the key that was published. That is the property that matters: identity-service
- * verifies with the JDK provider, and a test that verified with the same library that signed would agree
- * with itself while every record was refused.
- */
 @OptIn(ExperimentalEncodingApi::class)
 class DefaultAccountAuthorityManagerTest {
     @Test
@@ -39,8 +31,6 @@ class DefaultAccountAuthorityManagerTest {
         val keyStore = createKeyStore()
         val manager = DefaultAccountAuthorityManager(client, keyStore)
         val offer = manager.beginAdoption().getOrThrow()
-        // Read before submitting: a submitted adoption moves the pair out of the adoption slot, which is
-        // what stops a second adoption on this device minting keys the chain has no place for.
         val keys = checkNotNull(keyStore.adoptionKeys())
 
         val submitted = manager.adopt(
@@ -53,13 +43,11 @@ class DefaultAccountAuthorityManagerTest {
 
         assertThat(offer.recoveryArtifact).startsWith(RecoveryArtifact.PREFIX)
         assertThat(submitted.seq).isEqualTo(1)
-        // The step-up is spent in the same call that mints the challenge, so it can never be older than it.
         assertThat(client.challengeCalls).containsExactly(
             FakeAccountAuthorityClient.ChallengeCall(AuthorityPurpose.ADOPT, A_PIN)
         )
         val submission = client.adoptCalls.single()
         assertThat(submission.recoveryArtifactConfirmed).isTrue()
-        // The challenge travels back because the server stores only its hash.
         assertThat(submission.challengeB64Url).isEqualTo(FakeAccountAuthorityClient.A_CHALLENGE_B64)
 
         val record = decode(submission.recordB64Url)
@@ -75,8 +63,6 @@ class DefaultAccountAuthorityManagerTest {
             record,
         )
         assertThat(verify(keys.deviceAuthorityPublicKey(), preimage, decode(submission.signatureB64Url))).isTrue()
-        // The same signature over the record alone must not verify, which is what puts the challenge and the
-        // domain inside the signature rather than beside it.
         assertThat(verify(keys.deviceAuthorityPublicKey(), record, decode(submission.signatureB64Url))).isFalse()
     }
 
@@ -96,8 +82,6 @@ class DefaultAccountAuthorityManagerTest {
         )
 
         assertThat(result.exceptionOrNull()).isInstanceOf(AuthorityError.ArtifactUnconfirmed::class.java)
-        // Not even a challenge: a refused adoption must not cost the user a step-up, and the artifact is
-        // what makes adoption recoverable at all.
         assertThat(client.challengeCalls).isEmpty()
         assertThat(client.adoptCalls).isEmpty()
     }
@@ -137,7 +121,6 @@ class DefaultAccountAuthorityManagerTest {
         assertThat(record).hasLength(161)
         assertThat(record.copyOfRange(40, 72)).isEqualTo(AuthorityRecordCodec.prevHashFromHex(A_HEAD_HASH_HEX))
         assertThat(record.copyOfRange(72, 80)).isEqualTo(byteArrayOf(0, 0, 0, 0, 0, 0, 0, 4))
-        // The new device's own key is what is granted: this client never sends one of its own.
         assertThat(record.copyOfRange(80, 112)).isEqualTo(A_GRANTEE_KEY)
         assertThat(record.copyOfRange(129, 161)).isEqualTo(ourKey)
 
@@ -178,7 +161,6 @@ class DefaultAccountAuthorityManagerTest {
 
         manager.approve(A_TOKEN, aRootedChain(), approval).getOrThrow()
 
-        // The browser's start minted the challenge; the device signs that one rather than asking for its own.
         assertThat(client.challengeCalls.map { it.purpose }).containsExactly(AuthorityPurpose.ADOPT)
         val (approvalId, signature) = client.signApprovalCalls.single()
         assertThat(approvalId).isEqualTo(approval.approvalId)
@@ -247,8 +229,6 @@ class DefaultAccountAuthorityManagerTest {
         val client = FakeAccountAuthorityClient()
         val manager = adoptedManager(client)
 
-        // The person confirmed eight characters. If the key does not produce them, they compared something
-        // else, and the only value the comparison had was that both phones derived it from the same key.
         val result = manager.grantDevice(
             accessToken = A_TOKEN,
             chain = aRootedChain(),
@@ -271,10 +251,7 @@ class DefaultAccountAuthorityManagerTest {
 
         val offered = checkNotNull(keyStore.candidateDevicePublicKey())
         assertThat(client.candidateCalls.single().first).isEqualTo(encode(offered))
-        // Recomputed from the key, so the eight characters the other phone shows are the ones these bytes
-        // produce rather than the ones the response claimed.
         assertThat(candidate.fingerprint).isEqualTo(AuthorityFingerprint.of(offered))
-        // Offering it is not holding authority: the chain has not granted anything yet.
         assertThat(manager.holdsAuthority()).isFalse()
     }
 
@@ -320,16 +297,10 @@ class DefaultAccountAuthorityManagerTest {
 
         val call = client.challengeCalls.last()
         assertThat(call.purpose).isEqualTo(AuthorityPurpose.OPPOSE)
-        // No factor, because the hold gates starting a transition and never objecting to one: an owner who
-        // just changed their PIN to lock a thief out must not be the one disarmed by it.
         assertThat(call.stepUp).isEqualTo(AuthorityStepUp.None)
         val record = decode(client.opposeRecordCalls.single().recordB64Url)
         assertThat(record).hasLength(144)
         assertThat(record.copyOfRange(0, 4)).isEqualTo("GUAO".toByteArray())
-        // The position of the record it cancels, not a place of its own, and the prevHash is that record's
-        // OWN as the chain read reports it. This assertion used to compare against the head hash, which is
-        // the pending record itself once it is placed, so it asserted the bug: the objection went out at the
-        // wrong position and the server could only answer authority_opposition_stale.
         assertThat(record.copyOfRange(40, 72))
             .isEqualTo(AuthorityRecordCodec.prevHashFromHex(A_PENDING_PREV_HASH_HEX))
         assertThat(record.copyOfRange(40, 72))
@@ -338,7 +309,6 @@ class DefaultAccountAuthorityManagerTest {
         assertThat(record.copyOfRange(80, 112))
             .isEqualTo(AuthorityRecordCodec.prevHashFromHex(A_PENDING_RECORD_HASH))
         assertThat(record.copyOfRange(112, 144)).isEqualTo(ourKey)
-        // The session route is untouched: it is the objection to an adoption and nothing else.
         assertThat(client.opposeCalls).isEmpty()
     }
 
@@ -346,18 +316,12 @@ class DefaultAccountAuthorityManagerTest {
     fun `an objection is refused rather than built wrong when the server sends no prevHash`() = runTest {
         val client = FakeAccountAuthorityClient()
         val manager = adoptedManager(client, createKeyStore())
-        // A server that predates the field. Nothing can derive the value locally and the head is the pending
-        // record itself, so refusing is the honest answer: an objection built at a guessed position is
-        // accepted by nothing and tells the owner their device said no when it did not.
         val pending = AuthorityPendingTransition("DEVICE_REVOKE", 4, 1_800_000_000, A_PENDING_RECORD_HASH)
 
         val result = manager.opposeWithRecord(A_TOKEN, aRootedChain(headSeq = 3, pending = pending))
 
         assertThat(result.exceptionOrNull()).isInstanceOf(AuthorityError.OppositionStale::class.java)
         assertThat(client.opposeRecordCalls).isEmpty()
-        // No OPPOSE challenge either, so nothing is spent on a record that cannot be built. Asserted on the
-        // purpose rather than on the list being empty: adoptedManager roots the account first, and that
-        // adoption's own ADOPT challenge is in here.
         assertThat(client.challengeCalls.map { it.purpose }).doesNotContain(AuthorityPurpose.OPPOSE)
     }
 
@@ -391,7 +355,6 @@ class DefaultAccountAuthorityManagerTest {
         val client = FakeAccountAuthorityClient()
         val keyStore = createKeyStore()
         val manager = DefaultAccountAuthorityManager(client, keyStore)
-        // The artifact an earlier adoption on some other device handed its owner.
         val oldRecovery = Ed25519Sign.KeyPair.newKeyPair()
         val artifact = RecoveryArtifact.encode(oldRecovery.privateKey)
 
@@ -416,14 +379,12 @@ class DefaultAccountAuthorityManagerTest {
         assertThat(record.copyOfRange(112, 144)).isEqualTo(installed.recoveryAuthorityPublicKey())
         assertThat(record[176].toInt()).isEqualTo(AuthorityRecord.AUTHORIZATION_RECOVERY_KEY)
         assertThat(record.copyOfRange(177, 209)).isEqualTo(oldRecovery.publicKey)
-        // Signed by the OLD recovery key, which is the whole reason the artifact matters.
         val preimage = AuthorityProofs.recordPreimage(
             AuthorityRecordType.AUTHORITY_RECOVERY,
             decode(FakeAccountAuthorityClient.A_CHALLENGE_B64),
             record,
         )
         assertThat(verify(oldRecovery.publicKey, preimage, decode(submission.signatureB64Url))).isTrue()
-        // And the pair the record installs is this device's authority afterwards.
         assertThat(keyStore.authorityDevicePublicKey()).isEqualTo(installed.deviceAuthorityPublicKey())
     }
 
@@ -447,13 +408,6 @@ class DefaultAccountAuthorityManagerTest {
         assertThat(client.recoverCalls).isEmpty()
     }
 
-    /**
-     * The account-recovery route, authorization 0x02, for an owner who no longer has the artifact.
-     *
-     * Two things make it that record rather than the other one: the authorization byte, and the authorizing key
-     * field being 32 zero bytes because this route names no key. What signs it is the device key the record
-     * installs, which is the only key anyone can produce here.
-     */
     @Test
     fun `an account-recovery record names no authorizing key and is signed by the device it installs`() =
         runTest {
@@ -474,7 +428,6 @@ class DefaultAccountAuthorityManagerTest {
             assertThat(offer.recoveryArtifact).startsWith(RecoveryArtifact.PREFIX)
             val challenge = client.challengeCalls.last()
             assertThat(challenge.purpose).isEqualTo(AuthorityPurpose.RECOVER)
-            // The factor was proved in the sheet, so the challenge request carries none of its own.
             assertThat(challenge.stepUp).isEqualTo(AuthorityStepUp.WebSheet)
             val submission = client.recoverCalls.single()
             val record = decode(submission.recordB64Url)
@@ -482,7 +435,6 @@ class DefaultAccountAuthorityManagerTest {
             assertThat(record.copyOfRange(80, 112)).isEqualTo(installed.deviceAuthorityPublicKey())
             assertThat(record.copyOfRange(112, 144)).isEqualTo(installed.recoveryAuthorityPublicKey())
             assertThat(record[176].toInt()).isEqualTo(AuthorityRecord.AUTHORIZATION_ACCOUNT_RECOVERY)
-            // The one pairing rule of this record type: under 0x02 the field is zero, in both directions.
             assertThat(record.copyOfRange(177, 209)).isEqualTo(ByteArray(32))
             val preimage = AuthorityProofs.recordPreimage(
                 AuthorityRecordType.AUTHORITY_RECOVERY,
@@ -525,13 +477,6 @@ class DefaultAccountAuthorityManagerTest {
         assertThat(client.webStepUpCalls).containsExactly(AuthorityPurpose.REVOKE)
     }
 
-    /**
-     * The scoping rule, from this side: a sheet exists only for the purposes that ask for a factor.
-     *
-     * Refused before a request is made, because a proof recorded for an objection, an approval or a
-     * notification binding would be a proof of nothing, and the way to make sure nobody can spend one is for it
-     * never to exist.
-     */
     @Test
     fun `a purpose that asks for no factor gets no sheet, and no request`() = runTest {
         val client = FakeAccountAuthorityClient()
@@ -560,7 +505,6 @@ class DefaultAccountAuthorityManagerTest {
         assertThat(client.webStepUpCalls).containsExactlyElementsIn(purposes)
     }
 
-    /** The adoption a passkey-only account performs: the same record, with the factor proved in the sheet. */
     @Test
     fun `an adoption authorized in the sheet asks for the challenge with no factor of its own`() = runTest {
         val client = FakeAccountAuthorityClient()
@@ -568,7 +512,6 @@ class DefaultAccountAuthorityManagerTest {
         val manager = DefaultAccountAuthorityManager(client, keyStore)
 
         manager.beginAdoption().getOrThrow()
-        // Read before the submission, because a completed adoption moves the pair out of the adoption slot.
         val installed = checkNotNull(keyStore.adoptionKeys())
         manager.startWebStepUp(A_TOKEN, AuthorityPurpose.ADOPT).getOrThrow()
         manager.adopt(
@@ -630,8 +573,6 @@ class DefaultAccountAuthorityManagerTest {
             "Pixel 9",
         ).getOrThrow()
         val first = manager.installationId()
-        // Signing out forgets the signup slot. It must not forget this: the registration has to outlive the
-        // sessions a completed account recovery revokes, which is the whole reason it is not a pusher.
         keyStore.clear()
 
         val registration = client.registerNotificationCalls.single()
@@ -661,9 +602,6 @@ class DefaultAccountAuthorityManagerTest {
 
         manager.state(A_TOKEN).getOrThrow()
 
-        // A grant is signed by ANOTHER device, so this one never sees the record: what it sees is its own key
-        // in the device set. Quarantined counts, because the window withholds what the device may sign rather
-        // than whether the key is this account's.
         assertThat(manager.holdsAuthority()).isTrue()
         assertThat(keyStore.authorityDevicePublicKey()).isEqualTo(offered)
         assertThat(keyStore.candidateDevicePublicKey()).isNull()
@@ -694,7 +632,6 @@ class DefaultAccountAuthorityManagerTest {
         expiresAtEpochSeconds = 0,
     )
 
-    /** A manager whose device has adopted, which is the state every device-signed transition starts from. */
     private suspend fun adoptedManager(
         client: FakeAccountAuthorityClient,
         keyStore: AccountAuthorityKeyStore = createKeyStore(),
@@ -719,7 +656,6 @@ class DefaultAccountAuthorityManagerTest {
         return Base64.UrlSafe.decode(value + "=".repeat(padding))
     }
 
-    /** Verifies with the JDK provider, which is what identity-service verifies with. */
     private fun verify(rawPublicKey: ByteArray, message: ByteArray, signature: ByteArray): Boolean {
         val spki = SPKI_PREFIX.chunked(2).map { it.toInt(16).toByte() }.toByteArray() + rawPublicKey
         val publicKey = KeyFactory.getInstance("Ed25519").generatePublic(X509EncodedKeySpec(spki))
@@ -735,10 +671,8 @@ class DefaultAccountAuthorityManagerTest {
         private const val A_TOKEN = "an-access-token"
         private val A_PIN = AuthorityStepUp.Pin("123456")
 
-        /** A real curve point, since the codec refuses anything else. */
         private val A_GRANTEE_KEY = Ed25519Sign.KeyPair.newKeyPair().publicKey
 
-        /** 32 bytes of hex, as a pending record's hash is reported. */
         private const val A_PENDING_RECORD_HASH =
             "9f8e7d6c5b4a39281706f5e4d3c2b1a09f8e7d6c5b4a39281706f5e4d3c2b1a0"
     }

@@ -11,24 +11,6 @@ import io.element.android.libraries.guaresolver.genesis.Ed25519PublicKeys
 import java.security.MessageDigest
 import java.security.SecureRandom
 
-/**
- * GUA FORK: builds the canonical bytes of the authority records this client submits (ADM-009 decision 2).
- * Kotlin side of the identity-service `AuthorityRecordCodec`, with the same offsets and the same refusal
- * tokens.
- *
- * Every record a phone can sign is built here, because every one of them now has a screen behind it:
- * `AdoptRoot`, `DeviceGrant`, `DeviceRevoke`, `AuthorityRecovery` and `Oppose`.
- *
- * [parse] is the same rules read backwards, with the refusal tokens the server's own decoder uses. It is what
- * the golden vectors of `authority-vectors.v1.json` are checked against, and it is run over the bytes this
- * client just built before a challenge is spent on them.
- *
- * WHY THE CLIENT VALIDATES WHAT THE SERVER WILL VALIDATE AGAIN. A record refused by the server's decoder
- * costs a burned challenge, and a burned challenge costs another step-up. Checking the same rules before
- * spending one turns a refusal the user would have to repeat into a bug that fails in a test. The rules are
- * ADM-008 decision 1's, carried forward: an all-zero key is checked separately from point decoding, because
- * the all-zero encoding decodes to a valid low-order point.
- */
 object AuthorityRecordCodec {
     private val random = SecureRandom()
 
@@ -39,25 +21,21 @@ object AuthorityRecordCodec {
     private const val OFFSET_SEQ = 72
     private const val OFFSET_BODY = 80
 
-    // AdoptRoot body, from OFFSET_BODY.
     private const val ADOPT_DEVICE_KEY = OFFSET_BODY
     private const val ADOPT_FRAMEWORK = 112
     private const val ADOPT_RECOVERY_KEY = 113
     private const val ADOPT_LABEL = 145
     private const val ADOPT_ENTROPY = 161
 
-    // DeviceGrant body.
     private const val GRANT_DEVICE_KEY = OFFSET_BODY
     private const val GRANT_FLAGS = 112
     private const val GRANT_LABEL = 113
     private const val GRANT_AUTHORIZING_KEY = 129
 
-    // DeviceRevoke body.
     private const val REVOKE_DEVICE_KEY = OFFSET_BODY
     private const val REVOKE_REASON = 112
     private const val REVOKE_AUTHORIZING_KEY = 113
 
-    // AuthorityRecovery body.
     private const val RECOVER_DEVICE_KEY = OFFSET_BODY
     private const val RECOVER_RECOVERY_KEY = 112
     private const val RECOVER_LABEL = 144
@@ -65,21 +43,9 @@ object AuthorityRecordCodec {
     private const val RECOVER_AUTHORIZATION = 176
     private const val RECOVER_AUTHORIZING_KEY = 177
 
-    // Oppose body.
     private const val OPPOSE_RECORD_HASH = OFFSET_BODY
     private const val OPPOSE_AUTHORIZING_KEY = 112
 
-    /**
-     * The canonical bytes of an `AdoptRoot` (`GUAA`, 177 bytes), which sits at `seq = 1` on an empty chain.
-     *
-     * @param accountReference the 34 raw accountId bytes, read from `GET /account/authority` and never
-     * composed locally: decision 3 rule 2 has the server resolve the account from its own session state, so
-     * a record built for another account is refused whatever endpoint it arrives at.
-     * @param deviceKey this device's authority public key, generated on device and non-synced.
-     * @param recoveryAuthorityKey the recovery authority public key framework 0x01 commits beside it.
-     * @param label at most 16 bytes of UTF-8. It is what a notification is allowed to name.
-     * @param entropy 16 CSPRNG bytes, so two devices that somehow minted the same keys still differ.
-     */
     fun adoptRoot(
         accountReference: ByteArray,
         deviceKey: ByteArray,
@@ -99,9 +65,6 @@ object AuthorityRecordCodec {
         labelBytes(label).copyInto(body, ADOPT_LABEL - OFFSET_BODY)
         entropy.copyInto(body, ADOPT_ENTROPY - OFFSET_BODY)
 
-        // An AdoptRoot is only ever the first record of a chain, so its prevHash is the 32 zero bytes and
-        // its seq is 1. Neither is a parameter: a caller that could pass something else could build a
-        // record the server can only refuse.
         return envelope(
             type = AuthorityRecordType.ADOPT_ROOT,
             accountReference = accountReference,
@@ -111,20 +74,6 @@ object AuthorityRecordCodec {
         )
     }
 
-    /**
-     * The canonical bytes of a `DeviceGrant` (`GUAD`, 161 bytes).
-     *
-     * @param accountReference the 34 raw accountId bytes, as [adoptRoot] takes them.
-     * @param prevHash the 32 bytes of the head this record appends to.
-     * @param seq exactly one more than the head's.
-     * @param granteeDeviceKey the NEW device's own authority public key. It generated it itself and never
-     * received one: a copied key makes revocation meaningless, because the revoked device still holds the
-     * key the account is defined by (ADM-009 decision 5).
-     * @param label at most 16 bytes of UTF-8, naming the device being granted.
-     * @param authorizingKey the granting device's own authority key, inside the hashed bytes, so a later log
-     * leaf commits who authorized this and not only that someone did (decision 2). The server checks it
-     * equals the verifying key rather than inferring it.
-     */
     fun deviceGrant(
         accountReference: ByteArray,
         prevHash: ByteArray,
@@ -136,9 +85,7 @@ object AuthorityRecordCodec {
         requireKey(granteeDeviceKey, "device_key")
         requireKey(authorizingKey, "authorizing_key")
         if (MessageDigest.isEqual(granteeDeviceKey, authorizingKey)) {
-            // Not a rule the server's decoder states, because there it cannot be told from a legitimate
-            // re-grant. Here it can only be this client having handed the grantee its own key, which is the
-            // key-copying decision 5 rejects, so it is refused before it is signed.
+            // Client-only rule: the server cannot tell this from a legitimate re-grant.
             throw InvalidAuthorityRecordException(
                 "duplicate_keys",
                 "a device cannot grant authority to its own key",
@@ -160,19 +107,6 @@ object AuthorityRecordCodec {
         )
     }
 
-    /**
-     * The canonical bytes of a `DeviceRevoke` (`GUAX`, 145 bytes).
-     *
-     * Revoking ANOTHER device waits out the window and is notified, and any active device other than the one
-     * named may object. Revoking ITSELF takes effect at once, because a device removing its own authority
-     * reduces what an attacker holding it could do. The difference is not in these bytes: the server reads it
-     * from whether the named key is the signing key, so a client cannot ask for the immediate path by
-     * labelling a record differently.
-     *
-     * `deviceKey` is the key being removed, `reason` is one of [AuthorityRecord.REVOCATION_REASONS] (not a
-     * free-text field, so nothing the owner typed can end up in a notification), and `authorizingKey` is the
-     * signing device's own authority key.
-     */
     fun deviceRevoke(
         accountReference: ByteArray,
         prevHash: ByteArray,
@@ -195,20 +129,6 @@ object AuthorityRecordCodec {
         return envelope(AuthorityRecordType.DEVICE_REVOKE, accountReference, prevHash, seq, body)
     }
 
-    /**
-     * The canonical bytes of an `AuthorityRecovery` (`GUAR`, 209 bytes), which replaces the whole device set
-     * and the recovery authority key in one record.
-     *
-     * `authorization` is [AuthorityRecord.AUTHORIZATION_RECOVERY_KEY] when the record is signed by the
-     * recovery authority key the account committed, which is rank 2 and the one record an intruder holding
-     * every device cannot cancel, or [AuthorityRecord.AUTHORIZATION_ACCOUNT_RECOVERY] for the weaker path,
-     * which is rank 0 and any active device may veto immediately.
-     *
-     * `authorizingKey` is the recovery authority public key under authorization 0x01, and null under 0x02,
-     * where the field is 32 zero bytes. The pairing is enforced in both directions here and again by the
-     * server's decoder: a record that named a key under the account-recovery path would be claiming an
-     * authorization it does not have.
-     */
     fun authorityRecovery(
         accountReference: ByteArray,
         prevHash: ByteArray,
@@ -237,15 +157,6 @@ object AuthorityRecordCodec {
         return envelope(AuthorityRecordType.AUTHORITY_RECOVERY, accountReference, prevHash, seq, body)
     }
 
-    /**
-     * The canonical bytes of an `Oppose` (`GUAO`, 144 bytes).
-     *
-     * `prevHash` is the prevHash of the record being opposed, which is the chain head the pending record was
-     * accepted against: a pending record holds its seq without being appended, so the head the client reads is
-     * still the one it names. `seq` is the pending record's own seq, because an Oppose takes no position of its
-     * own, and the server refuses it as stale when either half does not match. `opposedRecordHash` is the 32
-     * bytes of the pending record's hash.
-     */
     fun oppose(
         accountReference: ByteArray,
         prevHash: ByteArray,
@@ -266,14 +177,7 @@ object AuthorityRecordCodec {
         return envelope(AuthorityRecordType.OPPOSE, accountReference, prevHash, seq, body)
     }
 
-    /**
-     * Reads canonical bytes back, enforcing every rule ADM-009 decision 2 gives a decoder, and refusing with
-     * the same token the server's `invalid_authority_record` names.
-     *
-     * The order of the checks is part of the contract, not an implementation detail: a record with two faults
-     * has to be refused for the same one on both sides, or the golden vectors could not name a single reason
-     * per entry.
-     */
+    /** The check order is part of the contract: a record with two faults is refused for the same one as on the server. */
     fun parse(canonicalBytes: ByteArray): ParsedAuthorityRecord {
         if (canonicalBytes.size < AuthorityRecord.MAGIC_LENGTH) {
             throw InvalidAuthorityRecordException("wrong_length", "a record carries at least its magic")
@@ -393,13 +297,8 @@ object AuthorityRecordCodec {
         }
     }
 
-    /** SHA-256 over canonical bytes, which is a record's own hash. */
     fun hash(canonicalBytes: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(canonicalBytes)
 
-    /**
-     * The 32 prevHash bytes from the `headHash` hex `GET /account/authority` reports, which is 64 zeros
-     * while the chain is empty.
-     */
     fun prevHashFromHex(headHashHex: String): ByteArray {
         val hex = headHashHex.trim()
         if (hex.length != AuthorityRecord.HASH_LENGTH * 2 || hex.any { it.digitToIntOrNull(16) == null }) {
@@ -410,12 +309,6 @@ object AuthorityRecordCodec {
         }
     }
 
-    /**
-     * 16 label bytes, UTF-8, zero-padded to the end.
-     *
-     * A label longer than the field is refused rather than truncated: truncating can cut a multi-byte
-     * character in half, and the notification that names it would then name something the user never typed.
-     */
     fun labelBytes(label: String): ByteArray {
         val utf8 = label.toByteArray(Charsets.UTF_8)
         if (utf8.isEmpty()) {
@@ -428,8 +321,6 @@ object AuthorityRecordCodec {
             )
         }
         if (utf8.contains(0)) {
-            // The padding rule is "nothing non-zero after the first zero", so an embedded zero would make
-            // the encoding non-canonical and the server would refuse it as non_canonical_label.
             throw InvalidAuthorityRecordException("non_canonical_label", "a label holds no zero byte")
         }
         return utf8.copyOf(AuthorityRecord.LABEL_LENGTH)
@@ -456,7 +347,6 @@ object AuthorityRecordCodec {
         out[OFFSET_SUITE] = AuthorityRecord.SUITE_ED25519_SHA256.toByte()
         accountReference.copyInto(out, OFFSET_ACCOUNT)
         prevHash.copyInto(out, OFFSET_PREV_HASH)
-        // Unsigned big-endian, no delimiters, so the bytes hashed here are the bytes the server hashes.
         for (index in 0 until 8) {
             out[OFFSET_SEQ + index] = (seq ushr 8 * (7 - index)).toByte()
         }
@@ -466,6 +356,7 @@ object AuthorityRecordCodec {
 
     private fun requireKey(raw: ByteArray, field: String) {
         requireLength(raw, AuthorityRecord.KEY_LENGTH, field)
+        // Checked separately: the all-zero encoding decodes to a valid low-order point.
         if (Ed25519PublicKeys.isAllZero(raw)) {
             throw InvalidAuthorityRecordException("zero_$field", "$field is all zero")
         }
@@ -489,7 +380,6 @@ object AuthorityRecordCodec {
         }
     }
 
-    /** The one pairing of an authorization byte and an authorizing key, checked in both directions. */
     private fun requireAuthorizationPairing(authorization: Int, authorizingKey: ByteArray?): ByteArray =
         when (authorization) {
             AuthorityRecord.AUTHORIZATION_RECOVERY_KEY -> {
@@ -522,7 +412,6 @@ object AuthorityRecordCodec {
         return raw
     }
 
-    /** "Nothing non-zero after the first zero", which is what makes a 16-byte label one encoding only. */
     private fun requireCanonicalLabel(canonicalBytes: ByteArray, offset: Int) {
         val label = canonicalBytes.copyOfRange(offset, offset + AuthorityRecord.LABEL_LENGTH)
         val firstZero = label.indexOfFirst { it == 0.toByte() }
@@ -532,24 +421,13 @@ object AuthorityRecordCodec {
     }
 }
 
-/**
- * One record read back out of its canonical bytes.
- *
- * Deliberately not a mutable view and deliberately not re-encoded: what a caller does with this is decide
- * whether to submit the bytes it already holds, and the bytes the server hashes are the bytes it received.
- *
- * Nothing compares two of these, which is why the array fields are not a problem: the comparison that matters
- * is over canonical bytes, and that is what the callers hold.
- */
 data class ParsedAuthorityRecord(
     val type: AuthorityRecordType,
     val accountReference: ByteArray,
     val prevHash: ByteArray,
     val seq: Long,
-    /** The device key the record names, which every type but `Oppose` carries. */
     val deviceKey: ByteArray?,
     val recoveryAuthorityKey: ByteArray?,
-    /** Null on an `AdoptRoot`, whose signer is the device key it commits, and under authorization 0x02. */
     val authorizingKey: ByteArray?,
     val opposedRecordHash: ByteArray? = null,
 )

@@ -110,8 +110,6 @@ class PreferencesFlowNode(
         @Parcelize
         data object ChangePhoneNumber : NavTarget
 
-        // GUA FORK: the account authority chain, its device set and the approvals only a phone can grant
-        // (ADM-009). Reachable only while the account-authority feature flag is on.
         @Parcelize
         data object AccountAuthority : NavTarget
 

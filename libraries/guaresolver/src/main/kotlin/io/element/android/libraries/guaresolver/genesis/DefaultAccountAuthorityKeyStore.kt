@@ -121,11 +121,7 @@ class DefaultAccountAuthorityKeyStore(
                 preferences.remove(sealedRecoverySeedKey)
             }
             val remaining = dataStore.data.first()
-            // GUA FORK: ADM-009. An adopted pair counts as much as an attached one here: deleting the
-            // keystore key while either is stored would leave a blob nothing can open, which is the same
-            // thing as losing the account's authority. The installation id counts too, for a smaller reason
-            // that matters just as much: a sealed id nothing can open is an id that changes, and the
-            // registration keyed on the old one could then never be removed by the install that made it.
+            // The keystore key stays while any value sealed under it remains, or nothing could open that value.
             if (remaining[attachedAccountIdKey] == null &&
                 remaining[adoptedAccountIdKey] == null &&
                 remaining[installationIdKey] == null
@@ -135,14 +131,9 @@ class DefaultAccountAuthorityKeyStore(
         }
     }
 
-    // GUA FORK: ADM-009, the authority chain's own slots. Sealed under the same keystore key as the genesis
-    // slots, for the reason the interface gives.
-
     override suspend fun createAdoptionKeys(): AdoptionKeys = mutex.withLock {
         val device = Ed25519Sign.KeyPair.newKeyPair()
         val recovery = Ed25519Sign.KeyPair.newKeyPair()
-        // ADM-009 decision 2: a record whose recovery key equals its device key is refused, so the two draws
-        // are checked rather than assumed, exactly as the genesis pair is.
         check(!device.privateKey.contentEquals(recovery.privateKey)) {
             "the recovery authority key must differ from the device key"
         }
@@ -150,7 +141,6 @@ class DefaultAccountAuthorityKeyStore(
         val sealedDevice = encryptionDecryptionService.encrypt(secretKey, device.privateKey).toBase64()
         val sealedRecovery = encryptionDecryptionService.encrypt(secretKey, recovery.privateKey).toBase64()
         dataStore.edit { preferences ->
-            // The adoption slot only. The adopted entries are never written from here.
             preferences[adoptionDeviceSeedKey] = sealedDevice
             preferences[adoptionRecoverySeedKey] = sealedRecovery
         }
@@ -179,8 +169,6 @@ class DefaultAccountAuthorityKeyStore(
                 error("Another account already holds this device's authority")
             }
             if (alreadyAdopted == accountId && preferences[adoptedDeviceSeedKey] != null) {
-                // Already recorded, so a resubmitted or retried adoption is a no-op rather than a second
-                // promotion over the pair the chain accepted.
                 return@withLock
             }
             val sealedDevice = preferences[adoptionDeviceSeedKey]
@@ -222,7 +210,6 @@ class DefaultAccountAuthorityKeyStore(
         val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
         val sealed = encryptionDecryptionService.encrypt(secretKey, device.privateKey).toBase64()
         dataStore.edit { preferences ->
-            // The candidate slot only. An offer the chain never granted is replaceable by definition.
             preferences[candidateDeviceSeedKey] = sealed
         }
         device.publicKey
@@ -246,8 +233,6 @@ class DefaultAccountAuthorityKeyStore(
                 edited[adoptedAccountIdKey] = accountId
                 edited[adoptedDeviceSeedKey] = sealedCandidate
                 edited.remove(candidateDeviceSeedKey)
-                // No recovery seed is written: a granted device holds none, and writing an empty one would
-                // make a later artifact look as though it had come from this device.
             }
         }
     }
@@ -264,9 +249,6 @@ class DefaultAccountAuthorityKeyStore(
             val sealedRecovery = preferences[adoptionRecoverySeedKey]
                 ?: error("No recovery authority key is stored on this device")
             dataStore.edit { edited ->
-                // Overwrites the adopted pair on purpose: an AuthorityRecovery replaces the device set with
-                // one device, so keeping the old pair would leave this device holding a key the chain will
-                // not recognise once the record takes effect.
                 edited[adoptedAccountIdKey] = accountId
                 edited[adoptedDeviceSeedKey] = sealedDevice
                 edited[adoptedRecoverySeedKey] = sealedRecovery
@@ -326,21 +308,14 @@ class DefaultAccountAuthorityKeyStore(
         private val attachedAuthoritySeedKey = stringPreferencesKey("attached_authority_seed")
         private val attachedRecoverySeedKey = stringPreferencesKey("attached_recovery_seed")
 
-        // GUA FORK: ADM-009. The authority chain's slots. Separate entries from the genesis ones, because an
-        // adopted account holds authority its accountId does not commit and the two must never be mistaken
-        // for each other.
         private val adoptionDeviceSeedKey = stringPreferencesKey("adoption_device_seed")
         private val adoptionRecoverySeedKey = stringPreferencesKey("adoption_recovery_seed")
         private val adoptedAccountIdKey = stringPreferencesKey("adopted_account_id")
         private val adoptedDeviceSeedKey = stringPreferencesKey("adopted_device_seed")
         private val adoptedRecoverySeedKey = stringPreferencesKey("adopted_recovery_seed")
 
-        // GUA FORK: ADM-009 decision 5, revision 4. The key this device offered for a grant, before any
-        // chain accepted it.
         private val candidateDeviceSeedKey = stringPreferencesKey("candidate_device_seed")
 
-        // GUA FORK: ADM-009 gate 2. Sealed under the same keystore key as everything else here, and never
-        // removed on sign-out, because the registration it keys has to outlive a session.
         private val installationIdKey = stringPreferencesKey("security_notification_installation_id")
     }
 }

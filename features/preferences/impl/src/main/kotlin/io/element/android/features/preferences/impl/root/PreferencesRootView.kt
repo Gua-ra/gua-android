@@ -265,7 +265,6 @@ private fun ColumnScope.ManageAccountSection(
             onClick = onLinkNewDeviceClick,
         )
     }
-    // GUA FORK: ADM-009. Which devices can act for this account, and the approvals only a phone can grant.
     if (state.showAccountAuthority) {
         ListItem(
             headlineContent = { Text(stringResource(id = R.string.screen_account_authority_title)) },

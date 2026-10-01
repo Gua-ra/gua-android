@@ -13,7 +13,6 @@ import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.guaresolver.genesis.AccountId
 import org.junit.Test
 
-/** GUA FORK: the one preimage rule, and the browser-approval preimage (ADM-009 decisions 2 and 6). */
 class AuthorityProofsTest {
     @Test
     fun `a record preimage is the magic, then the challenge, then the canonical bytes`() {
@@ -45,7 +44,6 @@ class AuthorityProofsTest {
 
         val asGrant = AuthorityProofs.recordPreimage(AuthorityRecordType.DEVICE_GRANT, A_CHALLENGE, grant)
 
-        // No record can be replayed as another type, because the type's magic leads its own preimage.
         assertThat(asGrant.copyOfRange(0, 4)).isEqualTo("GUAD".toByteArray(Charsets.US_ASCII))
         assertThat(asGrant.copyOfRange(36, asGrant.size)).isEqualTo(grant)
     }

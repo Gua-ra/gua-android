@@ -349,10 +349,6 @@ class LoggedInPresenterTest {
         return awaitItem()
     }
 
-    /**
-     * GUA FORK: ADM-009 gate 2. A session start hands the registrar this install's push destination, and
-     * names the platform only when the server could actually deliver to it.
-     */
     @Test
     fun `present - a session start offers its push destination to the authority registrar`() = runTest {
         val registrar = FakeAuthoritySessionRegistrar()
@@ -391,8 +387,6 @@ class LoggedInPresenterTest {
 
         presenter.test {
             awaitItem()
-            // The token is there, but APNs and FCM are the only destinations the server can send to, so the
-            // platform is null and the registrar registers nothing rather than a row nothing could reach.
             assertThat(registrar.calls.single().platform).isNull()
             cancelAndIgnoreRemainingEvents()
         }

@@ -2,18 +2,10 @@
 <!--
   GUA FORK: the upstream file committed Element's live Firebase project (vector-alpha) and a real
   Google API key. Those third-party credentials must never ship in the Gua binary, so they are
-  removed here.
+  removed here. Gua's own values are written per build type in this module's build.gradle.kts.
 
-  Gua's own values are not here either, because they differ per build: the store app registers in
-  the production project and the QA and debug apps in a separate dev project, so that a dev
-  server's sending credential cannot address a device running the store build. Every value the
-  Firebase SDK reads is therefore written per build type from config.BuildTimeConfig, in this
-  module's build.gradle.kts. A variant with no Firebase app record gets empty values, which makes
-  FirebaseApp skip auto-initialisation: no push, no crash.
-
-  What is left here is what is empty in both projects: default_web_client_id (no Google Sign-In),
-  firebase_database_url (no Realtime Database), google_crash_reporting_api_key (Crashlytics is not
-  used).
+  Left empty on purpose: default_web_client_id (no Google Sign-In), firebase_database_url
+  (no Realtime Database), google_crash_reporting_api_key (Crashlytics is not used).
 -->
 <resources>
     <string name="default_web_client_id" translatable="false"></string>

@@ -15,17 +15,6 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Path
 
-/**
- * GUA FORK: Retrofit surface for the identity-service account authority chain (ADM-009). Internal to the
- * module; the public API is
- * [io.element.android.libraries.guaresolver.authority.AccountAuthorityClient].
- *
- * Every endpoint is bearer-authenticated and every one answers 503 `authority_disabled` until a deployment
- * turns the feature on.
- *
- * **No request here carries a phone code**, and none may be given one: the phone is a notification channel
- * and authorizes nothing in this chain (ADM-009 decision 9).
- */
 internal interface AccountAuthorityApi {
     @POST("account/authority/challenge")
     suspend fun challenge(
@@ -33,14 +22,6 @@ internal interface AccountAuthorityApi {
         @Body body: AuthorityChallengeRequest,
     ): AuthorityChallengeResponse
 
-    /**
-     * The web step-up handoff of ADM-009 decision 4 step 2.
-     *
-     * Under `security/`, not `account/authority/`, because it is the same handoff the two factor-enrollment
-     * starts use and the server builds all three from one session builder. It answers 503
-     * `authority_disabled` like every other call here, and 409 `authority_step_up_unavailable` for an account
-     * whose page would have nothing to ask for.
-     */
     @POST("security/authority/step-up/start")
     suspend fun startWebStepUp(
         @Header("Authorization") authorization: String,
@@ -77,11 +58,6 @@ internal interface AccountAuthorityApi {
         @Body body: AuthorityOpposeRequest,
     )
 
-    /**
-     * The signed objection of ADM-009 decision 2. A separate path from `oppose` because it is a different
-     * thing: that one is a session saying no to an adoption, this one is a device key the chain has active
-     * saying no to anything else, and the server accepts each only where it is permitted.
-     */
     @POST("account/authority/oppose/record")
     suspend fun opposeWithRecord(
         @Header("Authorization") authorization: String,
@@ -98,10 +74,6 @@ internal interface AccountAuthorityApi {
     suspend fun candidates(
         @Header("Authorization") authorization: String,
     ): List<AuthorityCandidateResponse>
-
-    // GUA FORK: the security notification channel of ADM-009 gate 2. Its own path prefix and its own
-    // off-by-default flag on the server, because it is the only part of this feature that holds a push
-    // credential and a per-install identifier.
 
     @POST("account/security-notifications")
     suspend fun registerSecurityNotification(
@@ -138,36 +110,20 @@ internal interface AccountAuthorityApi {
     )
 }
 
-/**
- * The step-up travels with the challenge request, so the step-up can never be older than the challenge it
- * authorizes. There is no field for a phone code and no field for saying a factor is unavailable on this
- * device: a claim that a factor cannot be produced costs an attacker nothing.
- */
 @Serializable
 internal data class AuthorityChallengeRequest(
     val purpose: String,
     val pin: String? = null,
-    /** Id from `POST /security/passkey/stepup/options`, sent with the assertion below. */
     val passkeyStepUpId: String? = null,
-    /** The user-verifying passkey assertion, which settles the step-up on its own. */
     val passkeyCredential: JsonElement? = null,
 )
 
-/**
- * What a web step-up start carries, and it is two fields.
- *
- * There is no field for a phone number, because no arm of that page sends a code, and none for saying which
- * factor this device can produce: a claim that a factor is unavailable costs an attacker nothing and could
- * only ever ask for something weaker.
- */
 @Serializable
 internal data class AuthorityStepUpStartRequest(
     val purpose: String,
-    /** The app scheme this build answers, checked against the deployment's own allowlist. */
     val redirectUri: String? = null,
 )
 
-/** One field: what the sheet leaves behind is server state, so there is nothing for this client to carry. */
 @Serializable
 internal data class AuthorityStepUpStartResponse(
     val stepUpUrl: String,
@@ -183,7 +139,6 @@ internal data class AuthorityChallengeResponse(
 internal data class AuthorityRecordSubmissionRequest(
     val record: String,
     val signature: String,
-    /** The server stores only the challenge's SHA-256, so it cannot rebuild the preimage without this. */
     val challenge: String,
     val recoveryArtifactConfirmed: Boolean = false,
 )
@@ -199,7 +154,6 @@ internal data class AuthoritySubmissionResponse(
 @Serializable
 internal data class AuthorityOpposeRequest(
     val recordHash: String? = null,
-    /** Second and later oppositions: a step-up on any factor the account holds, at any age. */
     val pin: String? = null,
 )
 
@@ -229,12 +183,6 @@ internal data class AuthorityPendingResponse(
     val seq: Long = 0,
     val effectiveAtEpochSeconds: Long = 0,
     val recordHash: String = "",
-    /**
-     * Hash of the record BEFORE the pending one, which an `Oppose` signs over.
-     *
-     * Nullable so a server that predates the field still decodes; an objection then refuses to be built
-     * rather than being built against a position nothing will accept.
-     */
     val prevHash: String? = null,
 )
 
@@ -267,13 +215,6 @@ internal data class AuthorityCandidateResponse(
     val expiresAtEpochSeconds: Long = 0,
 )
 
-/**
- * One install's security-notification destination.
- *
- * The installation id is the upsert key and the whole point of the row: it is client-generated, sealed on the
- * device rather than kept in preferences, and stable across sign-out, which is what lets the registration
- * outlive the sessions a completed account recovery ends.
- */
 @Serializable
 internal data class SecurityNotificationRegisterRequest(
     val installationId: String,
@@ -281,7 +222,6 @@ internal data class SecurityNotificationRegisterRequest(
     val token: String,
     val appId: String,
     val deviceLabel: String? = null,
-    /** Present only when this install holds an authority key, and then with the challenge and signature. */
     val authorityDeviceKeyB64: String? = null,
     val challenge: String? = null,
     val signature: String? = null,
@@ -304,18 +244,6 @@ internal data class SecurityNotificationResponse(
     val lastSeenAtEpochSeconds: Long = 0,
 )
 
-/**
- * A removal, which has exactly one tier (ADM-009 decision 13).
- *
- * Every removal needs a factor past the fresh-factor hold, and a device signature where the row carries a
- * key. That is the price for whichever row is named, this install's own included: there is deliberately no
- * cheaper path for "my own install", because a caller-named installation id is a request-body field and one
- * of a caller's values cannot authenticate another of the same caller's values. That is what stops an
- * attacker holding a just-minted PIN emptying the channel before starting a transition.
- *
- * There is therefore no field here for the caller to name itself with, and the server's own request object
- * has none either.
- */
 @Serializable
 internal data class SecurityNotificationRemoveRequest(
     val installationId: String,

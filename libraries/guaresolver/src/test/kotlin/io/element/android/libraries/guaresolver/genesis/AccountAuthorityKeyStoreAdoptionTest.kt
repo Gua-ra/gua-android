@@ -22,13 +22,6 @@ import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
 
-/**
- * GUA FORK: the authority chain's own slots in the key store (ADM-009 decisions 5 and 7).
- *
- * One store, two more slots, and the same keystore-sealed seed the genesis pair already uses. The tests that
- * matter here are the ones about loss: an adopted pair is never overwritten, because ADM-009 decision 7
- * offers no way back from that except the recovery artifact, and the artifact is the private key itself.
- */
 class AccountAuthorityKeyStoreAdoptionTest {
     @Test
     fun `an adoption mints two distinct curve points and an artifact that encodes the recovery key`() = runTest {
@@ -41,8 +34,6 @@ class AccountAuthorityKeyStoreAdoptionTest {
         assertThat(keys.deviceAuthorityPublicKey()).isNotEqualTo(keys.recoveryAuthorityPublicKey())
         assertThat(Ed25519PublicKeys.isOnCurve(keys.deviceAuthorityPublicKey())).isTrue()
         assertThat(Ed25519PublicKeys.isOnCurve(keys.recoveryAuthorityPublicKey())).isTrue()
-        // The artifact is the PRIVATE recovery key, rendered for a person: the public half would recover
-        // nothing, and showing it would be a ceremony that protects no one.
         assertThat(keys.recoveryArtifact).startsWith(RecoveryArtifact.PREFIX)
         val seed = decodeArtifact(keys.recoveryArtifact)
         assertThat(Ed25519Sign.KeyPair.newKeyPairFromSeed(seed).publicKey)
@@ -72,12 +63,10 @@ class AccountAuthorityKeyStoreAdoptionTest {
         assertThat(keyStore.adoptedAccountId()).isEqualTo(AN_ACCOUNT_ID)
         assertThat(keyStore.adoptionKeys()).isNull()
         assertThat(keyStore.authorityDevicePublicKey()).isEqualTo(keys.deviceAuthorityPublicKey())
-        // A retried submission records the same account again and changes nothing.
         keyStore.markAdopted(AN_ACCOUNT_ID)
         assertThat(keyStore.authorityDevicePublicKey()).isEqualTo(keys.deviceAuthorityPublicKey())
 
         keyStore.createAdoptionKeys()
-        // A new adoption in flight does not touch the pair that already holds an account's authority.
         assertThat(keyStore.authorityDevicePublicKey()).isEqualTo(keys.deviceAuthorityPublicKey())
     }
 
@@ -100,9 +89,6 @@ class AccountAuthorityKeyStoreAdoptionTest {
         val genesisKeys = keyStore.createKeyPair()
         keyStore.markAttached(AccountId.parse(A_GENESIS_ACCOUNT_ID))
 
-        // ADM-009 decision 10: on a class 0x01 account the genesis authority key IS the first device key,
-        // committed by the accountId rather than by a record. A signer that knew only about adopted pairs
-        // would tell such an account it holds no authority.
         assertThat(keyStore.authorityDevicePublicKey()).isEqualTo(genesisKeys.authorityPublicKey())
         val message = "an approval preimage".toByteArray()
         assertThat(verify(genesisKeys.authorityPublicKey(), message, keyStore.signAsAuthorityDevice(message)))
@@ -131,8 +117,6 @@ class AccountAuthorityKeyStoreAdoptionTest {
 
         keyStore.clear()
 
-        // Deleting the keystore key here would leave a sealed blob nothing can open, which is the same
-        // thing as losing the account's authority.
         assertThat(keyStore.authorityDevicePublicKey()).isNotNull()
         assertThat(keyStore.hasKeyPair()).isFalse()
     }
@@ -146,8 +130,6 @@ class AccountAuthorityKeyStoreAdoptionTest {
 
         val persisted = factory.create("gua_account_genesis").data.first()[stringPreferencesKey("adoption_device_seed")]
         assertThat(persisted).isNotNull()
-        // The stored value is not the seed and not the public key: it is a blob only this device's keystore
-        // key opens.
         assertThat(persisted).doesNotContain(keys.deviceAuthorityPublicKey().joinToString(""))
     }
 
@@ -160,7 +142,6 @@ class AccountAuthorityKeyStoreAdoptionTest {
         preferenceDataStoreFactory = preferenceDataStoreFactory,
     )
 
-    /** The artifact is the base32 of the seed, in groups of four, after a version prefix. */
     private fun decodeArtifact(artifact: String): ByteArray =
         Base32.decode(artifact.removePrefix(RecoveryArtifact.PREFIX).filterNot { it == ' ' })
 

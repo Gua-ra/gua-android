@@ -94,8 +94,6 @@ class EnterNumberPresenterTest {
             assertThat(loadingState.sendingCode.isLoading()).isTrue()
             val finalState = awaitItem()
             assertThat(finalState.sendingCode.isFailure()).isTrue()
-            // Straight into the channel: there is no local pre-check to make first, and the code the user
-            // typed is compared inside the ceremony's confirm step.
             sendResult.assertions().isCalledOnce().with(value(88.toUByte()))
         }
     }
@@ -129,8 +127,6 @@ class EnterNumberPresenterTest {
             assertThat(loadingState.sendingCode.isLoading()).isTrue()
             expectNoEvents()
             advanceUntilIdle()
-            // Straight into the channel: there is no local pre-check to make first, and the code the user
-            // typed is compared inside the ceremony's confirm step.
             sendResult.assertions().isCalledOnce().with(value(88.toUByte()))
         }
     }

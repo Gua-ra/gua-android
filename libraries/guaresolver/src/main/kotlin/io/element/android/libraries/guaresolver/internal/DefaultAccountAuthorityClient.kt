@@ -37,13 +37,6 @@ import kotlinx.serialization.json.Json
 import retrofit2.HttpException
 import timber.log.Timber
 
-/**
- * GUA FORK: default [AccountAuthorityClient]. Talks to the active [GuaDeployment]'s identity-service through
- * the app-wide [RetrofitFactory], and maps the server's stable refusal codes onto [AuthorityError].
- *
- * NOTHING IS LOGGED FROM A BODY HERE. A request carries a signature, a challenge and a PIN, and a response
- * carries the account's permanent id; a failure is logged as its code and its status and nothing else.
- */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class DefaultAccountAuthorityClient(
@@ -114,8 +107,6 @@ class DefaultAccountAuthorityClient(
         accessToken: String,
         registration: SecurityNotificationRegistration,
     ): Result<Unit> = runAuthorityCall { api ->
-        // The response names the row and its token fingerprint; the caller registers rather than asks, so it
-        // is read for its status and dropped.
         api.registerSecurityNotification(
             authorization = bearer(accessToken),
             body = SecurityNotificationRegisterRequest(
@@ -230,15 +221,6 @@ class DefaultAccountAuthorityClient(
         )
     }
 
-    /**
-     * Starts the web step-up, naming this build's own redirect so the sheet closes back into the app it was
-     * opened from rather than into whichever variant the deployment happens to default to.
-     *
-     * The named value is only a request, exactly as it is on a factor-enrollment start: a deployment that has
-     * not allowlisted this variant refuses the whole call with 400 `invalid_redirect_uri`, and that refusal is
-     * answered once by asking again with no redirect at all. The retry runs at most once, so a second refusal
-     * reaches the caller instead of looping.
-     */
     override suspend fun startWebStepUp(
         accessToken: String,
         purpose: AuthorityPurpose,
@@ -254,20 +236,10 @@ class DefaultAccountAuthorityClient(
             ?: return start(null)
         val named = start(redirectUri)
         if (named.exceptionOrNull() !is AuthorityError.RedirectRefused) return named
-        // Never the value itself: it names the build, and the server does not echo it back either.
         Timber.w("The identity service refused this build's step-up redirect, starting again without one")
         return start(null)
     }
 
-    /**
-     * The one place a step-up becomes wire fields, written as an exhaustive `when` rather than three casts.
-     *
-     * Three of the four cases send no factor field at all, and they mean different things: a purpose that asks
-     * for nothing, and a factor already proved in the web sheet, which the server looks up against its own row
-     * for this account, this token and this purpose. **There is no fifth case and no phone-code field**
-     * (ADM-009 decision 9), and an exhaustive `when` is what makes a future case have to say which it is
-     * instead of quietly arriving as "no factor".
-     */
     private fun AuthorityStepUp.toRequest(purpose: AuthorityPurpose): AuthorityChallengeRequest =
         when (this) {
             AuthorityStepUp.None, AuthorityStepUp.WebSheet -> AuthorityChallengeRequest(purpose = purpose.name)
@@ -278,8 +250,6 @@ class DefaultAccountAuthorityClient(
             is AuthorityStepUp.Passkey -> AuthorityChallengeRequest(
                 purpose = purpose.name,
                 passkeyStepUpId = stepUpId,
-                // Parsed rather than forwarded as a string, because the field is a JSON object on the wire and
-                // a client that sent it quoted would have the server refuse an assertion that was fine.
                 passkeyCredential = requestBodyJson.parseToJsonElement(credentialJson),
             )
         }
@@ -293,14 +263,6 @@ class DefaultAccountAuthorityClient(
         recoveryArtifactConfirmed = recoveryArtifactConfirmed,
     )
 
-    /**
-     * The fingerprint is recomputed from the key rather than read from the response.
-     *
-     * The comparison a person makes is only worth making if both phones derived it from the same 32 bytes; a
-     * string this client simply displayed would let whoever answered the request choose what the user compares.
-     * A key that does not decode gets no fingerprint at all, and the screen shows the candidate as unusable
-     * rather than showing eight characters of nothing.
-     */
     private fun AuthorityCandidateResponse.toCandidate() = AuthorityCandidate(
         deviceKeyB64Url = deviceKeyB64,
         fingerprint = tryOrNull { AuthorityFingerprint.of(Base64Url.decode(deviceKeyB64)) }.orEmpty(),
@@ -331,17 +293,12 @@ class DefaultAccountAuthorityClient(
         } catch (e: HttpException) {
             Result.failure(e.toAuthorityError())
         } catch (e: Exception) {
-            // The message only: a body here holds a signature, a challenge or a PIN.
+            // Type only: a body here holds a signature, a challenge or a PIN.
             Timber.w("An account authority call failed: %s", e.javaClass.simpleName)
             Result.failure(AuthorityError.Transport(e))
         }
     }
 
-    /**
-     * Maps one refusal onto its typed case. The code is the contract, not the status: the server states the
-     * rule that refused a transition, and a client that read only the status could not tell "wait out a
-     * backoff" from "this position is not permitted at all".
-     */
     private fun HttpException.toAuthorityError(): AuthorityError {
         val rawBody = response()?.errorBody()?.string()
         val body = rawBody?.let { tryOrNull { errorBodyJson.decodeFromString<IdentityServiceErrorBody>(it) } }
@@ -352,8 +309,6 @@ class DefaultAccountAuthorityClient(
             "authority_step_up_required" -> AuthorityError.StepUpRequired
             "authority_step_up_unavailable" -> AuthorityError.StepUpUnavailable
             "authority_step_up_purpose_refused" -> AuthorityError.StepUpPurposeRefused
-            // Named so `startWebStepUp` can tell it apart from every other 400 and start again with no
-            // redirect. Left as a bare server error it would dead-end the one flow it exists to keep open.
             "invalid_redirect_uri" -> AuthorityError.RedirectRefused
             "authority_factor_too_fresh" -> AuthorityError.FactorTooFresh
             "authority_recovery_too_recent" -> AuthorityError.RecoveryTooRecent
@@ -386,9 +341,6 @@ class DefaultAccountAuthorityClient(
             "authority_opposition_refused" -> AuthorityError.OppositionRefused
             "invalid_authority_record" -> AuthorityError.InvalidRecord(body.message)
             else -> when {
-                // A 503 with no code at all is still this feature being off, which is the state every
-                // deployment is in today: treating it as a server error would show an error for the normal
-                // case.
                 code == null && code() == 503 -> AuthorityError.Disabled
                 else -> AuthorityError.Server(code())
             }
@@ -398,7 +350,6 @@ class DefaultAccountAuthorityClient(
     private companion object {
         private val errorBodyJson = Json { ignoreUnknownKeys = true }
 
-        /** Only ever used to reparse an assertion the platform produced, never to build one. */
         private val requestBodyJson = Json { ignoreUnknownKeys = true }
     }
 }

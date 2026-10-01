@@ -9,13 +9,6 @@ package io.element.android.appnav.loggedin
 
 import io.element.android.libraries.guaresolver.authority.AuthoritySessionRegistrar
 
-/**
- * GUA FORK: records what a session start handed the authority registrar (ADM-009 gate 2).
- *
- * What a test asserts with this is mostly what is absent: the push destination is only offered when the
- * install actually has one, and it is offered without the pusher's registration having to succeed first,
- * because a pusher dies with the session an account recovery revokes.
- */
 class FakeAuthoritySessionRegistrar : AuthoritySessionRegistrar {
     data class Call(
         val sessionId: String,

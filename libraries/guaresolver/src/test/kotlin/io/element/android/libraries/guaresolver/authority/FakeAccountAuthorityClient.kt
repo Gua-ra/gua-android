@@ -9,12 +9,6 @@ package io.element.android.libraries.guaresolver.authority
 
 import io.element.android.libraries.guaresolver.genesis.Base64Url
 
-/**
- * GUA FORK: an [AccountAuthorityClient] that records what it was asked, so a test can assert both what was
- * sent and what was NOT: no challenge may be minted for an adoption whose recovery artifact was never
- * confirmed, no grant may be signed over a candidate nobody compared, and nothing in this feature may ever
- * carry a phone code.
- */
 class FakeAccountAuthorityClient(
     private val challengeResult: (AuthorityPurpose) -> Result<AuthorityChallenge> = {
         Result.success(AuthorityChallenge(challengeB64Url = A_CHALLENGE_B64, expiresInSeconds = 900))
@@ -169,10 +163,8 @@ class FakeAccountAuthorityClient(
     }
 
     companion object {
-        /** 32 bytes, base64url without padding, as the server mints them. */
         const val A_CHALLENGE_B64 = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"
 
-        /** The one-time URL a web step-up runs at, on the sign-in web origin. */
         const val A_STEP_UP_URL = "https://auth.example.org/login/enroll/AbCdEf"
     }
 }

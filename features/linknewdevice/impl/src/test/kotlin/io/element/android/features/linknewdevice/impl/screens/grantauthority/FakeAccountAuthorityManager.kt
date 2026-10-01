@@ -17,10 +17,6 @@ import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
 import io.element.android.libraries.guaresolver.authority.AuthoritySubmission
 import io.element.android.libraries.guaresolver.authority.SecurityNotificationView
 
-/**
- * GUA FORK: an [AccountAuthorityManager] for the grant offer's tests, recording what it was asked so a test
- * can assert that declining the offer sends nothing at all.
- */
 class FakeAccountAuthorityManager(
     private val stateResult: () -> Result<AuthorityChainState> = { Result.success(aRootedChain()) },
     private val grantResult: () -> Result<AuthoritySubmission> = {

@@ -19,12 +19,6 @@ import io.element.android.libraries.sessionstorage.test.aSessionData
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
-/**
- * GUA FORK: what a session start owes the chain, and what it must not do while the flag is off (ADM-009).
- *
- * The real manager over a fake client, because the interesting part is which requests a session start makes,
- * and a fake manager would only be asserting that this class called the method the test expected.
- */
 class DefaultAuthoritySessionRegistrarTest {
     @Test
     fun `with the flag off a session start makes no request at all`() = runTest {
@@ -33,8 +27,6 @@ class DefaultAuthoritySessionRegistrarTest {
 
         registrar.onSessionStarted(A_SESSION_ID, A_PUSH_TOKEN, FCM, AN_APP_ID, "Pixel 9")
 
-        // Not "registered and ignored": with the flag off a deployment sees nothing from this client, which
-        // is what shipping disabled means on this side.
         assertThat(client.registerNotificationCalls).isEmpty()
         assertThat(client.candidateCalls).isEmpty()
         assertThat(client.challengeCalls).isEmpty()
@@ -51,11 +43,7 @@ class DefaultAuthoritySessionRegistrarTest {
         assertThat(registration.token).isEqualTo(A_PUSH_TOKEN)
         assertThat(registration.platform).isEqualTo(FCM)
         assertThat(registration.appId).isEqualTo(AN_APP_ID)
-        // Unbound, because this install holds no authority key yet. Its own removal still works; what it
-        // cannot do is be removed from another install without a factor.
         assertThat(registration.authorityDeviceKeyB64Url).isNull()
-        // And it offers its own key, which is the other end of the candidate step: a device with account
-        // access and no offered key is a device the account's other phones cannot add.
         assertThat(client.candidateCalls).hasSize(1)
     }
 
@@ -66,7 +54,6 @@ class DefaultAuthoritySessionRegistrarTest {
 
         registrar.onSessionStarted(A_SESSION_ID, pushToken = null, platform = null, appId = AN_APP_ID, "Pixel 9")
 
-        // A row with no destination is not a channel, so none is made.
         assertThat(client.registerNotificationCalls).isEmpty()
         assertThat(client.candidateCalls).hasSize(1)
     }

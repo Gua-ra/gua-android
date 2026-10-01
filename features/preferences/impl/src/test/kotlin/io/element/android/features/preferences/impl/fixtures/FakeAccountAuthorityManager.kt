@@ -19,10 +19,6 @@ import io.element.android.libraries.guaresolver.authority.AuthorityStepUp
 import io.element.android.libraries.guaresolver.authority.AuthoritySubmission
 import io.element.android.libraries.guaresolver.authority.SecurityNotificationView
 
-/**
- * GUA FORK: an [AccountAuthorityManager] that records what it was asked, so a test can assert what was sent
- * and, just as importantly, what was not: with the feature flag off nothing here may be called at all.
- */
 class FakeAccountAuthorityManager(
     private val stateResult: () -> Result<AuthorityChainState> = { Result.success(aBootstrapChain()) },
     private val holdsAuthorityResult: () -> Boolean = { false },
@@ -190,8 +186,6 @@ class FakeAccountAuthorityManager(
         stepUp: AuthorityStepUp,
         artifactConfirmed: Boolean,
     ): Result<AuthoritySubmission> {
-        // The artifact a 0x02 record commits is the NEW one, so there is no old artifact in this call. The
-        // field is empty rather than absent so the two routes can be compared in one assertion.
         accountRecoveryCalls += RecoverCall("", deviceLabel, stepUp, artifactConfirmed)
         return recoverThroughAccountRecoveryResult()
     }
@@ -242,7 +236,6 @@ const val A_DEVICE_KEY: String = "a-device-key"
 
 const val AN_INSTALLATION_ID: String = "an-installation"
 
-/** The one-time URL a web step-up runs at, on the sign-in web origin. */
 const val A_STEP_UP_URL: String = "https://auth.example.org/login/enroll/AbCdEf"
 
 fun aBootstrapChain(pending: AuthorityPendingTransition? = null): AuthorityChainState = AuthorityChainState(
@@ -272,7 +265,6 @@ fun aRootedChain(
     pending = pending,
 )
 
-/** A chain whose account lost every device and its recovery key: terminal, by ADM-009 decision 7. */
 fun anAuthorityLostChain(): AuthorityChainState = AuthorityChainState(
     accountId = AN_ACCOUNT_ID,
     accountClass = "BOOTSTRAP",
@@ -283,12 +275,6 @@ fun anAuthorityLostChain(): AuthorityChainState = AuthorityChainState(
     pending = null,
 )
 
-/**
- * A chain whose accountId commits its authority (class 0x01), where the account-recovery route is refused.
- *
- * The server refuses a 0x02 record on such an account outright: a genesis-committed authority is replaced only
- * by the key the genesis committed for that purpose. The screen has to withhold the offer rather than send one.
- */
 fun aGenesisRootedChain(
     devices: List<AuthorityDevice> = emptyList(),
 ): AuthorityChainState = AuthorityChainState(

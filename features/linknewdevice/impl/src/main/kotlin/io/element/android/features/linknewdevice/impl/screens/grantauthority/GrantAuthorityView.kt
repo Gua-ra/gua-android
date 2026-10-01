@@ -30,12 +30,6 @@ import io.element.android.libraries.designsystem.theme.components.TextButton
 import io.element.android.libraries.designsystem.theme.components.TextField
 import io.element.android.libraries.ui.strings.CommonStrings
 
-/**
- * GUA FORK: the grant offer (ADM-009 decision 5).
- *
- * It names the new device, says in plain words what the grant lets it do, and says what the waiting period
- * afterwards means. Declining sits next to accepting rather than under it: the new device already works.
- */
 @Composable
 fun GrantAuthorityView(
     state: GrantAuthorityState,
@@ -98,8 +92,6 @@ fun GrantAuthorityView(
                         style = ElementTheme.typography.fontBodyMdRegular,
                         color = ElementTheme.colors.textSecondary,
                     )
-                    // The value itself, large and on its own line, because the whole point is that two people
-                    // read it out to each other and both phones computed it from the same key.
                     Text(
                         text = state.fingerprint,
                         style = ElementTheme.typography.fontHeadingMdBold,
@@ -124,8 +116,6 @@ fun GrantAuthorityView(
                     )
                     Button(
                         text = stringResource(id = CommonStrings.action_continue),
-                        // The same rule the presenter enforces and the manager enforces again, because this
-                        // one is only a button.
                         enabled = state.canContinueFromCompare,
                         onClick = { eventSink(GrantAuthorityEvent.ContinueFromCompare) },
                         modifier = Modifier

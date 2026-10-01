@@ -22,12 +22,6 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
 
-/**
- * GUA FORK: the wire the two halves of ADM-009 have to agree on.
- *
- * The assertions about what is absent matter as much as the ones about what is present: there is no OTP
- * field on any request in this feature, in any combination, at any step (decision 9).
- */
 class DefaultAccountAuthorityClientTest {
     @Test
     fun `a challenge request carries the purpose and the step-up, and never a phone code`() = runTest {
@@ -52,13 +46,6 @@ class DefaultAccountAuthorityClientTest {
         server.shutdown()
     }
 
-    /**
-     * The assertion is passed through as the object the platform produced, not as a quoted string.
-     *
-     * Nothing in this build can produce one yet, so this is the test that pins the field names and the shape
-     * for the day something can: a client that sent the credential quoted would have the server refuse an
-     * assertion that was fine.
-     */
     @Test
     fun `a passkey step-up travels as the assertion object, beside its ceremony id`() = runTest {
         val server = MockWebServer()
@@ -78,19 +65,11 @@ class DefaultAccountAuthorityClientTest {
         assertThat(body).contains("\"passkeyStepUpId\":\"a-ceremony\"")
         assertThat(body).contains("\"passkeyCredential\":{")
         assertThat(body).contains("\"id\":\"a-credential\"")
-        // No PIN travels with a passkey assertion, and no phone code travels with either.
         assertThat(body).doesNotContain("pin")
         assertThat(body).doesNotContain("otp")
         server.shutdown()
     }
 
-    /**
-     * The step-up a passkey account takes: a purpose, this build's redirect, and nothing else.
-     *
-     * Nothing comes back but the URL, because the proof the page leaves behind is a row the server wrote. A
-     * response field the client carried back would be a value a client could be talked into carrying somewhere
-     * else.
-     */
     @Test
     fun `a web step-up start carries the purpose and this build's redirect, and never a number`() = runTest {
         val server = MockWebServer()
@@ -107,7 +86,6 @@ class DefaultAccountAuthorityClientTest {
         val body = request.body.readUtf8()
         assertThat(body).contains("\"purpose\":\"ADOPT\"")
         assertThat(body).contains("\"redirectUri\":\"global.gua.dev:/oidc\"")
-        // No arm of that page sends a code, and nothing here can ask it to.
         assertThat(body).doesNotContain("phone")
         assertThat(body).doesNotContain("otp")
         server.shutdown()
@@ -123,20 +101,12 @@ class DefaultAccountAuthorityClientTest {
 
         val body = server.takeRequest().body.readUtf8()
         assertThat(body).contains("\"purpose\":\"ADOPT\"")
-        // The server spends the proof it recorded for this account, this token and this purpose. A request that
-        // carried a factor of its own would never look at the sheet at all.
         assertThat(body).doesNotContain("pin")
         assertThat(body).doesNotContain("passkey")
         assertThat(body).doesNotContain("otp")
         server.shutdown()
     }
 
-    /**
-     * A deployment that has not allowlisted this build's scheme must not dead-end the sheet.
-     *
-     * The retry runs once and names nothing, so the deployment parks the sheet at its own configured default,
-     * which is exactly what a factor-enrollment start does with the same refusal.
-     */
     @Test
     fun `a refused redirect is answered once by asking again with none`() = runTest {
         val server = MockWebServer()
@@ -229,7 +199,6 @@ class DefaultAccountAuthorityClientTest {
         val body = server.takeRequest().body.readUtf8()
         assertThat(body).contains("\"record\":\"cmVjb3Jk\"")
         assertThat(body).contains("\"signature\":\"c2ln\"")
-        // The challenge travels back because only its SHA-256 is stored server side.
         assertThat(body).contains("\"challenge\":\"Y2hhbGxlbmdl\"")
         assertThat(body).contains("\"recoveryArtifactConfirmed\":true")
         server.shutdown()
@@ -266,7 +235,6 @@ class DefaultAccountAuthorityClientTest {
         assertThat(state.state).isEqualTo("ROOTED")
         assertThat(state.headSeq).isEqualTo(2)
         assertThat(state.devices.first().isActive).isTrue()
-        // A quarantined device counts for nothing and can do nothing, so it is never read as active.
         assertThat(state.devices[1].isQuarantined).isTrue()
         assertThat(state.devices[1].isActive).isFalse()
         assertThat(state.devices[1].quarantineUntilEpochSeconds).isEqualTo(1_800_000_000)
@@ -299,7 +267,6 @@ class DefaultAccountAuthorityClientTest {
 
         val error = client.state("a-token").exceptionOrNull()
 
-        // Every deployment is in this state today, and showing an error for the normal case would be wrong.
         assertThat(error).isInstanceOf(AuthorityError.Disabled::class.java)
         server.shutdown()
     }
