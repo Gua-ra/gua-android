@@ -473,7 +473,7 @@ class DefaultIdentityServiceClientTest {
         val error = client.startPhoneChangeReauth("secret-token", phone = "+15550000000", language = null).exceptionOrNull()
 
         // Its own case so no caller can render it as one of the retryable PIN failures, and so the
-        // one thing it is allowed to say stays the one thing the server said.
+        // client repeats only the server's message.
         assertThat(error).isInstanceOf(ResolverError.ReauthPhoneMismatch::class.java)
         server.shutdown()
     }

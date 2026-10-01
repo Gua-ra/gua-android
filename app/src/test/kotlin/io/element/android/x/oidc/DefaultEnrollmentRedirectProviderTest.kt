@@ -22,7 +22,7 @@ class DefaultEnrollmentRedirectProviderTest {
     }
 
     @Test
-    fun `the QA and debug builds name themselves, which is the whole point of sending it`() {
+    fun `QA and debug builds send their own redirect scheme`() {
         val qa = DefaultEnrollmentRedirectProvider(
             oAuthRedirectUrlProvider = FakeOAuthRedirectUrlProvider(provideResult = "global.gua.dev:/"),
         )

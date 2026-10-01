@@ -11,28 +11,21 @@ import androidx.annotation.StringRes
 import io.element.android.libraries.phonenumberentry.Country
 
 /**
- * GUA FORK: drives the change-phone-number screen against the real identity-service contract
- * (the `/account/reauth` and `/account/phone/change` endpoints).
+ * GUA FORK: drives the change-phone-number screen. The endpoint sequence and its two invariants are
+ * documented on `IdentityServiceClient`; this is the screen's phase order.
  *
- * On [Intro] Continue the account's FACTORS are fetched first and the flow branches before anything
+ * On [Intro] Continue the account's factors are fetched first and the flow branches before anything
  * is sent:
  *  - no factor a phone change accepts -> [NeedsStepUp], a hard block, never proceed.
  *  - a fresh-2FA hold or a phone-change cooldown -> [Cooldown], never proceed.
  *  - otherwise -> [EnteringCurrentPhone].
  *
- * [EnteringCurrentPhone] asks the user which number is on the account. The server never hands that
- * number back, so the only way to check it is to have the user say it: identity-service digests what
- * is submitted and compares it against the account's own binding, and only a match is texted. A
- * wrong number is refused identically whether it is unknown, someone else's or simply not this
- * account's, and the screen must not add anything to that.
- *
- * Then [EnteringReauthOtp] takes the code that number received, proving possession of it and buying
- * a single-use token scoped to this operation, [EnteringPin] captures the step-up factor,
- * [EnteringNewPhone] takes the new number, and submitting the pair spends the token AND the factor
- * in one call. Only that call texts the NEW number, which is why the step-up is collected first:
- * nothing reaches the new number until the server has accepted a factor a SIM-swapper does not hold.
- *
- * [Submitting] is shown while the async identity-service calls are in flight.
+ * [EnteringCurrentPhone] asks the user which number is on the account, because the server never
+ * hands it back; a wrong number is refused with one neutral message whatever the reason, and the
+ * screen must not add to it. [EnteringReauthOtp] takes the code that number received,
+ * [EnteringPin] the step-up factor and [EnteringNewPhone] the new number; submitting the pair is
+ * the only call that texts the new number. [Submitting] is shown while identity-service calls are
+ * in flight.
  */
 enum class ChangePhoneNumberPhase {
     Intro,

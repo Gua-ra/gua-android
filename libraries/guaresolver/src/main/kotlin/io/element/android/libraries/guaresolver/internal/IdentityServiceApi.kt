@@ -66,11 +66,7 @@ internal interface IdentityServiceApi {
         @Header("Authorization") authorization: String,
     )
 
-    // GUA FORK: change phone number, against the real `/account` contract.
-    //
-    // An earlier revision of this file called `security/pin/reauth`, `otp/change-number/request` and
-    // `otp/change-number`. The identity service has never served any of those three, so every phone
-    // change failed at the first call. The real sequence is:
+    // GUA FORK: change phone number, against the `/account` contract. The sequence:
     //   1. account/reauth/start   takes the number the signed-in user says is theirs and, only if it
     //      matches the one bound to the account, sends an OTP to it (proof of possession only),
     //   2. account/reauth/verify  takes that number again with the OTP and exchanges them for a
@@ -80,10 +76,10 @@ internal interface IdentityServiceApi {
     //   4. account/phone/change/complete   redeems the challenge with that OTP.
     // No SMS reaches the new number before step 3 has accepted a step-up factor.
     //
-    // The number is submitted rather than read back from the server: identity-service compares its
-    // digest against the account's own directory binding and never reveals whose number it is, so a
-    // wrong one is refused with the same `reauth_phone_mismatch` whether it is unknown or someone
-    // else's. Nothing is stored between the two calls, which is why both of them carry it.
+    // The number is submitted rather than read back: identity-service compares its digest against
+    // the account's binding and never reveals whose number it is, so a wrong one is refused with the
+    // same `reauth_phone_mismatch` whether it is unknown or someone else's. Nothing is stored between
+    // steps 1 and 2, so both carry it.
 
     @POST("account/reauth/start")
     suspend fun startAccountReauth(
@@ -112,20 +108,15 @@ internal interface IdentityServiceApi {
     )
 
     // GUA FORK: passkey enrollment. Returns the authenticated web-ceremony URL the client opens to
-    // complete WebAuthn registration at the IdP.
-    //
-    // POST, not GET: the identity service maps this as @PostMapping("/passkey/enroll/start"), and
-    // iOS reaches it through a helper that always sends POST. An earlier comment here described it
-    // as a GET, which is what the declaration was written to match, so every tap was answered with
-    // 405 before any ceremony could start. The access token in the Authorization header is the
-    // whole input apart from the optional redirect in the body.
+    // complete WebAuthn registration at the IdP. POST: identity-service maps it with @PostMapping, as
+    // iOS does. The access token is the whole input apart from the optional redirect in the body.
     @POST("security/passkey/enroll/start")
     suspend fun startPasskeyEnrollment(
         @Header("Authorization") authorization: String,
         @Body body: FactorEnrollStartRequest,
     ): FactorEnrollStartResponse
 
-    // GUA FORK: account genesis registration (ADM-008 decision 6, step 1). Deliberately unauthenticated:
+    // GUA FORK: account genesis registration, step 1 of the attach flow (ADM-008 decision 6). Unauthenticated:
     // it runs before any OIDC flow exists to authenticate against, and the body carries its own
     // possession proof under the key committed inside the genesis itself.
 
@@ -137,7 +128,7 @@ internal interface IdentityServiceApi {
 
 @Serializable
 internal data class LookupRequest(
-    /** Hashed phone digests — never raw numbers. */
+    /** Hashed phone digests, never raw numbers. */
     val hashedPhones: List<String>,
 )
 
@@ -160,7 +151,7 @@ internal data class LookupResponse(
 internal data class PinStatusResponse(
     val hasPin: Boolean,
     /**
-     * Remaining seconds of the fresh-2FA hold before the account PIN may be spent as the
+     * Remaining seconds of the fresh-2FA hold before the account PIN may be used as the
      * phone-change step-up (0 = no active hold). Defaults to 0 for older identity-service builds
      * that do not yet return the field.
      */

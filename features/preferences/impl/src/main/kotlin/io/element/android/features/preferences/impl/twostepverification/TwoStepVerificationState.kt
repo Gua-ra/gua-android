@@ -90,8 +90,8 @@ data class TwoStepVerificationState(
 
     /**
      * Whether two-step verification is on, off, or not known. A passkey alone turns it on: that is
-     * the whole point of the preferred factor, and reporting "off" to its holder is what sent them
-     * to create a PIN they do not need.
+     * why the preferred factor exists, and reporting "off" to its holder sends them to create a PIN
+     * they do not need.
      */
     val twoStepVerificationOn: Boolean? = factors?.hasStrongFactor
 

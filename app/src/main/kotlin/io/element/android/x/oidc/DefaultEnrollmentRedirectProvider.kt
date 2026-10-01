@@ -13,7 +13,7 @@ import io.element.android.libraries.guaresolver.EnrollmentRedirectProvider
 import io.element.android.libraries.matrix.api.auth.OAuthRedirectUrlProvider
 
 /**
- * GUA FORK: names this build's own factor-enrollment redirect, `global.gua:/oidc` for the
+ * GUA FORK: supplies this build's own factor-enrollment redirect, `global.gua:/oidc` for the
  * production app, `global.gua.dev:/oidc` for the QA one and `global.gua.debug:/oidc` for a debug
  * build.
  *

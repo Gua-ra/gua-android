@@ -11,8 +11,8 @@ package io.element.android.libraries.guaresolver
  * GUA FORK: an authentication factor, as named by the identity service.
  *
  * A passkey is the preferred strong factor; the PIN is the fallback for everyone who cannot produce
- * one; the phone OTP is possession of the number and is never on its own enough to re-point that
- * same number.
+ * one; the phone OTP is possession of the number and is never on its own enough to change the
+ * account's number.
  */
 enum class AuthFactor {
     PASSKEY,
@@ -38,7 +38,7 @@ enum class AuthFactor {
  * only the client knows, is never sent back, and may steer the UI but never a security decision.
  *
  * [changePhoneCooldownRemainingSeconds] is the fresh-2FA hold: after a PIN is created, changed or
- * reset it cannot be spent as the phone-change step-up for a window, so someone who just set a PIN
+ * reset it cannot be used as the phone-change step-up for a window, so someone who just set a PIN
  * cannot immediately use it to take over the number. `0` means no active hold. It is separate from
  * the minimum gap between two successful phone changes, which the change endpoint reports itself.
  */

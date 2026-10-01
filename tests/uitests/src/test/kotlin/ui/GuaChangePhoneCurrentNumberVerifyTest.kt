@@ -22,7 +22,7 @@ import org.junit.Test
  * GUA FORK verification: records the step that asks the signed-in user which number is on their
  * account, which now comes before the reauthentication code in the change-phone flow.
  *
- * The refusal is the point of the third shot. The server answers "unknown number", "someone else's
+ * The third screenshot shows the refusal. The server answers "unknown number", "someone else's
  * number" and "not this account's number" identically, and this screen must not add anything to
  * that, so the recorded wording is the one neutral sentence and nothing more.
  *

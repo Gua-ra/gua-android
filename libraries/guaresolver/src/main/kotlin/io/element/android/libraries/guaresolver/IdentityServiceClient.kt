@@ -8,15 +8,18 @@
 package io.element.android.libraries.guaresolver
 
 /**
- * GUA FORK: talks to the Gua identity-service (`POST /directory/lookup`) for contact discovery:
- * matching a batch of address-book phone numbers against Gua accounts. Android counterpart of iOS
- * `IdentityServiceClientProtocol.lookupContacts` (+ `ContactMatch`).
+ * GUA FORK: the Gua identity-service client: contact discovery, two-step verification factors,
+ * phone number changes and account genesis. Android counterpart of iOS `IdentityServiceClientProtocol`.
  *
  * PRIVACY: callers pass hashed phone digests, never raw numbers, see [PhoneHasher]. The address
  * book is never persisted; the digests are sent over TLS for a one-shot lookup and the raw numbers
  * never leave the device. The digest is a privacy-hardening step, not a guarantee of
  * irreversibility: the domain tag is public and the phone keyspace is small, so the identity-service
  * can match a digest back to a number. Only the contacts that are on Gua and discoverable come back.
+ *
+ * SECURITY: a bearer session on its own must never add a durable factor. Every factor enrollment
+ * runs as an authenticated web ceremony at the IdP, the only place a step-up (passkey, else PIN,
+ * else current number plus OTP) can be asked for on every platform.
  */
 interface IdentityServiceClient {
     /**
@@ -36,19 +39,15 @@ interface IdentityServiceClient {
     // completePinChange`.
 
     /**
-     * The factors the account holds, per the server: whether a PIN is set, whether a passkey is
-     * registered, which factor to offer first, which ones a phone change accepts, and any remaining
-     * fresh-2FA hold on the PIN.
+     * The factors the account holds, per the server (`GET /security/pin/status`): whether a PIN is
+     * set, whether a passkey is registered, which factor to offer first, which ones a phone change
+     * accepts, and any remaining fresh-2FA hold on the PIN.
      *
-     * This is the signal every factor decision branches on. Nothing in the client may decide from a
-     * lone `hasPin` boolean: an account with a passkey and no PIN already has two-step verification,
-     * and telling that user to create a PIN is telling them to add a weaker factor they do not need.
+     * Every factor decision branches on this, never on a lone `hasPin`: an account with a passkey
+     * and no PIN already has two-step verification.
      *
-     * @param accessToken the caller's access token, sent as the bearer credential.
-     * @param userId the caller's Matrix id (mirrors iOS, which scopes the status to the user).
      * @return [Result.success] with the [AccountFactorStatus], or [Result.failure] with a
-     * [ResolverError]. A failure means the factors are UNKNOWN; callers must not read it as
-     * "no factors", which is how a passkey holder ends up nagged to set up a PIN.
+     * [ResolverError]. A failure means the factors are UNKNOWN, not "no factors".
      */
     suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus>
 
@@ -63,21 +62,14 @@ interface IdentityServiceClient {
     suspend fun cancelAccountRecovery(accessToken: String): Result<Unit>
 
     /**
-     * Start enrollment of the account's FIRST PIN and obtain the authenticated web-ceremony URL to
-     * open at the IdP (`POST /security/pin/enroll/start`), exactly as
-     * [startPasskeyEnrollment] does for a passkey.
+     * Start enrollment of the account's FIRST PIN (`POST /security/pin/enroll/start`) and return the
+     * authenticated web-ceremony URL to open at the IdP, as [startPasskeyEnrollment] does for a
+     * passkey. There is no native path: the old `POST /security/pin` answers 403 for everyone (see
+     * the interface header). Changing an existing PIN is unaffected, since that flow proves the
+     * current PIN first.
      *
-     * There is no native path for this any more. A bearer session on its own must never be able to
-     * add a durable factor, and the step-up that proves the account holder is present (their
-     * passkey, else their PIN, else their current number plus an OTP) can only run in the IdP web
-     * session, which is the one place a passkey assertion works on every platform. The old
-     * `POST /security/pin` now answers 403 for everyone.
-     *
-     * Changing an existing PIN is unaffected: that flow already proves the current PIN first.
-     *
-     * The call names this build's own [EnrollmentRedirectProvider] redirect, so the ceremony returns
-     * to the app it was opened from. A deployment that refuses it is asked again without one; see
-     * the implementation for why that retry exists.
+     * The call sends this build's own [EnrollmentRedirectProvider] redirect so the ceremony returns
+     * to the app it was opened from; a deployment that refuses it is asked again without one.
      *
      * @return [Result.success] with the enrollment URL, or [Result.failure] with a [ResolverError]
      * (notably [ResolverError.PinAlreadySet] when the account already holds a PIN).
@@ -101,33 +93,29 @@ interface IdentityServiceClient {
      */
     suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit>
 
-    // GUA FORK: Change phone number, against the real `/account` contract. Android counterpart of iOS
+    // GUA FORK: change phone number. Android counterpart of iOS
     // `IdentityServiceClientProtocol.startPhoneChangeReauth / verifyPhoneChangeReauth /
-    // startPhoneChange / completePhoneChange`.
-    //
-    // Ordering is the security property: the OTP that reaches the NEW number is sent by
-    // [startPhoneChange], which the server only reaches after it has spent the reauth token AND
-    // accepted a step-up factor. Nothing before that point can text the new number.
+    // startPhoneChange / completePhoneChange`. The endpoint sequence is documented once, on
+    // `IdentityServiceApi`. Two invariants hold it together: nothing is sent to the NEW number before
+    // [startPhoneChange] has spent the reauth token and accepted a step-up factor, and
+    // `step_up_required` is a hard block with no token-only fallback.
 
     /**
-     * Send a reauthentication OTP to the number currently on file, as the first half of the
-     * single-use reauth token every privileged account operation needs
-     * (`POST /account/reauth/start`). The optional BCP-47 [language] tag localises the message.
+     * Send a reauthentication OTP to the number currently on file (`POST /account/reauth/start`),
+     * the first half of the single-use reauth token. The optional BCP-47 [language] tag localises
+     * the message.
      *
-     * [phone] is the number the signed-in user typed as their current one. The server digests it and
-     * compares it against the account's own directory binding, and texts it only on a match, so this
-     * call can never send an SMS to a number the account does not already hold. It is submitted
-     * rather than looked up because the server does not hand out the number it holds.
+     * [phone] is the number the signed-in user typed as their current one. The server never hands
+     * the number out; it digests the submitted one, compares it against the account's binding and
+     * texts it only on a match, so this call cannot send an SMS to a number the account does not hold.
      *
-     * This proves possession of the CURRENT number and nothing more, which is exactly why it is not
-     * sufficient on its own: a SIM-swap attacker holds that number too. The step-up factor demanded
-     * by [startPhoneChange] is the other half.
+     * This proves only possession of the current number, so it is not sufficient on its own: a
+     * SIM-swap attacker holds that number too. The step-up factor [startPhoneChange] demands is the
+     * other half.
      *
      * @return [Result.success] on success, or [Result.failure] with a [ResolverError]:
-     * [ResolverError.ReauthPhoneMismatch] when the number is not this account's (which must be
-     * surfaced without ever suggesting whose it might be), [ResolverError.InvalidPhoneNumber] when
-     * it is not a phone number at all, or [ResolverError.RateLimited] once the per-account attempt
-     * cap is reached.
+     * [ResolverError.ReauthPhoneMismatch] when the number is not this account's (surfaced without
+     * suggesting whose it might be), [ResolverError.InvalidPhoneNumber], or [ResolverError.RateLimited].
      */
     suspend fun startPhoneChangeReauth(accessToken: String, phone: String, language: String?): Result<Unit>
 
@@ -135,9 +123,7 @@ interface IdentityServiceClient {
      * Exchange the reauth OTP for a single-use token scoped to the phone-change operation
      * (`POST /account/reauth/verify`). No SMS is sent here.
      *
-     * [phone] is the same current number that was sent to [startPhoneChangeReauth]: the server keeps
-     * no pending record between the two calls and re-derives the digest from what arrives here, so
-     * it has to be sent again.
+     * [phone] is sent again because the server keeps nothing between the two calls.
      *
      * @return [Result.success] with the opaque reauth token, or [Result.failure] with a
      * [ResolverError] (notably [ResolverError.InvalidOtp] and the same refusals as
@@ -150,16 +136,14 @@ interface IdentityServiceClient {
      * step-up factor, and only then sends an OTP to [newPhone]. Returns the challenge to redeem at
      * [completePhoneChange].
      *
-     * The server spends [reauthToken] BEFORE it weighs the step-up factor, so the token is gone on
-     * every outcome, success or failure. Callers must treat it as spent and mint a fresh one through
-     * [startPhoneChangeReauth] rather than retrying with the same token.
-     *
-     * [pin] is the fallback factor, offered when the account holds a PIN. A verified passkey
-     * assertion is the preferred one and settles the step-up on its own; see [passkeyStepUpId].
+     * The server spends [reauthToken] before it weighs the step-up factor, so the token is gone on
+     * every outcome; a retry needs a fresh one from [startPhoneChangeReauth]. A verified passkey
+     * assertion ([passkeyStepUpId], [passkeyCredentialJson]) is the preferred factor; [pin] is the
+     * fallback when the account holds one.
      *
      * @return [Result.success] with the [PhoneChangeChallenge], or [Result.failure] with a
      * [ResolverError]: [ResolverError.StepUpRequired] when the account holds neither factor (a hard
-     * block, never a fallthrough), [ResolverError.InvalidPin], [ResolverError.TwoFactorCooldown],
+     * block), [ResolverError.InvalidPin], [ResolverError.TwoFactorCooldown],
      * [ResolverError.PhoneChangeCooldown], [ResolverError.PhoneAlreadyLinked],
      * [ResolverError.InvalidReauthToken].
      */
@@ -187,16 +171,13 @@ interface IdentityServiceClient {
     // `IdentityServiceClientProtocol.startPasskeyEnrollment`.
 
     /**
-     * Start passkey enrollment and obtain the authenticated web-ceremony URL to open at the IdP.
-     * Mirrors iOS `startPasskeyEnrollment(accessToken:)` (`POST /security/passkey/enroll/start`,
-     * returning `{ "enrollUrl": ... }`).
+     * Start passkey enrollment (`POST /security/passkey/enroll/start`) and return the authenticated
+     * web-ceremony URL to open at the IdP. Mirrors iOS `startPasskeyEnrollment(accessToken:)`.
      *
-     * The returned URL is self-authenticating (it carries a short-lived enrollment token), so the
-     * client just opens it in an authenticated web ceremony, on Android a Chrome Custom Tab, and
-     * the user completes the WebAuthn registration in-browser at the IdP.
-     *
-     * Like [startPinEnrollment] it names this build's own [EnrollmentRedirectProvider] redirect and
-     * falls back to naming none when the deployment refuses it.
+     * The URL carries a short-lived enrollment token, so the client opens it in a Chrome Custom Tab
+     * and the user completes the WebAuthn registration in the browser. Like [startPinEnrollment] it
+     * sends this build's own [EnrollmentRedirectProvider] redirect and retries without one when the
+     * deployment refuses it.
      *
      * @return [Result.success] with the enrollment URL, or [Result.failure] with a [ResolverError].
      */

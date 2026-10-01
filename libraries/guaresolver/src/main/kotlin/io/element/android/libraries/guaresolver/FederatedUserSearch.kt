@@ -9,7 +9,7 @@ package io.element.android.libraries.guaresolver
 
 /**
  * GUA FORK: how a federation homeserver lets its users be found by bare-handle search from other
- * servers. An absent value means [Global] — the default for roster entries that predate the policy.
+ * servers. An absent value means [Global], the default for roster entries that predate the policy.
  * Values this client doesn't recognize are treated as **not** discoverable, so a stricter policy
  * introduced server-side is never widened by an older client. Android counterpart of iOS
  * `RosterSearchVisibility`.
@@ -51,8 +51,8 @@ object FederatedUserSearch {
 
     /**
      * Normalizes a search query into a bare handle, or `null` when the query isn't one.
-     * A bare handle is an optional leading `@` followed by at least 3 localpart characters —
-     * and crucially no `:`, otherwise the user is already typing a full address.
+     * A bare handle is an optional leading `@` followed by at least 3 localpart characters and
+     * no `:`; a `:` means the user is already typing a full address.
      */
     fun bareHandle(query: String): String? {
         var handle = query.trim().lowercase()
@@ -65,13 +65,9 @@ object FederatedUserSearch {
      * The full user IDs to look up for a bare handle: the searcher's own server first, then one
      * per ACTIVE roster server that allows discovery from it, in roster order.
      *
-     * The searcher's own server used to be skipped here, on the assumption that the local
-     * directory already covered it. It does not. Synapse's user directory only returns people you
-     * already share a room with unless `search_all_users` is on, so a bare handle found nobody on
-     * your own server while the full `@handle:server` worked, because that path is an exact
-     * profile lookup instead. Looking our own server up by the same exact-match route makes a bare
-     * handle behave the same way everywhere. Duplicates are dropped downstream, so a local hit
-     * costs nothing.
+     * Includes the searcher's own server: Synapse's directory only returns people you already share
+     * a room with unless `search_all_users` is on, so a bare handle is looked up there by exact
+     * match like everywhere else. Duplicates are dropped downstream.
      */
     fun candidates(handle: String, roster: FederationRoster, ownServerName: String): List<String> {
         val ownGroups = roster.entries
