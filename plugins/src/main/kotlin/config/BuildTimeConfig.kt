@@ -12,22 +12,18 @@ object BuildTimeConfig {
     const val APPLICATION_ID = "global.gua"
     const val APPLICATION_NAME = "Gua"
 
-    // GUA FORK: the Firebase app id of each Gua Android app. DEV is the release build type built with -Pgua.deployment=dev.
+    // GUA FORK: DEV is the release build type built with `-Pgua.deployment=dev`.
     const val GOOGLE_APP_ID_RELEASE = "1:511804071315:android:7a87ae8499f379204e1c66"
     const val GOOGLE_APP_ID_DEV = "1:511804071315:android:55bc17310919f64c4e1c66"
     const val GOOGLE_APP_ID_DEBUG = "1:511804071315:android:0b8eb92ccf4eaa6a4e1c66"
 
-    // Nightly has no Firebase app record: global.gua.nightly is not registered. Left empty
-    // so those builds start with push disabled rather than registering as another package.
+    // Empty: global.gua.nightly has no Firebase app, so nightly builds start with push disabled.
     const val GOOGLE_APP_ID_NIGHTLY = ""
 
-    // Reverse-DNS of the brand host gua.global. Drives the OIDC custom-scheme redirect
-    // (login_redirect_scheme = "global.gua", i.e. global.gua:/oidc) — mirrors iOS.
+    // Reverse-DNS of gua.global, used as the OIDC redirect scheme.
     val METADATA_HOST_REVERSED: String? = "global.gua"
 
-    // OIDC dynamic client registration requires client_uri, logo_uri, tos_uri and policy_uri
-    // to share a single host, which must be the redirect scheme's reverse-DNS — so every URL
-    // below lives on gua.global. MAS only validates the hosts; it never fetches these URLs.
+    // MAS requires client_uri, logo_uri, tos_uri and policy_uri to share one host, the reverse of the redirect scheme.
     val URL_WEBSITE: String? = "https://gua.global"
     val URL_LOGO: String? = "https://gua.global/gua-icon.png"
     val URL_COPYRIGHT: String? = "https://gua.global/copyright"

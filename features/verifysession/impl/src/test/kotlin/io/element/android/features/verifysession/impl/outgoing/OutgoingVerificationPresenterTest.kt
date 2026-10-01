@@ -290,9 +290,6 @@ class OutgoingVerificationPresenterTest {
             forceVerification = true,
         )
         presenter.test {
-            // Counterpart of the skip test above, which starts on Completed and settles on
-            // Exit. Being verified says nothing about holding the keys, so a second attempt
-            // starts over instead of leaving at once.
             assertThat(awaitItem().step).isEqualTo(Step.Initial)
             cancelAndIgnoreRemainingEvents()
         }
@@ -329,7 +326,6 @@ class OutgoingVerificationPresenterTest {
             )
             service.emitVerificationFlowState(VerificationFlowState.DidFinish)
             service.emitVerifiedStatus(SessionVerifiedStatus.Verified)
-            // The caller asked for no success screen, so finishing means leaving.
             assertThat(awaitItem().step).isEqualTo(Step.Exit)
         }
     }

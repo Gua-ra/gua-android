@@ -69,7 +69,6 @@ internal fun TimelineItem.Event.canBeGrouped(): Boolean {
     }
 }
 
-/** GUA FORK: true for the rendered room-change events suppressed in 1:1 direct chats. */
 internal fun TimelineItem.Event.isDirectOneToOneRoomChangeEvent(): Boolean {
     return when (content) {
         is TimelineItemProfileChangeContent,

@@ -1,5 +1,5 @@
 name: Generate GitHub Pages
-# GUA FORK: scheduled GitHub Pages generation disabled. Upstream docs site. Manual only.
+# GUA FORK: manual dispatch only.
 on:
   workflow_dispatch:
 

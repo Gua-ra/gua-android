@@ -211,7 +211,6 @@ class RoomListDataSource(
     }
 
     private fun buildAndCacheItem(roomSummaries: List<RoomSummary>, index: Int): RoomListRoomSummary? {
-        // GUA FORK: hide space rooms and empty orphan rooms.
         val roomListSummary = roomSummaries.getOrNull(index)
             ?.takeUnless { it.info.isSpace || it.isEmptyOrphanRoom() }
             ?.let { roomListRoomSummaryFactory.create(it) }
@@ -225,10 +224,9 @@ class RoomListDataSource(
             info.activeMembersCount <= 2 &&
             !hasRealMessage()
 
-    /** A genuine conversation: the latest event is an actual message, not absent / a state change. */
     private fun RoomSummary.hasRealMessage(): Boolean = when (val ev = latestEvent) {
         is LatestEventValue.None -> false
-        is LatestEventValue.RoomInvite -> true // a real invite, never treat as empty
+        is LatestEventValue.RoomInvite -> true
         is LatestEventValue.Remote -> ev.content.isRealMessage()
         is LatestEventValue.Local -> ev.content.isRealMessage()
     }

@@ -29,7 +29,6 @@ class ResetIdentityRootNode(
     interface Callback : Plugin {
         fun onContinue()
 
-        /** GUA FORK: get the keys from another device of this account instead of resetting. */
         fun onRecoverFromOtherDevice()
     }
 

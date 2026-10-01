@@ -95,7 +95,6 @@ class LogoutViewTest : RobolectricTest() {
 
     @Test
     fun `signing out of the only device offers no way into the recovery key screens`() = runAndroidComposeUiTest {
-        // GUA FORK: no "Settings" button on this screen.
         val eventsRecorder = EventsRecorder<LogoutEvents>(expectEvents = false)
         setLogoutView(
             aLogoutState(

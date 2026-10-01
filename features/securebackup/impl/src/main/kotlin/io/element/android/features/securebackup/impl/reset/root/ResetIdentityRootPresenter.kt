@@ -28,7 +28,6 @@ class ResetIdentityRootPresenter(
     override fun present(): ResetIdentityRootState {
         var displayConfirmDialog by remember { mutableStateOf(false) }
 
-        // GUA FORK: offered only when recovery is incomplete and another device is signed by the current identity.
         val canRecoverFromOtherDevice by produceState(initialValue = false) {
             if (encryptionService.recoveryStateStateFlow.value != RecoveryState.INCOMPLETE) return@produceState
             val hasOtherDevice = encryptionService.hasDevicesToVerifyAgainst().getOrDefault(false)

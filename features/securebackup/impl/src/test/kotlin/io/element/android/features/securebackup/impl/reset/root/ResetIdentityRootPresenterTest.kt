@@ -57,7 +57,6 @@ class ResetIdentityRootPresenterTest {
         }
     }
 
-    // GUA FORK: the recovery option is offered only when it can work.
     @Test
     fun `present - offers recovery from another device only when incomplete and another device holds the keys`() = runTest {
         val encryptionService = FakeEncryptionService().apply {

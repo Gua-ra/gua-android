@@ -25,7 +25,6 @@ interface StartChatNavigator : Plugin {
     fun onDismissJoinRoomByAddress()
     fun onOpenRoomDirectory()
 
-    // GUA FORK: open the Find friends contact-discovery screen, and a contact's profile from it.
     fun onShowFindFriends()
     fun onShowUserProfile(userId: UserId)
 }

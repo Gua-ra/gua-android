@@ -61,7 +61,6 @@ fun StartChatView(
     onInviteFriendsClick: () -> Unit,
     onJoinByAddressClick: () -> Unit,
     onRoomDirectorySearchClick: () -> Unit,
-    // GUA FORK: open the Find friends contact-discovery screen.
     onFindFriendsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -173,8 +172,6 @@ private fun CreateRoomActionButtonsList(
     onDmClick: (RoomId) -> Unit,
 ) {
     LazyColumn {
-        // GUA FORK: Discover which phone contacts are already on Gua. Mirrors iOS' top-of-list
-        // "Find friends" entry in the new-chat / "+" screen.
         item {
             CreateRoomActionButton(
                 iconRes = CompoundDrawables.ic_compound_user_add,

@@ -28,7 +28,6 @@ android {
     buildTypes {
         getByName("release") {
             consumerProguardFiles("consumer-proguard-rules.pro")
-            // GUA FORK: `-Pgua.deployment=dev` builds the QA app, which has its own Firebase app id.
             val useDevDeployment = (project.findProperty("gua.deployment") as? String) == "dev"
             resValue(
                 type = "string",

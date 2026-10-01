@@ -1,6 +1,6 @@
 name: Post-release
 
-# GUA FORK: disabled. Upstream post-release automation (GitHub release notes / element bot). Manual only.
+# GUA FORK: manual dispatch only.
 on:
   workflow_dispatch:
 

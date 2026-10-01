@@ -9,10 +9,8 @@ package io.element.android.libraries.guaresolver.genesis
 
 /** Fixed-length preimages for the registration and attach proofs, both signed by the authority key. */
 object GenesisProofs {
-    /** 28 ASCII bytes. */
     const val GENESIS_PROOF_DOMAIN = "gua-account-genesis-proof.v1"
 
-    /** 27 ASCII bytes. */
     const val ATTACH_PROOF_DOMAIN = "gua-account-attach-proof.v1"
 
     const val ATTACH_CHALLENGE_LENGTH = 32
@@ -20,13 +18,10 @@ object GenesisProofs {
     private val genesisDomainBytes = GENESIS_PROOF_DOMAIN.toByteArray(Charsets.US_ASCII)
     private val attachDomainBytes = ATTACH_PROOF_DOMAIN.toByteArray(Charsets.US_ASCII)
 
-    /** 27 + 32 + 34. */
     const val ATTACH_PREIMAGE_LENGTH = 93
 
-    /** Domain bytes then the canonical bytes. */
     fun genesisProofPreimage(canonicalBytes: ByteArray): ByteArray = genesisDomainBytes + canonicalBytes
 
-    /** Domain bytes, then the challenge, then the raw accountId bytes. */
     fun attachProofPreimage(challenge: ByteArray, accountId: AccountId): ByteArray {
         require(challenge.size == ATTACH_CHALLENGE_LENGTH) { "attach challenge is $ATTACH_CHALLENGE_LENGTH bytes" }
         val raw = accountId.rawBytes()

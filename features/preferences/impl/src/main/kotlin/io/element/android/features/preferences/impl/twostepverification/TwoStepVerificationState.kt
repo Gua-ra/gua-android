@@ -37,10 +37,8 @@ data class TwoStepVerificationState(
 ) {
     val isWorking: Boolean = phase == TwoStepVerificationPhase.Submitting
 
-    /** Null while unknown. Neither "Change PIN" nor "Set up PIN" may be offered on it. */
     val hasPin: Boolean? = factors?.hasPin
 
-    /** Null while unknown. No enrollment is offered on it. */
     val passkeyRegistered: Boolean? = factors?.passkeyRegistered
 
     /** A passkey alone turns two-step verification on. */

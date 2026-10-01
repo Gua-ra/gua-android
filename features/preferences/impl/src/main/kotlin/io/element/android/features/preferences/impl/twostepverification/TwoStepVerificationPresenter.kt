@@ -32,10 +32,7 @@ import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.coroutines.launch
 
-/**
- * The first PIN is enrolled in the web ceremony: a bearer session alone must not be able to add a durable factor.
- * The change flow verifies the current PIN before any SMS is sent.
- */
+/** The change flow verifies the current PIN before any SMS is sent. */
 @AssistedInject
 class TwoStepVerificationPresenter(
     @Assisted private val navigateToCountryPicker: () -> Unit,
@@ -72,14 +69,12 @@ class TwoStepVerificationPresenter(
             }
         }
 
-        // Null is unknown, never "no factors".
         var factors by remember { mutableStateOf<AccountFactorStatus?>(null) }
         var currentPin by remember { mutableStateOf("") }
         var stagedNewPin by remember { mutableStateOf("") }
         var challengeId by remember { mutableStateOf<String?>(null) }
         var otpCode by remember { mutableStateOf("") }
 
-        // Null is unknown, and neither PIN flow may run on it.
         val userHasPin: Boolean? = factors?.hasPin
 
         // Read on every resume: factors are registered in a Custom Tab while this screen is in the background.
@@ -131,7 +126,6 @@ class TwoStepVerificationPresenter(
             code = ""
         }
 
-        // `startPinChange` verifies the PIN and sends the OTP in one call, so no SMS goes out before a PIN is supplied.
         fun confirmNumberAndRequestOtp(e164Phone: String) {
             coroutineScope.launch {
                 val accessToken = accessToken()
@@ -140,7 +134,6 @@ class TwoStepVerificationPresenter(
                     return@launch
                 }
                 if (currentPin.isEmpty()) {
-                    // Should never happen: the PIN is captured before this step.
                     errorMessage = CommonStrings.error_unknown
                     phase = TwoStepVerificationPhase.EnteringCurrent
                     return@launch
@@ -192,7 +185,6 @@ class TwoStepVerificationPresenter(
                 }
                 val activeChallengeId = challengeId
                 if (userHasPin != true || activeChallengeId == null) {
-                    // Only the change flow reaches this.
                     errorMessage = CommonStrings.error_unknown
                     phase = TwoStepVerificationPhase.Overview
                     return@launch
@@ -259,7 +251,6 @@ class TwoStepVerificationPresenter(
                     }
                     .onFailure { error ->
                         when (error) {
-                            // The view of the account was stale: correct the row.
                             is ResolverError.PinAlreadySet -> {
                                 factors = factors?.copy(hasPin = true)
                                 errorMessage = R.string.screen_two_step_verification_pin_already_set
@@ -321,13 +312,11 @@ class TwoStepVerificationPresenter(
         fun handleEvent(event: TwoStepVerificationEvent) {
             when (event) {
                 TwoStepVerificationEvent.StartSetup -> {
-                    // Only on a known "no PIN".
                     if (userHasPin == false) {
                         startFactorEnrollment(identityServiceClient::startPinEnrollment)
                     }
                 }
                 TwoStepVerificationEvent.StartChange -> {
-                    // Only on a known "has PIN".
                     if (userHasPin == true) {
                         resetFlowState()
                         phase = TwoStepVerificationPhase.EnteringCurrent
@@ -382,7 +371,6 @@ class TwoStepVerificationPresenter(
                 TwoStepVerificationEvent.ClearSuccess -> {
                     showSuccess = false
                 }
-                // Only on a known "no passkey": enrollment excludes credentials the account already holds.
                 TwoStepVerificationEvent.SetUpPasskey -> if (factors?.passkeyRegistered == false) {
                     startFactorEnrollment(identityServiceClient::startPasskeyEnrollment)
                 }

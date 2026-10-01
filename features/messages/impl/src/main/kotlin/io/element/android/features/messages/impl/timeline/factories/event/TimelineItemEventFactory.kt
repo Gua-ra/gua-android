@@ -56,11 +56,7 @@ class TimelineItemEventFactory(
         fun create(config: TimelineItemsFactoryConfig): TimelineItemEventFactory
     }
 
-    /**
-     * Build a [TimelineItem.Event] for the given SDK event.
-     *
-     * GUA FORK: returns null in 1:1 direct chats for state, membership and profile-change events.
-     */
+    /** GUA FORK: returns null for state, membership and profile-change events in a 1:1 chat. */
     suspend fun create(
         currentTimelineItem: MatrixTimelineItem.Event,
         index: Int,
@@ -272,7 +268,6 @@ class TimelineItemEventFactory(
     }
 }
 
-/** GUA FORK: true for the state, membership and profile-change events hidden in a 1:1 direct chat. */
 private fun EventContent.isSuppressedInDirectOneToOneRoom(): Boolean = when (this) {
     is StateContent,
     is RoomMembershipContent,

@@ -34,8 +34,7 @@ import io.element.android.libraries.designsystem.theme.components.Text
  * @param modifier Classical modifier.
  * @param renderBackground whether to render the default background image or not.
  * @param contentAlignment horizontal alignment of the contents.
- * @param background optional full-bleed background drawn behind the (system-bar-padded) content
- * and footer. Takes precedence over [renderBackground] when provided.
+ * @param background drawn full-bleed behind content and footer; takes precedence over [renderBackground].
  * @param footer optional footer.
  * @param content main content.
  */

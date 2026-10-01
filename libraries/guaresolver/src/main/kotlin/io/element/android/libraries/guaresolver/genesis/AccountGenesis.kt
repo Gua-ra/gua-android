@@ -31,7 +31,6 @@ class AccountGenesis internal constructor(
     companion object {
         const val LENGTH = 87
 
-        /** ASCII `GUAG`, the domain separator. */
         const val MAGIC = "GUAG"
 
         const val VERSION = 0x01
@@ -39,7 +38,6 @@ class AccountGenesis internal constructor(
         /** Ed25519 authority, Ed25519 recovery, SHA-256. */
         const val SUITE_ED25519_SHA256 = 0x01
 
-        /** One committed recovery authority key. */
         const val RECOVERY_FRAMEWORK_COMMITTED_KEY = 0x01
 
         const val ENTROPY_LENGTH = 16

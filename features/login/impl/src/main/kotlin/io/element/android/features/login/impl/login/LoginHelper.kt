@@ -111,15 +111,12 @@ class LoginHelper(
         )
     }
 
-    /** GUA FORK: phone-first entry. Resolves the number to its homeserver, then builds the OIDC url with the phone as `login_hint`. */
     suspend fun submitPhone(e164Phone: String) {
         suspend {
             val resolution = resolverClient.resolve(e164Phone).getOrThrow()
             val homeserverUrl = resolution.homeserver.baseUrl
             val isAccountCreation = !resolution.exists
-            // GUA FORK: a new account registers its genesis first and carries the handle in the login_hint.
             val loginHint = loginHintFor(e164Phone = e164Phone, isAccountCreation = isAccountCreation)
-            // Configure the auth service for the resolved homeserver, then build the OIDC url.
             authenticationService.setHomeserver(homeserverUrl)
                 .map { matrixHomeServerDetails ->
                     if (matrixHomeServerDetails.supportsOAuthLogin) {
@@ -135,26 +132,21 @@ class LoginHelper(
         }.runCatchingUpdatingState(
             state = loginModeState,
             errorTransform = {
-                // A genesis the device meant to register and could not must reach the user as itself,
-                // not as a generic server error, because it is the only case that stops the signup.
                 if (it is AccountGenesisSignupError) it else ChangeServerError.from(it)
             }
         )
     }
 
-    /** GUA FORK: the bare E.164 number, or the genesis hint for a new account when the flag is on and the deployment issued a handle. */
     private suspend fun loginHintFor(e164Phone: String, isAccountCreation: Boolean): String {
         if (!featureFlagService.isFeatureEnabled(FeatureFlags.AccountGenesis)) return e164Phone
         if (!isAccountCreation) return e164Phone
         return when (val registration = accountGenesisManager.registerForSignup()) {
             is GenesisRegistration.Registered -> GuaLoginHint.forPhone(e164Phone, registration.attachHandle)
-            // The deployment does not do genesis. Continue with today's signup, showing nothing.
             GenesisRegistration.Unavailable -> e164Phone
             is GenesisRegistration.Failed -> throw AccountGenesisSignupError.SetupFailed
         }
     }
 
-    /** GUA FORK: passkey sign-in. Skips the resolver, uses the default account provider and sends [PASSKEY_LOGIN_HINT]. */
     suspend fun submitPasskey() {
         suspend {
             val accountProvider = deployment.defaultAccountProvider?.takeIf { it.isNotEmpty() }

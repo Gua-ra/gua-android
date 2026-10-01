@@ -324,7 +324,6 @@ fun createLoginHelper(
     authenticationService: MatrixAuthenticationService = FakeMatrixAuthenticationService(),
     webClientUrlForAuthenticationRetriever: WebClientUrlForAuthenticationRetriever = FakeWebClientUrlForAuthenticationRetriever(),
     resolverClient: ResolverClient = FakeResolverClient(),
-    // GUA FORK: AccountGenesis defaults to off.
     featureFlagService: FeatureFlagService = FakeFeatureFlagService(),
     accountGenesisManager: AccountGenesisManager = FakeAccountGenesisManager(),
     deployment: GuaDeployment = FakeGuaDeployment(),

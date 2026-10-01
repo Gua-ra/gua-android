@@ -1,6 +1,6 @@
 name: Nightly reports
 
-# GUA FORK: scheduled reports disabled. Upstream codecov/kover dashboards + secrets. Manual only.
+# GUA FORK: manual dispatch only.
 on:
   workflow_dispatch:
 

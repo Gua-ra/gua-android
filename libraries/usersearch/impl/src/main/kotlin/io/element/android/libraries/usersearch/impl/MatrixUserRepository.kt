@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.flow
 class MatrixUserRepository(
     private val client: MatrixClient,
     private val dataSource: UserListDataSource,
-    // GUA FORK: fan-out for bare-handle queries across the federation roster.
     private val federatedDataSource: FederatedUserSearchDataSource,
 ) : UserRepository {
     override fun search(query: String): Flow<UserSearchResultState> = flow {
@@ -52,8 +51,6 @@ class MatrixUserRepository(
     private suspend fun fetchSearchResults(query: String, shouldQueryProfile: Boolean): UserSearchResultState = coroutineScope {
         // Debounce
         delay(DEBOUNCE_TIME_MILLIS)
-        // GUA FORK: if the query is a bare handle, fan out an exact-match lookup to the other
-        // federation servers in parallel with the local directory search.
         val federatedUsers = async { federatedDataSource.search(query) }
         val results = dataSource
             .search(query, MAXIMUM_SEARCH_RESULTS)
@@ -71,7 +68,6 @@ class MatrixUserRepository(
             )
         }
 
-        // GUA FORK: local results first, then the federated exact matches that aren't already present.
         val knownUserIds = results.map { it.matrixUser.userId }.toHashSet()
         federatedUsers.await()
             .filter { knownUserIds.add(it.userId) }

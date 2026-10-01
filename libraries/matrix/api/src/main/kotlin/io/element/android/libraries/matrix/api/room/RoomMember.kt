@@ -66,8 +66,6 @@ data class RoomMember(
      * If the display name is null, the user ID is returned.
      * If the display name is ambiguous, the user ID is appended in parentheses.
      * Otherwise, the display name is returned.
-     *
-     * GUA FORK: falls back to, and disambiguates with, the homeserver-stripped handle.
      */
     val disambiguatedDisplayName: String = when {
         displayName == null -> userId.displayHandle
@@ -97,7 +95,6 @@ enum class RoomMembershipState {
  * If the [RoomMember.displayName] is present and not empty it'll be used, otherwise the [RoomMember.userId] will be used.
  */
 fun RoomMember.getBestName(): String {
-    // GUA FORK: fall back to the homeserver-stripped handle, never `@user:server`.
     return displayName?.takeIf { it.isNotEmpty() } ?: userId.displayHandle
 }
 

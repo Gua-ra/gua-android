@@ -41,7 +41,6 @@ fun IdentityChangeStateView(
         it.identityState.isAViolation()
     }
     when (identityChangeViolation?.identityState) {
-        // GUA FORK: both violations show one informational notice with a single acknowledging action, as on iOS.
         IdentityState.PinViolation -> ViolationAlert(
             identityChangeViolation = identityChangeViolation,
             onLinkClick = onLinkClick,

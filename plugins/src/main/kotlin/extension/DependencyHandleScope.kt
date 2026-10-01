@@ -124,9 +124,7 @@ fun DependencyHandlerScope.allLibrariesImpl() {
     implementation(project(":libraries:oauth:impl"))
     implementation(project(":libraries:workmanager:impl"))
     implementation(project(":libraries:recentemojis:impl"))
-    // GUA FORK: the Gua resolver client module.
     implementation(project(":libraries:guaresolver"))
-    // GUA FORK: the shared phone-number and country-picker module.
     implementation(project(":libraries:phonenumberentry"))
 }
 

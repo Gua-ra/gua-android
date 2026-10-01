@@ -91,7 +91,6 @@ private fun RoomMember.toTypingRoomMember(): TypingRoomMember {
 
 private fun createDefaultRoomMemberForTyping(userId: UserId): TypingRoomMember {
     return TypingRoomMember(
-        // GUA FORK: hide the homeserver suffix in the user handle.
         disambiguatedDisplayName = userId.displayHandle,
     )
 }

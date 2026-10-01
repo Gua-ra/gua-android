@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        // GUA FORK: always from BuildTimeConfig. An empty value disables the feature.
+        // GUA FORK: an empty value disables the feature.
         buildConfigFieldStr(
             name = "URL_POLICY",
             value = BuildTimeConfig.URL_POLICY ?: "",

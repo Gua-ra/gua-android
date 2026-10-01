@@ -90,7 +90,6 @@ fun TwoStepVerificationView(
     }
 }
 
-/** Both action rows are withheld while the factor status is unknown. */
 @Composable
 private fun OverviewSection(
     state: TwoStepVerificationState,

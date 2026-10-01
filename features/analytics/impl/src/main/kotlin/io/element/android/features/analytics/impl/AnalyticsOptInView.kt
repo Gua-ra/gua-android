@@ -59,7 +59,6 @@ fun AnalyticsOptInView(
     }
 
     BackHandler(onBack = ::onDeclineTerms)
-    // GUA FORK: buttons sit in the content area and the bottom gradient is dropped, matching iOS.
     HeaderFooterPage(
         modifier = modifier
             .fillMaxSize()

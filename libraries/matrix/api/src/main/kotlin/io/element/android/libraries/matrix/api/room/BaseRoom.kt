@@ -66,7 +66,6 @@ interface BaseRoom : Closeable {
      */
     fun isDm() = roomInfoFlow.value.isDm
 
-    /** GUA FORK: see [RoomInfo.isDirectOneToOneRoom]. */
     fun isDirectOneToOneRoom() = roomInfoFlow.value.isDirectOneToOneRoom
 
     fun predecessorRoom(): PredecessorRoom?

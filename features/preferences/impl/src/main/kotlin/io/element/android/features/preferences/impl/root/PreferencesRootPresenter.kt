@@ -124,7 +124,6 @@ class PreferencesRootPresenter(
             lockScreenService.isPinSetup()
         }.collectAsState(initial = true)
 
-        // GUA FORK: gated on the account's factors. Null means unknown, and the banner shows only on an explicit false.
         val hasAccountStrongFactor by produceState<Boolean?>(initialValue = null) {
             val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken ?: return@produceState
             identityServiceClient.accountFactorStatus(accessToken, matrixClient.sessionId.value)
@@ -184,7 +183,6 @@ class PreferencesRootPresenter(
             ?.let {
                 sessionEnterpriseService.tweakMasUrl(it)
             }
-            // GUA FORK: the URL names this account so the page can refuse another account's browser session.
             ?.withMxidLoginHint(matrixClient.sessionId.value)
     }
 }

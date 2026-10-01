@@ -15,8 +15,6 @@ import org.junit.Test
 private const val A_USER_ID = "@foo:example.org"
 private val aUserId = UserId(A_USER_ID)
 
-// GUA FORK: the homeserver suffix is never surfaced to end users, so the fallback/disambiguation
-// uses the homeserver-stripped handle (`@foo`) instead of the raw `@foo:example.org`.
 private val aDisplayHandle = aUserId.displayHandle
 
 class ProfileTimelineDetailsTest {

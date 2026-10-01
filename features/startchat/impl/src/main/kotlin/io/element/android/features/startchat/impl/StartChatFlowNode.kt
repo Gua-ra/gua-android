@@ -65,7 +65,6 @@ class StartChatFlowNode(
         @Parcelize
         data object JoinByAddress : NavTarget
 
-        // GUA FORK: Find friends contact-discovery screen + the profile it can open.
         @Parcelize
         data object FindFriends : NavTarget
 

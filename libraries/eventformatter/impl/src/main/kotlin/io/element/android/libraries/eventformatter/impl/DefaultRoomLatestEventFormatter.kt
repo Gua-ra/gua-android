@@ -100,7 +100,6 @@ class DefaultRoomLatestEventFormatter(
                 val message = sp.getString(CommonStrings.common_waiting_for_decryption_key)
                 message.prefixIfNeeded(senderDisambiguatedDisplayName, isDmRoom, isOutgoing)
             }
-            // GUA FORK: 1:1 chats hide membership, profile and state churn, so it must not appear in the room-list preview either.
             is RoomMembershipContent -> {
                 if (isDmRoom) null else roomMembershipContentFormatter.format(content, senderDisambiguatedDisplayName, isOutgoing)
             }

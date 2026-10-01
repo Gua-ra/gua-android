@@ -23,7 +23,6 @@ dependencies {
     implementation(projects.libraries.core)
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.di)
-    // GUA FORK: federation roster + bare-handle logic for federated user search.
     implementation(projects.libraries.guaresolver)
     implementation(projects.libraries.matrixui)
     implementation(projects.libraries.matrix.api)

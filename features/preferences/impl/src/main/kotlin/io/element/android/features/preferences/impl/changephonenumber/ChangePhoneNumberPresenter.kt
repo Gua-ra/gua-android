@@ -203,7 +203,6 @@ class ChangePhoneNumberPresenter(
                             is ResolverError.TwoFactorCooldown -> showCooldown(error.retryAfterSeconds)
                             is ResolverError.PhoneChangeCooldown -> showCooldown(error.retryAfterSeconds)
                             else -> {
-                                // The factors are unknown, not absent: stop with an error instead of guessing.
                                 errorMessage = CommonStrings.error_unknown
                                 phase = ChangePhoneNumberPhase.Intro
                             }
@@ -239,7 +238,6 @@ class ChangePhoneNumberPresenter(
         }
 
         fun verifyReauthOtp(enteredOtp: String) {
-            // Claimed before suspending, like requestReauthOtp.
             phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
                 val accessToken = accessToken()
@@ -286,7 +284,6 @@ class ChangePhoneNumberPresenter(
         }
 
         fun startPhoneChange(enteredPhone: String) {
-            // Claimed before suspending, like requestReauthOtp.
             phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
                 val accessToken = accessToken()
@@ -297,7 +294,6 @@ class ChangePhoneNumberPresenter(
                 }
                 val token = reauthToken
                 if (token.isEmpty()) {
-                    // Should never happen: the token is minted before this step.
                     abortSpentReauth(CommonStrings.error_unknown)
                     return@launch
                 }
@@ -311,7 +307,6 @@ class ChangePhoneNumberPresenter(
                     passkeyCredentialJson = null,
                     language = Locale.getDefault().toLanguageTag(),
                 )
-                // The server spent the token before weighing the step-up.
                 reauthToken = ""
                 stepUpPin = ""
                 result
@@ -340,7 +335,6 @@ class ChangePhoneNumberPresenter(
         }
 
         fun completePhoneChange(enteredOtp: String) {
-            // Claimed before suspending, like requestReauthOtp.
             phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
                 val accessToken = accessToken()
@@ -400,7 +394,6 @@ class ChangePhoneNumberPresenter(
                     }
                     .onFailure { error ->
                         errorMessage = when (error) {
-                            // The block was stale: the passkey it asks for is already registered.
                             is ResolverError.PasskeyAlreadyRegistered ->
                                 R.string.screen_two_step_verification_passkey_already_registered
                             is ResolverError.StepUpUnavailable ->
@@ -415,7 +408,6 @@ class ChangePhoneNumberPresenter(
             when (phase) {
                 ChangePhoneNumberPhase.EnteringReauthOtp -> verifyReauthOtp(submitted)
                 ChangePhoneNumberPhase.EnteringPin -> {
-                    // Captured, not verified: the server weighs it in the call that texts the new number.
                     stepUpPin = submitted
                     code = ""
                     errorMessage = null

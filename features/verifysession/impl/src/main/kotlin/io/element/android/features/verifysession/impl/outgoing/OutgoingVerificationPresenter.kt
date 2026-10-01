@@ -65,7 +65,6 @@ class OutgoingVerificationPresenter(
         val step by remember {
             derivedStateOf {
                 when (verificationRequest) {
-                    // GUA FORK: being verified says nothing about holding the keys.
                     is VerificationRequest.Outgoing.CurrentSession if forceVerification -> {
                         val step = stateAndDispatch.state.value.toVerificationStep()
                         if (step == OutgoingVerificationState.Step.Completed && !showDeviceVerifiedScreen) {

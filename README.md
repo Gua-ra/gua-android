@@ -30,11 +30,6 @@ This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://git
 | Area | Upstream (Element X) | Gua |
 |---|---|---|
 | Brand | Element / New Vector | Gua (`global.gua` application id) |
-| Login flow | Matrix password / SSO with manual homeserver selection | Phone number and verification code, no homeserver picking. Institutional SSO planned |
-| Welcome screen | Element onboarding | Gua aurora welcome with native phone entry and country picker |
-| Account home | user selects a homeserver | resolved automatically behind the scenes (`libraries/guaresolver`) |
-| Contact discovery | user directory search | Find Friends (hashed phone lookups) wired into Start Chat (`features/findfriends`) |
-| Two-step verification | device verification | 6-digit account PIN: set, change, reset (`features/preferences` two-step verification) |
 | Settings identity | full user id with server suffix | username only, server abstracted |
 | Chat list | all rooms, including Spaces and empty rooms | chats-first: Spaces and state-only rooms are hidden |
 | 1:1 conversations | state events visible in the timeline | configuration noise suppressed for clean 1:1 chats |

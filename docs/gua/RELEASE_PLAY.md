@@ -17,8 +17,7 @@ How Gua builds reach Google Play. The mechanics live in `.github/workflows/publi
 Put the `release-qa` label on the pull request. The workflow builds that branch, signs it with the
 upload key and publishes it to the QA app's internal track, then comments on the PR with the track
 and commit. Every later push to a labelled PR ships again. Only people with write access can add the
-label. The QA versionCode adds the workflow run number (`-Pgua.versionCodeOffset`) so one label can
-ship many times without Play rejecting a reused code.
+label.
 
 ## 3. Ship a production build
 

@@ -37,8 +37,7 @@ class DefaultOAuthUrlParser(
     override fun parse(url: String): OAuthAction? {
         val redirectUrl = oAuthRedirectUrlProvider.provide()
         if (url.startsWith(redirectUrl).not()) return null
-        // GUA FORK: the identity-reset approval page returns here; map it explicitly so the app does
-        // not infer approval from a bare resume.
+        // GUA FORK: mapped explicitly so the app does not infer approval from a bare resume.
         if (url.removePrefix(redirectUrl).substringBefore('?').trimEnd('/') == IDENTITY_RESET_DONE_PATH) {
             return OAuthAction.IdentityResetApproved
         }

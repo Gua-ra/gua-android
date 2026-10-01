@@ -28,7 +28,6 @@ import org.sonarqube.gradle.SonarResolverTask
 import java.util.Locale
 import java.util.Properties
 
-// GUA FORK: release signing values come from the environment, then the gitignored `app/keystore.properties`.
 val guaKeystoreProperties = Properties().apply {
     val propsFile = rootProject.file("app/keystore.properties")
     if (propsFile.exists()) {
@@ -112,7 +111,6 @@ android {
                 ?: project.property("signing.element.nightly.storePassword") as? String?
         }
 
-        // GUA FORK: registered only when a keystore path is provided.
         val guaReleaseStoreFile = guaSigningValue("GUA_RELEASE_KEYSTORE", "storeFile")
         if (guaReleaseStoreFile != null) {
             register("release") {
@@ -142,7 +140,6 @@ android {
         }
 
         getByName("release") {
-            // GUA FORK: `-Pgua.deployment=dev` builds the QA app (global.gua.dev) against the dev deployment.
             val useDevDeployment = (project.findProperty("gua.deployment") as? String) == "dev"
             if (useDevDeployment) {
                 applicationIdSuffix = ".dev"
@@ -160,7 +157,6 @@ android {
                     oAuthRedirectSchemeBase,
                 )
             }
-            // GUA FORK: falls back to the debug keystore when no release key is configured.
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
 
             optimization {

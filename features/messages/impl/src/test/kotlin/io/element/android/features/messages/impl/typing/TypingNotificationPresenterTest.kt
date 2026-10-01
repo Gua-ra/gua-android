@@ -72,7 +72,6 @@ class TypingNotificationPresenterTest {
             assertThat(oneMemberTypingState.typingMembers.size).isEqualTo(1)
             assertThat(oneMemberTypingState.typingMembers.first()).isEqualTo(
                 TypingRoomMember(
-                    // GUA FORK: unknown members fall back to the homeserver-stripped handle.
                     disambiguatedDisplayName = A_USER_ID_2.displayHandle,
                 )
             )
@@ -98,7 +97,6 @@ class TypingNotificationPresenterTest {
             assertThat(oneMemberTypingState.typingMembers.size).isEqualTo(1)
             assertThat(oneMemberTypingState.typingMembers.first()).isEqualTo(
                 TypingRoomMember(
-                    // GUA FORK: unknown members fall back to the homeserver-stripped handle.
                     disambiguatedDisplayName = A_USER_ID_2.displayHandle,
                 )
             )
@@ -135,7 +133,6 @@ class TypingNotificationPresenterTest {
             assertThat(oneMemberTypingState.typingMembers.size).isEqualTo(1)
             assertThat(oneMemberTypingState.typingMembers.first()).isEqualTo(
                 TypingRoomMember(
-                    // GUA FORK: ambiguous names disambiguate with the homeserver-stripped handle.
                     disambiguatedDisplayName = "Alice Doe (@bob)",
                 )
             )
@@ -161,7 +158,6 @@ class TypingNotificationPresenterTest {
             assertThat(oneMemberTypingState.typingMembers.size).isEqualTo(1)
             assertThat(oneMemberTypingState.typingMembers.first()).isEqualTo(
                 TypingRoomMember(
-                    // GUA FORK: unknown members fall back to the homeserver-stripped handle.
                     disambiguatedDisplayName = A_USER_ID_2.displayHandle,
                 )
             )
@@ -175,7 +171,6 @@ class TypingNotificationPresenterTest {
             val finalState = awaitItem()
             assertThat(finalState.typingMembers.first()).isEqualTo(
                 TypingRoomMember(
-                    // GUA FORK: ambiguous names disambiguate with the homeserver-stripped handle.
                     disambiguatedDisplayName = "Alice Doe (@bob)",
                 )
             )

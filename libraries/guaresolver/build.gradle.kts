@@ -26,7 +26,6 @@ android {
     val devDefaultAccountProvider = readLocalProperty("gua.defaultAccountProvider").orEmpty()
     val devIdentityServiceBaseUrl = readLocalProperty("gua.identityServiceBaseUrl").orEmpty()
 
-    // `-Pgua.deployment=dev` makes release builds target the development deployment.
     val useDevDeployment = (project.findProperty("gua.deployment") as? String) == "dev"
 
     defaultConfig {

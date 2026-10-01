@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  GUA FORK: Gua's own Firebase project values. google_app_id is set per build by BuildTimeConfig.GOOGLE_APP_ID_*.
-  Empty values make FirebaseApp skip initialisation.
--->
+<!-- google_app_id comes from BuildTimeConfig per build. Empty values make FirebaseApp skip initialisation. -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="default_web_client_id" translatable="false"></string>
     <string name="firebase_database_url" translatable="false"></string>

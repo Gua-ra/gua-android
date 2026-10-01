@@ -29,8 +29,7 @@ android {
     }
 
     defaultConfig {
-        // GUA FORK: fall back to the Gua pages so no element.io link can ever ship,
-        // even if the BuildTimeConfig values are unset.
+        // GUA FORK: defaults to the Gua pages so no element.io link ships.
         buildConfigFieldStr(
             name = "URL_COPYRIGHT",
             value = BuildTimeConfig.URL_COPYRIGHT ?: "https://gua.global/copyright",

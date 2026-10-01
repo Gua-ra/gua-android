@@ -26,7 +26,6 @@ internal interface IdentityServiceApi {
         @Header("Authorization") authorization: String,
     ): PinStatusResponse
 
-    // `POST /security/pin` answers 403 for every caller: the first PIN is enrolled through the web ceremony.
     @POST("security/pin/enroll/start")
     suspend fun startPinEnrollment(
         @Header("Authorization") authorization: String,
@@ -45,14 +44,10 @@ internal interface IdentityServiceApi {
         @Body body: CompletePinChangeRequest,
     )
 
-    // Answers 204 whether or not a recovery was live.
     @POST("security/recovery/cancel")
     suspend fun cancelAccountRecovery(
         @Header("Authorization") authorization: String,
     )
-
-    // Phone change: reauth/start, reauth/verify, phone/change/start, phone/change/complete.
-    // No SMS reaches the new number before phone/change/start has accepted a step-up factor.
 
     @POST("account/reauth/start")
     suspend fun startAccountReauth(
@@ -86,8 +81,6 @@ internal interface IdentityServiceApi {
         @Body body: FactorEnrollStartRequest,
     ): FactorEnrollStartResponse
 
-    // Unauthenticated: the body carries its own possession proof.
-
     @POST("account/genesis")
     suspend fun registerAccountGenesis(
         @Body body: AccountGenesisRegisterRequest,
@@ -96,7 +89,6 @@ internal interface IdentityServiceApi {
 
 @Serializable
 internal data class LookupRequest(
-    /** Hashed phone digests, never raw numbers. */
     val hashedPhones: List<String>,
 )
 

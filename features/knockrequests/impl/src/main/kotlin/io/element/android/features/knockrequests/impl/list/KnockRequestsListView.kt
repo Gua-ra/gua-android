@@ -350,7 +350,6 @@ private fun KnockRequestItem(
             // UserId
             if (!knockRequest.displayName.isNullOrEmpty()) {
                 Text(
-                    // GUA FORK: hide the homeserver suffix in the user handle.
                     text = knockRequest.userId.displayHandle,
                     color = ElementTheme.colors.textSecondary,
                     maxLines = 1,

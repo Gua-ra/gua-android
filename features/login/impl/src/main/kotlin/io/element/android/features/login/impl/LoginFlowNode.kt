@@ -73,7 +73,6 @@ class LoginFlowNode(
     private val preferencesEntryPoint: PreferencesEntryPoint,
 ) : BaseFlowNode<LoginFlowNode.NavTarget>(
     backstack = BackStack(
-        // GUA FORK: phone-first onboarding only. Sign-in stays pinned to the Gua resolver.
         initialElement = NavTarget.PhoneEntry,
         savedStateMap = buildContext.savedStateMap,
     ),
@@ -111,7 +110,6 @@ class LoginFlowNode(
     }
 
     sealed interface NavTarget : Parcelable {
-        // GUA FORK: phone-first entry (active path) + its country picker.
         @Parcelize
         data object PhoneEntry : NavTarget
 
@@ -370,8 +368,7 @@ class LoginFlowNode(
     private fun navigateToMas(oAuthDetails: OAuthDetails) {
         activity?.let {
             externalAppStarted = true
-            // GUA FORK: a private tab, so the sign-in page can never continue as whoever last
-            // signed in on this phone's browser.
+            // GUA FORK: a private tab, so the sign-in page cannot continue as whoever last signed in on this phone's browser.
             it.openUrlInChromeCustomTab(null, darkTheme, oAuthDetails.url, ephemeral = true)
         }
     }

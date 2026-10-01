@@ -23,12 +23,10 @@ class BootstrapGenesis internal constructor(
     companion object {
         const val LENGTH = 22
 
-        /** ASCII `GUAB`, the domain separator. */
         const val MAGIC = "GUAB"
 
         const val VERSION = 0x01
 
-        /** No authority key. */
         const val SUITE_NONE = 0x00
 
         const val ENTROPY_LENGTH = 16

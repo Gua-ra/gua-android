@@ -8,7 +8,6 @@
 package io.element.android.features.preferences.impl.twostepverification
 
 sealed interface TwoStepVerificationEvent {
-    /** Opens the web ceremony: a bearer session alone must not be able to add a durable factor. */
     data object StartSetup : TwoStepVerificationEvent
 
     data object StartChange : TwoStepVerificationEvent

@@ -1,6 +1,6 @@
 name: Close stale issues that are missing info.
 
-# GUA FORK: disabled. Upstream issue-triage automation. Manual only.
+# GUA FORK: manual dispatch only.
 on:
   workflow_dispatch:
 

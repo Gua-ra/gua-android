@@ -20,15 +20,13 @@ interface IdentityServiceClient {
     /** Succeeds whether or not a recovery was live, so a retry is safe. */
     suspend fun cancelAccountRecovery(accessToken: String): Result<Unit>
 
-    /** Returns the web-ceremony URL for enrolling the first PIN. Fails with [ResolverError.PinAlreadySet] when the account already holds one. */
+    /** Fails with [ResolverError.PinAlreadySet] when the account already holds a PIN. */
     suspend fun startPinEnrollment(accessToken: String): Result<String>
 
     /** Verifies the current PIN and triggers an OTP to [phone]. Returns the challenge id. */
     suspend fun startPinChange(accessToken: String, phone: String, currentPin: String): Result<String>
 
     suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit>
-
-    // Nothing is sent to the new number before [startPhoneChange] has spent the reauth token and accepted a step-up factor.
 
     /** Sends a reauth OTP only when [phone] is the number bound to the account. */
     suspend fun startPhoneChangeReauth(accessToken: String, phone: String, language: String?): Result<Unit>
@@ -49,13 +47,9 @@ interface IdentityServiceClient {
 
     suspend fun completePhoneChange(accessToken: String, challengeId: String, code: String): Result<Unit>
 
-    /** Returns the web-ceremony URL for passkey enrollment. */
     suspend fun startPasskeyEnrollment(accessToken: String): Result<String>
 
-    /**
-     * Unauthenticated: [proofB64Url] is a signature under the authority key committed inside [genesisB64Url]. A 503 means the deployment does not do account
-     * genesis.
-     */
+    /** Unauthenticated: [proofB64Url] is signed by the authority key committed in [genesisB64Url]. */
     suspend fun registerAccountGenesis(genesisB64Url: String, proofB64Url: String): Result<AccountGenesisRegistration>
 }
 

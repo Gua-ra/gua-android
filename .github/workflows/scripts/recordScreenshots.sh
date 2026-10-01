@@ -67,8 +67,6 @@ echo "Committing changes"
 git config http.sslVerify false
 
 if [[ -z ${INPUT_AUTHOR_NAME} ]]; then
-  # GUA FORK: this commit lands on a Gua branch, so it carries a Gua identity
-  # rather than upstream's ElementBot.
   git config user.name "gua-bot"
 else
   git config --local user.name "${INPUT_AUTHOR_NAME}"

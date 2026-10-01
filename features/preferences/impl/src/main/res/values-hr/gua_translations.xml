@@ -4,8 +4,6 @@
   ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
   ~ Please see LICENSE files in the repository root for full details.
   -->
-<!-- GUA FORK: hr translations for this module's Gua strings. The English source of truth
-     lives in values/temporary.xml. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="screen_preferences_set_up_pin_title">Postavi provjeru u dva koraka</string>
     <string name="screen_preferences_pin_nudge_message">Dodajte 6-znamenkasti PIN za bolju zaštitu svog računa.</string>

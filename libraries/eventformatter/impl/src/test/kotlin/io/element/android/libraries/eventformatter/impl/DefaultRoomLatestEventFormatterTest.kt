@@ -102,7 +102,6 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
         val info = ImageInfo(null, null, null, null, null, null, null)
         val message = createLatestEvent(false, null, aStickerContent(body, info, aMediaSource(url = "url")))
         val result = formatter.format(message, false)
-        // GUA FORK: the sender is rendered by its homeserver-stripped handle, never `@user:server`.
         val expectedBody = someoneElseId.displayHandle + ": Sticker: a sticker body"
         // Check we have formatting
         assertThat(result is AnnotatedString).isTrue()
@@ -842,7 +841,6 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
 
         val someoneChangedDisplayNameEvent = createLatestEvent(sentByYou = false, senderDisplayName = otherName, content = changedContent)
         val someoneChangedDisplayName = formatter.format(someoneChangedDisplayNameEvent, false)
-        // GUA FORK: the sender is identified by its homeserver-stripped handle, never `@user:server`.
         assertThat(someoneChangedDisplayName).isEqualTo("${someoneElseId.displayHandle} changed their display name from $oldDisplayName to $newDisplayName")
 
         val youSetDisplayNameEvent = createLatestEvent(sentByYou = true, senderDisplayName = null, content = setContent)

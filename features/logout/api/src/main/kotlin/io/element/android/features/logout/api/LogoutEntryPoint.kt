@@ -20,6 +20,5 @@ interface LogoutEntryPoint : FeatureEntryPoint {
         callback: Callback,
     ): Node
 
-    // GUA FORK: empty. Kept so the createNode signature does not change.
     interface Callback : Plugin
 }

@@ -1,6 +1,6 @@
 name: Move new issues onto issue triage board v2
 
-# GUA FORK: disabled. Upstream issue-board automation (element-hq project boards). Manual only.
+# GUA FORK: manual dispatch only.
 on:
   workflow_dispatch:
 

@@ -12,8 +12,6 @@ object FirebaseConfig {
     /**
      * It is the push gateway for firebase.
      * Note: pusher_http_url should have path '/_matrix/push/v1/notify' -->
-     *
-     * GUA FORK: Gua's own gateway.
      */
     const val PUSHER_HTTP_URL: String = "https://push.gua.global/_matrix/push/v1/notify"
 

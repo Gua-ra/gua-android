@@ -149,7 +149,6 @@ private fun InvitePeopleContentView(
                             data = CheckableUserRowData.Resolved(
                                 avatarData = invitableUser.matrixUser.getAvatarData(AvatarSize.UserListItem),
                                 name = invitableUser.matrixUser.getBestName(),
-                                // GUA FORK: hide the homeserver suffix in the user handle.
                                 subtext = invitableUser.matrixUser.userId.displayHandle,
                             ),
                         )
@@ -237,7 +236,6 @@ private fun InvitePeopleSearchBar(
                                 invitableUser.isAlreadyJoined -> stringResource(R.string.screen_invite_users_already_a_member)
                                 invitableUser.isAlreadyInvited -> stringResource(R.string.screen_invite_users_already_invited)
                                 // Otherwise show the ID, unless that's already used for their name
-                                // GUA FORK: hide the homeserver suffix in the user handle.
                                 invitableUser.matrixUser.displayName.isNullOrEmpty()
                                     .not() -> invitableUser.matrixUser.userId.displayHandle
                                 else -> null

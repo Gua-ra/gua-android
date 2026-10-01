@@ -111,7 +111,6 @@ class TimelinePresenter(
         config = TimelineItemsFactoryConfig(
             computeReadReceipts = true,
             computeReactions = true,
-            // GUA FORK: drop state/membership churn (and the collapsed "room changes" group) in 1:1 chats.
             isDirectOneToOneRoom = room.isDirectOneToOneRoom(),
         )
     )

@@ -1,6 +1,6 @@
 name: Community PR notice
 
-# GUA FORK: disabled. Upstream community-PR notice bot. Manual only.
+# GUA FORK: manual dispatch only.
 on:
   workflow_dispatch:
 

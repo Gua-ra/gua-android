@@ -1,7 +1,5 @@
 name: Gua CI
 
-# Fork CI: constraint guard, debug build, unit and screenshot tests, static analysis. Uses no upstream secrets.
-
 on:
   workflow_dispatch:
   pull_request:

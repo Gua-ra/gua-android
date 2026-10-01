@@ -88,7 +88,6 @@ class PinnedMessagesListPresenter(
         config = TimelineItemsFactoryConfig(
             computeReadReceipts = false,
             computeReactions = false,
-            // GUA FORK: consistent with the live timeline; pinned events are messages so this is a no-op in practice.
             isDirectOneToOneRoom = room.isDirectOneToOneRoom(),
         )
     )

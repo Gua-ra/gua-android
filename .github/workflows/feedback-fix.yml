@@ -1,7 +1,5 @@
 name: Feedback fix
 
-# Runs Claude Code on an issue labelled `feedback:approved` and opens a pull request with the fix.
-
 on:
   issues:
     types: [labeled]
