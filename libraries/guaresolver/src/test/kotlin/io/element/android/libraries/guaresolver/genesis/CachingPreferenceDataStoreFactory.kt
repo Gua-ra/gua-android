@@ -14,13 +14,7 @@ import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory as AndroidPreferenceDataStoreFactory
 
-/**
- * GUA FORK: a [PreferenceDataStoreFactory] that returns THE SAME store for the same name.
- *
- * `FakePreferenceDataStoreFactory` creates a fresh temp file on every call, so two objects built over it
- * never see each other's writes. That would quietly turn the "a stored key survives a restart" test into
- * a test that a brand-new empty store is empty, which is the assertion passing for the wrong reason.
- */
+/** Returns the same store for the same name, so two instances see each other's writes. */
 class CachingPreferenceDataStoreFactory : PreferenceDataStoreFactory {
     private val stores = ConcurrentHashMap<String, DataStore<Preferences>>()
 

@@ -73,7 +73,6 @@ class FederatedUserSearchTest {
 
     @Test
     fun `visibility matching is case insensitive`() {
-        // The resolver serializes the policy uppercase, like the entry status.
         assertThat(RosterSearchVisibility.parse("GLOBAL")).isEqualTo(RosterSearchVisibility.Global)
         assertThat(RosterSearchVisibility.parse("GROUP")).isEqualTo(RosterSearchVisibility.Group)
         assertThat(RosterSearchVisibility.parse("SERVER")).isEqualTo(RosterSearchVisibility.Server)

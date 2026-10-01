@@ -7,24 +7,8 @@
 
 package io.element.android.libraries.guaresolver
 
-/**
- * GUA FORK: where a factor-enrollment ceremony returns to once the IdP is finished with it.
- *
- * `POST /security/{pin,passkey}/enroll/start` accepts an optional `redirectUri`, checked against the
- * deployment's allowlist. Without one the identity service parks every session at its single
- * configured default, which is production's scheme, so a QA or debug build would send the owner to
- * an app they do not have installed and the enrollment would dead-end in the browser.
- *
- * The value has to be the same custom scheme the OAuth intent filter already claims for this build
- * (`global.gua`, `global.gua.dev` for the QA app, `global.gua.debug` for a debug build), which is
- * why it is resolved from the build rather than written down anywhere: the only implementation
- * derives it from the sign-in redirect, and nothing else in the app gets to name one.
- */
+/** Where a factor-enrollment ceremony returns to. Must be the custom scheme this build's OAuth intent filter claims. */
 interface EnrollmentRedirectProvider {
-    /**
-     * The redirect to name on an enrollment start, or null when this build cannot say. A null is not
-     * an error: the client then names nothing and the server falls back to its own configured
-     * default, which is what every build did before the field existed.
-     */
+    /** Null when this build cannot say. The server then uses its configured default. */
     fun provide(): String?
 }

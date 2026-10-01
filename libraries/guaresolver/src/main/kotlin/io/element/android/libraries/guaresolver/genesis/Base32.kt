@@ -7,25 +7,14 @@
 
 package io.element.android.libraries.guaresolver.genesis
 
-/**
- * GUA FORK: RFC 4648 base32, lowercase and unpadded, which is the spelling ADM-008 decision 2 fixes
- * for an accountId. Port of the identity-service `Base32`, byte for byte.
- *
- * The decoder is strict in each direction an ambiguity could enter: only the lowercase alphabet (no
- * uppercase, no padding, no "extended hex" alphabet), only a character count an unpadded encoding can
- * actually produce, and only zero trailing bits. Those are the three ways a decoder that "helpfully"
- * accepts more would give one byte string several spellings, which ADM-001 L4 forbids for anything a
- * signature or a permanent identifier covers.
- */
+/** RFC 4648 base32, lowercase and unpadded. The decoder is strict so one byte string has exactly one spelling. */
 internal object Base32 {
     private const val ALPHABET = "abcdefghijklmnopqrstuvwxyz234567"
 
-    /** Reverse lookup, -1 for every character outside the alphabet. */
     private val values = IntArray(128) { -1 }.apply {
         ALPHABET.forEachIndexed { index, character -> this[character.code] = index }
     }
 
-    /** Encodes [data] as lowercase unpadded base32. */
     fun encode(data: ByteArray): String {
         val out = StringBuilder((data.size * 8 + 4) / 5)
         var buffer = 0
@@ -40,19 +29,12 @@ internal object Base32 {
             }
         }
         if (bits > 0) {
-            // Left-over bits are left-aligned and zero-padded on the right.
             val shift = 5 - bits
             out.append(ALPHABET[buffer shl shift and 0x1F])
         }
         return out.toString()
     }
 
-    /**
-     * Decodes lowercase unpadded base32.
-     *
-     * @throws InvalidGenesisException with reason `bad_base32` on any character outside the alphabet,
-     * a character count no unpadded encoding produces, or non-zero trailing bits.
-     */
     fun decode(encoded: String): ByteArray {
         val remainder = encoded.length % 8
         // 1, 3 and 6 left-over characters cannot come out of any byte string.
@@ -76,7 +58,7 @@ internal object Base32 {
                 bits -= 8
             }
         }
-        // Whatever is left over is padding and must be zero, or one byte string has several spellings.
+        // Left-over bits must be zero, or one byte string has several spellings.
         if (bits > 0) {
             val mask = (1 shl bits) - 1
             if (buffer and mask != 0) {

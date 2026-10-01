@@ -22,13 +22,7 @@ import io.element.android.libraries.network.RetrofitFactory
 import retrofit2.HttpException
 import timber.log.Timber
 
-/**
- * GUA FORK: default [ResolverClient]. Talks to the active [GuaDeployment]'s resolver via Retrofit,
- * reusing the app-wide [RetrofitFactory] (OkHttp + kotlinx-serialization). Mirrors iOS
- * `ResolverClient`.
- *
- * PII note: the phone number is sent plaintext over TLS to the resolver only, and is never logged.
- */
+/** The phone number is sent over TLS to the resolver only, and is never logged. */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class DefaultResolverClient(

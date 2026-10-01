@@ -12,10 +12,6 @@ import io.element.android.libraries.guaresolver.FederationRosterEntry
 import io.element.android.libraries.guaresolver.FederationRosterProvider
 import io.element.android.libraries.guaresolver.FederationRosterServer
 
-/**
- * GUA FORK: fake [FederationRosterProvider] with a fixed roster (or none) for federated user
- * search tests.
- */
 class FakeFederationRosterProvider(
     private val roster: FederationRoster? = null,
 ) : FederationRosterProvider {

@@ -95,10 +95,7 @@ class DefaultPushService(
                 .also { Timber.w("Account is not verified") }
         }
         Timber.d("Ensure pusher is registered")
-        // GUA FORK: a remembered provider with no distributor on this build (Firebase without a
-        // Firebase project, for instance) must not be re-registered blindly; it would fail on
-        // every start and put an error dialog in front of the user. Fall through to the
-        // selection path instead, which reports "nothing available" quietly.
+        // GUA FORK: a remembered provider with no distributor on this build falls through to the selection path instead of failing on every start.
         val currentPushProvider = getCurrentPushProvider(matrixClient.sessionId)
             ?.takeIf { it.getDistributors().isNotEmpty() }
         val result = if (currentPushProvider == null) {

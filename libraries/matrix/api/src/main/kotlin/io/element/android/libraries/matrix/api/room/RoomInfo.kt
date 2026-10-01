@@ -84,14 +84,7 @@ data class RoomInfo(
     val aliases: List<RoomAlias>
         get() = listOfNotNull(canonicalAlias) + alternativeAliases
 
-    /**
-     * GUA FORK: true when this is a 1:1 direct chat (a direct room with at most two
-     * active members). 1:1 chats are conversations, not "rooms", so the UI suppresses
-     * state/membership churn and the collapsed "N room changes" summary for them.
-     *
-     * Mirrors Element X iOS `RoomProxy.isDirectOneToOneRoom`
-     * (`isDirect && activeMembersCount <= 2`).
-     */
+    /** GUA FORK: a direct room with at most two active members. */
     val isDirectOneToOneRoom: Boolean
         get() = isDirect && activeMembersCount <= 2
 }

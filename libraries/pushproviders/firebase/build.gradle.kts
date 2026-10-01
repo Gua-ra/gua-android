@@ -28,10 +28,7 @@ android {
     buildTypes {
         getByName("release") {
             consumerProguardFiles("consumer-proguard-rules.pro")
-            // GUA FORK: the release build type serves two apps. `-Pgua.deployment=dev`
-            // builds the QA app (applicationId global.gua.dev), which Firebase holds a
-            // separate record for, so it needs its own id here. Without this branch QA
-            // would register under production's id and get no push at all.
+            // GUA FORK: `-Pgua.deployment=dev` builds the QA app, which has its own Firebase app id.
             val useDevDeployment = (project.findProperty("gua.deployment") as? String) == "dev"
             resValue(
                 type = "string",

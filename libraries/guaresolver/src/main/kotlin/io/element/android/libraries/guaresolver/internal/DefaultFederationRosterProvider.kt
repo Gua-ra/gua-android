@@ -16,11 +16,7 @@ import io.element.android.libraries.guaresolver.FederationRosterProvider
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-/**
- * GUA FORK: in-memory roster cache so a burst of searches doesn't hammer the resolver: the roster
- * only changes when servers join or leave the federation, so a short TTL is plenty. Keeps serving
- * the last good roster when a refresh fails. Mirrors iOS `FederationRosterCache`.
- */
+/** Short-TTL in-memory cache. Keeps serving the last good roster when a refresh fails. */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class DefaultFederationRosterProvider(
@@ -43,7 +39,6 @@ class DefaultFederationRosterProvider(
                 roster
             },
             onFailure = {
-                // A transient resolver error shouldn't kill federated search: serve the stale roster if there is one.
                 cached
             },
         )

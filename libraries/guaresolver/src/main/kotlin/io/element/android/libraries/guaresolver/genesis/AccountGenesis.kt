@@ -7,14 +7,7 @@
 
 package io.element.android.libraries.guaresolver.genesis
 
-/**
- * GUA FORK: a decoded `AccountGenesis` (ADM-008 suite 0x01), together with the exact bytes it was
- * decoded from. Port of the identity-service `AccountGenesis`.
- *
- * It commits the initial authority key, the algorithm identifiers and the initial recovery authority and
- * framework, and it holds no identifier and no homeserver (ADM-001 L4). Every accessor hands back a
- * copy, so nothing downstream can mutate the bytes the accountId is derived from.
- */
+/** Keeps the exact bytes it was decoded from. Accessors return copies. */
 class AccountGenesis internal constructor(
     val genesisVersion: Int,
     val suite: Int,
@@ -24,7 +17,6 @@ class AccountGenesis internal constructor(
     private val entropyBytes: ByteArray,
     private val bytes: ByteArray,
 ) {
-    /** The raw 32-byte Ed25519 account authority key. */
     fun authorityPublicKey(): ByteArray = authorityKey.copyOf()
 
     fun recoveryAuthorityPublicKey(): ByteArray = recoveryKey.copyOf()
@@ -34,11 +26,9 @@ class AccountGenesis internal constructor(
     /** The bytes as received. The accountId is the hash of these, never of a re-encoding. */
     fun canonicalBytes(): ByteArray = bytes.copyOf()
 
-    /** Genesis-rooted accountId over the received bytes. */
     fun accountId(): AccountId = AccountId.derive(AccountId.CLASS_GENESIS, bytes)
 
     companion object {
-        /** Total canonical length. Any other length is rejected. */
         const val LENGTH = 87
 
         /** ASCII `GUAG`, the domain separator. */
@@ -49,7 +39,7 @@ class AccountGenesis internal constructor(
         /** Ed25519 authority, Ed25519 recovery, SHA-256. */
         const val SUITE_ED25519_SHA256 = 0x01
 
-        /** One committed recovery authority key (ADM-008 decision 4). */
+        /** One committed recovery authority key. */
         const val RECOVERY_FRAMEWORK_COMMITTED_KEY = 0x01
 
         const val ENTROPY_LENGTH = 16

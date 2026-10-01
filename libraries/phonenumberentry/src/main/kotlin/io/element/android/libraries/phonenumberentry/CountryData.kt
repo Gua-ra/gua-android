@@ -7,11 +7,7 @@
 
 package io.element.android.libraries.phonenumberentry
 
-/**
- * GUA FORK: the hand-curated country database for phone entry — ISO 3166-1 alpha-2 codes paired with
- * ITU-T E.164 dial codes. Ported from iOS `Country.swift`. The list order matters only for dial-code
- * ambiguity (most-populous listed first, e.g. US before CA for +1).
- */
+/** Order matters for dial-code ambiguity: the most populous country comes first. */
 internal val all: List<Country> = listOf(
         Country(isoCode = "US", dialCode = "1"),
         Country(isoCode = "CA", dialCode = "1"),
@@ -250,10 +246,6 @@ internal val all: List<Country> = listOf(
         Country(isoCode = "ZW", dialCode = "263"),
 )
 
-/**
- * National-format example mobile numbers (no country code), used as the input placeholder. Curated
- * for the most-populous markets; everything else falls back to a generic 10-digit hint.
- */
 internal val nationalExamples: Map<String, String> = mapOf(
         "US" to "555 123 4567",
         "CA" to "506 555 0123",
@@ -315,23 +307,14 @@ internal val nationalExamples: Map<String, String> = mapOf(
         "LB" to "03 123 456",
 )
 
-/**
- * Live-formatting masks per country. `#` is a digit placeholder; everything else is a literal
- * separator inserted as the user types. Curated for markets where the local convention groups digits
- * with parens/dashes; otherwise a mask is derived from [nationalExamples].
- */
+/** `#` is a digit placeholder. Everything else is a literal separator. */
 internal val nationalMasks: Map<String, String> = mapOf(
         "US" to "(###) ###-####",
         "CA" to "(###) ###-####",
         "BR" to "(##) #####-####",
 )
 
-/**
- * NANP area codes (NPA) assigned to Canada. The North American Numbering Plan shares the +1 dial code
- * between the US, Canada and most Caribbean nations. Caribbean countries are disambiguated by full
- * +1XXX dial codes in [all]; Canada vs US must be disambiguated by the local 3-digit area code.
- * Source: Canadian Numbering Administrator (CNA), 2024.
- */
+/** NANP area codes assigned to Canada. Source: Canadian Numbering Administrator, 2024. */
 internal val canadianAreaCodes: Set<String> = setOf(
         "204",
         "226",

@@ -7,20 +7,7 @@
 
 package io.element.android.libraries.guaresolver.genesis
 
-/**
- * GUA FORK: the canonical codec for `BootstrapGenesis`, suite 0x00 (ADM-008 encoding tables).
- *
- * ```
- * off len field
- * 0   4   magic "GUAB"
- * 4   1   version = 0x01
- * 5   1   suite = 0x00
- * 6   16  entropy   CSPRNG, never derived from the MXID or the phone
- * 22      end
- * ```
- *
- * The fixed-layout rationale is the one [AccountGenesisCodec] documents.
- */
+/** Canonical fixed-width encoding, 22 bytes. */
 object BootstrapGenesisCodec {
     private val magic = BootstrapGenesis.MAGIC.toByteArray(Charsets.US_ASCII)
 
@@ -28,11 +15,6 @@ object BootstrapGenesisCodec {
     private const val OFFSET_SUITE = 5
     private const val OFFSET_ENTROPY = 6
 
-    /**
-     * Strictly decodes canonical bytes.
-     *
-     * @throws InvalidGenesisException on a wrong length, magic, version or suite.
-     */
     fun decode(bytes: ByteArray): BootstrapGenesis {
         if (bytes.size != BootstrapGenesis.LENGTH) {
             throw InvalidGenesisException("wrong_length", "BootstrapGenesis must be exactly ${BootstrapGenesis.LENGTH} bytes")
@@ -52,7 +34,6 @@ object BootstrapGenesisCodec {
         return BootstrapGenesis(version, suite, entropy, bytes)
     }
 
-    /** Builds canonical bytes over the given entropy. */
     fun encode(entropy: ByteArray): ByteArray {
         require(entropy.size == BootstrapGenesis.ENTROPY_LENGTH) { "entropy is ${BootstrapGenesis.ENTROPY_LENGTH} bytes" }
         val out = ByteArray(BootstrapGenesis.LENGTH)

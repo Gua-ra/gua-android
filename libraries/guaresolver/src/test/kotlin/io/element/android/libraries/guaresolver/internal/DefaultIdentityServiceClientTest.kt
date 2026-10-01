@@ -45,7 +45,6 @@ class DefaultIdentityServiceClientTest {
         assertThat(matches[0].displayHandle).isEqualTo("@alice")
         assertThat(matches[0].displayName).isEqualTo("Alice")
         assertThat(matches[0].avatarUrl).isEqualTo("mxc://x/y")
-        // No username assigned -> strip the :homeserver suffix from the Matrix id.
         assertThat(matches[1].displayHandle).isEqualTo("@bob")
         server.shutdown()
     }
@@ -64,7 +63,6 @@ class DefaultIdentityServiceClientTest {
         val body = request.body.readUtf8()
         assertThat(body).contains("hash1")
         assertThat(body).contains("hash2")
-        // Privacy: only the hashed key is sent.
         assertThat(body).doesNotContain("+")
         server.shutdown()
     }
@@ -121,13 +119,9 @@ class DefaultIdentityServiceClientTest {
 
         assertThat(enrollUrl).isEqualTo("https://idp.gua.global/passkey/enroll?token=abc")
         val request = server.takeRequest()
-        // POST is the contract the identity service actually serves; asserting GET here is what
-        // let the 405 ship.
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.path).isEqualTo("/security/passkey/enroll/start")
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer secret-token")
-        // This build's own redirect, so the ceremony comes back to the app it was opened from
-        // rather than to whichever variant the deployment has configured.
         assertThat(request.body.readUtf8()).isEqualTo("""{"redirectUri":"global.gua.dev:/oidc"}""")
         server.shutdown()
     }
@@ -145,8 +139,6 @@ class DefaultIdentityServiceClientTest {
         assertThat(enrollUrl).isEqualTo("https://idp.gua.global/login/enroll/abc")
         val request = server.takeRequest()
         assertThat(request.method).isEqualTo("POST")
-        // The first PIN is enrolled here, not at `security/pin`, which now refuses every bearer
-        // caller. The access token is the credential; the body carries nothing but the redirect.
         assertThat(request.path).isEqualTo("/security/pin/enroll/start")
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer secret-token")
         assertThat(request.body.readUtf8()).isEqualTo("""{"redirectUri":"global.gua.dev:/oidc"}""")
@@ -163,7 +155,6 @@ class DefaultIdentityServiceClientTest {
 
         client.startPinEnrollment("secret-token").getOrThrow()
 
-        // `{}`, not `{"redirectUri":null}`: the server is left to its own configured default.
         assertThat(server.takeRequest().body.readUtf8()).isEqualTo("{}")
         server.shutdown()
     }
@@ -179,9 +170,6 @@ class DefaultIdentityServiceClientTest {
 
         val enrollUrl = client.startPinEnrollment("secret-token").getOrThrow()
 
-        // The ceremony still opens. An older server and a deployment that has not allowlisted this
-        // variant both land here, and QA meeting a dead end is worse than returning to production's
-        // scheme.
         assertThat(enrollUrl).isEqualTo("https://idp.gua.global/login/enroll/abc")
         assertThat(server.takeRequest().body.readUtf8()).isEqualTo("""{"redirectUri":"global.gua.dev:/oidc"}""")
         val retry = server.takeRequest()
@@ -233,8 +221,6 @@ class DefaultIdentityServiceClientTest {
 
         val error = client.startPinEnrollment("secret-token").exceptionOrNull()
 
-        // The retry is for the redirect and nothing else: spending a second call on a refusal that
-        // has nothing to do with it would only ask the account to be told off twice.
         assertThat(error).isInstanceOf(ResolverError.PinAlreadySet::class.java)
         assertThat(server.requestCount).isEqualTo(1)
         server.shutdown()
@@ -250,8 +236,6 @@ class DefaultIdentityServiceClientTest {
 
         val error = client.startPinEnrollment("secret-token").exceptionOrNull()
 
-        // 409 alone would have fallen through to PhoneAlreadyLinked, which is a different account's
-        // number rather than this account's own PIN.
         assertThat(error).isInstanceOf(ResolverError.PinAlreadySet::class.java)
         server.shutdown()
     }
@@ -266,8 +250,6 @@ class DefaultIdentityServiceClientTest {
 
         val error = client.startPasskeyEnrollment("secret-token").exceptionOrNull()
 
-        // The twin of pin_already_set: 409 alone fell through to PhoneAlreadyLinked, and unnamed it
-        // reached the screen as "Something went wrong" for a screen that was merely out of date.
         assertThat(error).isInstanceOf(ResolverError.PasskeyAlreadyRegistered::class.java)
         server.shutdown()
     }
@@ -282,13 +264,9 @@ class DefaultIdentityServiceClientTest {
 
         val error = client.startPasskeyEnrollment("secret-token").exceptionOrNull()
 
-        // The one account that genuinely cannot enroll anything here. It needs to be told why, and
-        // pointed at the delayed recovery, rather than invited to try again.
         assertThat(error).isInstanceOf(ResolverError.StepUpUnavailable::class.java)
         server.shutdown()
     }
-
-    // GUA FORK: the account factor signal and the real phone-change contract.
 
     @Test
     fun `accountFactorStatus parses the factors the account holds`() = runTest {
@@ -313,7 +291,6 @@ class DefaultIdentityServiceClientTest {
         assertThat(status.hasPin).isFalse()
         assertThat(status.passkeyRegistered).isTrue()
         assertThat(status.preferredFactor).isEqualTo(AuthFactor.PASSKEY)
-        // The account holds a passkey, so it can settle a step-up even with no PIN at all.
         assertThat(status.phoneChangeStepUpOptions).containsExactly(AuthFactor.PASSKEY)
         assertThat(status.hasStrongFactor).isTrue()
         val request = server.takeRequest()
@@ -325,7 +302,6 @@ class DefaultIdentityServiceClientTest {
     @Test
     fun `accountFactorStatus derives the factors an older identity-service does not report`() = runTest {
         val server = MockWebServer()
-        // The shape from before the factor policy: a PIN flag and a cooldown, nothing else.
         server.enqueue(MockResponse().setBody("""{ "hasPin": true, "changePhoneCooldownRemainingSeconds": 42 }"""))
         val client = createClient(server)
 
@@ -333,8 +309,6 @@ class DefaultIdentityServiceClientTest {
 
         assertThat(status.passkeyRegistered).isFalse()
         assertThat(status.preferredFactor).isEqualTo(AuthFactor.PIN)
-        // Derived, not defaulted to empty: an empty list would hard-block a change the old server
-        // would have allowed.
         assertThat(status.phoneChangeStepUpOptions).containsExactly(AuthFactor.PIN)
         assertThat(status.changePhoneCooldownRemainingSeconds).isEqualTo(42)
         server.shutdown()
@@ -447,15 +421,12 @@ class DefaultIdentityServiceClientTest {
         assertThat(startRequest.method).isEqualTo("POST")
         assertThat(startRequest.path).isEqualTo("/account/reauth/start")
         assertThat(startRequest.getHeader("Accept-Language")).isEqualTo("pt-BR")
-        // The number the user typed is what decides whether an SMS goes out at all.
         assertThat(startRequest.body.readUtf8()).contains("\"phone\":\"+15551234567\"")
         val verifyRequest = server.takeRequest()
         assertThat(verifyRequest.path).isEqualTo("/account/reauth/verify")
         val body = verifyRequest.body.readUtf8()
         assertThat(body).contains("\"code\":\"123456\"")
-        // Sent again: the server keeps no pending record between start and verify.
         assertThat(body).contains("\"phone\":\"+15551234567\"")
-        // Never left to the server default: a token scoped elsewhere cannot be spent here.
         assertThat(body).contains("\"operation\":\"PHONE_CHANGE\"")
         server.shutdown()
     }
@@ -472,8 +443,6 @@ class DefaultIdentityServiceClientTest {
 
         val error = client.startPhoneChangeReauth("secret-token", phone = "+15550000000", language = null).exceptionOrNull()
 
-        // Its own case so no caller can render it as one of the retryable PIN failures, and so the
-        // client repeats only the server's message.
         assertThat(error).isInstanceOf(ResolverError.ReauthPhoneMismatch::class.java)
         server.shutdown()
     }
@@ -488,7 +457,6 @@ class DefaultIdentityServiceClientTest {
 
         val error = client.startPhoneChangeReauth("secret-token", phone = "nonsense", language = null).exceptionOrNull()
 
-        // Safe to distinguish: it says the input was not a phone number, never who holds one.
         assertThat(error).isInstanceOf(ResolverError.InvalidPhoneNumber::class.java)
         server.shutdown()
     }
@@ -551,7 +519,6 @@ class DefaultIdentityServiceClientTest {
 
         val body = server.takeRequest().body.readUtf8()
         assertThat(body).contains("\"passkeyStepUpId\":\"stepup-1\"")
-        // An object, not a re-encoded string: the server verifies the assertion it was handed.
         assertThat(body).contains("\"passkeyCredential\":{\"id\":\"cred\",\"type\":\"public-key\"}")
         assertThat(body).doesNotContain("\"pin\"")
         server.shutdown()
@@ -599,7 +566,6 @@ class DefaultIdentityServiceClientTest {
             language = null,
         ).exceptionOrNull()
 
-        // The body wins over the header: they are the same number, but only the body is authoritative.
         assertThat(error).isEqualTo(ResolverError.TwoFactorCooldown(retryAfterSeconds = 604_800))
         server.shutdown()
     }
@@ -659,8 +625,6 @@ class DefaultIdentityServiceClientTest {
         server.shutdown()
     }
 
-    // GUA FORK: account genesis registration (ADM-008 Phase 3).
-
     @Test
     fun `registerAccountGenesis POSTs the genesis and proof and parses the accountId and handle`() = runTest {
         val server = MockWebServer()
@@ -684,7 +648,6 @@ class DefaultIdentityServiceClientTest {
         val request = server.takeRequest()
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.path).isEqualTo("/account/genesis")
-        // Self-authenticating: the proof inside the body is the credential, so no bearer token is sent.
         assertThat(request.getHeader("Authorization")).isNull()
         val body = request.body.readUtf8()
         assertThat(body).contains("\"genesis\":\"R1VBRw\"")

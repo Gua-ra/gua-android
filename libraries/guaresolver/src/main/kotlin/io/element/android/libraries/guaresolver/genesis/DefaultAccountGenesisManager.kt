@@ -15,13 +15,7 @@ import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.ResolverError
 import timber.log.Timber
 
-/**
- * GUA FORK: default [AccountGenesisManager].
- *
- * The accountId this holds is the one the SERVER derived and returned. It is compared against the one
- * derived here from the same bytes, so a disagreement is caught at registration rather than at the
- * attach step, where it would only surface as a proof that does not verify.
- */
+/** The server-derived accountId is compared against the one derived here from the same bytes. */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class DefaultAccountGenesisManager(
@@ -33,16 +27,11 @@ class DefaultAccountGenesisManager(
 
     override suspend fun registerForSignup(): GenesisRegistration {
         return try {
-            // A fresh pair per signup: re-using one that already owns an account would be an attempt to
-            // re-point it, which the server refuses with a conflict anyway. This mints into the store's
-            // signup slot, so a pair that already owns an account is left where it is.
             val keys = keyStore.createKeyPair()
             val canonicalBytes = AccountGenesisCodec.mint(
                 authorityPublicKey = keys.authorityPublicKey(),
                 recoveryAuthorityPublicKey = keys.recoveryAuthorityPublicKey(),
             )
-            // Decode what was just built, so a mint that somehow produced bytes the server would refuse
-            // fails here rather than as an opaque 400.
             val genesis = AccountGenesisCodec.decode(canonicalBytes)
             val derivedAccountId = genesis.accountId()
             val proof = keyStore.signWithAuthorityKey(GenesisProofs.genesisProofPreimage(canonicalBytes))
@@ -53,10 +42,7 @@ class DefaultAccountGenesisManager(
             ).getOrElse { error ->
                 return when {
                     isGenesisUnsupported(error) -> {
-                        // Not a failure: the deployment does not do genesis, so this signup takes the
-                        // bootstrap branch with no handle and nothing shown to the user.
                         Timber.i("This deployment does not issue an account genesis; continuing without one")
-                        // Drops the pair minted just above. An attached pair is not part of this.
                         keyStore.clear()
                         GenesisRegistration.Unavailable
                     }
@@ -93,14 +79,7 @@ class DefaultAccountGenesisManager(
         }
     }
 
-    /**
-     * True when the deployment said it does not do account genesis.
-     *
-     * 503 is the documented answer while `identity.genesis.enabled` is off. 403 is the answer while the
-     * deployment declines to issue under recovery framework 0x01 (ADM-008 decision 4 gates it on account
-     * recovery, ADM-002). Both mean no handle exists to present, which is the no-handle bootstrap branch
-     * (ADM-008 decision 6 calls it "not a failure"), so both continue silently rather than blocking the signup.
-     */
+    /** 503 and 403 both mean the deployment issues no genesis, so the signup continues without a handle. */
     private fun isGenesisUnsupported(error: Throwable): Boolean =
         error is ResolverError.Server && (error.status == 503 || error.status == 403)
 }

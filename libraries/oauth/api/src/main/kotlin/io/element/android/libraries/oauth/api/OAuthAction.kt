@@ -12,9 +12,6 @@ sealed interface OAuthAction {
     data class GoBack(val toUnblock: Boolean = false) : OAuthAction
     data class Success(val url: String) : OAuthAction
 
-    /**
-     * GUA FORK: the identity-reset approval page handed control back to the app after the user
-     * approved. Only the reset flow acts on it; login ignores it.
-     */
+    /** GUA FORK: the identity-reset approval page handed control back to the app. Only the reset flow acts on it. */
     data object IdentityResetApproved : OAuthAction
 }

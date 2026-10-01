@@ -7,10 +7,6 @@
 
 package io.element.android.libraries.phonenumberentry
 
-/**
- * GUA FORK: a [DeviceCountryProvider] with no Android context behind it, for tests and previews.
- * Defaults to the same fallback the real one uses when a device tells it nothing.
- */
 class FakeDeviceCountryProvider(
     private val country: Country = Country.fallback,
 ) : DeviceCountryProvider {

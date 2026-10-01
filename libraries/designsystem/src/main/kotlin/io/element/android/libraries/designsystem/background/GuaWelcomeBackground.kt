@@ -32,26 +32,11 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import kotlin.math.cos
 import kotlin.math.sin
 
-// Gua brand greens for the welcome aurora. Mirrors the iOS welcome screen "aurora" in feel:
-// a calm, premium, slowly-drifting glow in Gua greens, with a teal accent.
 private val GuaDeepGreen = Color(0xFF0E3A23)
 private val GuaGreen = Color(0xFF11512F)
 private val GuaBrightGreen = Color(0xFF1F9D5B)
 private val GuaTeal = Color(0xFF0D9AA6)
 
-/**
- * A soft, premium "aurora" background in Gua greens for the welcome/first-run screen.
- *
- * Two large radial glow blobs (a bright Gua green and a teal accent) drift slowly over a deep-green
- * canvas, evoking the same calm, alive feel as the iOS welcome screen. The motion is deliberately
- * low and tasteful: a single very slow cycle, eased linearly, with no pulsing.
- *
- * Respects the system "remove animations" accessibility setting (and snapshot/preview builds) by
- * falling back to a still composition of the same glows, so screenshot references stay stable.
- *
- * @param animated when false the aurora is drawn static (also forced off when animations are
- * disabled in system settings).
- */
 @Suppress("ModifierMissing")
 @Composable
 fun GuaWelcomeBackground(
@@ -60,14 +45,11 @@ fun GuaWelcomeBackground(
     val context = LocalContext.current
     val isLive = remember(animated) { animated && context.areAnimationsEnabled() }
 
-    // A single slowly-advancing phase drives both glows. When not live, it stays at 0 so the
-    // aurora is drawn as a stable still composition (snapshot-safe, Reduce-Motion-safe).
     val transition = rememberInfiniteTransition(label = "gua-aurora")
     val animatedPhase by transition.animateFloat(
         initialValue = 0f,
         targetValue = (2 * Math.PI).toFloat(),
         animationSpec = infiniteRepeatable(
-            // ~24s for a full, barely-perceptible orbit — calm, not busy.
             animation = tween(durationMillis = 24_000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart,
         ),
@@ -75,8 +57,6 @@ fun GuaWelcomeBackground(
     )
     val phase = if (isLive) animatedPhase else 0f
 
-    // The deep canvas. In light theme we keep it a touch lighter so text reads cleanly,
-    // while the greens still come through via the glows.
     val canvasColor = if (ElementTheme.isLightTheme) GuaDeepGreen else Color(0xFF071D12)
 
     Box(
@@ -88,7 +68,6 @@ fun GuaWelcomeBackground(
                 val h = size.height
                 val drift = w * 0.10f
 
-                // Primary Gua-green glow, upper area, drifting in a slow ellipse.
                 val greenCenter = Offset(
                     x = w * 0.32f + cos(phase) * drift,
                     y = h * 0.30f + sin(phase) * drift * 0.7f,
@@ -107,7 +86,6 @@ fun GuaWelcomeBackground(
                     center = greenCenter,
                 )
 
-                // Teal accent glow, lower area, drifting on a different slow phase.
                 val tealCenter = Offset(
                     x = w * 0.72f + cos(phase + 2.1f) * drift,
                     y = h * 0.74f + sin(phase + 1.3f) * drift * 0.8f,
@@ -126,7 +104,6 @@ fun GuaWelcomeBackground(
                     center = tealCenter,
                 )
 
-                // A subtle deepening vignette at the bottom so the footer buttons sit calmly.
                 drawRect(
                     brush = Brush.verticalGradient(
                         colors = listOf(Color.Transparent, canvasColor.copy(alpha = 0.55f)),
@@ -142,7 +119,6 @@ fun GuaWelcomeBackground(
 @Composable
 internal fun GuaWelcomeBackgroundPreview() = ElementPreview {
     Box(modifier = Modifier.fillMaxSize()) {
-        // Static in previews/snapshots for stable references.
         GuaWelcomeBackground(animated = false)
     }
 }

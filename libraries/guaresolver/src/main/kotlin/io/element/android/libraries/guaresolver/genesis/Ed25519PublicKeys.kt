@@ -9,16 +9,7 @@ package io.element.android.libraries.guaresolver.genesis
 
 import java.math.BigInteger
 
-/**
- * GUA FORK: raw RFC 8032 Ed25519 public keys, as the genesis objects carry them.
- *
- * ADM-008 decision 1 requires the DECODER itself to refuse a key that fails Ed25519 point decoding, not
- * to defer it to the first verification. identity-service gets that from the JDK provider (Ed25519 is
- * JDK 15+), which Android does not have at this module's minSdk, so the point decoding is done here in
- * arithmetic that behaves identically on every supported API level. The two rules ADM-008 lists stay
- * separate on purpose: [isAllZero] is checked before [isOnCurve], because the all-zero encoding decodes
- * to a valid low-order point and point decoding alone would let it through.
- */
+/** Raw RFC 8032 Ed25519 public keys. Point decoding is done here because the JDK Ed25519 provider is unavailable at this minSdk. */
 internal object Ed25519PublicKeys {
     const val RAW_PUBLIC_KEY_LENGTH = 32
     const val SIGNATURE_LENGTH = 64
@@ -32,7 +23,7 @@ internal object Ed25519PublicKeys {
     /** A square root of -1 mod p, used to recover the other root. */
     private val SQRT_MINUS_ONE: BigInteger = BigInteger.TWO.modPow((P - BigInteger.ONE) / BigInteger.valueOf(4), P)
 
-    /** True when every byte is zero. ADM-008 decision 1 refuses such a key even though it decodes. */
+    /** True when every byte is zero. Such a key is refused even though it decodes. */
     fun isAllZero(value: ByteArray): Boolean {
         var accumulator = 0
         for (byte in value) {
@@ -41,17 +32,7 @@ internal object Ed25519PublicKeys {
         return accumulator == 0
     }
 
-    /**
-     * True when the raw bytes decode to a point on the curve.
-     *
-     * The encoding is little-endian y with the top bit carrying the sign of x, so a y at or above the
-     * field prime is refused first (that is the "y is larger than the field prime" rejection vector),
-     * then x is recovered and the curve equation is checked (the "not on the curve" one). The sign bit
-     * is not decoration: RFC 8032 section 5.1.3 step 4 fails decoding when the recovered x is zero and
-     * the sign bit asks for the negative root, because that root does not exist. identity-service decodes
-     * with the JDK provider, which enforces that rule, so a decoder whose job is to refuse exactly what
-     * the server refuses has to enforce it too.
-     */
+    /** True when the raw bytes decode to a curve point, per RFC 8032 section 5.1.3. */
     fun isOnCurve(rawPublicKey: ByteArray): Boolean {
         if (rawPublicKey.size != RAW_PUBLIC_KEY_LENGTH) return false
         val y = BigInteger(1, rawPublicKey.reversedArray()).clearBit(255)
@@ -73,23 +54,16 @@ internal object Ed25519PublicKeys {
         when {
             check == u -> Unit
             check == u.negate().mod(P) -> {
-                // The other root; a point either way, which is what decoding has to establish.
                 x = x.multiply(SQRT_MINUS_ONE).mod(P)
                 if (v.multiply(x).mod(P).multiply(x).mod(P) != u) return false
             }
             else -> return false
         }
 
-        // x = 0 has one root, not two, so the encoding that asks for its negative has no point behind it.
-        // Only y = 1 and y = p - 1 reach this, and both are refused by the server's decoder.
+        // x = 0 has one root, so an encoding that asks for its negative names no point.
         return !(x.signum() == 0 && signBit != 0)
     }
 
-    /**
-     * Refuses a key that is not a curve point, with the caller's rejection [reason].
-     *
-     * @throws InvalidGenesisException when the bytes are not a well-formed Ed25519 public key.
-     */
     fun require(rawPublicKey: ByteArray, reason: String) {
         if (rawPublicKey.size != RAW_PUBLIC_KEY_LENGTH) {
             throw InvalidGenesisException(reason, "Ed25519 public key is not $RAW_PUBLIC_KEY_LENGTH bytes")

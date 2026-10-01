@@ -7,9 +7,6 @@
 
 package io.element.android.libraries.guaresolver
 
-/**
- * GUA FORK: lambda-overridable fake [ResolverClient] for downstream presenter tests.
- */
 class FakeResolverClient(
     private val resolveResult: (String) -> Result<HomeserverResolution> = {
         Result.success(aHomeserverResolution())
@@ -18,10 +15,6 @@ class FakeResolverClient(
     override suspend fun resolve(e164Phone: String): Result<HomeserverResolution> = resolveResult(e164Phone)
 }
 
-/**
- * GUA FORK: lambda-overridable fake [FederationRosterFetcher] that also counts fetches, for
- * roster cache tests.
- */
 class FakeFederationRosterFetcher(
     var fetchRosterResult: () -> Result<FederationRoster> = { Result.success(aFederationRoster()) },
 ) : FederationRosterFetcher {
@@ -34,30 +27,18 @@ class FakeFederationRosterFetcher(
     }
 }
 
-/**
- * GUA FORK: test-only [GuaDeployment] with explicit values, so tests can exercise the
- * configured / unconfigured resolver / identity-service paths without the build-time
- * [GuaResolverConfig] selection.
- */
 data class FakeGuaDeployment(
     override val resolverBaseUrl: String? = "https://resolver.gua.global",
     override val defaultAccountProvider: String? = "gua.global",
     override val identityServiceBaseUrl: String? = "https://identity.gua.global",
 ) : GuaDeployment
 
-/**
- * GUA FORK: test-only [EnrollmentRedirectProvider]. Defaults to the QA build's scheme, which is the
- * variant the field exists for; pass null for a build that names no redirect.
- */
 class FakeEnrollmentRedirectProvider(
     private val redirectUri: String? = "global.gua.dev:/oidc",
 ) : EnrollmentRedirectProvider {
     override fun provide(): String? = redirectUri
 }
 
-/**
- * GUA FORK: lambda-overridable fake [IdentityServiceClient] for downstream presenter tests.
- */
 class FakeIdentityServiceClient(
     private val lookupResult: (String, List<String>) -> Result<List<ContactMatch>> = { _, _ ->
         Result.success(emptyList())
@@ -83,13 +64,8 @@ class FakeIdentityServiceClient(
     override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> =
         lookupResult(accessToken, hashedPhones)
 
-    /** Every [startPhoneChange] the fake saw, so tests can assert on ordering and on what was sent. */
     val startPhoneChangeCalls: MutableList<PhoneChangeStartCall> = mutableListOf()
 
-    /**
-     * Every [startPhoneChangeReauth] the fake saw, as (current number, language), so tests can
-     * assert no SMS fired too early and that the number the user typed is what was submitted.
-     */
     val startPhoneChangeReauthCalls: MutableList<Pair<String, String?>> = mutableListOf()
 
     override suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus> =
@@ -146,10 +122,8 @@ class FakeIdentityServiceClient(
         registerAccountGenesisResult(genesisB64Url, proofB64Url)
 
     companion object {
-        /** A genesis-rooted accountId from the published golden vectors, so it is a canonical spelling. */
         const val A_FAKE_ACCOUNT_ID = "ga1aea6aqb5opmzmutench3ggzepkhgwmkajb3epqqrhckkf7bcbcwl2cy"
 
-        /** Shaped like what identity-service issues: 32 CSPRNG bytes as unpadded base64url. */
         const val A_FAKE_ATTACH_HANDLE = "Zm9vYmFyYmF6cXV1eGNvcmdlZ3JhdWx0"
 
         const val A_FAKE_REAUTH_TOKEN = "reauth-token"
@@ -158,10 +132,6 @@ class FakeIdentityServiceClient(
     }
 }
 
-/**
- * GUA FORK: one recorded `account/phone/change/start` call, so tests can assert which step-up factor
- * was offered and that the call only happened once a reauth token existed.
- */
 data class PhoneChangeStartCall(
     val reauthToken: String,
     val newPhone: String,
@@ -171,11 +141,6 @@ data class PhoneChangeStartCall(
     val language: String?,
 )
 
-/**
- * GUA FORK: an [AccountFactorStatus] with the server's own defaults. Overriding [hasPin] or
- * [passkeyRegistered] alone keeps [preferredFactor] and [phoneChangeStepUpFactors] consistent with
- * them, which is what the real endpoint does.
- */
 fun anAccountFactorStatus(
     hasPin: Boolean = false,
     passkeyRegistered: Boolean = false,

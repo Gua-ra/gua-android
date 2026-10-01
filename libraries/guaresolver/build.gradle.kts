@@ -21,19 +21,12 @@ android {
         buildConfig = true
     }
 
-    // GUA FORK: the Gua deployment config (resolver base URL + default account provider).
-    //
-    // Production values are the project's own public `gua.global` domain and are committed below.
-    // Development values are read from the per-machine `local.properties` (mirroring iOS' injected
-    // `Secrets` pipeline) so the non-public dev host never lands in this (public) repo. When the dev
-    // keys are absent the fields stay empty and `GuaDeployment` treats the resolver as unconfigured.
+    // Development values come from the per-machine `local.properties`, so the dev host is never committed to this public repo.
     val devResolverBaseUrl = readLocalProperty("gua.resolverBaseUrl").orEmpty()
     val devDefaultAccountProvider = readLocalProperty("gua.defaultAccountProvider").orEmpty()
     val devIdentityServiceBaseUrl = readLocalProperty("gua.identityServiceBaseUrl").orEmpty()
 
-    // `-Pgua.deployment=dev` makes RELEASE builds target the development deployment: the QA build
-    // distributed through the Play internal-testing track, mirroring the iOS dev TestFlight app.
-    // Without the property the release build targets production, exactly as before.
+    // `-Pgua.deployment=dev` makes release builds target the development deployment.
     val useDevDeployment = (project.findProperty("gua.deployment") as? String) == "dev"
 
     defaultConfig {
@@ -54,9 +47,7 @@ dependencies {
     implementation(projects.libraries.core)
     implementation(projects.libraries.di)
     implementation(projects.libraries.network)
-    // GUA FORK: account genesis (ADM-008 Phase 3). Tink supplies Ed25519, which the Android keystore
-    // does not generate or sign with at this minSdk; the cryptography module supplies the non-exportable
-    // keystore key the Ed25519 seed is sealed under, and the preferences store holds only that sealed blob.
+    // Tink supplies Ed25519, which the Android keystore does not provide at this minSdk.
     implementation(projects.libraries.cryptography.api)
     implementation(projects.libraries.preferences.api)
     implementation(libs.androidx.datastore.preferences)

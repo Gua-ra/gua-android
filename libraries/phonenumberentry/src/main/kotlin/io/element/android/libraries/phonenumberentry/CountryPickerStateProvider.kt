@@ -14,14 +14,11 @@ import kotlinx.collections.immutable.toImmutableList
 open class CountryPickerStateProvider : PreviewParameterProvider<CountryPickerState> {
     override val values: Sequence<CountryPickerState>
         get() = sequenceOf(
-            // Full list.
             aCountryPickerState(),
-            // Search-filtered.
             aCountryPickerState(
                 query = "Bra",
                 countries = persistentListOf(Country(isoCode = "BR", dialCode = "55")),
             ),
-            // Empty result.
             aCountryPickerState(
                 query = "zzzz",
                 countries = persistentListOf(),
