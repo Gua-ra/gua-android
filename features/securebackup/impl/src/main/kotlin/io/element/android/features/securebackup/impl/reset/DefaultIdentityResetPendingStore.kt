@@ -26,21 +26,11 @@ class DefaultIdentityResetPendingStore(
         context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
     }
 
-    // GUA FORK: the marker names the device whose crypto store holds the pending identity. Logout
-    // discards that store, and the next login on this phone is a new device, so a marker left by an
-    // earlier device of the same account must not send the healthy new login into a reset. The
-    // preferences file lives outside the session directory and outlives logout, which is why the
-    // device is part of the value rather than the key being cleared on the way out.
+    // The value is the device ID. The file outlives logout, and a marker from an earlier device must not count as pending.
     private val key: String
         get() = "pending_device_" + matrixClient.sessionId.value
 
-    /**
-     * The earlier, device-less form of the marker. Deliberately never read: it cannot say which
-     * device wrote it, and honouring it would send a healthy re-login into a reset, which is the
-     * defect the device key fixes. The one thing it could still protect, a reset started on this
-     * very device before the upgrade and never approved, is the setup banner's ordinary repair
-     * path either way. Removed on every write so it cannot linger.
-     */
+    /** Device-less legacy marker. Never read; removed on every write. */
     private val legacyKey: String
         get() = "pending_" + matrixClient.sessionId.value
 

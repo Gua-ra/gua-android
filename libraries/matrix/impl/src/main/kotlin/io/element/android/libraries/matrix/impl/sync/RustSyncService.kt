@@ -31,7 +31,6 @@ class RustSyncService(
     private val inner: InnerSyncService,
     private val dispatcher: CoroutineDispatcher,
     sessionCoroutineScope: CoroutineScope,
-    /** GUA FORK: true while an identity reset holds the sync; no start goes through. Owned by the reset guard. */
     private val identityResetHold: StateFlow<Boolean>,
 ) : SyncService {
     private val isServiceReady = AtomicBoolean(true)

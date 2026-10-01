@@ -26,21 +26,6 @@ import timber.log.Timber
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-/**
- * The session's [IdentityResetGuard]. See the interface for what it protects.
- *
- * [hold] is shared with the sync service and the notification service, which consult it before
- * starting a sync or fetching an event; the guard is its only writer. The sync is stopped twice
- * because `SyncService.start()` and `stop()` serialise on one lock inside the SDK: a start that
- * was already inside the SDK when the hold went up runs after the first stop and is caught by the
- * second. The SDK also resumes an offline sync on its own; an awaited stop leaves it Idle, which is
- * the one state it does not leave by itself.
- *
- * Every transition of the hold happens under [transitions], and a reset call checks the hold under
- * that same lock before it starts, so a guard released in the meantime (a screen torn down by a
- * notification tap while the handle was being minted) refuses the call instead of running it
- * with the sync live.
- */
 class DefaultIdentityResetGuard(
     private val syncService: SyncService,
     private val sessionCoroutineScope: CoroutineScope,
@@ -49,7 +34,6 @@ class DefaultIdentityResetGuard(
 ) : IdentityResetGuard {
     override val isHeld: StateFlow<Boolean> = hold.asStateFlow()
 
-    /** Serialises acquisition, release and the pre-call check, so none can overlap another. */
     private val transitions = Mutex()
     private val inFlightLock = Any()
     private var inFlight: Deferred<Result<Unit>>? = null
@@ -59,6 +43,7 @@ class DefaultIdentityResetGuard(
         if (hold.value) return@withLock true
         hold.value = true
         syncService.stopSync()
+        // Stopped twice: a start already inside the SDK when the hold went up runs after the first stop.
         delay(settleDelay)
         if (syncService.syncState.value == SyncState.Running) {
             Timber.w("The sync started again during identity reset acquisition; stopping it once more.")
@@ -79,8 +64,6 @@ class DefaultIdentityResetGuard(
                 try {
                     runCatchingExceptions { operation().getOrThrow() }
                 } finally {
-                    // Whatever happened to the call, and even if the session is going away, the
-                    // sync is not left stopped behind a hold nobody owns any more.
                     withContext(NonCancellable) { release() }
                 }
             }
@@ -98,7 +81,6 @@ class DefaultIdentityResetGuard(
         releaseLocked()
     }
 
-    /** The one terminal ordering: suppression off, then the sync restarted. Idempotent. Caller holds [transitions]. */
     private suspend fun releaseLocked() {
         if (!hold.value) return
         hold.value = false

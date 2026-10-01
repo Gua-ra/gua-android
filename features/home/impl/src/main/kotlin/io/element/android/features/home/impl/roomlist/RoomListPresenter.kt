@@ -199,9 +199,6 @@ class RoomListPresenter(
                                     encryptionSetupNeedsReset = true
                                 }
                                 EncryptionRepairOutcome.IdentityIncompleteAfterReset -> {
-                                    // Only the post-reset provisioner produces this; it never
-                                    // comes out of repairWithoutReset. Leave the banner, and never
-                                    // route a fresh reset from here.
                                     Timber.w("The identity is still incomplete after a reset; leaving the banner.")
                                 }
                             }

@@ -65,8 +65,6 @@ interface MatrixClient {
     val notificationService: NotificationService
     val notificationSettingsService: NotificationSettingsService
     val encryptionService: EncryptionService
-
-    /** GUA FORK: holds the sync for the whole of an identity reset. See [IdentityResetGuard]. */
     val identityResetGuard: IdentityResetGuard
     val roomDirectoryService: RoomDirectoryService
     val mediaPreviewService: MediaPreviewService

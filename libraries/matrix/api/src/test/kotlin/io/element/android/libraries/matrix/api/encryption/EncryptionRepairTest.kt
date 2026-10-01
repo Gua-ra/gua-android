@@ -144,9 +144,6 @@ class EncryptionRepairTest {
 
     @Test
     fun `after a reset, the verdict is the SDK's own read, not the sync-conditioned flow`() = runTest {
-        // The flow is pinned to WAITING_FOR_SYNC whenever the sync is not running, which is how the
-        // account looks if the user leaves the app after approving. That must not turn a mint the
-        // SDK has confirmed into another rotation.
         var enableCalls = 0
         var sdkState = RecoveryState.DISABLED
         val service = FakeEncryptionService(
@@ -165,10 +162,6 @@ class EncryptionRepairTest {
 
     @Test
     fun `after a reset, a store that exported nothing ends the loop after exactly one mint`() = runTest {
-        // enableRecovery succeeds for a secret store it populated with nothing, because the private
-        // cross-signing keys were not exportable when it ran. Another store would be missing the
-        // same secrets, and every rotation strands the one before, so the first mint is decisive:
-        // the loop stops with an explicit outcome and no second reset.
         var enableCalls = 0
         val service = FakeEncryptionService(
             enableRecoveryLambda = { _, _ ->
@@ -181,7 +174,6 @@ class EncryptionRepairTest {
         val before = testScheduler.currentTime
         assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.IdentityIncompleteAfterReset)
         assertThat(enableCalls).isEqualTo(1)
-        // No backoff was spent on a verdict the SDK had already given.
         assertThat(testScheduler.currentTime - before).isLessThan(1_000)
     }
 
@@ -201,7 +193,6 @@ class EncryptionRepairTest {
         assertThat(service.provisionAfterReset()).isEqualTo(EncryptionRepairOutcome.IdentityIncompleteAfterReset)
         assertThat(enableCalls).isEqualTo(1)
         val waited = testScheduler.currentTime - before
-        // One confirmation wait (two seconds), not the sixty-second backoff.
         assertThat(waited).isAtLeast(2_000)
         assertThat(waited).isLessThan(3_000)
     }
@@ -299,8 +290,6 @@ class EncryptionRepairTest {
 
     @Test
     fun `after a reset, a mint that failed only after the SDK reported it done is still decisive`() = runTest {
-        // The store exists; only the SDK's own recomputation after it failed. Retrying would
-        // rotate the store just made, so the one mint is judged like a successful one.
         var enableCalls = 0
         val service = FakeEncryptionService(
             enableRecoveryLambda = { _, _ ->
@@ -332,8 +321,6 @@ class EncryptionRepairTest {
 
     @Test
     fun `provisioning refuses while the encryption initialisation is still pending`() = runTest {
-        // The SDK's own initialisation creates the key backup on a fresh account. A client that has
-        // not seen it finish must not create another; the banner stays and the tap can be repeated.
         var enableCalls = 0
         val service = FakeEncryptionService(
             enableRecoveryLambda = { _, _ ->
@@ -350,8 +337,6 @@ class EncryptionRepairTest {
 
     @Test
     fun `a banner repair is judged on the SDK's own read`() = runTest {
-        // enableBackups does not recompute inside the call, so the repair waits for the flow to
-        // catch up and then asks the SDK directly rather than trusting the flow's value.
         val service = FakeEncryptionService()
         service.recoveryStateStateFlow.value = RecoveryState.INCOMPLETE
         var sdkState = RecoveryState.INCOMPLETE

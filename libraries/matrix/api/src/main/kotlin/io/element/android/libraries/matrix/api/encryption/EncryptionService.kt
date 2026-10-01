@@ -26,25 +26,14 @@ interface EncryptionService {
     suspend fun enableBackups(): Result<Unit>
 
     /**
-     * GUA FORK: joins the SDK's own end-to-end encryption initialisation.
-     *
-     * That initialisation provisions the key backup on a fresh account. Every operation that can
-     * create one must wait for it, because `Recovery::enable` and `Recovery::enable_backup` each
-     * create a version unless one is already enabled locally, and an account may only ever hold
-     * one. The SDK's own wait is one-shot, so this is the single shared join for the session:
-     * whoever asks first or last gets the same answer.
-     *
-     * True once the initialisation has finished, whatever its result. False when [timeout] elapsed
-     * first, in which case the caller refuses to act; the bound is a give-up, never a go-ahead.
+     * GUA FORK: waits for the SDK's E2EE initialisation, which creates the key backup on a fresh account.
+     * Returns false on [timeout]; the caller must then not create a backup, or the account ends up with two.
      */
     suspend fun awaitE2eeInitialization(timeout: Duration = E2EE_INITIALIZATION_CEILING): Boolean
 
     /**
-     * GUA FORK: the SDK's recovery state, recomputed and read directly.
-     *
-     * The verdict after an operation. [recoveryStateStateFlow] is pinned to
-     * [RecoveryState.WAITING_FOR_SYNC] whenever the sync is not running, so it can only select a
-     * branch; it cannot say whether a call that just returned actually finished the job.
+     * GUA FORK: the SDK's recomputed recovery state.
+     * [recoveryStateStateFlow] reads [RecoveryState.WAITING_FOR_SYNC] whenever the sync is not running.
      */
     suspend fun recoveryState(): RecoveryState
 
@@ -168,8 +157,4 @@ interface IdentityOAuthResetHandle : IdentityResetHandle {
     suspend fun resetOAuth(): Result<Unit>
 }
 
-/**
- * GUA FORK: how long a caller waits for the SDK's encryption initialisation before refusing to
- * create key storage. Long enough for a slow first sync; on expiry nothing proceeds.
- */
 val E2EE_INITIALIZATION_CEILING: Duration = 30.seconds

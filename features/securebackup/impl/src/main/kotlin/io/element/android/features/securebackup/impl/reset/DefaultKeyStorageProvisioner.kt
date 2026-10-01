@@ -45,8 +45,6 @@ class DefaultKeyStorageProvisioner(
                     EncryptionRepairOutcome.Repaired ->
                         Timber.d("Provisioned key storage after the reset.")
                     EncryptionRepairOutcome.IdentityIncompleteAfterReset ->
-                        // The one store minted is not complete. No further rotation and no second
-                        // reset: the banner stays and the user decides.
                         Timber.e("The identity is still incomplete after the reset; leaving the banner.")
                     EncryptionRepairOutcome.NotYet,
                     EncryptionRepairOutcome.Failed,

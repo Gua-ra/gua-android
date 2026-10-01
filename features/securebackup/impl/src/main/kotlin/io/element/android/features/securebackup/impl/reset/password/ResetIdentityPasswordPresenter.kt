@@ -48,8 +48,6 @@ class ResetIdentityPasswordPresenter(
 
     private fun CoroutineScope.reset(password: String, action: MutableState<AsyncAction<Unit>>) = launch(dispatchers.io) {
         suspend {
-            // GUA FORK: the guard owns the call and keeps the sync held until it returns; this
-            // screen only waits on it. The flow node acquired the guard before the handle was minted.
             identityResetGuard.runReset { identityPasswordResetHandle.resetPassword(password) }.await().getOrThrow()
         }.runCatchingUpdatingState(action)
     }

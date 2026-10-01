@@ -20,7 +20,6 @@ import org.junit.Test
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-/** The launch bootstrapper is a backup creator, so it waits for the shared join and refuses on its bound. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SilentSessionEncryptionBootstrapperTest {
     @Test
@@ -40,7 +39,6 @@ class SilentSessionEncryptionBootstrapperTest {
         encryptionService.recoveryStateStateFlow.value = RecoveryState.DISABLED
 
         SilentSessionEncryptionBootstrapper(A_SESSION_ID, encryptionService, backgroundScope).start()
-        // Background work only moves when time does; a whole minute of it changes nothing here.
         advanceTimeBy(1.minutes)
         runCurrent()
         assertThat(enableCalls).isEqualTo(0)

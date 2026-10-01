@@ -54,11 +54,6 @@ class RustSessionVerificationService(
     private val client: Client,
     isSyncServiceReady: Flow<Boolean>,
     private val sessionCoroutineScope: CoroutineScope,
-    /**
-     * GUA FORK: the session's one shared join on the SDK's E2EE initialisation. The raw FFI wait is
-     * one-shot, and this service used to consume it at construction, which left every later caller
-     * returning at once whether or not the initialisation had finished.
-     */
     private val awaitE2eeInitialization: suspend (Duration) -> Boolean,
 ) : SessionVerificationService, SessionVerificationControllerDelegate {
     private var currentVerificationRequest: VerificationRequest? = null

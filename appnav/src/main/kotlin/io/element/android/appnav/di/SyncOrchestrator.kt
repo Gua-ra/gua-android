@@ -111,8 +111,7 @@ class SyncOrchestrator(
 
             Timber.tag(tag).d("isAppActive=$isAppActive, isNetworkAvailable=$isNetworkAvailable, isIdentityResetHeld=$isIdentityResetHeld")
             if (isIdentityResetHeld) {
-                // GUA FORK: the reset guard owns the sync for the duration. It stopped it and it
-                // restarts it; an Idle sync in the foreground is exactly what it wants to see.
+                // GUA FORK: the identity reset guard stops and restarts the sync itself.
                 SyncStateAction.NoOp
             } else if (syncState == SyncState.Running && !isAppActive) {
                 SyncStateAction.StopSync

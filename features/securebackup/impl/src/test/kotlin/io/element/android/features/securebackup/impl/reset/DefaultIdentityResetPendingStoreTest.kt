@@ -15,10 +15,6 @@ import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.Test
 import org.robolectric.RuntimeEnvironment
 
-/**
- * The marker names the device whose crypto store holds the pending identity. Logout discards that
- * store and the next login is a new device, so a marker from an earlier device is not pending.
- */
 class DefaultIdentityResetPendingStoreTest : RobolectricTest() {
     private val context: Context get() = RuntimeEnvironment.getApplication()
 

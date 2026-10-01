@@ -32,7 +32,6 @@ class RustNotificationService(
     private val notificationClient: NotificationClient,
     private val dispatchers: CoroutineDispatchers,
     clock: SystemClock,
-    /** GUA FORK: true while an identity reset holds the sync. Owned by the reset guard. */
     private val identityResetHold: StateFlow<Boolean>,
 ) : NotificationService {
     private val notificationMapper: NotificationMapper = NotificationMapper(clock)
@@ -40,10 +39,7 @@ class RustNotificationService(
     override suspend fun getNotifications(
         ids: Map<RoomId, List<EventId>>
     ): GetNotificationDataResult = withContext(dispatchers.io) {
-        // GUA FORK: with the main sync stopped, the SDK's notification client takes the free
-        // encryption-sync permit and runs its own two-iteration encryption sync, which is the
-        // own-user key query the reset guard exists to keep away. Stand down; the push falls back
-        // to its generic content and the work retries once the reset is over.
+        // GUA FORK: with the main sync stopped, the SDK's notification client would run its own encryption sync.
         if (identityResetHold.value) {
             Timber.w("Not fetching notifications: an identity reset holds the sync")
             return@withContext Result.failure(IdentityResetInProgressException())

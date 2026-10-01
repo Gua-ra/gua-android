@@ -399,11 +399,8 @@ class SyncOrchestratorTest {
         syncOrchestrator.observeStates()
         advanceTimeBy(1.seconds)
 
-        // Everything that normally starts the sync is true, and the hold wins.
         startSyncRecorder.assertions().isNeverCalled()
 
-        // The guard restarts the sync itself on release; the orchestrator only resumes its own
-        // decisions, which here also say start.
         identityResetGuard.isHeld.value = false
         advanceTimeBy(1.seconds)
         startSyncRecorder.assertions().isCalledOnce()

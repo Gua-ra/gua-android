@@ -38,9 +38,6 @@ class DefaultSyncOnNotifiableEvent(
         try {
             val eventsBySession = requests.groupBy { it.sessionId }
 
-            // GUA FORK: a session whose identity reset holds the sync is left alone. Raising the
-            // syncing flag would ask the orchestrator to start the very sync the guard stopped,
-            // and the notification is delivered from the push payload regardless.
             val clientsToSync = eventsBySession.mapNotNull { (sessionId, events) ->
                 val client = matrixClientProvider.getOrRestore(SessionId(sessionId)).getOrNull() ?: return@mapNotNull null
                 if (client.identityResetGuard.isHeld.value) {

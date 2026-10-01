@@ -39,13 +39,8 @@ import kotlin.time.Duration.Companion.seconds
 import org.matrix.rustcomponents.sdk.EnableRecoveryProgress as RustEnableRecoveryProgress
 import org.matrix.rustcomponents.sdk.RecoveryState as RustRecoveryState
 
-/**
- * The one E2EE initialisation join per session: the SDK's wait is consumed once, every caller
- * shares the answer, and the bound is a refusal.
- */
 @OptIn(ExperimentalCoroutinesApi::class)
 class RustEncryptionServiceTest {
-    /** An SDK whose initialisation finishes when the test says so, counting how often it is asked. */
     private open class GatedFfiEncryption : Encryption(NoHandle) {
         val initialization = CompletableDeferred<Unit>()
         var waitCalls = 0

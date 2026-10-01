@@ -126,7 +126,6 @@ class SyncOnNotifiableEventTest {
 
         sut(listOf(notificationRequest))
 
-        // The flag is what asks the orchestrator to start the sync the guard stopped; it stays down.
         assertThat(appForegroundStateService.isSyncingNotificationEvent.value).isFalse()
         assert(subscribeToSyncLambda).isNeverCalled()
         assert(startSyncLambda).isNeverCalled()

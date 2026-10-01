@@ -58,14 +58,7 @@ sealed interface EncryptionRepairOutcome {
     /** Everything non-destructive has been tried. Only a reset can finish this device. */
     data object ResetRequired : EncryptionRepairOutcome
 
-    /**
-     * GUA FORK: the first post-reset provisioning attempt minted a store, and the SDK's own state
-     * says the account is still not complete.
-     *
-     * Terminal for the loop. Another store would not be improved by the same missing secrets, so
-     * no further rotation and no automatic second reset follow; the setup banner stays and the
-     * user decides. Distinct from [ResetRequired] because a reset has just happened.
-     */
+    /** The store minted after a reset is still incomplete. Never rotate it again or reset automatically. */
     data object IdentityIncompleteAfterReset : EncryptionRepairOutcome
 
     /**
@@ -94,29 +87,15 @@ sealed interface EncryptionRepairOutcome {
  * private cross-signing keys and forcing a reset on that account forever after.
  */
 private suspend fun EncryptionService.provisionKeyStorage(): EncryptionRepairOutcome {
-    // GUA FORK: the SDK's own initialisation creates the key backup on a fresh account, and
-    // Recovery::enable creates another unless one is enabled locally by the time it runs. A
-    // client that cannot yet tell is a client that must not act; the banner stays and the tap
-    // can be repeated.
     if (!awaitE2eeInitialization(INITIALIZATION_JOIN)) return EncryptionRepairOutcome.NotYet
 
     val enabled = enableRecovery(waitForBackupsToUpload = false)
-
-    // Only the SDK's recomputed state can say whether that finished the job. A store was minted
-    // when the call returned normally, and also when it failed only after the SDK reported the
-    // mint done. A call that minted nothing gets no grace period: recovery cannot flip to ENABLED
-    // off the back of it, and the current value is still read in case something else repaired the
-    // account meanwhile.
     val minted = enabled.isSuccess || enabled.exceptionOrNull() is RecoveryException.MintedButUnconfirmed
     val state = if (minted) stateAfterMint(reReadDisabled = enabled.isFailure) else recoveryState()
     return when {
         state == RecoveryState.ENABLED -> EncryptionRepairOutcome.Repaired
-        // A store exists but the SDK's own read is not a verdict on it: UNKNOWN means the read
-        // itself failed, DISABLED contradicts the mint that just happened. Neither established
-        // that a reset is needed; the banner stays and the tap can be repeated.
+        // After a mint, UNKNOWN or DISABLED means the state read failed.
         minted && (state == RecoveryState.UNKNOWN || state == RecoveryState.DISABLED) -> EncryptionRepairOutcome.Failed
-        // Minted and INCOMPLETE (the store exported nothing), or nothing minted on an account
-        // that is still not ENABLED: the existing reset verdict.
         else -> EncryptionRepairOutcome.ResetRequired
     }
 }
@@ -149,9 +128,6 @@ private suspend fun EncryptionService.repairIncomplete(): EncryptionRepairOutcom
 
     val enabled = enableBackups()
 
-    // Turning backups on does not recompute the recovery state inside the call, so a successful
-    // call is given the confirmation wait for the SDK to catch up; the verdict is then read
-    // directly, never off the sync-conditioned flow.
     if (enabled.isSuccess) awaitRecoveryEnabled(CONFIRM_TIMEOUT)
     return if (recoveryState() == RecoveryState.ENABLED) {
         EncryptionRepairOutcome.Repaired
@@ -161,64 +137,28 @@ private suspend fun EncryptionService.repairIncomplete(): EncryptionRepairOutcom
 }
 
 /**
- * GUA FORK: provisions key storage straight after a reset, and does NOT go through
- * [repairWithoutReset].
- *
- * That path deliberately refuses [EncryptionService.enableRecovery] on an INCOMPLETE account,
- * because enabling rotates the secret store and would invalidate a recovery key saved elsewhere.
- * Immediately after a reset there is no such key left to protect and no cross-signing identity
- * either, so the conservative path can never succeed here.
- *
- * `Recovery::enable` exports whatever private cross-signing keys the crypto store can hand over at
- * the moment it runs, and reports success even when it exported nothing. The reset has only just
- * minted those keys, so an export that runs too early writes a secret store holding only the backup
- * key and the account lands straight back on INCOMPLETE -- which is the setup banner, back in front
- * of someone who has just finished a reset, offering them another reset.
- *
- * An earlier version gated this on the session reporting itself verified. That is not a sound
- * signal: it reports the identity the session currently trusts, which right after a reset is often
- * still the OLD one, so the gate passed instantly and bought nothing. The SDK's own recomputed
- * state is the only sound signal, read directly rather than off the sync-conditioned flow.
- *
- * The first successful mint is decisive. A store the device cannot complete is not improved by
- * another store: the same secrets would be missing from it, and every rotation strands the one
- * before. So after a mint that returned normally the state is read once and the loop ends with
- * [EncryptionRepairOutcome.Repaired] or [EncryptionRepairOutcome.IdentityIncompleteAfterReset].
- * Only an attempt that threw before minting anything is retried on the backoff. Nothing here is on
- * a user's critical path, so those retries can afford to be patient.
+ * Provisions key storage after a reset, when no saved recovery key is left for [EncryptionService.enableRecovery] to invalidate.
+ * The first mint is decisive: only an attempt that failed before minting is retried.
  */
 suspend fun EncryptionService.provisionAfterReset(): EncryptionRepairOutcome {
     PROVISION_BACKOFF.forEachIndexed { attempt, wait ->
-        // Re-read before spending a rotation: a store that already works must not be rotated over.
         if (recoveryState() == RecoveryState.ENABLED) return EncryptionRepairOutcome.Repaired
 
         val minted = enableRecovery(waitForBackupsToUpload = false)
         minted.onFailure { error ->
-            // A backup this device cannot open already exists. Structural: no amount of waiting
-            // changes it, so the remaining backoff would only delay the answer.
             if (error is RecoveryException.BackupExistsOnServer) return EncryptionRepairOutcome.ResetRequired
-            // The store was minted and only the SDK's own confirmation of it failed. The mint is
-            // decisive all the same; another attempt would rotate the store just made.
             if (error is RecoveryException.MintedButUnconfirmed) return judgeFirstMint(confirmed = false)
             Timber.w(error, "Post-reset provision attempt ${attempt + 1} threw before minting a store.")
         }
 
         if (minted.isSuccess) return judgeFirstMint(confirmed = true)
 
-        // Nothing was minted, so another attempt is safe. Give the identity time to settle first,
-        // and honour a state something else repaired meanwhile.
         if (awaitRecoveryEnabled(wait) || recoveryState() == RecoveryState.ENABLED) return EncryptionRepairOutcome.Repaired
     }
 
     return EncryptionRepairOutcome.ResetRequired
 }
 
-/**
- * The verdict on the one store the post-reset loop minted. ENABLED is the only success; INCOMPLETE
- * and DISABLED end the loop without another rotation; UNKNOWN is given a single bounded re-read.
- * [confirmed] is false when the SDK's own recomputation after the mint failed, in which case a
- * DISABLED read is a stale cache rather than a verdict and gets the same single re-read.
- */
 private suspend fun EncryptionService.judgeFirstMint(confirmed: Boolean): EncryptionRepairOutcome {
     return when (val state = stateAfterMint(reReadDisabled = !confirmed)) {
         RecoveryState.ENABLED -> EncryptionRepairOutcome.Repaired
@@ -238,12 +178,6 @@ private suspend fun EncryptionService.judgeFirstMint(confirmed: Boolean): Encryp
     }
 }
 
-/**
- * The SDK's recomputed state after a mint. `Recovery::enable` recomputes before it returns, so the
- * first read is normally final; an UNKNOWN (and, when [reReadDisabled], a DISABLED that contradicts
- * the mint) gets exactly one bounded wait for the flow to move and then one more direct read. Never
- * more than that: the verdict must not depend on how long the caller was prepared to wait.
- */
 private suspend fun EncryptionService.stateAfterMint(reReadDisabled: Boolean): RecoveryState {
     val state = recoveryState()
     val inconclusive = state == RecoveryState.UNKNOWN || reReadDisabled && state == RecoveryState.DISABLED
@@ -278,9 +212,7 @@ private val SETTLE_TIMEOUT = 2.seconds
 // enableRecovery has already returned by this point; this only covers the flow catching up.
 private val CONFIRM_TIMEOUT = 2.seconds
 
-// How long a banner tap waits for the SDK's encryption initialisation before answering NotYet.
-// Shorter than the launch bootstrapper's wait because the user is watching, and shorter than the
-// repair ceiling so the answer is the honest "not yet" rather than a failure.
+// Below REPAIR_CEILING, so a pending initialisation answers NotYet before the repair times out.
 private val INITIALIZATION_JOIN = 5.seconds
 
 // Hard ceiling on the whole operation, so the banner's spinner always resolves.

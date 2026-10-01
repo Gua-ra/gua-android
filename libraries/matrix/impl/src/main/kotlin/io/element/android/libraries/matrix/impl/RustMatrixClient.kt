@@ -166,8 +166,7 @@ class RustMatrixClient(
 
     override val roomMembershipObserver = RoomMembershipObserver()
 
-    // GUA FORK: written only by the identity reset guard; read before every sync start and
-    // notification fetch. Declared before the services that consult it.
+    // GUA FORK: written only by the identity reset guard.
     private val identityResetHold = MutableStateFlow(false)
 
     override val syncService = RustSyncService(innerSyncService, sessionDispatcher, sessionCoroutineScope, identityResetHold)

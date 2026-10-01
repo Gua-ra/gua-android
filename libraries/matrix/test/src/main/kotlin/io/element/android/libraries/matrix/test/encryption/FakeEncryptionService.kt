@@ -32,7 +32,6 @@ class FakeEncryptionService(
     private val enableRecoveryLambda: (Boolean, String?) -> Result<String> = { _, _ -> lambdaError() },
     private val resetRecoveryKeyLambda: () -> Result<String> = { Result.success(FAKE_RECOVERY_KEY) },
     var awaitE2eeInitializationLambda: suspend (Duration) -> Boolean = { true },
-    /** When null, the direct read mirrors [recoveryStateStateFlow], with WAITING_FOR_SYNC read as UNKNOWN. */
     var recoveryStateLambda: (suspend () -> RecoveryState)? = null,
 ) : EncryptionService {
     private var disableRecoveryFailure: Exception? = null

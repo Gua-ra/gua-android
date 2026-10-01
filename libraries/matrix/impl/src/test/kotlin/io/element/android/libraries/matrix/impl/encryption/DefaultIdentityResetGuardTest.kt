@@ -26,11 +26,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Test
 import kotlin.time.Duration.Companion.milliseconds
 
-/**
- * The guard's lifetime: hold before the stop, the stop awaited before anything is minted, the hold
- * kept until the reset call has returned whoever stopped waiting, and one release however many
- * times it is asked.
- */
 @OptIn(ExperimentalCoroutinesApi::class)
 class DefaultIdentityResetGuardTest {
     private val events = mutableListOf<String>()
@@ -92,17 +87,14 @@ class DefaultIdentityResetGuardTest {
             Result.success(Unit)
         }
 
-        // The UI's ceiling fires; nothing about the guard changes.
         assertThat(withTimeoutOrNull(20.milliseconds) { operation.await() }).isNull()
         assertThat(guard.isHeld.value).isTrue()
         assertThat(events).isEmpty()
 
-        // Teardown asks; the guard declines while the call runs.
         guard.releaseIfIdle()
         assertThat(guard.isHeld.value).isTrue()
         assertThat(events).isEmpty()
 
-        // A second press joins the running call instead of starting another reset.
         val second = guard.runReset { error("a second reset must not start") }
         assertThat(second).isSameInstanceAs(operation)
 
@@ -154,13 +146,11 @@ class DefaultIdentityResetGuardTest {
         }
         events.clear()
 
-        // A second screen must not mint another identity under this upload.
         assertThat(guard.acquire()).isFalse()
         assertThat(events).isEmpty()
 
         gate.complete(Unit)
         operation.await()
-        // Once the call has returned the guard is free again.
         assertThat(guard.acquire()).isTrue()
     }
 
