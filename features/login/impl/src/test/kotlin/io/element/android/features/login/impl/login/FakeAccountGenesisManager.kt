@@ -10,10 +10,6 @@ package io.element.android.features.login.impl.login
 import io.element.android.libraries.guaresolver.genesis.AccountGenesisManager
 import io.element.android.libraries.guaresolver.genesis.GenesisRegistration
 
-/**
- * GUA FORK: lambda-overridable fake [AccountGenesisManager] that also counts registrations, so a test
- * can assert that nothing ran while the feature flag was off.
- */
 class FakeAccountGenesisManager(
     private val registerResult: () -> GenesisRegistration = { GenesisRegistration.Unavailable },
     private val signAttachProofResult: (String) -> Result<String> = { Result.success("signature") },

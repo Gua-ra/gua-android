@@ -95,10 +95,7 @@ class LogoutViewTest : RobolectricTest() {
 
     @Test
     fun `signing out of the only device offers no way into the recovery key screens`() = runAndroidComposeUiTest {
-        // GUA FORK: this screen used to carry a "Settings" button through to the secure-backup
-        // console, which is where a recovery key gets generated and shown, and it did so whatever
-        // the developer gate on the Settings row said. Signing out of your only device is the
-        // moment this fork most needs not to hand someone a key.
+        // GUA FORK: no "Settings" button on this screen.
         val eventsRecorder = EventsRecorder<LogoutEvents>(expectEvents = false)
         setLogoutView(
             aLogoutState(

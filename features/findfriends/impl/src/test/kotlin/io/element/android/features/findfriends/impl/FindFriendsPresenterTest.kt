@@ -111,7 +111,6 @@ class FindFriendsPresenterTest {
         presenter.test {
             val loaded = consumeItemsUntilPredicate { it.phase == FindFriendsPhase.Loaded }.last()
             loaded.eventSink(FindFriendsEvents.StartChat(loaded.contacts.first()))
-            // Drain emissions: the per-row spinner toggles on then off as the DM is opened.
             consumeItemsUntilTimeout()
             assertThat(startedRoom).isEqualTo(A_ROOM_ID)
         }

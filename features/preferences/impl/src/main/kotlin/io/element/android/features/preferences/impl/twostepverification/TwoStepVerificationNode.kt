@@ -29,7 +29,6 @@ class TwoStepVerificationNode(
     presenterFactory: TwoStepVerificationPresenter.Factory,
 ) : Node(buildContext, plugins = plugins) {
     interface Callback : Plugin {
-        /** Open the shared country picker for the confirm-number field. */
         fun navigateToCountryPicker()
     }
 
@@ -46,10 +45,7 @@ class TwoStepVerificationNode(
         TwoStepVerificationView(
             state = state,
             onBackClick = ::navigateUp,
-            // GUA FORK: the enrollUrl is self-authenticating (like iOS' ASWebAuthenticationSession),
-            // so we open it in a private Custom Tab for the user to settle the step-up and register
-            // the factor, passkey or first PIN. It needs no browser session, and must not pick up
-            // one that belongs to someone else.
+            // The enrollUrl is self-authenticating, so it opens in a private Custom Tab.
             onOpenEnrollUrl = { url ->
                 activity.openUrlInChromeCustomTab(session = null, darkTheme = isDark, url = url, ephemeral = true)
             },

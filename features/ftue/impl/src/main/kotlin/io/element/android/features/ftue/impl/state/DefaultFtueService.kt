@@ -80,11 +80,7 @@ class DefaultFtueService(
 
     private suspend fun getNextStep(completedStep: FtueStep? = null): FtueStep? =
         when (completedStep) {
-            // GUA FORK: never wait for the verification state. The only step that needed it is
-            // the session-verification ceremony below, which this fork does not present, and the
-            // wait held a device whose identity was reset from ANOTHER device on a blank screen
-            // for good (the SDK's encryption set-up never reports ready there). The room list
-            // handles an unverified or incomplete device with its setup banner instead.
+            // GUA FORK: never wait for the verification state. It never arrives on a device whose identity was reset elsewhere.
             null -> getNextStep(FtueStep.WaitingForInitialState)
             // Gua: never gate onboarding on session verification. Encryption is bootstrapped /
             // restored silently in the background, mirroring iOS requiresVerification == false, so

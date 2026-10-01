@@ -12,10 +12,6 @@ import io.element.android.libraries.matrix.api.core.UserId
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 
-/**
- * GUA FORK: sample states for previews + screenshot tests. Covers every Find friends phase, mirroring
- * iOS' `FindFriendsScreenPhase`.
- */
 open class FindFriendsStateProvider : PreviewParameterProvider<FindFriendsState> {
     override val values: Sequence<FindFriendsState>
         get() = sequenceOf(

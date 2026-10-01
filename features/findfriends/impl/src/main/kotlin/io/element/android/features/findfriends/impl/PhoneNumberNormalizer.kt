@@ -7,13 +7,7 @@
 
 package io.element.android.features.findfriends.impl
 
-/**
- * GUA FORK: best-effort E.164 normalization for an address-book number, ported from iOS'
- * `ContactDiscoveryService.normalizeToE164`. International numbers (with `+`, `00`, or the device
- * region's dial code already included) are used as-is; national numbers get the device region's dial
- * code with a single trunk `0` dropped. The identity-service validates and silently skips anything
- * that still isn't valid E.164, so over-normalizing is harmless.
- */
+/** Best-effort E.164 normalization. The identity service skips anything still invalid. */
 internal object PhoneNumberNormalizer {
     private val E164 = Regex("^\\+[1-9]\\d{6,14}$")
 

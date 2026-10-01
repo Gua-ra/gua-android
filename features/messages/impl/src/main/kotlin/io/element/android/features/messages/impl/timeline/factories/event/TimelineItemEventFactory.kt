@@ -59,11 +59,7 @@ class TimelineItemEventFactory(
     /**
      * Build a [TimelineItem.Event] for the given SDK event.
      *
-     * GUA FORK: returns null in 1:1 direct chats for state, membership and profile-change
-     * events. 1:1 chats are conversations, not "rooms", so this churn (joined/left/invited,
-     * name/avatar/topic/encryption changes, display-name/avatar updates) is suppressed.
-     * Dropping the items here means they are never grouped into a collapsed "N room changes"
-     * summary either. This mirrors Element X iOS `RoomTimelineItemFactory.buildTimelineItem`.
+     * GUA FORK: returns null in 1:1 direct chats for state, membership and profile-change events.
      */
     suspend fun create(
         currentTimelineItem: MatrixTimelineItem.Event,
@@ -276,12 +272,7 @@ class TimelineItemEventFactory(
     }
 }
 
-/**
- * GUA FORK: true for the state/membership/profile-change events that should not appear in a
- * 1:1 direct chat timeline. Classified on the raw SDK [EventContent] so dropped items are never
- * even built (and therefore never grouped into a collapsed "N room changes" summary).
- * Mirrors the `isDM` guards in Element X iOS `RoomTimelineItemFactory`.
- */
+/** GUA FORK: true for the state, membership and profile-change events hidden in a 1:1 direct chat. */
 private fun EventContent.isSuppressedInDirectOneToOneRoom(): Boolean = when (this) {
     is StateContent,
     is RoomMembershipContent,

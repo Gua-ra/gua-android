@@ -29,13 +29,8 @@ class ChangePhoneNumberNode(
     presenterFactory: ChangePhoneNumberPresenter.Factory,
 ) : Node(buildContext, plugins = plugins) {
     interface Callback : Plugin {
-        /** Open the shared country picker for the new-number field. */
         fun navigateToCountryPicker()
 
-        /**
-         * Open the existing 2SV PIN-setup flow. Offered as one of the two ways out of the step-up
-         * block, alongside registering a passkey; never as the only one when a passkey is possible.
-         */
         fun navigateToPinSetup()
     }
 
@@ -54,8 +49,7 @@ class ChangePhoneNumberNode(
             state = state,
             onBackClick = ::navigateUp,
             onFinish = ::navigateUp,
-            // GUA FORK: the enrollUrl is self-authenticating, so it opens in a private Custom Tab for
-            // the user to complete WebAuthn registration, exactly as the 2SV screen does.
+            // The enrollUrl is self-authenticating, so it opens in a private Custom Tab.
             onOpenPasskeyEnrollUrl = { url ->
                 activity.openUrlInChromeCustomTab(session = null, darkTheme = isDark, url = url, ephemeral = true)
             },

@@ -66,9 +66,7 @@ fun OutgoingVerificationView(
     modifier: Modifier = Modifier,
 ) {
     val step = state.step
-    // GUA FORK: Exit is a step that draws nothing. Upstream never lands on it while the
-    // screen is showing; the fork does (recovery from another device), so leave through
-    // the caller instead of showing a blank screen.
+    // GUA FORK: Exit draws nothing, so leave through the caller instead of showing a blank screen.
     if (step is Step.Exit) {
         val finish by rememberUpdatedState(onFinish)
         LaunchedEffect(Unit) { finish() }

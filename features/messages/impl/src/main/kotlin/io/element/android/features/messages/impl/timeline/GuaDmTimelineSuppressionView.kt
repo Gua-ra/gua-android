@@ -33,15 +33,7 @@ import io.element.android.libraries.designsystem.theme.components.Text
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
-/**
- * GUA FORK: 1:1 chats hide membership, profile and state churn, so those events never reach the
- * timeline and are never collapsed into a "N room changes" summary. At runtime
- * `TimelineItemEventFactory` drops them before the grouper, mirroring the iOS `isDM` guards.
- *
- * This preview runs one raw item set through the production classifier
- * ([isDirectOneToOneRoomChangeEvent]) and grouper ([TimelineItemGrouper]) twice: the "Group room"
- * column keeps and groups the changes, the "1:1 chat" column suppresses them.
- */
+/** Runs one item set through the production classifier and grouper, as a group room and as a 1:1 chat. */
 private val guaRoomChangeEvents = listOf(
     aTimelineItemEvent(
         isMine = false,
@@ -63,10 +55,8 @@ private val guaMessageEvent = aTimelineItemEvent(
 )
 
 private fun guaGroupedTimeline(grouper: TimelineItemGrouper, isDirectOneToOneRoom: Boolean): ImmutableList<TimelineItem> {
-    // Identical "raw" timeline for both cases: message + the three room-change events.
     val rawItems = guaRoomChangeEvents + guaMessageEvent
     val itemsForRoom = if (isDirectOneToOneRoom) {
-        // Mirror the factory: drop the room-change events for a 1:1 DM.
         rawItems.filterNot { it.isDirectOneToOneRoomChangeEvent() }
     } else {
         rawItems

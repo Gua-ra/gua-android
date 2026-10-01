@@ -46,11 +46,6 @@ import io.element.android.libraries.designsystem.theme.components.Scaffold
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.designsystem.theme.components.TopAppBar
 
-/**
- * GUA FORK: stateless Find friends UI. Android counterpart of iOS `FindFriendsScreen`. Renders the
- * needs-permission / permission-denied / loading / empty / error / results states, and surfaces the
- * homeserver-abstracted handle as the only id shown.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FindFriendsView(

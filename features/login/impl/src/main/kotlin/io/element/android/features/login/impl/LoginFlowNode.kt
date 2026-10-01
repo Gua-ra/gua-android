@@ -73,9 +73,7 @@ class LoginFlowNode(
     private val preferencesEntryPoint: PreferencesEntryPoint,
 ) : BaseFlowNode<LoginFlowNode.NavTarget>(
     backstack = BackStack(
-        // GUA FORK: phone-first onboarding is the only supported path. Do not expose
-        // Element's account-provider selection because Gua sign-in must stay pinned to
-        // Gua MAS/resolver.
+        // GUA FORK: phone-first onboarding only. Sign-in stays pinned to the Gua resolver.
         initialElement = NavTarget.PhoneEntry,
         savedStateMap = buildContext.savedStateMap,
     ),

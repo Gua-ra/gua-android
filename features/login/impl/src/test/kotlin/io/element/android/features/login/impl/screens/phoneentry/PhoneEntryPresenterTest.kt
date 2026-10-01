@@ -56,7 +56,6 @@ class PhoneEntryPresenterTest {
             val initialState = awaitItem()
             initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("2015550123"))
             val state = awaitItem()
-            // Raw digits only; the US mask "(201) 555-0123" is applied visually in the field.
             assertThat(state.localPhoneNumber).isEqualTo("2015550123")
             assertThat(state.localDigits).isEqualTo("2015550123")
             assertThat(state.e164PhoneNumber).isEqualTo("+12015550123")
@@ -69,12 +68,8 @@ class PhoneEntryPresenterTest {
         val presenter = createPhoneEntryPresenter()
         presenter.test {
             val initialState = awaitItem()
-            // 10 digits, so the old length-only heuristic would have accepted it, but 555 is not a
-            // diallable NANP area code, so libphonenumber (and the backend, which runs the same
-            // isValidNumber check) rejects it.
             initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("5551234567"))
             val state = awaitItem()
-            // Raw digits only; the US mask "(555) 123-4567" is applied visually in the field.
             assertThat(state.localPhoneNumber).isEqualTo("5551234567")
             assertThat(state.localDigits).isEqualTo("5551234567")
             assertThat(state.canContinue).isFalse()
@@ -132,7 +127,6 @@ class PhoneEntryPresenterTest {
         presenter.test {
             val initialState = awaitItem()
             initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("+5511912345678"))
-            // The country switch (US -> BR) recomposes more than once; drain to the settled frame.
             val state = awaitSettledNonEmpty()
             assertThat(state.selectedCountry.isoCode).isEqualTo("BR")
             assertThat(state.localDigits).isEqualTo("11912345678")
@@ -149,7 +143,6 @@ class PhoneEntryPresenterTest {
             val initialState = awaitItem()
             assertThat(initialState.selectedCountry.isoCode).isEqualTo("US")
             initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("+14165551234"))
-            // The country switch (US -> CA) recomposes more than once; drain to the settled frame.
             val state = awaitSettledNonEmpty()
             assertThat(state.selectedCountry.isoCode).isEqualTo("CA")
             assertThat(state.localDigits).isEqualTo("4165551234")
@@ -206,7 +199,6 @@ class PhoneEntryPresenterTest {
             val typedState = awaitItem()
             assertThat(typedState.canContinue).isTrue()
             typedState.eventSink(PhoneEntryEvents.Continue)
-            // Drain to the terminal OIDC success state (resolve -> configure -> getOAuthUrl).
             val successState = awaitTerminalLoginMode()
             assertThat(successState.loginMode).isInstanceOf(AsyncData.Success::class.java)
             assertThat(successState.loginMode.dataOrNull()).isInstanceOf(LoginMode.OAuth::class.java)
@@ -234,14 +226,12 @@ class PhoneEntryPresenterTest {
 
     @Test
     fun `present - sign in with passkey configures the default account provider and sends the passkey hint`() = runTest {
-        // No number is involved, so the resolver must never be consulted.
         val resolveRecorder = lambdaRecorder<String, Result<HomeserverResolution>> { error("resolver must not be called") }
         val setHomeserverRecorder = lambdaRecorder<String, Result<io.element.android.libraries.matrix.api.auth.MatrixHomeServerDetails>> { homeserver ->
             assertThat(homeserver).isEqualTo("gua.global")
             Result.success(aMatrixHomeServerDetails(supportsOAuthLogin = true))
         }
         val getOAuthUrlRecorder = lambdaRecorder<OAuthPrompt, String?, Result<OAuthDetails>> { prompt, loginHint ->
-            // The prompt stays `login`; only the reserved hint tells the sign-in page to lead with the passkey.
             assertThat(prompt).isEqualTo(OAuthPrompt.Login)
             assertThat(loginHint).isEqualTo(LoginHelper.PASSKEY_LOGIN_HINT)
             assertThat(loginHint).isEqualTo("passkey")
@@ -259,7 +249,6 @@ class PhoneEntryPresenterTest {
         )
         presenter.test {
             val initialState = awaitItem()
-            // Works with an empty phone field: the passkey identifies the account by itself.
             assertThat(initialState.canContinue).isFalse()
             initialState.eventSink(PhoneEntryEvents.SignInWithPasskey)
             val successState = awaitTerminalLoginMode()
@@ -275,7 +264,6 @@ class PhoneEntryPresenterTest {
         val resolveRecorder = lambdaRecorder<String, Result<HomeserverResolution>> { error("resolver must not be called") }
         val presenter = createPhoneEntryPresenter(
             loginHelper = createLoginHelper(
-                // setHomeserver is left at its lambdaError default: nothing may be configured.
                 authenticationService = FakeMatrixAuthenticationService(),
                 resolverClient = FakeResolverClient(resolveResult = resolveRecorder),
                 deployment = FakeGuaDeployment(defaultAccountProvider = null),
@@ -310,11 +298,6 @@ class PhoneEntryPresenterTest {
     }
 }
 
-/**
- * Drains intermediate emissions (typed-state re-emissions + the Loading frame) until the login mode
- * settles into a terminal Success/Failure. The exact intermediate emission ordering is a Molecule
- * recomposition detail; the wiring contract is that the pipeline reaches a terminal state.
- */
 private suspend fun app.cash.turbine.ReceiveTurbine<PhoneEntryState>.awaitTerminalLoginMode(): PhoneEntryState {
     while (true) {
         val state = awaitItem()
@@ -324,11 +307,6 @@ private suspend fun app.cash.turbine.ReceiveTurbine<PhoneEntryState>.awaitTermin
     }
 }
 
-/**
- * Drains intermediate recomposition frames after a country switch until the local number has settled
- * (non-empty). A country change updates two pieces of `rememberSaveable` state, so Molecule may emit a
- * frame with the new country before the normalised digits land; the settled frame is the contract.
- */
 private suspend fun app.cash.turbine.ReceiveTurbine<PhoneEntryState>.awaitSettledNonEmpty(): PhoneEntryState {
     while (true) {
         val state = awaitItem()

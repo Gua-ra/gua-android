@@ -41,17 +41,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * GUA FORK: tells the owner, on every signed-in device, that someone has started a delayed account
- * recovery, and lets them cancel it.
- *
- * The status is read when the screen resumes, which covers the first start and every return to the
- * app, and again every [REFRESH_INTERVAL] while it stays resumed, or sooner when the recovery becomes
- * finishable or runs out before then, so the wording and the banner follow those moments. A failed
- * read changes nothing: it neither raises a warning without evidence nor takes down one that is up.
- * It is followed by one extra read after [RETRY_AFTER_FAILURE] rather than a wait for the next
- * periodic one.
- */
+/** A failed read changes nothing: it neither raises the banner nor takes it down. */
 @Inject
 class AccountRecoveryBannerPresenter(
     private val matrixClient: MatrixClient,
@@ -67,12 +57,10 @@ class AccountRecoveryBannerPresenter(
         var cancelAction by remember { mutableStateOf<AsyncAction<Unit>>(AsyncAction.Uninitialized) }
         val statusReads = remember { StatusReads() }
 
-        /** Reads the status and applies it. False when the read could not be made or failed. */
         suspend fun refresh(): Boolean = statusReads.mutex.withLock {
             val generation = statusReads.generation
             val status = fetchStatus() ?: return@withLock false
             // A cancel went through while this read was out, so its answer may predate the cancel.
-            // Dropping it keeps a read that fails after the cancel from leaving the banner up.
             if (generation != statusReads.generation) return@withLock true
             statusReads.latest = status
             pendingRecovery = status.toPendingRecovery()
@@ -84,19 +72,14 @@ class AccountRecoveryBannerPresenter(
             isResumed = true
             onPauseOrDispose { isResumed = false }
         }
-        // Keyed on the value this composition saw, not on a read inside the effect: the resume
-        // callback can flip the state before the effect starts, and reading it there would start a
-        // second loop alongside the one the recomposition starts.
+        // Keyed on the value this composition saw: reading the state inside the effect could start a second loop.
         val resumed = isResumed
         LaunchedEffect(resumed) {
             if (!resumed) return@LaunchedEffect
             var retrying = false
             while (true) {
                 val failed = !refresh()
-                // A failure, such as a 401 for a token that expired while the app was in the
-                // background and is refreshed on return, gets one early read. When that read fails
-                // too the schedule goes back to normal, so retries never chain. Everything runs in
-                // this one loop, which a pause cancels, so a resume replaces a waiting retry.
+                // A failed read gets one early retry. Retries never chain.
                 retrying = failed && !retrying
                 val nextDelay = nextReadDelay(statusReads.latest)
                 delay(if (retrying) minOf(RETRY_AFTER_FAILURE, nextDelay) else nextDelay)
@@ -111,7 +94,6 @@ class AccountRecoveryBannerPresenter(
                 AccountRecoveryBannerEvent.DismissCancelConfirmation -> if (cancelAction.isConfirming()) {
                     cancelAction = AsyncAction.Uninitialized
                 }
-                // Only from the confirmation dialog: a cancel is never sent without asking first.
                 AccountRecoveryBannerEvent.ConfirmCancelRecovery -> if (cancelAction.isConfirming()) {
                     cancelAction = AsyncAction.Loading
                     coroutineScope.launch {
@@ -120,13 +102,10 @@ class AccountRecoveryBannerPresenter(
                             ?: Result.failure(IllegalStateException("No access token for this session"))
                         result
                             .onSuccess {
-                                // The server clears a live recovery on every successful cancel, so
-                                // there is nothing left to warn about even if the read below fails.
+                                // A successful cancel clears the live recovery even if the read below fails.
                                 statusReads.generation++
                                 statusReads.latest = null
                                 pendingRecovery = null
-                                // No early retry if this read fails: the server does not let a new
-                                // recovery start right after a cancel, so the periodic read is enough.
                                 refresh()
                                 snackbarDispatcher.post(SnackbarMessage(R.string.gua_account_recovery_cancelled))
                             }
@@ -156,11 +135,7 @@ class AccountRecoveryBannerPresenter(
             .getOrNull()
     }
 
-    /**
-     * [REFRESH_INTERVAL], or less when the live recovery in [status] becomes finishable or runs out
-     * before then. Moments already past are ignored, so a server that still reports the recovery
-     * after its expiry on this device's clock falls back to the periodic read.
-     */
+    /** [REFRESH_INTERVAL], or sooner when the recovery becomes finishable or expires before then. */
     private fun nextReadDelay(status: AccountFactorStatus?): Duration {
         if (status?.accountRecoveryPending != true) return REFRESH_INTERVAL
         val nowMillis = systemClock.epochMillis()
@@ -175,16 +150,6 @@ class AccountRecoveryBannerPresenter(
         return minOf(REFRESH_INTERVAL, (nextMomentMillis - nowMillis).milliseconds + MOMENT_SLACK)
     }
 
-    /**
-     * The date only, never the time of day. The waiting periods here run in days, so the minute a
-     * recovery becomes finishable tells the owner nothing they can act on, and a clock time reads
-     * like a deadline that is far more precise than the decision it informs. A whole date is also
-     * what the web shows on the same recovery, so the two agree.
-     *
-     * A recovery the server reported with no completable moment is its own case. It was previously
-     * folded into "can be finished now", which told the owner their remaining time was gone when
-     * nothing had said so, on the one surface whose job is to get them to cancel in time.
-     */
     private fun AccountFactorStatus.toPendingRecovery(): PendingAccountRecovery? {
         if (!accountRecoveryPending) return null
         val completableAtMillis = accountRecoveryCompletableAtEpochSeconds?.times(MILLIS_PER_SECOND)
@@ -196,36 +161,23 @@ class AccountRecoveryBannerPresenter(
         }
     }
 
-    /**
-     * The localised long date the moment falls on, in the reader's own zone, with the year and no
-     * time of day. The year is kept so the banner reads the same on both apps and so a deadline that
-     * crosses new year cannot be read as a date already past.
-     *
-     * Not the shared [io.element.android.libraries.dateformatter.api.DateFormatter]: its Day mode
-     * drops the year for any date inside the current year and its Full mode adds a clock time, and
-     * neither can be asked for this shape.
-     */
+    /** Long date with the year, in the reader's zone. The shared DateFormatter cannot produce this shape. */
     private fun longDate(epochMillis: Long): String =
         DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)
             .withLocale(Locale.getDefault())
             .format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
 
-    /** The bookkeeping behind the reads. Only touched from the composition's coroutines. */
     private class StatusReads {
-        /** One read at a time, so reads land in the order they started. */
         val mutex = Mutex()
 
-        /** Moves on every successful cancel; a read that started before that is not applied. */
         var generation = 0
 
-        /** The last status applied, which schedules the next read. */
         var latest: AccountFactorStatus? = null
     }
 
     companion object {
         val REFRESH_INTERVAL = 15.minutes
 
-        /** How soon a failed read is tried once more. */
         val RETRY_AFTER_FAILURE = 30.seconds
 
         /** Reads a moment later than the recovery's own times, so the server has passed them too. */

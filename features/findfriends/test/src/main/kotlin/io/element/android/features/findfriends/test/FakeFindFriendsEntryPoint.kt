@@ -12,10 +12,6 @@ import com.bumble.appyx.core.node.Node
 import com.bumble.appyx.core.plugin.Plugin
 import io.element.android.features.findfriends.api.FindFriendsEntryPoint
 
-/**
- * GUA FORK: test fake for [FindFriendsEntryPoint] — returns a no-op node and captures the supplied
- * callback so flows wiring Find friends can be exercised without the impl module.
- */
 class FakeFindFriendsEntryPoint(
     private val nodeFactory: (BuildContext, List<Plugin>) -> Node,
 ) : FindFriendsEntryPoint {

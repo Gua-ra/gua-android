@@ -47,8 +47,6 @@ class AccountRecoveryBannerPresenterTest {
     private val defaultLocale = Locale.getDefault()
     private val defaultTimeZone = TimeZone.getDefault()
 
-    // The banner formats the date in the reader's own locale and zone, so both are pinned here:
-    // the assertions below are on the real formatted string, not on a fake formatter's echo.
     @Before
     fun pinLocaleAndZone() {
         Locale.setDefault(Locale.US)
@@ -82,8 +80,6 @@ class AccountRecoveryBannerPresenterTest {
 
             lifecycleOwner.givenState(Lifecycle.State.RESUMED)
             val shownState = consumeItemsUntilPredicate { it.pendingRecovery != null }.last()
-            // A localised long date with the year, and never a time of day: the server's instant is
-            // 2026-09-21T14:13:20Z, and only the date it falls on reaches the banner.
             assertThat(shownState.pendingRecovery).isEqualTo(
                 PendingAccountRecovery.FinishableFrom("September 21, 2026")
             )
@@ -111,8 +107,6 @@ class AccountRecoveryBannerPresenterTest {
     fun `a live recovery the server gave no completable moment claims nothing about timing`() = runTest {
         val presenter = createAccountRecoveryBannerPresenter(
             identityServiceClient = FakeIdentityServiceClient(
-                // What an identity service too old to publish the field answers, which the client
-                // decodes as null rather than refusing.
                 accountFactorStatusResult = { _, _ ->
                     Result.success(aRecoveryStatus(pending = true, completableAtEpochSeconds = null))
                 },
@@ -120,8 +114,6 @@ class AccountRecoveryBannerPresenterTest {
         )
         presenter.testWithLifecycleOwner(FakeLifecycleOwner(Lifecycle.State.RESUMED)) {
             val shownState = consumeItemsUntilPredicate { it.pendingRecovery != null }.last()
-            // Not FinishableNow: nothing said the moment had passed, and saying so would tell the
-            // owner the time they have to cancel is already gone.
             assertThat(shownState.pendingRecovery).isEqualTo(PendingAccountRecovery.FinishableUnknown)
             cancelAndIgnoreRemainingEvents()
         }
@@ -225,7 +217,6 @@ class AccountRecoveryBannerPresenterTest {
                     Result.success(results.removeFirst())
                 },
             ),
-            // Follows the test's virtual time, so the wall clock and the scheduled reads agree.
             systemClock = object : SystemClock {
                 override fun epochMillis() = startMillis + testScheduler.currentTime
             },
@@ -249,7 +240,6 @@ class AccountRecoveryBannerPresenterTest {
             assertThat(statusReads).isEqualTo(3)
             assertThat(consumeItemsUntilPredicate { it.pendingRecovery == null }.last().pendingRecovery).isNull()
 
-            // Nothing is left to wait for, so the next read is the periodic one.
             advanceTimeBy(14.minutes)
             runCurrent()
             assertThat(statusReads).isEqualTo(3)
@@ -308,7 +298,6 @@ class AccountRecoveryBannerPresenterTest {
             identityServiceClient = FakeIdentityServiceClient(
                 accountFactorStatusResult = { token, _ ->
                     statusReads += token
-                    // The token expired while the app was in the background.
                     if (token == AN_ACCESS_TOKEN) {
                         Result.failure(ResolverError.Server(401))
                     } else {
@@ -332,7 +321,6 @@ class AccountRecoveryBannerPresenterTest {
             assertThat(statusReads).containsExactly(AN_ACCESS_TOKEN, A_REFRESHED_ACCESS_TOKEN).inOrder()
             assertThat(consumeItemsUntilPredicate { it.pendingRecovery != null }.last().pendingRecovery).isNotNull()
 
-            // The retry read fine, so the next read is the periodic one.
             advanceTimeBy(14.minutes)
             runCurrent()
             assertThat(statusReads).hasSize(2)
@@ -362,7 +350,6 @@ class AccountRecoveryBannerPresenterTest {
             runCurrent()
             assertThat(statusReads).isEqualTo(2)
 
-            // No retry of the retry.
             advanceTimeBy(14.minutes)
             runCurrent()
             assertThat(statusReads).isEqualTo(2)
@@ -404,7 +391,6 @@ class AccountRecoveryBannerPresenterTest {
             runCurrent()
             assertThat(statusReads).isEqualTo(2)
 
-            // The retry of the first read is gone; only the resume read's own retry is left.
             advanceTimeBy(20.seconds)
             runCurrent()
             assertThat(statusReads).isEqualTo(2)
@@ -421,7 +407,6 @@ class AccountRecoveryBannerPresenterTest {
     @Test
     fun `a retry does not wait past a moment of the recovery that comes sooner`() = runTest {
         val startMillis = A_COMPLETABLE_AT_EPOCH_SECONDS * 1000
-        // Finishable 20 seconds in, and runs out 40 seconds in.
         val liveRecovery = aRecoveryStatus(pending = true).copy(
             accountRecoveryCompletableAtEpochSeconds = A_COMPLETABLE_AT_EPOCH_SECONDS + 20,
             accountRecoveryExpiresAtEpochSeconds = A_COMPLETABLE_AT_EPOCH_SECONDS + 40,
@@ -449,14 +434,11 @@ class AccountRecoveryBannerPresenterTest {
             consumeItemsUntilPredicate { it.pendingRecovery != null }
             assertThat(statusReads).isEqualTo(1)
 
-            // The read at the finishable moment fails, and the warning stays up.
             advanceTimeBy(21.seconds)
             runCurrent()
             assertThat(statusReads).isEqualTo(2)
-            // Nothing moves, so the warning that is up stays up.
             expectNoEvents()
 
-            // Its retry comes at the expiry, 20 seconds later, not 30.
             advanceTimeBy(19.seconds)
             runCurrent()
             assertThat(statusReads).isEqualTo(2)
@@ -472,7 +454,6 @@ class AccountRecoveryBannerPresenterTest {
     fun `without an access token nothing is sent and nothing is shown`() = runTest {
         val presenter = createAccountRecoveryBannerPresenter(
             sessionStore = InMemorySessionStore(),
-            // The default fake fails the test on any call.
             identityServiceClient = FakeIdentityServiceClient(),
         )
         presenter.testWithLifecycleOwner(FakeLifecycleOwner(Lifecycle.State.RESUMED)) {
@@ -573,7 +554,6 @@ class AccountRecoveryBannerPresenterTest {
         )
         presenter.testWithLifecycleOwner(FakeLifecycleOwner(Lifecycle.State.RESUMED)) {
             val shownState = consumeItemsUntilPredicate { it.pendingRecovery != null }.last()
-            // The periodic read goes out and has not answered yet.
             advanceTimeBy(AccountRecoveryBannerPresenter.REFRESH_INTERVAL)
             runCurrent()
             assertThat(reads).hasSize(1)
@@ -584,7 +564,6 @@ class AccountRecoveryBannerPresenterTest {
             consumeItemsUntilPredicate { it.cancelAction == AsyncAction.Loading }
             runCurrent()
 
-            // It answers from before the cancel, and the read after the cancel fails.
             staleRead.complete(Result.success(aRecoveryStatus(pending = true)))
             val doneState = consumeItemsUntilPredicate { it.cancelAction == AsyncAction.Uninitialized }.last()
             assertThat(reads).isEmpty()
@@ -611,7 +590,6 @@ class AccountRecoveryBannerPresenterTest {
             shownState.eventSink(AccountRecoveryBannerEvent.ConfirmCancelRecovery)
             runCurrent()
             assertThat(cancelCalls).isEqualTo(0)
-            // No confirmation dialog and no progress either: the state does not move at all.
             expectNoEvents()
             cancelAndIgnoreRemainingEvents()
         }
@@ -622,7 +600,6 @@ class AccountRecoveryBannerPresenterTest {
         val presenter = createAccountRecoveryBannerPresenter(
             identityServiceClient = FakeIdentityServiceClient(
                 accountFactorStatusResult = { _, _ -> Result.success(aRecoveryStatus(pending = true)) },
-                // The default would fail the test if a cancel were sent.
             ),
         )
         presenter.testWithLifecycleOwner(FakeLifecycleOwner(Lifecycle.State.RESUMED)) {

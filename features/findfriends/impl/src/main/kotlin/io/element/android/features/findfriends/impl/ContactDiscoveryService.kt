@@ -17,16 +17,7 @@ import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.withContext
 
-/**
- * GUA FORK: reads the device address book, protects the numbers, looks them up against Gua, and
- * returns the matching contacts. Android counterpart of iOS `ContactDiscoveryService.discover`.
- *
- * PRIVACY (mirrors iOS):
- * - The address book is read once and never persisted.
- * - Raw phone numbers never leave the device — they are hashed via [PhoneHasher] before the lookup.
- * - The hashes the device produced are mapped back to local names so matches are labelled with how
- *   the user actually knows the person; the server only ever sees the hashes.
- */
+/** Raw phone numbers never leave the device: they are hashed by [PhoneHasher] before the lookup. The address book is never persisted. */
 sealed interface ContactDiscoveryResult {
     data class Success(val contacts: List<DiscoveredContact>) : ContactDiscoveryResult
     data object NoContactsWithNumbers : ContactDiscoveryResult
@@ -45,7 +36,7 @@ class DefaultContactDiscoveryService(
     private val sessionStore: SessionStore,
     private val dispatchers: CoroutineDispatchers,
 ) : ContactDiscoveryService {
-    /** Identity-service caps the batch; stay under it (mirrors iOS' 1000). */
+    /** The identity service caps the batch size. */
     private val maxNumbersPerRequest = 1000
 
     override suspend fun discover(): ContactDiscoveryResult {
@@ -55,8 +46,6 @@ class DefaultContactDiscoveryService(
         val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
             ?: return ContactDiscoveryResult.Failure
 
-        // Map hashed digest -> best local name so matches can be labelled locally without the server
-        // ever seeing the raw number.
         val nameByHash = nameByNumber.entries.mapNotNull { (e164, name) ->
             PhoneHasher.hash(e164)?.let { it to name }
         }.toMap()

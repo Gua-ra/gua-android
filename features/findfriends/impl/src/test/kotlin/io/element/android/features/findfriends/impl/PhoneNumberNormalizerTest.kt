@@ -25,7 +25,6 @@ class PhoneNumberNormalizerTest {
 
     @Test
     fun `national number gets the device dial code and drops the trunk zero`() {
-        // Brazilian national format with a trunk 0.
         assertThat(PhoneNumberNormalizer.normalize("011 91234-5678", defaultDialCode = "55"))
             .isEqualTo("+5511912345678")
     }

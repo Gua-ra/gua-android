@@ -42,16 +42,13 @@ class PhoneEntryPresenter(
     override fun present(): PhoneEntryState {
         val coroutineScope = rememberCoroutineScope()
 
-        // Seed country + local number from any pre-populated E.164 number (else device locale).
-        // The local number is held as RAW DIGITS; the national mask is applied purely visually by
-        // the field's PhoneNumberVisualTransformation, so the cursor never needs correcting.
+        // The local number is held as raw digits. The mask is applied visually by the field.
         val initial = remember { deviceCountryProvider.parse(params.initialPhoneNumber) }
         var selectedCountry by rememberSaveable { mutableStateOf(initial.first) }
         var localPhoneNumber by rememberSaveable { mutableStateOf(initial.second) }
 
         val loginMode by loginHelper.collectLoginMode()
 
-        // Apply any country picked in the CountryPicker child screen, then clear it.
         val pickedCountry by selectedCountryStore.flow.collectAsState()
         LaunchedEffect(pickedCountry) {
             pickedCountry?.let { country ->
@@ -63,15 +60,10 @@ class PhoneEntryPresenter(
         fun handleEvent(event: PhoneEntryEvents) {
             when (event) {
                 is PhoneEntryEvents.PhoneNumberChanged -> {
-                    // First normalize: if the user pasted/autofilled a number that includes the country
-                    // code (with or without a leading "+"), strip the redundant code and switch the
-                    // country when the input is unambiguously international. No-op for ordinary typing.
                     val (normalizedCountry, normalizedDigits) = Country.normalize(
                         rawInput = event.value,
                         current = selectedCountry,
                     )
-                    // Then auto-detect (longest-prefix dial code / NANP US<->CA area code) on the
-                    // stripped digits. Only raw digits are stored; the national mask is visual-only.
                     val country = Country.detect(localDigits = normalizedDigits, current = normalizedCountry) ?: normalizedCountry
                     selectedCountry = country
                     localPhoneNumber = normalizedDigits

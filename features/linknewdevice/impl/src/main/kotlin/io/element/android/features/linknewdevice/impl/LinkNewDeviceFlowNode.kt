@@ -312,8 +312,7 @@ class LinkNewDeviceFlowNode(
         activity?.openUrlInChromeCustomTab(
             session = null,
             darkTheme = darkTheme,
-            // GUA FORK: name this account, so the approval page refuses to approve the new device
-            // under a browser session that belongs to someone else.
+            // GUA FORK: name this account so the approval page refuses another account's browser session.
             url = sessionEnterpriseService.linkNewDeviceBrowserUrl(url, sessionId),
             // GUA FORK: and a private tab, so there is no such session to pick up in the first place.
             ephemeral = true,

@@ -51,10 +51,7 @@ fun ResetIdentityRootView(
         isScrollable = true,
         content = { Content(canRecoverFromOtherDevice = state.canRecoverFromOtherDevice) },
         buttons = {
-            // GUA FORK: offered only when another device of this account holds the keys. It
-            // brings the messages here without resetting anything; otherwise the reset is the
-            // only way forward and the sole option shown. The reset goes straight through: this
-            // screen already names what is lost and its button is destructive.
+            // GUA FORK: offered only when another device of this account holds the keys.
             if (state.canRecoverFromOtherDevice) {
                 Button(
                     modifier = Modifier.fillMaxWidth(),
@@ -86,10 +83,7 @@ private fun Content(canRecoverFromOtherDevice: Boolean) {
         modifier = Modifier.padding(top = 8.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        // GUA FORK: one plain sentence about what is lost, instead of three bullets of
-        // upstream jargon about identities and recovery keys the user has never seen. When the
-        // keys can be fetched from another device, saying the backup must be reset would be
-        // untrue, and the button below offers the other way out.
+        // GUA FORK: one plain sentence about what is lost.
         Text(
             modifier = Modifier.fillMaxWidth(),
             text = stringResource(

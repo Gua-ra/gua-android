@@ -180,9 +180,7 @@ private fun EmptyView(
             AccountRecoveryBanner(state = accountRecoveryBannerState)
             when (state.securityBannerState) {
                 SecurityBannerState.SetUpRecovery,
-                // GUA FORK: the presenter no longer produces SetUpRecovery, but render the same
-                // silent-repair banner here rather than upstream's, so no future path can reach
-                // the flow that hands a user a recovery key to write down.
+                // GUA FORK: the silent-repair banner, never upstream's recovery-key flow.
                 SecurityBannerState.RecoveryKeyConfirmation -> {
                     ConfirmRecoveryKeyBanner(
                         onContinueClick = { eventSink(RoomListEvent.FinishEncryptionSetup) },
@@ -264,8 +262,7 @@ private fun RoomsViewList(
         modifier = modifier,
         contentPadding = contentPadding,
     ) {
-        // GUA FORK: above the other banners and independent of them, so neither the encryption
-        // banner nor any dismissal can push it out.
+        // GUA FORK: above the other banners and independent of them.
         if (accountRecoveryBannerState.pendingRecovery != null) {
             item {
                 AccountRecoveryBanner(state = accountRecoveryBannerState)
@@ -273,9 +270,7 @@ private fun RoomsViewList(
         }
         when (state.securityBannerState) {
             SecurityBannerState.SetUpRecovery,
-            // GUA FORK: the presenter no longer produces SetUpRecovery, but render the same
-            // silent-repair banner here rather than upstream's, so no future path can reach
-            // the flow that hands a user a recovery key to write down.
+            // GUA FORK: the silent-repair banner, never upstream's recovery-key flow.
             SecurityBannerState.RecoveryKeyConfirmation -> {
                 item {
                     ConfirmRecoveryKeyBanner(

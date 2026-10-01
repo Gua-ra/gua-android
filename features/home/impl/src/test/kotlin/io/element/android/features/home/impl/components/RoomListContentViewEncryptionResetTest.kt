@@ -25,10 +25,6 @@ import io.element.android.features.home.impl.spacefilters.aDisabledSpaceFiltersS
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.Test
 
-/**
- * GUA FORK: the setup banner's reset verdict must be consumed on EVERY content state, including
- * Rooms, the branch every account with chats takes. See RoomListContentState.encryptionSetupNeedsReset.
- */
 class RoomListContentViewEncryptionResetTest : RobolectricTest() {
     @Test
     fun `a reset verdict on the rooms list is consumed, not left latched`() = runAndroidComposeUiTest<ComponentActivity> {
@@ -53,8 +49,6 @@ class RoomListContentViewEncryptionResetTest : RobolectricTest() {
             )
         }
 
-        // Navigating is not enough on its own: without the event the flag stays set, the effect
-        // never re-keys, and the next tap is a no-op for the rest of the session.
         assert(navigated == 1) { "expected to navigate once, navigated $navigated times" }
         assert(events.contains(RoomListEvent.EncryptionResetNavigated)) {
             "expected the verdict to be consumed, got $events"

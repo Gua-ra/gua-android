@@ -65,13 +65,7 @@ enum class SecurityBannerState {
 
 @Immutable
 sealed interface RoomListContentState {
-    /**
-     * GUA FORK: set once the repair has established only a reset can finish this device.
-     *
-     * Declared on the interface so the navigation effect is written once above the branch. The flag
-     * is one-shot and must be consumed on every content state, or the `LaunchedEffect` key never
-     * changes again and the Finish setup button goes dead.
-     */
+    /** GUA FORK: one-shot. Must be consumed on every content state, or the navigation effect never fires again. */
     val encryptionSetupNeedsReset: Boolean
 
     data class Skeleton(val count: Int) : RoomListContentState {

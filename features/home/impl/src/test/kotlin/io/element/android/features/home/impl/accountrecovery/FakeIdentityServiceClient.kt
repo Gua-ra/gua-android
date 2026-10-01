@@ -15,10 +15,6 @@ import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.PhoneChangeChallenge
 import io.element.android.tests.testutils.lambda.lambdaError
 
-/**
- * GUA FORK: an [IdentityServiceClient] for the account recovery banner. Only the status read and the
- * cancel are expected; anything else fails the test.
- */
 class FakeIdentityServiceClient(
     private val accountFactorStatusResult: suspend (String, String) -> Result<AccountFactorStatus> = { _, _ -> lambdaError() },
     private val cancelAccountRecoveryResult: suspend (String) -> Result<Unit> = { lambdaError() },
@@ -60,7 +56,6 @@ class FakeIdentityServiceClient(
         lambdaError()
 }
 
-/** An account holding a PIN, with or without a live delayed recovery. */
 fun aRecoveryStatus(
     pending: Boolean,
     completableAtEpochSeconds: Long? = if (pending) A_COMPLETABLE_AT_EPOCH_SECONDS else null,

@@ -14,15 +14,7 @@ import dev.zacsweers.metro.ContributesBinding
 import io.element.android.libraries.di.annotations.ApplicationContext
 import timber.log.Timber
 
-/**
- * GUA FORK: reads the device address book and returns a map of normalized E.164 number -> best local
- * display name. Android counterpart of iOS `ContactDiscoveryService.readAddressBook`.
- *
- * PRIVACY: this is a one-shot read used only to build the lookup payload. The address book is never
- * persisted, and individual phone numbers are never logged.
- */
 interface ContactsReader {
-    /** @return E.164 number -> the best local name for it, or an empty map if none/unreadable. */
     fun readContacts(): Map<String, String>
 }
 
@@ -53,7 +45,6 @@ class AndroidContactsReader(
                 while (cursor.moveToNext()) {
                     val rawNumber = cursor.getString(numberIndex)
                     val e164 = rawNumber?.let { PhoneNumberNormalizer.normalize(it, defaultDialCode) }
-                    // First non-empty name wins; never overwrite a real name with a blank.
                     if (e164 != null && nameByNumber[e164].isNullOrEmpty()) {
                         val name = (if (nameIndex >= 0) cursor.getString(nameIndex) else null).orEmpty()
                         nameByNumber[e164] = name.ifEmpty { e164 }
