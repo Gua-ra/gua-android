@@ -22,7 +22,7 @@ import sergio.sastre.composable.preview.scanner.android.AndroidPreviewInfo
 import sergio.sastre.composable.preview.scanner.core.preview.ComposablePreview
 
 /**
- * GUA FORK Stage 4 verification: confirms that in a 1:1 direct chat the timeline suppresses
+ * GUA FORK: 1:1 timeline suppression verification. Confirms that in a 1:1 direct chat the timeline suppresses
  * membership/profile/state "room change" events (and never renders a collapsed "N room changes"
  * group), while a group room still renders them. Mirrors the iOS `isDM` guards in
  * `RoomTimelineItemFactory`.

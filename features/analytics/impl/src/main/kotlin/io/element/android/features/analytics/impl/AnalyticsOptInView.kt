@@ -61,8 +61,8 @@ fun AnalyticsOptInView(
     BackHandler(onBack = ::onDeclineTerms)
     // GUA FORK: match iOS `AnalyticsPromptScreen`, which renders the header, checklist AND buttons
     // together in the main (white) content area. iOS' gradient is only a thin TOP breaker behind the
-    // header; Android's `OnboardingBackground` is a 220dp BOTTOM band, so the dark filled buttons —
-    // which naturally fall near the bottom of the content flow — landed ON that teal/blue gradient,
+    // header; Android's `OnboardingBackground` is a 220dp BOTTOM band, so the dark filled buttons,
+    // which naturally fall near the bottom of the content flow, landed ON that teal/blue gradient,
     // giving an ugly dark-on-blue contrast. We therefore (1) move the buttons up into the content
     // (no separate footer over the gradient) and (2) drop the bottom gradient entirely so everything
     // sits on the white `bgCanvasDefault`, matching the iOS result.

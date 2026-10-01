@@ -19,7 +19,7 @@ import org.junit.Rule
 import org.junit.Test
 
 /**
- * GUA FORK Stage 2 verification: confirms that the homeserver suffix of a Matrix
+ * GUA FORK: homeserver abstraction verification. Confirms that the homeserver suffix of a Matrix
  * user id (the `:server` part) is NEVER rendered in user-facing UI. The user below
  * intentionally has NO display name, so the rendered handle comes straight from the
  * abstracted [UserId.displayHandle] (mirrors iOS `guaDisplayHandle`). If the

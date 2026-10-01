@@ -212,7 +212,7 @@ class RoomListDataSource(
 
     private fun buildAndCacheItem(roomSummaries: List<RoomSummary>, index: Int): RoomListRoomSummary? {
         // GUA FORK: Gua has no Spaces concept (like iOS, where the room list never surfaces spaces), so
-        // hide m.space container rooms — otherwise they leak into the chat list looking like empty rooms.
+        // hide m.space container rooms; otherwise they leak into the chat list looking like empty rooms.
         // Also hide stray empty "orphan" rooms so a half-created or never-joined chat (e.g. a failed
         // start-chat) doesn't clutter the list. Mirrors iOS RoomSummary.isEmptyOrphanRoom.
         val roomListSummary = roomSummaries.getOrNull(index)
@@ -223,7 +223,7 @@ class RoomListDataSource(
     }
 
     // GUA FORK: a stray empty room (a half-created/never-used chat, or a no-content room the user was
-    // joined to) — no visible joined members (heroes), at most the local user + one peer, and no real
+    // joined to): no visible joined members (heroes), at most the local user + one peer, and no real
     // message. Mirrors iOS RoomSummary.isEmptyOrphanRoom (heroes empty && lastMessage == nil &&
     // activeMembersCount <= 2). NOTE: unlike iOS's `lastMessage`, Android's `latestEvent` also includes
     // state events (e.g. "You joined the room" = RoomMembershipContent), so "no message" means the
@@ -236,7 +236,7 @@ class RoomListDataSource(
     /** A genuine conversation: the latest event is an actual message, not absent / a state change. */
     private fun RoomSummary.hasRealMessage(): Boolean = when (val ev = latestEvent) {
         is LatestEventValue.None -> false
-        is LatestEventValue.RoomInvite -> true // a real invite — never treat as empty
+        is LatestEventValue.RoomInvite -> true // a real invite, never treat as empty
         is LatestEventValue.Remote -> ev.content.isRealMessage()
         is LatestEventValue.Local -> ev.content.isRealMessage()
     }

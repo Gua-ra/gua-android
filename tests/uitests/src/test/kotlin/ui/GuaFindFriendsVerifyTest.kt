@@ -21,7 +21,7 @@ import org.junit.Rule
 import org.junit.Test
 
 /**
- * GUA FORK S12 verification: records focused screenshots of the Find friends contact-discovery
+ * GUA FORK: Find friends (contact discovery) verification. Records focused screenshots of the
  * screen (Android port of iOS `FindFriendsScreen`) so the visual can be reviewed without recording
  * the whole golden set. Mirrors the precedent of [GuaPhoneEntryVerifyTest].
  *

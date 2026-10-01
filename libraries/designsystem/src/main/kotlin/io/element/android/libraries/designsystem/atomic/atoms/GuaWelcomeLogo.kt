@@ -37,12 +37,12 @@ private const val PARALLAX_DEGREES = 5f
 private const val ENTRANCE_FLIP_DEGREES = 60f
 
 /**
- * The branded Gua welcome logo: the full app-icon mark (`element_logo`) rendered CLEANLY — no glass
- * tile, no glow, no spotlight — with a soft drop shadow for depth.
+ * The branded Gua welcome logo: the full app-icon mark (`element_logo`) rendered cleanly, with no
+ * glass tile, glow or spotlight, and a soft drop shadow for depth.
  *
  * It arrives with an **elegant one-shot 3D entrance**: the logo flies in from the side while flipping
  * on its Y axis (a real perspective rotation that settles), fading and scaling up. After that it moves
- * **only** with the device — a home-screen-icon parallax (3D tilt), the iOS welcome-logo analogue.
+ * **only** with the device: a home-screen-icon parallax (3D tilt), the iOS welcome-logo analogue.
  *
  * All motion (entrance + tilt) is gated on
  * [areAnimationsEnabled][io.element.android.libraries.androidutils.system.areAnimationsEnabled]; under
@@ -77,7 +77,7 @@ fun GuaWelcomeLogo(
         contentDescription = null,
         modifier = modifier
             .size(size)
-            // Soft drop shadow matching the icon's rounded corners — depth, not a glow.
+            // Soft drop shadow matching the icon's rounded corners: depth, not a glow.
             .shadow(elevation = 14.dp, shape = RoundedCornerShape(percent = 22), clip = false)
             .graphicsLayer {
                 val p = entrance.value

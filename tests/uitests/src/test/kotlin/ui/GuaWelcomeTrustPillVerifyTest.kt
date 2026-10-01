@@ -17,7 +17,7 @@ import org.junit.Test
 
 /**
  * GUA FORK verification: records a focused screenshot of the welcome (onboarding) screen to confirm
- * the iOS-parity trust treatment — the welcome title followed by the "End-to-end encrypted" pill
+ * the iOS-parity trust treatment: the welcome title followed by the "End-to-end encrypted" pill
  * (lock icon + label), with NO marketing subtitle below the title.
  *
  * Mirrors the precedent of [GuaPhoneEntryVerifyTest]: records to its own snapshot file and does not
