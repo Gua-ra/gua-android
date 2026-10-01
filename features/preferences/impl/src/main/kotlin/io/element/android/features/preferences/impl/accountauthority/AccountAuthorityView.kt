@@ -262,50 +262,52 @@ private fun SecurityNotificationRow(
     enabled: Boolean,
     eventSink: (AccountAuthorityEvent) -> Unit,
 ) {
-    ListItem(
-        headlineContent = {
-            Text(
-                buildString {
-                    append(
-                        registration.deviceLabel?.takeIf { it.isNotBlank() }
-                            ?: stringResource(id = R.string.screen_account_authority_device_unlabelled)
+    Column {
+        ListItem(
+            headlineContent = {
+                Text(
+                    buildString {
+                        append(
+                            registration.deviceLabel?.takeIf { it.isNotBlank() }
+                                ?: stringResource(id = R.string.screen_account_authority_device_unlabelled)
+                        )
+                        if (isThisInstall) {
+                            append(" ")
+                            append(stringResource(id = R.string.screen_account_authority_device_this_phone))
+                        }
+                    }
+                )
+            },
+            supportingContent = {
+                Text(
+                    stringResource(
+                        id = R.string.screen_account_authority_alerts_row_message,
+                        formatTime(registration.lastSeenAtEpochSeconds),
                     )
-                    if (isThisInstall) {
-                        append(" ")
-                        append(stringResource(id = R.string.screen_account_authority_device_this_phone))
-                    }
-                }
-            )
-        },
-        supportingContent = {
-            Text(
-                stringResource(
-                    id = R.string.screen_account_authority_alerts_row_message,
-                    formatTime(registration.lastSeenAtEpochSeconds),
                 )
-            )
-        },
-        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Notifications())),
-    )
-    ListItem(
-        headlineContent = {
-            Text(
-                stringResource(
-                    id = if (isThisInstall) {
-                        R.string.screen_account_authority_alerts_remove_self_action
-                    } else {
-                        R.string.screen_account_authority_alerts_remove_action
-                    }
+            },
+            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Notifications())),
+        )
+        ListItem(
+            headlineContent = {
+                Text(
+                    stringResource(
+                        id = if (isThisInstall) {
+                            R.string.screen_account_authority_alerts_remove_self_action
+                        } else {
+                            R.string.screen_account_authority_alerts_remove_action
+                        }
+                    )
                 )
-            )
-        },
-        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Close())),
-        style = ListItemStyle.Destructive,
-        enabled = enabled,
-        onClick = {
-            eventSink(AccountAuthorityEvent.RemoveSecurityNotification(registration.installationId))
-        },
-    )
+            },
+            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Close())),
+            style = ListItemStyle.Destructive,
+            enabled = enabled,
+            onClick = {
+                eventSink(AccountAuthorityEvent.RemoveSecurityNotification(registration.installationId))
+            },
+        )
+    }
 }
 
 @Composable
