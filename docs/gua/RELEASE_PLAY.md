@@ -1,8 +1,6 @@
 # Releasing Gua to Google Play
 
-How Gua builds reach Google Play. Gua is a fork of Element X Android; this page covers only the
-Gua release path. The mechanics live in `.github/workflows/publish-play.yml`, and its header
-comment is the reference when this page and the workflow disagree.
+How Gua builds reach Google Play. The mechanics live in `.github/workflows/publish-play.yml`.
 
 ## 1. The two apps
 

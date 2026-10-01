@@ -41,20 +41,9 @@ This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://git
 | Sign-in session handling | may silently resume a previous web session | fresh authentication forced on every sign-in (`prompt=login`), in a private Custom Tab where the browser supports one |
 | Languages | upstream translations | adds Gua pt-BR and fr strings |
 
-### How sign-in works today
+### How sign-in works
 
-Sign-in is a resolver lookup, then an OIDC authorization-code flow with PKCE against the Gua fork of Matrix Authentication Service, which delegates to the Gua Identity Service. The full sequence is in [Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md); the Android specifics are:
-
-- Before sign-in, the app asks [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) which homeserver to use (`libraries/guaresolver`). The client never hardcodes a server. The federation layout stays out of the UI.
-- The app registers as a public OIDC client and requires PKCE. It opens the sign-in flow in a private (ephemeral) Custom Tab when the browser supports one, so no earlier browser session is carried into it. Account management stays in the shared tab and names the signed-in account (`org.matrix.msc4198.login_hint`). The [Gua fork of MAS](https://github.com/Gua-ra/gua-auth-service) and the [Gua Identity Service](https://github.com/Gua-ra/identity-service) serve that flow.
-- Find Friends, the account PIN and phone number changes talk to the Gua Identity Service, not the resolver.
-- End-to-end encryption stays on by default.
-
----
-
-## How this relates to the target design
-
-Everything above describes the current implementation. Per-homeserver authentication and verified routing are not shipped yet: every sign-in completes at the single Gua identity host, and the app follows the resolver's answer without checking it against signed federation state. [Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md) explains the target design; the decision record behind it is [ADM-001 (identifier binding, placement and trust)](https://github.com/Gua-ra/gua-resolver/blob/main/docs/decisions/ADM-001-identifier-binding-placement-trust.md).
+Sign-in is a resolver lookup, then an OIDC authorization-code flow with PKCE against the Gua fork of Matrix Authentication Service, which delegates to the Gua Identity Service. See [Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md).
 
 ---
 
