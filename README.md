@@ -43,21 +43,7 @@ This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://git
 
 ### How sign-in works today
 
-```
-Gua Android app
-    |  1. resolver lookup by phone number: which homeserver to use
-    v
-gua-resolver
-    |  2. OIDC authorization code + PKCE (Custom Tab) against the resolved server
-    v
-Matrix Authentication Service (Gua fork: gua-auth-service)
-    |  3. delegated sign-in (phone + one-time code + PIN today; institutional SSO planned)
-    v
-Gua Identity Service
-    |  provisioning, account PIN, contact lookup, phone-number changes
-    v
-Synapse homeserver in the Gua federation
-```
+Sign-in is a resolver lookup, then an OIDC authorization-code flow with PKCE against the Gua fork of Matrix Authentication Service, which delegates to the Gua Identity Service. The full sequence is in [Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md); the Android specifics are:
 
 - Before sign-in, the app asks [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) which homeserver to use (`libraries/guaresolver`). The client never hardcodes a server. The federation layout stays out of the UI.
 - The app registers as a public OIDC client and requires PKCE. It opens the sign-in flow in a private (ephemeral) Custom Tab when the browser supports one, so no earlier browser session is carried into it. Account management stays in the shared tab and names the signed-in account (`org.matrix.msc4198.login_hint`). The [Gua fork of MAS](https://github.com/Gua-ra/gua-auth-service) and the [Gua Identity Service](https://github.com/Gua-ra/identity-service) serve that flow.
@@ -68,12 +54,7 @@ Synapse homeserver in the Gua federation
 
 ## How this relates to the target design
 
-Everything above describes the current implementation. Parts of the target design are not shipped yet, including:
-
-- **Per-homeserver authentication.** Today every sign-in completes at the single Gua identity host.
-- **Verified routing.** Today the app follows the resolver's answer as given. It does not check that answer against signed federation state.
-
-[Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md) explains the target in plain language. [ADM-001](https://github.com/Gua-ra/gua-resolver/blob/main/docs/decisions/ADM-001-identifier-binding-placement-trust.md) records the decision behind it.
+Everything above describes the current implementation. Per-homeserver authentication and verified routing are not shipped yet: every sign-in completes at the single Gua identity host, and the app follows the resolver's answer without checking it against signed federation state. [Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md) explains the target design; the decision record behind it is [ADM-001 (identifier binding, placement and trust)](https://github.com/Gua-ra/gua-resolver/blob/main/docs/decisions/ADM-001-identifier-binding-placement-trust.md).
 
 ---
 
