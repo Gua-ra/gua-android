@@ -68,11 +68,9 @@ sealed interface RoomListContentState {
     /**
      * GUA FORK: set once the repair has established only a reset can finish this device.
      *
-     * Declared here, not just on the states that carry it, so the navigation effect can be written
-     * once against the interface. It used to be duplicated into each state's own composable, and
-     * RoomsView -- the branch every account with chats takes -- navigated without ever sending
-     * EncryptionResetNavigated back. The flag latched true, its LaunchedEffect key never changed
-     * again, and from then on every tap of Finish setup did nothing at all.
+     * Declared on the interface so the navigation effect is written once above the branch. The flag
+     * is one-shot and must be consumed on every content state, or the `LaunchedEffect` key never
+     * changes again and the Finish setup button goes dead.
      */
     val encryptionSetupNeedsReset: Boolean
 

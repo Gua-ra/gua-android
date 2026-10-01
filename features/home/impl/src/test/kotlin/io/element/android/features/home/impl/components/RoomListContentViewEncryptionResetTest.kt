@@ -26,13 +26,8 @@ import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.Test
 
 /**
- * GUA FORK: the setup banner's reset verdict must be consumed on EVERY content state.
- *
- * It used to be handled inside each state's own composable, and the Rooms one -- the branch every
- * account with any chats takes -- navigated without ever sending [RoomListEvent.EncryptionResetNavigated]
- * back. The flag stayed true, so its LaunchedEffect key never changed again, and from then on every
- * tap of Finish setup did nothing at all. It reproduced only on an account that had chats, which is
- * why an empty test account did not catch it.
+ * GUA FORK: the setup banner's reset verdict must be consumed on EVERY content state, including
+ * Rooms, the branch every account with chats takes. See RoomListContentState.encryptionSetupNeedsReset.
  */
 class RoomListContentViewEncryptionResetTest : RobolectricTest() {
     @Test

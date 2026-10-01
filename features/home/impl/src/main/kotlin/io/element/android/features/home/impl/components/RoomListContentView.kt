@@ -78,18 +78,13 @@ fun RoomListContentView(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
-    // GUA FORK: navigation is driven by the repair's verdict, not by the tap, and it lives HERE --
-    // once, above the branch -- rather than inside each state's own composable.
-    //
-    // It used to be written twice. EmptyView consumed the flag by sending EncryptionResetNavigated;
-    // RoomsView, the branch every account with any chats takes, navigated and never sent it. The
-    // flag stayed true, so its LaunchedEffect key never changed again, and every later tap of
-    // Finish setup set an already-true flag and did nothing. That is the dead button.
+    // GUA FORK: navigation is driven by the repair's verdict, not by the tap, and runs once here,
+    // above the branch. See RoomListContentState.encryptionSetupNeedsReset for the one-shot rule.
     val onNeedsReset by rememberUpdatedState(onConfirmRecoveryKeyClick)
     val onNavigated by rememberUpdatedState(eventSink)
     LaunchedEffect(contentState.encryptionSetupNeedsReset) {
         if (contentState.encryptionSetupNeedsReset) {
-            // Consume first: the flag is one-shot, and leaving it set is what wedged the button.
+            // Consume first: the flag is one-shot.
             onNavigated(RoomListEvent.EncryptionResetNavigated)
             onNeedsReset()
         }

@@ -222,10 +222,9 @@ class RoomListPresenterTest {
                 it.contentState is RoomListContentState.Rooms
             }.last()
             // GUA FORK: DISABLED and INCOMPLETE both show the same "finish setting up this
-            // device" banner, which repairs silently. DISABLED used to show SetUpRecovery, whose
-            // flow hands the user a recovery key to write down, and DISABLED is the state an
-            // identity reset leaves behind. Because the two now map to one banner, moving between
-            // them emits nothing, so this walks through ENABLED in between to force a change.
+            // device" banner, which repairs silently; an identity reset leaves recovery DISABLED,
+            // and that state must not hand the user a recovery key. Moving between the two emits
+            // nothing, so this walks through ENABLED in between to force a change.
             assertThat(initialState.contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.RecoveryKeyConfirmation)
             encryptionService.emitRecoveryState(RecoveryState.ENABLED)
             assertThat(awaitItem().contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.None)
