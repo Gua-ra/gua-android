@@ -1,21 +1,6 @@
 name: Feedback fix
 
-
-# feedback-bot (in gua-deploy) files crashes and tester feedback as issues here.
-# A human reads one, and if it is worth acting on adds the `feedback:approved`
-# label. That is what this workflow waits for.
-#
-# It then runs Claude Code headlessly against this repository to investigate,
-# fix, build and test the change, and open a pull request that links back to the
-# issue with its evidence attached. Review happens on that pull request; shipping
-# it to QA is still the `release-qa` label, and production is still gated on the
-# `production` environment. Nothing here bypasses either.
-#
-#
-# WHERE THIS RUNS: FIX_RUNNER selects the runner. A hosted ubuntu runner can
-# build and run the unit and screenshot tests, which is enough to verify most
-# fixes. Driving the app on an emulator needs a self-hosted runner with one
-# attached; point FIX_RUNNER at it when that exists.
+# Runs Claude Code on an issue labelled `feedback:approved` and opens a pull request with the fix.
 
 on:
   issues:
@@ -27,8 +12,6 @@ on:
         required: true
         type: string
 
-# One fix at a time per issue. Two runs on the same issue would race on the same
-# branch name and produce a confusing pull request.
 concurrency:
   group: feedback-fix-${{ github.event.issue.number || inputs.issue }}
   cancel-in-progress: false
@@ -38,9 +21,6 @@ permissions:
 
 jobs:
   fix:
-    # `labeled` fires for every label, so gate on the one that means "approved".
-    # Manual dispatch skips the label check on purpose: that path is already a
-    # deliberate human action.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.label.name == 'feedback:approved'
@@ -56,12 +36,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-          # :libraries:compound's Roborazzi goldens are LFS-tracked. A pointer stub
-          # reads as a screenshot failure the fixer did not cause.
+          # The :libraries:compound screenshot goldens are in Git LFS.
           lfs: true
 
-      # Fail on the missing prerequisite rather than 20 minutes later inside the
-      # model call, where the cause would be unrecognisable.
       - name: Check the credentials this needs are present
         run: |
           missing=""
@@ -91,16 +68,12 @@ jobs:
           gh auth setup-git
           git config --global user.name "gua-feedback-bot"
           git config --global user.email "feedback-bot@users.noreply.github.com"
-          # Gua commits carry no AI attribution: no Co-Authored-By trailer and no
-          # "Generated with Claude Code" footer.
           mkdir -p "$HOME/.claude"
           printf '{ "includeCoAuthoredBy": false }\n' > "$HOME/.claude/settings.json"
 
       - name: Read the issue
         run: |
-          # The issue body quotes an unverified report. It is written to a file and
-          # handed to the model as data rather than interpolated into the prompt,
-          # so nothing inside it can terminate the prompt and start giving orders.
+          # The issue body is untrusted: it is passed as a file, never interpolated into the prompt.
           gh issue view "$ISSUE" --repo "$GITHUB_REPOSITORY" \
             --json number,title,body,labels > /tmp/issue.json
           jq -r '.title' /tmp/issue.json > /tmp/issue-title.txt

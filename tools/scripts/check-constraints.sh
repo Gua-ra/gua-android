@@ -3,20 +3,8 @@
 # Copyright (c) 2025 Element Creations Ltd.
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
 #
-# GUA FORK constraint guard.
-#
-# Fails the build if forbidden content has leaked into the tree or git history:
-#   * scrubbed personal / infra identifiers (developer handle, reverse-DNS app ids, lab box name)
-#   * AI authorship attribution in commit messages
-#   * a committed keystore / signing secret (other than the known upstream debug & nightly keystores)
-#
-# Runnable locally:  ./tools/scripts/check-constraints.sh
-# Exit code 0 = clean, 1 = at least one violation found.
-#
-# Scope:
-#   By default it scans the tracked working tree (git ls-files) plus the commit-message
-#   history reachable from HEAD. Set GUA_CONSTRAINTS_BASE_REF=<ref> to only scan commit
-#   messages in the range <ref>..HEAD (useful for PR CI to avoid re-scanning upstream history).
+# GUA FORK constraint guard: fails on forbidden identifiers, AI attribution in commit messages or a committed keystore.
+# Set GUA_CONSTRAINTS_BASE_REF=<ref> to scan only the commit messages in <ref>..HEAD.
 
 set -uo pipefail
 
@@ -39,14 +27,7 @@ ok() {
     echo "${GREEN}✓${RESET} $1"
 }
 
-# ---------------------------------------------------------------------------
-# 1. Forbidden identifier strings in tracked file CONTENT.
-#
-#    These are scrubbed personal / infra identifiers that must never appear in
-#    the public fork. We grep tracked files only (never build output / .git),
-#    and we exclude this guard script itself (it necessarily contains the
-#    patterns it searches for).
-# ---------------------------------------------------------------------------
+# 1. Forbidden identifier strings in tracked files. This script is excluded: it contains the patterns.
 FORBIDDEN_STRINGS=(
     "sarahlacerda"
     "me.sarahlacerda.gua"
@@ -58,8 +39,6 @@ SELF_REL="tools/scripts/check-constraints.sh"
 
 echo "→ Scanning tracked file content for forbidden identifiers..."
 for needle in "${FORBIDDEN_STRINGS[@]}"; do
-    # -F fixed string, -I skip binary, -n line numbers. List tracked files via git ls-files
-    # so we never touch ignored/build artifacts. Exclude this script from the match set.
     matches="$(git ls-files -z \
         | grep -zZv "^${SELF_REL}\$" \
         | xargs -0 grep -F -I -n -- "$needle" 2>/dev/null || true)"
@@ -71,16 +50,10 @@ for needle in "${FORBIDDEN_STRINGS[@]}"; do
     fi
 done
 
-# ---------------------------------------------------------------------------
 # 2. AI authorship attribution in commit messages.
-#
-#    No "Co-Authored-By: Claude ..." trailers and no "Generated with ... AI"
-#    style attributions are allowed in commit history.
-# ---------------------------------------------------------------------------
 echo "→ Scanning commit messages for AI attribution..."
 if [ -n "${GUA_CONSTRAINTS_SKIP_HISTORY:-}" ]; then
-    # Set when the caller has no meaningful range to scan (a new branch, a force push, a manual
-    # run). Scanning the whole history instead would fail on commits that are already merged.
+    # Set when the caller has no meaningful range to scan.
     LOG_RANGE=""
 elif [ -n "${GUA_CONSTRAINTS_BASE_REF:-}" ]; then
     LOG_RANGE="${GUA_CONSTRAINTS_BASE_REF}..HEAD"
@@ -91,7 +64,6 @@ fi
 if [ -z "$LOG_RANGE" ]; then
     echo "${YELLOW}-${RESET} commit-message scan skipped (no range to scan)"
 else
-    # -i case-insensitive, -E extended regex over the full commit message bodies.
     ai_attr="$(git log "$LOG_RANGE" --format='%H%n%B' 2>/dev/null \
         | grep -i -E 'Co-Authored-By:[[:space:]]*Claude|Generated with .*(Claude|AI|Anthropic)|🤖 Generated with' || true)"
     if [ -n "$ai_attr" ]; then
@@ -102,16 +74,7 @@ else
     fi
 fi
 
-# ---------------------------------------------------------------------------
-# 3. Committed keystore / signing secrets.
-#
-#    Any tracked keystore (*.keystore, *.jks, *.p12) or keystore.properties is a
-#    violation, EXCEPT the two well-known upstream keystores that ship with the
-#    base project:
-#      - app/signature/debug.keystore   (the public Android debug key)
-#      - app/signature/nightly.keystore (upstream nightly key; passwords come from env)
-#    Real Gua release material is supplied via env / a gitignored keystore.properties.
-# ---------------------------------------------------------------------------
+# 3. Committed keystores or signing secrets, except the two upstream keystores under app/signature.
 echo "→ Scanning for committed keystores / signing secrets..."
 ALLOWED_KEYSTORES=(
     "app/signature/debug.keystore"
@@ -140,9 +103,6 @@ if [ "$secret_hits" -eq 0 ]; then
     ok "no unexpected committed keystores/secrets (only known upstream debug & nightly keystores present)"
 fi
 
-# ---------------------------------------------------------------------------
-# Result
-# ---------------------------------------------------------------------------
 echo
 if [ "$violations" -ne 0 ]; then
     echo "${RED}Constraint guard FAILED with ${violations} violation(s).${RESET}"
