@@ -36,6 +36,8 @@ dependencies {
     implementation(projects.libraries.matrix.api)
     implementation(projects.libraries.matrixui)
     implementation(projects.libraries.designsystem)
+    // GUA FORK: the shared identity-service accessor, which also authenticates the app-side reset approval.
+    implementation(projects.libraries.guaresolver)
     implementation(projects.libraries.oauth.api)
     implementation(projects.libraries.network)
     implementation(platform(libs.network.okhttp.bom))

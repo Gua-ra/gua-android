@@ -24,6 +24,8 @@ import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.guaresolver.AccountFactorStatus
 import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.ResolverError
+import io.element.android.libraries.guaresolver.identityServiceMessage
+import io.element.android.libraries.guaresolver.withFreshAccessToken
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.phonenumberentry.Country
 import io.element.android.libraries.phonenumberentry.DeviceCountryProvider
@@ -123,27 +125,20 @@ class TwoStepVerificationPresenter(
             // step they are on, and only the first read has nothing to show while it waits.
             val isFirstRead = phase == TwoStepVerificationPhase.Loading
             if (!isFirstRead && phase != TwoStepVerificationPhase.Overview) return@LaunchedEffect
-            val accessToken = accessToken()
-            if (accessToken == null) {
-                if (isFirstRead) {
-                    factors = null
-                    errorMessage = CommonStrings.error_unknown
-                }
-                phase = TwoStepVerificationPhase.Overview
-                return@LaunchedEffect
+            identityServiceCall { accessToken ->
+                identityServiceClient.accountFactorStatus(accessToken, matrixClient.sessionId.value)
             }
-            identityServiceClient.accountFactorStatus(accessToken, matrixClient.sessionId.value)
                 .onSuccess { status ->
                     factors = status
                     errorMessage = null
                     phase = TwoStepVerificationPhase.Overview
                 }
-                .onFailure {
+                .onFailure { error ->
                     // A refresh that fails keeps the status the screen already holds: it is still
                     // the last thing the server said, and only the first read has no fallback.
                     if (isFirstRead) {
                         factors = null
-                        errorMessage = CommonStrings.error_unknown
+                        errorMessage = error.identityServiceMessage()
                     }
                     phase = TwoStepVerificationPhase.Overview
                 }
@@ -165,11 +160,6 @@ class TwoStepVerificationPresenter(
         // never goes out until a PIN has been supplied; a wrong PIN routes back to the PIN step.
         fun confirmNumberAndRequestOtp(e164Phone: String) {
             coroutineScope.launch {
-                val accessToken = accessToken()
-                if (accessToken == null) {
-                    errorMessage = CommonStrings.error_unknown
-                    return@launch
-                }
                 if (currentPin.isEmpty()) {
                     // Should never happen: PIN is captured before this step. Belt-and-suspenders.
                     errorMessage = CommonStrings.error_unknown
@@ -178,7 +168,9 @@ class TwoStepVerificationPresenter(
                 }
                 val previousPhase = phase
                 phase = TwoStepVerificationPhase.Submitting
-                identityServiceClient.startPinChange(accessToken = accessToken, phone = e164Phone, currentPin = currentPin)
+                identityServiceCall { accessToken ->
+                    identityServiceClient.startPinChange(accessToken = accessToken, phone = e164Phone, currentPin = currentPin)
+                }
                     .onSuccess { newChallengeId ->
                         challengeId = newChallengeId
                         code = ""
@@ -206,6 +198,13 @@ class TwoStepVerificationPresenter(
                                 errorMessage = R.string.screen_two_step_verification_rate_limited
                                 phase = previousPhase
                             }
+                            // The number was never weighed, so calling it invalid would send the user
+                            // to correct something that was right.
+                            is ResolverError.SessionRefreshNeeded,
+                            is ResolverError.NoSession -> {
+                                errorMessage = error.identityServiceMessage()
+                                phase = previousPhase
+                            }
                             else -> {
                                 errorMessage = R.string.screen_two_step_verification_phone_invalid
                                 phase = TwoStepVerificationPhase.EnteringPhone
@@ -217,11 +216,6 @@ class TwoStepVerificationPresenter(
 
         fun submitNewPin(newPin: String) {
             coroutineScope.launch {
-                val accessToken = accessToken()
-                if (accessToken == null) {
-                    errorMessage = CommonStrings.error_unknown
-                    return@launch
-                }
                 val activeChallengeId = challengeId
                 if (userHasPin != true || activeChallengeId == null) {
                     // Belt-and-suspenders: only the change flow reaches this, and it starts from a
@@ -232,12 +226,14 @@ class TwoStepVerificationPresenter(
                     return@launch
                 }
                 phase = TwoStepVerificationPhase.Submitting
-                identityServiceClient.completePinChange(
-                    accessToken = accessToken,
-                    challengeId = activeChallengeId,
-                    otpCode = otpCode,
-                    newPin = newPin,
-                )
+                identityServiceCall { accessToken ->
+                    identityServiceClient.completePinChange(
+                        accessToken = accessToken,
+                        challengeId = activeChallengeId,
+                        otpCode = otpCode,
+                        newPin = newPin,
+                    )
+                }
                     .onSuccess {
                         // The account still holds a PIN; keep whatever else the server said it holds
                         // rather than dropping back to an unknown status.
@@ -272,7 +268,7 @@ class TwoStepVerificationPresenter(
                                 phase = TwoStepVerificationPhase.Overview
                             }
                             else -> {
-                                errorMessage = CommonStrings.error_unknown
+                                errorMessage = error.identityServiceMessage()
                                 code = ""
                                 phase = TwoStepVerificationPhase.EnteringCurrent
                             }
@@ -288,12 +284,7 @@ class TwoStepVerificationPresenter(
         // in-browser at the IdP.
         fun startFactorEnrollment(start: suspend (String) -> Result<String>) {
             coroutineScope.launch {
-                val accessToken = accessToken()
-                if (accessToken == null) {
-                    errorMessage = CommonStrings.error_unknown
-                    return@launch
-                }
-                start(accessToken)
+                identityServiceCall { accessToken -> start(accessToken) }
                     .onSuccess { enrollUrl ->
                         errorMessage = null
                         factorEnrollUrl = enrollUrl
@@ -317,7 +308,7 @@ class TwoStepVerificationPresenter(
                             // and point at the delayed recovery, which is the only way out.
                             is ResolverError.StepUpUnavailable ->
                                 errorMessage = R.string.screen_two_step_verification_step_up_unavailable
-                            else -> errorMessage = CommonStrings.error_unknown
+                            else -> errorMessage = error.identityServiceMessage()
                         }
                     }
             }
@@ -459,8 +450,13 @@ class TwoStepVerificationPresenter(
         )
     }
 
-    private suspend fun accessToken(): String? =
-        sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
+    /**
+     * Every identity-service call on this screen goes through the shared accessor, so a token that
+     * expired while the screen sat in the background costs a retry nobody sees rather than the
+     * generic error.
+     */
+    private suspend fun <T> identityServiceCall(call: suspend (String) -> Result<T>): Result<T> =
+        matrixClient.withFreshAccessToken(sessionStore, call)
 
     private fun isWeakPin(pin: String): Boolean = pin in WEAK_PINS
 

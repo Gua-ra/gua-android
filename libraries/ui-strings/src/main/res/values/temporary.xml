@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: shared Gua strings, reachable through CommonStrings like the rest of this module.
+     English source of truth lives here; localazy.xml is generated and must never be edited. -->
+<resources>
+    <!-- Shown when an action was refused because the signed-in session's token had expired and the
+         one refresh it was given did not settle it. It replaces the generic "an error occurred",
+         which told people nothing about the one thing that fixes it: doing it again. -->
+    <string name="gua_error_session_refresh_needed">We had to refresh your session. Please try again.</string>
+</resources>
