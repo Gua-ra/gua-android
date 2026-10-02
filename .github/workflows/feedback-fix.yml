@@ -43,7 +43,7 @@ jobs:
           [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ] && missing="$missing CLAUDE_CODE_OAUTH_TOKEN"
           [ -z "${GH_TOKEN:-}" ] && missing="$missing FEEDBACK_BOT_GH_TOKEN"
           if [ -n "$missing" ]; then
-            echo "::error::Missing repository secret(s):$missing. Both live in gua-deploy today and must also exist here (or as organisation secrets) for this workflow to run. CLAUDE_CODE_OAUTH_TOKEN comes from 'claude setup-token' and keeps this on a Claude subscription rather than API billing."
+            echo "::error::Missing repository secret(s):$missing. Both live in gua-deploy today and must also exist here (or as organisation secrets) for this workflow to run. CLAUDE_CODE_OAUTH_TOKEN comes from 'claude setup-token' and keeps the agent CLI on a subscription rather than API billing."
             exit 1
           fi
 
@@ -58,7 +58,7 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Install Claude Code
+      - name: Install the agent CLI
         run: npm install -g @anthropic-ai/claude-code
 
       - name: Configure git identity
@@ -132,7 +132,7 @@ jobs:
           claude -p "$(cat /tmp/prompt.md)" \
             --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git:*),Bash(gh:*),Bash(./gradlew:*)" \
             --permission-mode acceptEdits \
-            | tee /tmp/claude-output.txt
+            | tee /tmp/agent-output.txt
 
       - name: Report back on the issue
         if: always()
