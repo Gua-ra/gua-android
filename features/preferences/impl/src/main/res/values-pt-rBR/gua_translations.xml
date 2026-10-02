@@ -30,6 +30,11 @@
     <string name="screen_two_step_verification_overview_header">PIN da conta</string>
     <string name="screen_two_step_verification_status_on">A verificação em duas etapas está ativada</string>
     <string name="screen_two_step_verification_status_off">A verificação em duas etapas está desativada</string>
+    <string name="screen_two_step_verification_status_unknown">Não foi possível verificar suas configurações de segurança</string>
+    <string name="screen_two_step_verification_overview_footer_on_passkey">Sua chave de acesso adiciona uma camada extra de segurança à sua conta.</string>
+    <string name="screen_two_step_verification_overview_footer_on_both">Sua chave de acesso e seu PIN de 6 dígitos protegem sua conta.</string>
+    <string name="screen_two_step_verification_overview_footer_unknown">Verifique sua conexão e tente novamente.</string>
+    <string name="screen_two_step_verification_set_footer_fallback">Uma alternativa para quando sua chave de acesso não estiver disponível.</string>
     <string name="screen_two_step_verification_overview_footer_on">Seu PIN de 6 dígitos adiciona uma camada extra de segurança à sua conta.</string>
     <string name="screen_two_step_verification_overview_footer_off">Adicione um PIN de 6 dígitos para uma camada extra de segurança na sua conta.</string>
     <string name="screen_two_step_verification_set_button">Configurar PIN</string>
@@ -67,4 +72,14 @@
     <string name="screen_change_phone_current_header">Confirme seu número atual</string>
     <string name="screen_change_phone_current_footer">Digite o número que sua conta usa agora. Vamos enviar um código para ele.</string>
     <string name="screen_change_phone_current_mismatch">Esse não é o número da sua conta.</string>
+    <string name="screen_change_phone_reauth_header">Confirme que é você</string>
+    <string name="screen_change_phone_reauth_footer">Digite o código de 6 dígitos que enviamos para o seu número atual.</string>
+    <string name="screen_change_phone_reauth_invalid">Esse código é inválido ou expirou. Tente novamente.</string>
+    <string name="screen_change_phone_reauth_expired">Sua confirmação expirou. Comece de novo.</string>
+    <string name="screen_change_phone_challenge_invalid">Sua alteração de número expirou. Comece de novo.</string>
+    <string name="screen_change_phone_needs_step_up_header">Primeiro, configure a verificação em duas etapas</string>
+    <string name="screen_change_phone_needs_step_up_message">Para alterar seu número, você precisa de uma chave de acesso ou de um PIN da conta de 6 dígitos. Configure um deles e volte aqui.</string>
+    <string name="screen_change_phone_needs_step_up_passkey_action">Configurar uma chave de acesso</string>
+    <string name="screen_change_phone_passkey_unavailable_header">Sua chave de acesso ainda não pode ser usada aqui</string>
+    <string name="screen_change_phone_passkey_unavailable_message">Este app ainda não consegue confirmar sua chave de acesso neste aparelho. Adicione um PIN da conta de 6 dígitos e use-o para alterar seu número.</string>
 </resources>
