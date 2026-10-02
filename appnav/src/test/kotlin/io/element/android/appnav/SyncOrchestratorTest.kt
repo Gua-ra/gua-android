@@ -12,6 +12,7 @@ import io.element.android.appnav.di.SyncOrchestrator
 import io.element.android.features.networkmonitor.api.NetworkStatus
 import io.element.android.features.networkmonitor.test.FakeNetworkMonitor
 import io.element.android.libraries.matrix.api.sync.SyncState
+import io.element.android.libraries.matrix.test.encryption.FakeIdentityResetGuard
 import io.element.android.libraries.matrix.test.sync.FakeSyncService
 import io.element.android.services.analytics.test.FakeAnalyticsService
 import io.element.android.services.appnavstate.test.FakeAppForegroundStateService
@@ -381,13 +382,65 @@ class SyncOrchestratorTest {
         startSyncRecorder.assertions().isNeverCalled()
     }
 
+    @Test
+    fun `while an identity reset holds the sync, the foreground and the network do not start it`() = runTest {
+        val startSyncRecorder = lambdaRecorder<Result<Unit>> { Result.success(Unit) }
+        val syncService = FakeSyncService(initialSyncState = SyncState.Idle).apply {
+            startSyncLambda = startSyncRecorder
+        }
+        val identityResetGuard = FakeIdentityResetGuard().apply { isHeld.value = true }
+        val syncOrchestrator = createSyncOrchestrator(
+            syncService = syncService,
+            networkMonitor = FakeNetworkMonitor(initialStatus = NetworkStatus.Connected),
+            appForegroundStateService = FakeAppForegroundStateService(initialForegroundValue = true),
+            identityResetGuard = identityResetGuard,
+        )
+
+        syncOrchestrator.observeStates()
+        advanceTimeBy(1.seconds)
+
+        startSyncRecorder.assertions().isNeverCalled()
+
+        identityResetGuard.isHeld.value = false
+        advanceTimeBy(1.seconds)
+        startSyncRecorder.assertions().isCalledOnce()
+    }
+
+    @Test
+    fun `while an identity reset holds the sync, a notification does not start it either`() = runTest {
+        val startSyncRecorder = lambdaRecorder<Result<Unit>> { Result.success(Unit) }
+        val syncService = FakeSyncService(initialSyncState = SyncState.Idle).apply {
+            startSyncLambda = startSyncRecorder
+        }
+        val appForegroundStateService = FakeAppForegroundStateService(
+            initialForegroundValue = false,
+            initialIsSyncingNotificationEventValue = false,
+        )
+        val syncOrchestrator = createSyncOrchestrator(
+            syncService = syncService,
+            networkMonitor = FakeNetworkMonitor(initialStatus = NetworkStatus.Connected),
+            appForegroundStateService = appForegroundStateService,
+            identityResetGuard = FakeIdentityResetGuard().apply { isHeld.value = true },
+        )
+
+        syncOrchestrator.observeStates()
+        advanceTimeBy(100.milliseconds)
+
+        appForegroundStateService.updateIsSyncingNotificationEvent(true)
+        advanceTimeBy(1.seconds)
+
+        startSyncRecorder.assertions().isNeverCalled()
+    }
+
     private fun TestScope.createSyncOrchestrator(
         syncService: FakeSyncService = FakeSyncService(),
         networkMonitor: FakeNetworkMonitor = FakeNetworkMonitor(),
         appForegroundStateService: FakeAppForegroundStateService = FakeAppForegroundStateService(),
+        identityResetGuard: FakeIdentityResetGuard = FakeIdentityResetGuard(),
     ) = SyncOrchestrator(
         syncService = syncService,
         sessionCoroutineScope = backgroundScope,
+        identityResetGuard = identityResetGuard,
         networkMonitor = networkMonitor,
         appForegroundStateService = appForegroundStateService,
         dispatchers = testCoroutineDispatchers(),

@@ -17,7 +17,11 @@ class FakeFfiNotificationClient(
     var notificationItemResult: Map<String, BatchNotificationResult> = emptyMap(),
     val closeResult: () -> Unit = { }
 ) : NotificationClient(NoHandle) {
+    var getNotificationsCallCount: Int = 0
+        private set
+
     override suspend fun getNotifications(requests: List<NotificationItemsRequest>): Map<String, BatchNotificationResult> {
+        getNotificationsCallCount++
         return notificationItemResult
     }
 

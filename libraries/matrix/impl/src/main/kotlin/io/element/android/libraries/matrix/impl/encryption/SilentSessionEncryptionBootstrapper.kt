@@ -59,6 +59,12 @@ internal class SilentSessionEncryptionBootstrapper(
     fun start() {
         sessionCoroutineScope.launch {
             try {
+                // GUA FORK: the recovery state settles before the SDK creates its key backup, so the state alone is not a gate.
+                if (!encryptionService.awaitE2eeInitialization()) {
+                    Timber.tag(TAG).w("Encryption initialisation did not finish in time for %s; leaving key storage alone this launch.", sessionId.value)
+                    return@launch
+                }
+
                 // Wait until the SDK has had a chance to report a real recovery state (i.e. after the
                 // first sync). WAITING_FOR_SYNC / UNKNOWN are transient bootstrapping values.
                 val recoveryState = encryptionService.recoveryStateStateFlow

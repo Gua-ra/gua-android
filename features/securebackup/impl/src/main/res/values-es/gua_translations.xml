@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Restablecer y finalizar</string>
     <string name="gua_encryption_reset_finishing">Finalizando la configuración…</string>
     <string name="gua_encryption_reset_failed">No se pudo finalizar la configuración. Pulsa «Restablecer y finalizar» para volver a intentarlo.</string>
+    <string name="gua_encryption_reset_still_finishing">Todavía se está terminando la configuración en segundo plano. Puedes seguir usando Gua.</string>
     <string name="gua_encryption_recover_from_other_device_title">Recupera tus mensajes anteriores</string>
     <string name="gua_encryption_recover_from_other_device_message">Usa tu otro dispositivo para recuperar los mensajes que aún no están disponibles en este dispositivo.\n\nSi no tienes acceso a él, puedes restablecer y finalizar la configuración, pero los mensajes guardados solo en tu copia de seguridad se perderán para siempre.</string>
     <string name="gua_encryption_recover_from_other_device_action">Usar mi otro dispositivo</string>

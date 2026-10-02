@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">ری سیٹ کریں اور مکمل کریں</string>
     <string name="gua_encryption_reset_finishing">سیٹ اپ مکمل ہو رہا ہے…</string>
     <string name="gua_encryption_reset_failed">سیٹ اپ مکمل نہیں ہو سکا۔ دوبارہ کوشش کرنے کے لیے ”ری سیٹ کریں اور مکمل کریں“ پر ٹیپ کریں۔</string>
+    <string name="gua_encryption_reset_still_finishing">سیٹ اپ ابھی بھی پس منظر میں مکمل ہو رہا ہے۔ آپ Gua استعمال کرتے رہ سکتے ہیں۔</string>
     <string name="gua_encryption_recover_from_other_device_title">اپنے پچھلے پیغامات بازیافت کریں</string>
     <string name="gua_encryption_recover_from_other_device_message">جو پیغامات ابھی اس ڈیوائس پر دستیاب نہیں ہیں، انہیں بازیافت کرنے کے لیے اپنی دوسری ڈیوائس استعمال کریں۔\n\nاگر آپ کو اس تک رسائی نہیں ہے، تو آپ ری سیٹ کر کے سیٹ اپ مکمل کر سکتے ہیں، لیکن صرف آپ کے بیک اپ میں محفوظ پیغامات ہمیشہ کے لیے ضائع ہو جائیں گے۔</string>
     <string name="gua_encryption_recover_from_other_device_action">دوسری ڈیوائس استعمال کریں</string>

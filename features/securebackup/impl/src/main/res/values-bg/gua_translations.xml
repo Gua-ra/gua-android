@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Нулиране и завършване</string>
     <string name="gua_encryption_reset_finishing">Завършване на настройката…</string>
     <string name="gua_encryption_reset_failed">Настройката не беше завършена. Докоснете „Нулиране и завършване“, за да опитате отново.</string>
+    <string name="gua_encryption_reset_still_finishing">Настройката все още се завършва във фонов режим. Можете да продължите да използвате Gua.</string>
     <string name="gua_encryption_recover_from_other_device_title">Възстановете предишните си съобщения</string>
     <string name="gua_encryption_recover_from_other_device_message">Използвайте другото си устройство, за да възстановите съобщенията, които още не са налични на това устройство.\n\nАко нямате достъп до него, можете да нулирате и да завършите настройката, но съобщенията, запазени само в резервното ви копие, ще бъдат загубени завинаги.</string>
     <string name="gua_encryption_recover_from_other_device_action">Другото ми устройство</string>

@@ -20,6 +20,7 @@ import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.createroom.CreateRoomParameters
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
+import io.element.android.libraries.matrix.api.encryption.IdentityResetGuard
 import io.element.android.libraries.matrix.api.linknewdevice.LinkDesktopHandler
 import io.element.android.libraries.matrix.api.linknewdevice.LinkMobileHandler
 import io.element.android.libraries.matrix.api.media.MatrixMediaLoader
@@ -64,6 +65,7 @@ interface MatrixClient {
     val notificationService: NotificationService
     val notificationSettingsService: NotificationSettingsService
     val encryptionService: EncryptionService
+    val identityResetGuard: IdentityResetGuard
     val roomDirectoryService: RoomDirectoryService
     val mediaPreviewService: MediaPreviewService
     val matrixMediaLoader: MatrixMediaLoader

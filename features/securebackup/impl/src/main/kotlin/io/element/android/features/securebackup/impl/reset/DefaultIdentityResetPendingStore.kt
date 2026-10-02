@@ -26,17 +26,22 @@ class DefaultIdentityResetPendingStore(
         context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
     }
 
+    // The value is the device ID. The file outlives logout, and a marker from an earlier device must not count as pending.
     private val key: String
+        get() = "pending_device_" + matrixClient.sessionId.value
+
+    /** Device-less legacy marker. Never read; removed on every write. */
+    private val legacyKey: String
         get() = "pending_" + matrixClient.sessionId.value
 
-    override fun isPending(): Boolean = preferences.getBoolean(key, false)
+    override fun isPending(): Boolean = preferences.getString(key, null) == matrixClient.deviceId.value
 
     override fun markPending() {
-        preferences.edit().putBoolean(key, true).apply()
+        preferences.edit().putString(key, matrixClient.deviceId.value).remove(legacyKey).apply()
     }
 
     override fun clear() {
-        preferences.edit().remove(key).apply()
+        preferences.edit().remove(key).remove(legacyKey).apply()
     }
 
     private companion object {

@@ -38,11 +38,20 @@ class DefaultSyncOnNotifiableEvent(
         try {
             val eventsBySession = requests.groupBy { it.sessionId }
 
+            val clientsToSync = eventsBySession.mapNotNull { (sessionId, events) ->
+                val client = matrixClientProvider.getOrRestore(SessionId(sessionId)).getOrNull() ?: return@mapNotNull null
+                if (client.identityResetGuard.isHeld.value) {
+                    Timber.d("Skipping the opportunistic sync for $sessionId: an identity reset holds the sync")
+                    return@mapNotNull null
+                }
+                client to events
+            }
+            if (clientsToSync.isEmpty()) return@withContext
+
             appForegroundStateService.updateIsSyncingNotificationEvent(true)
             Timber.d("Starting opportunistic room list sync | In foreground: ${appForegroundStateService.isInForeground.value}")
 
-            for ((sessionId, events) in eventsBySession) {
-                val client = matrixClientProvider.getOrRestore(SessionId(sessionId)).getOrNull() ?: continue
+            for ((client, events) in clientsToSync) {
                 val roomIds = events.map { RoomId(it.roomId) }.distinct()
 
                 client.roomListService.subscribeToVisibleRooms(roomIds)

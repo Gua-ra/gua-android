@@ -58,6 +58,9 @@ sealed interface EncryptionRepairOutcome {
     /** Everything non-destructive has been tried. Only a reset can finish this device. */
     data object ResetRequired : EncryptionRepairOutcome
 
+    /** The store minted after a reset is still incomplete. Never rotate it again or reset automatically. */
+    data object IdentityIncompleteAfterReset : EncryptionRepairOutcome
+
     /**
      * The repair ran past its ceiling, or failed outright.
      *
@@ -84,15 +87,16 @@ sealed interface EncryptionRepairOutcome {
  * private cross-signing keys and forcing a reset on that account forever after.
  */
 private suspend fun EncryptionService.provisionKeyStorage(): EncryptionRepairOutcome {
-    val enabled = enableRecovery(waitForBackupsToUpload = false)
+    if (!awaitE2eeInitialization(INITIALIZATION_JOIN)) return EncryptionRepairOutcome.NotYet
 
-    // Only the state can say whether that finished the job. Whether it is worth waiting for,
-    // though, is settled by the call: recovery cannot flip to ENABLED off a call that failed, so
-    // waiting after a failure is dead time the user spends on a spinner before the same answer.
-    return if (awaitRecoveryEnabled(wait = enabled.isSuccess)) {
-        EncryptionRepairOutcome.Repaired
-    } else {
-        EncryptionRepairOutcome.ResetRequired
+    val enabled = enableRecovery(waitForBackupsToUpload = false)
+    val minted = enabled.isSuccess || enabled.exceptionOrNull() is RecoveryException.MintedButUnconfirmed
+    val state = if (minted) stateAfterMint(reReadDisabled = enabled.isFailure) else recoveryState()
+    return when {
+        state == RecoveryState.ENABLED -> EncryptionRepairOutcome.Repaired
+        // After a mint, UNKNOWN or DISABLED means the state read failed.
+        minted && (state == RecoveryState.UNKNOWN || state == RecoveryState.DISABLED) -> EncryptionRepairOutcome.Failed
+        else -> EncryptionRepairOutcome.ResetRequired
     }
 }
 
@@ -120,9 +124,12 @@ private suspend fun EncryptionService.repairIncomplete(): EncryptionRepairOutcom
     // What the failure does settle is how long to wait for that state. Recovery only flips to
     // ENABLED off the back of a call that worked, so waiting after one that threw just holds the
     // user on a spinner before giving the same answer. Only wait when there is something to wait for.
+    if (!awaitE2eeInitialization(INITIALIZATION_JOIN)) return EncryptionRepairOutcome.NotYet
+
     val enabled = enableBackups()
 
-    return if (awaitRecoveryEnabled(wait = enabled.isSuccess)) {
+    if (enabled.isSuccess) awaitRecoveryEnabled(CONFIRM_TIMEOUT)
+    return if (recoveryState() == RecoveryState.ENABLED) {
         EncryptionRepairOutcome.Repaired
     } else {
         EncryptionRepairOutcome.ResetRequired
@@ -130,55 +137,55 @@ private suspend fun EncryptionService.repairIncomplete(): EncryptionRepairOutcom
 }
 
 /**
- * GUA FORK: provisions key storage straight after a reset, and does NOT go through
- * [repairWithoutReset].
- *
- * That path deliberately refuses [EncryptionService.enableRecovery] on an INCOMPLETE account,
- * because enabling rotates the secret store and would invalidate a recovery key saved elsewhere.
- * Immediately after a reset there is no such key left to protect and no cross-signing identity
- * either, so the conservative path can never succeed here.
- *
- * `Recovery::enable` exports whatever private cross-signing keys the crypto store can hand over at
- * the moment it runs, and reports success even when it exported nothing. The reset has only just
- * minted those keys, so an export that runs too early writes a secret store holding only the backup
- * key and the account lands straight back on INCOMPLETE -- which is the setup banner, back in front
- * of someone who has just finished a reset, offering them another reset.
- *
- * An earlier version gated this on the session reporting itself verified. That is not a sound
- * signal: it reports the identity the session currently trusts, which right after a reset is often
- * still the OLD one, so the gate passed instantly and bought nothing. The outcome is the only sound
- * signal, so this asks for it and, while the account is still incomplete, waits and asks again.
- * Nothing here is on a user's critical path, so it can afford to be patient.
+ * Provisions key storage after a reset, when no saved recovery key is left for [EncryptionService.enableRecovery] to invalidate.
+ * The first mint is decisive: only an attempt that failed before minting is retried.
  */
 suspend fun EncryptionService.provisionAfterReset(): EncryptionRepairOutcome {
-    // Rotating the secret store is normally the one thing to avoid, since it invalidates any
-    // recovery key saved elsewhere for this account. Immediately after a reset there is no such key
-    // and no earlier store left to strand, so re-running it costs nothing but a round trip.
     PROVISION_BACKOFF.forEachIndexed { attempt, wait ->
-        // Re-read before spending another rotation: an earlier attempt may have landed while this
-        // one was waiting, and rotating over a store that already works would undo it.
-        if (recoveryStateStateFlow.value == RecoveryState.ENABLED) return EncryptionRepairOutcome.Repaired
+        if (recoveryState() == RecoveryState.ENABLED) return EncryptionRepairOutcome.Repaired
 
-        enableRecovery(waitForBackupsToUpload = false)
-            .onFailure { Timber.w(it, "Post-reset provision attempt ${attempt + 1} failed.") }
+        val minted = enableRecovery(waitForBackupsToUpload = false)
+        minted.onFailure { error ->
+            if (error is RecoveryException.BackupExistsOnServer) return EncryptionRepairOutcome.ResetRequired
+            if (error is RecoveryException.MintedButUnconfirmed) return judgeFirstMint(confirmed = false)
+            Timber.w(error, "Post-reset provision attempt ${attempt + 1} threw before minting a store.")
+        }
 
-        if (awaitRecoveryEnabled(wait)) return EncryptionRepairOutcome.Repaired
+        if (minted.isSuccess) return judgeFirstMint(confirmed = true)
+
+        if (awaitRecoveryEnabled(wait) || recoveryState() == RecoveryState.ENABLED) return EncryptionRepairOutcome.Repaired
     }
 
     return EncryptionRepairOutcome.ResetRequired
 }
 
-/**
- * Gives the recovery state a moment to reflect a change we just made.
- *
- * [wait] is false when the call that would have caused the change failed. The current value is
- * still worth reading, because something else may have repaired the account concurrently, but
- * there is nothing on the way and holding the spinner open would only delay the same verdict.
- */
-private suspend fun EncryptionService.awaitRecoveryEnabled(wait: Boolean): Boolean {
-    if (recoveryStateStateFlow.value == RecoveryState.ENABLED) return true
-    if (!wait) return false
-    return awaitRecoveryEnabled(CONFIRM_TIMEOUT)
+private suspend fun EncryptionService.judgeFirstMint(confirmed: Boolean): EncryptionRepairOutcome {
+    return when (val state = stateAfterMint(reReadDisabled = !confirmed)) {
+        RecoveryState.ENABLED -> EncryptionRepairOutcome.Repaired
+        RecoveryState.INCOMPLETE -> {
+            Timber.w("The store minted after the reset is incomplete; not rotating it again.")
+            EncryptionRepairOutcome.IdentityIncompleteAfterReset
+        }
+        RecoveryState.DISABLED -> {
+            Timber.e("Recovery reads DISABLED right after minting a store; treating it as incomplete.")
+            EncryptionRepairOutcome.IdentityIncompleteAfterReset
+        }
+        RecoveryState.UNKNOWN,
+        RecoveryState.WAITING_FOR_SYNC -> {
+            Timber.w("Recovery still reads %s after the bounded re-read; not rotating again.", state)
+            EncryptionRepairOutcome.IdentityIncompleteAfterReset
+        }
+    }
+}
+
+private suspend fun EncryptionService.stateAfterMint(reReadDisabled: Boolean): RecoveryState {
+    val state = recoveryState()
+    val inconclusive = state == RecoveryState.UNKNOWN || reReadDisabled && state == RecoveryState.DISABLED
+    if (!inconclusive) return state
+    withTimeoutOrNull(CONFIRM_TIMEOUT) {
+        recoveryStateStateFlow.first { it != RecoveryState.UNKNOWN && it != RecoveryState.WAITING_FOR_SYNC }
+    }
+    return recoveryState()
 }
 
 /** Waits up to [timeout] for the recovery state to reach ENABLED. */
@@ -204,6 +211,9 @@ private val SETTLE_TIMEOUT = 2.seconds
 
 // enableRecovery has already returned by this point; this only covers the flow catching up.
 private val CONFIRM_TIMEOUT = 2.seconds
+
+// Below REPAIR_CEILING, so a pending initialisation answers NotYet before the repair times out.
+private val INITIALIZATION_JOIN = 5.seconds
 
 // Hard ceiling on the whole operation, so the banner's spinner always resolves.
 private val REPAIR_CEILING = 12.seconds

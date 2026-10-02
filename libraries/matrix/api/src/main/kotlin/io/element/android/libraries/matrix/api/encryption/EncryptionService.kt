@@ -13,6 +13,8 @@ import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.encryption.identity.IdentityState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 interface EncryptionService {
     val backupStateStateFlow: StateFlow<BackupState>
@@ -22,6 +24,18 @@ interface EncryptionService {
     val hasDevicesToVerifyAgainst: StateFlow<AsyncData<Boolean>>
 
     suspend fun enableBackups(): Result<Unit>
+
+    /**
+     * GUA FORK: waits for the SDK's E2EE initialisation, which creates the key backup on a fresh account.
+     * Returns false on [timeout]; the caller must then not create a backup, or the account ends up with two.
+     */
+    suspend fun awaitE2eeInitialization(timeout: Duration = E2EE_INITIALIZATION_CEILING): Boolean
+
+    /**
+     * GUA FORK: the SDK's recomputed recovery state.
+     * [recoveryStateStateFlow] reads [RecoveryState.WAITING_FOR_SYNC] whenever the sync is not running.
+     */
+    suspend fun recoveryState(): RecoveryState
 
     /**
      * Enable recovery and return the SDK-generated recovery key on success.
@@ -142,3 +156,5 @@ interface IdentityOAuthResetHandle : IdentityResetHandle {
      */
     suspend fun resetOAuth(): Result<Unit>
 }
+
+val E2EE_INITIALIZATION_CEILING: Duration = 30.seconds

@@ -17,6 +17,7 @@ import io.element.android.libraries.matrix.api.sync.SyncState
 import io.element.android.libraries.matrix.test.A_ROOM_ID
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.FakeMatrixClientProvider
+import io.element.android.libraries.matrix.test.encryption.FakeIdentityResetGuard
 import io.element.android.libraries.matrix.test.room.FakeBaseRoom
 import io.element.android.libraries.matrix.test.room.FakeJoinedRoom
 import io.element.android.libraries.matrix.test.sync.FakeSyncService
@@ -107,6 +108,27 @@ class SyncOnNotifiableEventTest {
 
             ensureAllEventsConsumed()
         }
+    }
+
+    @Test
+    fun `when an identity reset holds the sync, the opportunistic sync is skipped for that session`() = runTest {
+        val heldClient = FakeMatrixClient(
+            syncService = syncService,
+            identityResetGuard = FakeIdentityResetGuard().apply { isHeld.value = true },
+        ).apply {
+            givenGetRoomResult(A_ROOM_ID, room)
+        }
+        val appForegroundStateService = FakeAppForegroundStateService(initialForegroundValue = false)
+        val sut = createSyncOnNotifiableEvent(
+            client = heldClient,
+            appForegroundStateService = appForegroundStateService,
+        )
+
+        sut(listOf(notificationRequest))
+
+        assertThat(appForegroundStateService.isSyncingNotificationEvent.value).isFalse()
+        assert(subscribeToSyncLambda).isNeverCalled()
+        assert(startSyncLambda).isNeverCalled()
     }
 
     private fun TestScope.createSyncOnNotifiableEvent(

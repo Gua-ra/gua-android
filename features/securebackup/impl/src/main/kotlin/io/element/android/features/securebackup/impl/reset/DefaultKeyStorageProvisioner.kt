@@ -44,6 +44,8 @@ class DefaultKeyStorageProvisioner(
                 when (matrixClient.encryptionService.provisionAfterReset()) {
                     EncryptionRepairOutcome.Repaired ->
                         Timber.d("Provisioned key storage after the reset.")
+                    EncryptionRepairOutcome.IdentityIncompleteAfterReset ->
+                        Timber.e("The identity is still incomplete after the reset; leaving the banner.")
                     EncryptionRepairOutcome.NotYet,
                     EncryptionRepairOutcome.Failed,
                     EncryptionRepairOutcome.ResetRequired ->

@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Nulstil og færdiggør</string>
     <string name="gua_encryption_reset_finishing">Færdiggør opsætningen…</string>
     <string name="gua_encryption_reset_failed">Opsætningen kunne ikke færdiggøres. Tryk på Nulstil og færdiggør for at prøve igen.</string>
+    <string name="gua_encryption_reset_still_finishing">Opsætningen færdiggøres stadig i baggrunden. Du kan fortsat bruge Gua.</string>
     <string name="gua_encryption_recover_from_other_device_title">Gendan dine tidligere beskeder</string>
     <string name="gua_encryption_recover_from_other_device_message">Brug din anden enhed til at gendanne de beskeder, der endnu ikke er tilgængelige på denne enhed.\n\nHvis du ikke har adgang til den, kan du nulstille og færdiggøre opsætningen, men beskeder, der kun er gemt i din sikkerhedskopi, går tabt for altid.</string>
     <string name="gua_encryption_recover_from_other_device_action">Brug min anden enhed</string>

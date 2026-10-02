@@ -22,6 +22,7 @@ import io.element.android.tests.testutils.simulateLongTask
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlin.time.Duration
 
 class FakeEncryptionService(
     var startIdentityResetLambda: () -> Result<IdentityResetHandle?> = { lambdaError() },
@@ -30,6 +31,8 @@ class FakeEncryptionService(
     private val getUserIdentityResult: (UserId) -> Result<IdentityState?> = { lambdaError() },
     private val enableRecoveryLambda: (Boolean, String?) -> Result<String> = { _, _ -> lambdaError() },
     private val resetRecoveryKeyLambda: () -> Result<String> = { Result.success(FAKE_RECOVERY_KEY) },
+    var awaitE2eeInitializationLambda: suspend (Duration) -> Boolean = { true },
+    var recoveryStateLambda: (suspend () -> RecoveryState)? = null,
 ) : EncryptionService {
     private var disableRecoveryFailure: Exception? = null
     override val backupStateStateFlow: MutableStateFlow<BackupState> = MutableStateFlow(BackupState.UNKNOWN)
@@ -55,6 +58,16 @@ class FakeEncryptionService(
     /** Runs while enableBackups is in flight, so a test can model state changing under the call. */
     fun givenEnableBackupsSideEffect(sideEffect: () -> Unit) {
         onEnableBackups = sideEffect
+    }
+
+    override suspend fun awaitE2eeInitialization(timeout: Duration): Boolean = awaitE2eeInitializationLambda(timeout)
+
+    override suspend fun recoveryState(): RecoveryState {
+        recoveryStateLambda?.let { return it() }
+        return when (val state = recoveryStateStateFlow.value) {
+            RecoveryState.WAITING_FOR_SYNC -> RecoveryState.UNKNOWN
+            else -> state
+        }
     }
 
     override suspend fun enableBackups(): Result<Unit> = simulateLongTask {

@@ -31,6 +31,7 @@ class RustSyncService(
     private val inner: InnerSyncService,
     private val dispatcher: CoroutineDispatcher,
     sessionCoroutineScope: CoroutineScope,
+    private val identityResetHold: StateFlow<Boolean>,
 ) : SyncService {
     private val isServiceReady = AtomicBoolean(true)
 
@@ -38,6 +39,10 @@ class RustSyncService(
         runCatchingExceptions {
             if (!isServiceReady.get()) {
                 Timber.d("Can't start sync: service is not ready")
+                return@runCatchingExceptions
+            }
+            if (identityResetHold.value) {
+                Timber.i("Not starting sync: an identity reset holds it")
                 return@runCatchingExceptions
             }
             Timber.i("Start sync")
