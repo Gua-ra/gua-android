@@ -44,6 +44,7 @@ import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.architecture.createNode
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.core.extensions.runCatchingExceptions
+import io.element.android.libraries.core.locale.withUiLocales
 import io.element.android.libraries.designsystem.components.ProgressDialog
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
@@ -289,7 +290,7 @@ class ResetIdentityFlowNode(
                         // one where the browser supports it, so the page cannot open under a
                         // browser session that belongs to another account.
                         Timber.d("Launching reset confirmation in MAS")
-                        val url = sessionEnterpriseService.tweakMasUrl(handle.url).withAppIdentity()
+                        val url = sessionEnterpriseService.tweakMasUrl(handle.url).withAppIdentity().withUiLocales()
                         activity.openUrlInChromeCustomTab(null, darkTheme, url, ephemeral = true)
 
                         // Nothing runs while the tab is open. The approval page hands control

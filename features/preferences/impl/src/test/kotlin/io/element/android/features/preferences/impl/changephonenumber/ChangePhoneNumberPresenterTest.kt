@@ -16,6 +16,7 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.features.preferences.impl.R
 import io.element.android.features.preferences.impl.fixtures.FakeIdentityServiceClient
 import io.element.android.features.preferences.impl.fixtures.aFactorStatus
+import io.element.android.libraries.core.locale.UiLanguage
 import io.element.android.libraries.guaresolver.AccountFactorStatus
 import io.element.android.libraries.guaresolver.AuthFactor
 import io.element.android.libraries.guaresolver.IdentityServiceClient
@@ -37,7 +38,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
-import java.util.Locale
 
 /**
  * GUA FORK: the change-phone-number flow against the real `/account` contract.
@@ -663,6 +663,6 @@ class ChangePhoneNumberPresenterTest {
         const val A_CURRENT_PHONE = "+15559876543"
 
         /** What the presenter sends as Accept-Language; the tests run under the default locale. */
-        val A_LANGUAGE_TAG: String = Locale.getDefault().toLanguageTag()
+        val A_LANGUAGE_TAG: String = UiLanguage.tag()
     }
 }
