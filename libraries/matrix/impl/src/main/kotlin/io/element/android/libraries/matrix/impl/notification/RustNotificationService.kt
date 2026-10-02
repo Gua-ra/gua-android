@@ -13,10 +13,12 @@ import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.SessionId
+import io.element.android.libraries.matrix.api.encryption.IdentityResetInProgressException
 import io.element.android.libraries.matrix.api.exception.NotificationResolverException
 import io.element.android.libraries.matrix.api.notification.GetNotificationDataResult
 import io.element.android.libraries.matrix.api.notification.NotificationService
 import io.element.android.services.toolbox.api.systemclock.SystemClock
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import org.matrix.rustcomponents.sdk.BatchNotificationResult
 import org.matrix.rustcomponents.sdk.NotificationClient
@@ -30,12 +32,18 @@ class RustNotificationService(
     private val notificationClient: NotificationClient,
     private val dispatchers: CoroutineDispatchers,
     clock: SystemClock,
+    private val identityResetHold: StateFlow<Boolean>,
 ) : NotificationService {
     private val notificationMapper: NotificationMapper = NotificationMapper(clock)
 
     override suspend fun getNotifications(
         ids: Map<RoomId, List<EventId>>
     ): GetNotificationDataResult = withContext(dispatchers.io) {
+        // GUA FORK: with the main sync stopped, the SDK's notification client would run its own encryption sync.
+        if (identityResetHold.value) {
+            Timber.w("Not fetching notifications: an identity reset holds the sync")
+            return@withContext Result.failure(IdentityResetInProgressException())
+        }
         runCatchingExceptions {
             val requests = ids.map { (roomId, eventIds) ->
                 NotificationItemsRequest(

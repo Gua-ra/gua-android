@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Tilbakestill og fullfør</string>
     <string name="gua_encryption_reset_finishing">Fullfører oppsettet…</string>
     <string name="gua_encryption_reset_failed">Kunne ikke fullføre oppsettet. Trykk på «Tilbakestill og fullfør» for å prøve igjen.</string>
+    <string name="gua_encryption_reset_still_finishing">Fullfører fortsatt oppsettet i bakgrunnen. Du kan fortsette å bruke Gua.</string>
     <string name="gua_encryption_recover_from_other_device_title">Gjenopprett de tidligere meldingene dine</string>
     <string name="gua_encryption_recover_from_other_device_message">Bruk den andre enheten din til å gjenopprette meldinger som ennå ikke er tilgjengelige på denne enheten.\n\nHvis du ikke har tilgang til den, kan du tilbakestille og fullføre oppsettet, men meldinger som bare er lagret i sikkerhetskopien din, går tapt for alltid.</string>
     <string name="gua_encryption_recover_from_other_device_action">Bruk den andre enheten min</string>

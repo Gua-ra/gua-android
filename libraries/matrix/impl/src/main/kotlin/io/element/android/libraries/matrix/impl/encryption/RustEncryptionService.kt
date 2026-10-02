@@ -20,12 +20,15 @@ import io.element.android.libraries.matrix.api.encryption.BackupUploadState
 import io.element.android.libraries.matrix.api.encryption.EnableRecoveryProgress
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.IdentityResetHandle
+import io.element.android.libraries.matrix.api.encryption.RecoveryException
 import io.element.android.libraries.matrix.api.encryption.RecoveryState
 import io.element.android.libraries.matrix.api.encryption.identity.IdentityState
 import io.element.android.libraries.matrix.api.sync.SyncState
 import io.element.android.libraries.matrix.impl.exception.mapClientException
 import io.element.android.libraries.matrix.impl.sync.RustSyncService
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -39,12 +42,14 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.matrix.rustcomponents.sdk.BackupSteadyStateListener
 import org.matrix.rustcomponents.sdk.Client
 import org.matrix.rustcomponents.sdk.EnableRecoveryProgressListener
 import org.matrix.rustcomponents.sdk.Encryption
 import org.matrix.rustcomponents.sdk.UserIdentity
 import timber.log.Timber
+import kotlin.time.Duration
 import org.matrix.rustcomponents.sdk.BackupUploadState as RustBackupUploadState
 import org.matrix.rustcomponents.sdk.EnableRecoveryProgress as RustEnableRecoveryProgress
 import org.matrix.rustcomponents.sdk.RecoveryException as RustRecoveryException
@@ -60,6 +65,14 @@ class RustEncryptionService(
     private val sessionId = SessionId(client.session().userId)
 
     private val enableRecoveryProgressMapper = EnableRecoveryProgressMapper()
+    private val recoveryStateMapper = RecoveryStateMapper()
+
+    /** GUA FORK: the only caller of `waitForE2eeInitializationTasks`, which is one-shot: a second call returns at once, finished or not. */
+    private val e2eeInitialization: Deferred<Unit> = sessionCoroutineScope.async(dispatchers.io) {
+        runCatchingExceptions { service.waitForE2eeInitializationTasks() }
+            .onFailure { Timber.w(it, "E2EE initialisation ended with an error; treating it as finished.") }
+            .getOrDefault(Unit)
+    }
     private val backupUploadStateMapper = BackupUploadStateMapper()
     private val steadyStateExceptionMapper = SteadyStateExceptionMapper()
 
@@ -121,7 +134,24 @@ class RustEncryptionService(
     }
         .stateIn(sessionCoroutineScope, SharingStarted.Eagerly, AsyncData.Uninitialized)
 
+    override suspend fun awaitE2eeInitialization(timeout: Duration): Boolean {
+        return withTimeoutOrNull(timeout) {
+            e2eeInitialization.join()
+            !e2eeInitialization.isCancelled
+        } ?: false
+    }
+
+    override suspend fun recoveryState(): RecoveryState = withContext(dispatchers.io) {
+        runCatchingExceptions { recoveryStateMapper.map(service.recoveryState()) }
+            .onFailure { Timber.w(it, "Could not read the recovery state") }
+            .getOrDefault(RecoveryState.UNKNOWN)
+    }
+
     override suspend fun enableBackups(): Result<Unit> = withContext(dispatchers.io) {
+        if (!awaitE2eeInitialization()) {
+            Timber.w("Refusing to enable backups: the encryption initialisation has not finished.")
+            return@withContext Result.failure(RecoveryException.E2eeInitializationPending)
+        }
         runCatchingExceptions {
             service.enableBackups()
         }.mapFailure {
@@ -133,6 +163,11 @@ class RustEncryptionService(
         waitForBackupsToUpload: Boolean,
         passphrase: String?,
     ): Result<String> = withContext(dispatchers.io) {
+        if (!awaitE2eeInitialization()) {
+            Timber.w("Refusing to enable recovery: the encryption initialisation has not finished.")
+            return@withContext Result.failure(RecoveryException.E2eeInitializationPending)
+        }
+        var sawDone = false
         runCatchingExceptions {
             // The key arrives as the suspend return value (like resetRecoveryKey), avoiding a
             // flow/return-value race; the listener only feeds sub-progress.
@@ -141,6 +176,7 @@ class RustEncryptionService(
                 waitForBackupsToUpload = waitForBackupsToUpload,
                 progressListener = object : EnableRecoveryProgressListener {
                     override fun onUpdate(status: RustEnableRecoveryProgress) {
+                        if (status is RustEnableRecoveryProgress.Done) sawDone = true
                         enableRecoveryProgressStateFlow.value = enableRecoveryProgressMapper.map(status)
                     }
                 },
@@ -154,7 +190,8 @@ class RustEncryptionService(
             enableRecoveryProgressStateFlow.value = EnableRecoveryProgress.Done(if (passphrase != null) "" else key)
             key
         }.mapFailure {
-            it.mapRecoveryException()
+            val mapped = it.mapRecoveryException()
+            if (sawDone) RecoveryException.MintedButUnconfirmed(mapped) else mapped
         }
     }
 
@@ -214,6 +251,10 @@ class RustEncryptionService(
     }
 
     override suspend fun resetRecoveryKey(): Result<String> = withContext(dispatchers.io) {
+        if (!awaitE2eeInitialization()) {
+            Timber.w("Refusing to reset the recovery key: the encryption initialisation has not finished.")
+            return@withContext Result.failure(RecoveryException.E2eeInitializationPending)
+        }
         runCatchingExceptions {
             service.resetRecoveryKey()
         }.mapFailure {
@@ -222,6 +263,11 @@ class RustEncryptionService(
     }
 
     override suspend fun recover(recoveryKey: String): Result<Unit> = withContext(dispatchers.io) {
+        // GUA FORK: recoverAndFixBackup can create a backup, so it waits for the initialisation too.
+        if (!awaitE2eeInitialization()) {
+            Timber.w("Refusing to recover: the encryption initialisation has not finished.")
+            return@withContext Result.failure(RecoveryException.E2eeInitializationPending)
+        }
         runCatchingExceptions {
             service.recoverAndFixBackup(recoveryKey)
         }.recoverCatching {

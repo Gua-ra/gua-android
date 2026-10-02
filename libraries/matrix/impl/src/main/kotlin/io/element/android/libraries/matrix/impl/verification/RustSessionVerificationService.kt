@@ -34,7 +34,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.withTimeoutOrNull
 import org.matrix.rustcomponents.sdk.Client
 import org.matrix.rustcomponents.sdk.Encryption
 import org.matrix.rustcomponents.sdk.RecoveryState
@@ -46,6 +45,7 @@ import org.matrix.rustcomponents.sdk.VerificationStateListener
 import org.matrix.rustcomponents.sdk.use
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import org.matrix.rustcomponents.sdk.SessionVerificationData as RustSessionVerificationData
 import org.matrix.rustcomponents.sdk.SessionVerificationRequestDetails as RustSessionVerificationRequestDetails
@@ -54,6 +54,7 @@ class RustSessionVerificationService(
     private val client: Client,
     isSyncServiceReady: Flow<Boolean>,
     private val sessionCoroutineScope: CoroutineScope,
+    private val awaitE2eeInitialization: suspend (Duration) -> Boolean,
 ) : SessionVerificationService, SessionVerificationControllerDelegate {
     private var currentVerificationRequest: VerificationRequest? = null
 
@@ -269,10 +270,7 @@ class RustSessionVerificationService(
                 // never returned, which left every caller hanging: the first-time-use flow, and
                 // the verification the user needs precisely then. The controller below works
                 // regardless; what it reports is judged by the recovery state anyway.
-                val ready = withTimeoutOrNull(E2EE_INITIALISATION_CEILING) {
-                    encryptionService.waitForE2eeInitializationTasks()
-                    true
-                } ?: false
+                val ready = awaitE2eeInitialization(E2EE_INITIALISATION_CEILING)
                 if (!ready) Timber.w("E2EE initialisation did not report ready within $E2EE_INITIALISATION_CEILING, continuing anyway")
                 isInitialized.set(true)
             }

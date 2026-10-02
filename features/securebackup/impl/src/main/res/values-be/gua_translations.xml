@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Скінуць і завяршыць</string>
     <string name="gua_encryption_reset_finishing">Завяршаем наладу…</string>
     <string name="gua_encryption_reset_failed">Не ўдалося завяршыць наладу. Націсніце «Скінуць і завяршыць», каб паўтарыць спробу.</string>
+    <string name="gua_encryption_reset_still_finishing">Усё яшчэ завяршаем наладу ў фонавым рэжыме. Вы можаце і далей карыстацца Gua.</string>
     <string name="gua_encryption_recover_from_other_device_title">Адновіце свае папярэднія паведамленні</string>
     <string name="gua_encryption_recover_from_other_device_message">Скарыстайцеся іншай прыладай, каб аднавіць паведамленні, якіх пакуль няма на гэтай прыладзе.\n\nКалі ў вас няма доступу да яе, вы можаце скінуць і завяршыць наладу, але паведамленні, што захоўваюцца толькі ў вашай рэзервовай копіі, будуць страчаны назаўсёды.</string>
     <string name="gua_encryption_recover_from_other_device_action">Выкарыстаць іншую прыладу</string>

@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Atstatyti ir užbaigti</string>
     <string name="gua_encryption_reset_finishing">Baigiama sąranka…</string>
     <string name="gua_encryption_reset_failed">Nepavyko užbaigti sąrankos. Palieskite „Atstatyti ir užbaigti“ ir bandykite dar kartą.</string>
+    <string name="gua_encryption_reset_still_finishing">Sąranka vis dar baigiama fone. Galite ir toliau naudotis Gua.</string>
     <string name="gua_encryption_recover_from_other_device_title">Atkurkite ankstesnes žinutes</string>
     <string name="gua_encryption_recover_from_other_device_message">Naudokite kitą savo įrenginį, kad atkurtumėte žinutes, kurių šiame įrenginyje dar nėra.\n\nJei negalite jo pasiekti, galite atstatyti ir užbaigti sąranką, bet žinutės, saugomos tik jūsų atsarginėje kopijoje, bus visam laikui prarastos.</string>
     <string name="gua_encryption_recover_from_other_device_action">Naudoti kitą įrenginį</string>

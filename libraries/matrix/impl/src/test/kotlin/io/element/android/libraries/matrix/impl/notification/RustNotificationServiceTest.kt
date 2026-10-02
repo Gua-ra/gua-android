@@ -9,6 +9,7 @@
 package io.element.android.libraries.matrix.impl.notification
 
 import com.google.common.truth.Truth.assertThat
+import io.element.android.libraries.matrix.api.encryption.IdentityResetInProgressException
 import io.element.android.libraries.matrix.api.exception.NotificationResolverException
 import io.element.android.libraries.matrix.api.notification.NotificationContent
 import io.element.android.libraries.matrix.api.timeline.item.event.TextMessageType
@@ -27,6 +28,8 @@ import io.element.android.services.toolbox.api.systemclock.SystemClock
 import io.element.android.services.toolbox.test.systemclock.FakeSystemClock
 import io.element.android.tests.testutils.lambda.lambdaRecorder
 import io.element.android.tests.testutils.testCoroutineDispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -108,14 +111,38 @@ class RustNotificationServiceTest {
         closeResult.assertions().isCalledOnce()
     }
 
+    @Test
+    fun `a held identity reset stands the fetch down without reaching the SDK`() = runTest {
+        val notificationClient = FakeFfiNotificationClient(
+            notificationItemResult = mapOf(AN_EVENT_ID.value to aRustBatchNotificationResultOk()),
+        )
+        val identityResetHold = MutableStateFlow(true)
+        val sut = createRustNotificationService(
+            notificationClient = notificationClient,
+            identityResetHold = identityResetHold,
+        )
+        val ids = mapOf(A_ROOM_ID to listOf(AN_EVENT_ID))
+
+        val held = sut.getNotifications(ids)
+        assertThat(held.exceptionOrNull()).isInstanceOf(IdentityResetInProgressException::class.java)
+        assertThat(notificationClient.getNotificationsCallCount).isEqualTo(0)
+
+        identityResetHold.value = false
+        val released = sut.getNotifications(ids)
+        assertThat(released.isSuccess).isTrue()
+        assertThat(notificationClient.getNotificationsCallCount).isEqualTo(1)
+    }
+
     private fun TestScope.createRustNotificationService(
         notificationClient: NotificationClient = FakeFfiNotificationClient(),
         clock: SystemClock = FakeSystemClock(),
+        identityResetHold: StateFlow<Boolean> = MutableStateFlow(false),
     ) =
         RustNotificationService(
             sessionId = A_SESSION_ID,
             notificationClient = notificationClient,
             dispatchers = testCoroutineDispatchers(),
             clock = clock,
+            identityResetHold = identityResetHold,
         )
 }

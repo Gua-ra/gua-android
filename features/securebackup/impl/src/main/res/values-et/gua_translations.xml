@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Lähtesta ja lõpeta</string>
     <string name="gua_encryption_reset_finishing">Lõpetame seadistamise…</string>
     <string name="gua_encryption_reset_failed">Seadistamise lõpetamine ei õnnestunud. Uuesti proovimiseks puuduta „Lähtesta ja lõpeta“.</string>
+    <string name="gua_encryption_reset_still_finishing">Seadistamise lõpetamine käib veel taustal. Võid Gua kasutamist jätkata.</string>
     <string name="gua_encryption_recover_from_other_device_title">Taasta oma varasemad sõnumid</string>
     <string name="gua_encryption_recover_from_other_device_message">Kasuta oma teist seadet, et taastada sõnumid, mis pole selles seadmes veel saadaval.\n\nKui sul pole ligipääsu oma teisele seadmele, siis saad lähtestada ja seadistamise lõpetada, kuid ainult sinu varukoopias olevad sõnumid lähevad jäädavalt kaotsi.</string>
     <string name="gua_encryption_recover_from_other_device_action">Kasuta teist seadet</string>

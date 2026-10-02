@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">بازنشانی و تکمیل</string>
     <string name="gua_encryption_reset_finishing">در حال تکمیل راه‌اندازی…</string>
     <string name="gua_encryption_reset_failed">راه‌اندازی تکمیل نشد. برای تلاش دوباره، «بازنشانی و تکمیل» را بزنید.</string>
+    <string name="gua_encryption_reset_still_finishing">راه‌اندازی هنوز در پس‌زمینه در حال تکمیل است. می‌توانید به استفاده از Gua ادامه دهید.</string>
     <string name="gua_encryption_recover_from_other_device_title">پیام‌های پیشین خود را بازیابی کنید</string>
     <string name="gua_encryption_recover_from_other_device_message">با دستگاه دیگر خود، پیام‌هایی را که هنوز روی این دستگاه در دسترس نیستند بازیابی کنید.\n\nاگر به آن دسترسی ندارید، می‌توانید بازنشانی کنید و راه‌اندازی را تکمیل کنید، اما پیام‌هایی که فقط در پشتیبان شما ذخیره شده‌اند برای همیشه از دست می‌روند.</string>
     <string name="gua_encryption_recover_from_other_device_action">استفاده از دستگاه دیگرم</string>

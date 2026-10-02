@@ -11,6 +11,7 @@ package io.element.android.appnav.di
 import com.bumble.appyx.core.state.MutableSavedStateMapImpl
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.networkmonitor.test.FakeNetworkMonitor
+import io.element.android.libraries.matrix.api.encryption.IdentityResetGuard
 import io.element.android.libraries.matrix.api.sync.SyncService
 import io.element.android.libraries.matrix.test.A_SESSION_ID
 import io.element.android.libraries.matrix.test.FakeMatrixClient
@@ -140,10 +141,12 @@ class MatrixSessionCacheTest {
             override fun create(
                 syncService: SyncService,
                 sessionCoroutineScope: CoroutineScope,
+                identityResetGuard: IdentityResetGuard,
             ): SyncOrchestrator {
                 return SyncOrchestrator(
                     syncService = syncService,
                     sessionCoroutineScope = sessionCoroutineScope,
+                    identityResetGuard = identityResetGuard,
                     appForegroundStateService = FakeAppForegroundStateService(),
                     networkMonitor = FakeNetworkMonitor(),
                     dispatchers = dispatchers,

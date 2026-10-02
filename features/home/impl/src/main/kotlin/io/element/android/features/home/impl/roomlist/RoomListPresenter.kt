@@ -198,6 +198,9 @@ class RoomListPresenter(
                                     Timber.w("Encryption setup cannot finish without a reset.")
                                     encryptionSetupNeedsReset = true
                                 }
+                                EncryptionRepairOutcome.IdentityIncompleteAfterReset -> {
+                                    Timber.w("The identity is still incomplete after a reset; leaving the banner.")
+                                }
                             }
                         } finally {
                             // Clears on every path out, so the button can never latch.

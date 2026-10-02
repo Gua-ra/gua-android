@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">재설정하고 완료</string>
     <string name="gua_encryption_reset_finishing">설정을 마치는 중…</string>
     <string name="gua_encryption_reset_failed">설정을 마치지 못했습니다. 다시 시도하려면 ‘재설정하고 완료’를 누르세요.</string>
+    <string name="gua_encryption_reset_still_finishing">아직 백그라운드에서 설정을 마치는 중입니다. Gua는 계속 사용할 수 있습니다.</string>
     <string name="gua_encryption_recover_from_other_device_title">이전 메시지 복구하기</string>
     <string name="gua_encryption_recover_from_other_device_message">다른 기기를 사용해 아직 이 기기에 없는 메시지를 복구하세요.\n\n그 기기를 사용할 수 없다면 재설정한 뒤 설정을 마칠 수 있지만, 백업에만 저장된 메시지는 영구히 사라집니다.</string>
     <string name="gua_encryption_recover_from_other_device_action">다른 기기 사용하기</string>

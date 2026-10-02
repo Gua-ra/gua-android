@@ -16,6 +16,7 @@ import io.element.android.features.networkmonitor.api.NetworkMonitor
 import io.element.android.features.networkmonitor.api.NetworkStatus
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.core.coroutine.childScope
+import io.element.android.libraries.matrix.api.encryption.IdentityResetGuard
 import io.element.android.libraries.matrix.api.sync.SyncService
 import io.element.android.libraries.matrix.api.sync.SyncState
 import io.element.android.services.analytics.api.AnalyticsService
@@ -39,6 +40,7 @@ import kotlin.time.Duration.Companion.seconds
 class SyncOrchestrator(
     @Assisted private val syncService: SyncService,
     @Assisted sessionCoroutineScope: CoroutineScope,
+    @Assisted private val identityResetGuard: IdentityResetGuard,
     private val appForegroundStateService: AppForegroundStateService,
     private val networkMonitor: NetworkMonitor,
     dispatchers: CoroutineDispatchers,
@@ -49,6 +51,7 @@ class SyncOrchestrator(
         fun create(
             syncService: SyncService,
             sessionCoroutineScope: CoroutineScope,
+            identityResetGuard: IdentityResetGuard,
         ): SyncOrchestrator
     }
 
@@ -102,11 +105,15 @@ class SyncOrchestrator(
             syncService.syncState.debounce(100.milliseconds),
             networkMonitor.connectivity,
             isAppActiveFlow,
-        ) { syncState, networkState, isAppActive ->
+            identityResetGuard.isHeld,
+        ) { syncState, networkState, isAppActive, isIdentityResetHeld ->
             val isNetworkAvailable = networkState == NetworkStatus.Connected
 
-            Timber.tag(tag).d("isAppActive=$isAppActive, isNetworkAvailable=$isNetworkAvailable")
-            if (syncState == SyncState.Running && !isAppActive) {
+            Timber.tag(tag).d("isAppActive=$isAppActive, isNetworkAvailable=$isNetworkAvailable, isIdentityResetHeld=$isIdentityResetHeld")
+            if (isIdentityResetHeld) {
+                // GUA FORK: the identity reset guard stops and restarts the sync itself.
+                SyncStateAction.NoOp
+            } else if (syncState == SyncState.Running && !isAppActive) {
                 SyncStateAction.StopSync
             } else if (syncState == SyncState.Idle && isAppActive && isNetworkAvailable) {
                 SyncStateAction.StartSync

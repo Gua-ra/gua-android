@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Resetovat a dokončit</string>
     <string name="gua_encryption_reset_finishing">Dokončování nastavení…</string>
     <string name="gua_encryption_reset_failed">Nastavení se nepodařilo dokončit. Zkuste to znovu klepnutím na „Resetovat a dokončit“.</string>
+    <string name="gua_encryption_reset_still_finishing">Nastavení se stále dokončuje na pozadí. Gua můžete dál používat.</string>
     <string name="gua_encryption_recover_from_other_device_title">Obnovte své předchozí zprávy</string>
     <string name="gua_encryption_recover_from_other_device_message">Pomocí svého druhého zařízení obnovte zprávy, které v tomto zařízení zatím nejsou dostupné.\n\nPokud k němu nemáte přístup, můžete provést reset a dokončit nastavení, ale zprávy uložené pouze ve vaší záloze budou nenávratně ztraceny.</string>
     <string name="gua_encryption_recover_from_other_device_action">Použít druhé zařízení</string>

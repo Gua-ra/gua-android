@@ -12,6 +12,7 @@
     <string name="gua_encryption_reset_required_action">Скинути й завершити</string>
     <string name="gua_encryption_reset_finishing">Завершуємо налаштування…</string>
     <string name="gua_encryption_reset_failed">Не вдалося завершити налаштування. Натисніть «Скинути й завершити», щоб спробувати ще раз.</string>
+    <string name="gua_encryption_reset_still_finishing">Усе ще завершуємо налаштування у фоновому режимі. Ви можете й далі користуватися Gua.</string>
     <string name="gua_encryption_recover_from_other_device_title">Відновіть свої попередні повідомлення</string>
     <string name="gua_encryption_recover_from_other_device_message">Скористайтеся іншим пристроєм, щоб відновити повідомлення, яких поки що немає на цьому пристрої.\n\nЯкщо у вас немає до нього доступу, ви можете скинути й завершити налаштування, але повідомлення, збережені лише у вашій резервній копії, буде втрачено назавжди.</string>
     <string name="gua_encryption_recover_from_other_device_action">Використати інший пристрій</string>
