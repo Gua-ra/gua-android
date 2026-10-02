@@ -8,7 +8,8 @@
 package io.element.android.libraries.guaresolver
 
 /**
- * GUA FORK: errors surfaced by [ResolverClient]. Mirrors iOS `ResolverError`.
+ * GUA FORK: errors surfaced by [ResolverClient]. Mirrors iOS `ResolverError`. Messages are for
+ * logs only: screens map each case to a string resource.
  */
 sealed class ResolverError(message: String, cause: Throwable? = null) : Exception(message, cause) {
     /** The resolver base URL is not configured for this build (dev secrets absent). */

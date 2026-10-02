@@ -77,4 +77,19 @@
     <string name="screen_change_phone_passkey_unavailable_message">This app can\'t confirm your passkey on this device yet. Add a 6-digit account PIN and use that to change your number.</string>
     <string name="screen_change_phone_cooldown_header">Not just yet</string>
     <string name="screen_change_phone_cooldown_message">For your security, you can change your number in %1$s.</string>
+    <plurals name="gua_duration_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <plurals name="gua_duration_hours">
+        <item quantity="one">%1$d hour</item>
+        <item quantity="other">%1$d hours</item>
+    </plurals>
+    <plurals name="gua_duration_minutes">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
+    <string name="gua_duration_moment">a moment</string>
+    <!-- Two durations from the plurals above, e.g. "6 days and 3 hours". -->
+    <string name="gua_duration_pair">%1$s and %2$s</string>
 </resources>

@@ -69,6 +69,20 @@
     <string name="screen_change_phone_needs_step_up_pin_action">Configurar PIN</string>
     <string name="screen_change_phone_cooldown_header">Ainda não</string>
     <string name="screen_change_phone_cooldown_message">Por segurança, você poderá alterar seu número em %1$s.</string>
+    <plurals name="gua_duration_days">
+        <item quantity="one">%1$d dia</item>
+        <item quantity="other">%1$d dias</item>
+    </plurals>
+    <plurals name="gua_duration_hours">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="other">%1$d horas</item>
+    </plurals>
+    <plurals name="gua_duration_minutes">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
+    <string name="gua_duration_moment">alguns instantes</string>
+    <string name="gua_duration_pair">%1$s e %2$s</string>
     <string name="screen_change_phone_current_header">Confirme seu número atual</string>
     <string name="screen_change_phone_current_footer">Digite o número que sua conta usa agora. Vamos enviar um código para ele.</string>
     <string name="screen_change_phone_current_mismatch">Esse não é o número da sua conta.</string>

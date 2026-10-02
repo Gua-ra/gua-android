@@ -55,11 +55,10 @@ fun LoggedInView(
         is AsyncData.Success -> Unit
         is AsyncData.Failure -> {
             state.pusherRegistrationState.errorOrNull()
-                ?.takeIf { !state.ignoreRegistrationError }
-                ?.getReason()
-                ?.let { reason ->
+                ?.takeIf { !state.ignoreRegistrationError && it.shouldBeShown() }
+                ?.let {
                     ErrorDialogWithDoNotShowAgain(
-                        content = stringResource(id = CommonStrings.common_error_registering_pusher_android, reason),
+                        content = stringResource(id = R.string.gua_error_registering_pusher),
                         cancelText = stringResource(id = CommonStrings.common_settings),
                         onDismiss = {
                             state.eventSink(LoggedInEvents.CloseErrorDialog(it))
@@ -84,23 +83,18 @@ fun LoggedInView(
     }
 }
 
-private fun Throwable.getReason(): String? {
+// GUA FORK: the dialog no longer appends the technical reason, which was English in every language.
+private fun Throwable.shouldBeShown(): Boolean {
     return when (this) {
-        is PusherRegistrationFailure.RegistrationFailure -> {
-            if (isRegisteringAgain && clientException.isNetworkError()) {
-                // When registering again, ignore network error
-                null
-            } else {
-                clientException.message ?: "Unknown error"
-            }
-        }
-        is PusherRegistrationFailure.AccountNotVerified -> null
+        // When registering again, ignore network error
+        is PusherRegistrationFailure.RegistrationFailure -> !(isRegisteringAgain && clientException.isNetworkError())
+        is PusherRegistrationFailure.AccountNotVerified -> false
         // GUA FORK: a build with no push provider is a known state, not an error the user can act
         // on. Upstream tells people to install a distributor; Gua offers none, so the dialog only
         // said that notifications were broken with nothing to do about it.
         is PusherRegistrationFailure.NoDistributorsAvailable,
-        is PusherRegistrationFailure.NoProvidersAvailable -> null
-        else -> "Other error: $message"
+        is PusherRegistrationFailure.NoProvidersAvailable -> false
+        else -> true
     }
 }
 

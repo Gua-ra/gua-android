@@ -119,7 +119,10 @@ class PreferencesRootPresenter(
                 .launchIn(this)
         }
 
-        val showLabsItem = remember { featureFlagService.getAvailableFeatures(isInLabs = true).isNotEmpty() }
+        // GUA FORK: Labs features carry developer copy that is not translated, so release builds hide Labs.
+        val showLabsItem = remember {
+            buildMeta.buildType != BuildType.RELEASE && featureFlagService.getAvailableFeatures(isInLabs = true).isNotEmpty()
+        }
         val isLockScreenPinSetup by remember {
             lockScreenService.isPinSetup()
         }.collectAsState(initial = true)

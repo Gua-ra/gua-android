@@ -13,7 +13,6 @@ import io.element.android.features.login.impl.login.FakeGuaDeployment
 import io.element.android.features.login.impl.login.FakeResolverClient
 import io.element.android.features.login.impl.login.LoginHelper
 import io.element.android.features.login.impl.login.LoginMode
-import io.element.android.features.login.impl.login.PasskeySignInError
 import io.element.android.features.login.impl.screens.onboarding.createLoginHelper
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.guaresolver.HomeserverResolution
@@ -286,7 +285,7 @@ class PhoneEntryPresenterTest {
             initialState.eventSink(PhoneEntryEvents.SignInWithPasskey)
             val failureState = awaitTerminalLoginMode()
             val error = (failureState.loginMode as AsyncData.Failure).error
-            assertThat(error).isEqualTo(ChangeServerError.Error(messageStr = PasskeySignInError.NotConfigured.message))
+            assertThat(error).isEqualTo(ChangeServerError.Error())
         }
         resolveRecorder.assertions().isNeverCalled()
     }
