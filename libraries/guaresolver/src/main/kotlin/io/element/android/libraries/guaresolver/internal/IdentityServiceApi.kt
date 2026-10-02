@@ -66,7 +66,7 @@ internal interface IdentityServiceApi {
     //   3. account/phone/change/start   spends the token AND a step-up factor (a passkey assertion,
     //      else the account PIN), and only then sends the OTP to the NEW number,
     //   4. account/phone/change/complete   redeems the challenge with that OTP.
-    // No SMS reaches the new number before step 3 has accepted a step-up factor.
+    // No SMS reaches the new number before account/phone/change/start has accepted a step-up factor.
     //
     // The number is submitted rather than read back from the server: the identity service compares its
     // digest against the account's own binding and never reveals whose number it is. Nothing is stored

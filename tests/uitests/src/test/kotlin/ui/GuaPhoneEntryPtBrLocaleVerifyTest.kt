@@ -22,7 +22,7 @@ import org.junit.Test
  *
  * Known limitation, not a pt-BR guarantee: Paparazzi resolves the locale by language only, so with
  * both `values-pt` and `values-pt-rBR` present it renders `values-pt`. A real device set to pt-BR
- * prefers `values-pt-rBR`. What this test covers is that the screen picks up fork translations at all
+ * prefers `values-pt-rBR`. The test still covers that the screen picks up fork translations at all
  * rather than falling back to English.
  */
 class GuaPhoneEntryPtBrLocaleVerifyTest {

@@ -51,7 +51,7 @@ import java.util.Locale
  *  4. The step-up factor is spent together with the new number. Only that call texts the new number.
  *
  * The token is single-use and the server spends it before it weighs the step-up, so any failure in
- * step 4 restarts the flow, and a `step_up_required` refusal ends the operation.
+ * that last call restarts the flow, and a `step_up_required` refusal ends the operation.
  */
 @AssistedInject
 class ChangePhoneNumberPresenter(
