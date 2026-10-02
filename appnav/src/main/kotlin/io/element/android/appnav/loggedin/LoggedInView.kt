@@ -83,7 +83,7 @@ fun LoggedInView(
     }
 }
 
-// GUA FORK: the dialog no longer appends the technical reason, which was English in every language.
+// GUA FORK: the dialog shows no technical reason; the SDK gives it in English whatever the app language.
 private fun Throwable.shouldBeShown(): Boolean {
     return when (this) {
         // When registering again, ignore network error
