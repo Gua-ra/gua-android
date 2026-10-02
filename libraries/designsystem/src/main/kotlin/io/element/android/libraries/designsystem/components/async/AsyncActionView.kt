@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.designsystem.components.ProgressDialog
@@ -21,6 +22,7 @@ import io.element.android.libraries.designsystem.components.dialogs.ErrorDialogD
 import io.element.android.libraries.designsystem.components.dialogs.RetryDialog
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
+import io.element.android.libraries.ui.strings.CommonStrings
 
 /**
  * Render an AsyncAction object.
@@ -28,6 +30,9 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
  * - If Failure, display a dialog with the error, which can be transformed, using [errorMessage]. When
  * closed, [onErrorDismiss] will be invoked. If [onRetry] is not null, a retry button will be displayed.
  * - When loading, display a loading dialog using [progressDialog]. Pass empty lambda to disable.
+ *
+ * GUA FORK: [errorMessage] defaults to a translated generic error, never the exception's message,
+ * which is English whatever the app language.
  */
 @Suppress("ContentSlotReused") // False positive, the lambdas don't add composable views
 @Composable
@@ -38,7 +43,7 @@ fun <T> AsyncActionView(
     confirmationDialog: @Composable (AsyncAction.Confirming) -> Unit = { },
     progressDialog: @Composable () -> Unit = { AsyncActionViewDefaults.ProgressDialog() },
     errorTitle: @Composable (Throwable) -> String = { ErrorDialogDefaults.title },
-    errorMessage: @Composable (Throwable) -> String = { it.message ?: it.toString() },
+    errorMessage: @Composable (Throwable) -> String = { stringResource(CommonStrings.error_unknown) },
     onRetry: (() -> Unit)? = null,
 ) {
     when (async) {

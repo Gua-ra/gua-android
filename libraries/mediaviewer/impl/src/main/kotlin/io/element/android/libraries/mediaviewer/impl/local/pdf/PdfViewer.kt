@@ -42,7 +42,6 @@ import io.element.android.libraries.mediaviewer.impl.viewer.topAppBarHeight
 import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.collections.immutable.ImmutableList
 import me.saket.telephoto.zoomable.zoomable
-import java.io.IOException
 
 @Composable
 fun PdfViewer(
@@ -82,10 +81,7 @@ private fun PdfPagesView(
     when (pdfPages) {
         is AsyncData.Uninitialized,
         is AsyncData.Loading -> Unit
-        is AsyncData.Failure -> PdfPagesErrorView(
-            pdfPages.error,
-            modifier,
-        )
+        is AsyncData.Failure -> PdfPagesErrorView(modifier)
         is AsyncData.Success -> PdfPagesContentView(
             pdfPages = pdfPages.data,
             lazyListState = lazyListState,
@@ -94,9 +90,9 @@ private fun PdfPagesView(
     }
 }
 
+// GUA FORK: no exception message after the generic error; it is English whatever the app language.
 @Composable
 private fun PdfPagesErrorView(
-    error: Throwable,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -104,11 +100,7 @@ private fun PdfPagesErrorView(
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = buildString {
-                append(stringResource(id = CommonStrings.error_unknown))
-                append("\n\n")
-                append(error.localizedMessage)
-            },
+            text = stringResource(id = CommonStrings.error_unknown),
             textAlign = TextAlign.Center,
             style = ElementTheme.typography.fontBodyLgRegular,
         )
@@ -171,7 +163,5 @@ private fun PdfPageView(
 @PreviewsDayNight
 @Composable
 internal fun PdfPagesErrorViewPreview() = ElementPreview {
-    PdfPagesErrorView(
-        error = IOException("file not in PDF format or corrupted"),
-    )
+    PdfPagesErrorView()
 }

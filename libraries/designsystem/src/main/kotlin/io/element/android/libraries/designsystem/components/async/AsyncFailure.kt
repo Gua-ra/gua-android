@@ -24,9 +24,11 @@ import io.element.android.libraries.designsystem.theme.components.Button
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.ui.strings.CommonStrings
 
+// GUA FORK: shows a translated generic error, never the exception's message, which is English
+// whatever the app language. The parameter stays so upstream call sites keep compiling.
 @Composable
 fun AsyncFailure(
-    throwable: Throwable,
+    @Suppress("UNUSED_PARAMETER") throwable: Throwable,
     onRetry: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
@@ -36,7 +38,7 @@ fun AsyncFailure(
             .padding(vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = throwable.message ?: stringResource(id = CommonStrings.error_unknown))
+        Text(text = stringResource(id = CommonStrings.error_unknown))
         if (onRetry != null) {
             Spacer(modifier = Modifier.height(24.dp))
             Button(
