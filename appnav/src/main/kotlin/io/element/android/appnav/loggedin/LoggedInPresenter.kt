@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import dev.zacsweers.metro.Inject
 import im.vector.app.features.analytics.plan.CryptoSessionStateChange
 import im.vector.app.features.analytics.plan.UserProperties
+import io.element.android.appconfig.PushConfig
 import io.element.android.features.networkmonitor.api.NetworkMonitor
 import io.element.android.features.networkmonitor.api.NetworkStatus
 import io.element.android.libraries.architecture.AsyncData
@@ -28,6 +29,9 @@ import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.core.log.logger.LoggerTag
 import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.guaresolver.authority.AuthorityDeviceLabel
+import io.element.android.libraries.guaresolver.authority.AuthoritySessionRegistrar
+import io.element.android.libraries.guaresolver.authority.SecurityNotificationRegistration
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.RecoveryState
@@ -48,6 +52,8 @@ import timber.log.Timber
 
 private val pusherTag = LoggerTag("Pusher", LoggerTag.PushLoggerTag)
 
+private const val FIREBASE_PROVIDER_NAME = "Firebase"
+
 @Inject
 class LoggedInPresenter(
     private val matrixClient: MatrixClient,
@@ -58,6 +64,7 @@ class LoggedInPresenter(
     private val encryptionService: EncryptionService,
     private val buildMeta: BuildMeta,
     private val networkMonitor: NetworkMonitor,
+    private val authoritySessionRegistrar: AuthoritySessionRegistrar,
 ) : Presenter<LoggedInState> {
     @Composable
     override fun present(): LoggedInState {
@@ -67,6 +74,8 @@ class LoggedInPresenter(
         }.collectAsState(initial = false)
         val pusherRegistrationState = remember<MutableState<AsyncData<Unit>>> { mutableStateOf(AsyncData.Uninitialized) }
         LaunchedEffect(Unit) { preloadAccountManagementUrl() }
+        // GUA FORK: not chained to the pusher registration, which dies with the session an account recovery revokes.
+        LaunchedEffect(Unit) { registerForAuthorityNotifications() }
         LaunchedEffect(Unit) {
             sessionVerificationService.sessionVerifiedStatus
                 .onEach { sessionVerifiedStatus ->
@@ -144,6 +153,20 @@ class LoggedInPresenter(
             forceNativeSlidingSyncMigration = forceNativeSlidingSyncMigration,
             appName = buildMeta.applicationName,
             eventSink = ::handleEvent,
+        )
+    }
+
+    private suspend fun registerForAuthorityNotifications() {
+        val provider = pushService.getCurrentPushProvider(matrixClient.sessionId)
+        val pushToken = provider?.getPushConfig(matrixClient.sessionId)?.pushKey
+        val platform = SecurityNotificationRegistration.PLATFORM_FCM
+            .takeIf { provider?.name == FIREBASE_PROVIDER_NAME }
+        authoritySessionRegistrar.onSessionStarted(
+            sessionId = matrixClient.sessionId.value,
+            pushToken = pushToken,
+            platform = platform,
+            appId = PushConfig.PUSHER_APP_ID,
+            deviceLabel = AuthorityDeviceLabel.current(),
         )
     }
 

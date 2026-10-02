@@ -7,13 +7,8 @@
 
 package io.element.android.libraries.matrix.api.linknewdevice
 
+/** GUA FORK: no `validate`. The SDK has no local pre-check; the code is compared when the ceremony confirms. */
 interface CheckCodeSender {
-    /**
-     * Validates the given [code]. Returns true if the code is valid, false otherwise.
-     * This method can be called multiple times to validate different codes.
-     */
-    suspend fun validate(code: UByte): Boolean
-
     /**
      * Sends the given [code].
      * This method can be called only once.

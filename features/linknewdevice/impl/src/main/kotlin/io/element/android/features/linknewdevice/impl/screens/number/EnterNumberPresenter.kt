@@ -16,9 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import dev.zacsweers.metro.Assisted
-import dev.zacsweers.metro.AssistedFactory
-import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.Inject
 import io.element.android.features.linknewdevice.impl.LinkNewMobileHandler
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.Presenter
@@ -31,16 +29,10 @@ import timber.log.Timber
 
 private val tag = LoggerTag("EnterNumberPresenter", LoggerTags.linkNewDevice)
 
-@AssistedInject
+@Inject
 class EnterNumberPresenter(
-    @Assisted private val navigator: EnterNumberNavigator,
     private val linkNewMobileHandler: LinkNewMobileHandler,
 ) : Presenter<EnterNumberState> {
-    @AssistedFactory
-    interface Factory {
-        fun create(navigator: EnterNumberNavigator): EnterNumberPresenter
-    }
-
     @Composable
     override fun present(): EnterNumberState {
         val coroutineScope = rememberCoroutineScope()
@@ -76,24 +68,17 @@ class EnterNumberPresenter(
                         sendingCode = AsyncAction.Failure(IllegalStateException("No check code sender available"))
                     } else {
                         sendingCode = AsyncAction.Loading
-                        val uByte = number.toUByte()
-                        val isValid = sender.validate(uByte)
-                        if (isValid) {
-                            sender.send(uByte)
-                                .fold(
-                                    onSuccess = {
-                                        Timber.tag(tag.value).d("Code sent successfully")
-                                        // Keep loading, do not set sendingCode to AsyncAction.Success(Unit)
-                                    },
-                                    onFailure = {
-                                        Timber.tag(tag.value).e(it, "Failed to send number code")
-                                        sendingCode = AsyncAction.Failure(it)
-                                    }
-                                )
-                        } else {
-                            // Navigate to the error state
-                            navigator.navigateToWrongNumberError()
-                        }
+                        sender.send(number.toUByte())
+                            .fold(
+                                onSuccess = {
+                                    Timber.tag(tag.value).d("Code sent successfully")
+                                    // Keep loading, do not set sendingCode to AsyncAction.Success(Unit)
+                                },
+                                onFailure = {
+                                    Timber.tag(tag.value).e(it, "Failed to send number code")
+                                    sendingCode = AsyncAction.Failure(it)
+                                }
+                            )
                     }
                 }
             }

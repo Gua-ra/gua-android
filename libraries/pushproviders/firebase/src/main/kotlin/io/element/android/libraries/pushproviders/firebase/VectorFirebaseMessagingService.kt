@@ -52,6 +52,17 @@ class VectorFirebaseMessagingService : FirebaseMessagingService() {
             fetchPushForegroundServiceManager.start()
         }
 
+        // GUA FORK: FCM hands a notification message to a foregrounded app instead of drawing it.
+        if (GuaAuthorityAlert.matches(message.data)) {
+            GuaAuthorityAlert.show(applicationContext, message.data)
+            coroutineScope.launch {
+                if (isHighPriority) {
+                    fetchPushForegroundServiceManager.stop()
+                }
+            }
+            return
+        }
+
         coroutineScope.launch {
             val pushData = pushParser.parse(message.data)
             if (pushData == null) {

@@ -45,6 +45,8 @@ class PreferencesRootNode(
         fun navigateToLockScreenSettings()
         fun navigateToTwoStepVerification()
         fun navigateToChangePhoneNumber()
+
+        fun navigateToAccountAuthority()
         fun navigateToAdvancedSettings()
         fun navigateToLabs()
         fun navigateToLinkNewDevice()
@@ -90,6 +92,7 @@ class PreferencesRootNode(
             onOpenAdvancedSettings = callback::navigateToAdvancedSettings,
             onOpenLabs = callback::navigateToLabs,
             onLinkNewDeviceClick = callback::navigateToLinkNewDevice,
+            onAccountAuthorityClick = callback::navigateToAccountAuthority,
             onManageAccountClick = { onManageAccountClick(activity, it, isDark) },
             onOpenNotificationSettings = callback::navigateToNotificationSettings,
             onOpenLockScreenSettings = callback::navigateToLockScreenSettings,

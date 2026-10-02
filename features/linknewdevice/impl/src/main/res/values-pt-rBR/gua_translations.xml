@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: pt-rBR translations for this module's Gua strings. The English source of truth
+     lives in values/temporary.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="screen_link_grant_authority_header">Dar autoridade a este aparelho?</string>
+    <string name="screen_link_grant_authority_message">%1$s já entrou na conta. Você também pode deixar que ele aprove novos aparelhos e ações iniciadas em um navegador. De qualquer forma, ele já consegue ler e enviar suas mensagens.</string>
+    <string name="screen_link_grant_authority_quarantine_notice">Antes há um período de espera: até ele terminar, o aparelho novo não pode aprovar nada e você ainda pode se opor.</string>
+    <string name="screen_link_grant_authority_action">Dar autoridade</string>
+    <string name="screen_link_grant_authority_skip_action">Agora não</string>
+    <string name="screen_link_grant_authority_pin_header">Confirme que é você</string>
+    <string name="screen_link_grant_authority_pin_footer">Digite o PIN de 6 dígitos da sua conta para dar autoridade a este aparelho.</string>
+    <string name="screen_link_grant_authority_error_step_up_required">Nesta tela é preciso o PIN de 6 dígitos da sua conta. Se a sua conta usa uma chave de acesso, adicione este telefone em Configurações, Autoridade da conta, onde você pode confirmar com ela.</string>
+    <string name="screen_link_grant_authority_error_too_recent">Algo na sua conta mudou há pouco tempo demais para isto. Tente de novo em alguns dias.</string>
+    <string name="screen_link_grant_authority_error_quarantined">Este telefone ainda está no próprio período de espera, então ainda não pode dar autoridade a outro aparelho.</string>
+    <string name="screen_link_grant_authority_error_signer_refused">Este telefone não pode fazer isso pela sua conta.</string>
+    <string name="screen_link_grant_authority_error_conflict">Algo mudou na sua conta enquanto você estava aqui. Abra Autoridade da conta nas Configurações para tentar de novo.</string>
+    <string name="screen_link_grant_authority_error_generic">Algo deu errado. Tente novamente.</string>
+    <string name="screen_link_grant_authority_compare_header">Confira o código nos dois telefones</string>
+    <string name="screen_link_grant_authority_compare_message">Seu outro telefone (%1$s) está mostrando oito caracteres. Eles devem ser exatamente os de baixo.</string>
+    <string name="screen_link_grant_authority_compare_warning">Se forem diferentes, pare. Outra pessoa pode estar tentando adicionar o dispositivo dela à sua conta.</string>
+    <string name="screen_link_grant_authority_compare_confirm">Os caracteres são iguais</string>
+    <string name="screen_link_grant_authority_error_unknown_candidate">O pedido do seu outro telefone expirou, ou não é o que você comparou. Comece de novo naquele telefone.</string>
+    <string name="screen_link_grant_authority_error_no_channel">Não conseguimos avisar seus outros dispositivos agora. Abra o Gua neles e tente novamente.</string>
+</resources>

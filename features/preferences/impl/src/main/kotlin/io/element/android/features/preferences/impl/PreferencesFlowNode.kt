@@ -26,6 +26,7 @@ import io.element.android.features.lockscreen.api.LockScreenEntryPoint
 import io.element.android.features.logout.api.LogoutEntryPoint
 import io.element.android.features.preferences.api.PreferencesEntryPoint
 import io.element.android.features.preferences.impl.about.AboutNode
+import io.element.android.features.preferences.impl.accountauthority.AccountAuthorityNode
 import io.element.android.features.preferences.impl.advanced.AdvancedSettingsNode
 import io.element.android.features.preferences.impl.analytics.AnalyticsSettingsNode
 import io.element.android.features.preferences.impl.blockedusers.BlockedUsersNode
@@ -109,6 +110,9 @@ class PreferencesFlowNode(
         @Parcelize
         data object ChangePhoneNumber : NavTarget
 
+        @Parcelize
+        data object AccountAuthority : NavTarget
+
         // GUA FORK: shared country picker for the change-phone new-number field.
         @Parcelize
         data object CountryPicker : NavTarget
@@ -176,6 +180,10 @@ class PreferencesFlowNode(
 
                     override fun navigateToChangePhoneNumber() {
                         backstack.push(NavTarget.ChangePhoneNumber)
+                    }
+
+                    override fun navigateToAccountAuthority() {
+                        backstack.push(NavTarget.AccountAuthority)
                     }
 
                     override fun navigateToAdvancedSettings() {
@@ -345,6 +353,9 @@ class PreferencesFlowNode(
                     }
                 }
                 createNode<ChangePhoneNumberNode>(buildContext, listOf(changePhoneCallback))
+            }
+            NavTarget.AccountAuthority -> {
+                createNode<AccountAuthorityNode>(buildContext)
             }
             NavTarget.CountryPicker -> {
                 val countryPickerCallback = object : CountryPickerNode.Callback {

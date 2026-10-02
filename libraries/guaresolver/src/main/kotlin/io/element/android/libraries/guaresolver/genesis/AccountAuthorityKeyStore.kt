@@ -68,6 +68,41 @@ interface AccountAuthorityKeyStore {
 
     /** Forgets the pair in the signup slot. An attached pair is kept. */
     suspend fun clear()
+
+    suspend fun createAdoptionKeys(): AdoptionKeys
+
+    suspend fun adoptionKeys(): AdoptionKeys?
+
+    suspend fun markAdopted(accountId: String)
+
+    suspend fun adoptedAccountId(): String?
+
+    /** The adopted device key, else the genesis authority key, which is the first device key of an account whose id commits it. */
+    suspend fun authorityDevicePublicKey(): ByteArray?
+
+    suspend fun signWithAdoptionKey(message: ByteArray): ByteArray
+
+    suspend fun signAsAuthorityDevice(message: ByteArray): ByteArray
+
+    suspend fun createCandidateKey(): ByteArray
+
+    suspend fun candidateDevicePublicKey(): ByteArray?
+
+    suspend fun markGranted(accountId: String)
+
+    suspend fun markRecovered(accountId: String)
+
+    /** Not cleared on sign-out: the registration it keys must outlive the sessions an account recovery revokes. */
+    suspend fun installationId(): String
+}
+
+class AdoptionKeys(
+    private val device: ByteArray,
+    private val recovery: ByteArray,
+    val recoveryArtifact: String,
+) {
+    fun deviceAuthorityPublicKey(): ByteArray = device.copyOf()
+    fun recoveryAuthorityPublicKey(): ByteArray = recovery.copyOf()
 }
 
 /**

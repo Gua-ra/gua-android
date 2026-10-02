@@ -32,6 +32,8 @@ dependencies {
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.deeplink.api)
     implementation(projects.libraries.featureflag.api)
+    implementation(projects.appconfig)
+    implementation(projects.libraries.guaresolver)
     implementation(projects.libraries.matrix.api)
     implementation(projects.libraries.oauth.api)
     implementation(projects.libraries.preferences.api)

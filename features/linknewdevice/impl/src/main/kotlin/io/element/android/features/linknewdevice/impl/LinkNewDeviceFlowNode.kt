@@ -32,6 +32,7 @@ import io.element.android.features.linknewdevice.impl.screens.confirmation.CodeC
 import io.element.android.features.linknewdevice.impl.screens.desktop.DesktopNoticeNode
 import io.element.android.features.linknewdevice.impl.screens.error.ErrorNode
 import io.element.android.features.linknewdevice.impl.screens.error.ErrorScreenType
+import io.element.android.features.linknewdevice.impl.screens.grantauthority.GrantAuthorityNode
 import io.element.android.features.linknewdevice.impl.screens.number.EnterNumberNode
 import io.element.android.features.linknewdevice.impl.screens.qrcode.ShowQrCodeNode
 import io.element.android.features.linknewdevice.impl.screens.root.LinkNewDeviceRootNode
@@ -44,11 +45,16 @@ import io.element.android.libraries.architecture.createNode
 import io.element.android.libraries.core.log.logger.LoggerTag
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
+import io.element.android.libraries.featureflag.api.FeatureFlagService
+import io.element.android.libraries.featureflag.api.FeatureFlags
+import io.element.android.libraries.guaresolver.authority.AccountAuthorityManager
+import io.element.android.libraries.guaresolver.authority.AuthorityCandidate
 import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.api.linknewdevice.ErrorType
 import io.element.android.libraries.matrix.api.linknewdevice.LinkDesktopStep
 import io.element.android.libraries.matrix.api.linknewdevice.LinkMobileStep
 import io.element.android.libraries.matrix.api.logs.LoggerTags
+import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.launchIn
@@ -69,6 +75,9 @@ class LinkNewDeviceFlowNode(
     private val linkNewDesktopHandler: LinkNewDesktopHandler,
     private val sessionEnterpriseService: SessionEnterpriseService,
     private val sessionId: SessionId,
+    private val featureFlagService: FeatureFlagService,
+    private val sessionStore: SessionStore,
+    private val authorityManager: AccountAuthorityManager,
 ) : BaseFlowNode<LinkNewDeviceFlowNode.NavTarget>(
     backstack = BackStack(
         initialElement = NavTarget.Root,
@@ -81,6 +90,9 @@ class LinkNewDeviceFlowNode(
     private var activity: Activity? = null
     private var darkTheme: Boolean = false
 
+    /** GUA FORK: set on WaitingForAuth, which the SDK emits only after confirm() accepted the check code. */
+    private var mobileCeremonyConfirmed: Boolean = false
+
     override fun onBuilt() {
         super.onBuilt()
         var linkMobileHandlerJob: Job? = null
@@ -88,6 +100,7 @@ class LinkNewDeviceFlowNode(
 
         lifecycle.subscribe(
             onCreate = {
+                mobileCeremonyConfirmed = false
                 linkNewMobileHandler.reset()
                 linkNewDesktopHandler.reset()
                 @Suppress("AssignedValueIsNeverRead")
@@ -130,6 +143,13 @@ class LinkNewDeviceFlowNode(
         data class Error(
             val errorScreenType: ErrorScreenType,
         ) : NavTarget
+
+        @Parcelize
+        data class GrantAuthority(
+            val granteeDeviceKey: String,
+            val granteeLabel: String,
+            val granteeFingerprint: String,
+        ) : NavTarget
     }
 
     private fun observeLinkNewMobileHandler(): Job {
@@ -140,7 +160,18 @@ class LinkNewDeviceFlowNode(
                 when (linkMobileStep) {
                     LinkMobileStep.Uninitialized -> Unit
                     LinkMobileStep.Done -> {
-                        callback.onDone()
+                        val candidate = grantCandidate()
+                        if (candidate == null) {
+                            callback.onDone()
+                        } else {
+                            backstack.push(
+                                NavTarget.GrantAuthority(
+                                    granteeDeviceKey = candidate.deviceKeyB64Url,
+                                    granteeLabel = candidate.label,
+                                    granteeFingerprint = candidate.fingerprint,
+                                )
+                            )
+                        }
                     }
                     is LinkMobileStep.Error -> {
                         navigateToError(linkMobileStep.errorType)
@@ -163,6 +194,7 @@ class LinkNewDeviceFlowNode(
                     }
                     LinkMobileStep.SyncingSecrets -> Unit
                     is LinkMobileStep.WaitingForAuth -> {
+                        mobileCeremonyConfirmed = true
                         navigateToBrowser(linkMobileStep.verificationUri)
                     }
                 }
@@ -194,6 +226,17 @@ class LinkNewDeviceFlowNode(
             }
         }
             .launchIn(sessionCoroutineScope)
+    }
+
+    /** GUA FORK: mobile flow only. In the desktop direction the check code binds a channel, not a peer. */
+    internal suspend fun grantCandidate(): AuthorityCandidate? {
+        if (!featureFlagService.isFeatureEnabled(FeatureFlags.AccountAuthority)) return null
+        if (!mobileCeremonyConfirmed) return null
+        if (!authorityManager.holdsAuthority()) return null
+        val accessToken = sessionStore.getSession(sessionId.value)?.accessToken ?: return null
+        return authorityManager.candidates(accessToken).getOrNull()
+            .orEmpty()
+            .firstOrNull { it.fingerprint.isNotEmpty() }
     }
 
     private fun navigateToError(errorType: ErrorType) {
@@ -255,10 +298,6 @@ class LinkNewDeviceFlowNode(
             }
             NavTarget.MobileEnterNumber -> {
                 val callback = object : EnterNumberNode.Callback {
-                    override fun navigateToWrongNumberError() {
-                        backstack.push(NavTarget.Error(ErrorScreenType.Mismatch2Digits))
-                    }
-
                     override fun navigateBack() {
                         backstack.pop()
                     }
@@ -289,9 +328,26 @@ class LinkNewDeviceFlowNode(
                 )
                 createNode<ShowQrCodeNode>(buildContext, listOf(inputs, callback))
             }
+            is NavTarget.GrantAuthority -> {
+                val grantCallback = object : GrantAuthorityNode.Callback {
+                    override fun onDone() {
+                        callback.onDone()
+                    }
+                }
+                val inputs = GrantAuthorityNode.Inputs(
+                    candidate = AuthorityCandidate(
+                        deviceKeyB64Url = navTarget.granteeDeviceKey,
+                        fingerprint = navTarget.granteeFingerprint,
+                        label = navTarget.granteeLabel,
+                        expiresAtEpochSeconds = 0,
+                    )
+                )
+                createNode<GrantAuthorityNode>(buildContext, listOf(inputs, grantCallback))
+            }
             is NavTarget.Error -> {
                 val callback = object : ErrorNode.Callback {
                     override fun onRetry() {
+                        mobileCeremonyConfirmed = false
                         linkNewMobileHandler.reset()
                         linkNewDesktopHandler.reset()
                         backstack.newRoot(NavTarget.Root)

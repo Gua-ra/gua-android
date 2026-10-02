@@ -18,21 +18,14 @@ import io.element.android.annotations.ContributesNode
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.di.SessionScope
 
-interface EnterNumberNavigator {
-    fun navigateToWrongNumberError()
-}
-
 @ContributesNode(SessionScope::class)
 @AssistedInject
 class EnterNumberNode(
     @Assisted buildContext: BuildContext,
     @Assisted plugins: List<Plugin>,
-    presenterFactory: EnterNumberPresenter.Factory,
-) : Node(buildContext, plugins = plugins), EnterNumberNavigator {
-    private val presenter = presenterFactory.create(this)
-
+    private val presenter: EnterNumberPresenter,
+) : Node(buildContext, plugins = plugins) {
     interface Callback : Plugin {
-        fun navigateToWrongNumberError()
         fun navigateBack()
     }
 
@@ -46,9 +39,5 @@ class EnterNumberNode(
             modifier = modifier,
             onBackClick = callback::navigateBack,
         )
-    }
-
-    override fun navigateToWrongNumberError() {
-        callback.navigateToWrongNumberError()
     }
 }

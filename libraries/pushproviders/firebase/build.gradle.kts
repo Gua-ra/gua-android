@@ -8,7 +8,9 @@
 
 @file:Suppress("UnstableApiUsage")
 
+import com.android.build.api.dsl.LibraryBuildType
 import config.BuildTimeConfig
+import config.FirebaseApp
 import extension.setupDependencyInjection
 import extension.testCommonDependencies
 import org.gradle.kotlin.dsl.withType
@@ -29,33 +31,28 @@ android {
         getByName("release") {
             consumerProguardFiles("consumer-proguard-rules.pro")
             // GUA FORK: the release build type serves two apps. `-Pgua.deployment=dev`
-            // builds the QA app (applicationId global.gua.dev), which Firebase holds a
-            // separate record for, so it needs its own id here. Without this branch QA
-            // would register under production's id and get no push at all.
+            // builds the QA app (applicationId global.gua.dev), which registers in the dev
+            // Firebase project.
             val useDevDeployment = (project.findProperty("gua.deployment") as? String) == "dev"
-            resValue(
-                type = "string",
-                name = "google_app_id",
-                value = if (useDevDeployment) BuildTimeConfig.GOOGLE_APP_ID_DEV else BuildTimeConfig.GOOGLE_APP_ID_RELEASE,
-            )
+            firebase(if (useDevDeployment) BuildTimeConfig.FIREBASE_APP_DEV else BuildTimeConfig.FIREBASE_APP_RELEASE)
         }
         getByName("debug") {
-            resValue(
-                type = "string",
-                name = "google_app_id",
-                value = BuildTimeConfig.GOOGLE_APP_ID_DEBUG,
-            )
+            firebase(BuildTimeConfig.FIREBASE_APP_DEBUG)
         }
         register("nightly") {
             consumerProguardFiles("consumer-proguard-rules.pro")
             matchingFallbacks += listOf("release")
-            resValue(
-                type = "string",
-                name = "google_app_id",
-                value = BuildTimeConfig.GOOGLE_APP_ID_NIGHTLY,
-            )
+            firebase(BuildTimeConfig.FIREBASE_APP_NIGHTLY)
         }
     }
+}
+
+fun LibraryBuildType.firebase(app: FirebaseApp) {
+    resValue(type = "string", name = "google_app_id", value = app.googleAppId)
+    resValue(type = "string", name = "gcm_defaultSenderId", value = app.project?.senderId.orEmpty())
+    resValue(type = "string", name = "google_api_key", value = app.project?.apiKey.orEmpty())
+    resValue(type = "string", name = "google_storage_bucket", value = app.project?.storageBucket.orEmpty())
+    resValue(type = "string", name = "project_id", value = app.project?.projectId.orEmpty())
 }
 
 // Configure the SonarQube plugin to wait for the resource generation tasks to complete before running the analysis.
@@ -85,7 +82,8 @@ dependencies {
     api("com.google.firebase:firebase-messaging") {
         exclude(group = "com.google.firebase", module = "firebase-core")
         exclude(group = "com.google.firebase", module = "firebase-analytics")
-        exclude(group = "com.google.firebase", module = "firebase-measurement-connector")
+        // GUA FORK: firebase-measurement-connector stays, unlike upstream. FCM references its
+        // AnalyticsConnector when a notification message arrives and crashes without it.
     }
 
     testCommonDependencies(libs)

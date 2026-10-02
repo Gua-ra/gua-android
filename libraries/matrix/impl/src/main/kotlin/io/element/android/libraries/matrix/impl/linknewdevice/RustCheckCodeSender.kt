@@ -17,14 +17,6 @@ class RustCheckCodeSender(
     private val inner: FfiCheckCodeSender,
     private val sessionDispatcher: CoroutineDispatcher,
 ) : CheckCodeSender {
-    override suspend fun validate(code: UByte): Boolean = withContext(sessionDispatcher) {
-        runCatchingExceptions {
-            // TODO https://github.com/matrix-org/matrix-rust-sdk/pull/5957
-            // inner.validate(code)
-            true
-        }.getOrNull() ?: true
-    }
-
     override suspend fun send(code: UByte): Result<Unit> = withContext(sessionDispatcher) {
         runCatchingExceptions {
             inner.send(code)

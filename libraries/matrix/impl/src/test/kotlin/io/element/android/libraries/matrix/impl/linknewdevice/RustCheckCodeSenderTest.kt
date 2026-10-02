@@ -30,12 +30,16 @@ class RustCheckCodeSenderTest {
     }
 
     @Test
-    fun `validate always returns true for now`() = runTest {
+    fun `a failure to send is reported rather than swallowed`() = runTest {
         val sut = RustCheckCodeSender(
-            inner = FakeFfiCheckCodeSender(),
+            inner = FakeFfiCheckCodeSender(sendResult = { throw AN_EXCEPTION }),
             sessionDispatcher = StandardTestDispatcher(testScheduler),
         )
-        val result = sut.validate(1.toUByte())
-        assertThat(result).isTrue()
+
+        assertThat(sut.send(1.toUByte()).isFailure).isTrue()
+    }
+
+    private companion object {
+        private val AN_EXCEPTION = IllegalStateException("the channel is gone")
     }
 }

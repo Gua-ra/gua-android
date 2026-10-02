@@ -17,10 +17,12 @@ import dev.zacsweers.metro.SingleIn
 import io.element.android.libraries.cryptography.api.EncryptionDecryptionService
 import io.element.android.libraries.cryptography.api.EncryptionResult
 import io.element.android.libraries.cryptography.api.SecretKeyRepository
+import io.element.android.libraries.guaresolver.authority.RecoveryArtifact
 import io.element.android.libraries.preferences.api.store.PreferenceDataStoreFactory
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.UUID
 
 /**
  * GUA FORK: default [AccountAuthorityKeyStore].
@@ -118,11 +120,155 @@ class DefaultAccountAuthorityKeyStore(
                 preferences.remove(sealedAuthoritySeedKey)
                 preferences.remove(sealedRecoverySeedKey)
             }
-            if (dataStore.data.first()[attachedAccountIdKey] == null) {
+            val remaining = dataStore.data.first()
+            // The keystore key stays while any value sealed under it remains, or nothing could open that value.
+            if (remaining[attachedAccountIdKey] == null &&
+                remaining[adoptedAccountIdKey] == null &&
+                remaining[installationIdKey] == null
+            ) {
                 secretKeyRepository.deleteKey(SECRET_KEY_ALIAS)
             }
         }
     }
+
+    override suspend fun createAdoptionKeys(): AdoptionKeys = mutex.withLock {
+        val device = Ed25519Sign.KeyPair.newKeyPair()
+        val recovery = Ed25519Sign.KeyPair.newKeyPair()
+        check(!device.privateKey.contentEquals(recovery.privateKey)) {
+            "the recovery authority key must differ from the device key"
+        }
+        val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
+        val sealedDevice = encryptionDecryptionService.encrypt(secretKey, device.privateKey).toBase64()
+        val sealedRecovery = encryptionDecryptionService.encrypt(secretKey, recovery.privateKey).toBase64()
+        dataStore.edit { preferences ->
+            preferences[adoptionDeviceSeedKey] = sealedDevice
+            preferences[adoptionRecoverySeedKey] = sealedRecovery
+        }
+        AdoptionKeys(
+            device = device.publicKey,
+            recovery = recovery.publicKey,
+            recoveryArtifact = RecoveryArtifact.encode(recovery.privateKey),
+        )
+    }
+
+    override suspend fun adoptionKeys(): AdoptionKeys? {
+        val deviceSeed = readSeed(adoptionDeviceSeedKey) ?: return null
+        val recoverySeed = readSeed(adoptionRecoverySeedKey) ?: return null
+        return AdoptionKeys(
+            device = Ed25519Sign.KeyPair.newKeyPairFromSeed(deviceSeed).publicKey,
+            recovery = Ed25519Sign.KeyPair.newKeyPairFromSeed(recoverySeed).publicKey,
+            recoveryArtifact = RecoveryArtifact.encode(recoverySeed),
+        )
+    }
+
+    override suspend fun markAdopted(accountId: String) {
+        mutex.withLock {
+            val preferences = dataStore.data.first()
+            val alreadyAdopted = preferences[adoptedAccountIdKey]
+            if (alreadyAdopted != null && alreadyAdopted != accountId) {
+                error("Another account already holds this device's authority")
+            }
+            if (alreadyAdopted == accountId && preferences[adoptedDeviceSeedKey] != null) {
+                return@withLock
+            }
+            val sealedDevice = preferences[adoptionDeviceSeedKey]
+                ?: error("No device authority key is stored on this device")
+            val sealedRecovery = preferences[adoptionRecoverySeedKey]
+                ?: error("No recovery authority key is stored on this device")
+            dataStore.edit { edited ->
+                edited[adoptedAccountIdKey] = accountId
+                edited[adoptedDeviceSeedKey] = sealedDevice
+                edited[adoptedRecoverySeedKey] = sealedRecovery
+                edited.remove(adoptionDeviceSeedKey)
+                edited.remove(adoptionRecoverySeedKey)
+            }
+        }
+    }
+
+    override suspend fun adoptedAccountId(): String? = dataStore.data.first()[adoptedAccountIdKey]
+
+    override suspend fun authorityDevicePublicKey(): ByteArray? {
+        val seed = readSeed(adoptedDeviceSeedKey) ?: readSeed(attachedAuthoritySeedKey) ?: return null
+        return Ed25519Sign.KeyPair.newKeyPairFromSeed(seed).publicKey
+    }
+
+    override suspend fun signWithAdoptionKey(message: ByteArray): ByteArray {
+        val seed = readSeed(adoptionDeviceSeedKey)
+            ?: error("No device authority key is stored for an adoption on this device")
+        return Ed25519Sign(seed).sign(message)
+    }
+
+    override suspend fun signAsAuthorityDevice(message: ByteArray): ByteArray {
+        val seed = readSeed(adoptedDeviceSeedKey)
+            ?: readSeed(attachedAuthoritySeedKey)
+            ?: error("This device holds no account authority key")
+        return Ed25519Sign(seed).sign(message)
+    }
+
+    override suspend fun createCandidateKey(): ByteArray = mutex.withLock {
+        val device = Ed25519Sign.KeyPair.newKeyPair()
+        val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
+        val sealed = encryptionDecryptionService.encrypt(secretKey, device.privateKey).toBase64()
+        dataStore.edit { preferences ->
+            preferences[candidateDeviceSeedKey] = sealed
+        }
+        device.publicKey
+    }
+
+    override suspend fun candidateDevicePublicKey(): ByteArray? {
+        val seed = readSeed(candidateDeviceSeedKey) ?: return null
+        return Ed25519Sign.KeyPair.newKeyPairFromSeed(seed).publicKey
+    }
+
+    override suspend fun markGranted(accountId: String) {
+        mutex.withLock {
+            val preferences = dataStore.data.first()
+            val alreadyAdopted = preferences[adoptedAccountIdKey]
+            if (alreadyAdopted != null && alreadyAdopted != accountId) {
+                error("Another account already holds this device's authority")
+            }
+            val sealedCandidate = preferences[candidateDeviceSeedKey]
+                ?: error("No candidate key is stored on this device")
+            dataStore.edit { edited ->
+                edited[adoptedAccountIdKey] = accountId
+                edited[adoptedDeviceSeedKey] = sealedCandidate
+                edited.remove(candidateDeviceSeedKey)
+            }
+        }
+    }
+
+    override suspend fun markRecovered(accountId: String) {
+        mutex.withLock {
+            val preferences = dataStore.data.first()
+            val alreadyAdopted = preferences[adoptedAccountIdKey]
+            if (alreadyAdopted != null && alreadyAdopted != accountId) {
+                error("Another account already holds this device's authority")
+            }
+            val sealedDevice = preferences[adoptionDeviceSeedKey]
+                ?: error("No device authority key is stored on this device")
+            val sealedRecovery = preferences[adoptionRecoverySeedKey]
+                ?: error("No recovery authority key is stored on this device")
+            dataStore.edit { edited ->
+                edited[adoptedAccountIdKey] = accountId
+                edited[adoptedDeviceSeedKey] = sealedDevice
+                edited[adoptedRecoverySeedKey] = sealedRecovery
+                edited.remove(adoptionDeviceSeedKey)
+                edited.remove(adoptionRecoverySeedKey)
+            }
+        }
+    }
+
+    override suspend fun installationId(): String = mutex.withLock {
+        readInstallationId()?.let { return@withLock it }
+        val minted = UUID.randomUUID().toString()
+        val secretKey = secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false)
+        val sealed = encryptionDecryptionService.encrypt(secretKey, minted.toByteArray(Charsets.UTF_8)).toBase64()
+        dataStore.edit { preferences -> preferences[installationIdKey] = sealed }
+        minted
+    }
+
+    private suspend fun readInstallationId(): String? =
+        readSeed(installationIdKey)?.toString(Charsets.UTF_8)?.takeIf { it.isNotEmpty() }
 
     private suspend fun publicKeysOf(
         authorityKey: Preferences.Key<String>,
@@ -161,5 +307,15 @@ class DefaultAccountAuthorityKeyStore(
         private val attachedAccountIdKey = stringPreferencesKey("attached_account_id")
         private val attachedAuthoritySeedKey = stringPreferencesKey("attached_authority_seed")
         private val attachedRecoverySeedKey = stringPreferencesKey("attached_recovery_seed")
+
+        private val adoptionDeviceSeedKey = stringPreferencesKey("adoption_device_seed")
+        private val adoptionRecoverySeedKey = stringPreferencesKey("adoption_recovery_seed")
+        private val adoptedAccountIdKey = stringPreferencesKey("adopted_account_id")
+        private val adoptedDeviceSeedKey = stringPreferencesKey("adopted_device_seed")
+        private val adoptedRecoverySeedKey = stringPreferencesKey("adopted_recovery_seed")
+
+        private val candidateDeviceSeedKey = stringPreferencesKey("candidate_device_seed")
+
+        private val installationIdKey = stringPreferencesKey("security_notification_installation_id")
     }
 }

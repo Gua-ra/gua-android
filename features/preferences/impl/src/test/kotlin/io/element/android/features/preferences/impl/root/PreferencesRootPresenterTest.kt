@@ -111,6 +111,7 @@ class PreferencesRootPresenterTest {
             assertThat(loadedState.accountManagementUrl).isNull()
             assertThat(loadedState.showAnalyticsSettings).isFalse()
             assertThat(loadedState.showLinkNewDevice).isFalse()
+            assertThat(loadedState.showAccountAuthority).isFalse()
             assertThat(loadedState.showDeveloperSettings).isTrue()
             assertThat(loadedState.canDeactivateAccount).isTrue()
             assertThat(loadedState.canReportBug).isTrue()

@@ -12,25 +12,28 @@ object BuildTimeConfig {
     const val APPLICATION_ID = "global.gua"
     const val APPLICATION_NAME = "Gua"
 
-    // GUA FORK: the mobilesdk_app_id of each Gua Firebase Android app, feeding the
-    // "google_app_id" string resource in the firebase push provider. These replaced
-    // Element's (project vector-alpha, 912726360885), which must never ship in a Gua
-    // binary. An empty value makes FirebaseApp skip initialisation: no push, no crash.
-    //
-    // Project "Gua Global" (gua-global, 511804071315). One per package, because Firebase
-    // keys its app records on the package name.
-    //
-    // RELEASE and DEV are both the release build type: the QA app is the release type
-    // built with -Pgua.deployment=dev, which suffixes the applicationId with ".dev". The
-    // firebase module picks between them on that same property, so QA registers as itself
-    // rather than falling back to production's id and failing.
-    const val GOOGLE_APP_ID_RELEASE = "1:511804071315:android:7a87ae8499f379204e1c66"
-    const val GOOGLE_APP_ID_DEV = "1:511804071315:android:55bc17310919f64c4e1c66"
-    const val GOOGLE_APP_ID_DEBUG = "1:511804071315:android:0b8eb92ccf4eaa6a4e1c66"
+    // GUA FORK: QA and debug builds register in their own Firebase project, so a dev server's
+    // credential cannot push to the store app.
+    val FIREBASE_PRODUCTION = FirebaseProject(
+        projectId = "gua-global",
+        senderId = "511804071315",
+        apiKey = "AIzaSyB2RTAWSf9v5lqoXILeoc7wzgfImvv1Pxs",
+        storageBucket = "gua-global.firebasestorage.app",
+    )
+    val FIREBASE_DEV = FirebaseProject(
+        projectId = "gua-dev",
+        senderId = "844160046939",
+        apiKey = "AIzaSyDXq3xuvwXIhXkJNZj0Rrv3ntc2YWtkdXw",
+        storageBucket = "gua-dev.firebasestorage.app",
+    )
 
-    // Nightly has no Firebase app record: global.gua.nightly is not registered. Left empty
-    // so those builds start with push disabled rather than registering as another package.
-    const val GOOGLE_APP_ID_NIGHTLY = ""
+    // RELEASE and DEV are both the release build type: DEV is built with -Pgua.deployment=dev.
+    val FIREBASE_APP_RELEASE = FirebaseApp("1:511804071315:android:7a87ae8499f379204e1c66", FIREBASE_PRODUCTION)
+    val FIREBASE_APP_DEV = FirebaseApp("1:844160046939:android:7a0fd8c65aac441e4a2c7e", FIREBASE_DEV)
+    val FIREBASE_APP_DEBUG = FirebaseApp("1:844160046939:android:6387a01892d6abfe4a2c7e", FIREBASE_DEV)
+
+    // Empty: global.gua.nightly has no Firebase app, so nightly builds start with push disabled.
+    val FIREBASE_APP_NIGHTLY = FirebaseApp("", null)
 
     // Reverse-DNS of the brand host gua.global. Drives the OIDC custom-scheme redirect
     // (login_redirect_scheme = "global.gua", i.e. global.gua:/oidc) — mirrors iOS.

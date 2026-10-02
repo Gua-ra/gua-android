@@ -79,6 +79,9 @@ class PreferencesRootPresenter(
         val showLinkNewDevice by remember {
             featureFlagService.isFeatureEnabledFlow(FeatureFlags.QrCodeLogin)
         }.collectAsState(initial = false)
+        val showAccountAuthority by remember {
+            featureFlagService.isFeatureEnabledFlow(FeatureFlags.AccountAuthority)
+        }.collectAsState(initial = false)
 
         val otherSessions by remember {
             sessionStore.sessionsFlow().map { list ->
@@ -178,6 +181,7 @@ class PreferencesRootPresenter(
             showAnalyticsSettings = hasAnalyticsProviders,
             canReportBug = canReportBug,
             showLinkNewDevice = showLinkNewDevice,
+            showAccountAuthority = showAccountAuthority,
             showDeveloperSettings = showDeveloperSettings,
             canDeactivateAccount = canDeactivateAccount,
             nbOfBlockedUsers = nbOfBlockedUsers,

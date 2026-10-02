@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gua_authority_alert_channel_name">Security alerts</string>
+    <string name="gua_authority_alert_channel_description">Warnings about anything asking for approval over your account.</string>
+</resources>
