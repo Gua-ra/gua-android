@@ -9,7 +9,7 @@
   <string name="screen_image_edition_a11y_flip_image_horizontally_state_flipped">Espelhada na horizontal</string>
   <string name="screen_image_edition_a11y_flip_image_vertically">Espelhar imagem na vertical</string>
   <string name="screen_image_edition_a11y_flip_image_vertically_state_flipped">Espelhada na vertical</string>
-  <string name="screen_image_edition_a11y_rotate_to_the_left">Girar a imagem para a esquerda</string>
+  <string name="screen_image_edition_a11y_rotate_to_the_left">Girar imagem para a esquerda</string>
   <plurals name="screen_image_edition_a11y_rotation_state">
     <item quantity="one">%1$d grau</item>
     <item quantity="other">%1$d graus</item>

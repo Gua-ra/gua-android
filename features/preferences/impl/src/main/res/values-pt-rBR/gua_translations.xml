@@ -21,7 +21,7 @@
     <string name="screen_change_phone_pin_incorrect">Esse PIN está incorreto. Tente novamente.</string>
     <string name="screen_change_phone_otp_header">Verifique seu novo número</string>
     <string name="screen_change_phone_otp_footer">Digite o código de 6 dígitos que enviamos para o seu novo número.</string>
-    <string name="screen_change_phone_otp_invalid">Esse código está errado ou expirou. Tente novamente.</string>
+    <string name="screen_change_phone_otp_invalid">Esse código está incorreto ou expirou. Tente novamente.</string>
     <string name="screen_change_phone_already_linked">Esse número de telefone já está vinculado a outra conta.</string>
     <string name="screen_change_phone_updated">Seu número de telefone foi atualizado.</string>
     <string name="screen_change_phone_done_header">Tudo pronto</string>
@@ -54,7 +54,7 @@
     <string name="screen_two_step_verification_phone_label">Número de telefone</string>
     <string name="screen_two_step_verification_phone_invalid">Digite um número de telefone válido.</string>
     <string name="screen_two_step_verification_current_incorrect">Esse PIN está incorreto. Tente novamente.</string>
-    <string name="screen_two_step_verification_otp_invalid">Esse código está errado ou expirou. Tente novamente.</string>
+    <string name="screen_two_step_verification_otp_invalid">Esse código está incorreto ou expirou. Tente novamente.</string>
     <string name="screen_two_step_verification_locked">PIN bloqueado por excesso de tentativas incorretas. Tente novamente mais tarde.</string>
     <string name="screen_two_step_verification_cooldown">Por segurança, você só pode alterar seu PIN uma vez por dia.</string>
     <string name="screen_two_step_verification_challenge_invalid">Isso demorou demais. Comece de novo.</string>
@@ -88,20 +88,20 @@
     <string name="screen_change_phone_current_mismatch">Esse não é o número da sua conta.</string>
     <string name="screen_change_phone_reauth_header">Confirme que é você</string>
     <string name="screen_change_phone_reauth_footer">Digite o código de 6 dígitos que enviamos para o seu número atual.</string>
-    <string name="screen_change_phone_reauth_invalid">Esse código está errado ou expirou. Tente novamente.</string>
+    <string name="screen_change_phone_reauth_invalid">Esse código está incorreto ou expirou. Tente novamente.</string>
     <string name="screen_change_phone_reauth_expired">Sua confirmação expirou. Comece de novo.</string>
     <string name="screen_change_phone_challenge_invalid">Isso demorou demais. Comece de novo.</string>
     <string name="screen_change_phone_needs_step_up_header">Primeiro, configure a verificação em duas etapas</string>
-    <string name="screen_change_phone_needs_step_up_message">Para alterar seu número, você precisa de uma chave de acesso ou de um PIN da conta de 6 dígitos. Configure um deles e volte aqui.</string>
+    <string name="screen_change_phone_needs_step_up_message">Para alterar seu número, você precisa ter uma chave de acesso ou um PIN de 6 dígitos na sua conta. Configure um deles e volte aqui.</string>
     <string name="screen_change_phone_needs_step_up_passkey_action">Configurar uma chave de acesso</string>
     <string name="screen_change_phone_passkey_unavailable_header">Sua chave de acesso ainda não pode ser usada aqui</string>
-    <string name="screen_change_phone_passkey_unavailable_message">Este app ainda não consegue confirmar sua chave de acesso neste aparelho. Adicione um PIN da conta de 6 dígitos e use-o para alterar seu número.</string>
+    <string name="screen_change_phone_passkey_unavailable_message">Ainda não é possível confirmar sua chave de acesso neste dispositivo. Adicione um PIN de 6 dígitos à sua conta e use-o para alterar seu número.</string>
     <string name="gua_notification_sound_default">Padrão do Gua</string>
     <string name="gua_notification_sound_soft">Gua suave</string>
     <!-- GUA FORK: translations of upstream strings that Element has not translated. Remove an entry when upstream ships one. -->
     <string name="screen_advanced_settings_live_location_section_title">Atualizações da localização em tempo real</string>
-    <string name="screen_advanced_settings_live_location_section_description">A distância que você precisa se deslocar para gerar uma atualização.</string>
-    <string name="screen_advanced_settings_live_location_section_footer">Verifique se a “Localização precisa” está ativada para este app. Para mudar a permissão, acesse %1$s.</string>
+    <string name="screen_advanced_settings_live_location_section_description">A distância que você precisa percorrer para gerar uma atualização.</string>
+    <string name="screen_advanced_settings_live_location_section_footer">Verifique se a opção “Usar local exato” está ativada para este app. Para mudar a permissão, acesse %1$s.</string>
     <string name="screen_advanced_settings_live_location_section_footer_link">Configurações do app</string>
     <plurals name="screen_advanced_settings_live_location_update_distance">
         <item quantity="one">A cada %1$d metro</item>
