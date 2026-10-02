@@ -22,7 +22,7 @@ jobs:
           # Need full history so the guard can scan commit messages for AI attribution.
           fetch-depth: 0
           persist-credentials: false
-      # Scan only the commits this event adds: upstream history carries trailers the fork cannot rewrite.
+      # The guard checks the commit messages this event adds for AI co-author trailers and generated-by notices.
       - name: Work out which commits this event adds
         id: scan_range
         env:

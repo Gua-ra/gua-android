@@ -50,7 +50,7 @@ for needle in "${FORBIDDEN_STRINGS[@]}"; do
     fi
 done
 
-# 2. AI authorship attribution in commit messages.
+# 2. No AI co-author trailers or generated-by notices in commit messages.
 echo "→ Scanning commit messages for AI attribution..."
 if [ -n "${GUA_CONSTRAINTS_SKIP_HISTORY:-}" ]; then
     # Set when the caller has no meaningful range to scan.
