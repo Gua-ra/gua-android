@@ -96,4 +96,6 @@
     <string name="screen_change_phone_needs_step_up_passkey_action">Configurer une clé d\'accès</string>
     <string name="screen_change_phone_passkey_unavailable_header">Votre clé d\'accès ne peut pas encore être utilisée ici</string>
     <string name="screen_change_phone_passkey_unavailable_message">Cette application ne peut pas encore confirmer votre clé d\'accès sur cet appareil. Ajoutez un code PIN à 6 chiffres à votre compte et utilisez-le pour changer de numéro.</string>
+    <string name="gua_notification_sound_default">Gua par défaut</string>
+    <string name="gua_notification_sound_soft">Gua doux</string>
 </resources>

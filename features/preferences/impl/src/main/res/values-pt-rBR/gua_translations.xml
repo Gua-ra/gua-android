@@ -96,4 +96,26 @@
     <string name="screen_change_phone_needs_step_up_passkey_action">Configurar uma chave de acesso</string>
     <string name="screen_change_phone_passkey_unavailable_header">Sua chave de acesso ainda não pode ser usada aqui</string>
     <string name="screen_change_phone_passkey_unavailable_message">Este app ainda não consegue confirmar sua chave de acesso neste aparelho. Adicione um PIN da conta de 6 dígitos e use-o para alterar seu número.</string>
+    <string name="gua_notification_sound_default">Padrão do Gua</string>
+    <string name="gua_notification_sound_soft">Gua suave</string>
+    <!-- GUA FORK: translations of upstream strings that Element has not translated. Remove an entry when upstream ships one. -->
+    <string name="screen_advanced_settings_live_location_section_title">Atualizações da localização em tempo real</string>
+    <string name="screen_advanced_settings_live_location_section_description">A distância que você precisa se deslocar para gerar uma atualização.</string>
+    <string name="screen_advanced_settings_live_location_section_footer">Verifique se a “Localização precisa” está ativada para este app. Para mudar a permissão, acesse %1$s.</string>
+    <string name="screen_advanced_settings_live_location_section_footer_link">Configurações do app</string>
+    <plurals name="screen_advanced_settings_live_location_update_distance">
+        <item quantity="one">A cada %1$d metro</item>
+        <item quantity="other">A cada %1$d metros</item>
+    </plurals>
+    <string name="screen_notification_settings_call_ringtone_label">Toque de chamada</string>
+    <string name="screen_notification_settings_message_sound_dialog_choose_other">Escolher outro som…</string>
+    <string name="screen_notification_settings_message_sound_dialog_current_subtitle">Som atual: %1$s</string>
+    <string name="screen_notification_settings_message_sound_dialog_title">Som de mensagem</string>
+    <string name="screen_notification_settings_message_sound_label">Som de mensagem</string>
+    <string name="screen_notification_settings_sound_custom_fallback">Personalizado</string>
+    <string name="screen_notification_settings_sound_section_title">Som</string>
+    <string name="screen_notification_settings_sound_set_sound_error_dismiss_a11y">Fechar o erro do som de alerta</string>
+    <string name="screen_notification_settings_sound_set_sound_error_title">Não foi possível definir o som de alerta</string>
+    <string name="screen_notification_settings_sound_silent">Silencioso</string>
+    <string name="screen_notification_settings_sound_system_default">Padrão do sistema</string>
 </resources>

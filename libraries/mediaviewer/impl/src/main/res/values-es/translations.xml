@@ -16,6 +16,7 @@
   <string name="screen_media_details_filename">"Nombre del archivo"</string>
   <string name="screen_media_details_no_more_files_to_show">"No hay más archivos que mostrar"</string>
   <string name="screen_media_details_no_more_media_to_show">"No hay más medios que mostrar"</string>
+  <string name="screen_media_details_title">"Información del archivo"</string>
   <string name="screen_media_details_uploaded_by">"Subido por"</string>
   <string name="screen_media_details_uploaded_on">"Subido el"</string>
 </resources>

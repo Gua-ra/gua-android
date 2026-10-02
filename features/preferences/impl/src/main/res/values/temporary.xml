@@ -92,4 +92,7 @@
     <string name="gua_duration_moment">a moment</string>
     <!-- Two durations from the plurals above, e.g. "6 days and 3 hours". -->
     <string name="gua_duration_pair">%1$s and %2$s</string>
+    <!-- GUA FORK: names of the two bundled message sounds. -->
+    <string name="gua_notification_sound_default">Gua Default</string>
+    <string name="gua_notification_sound_soft">Gua Soft</string>
 </resources>
