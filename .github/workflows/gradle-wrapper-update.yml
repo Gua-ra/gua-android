@@ -1,6 +1,6 @@
 name: Update Gradle Wrapper
 
-# GUA FORK: manual dispatch only.
+# GUA FORK: manual dispatch only, to keep the Gradle wrapper pinned.
 on:
   workflow_dispatch:
 

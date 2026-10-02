@@ -12,7 +12,13 @@ package io.element.android.libraries.guaresolver.genesis
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
-/** Base64url without padding. Uses the Kotlin stdlib: `java.util.Base64` needs API 26 and `android.util.Base64` is absent from unit tests. */
+/**
+ * Base64url without padding, which is how the identity service carries the genesis bytes, the
+ * registration proof, the attach challenge and the attach proof.
+ *
+ * Uses the Kotlin stdlib encoder: `android.util.Base64` is absent from a plain unit-test JVM and
+ * `java.util.Base64` needs API 26 while this module builds down to 24.
+ */
 internal object Base64Url {
     fun encode(value: ByteArray): String = Base64.UrlSafe.encode(value).trimEnd('=')
 

@@ -33,7 +33,15 @@ import io.element.android.libraries.designsystem.theme.components.Text
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
-/** Runs one item set through the production classifier and grouper, as a group room and as a 1:1 chat. */
+/**
+ * 1:1 direct chats are conversations, not "rooms", so membership, profile and state churn must not
+ * appear in the timeline, and must never be collapsed into a "N room changes" summary either.
+ *
+ * This preview runs one identical item set through the production classifier
+ * ([isDirectOneToOneRoomChangeEvent]) and grouper ([TimelineItemGrouper]): as a group room the three
+ * room-change events collapse into one grouped block above the message, as a 1:1 chat only the
+ * message remains. If the suppression regressed, the recorded screenshot would diff.
+ */
 private val guaRoomChangeEvents = listOf(
     aTimelineItemEvent(
         isMine = false,

@@ -7,7 +7,14 @@
 
 package io.element.android.features.login.impl.login
 
-/** A device that meant to register an account genesis and could not must fail the signup, never continue without one. */
+/**
+ * The signup could not be given the account genesis it meant to register.
+ *
+ * Deliberately a hard failure rather than a fallback: a device that meant to register a genesis and
+ * quietly continued would create an account with a bootstrap id instead. A deployment that answers
+ * that it does not do genesis is a different case and continues silently.
+ */
 sealed class AccountGenesisSignupError : Exception() {
+    /** The device could not generate, register or sign for its account authority key. */
     data object SetupFailed : AccountGenesisSignupError()
 }

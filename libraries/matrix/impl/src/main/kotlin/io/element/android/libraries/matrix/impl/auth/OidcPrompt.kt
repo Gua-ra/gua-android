@@ -13,7 +13,10 @@ import org.matrix.rustcomponents.sdk.OAuthPrompt as RustOAuthPrompt
 
 internal fun OAuthPrompt.toRustPrompt(): RustOAuthPrompt {
     return when (this) {
-        // GUA FORK: prompt=login, so a lingering Custom Tab session is never resumed after sign-out. Keep in sync with the server-side prompt handling.
+        // GUA FORK: upstream maps Login to prompt=consent so an existing browser session is silently
+        // reused. Gua must never resume a lingering Custom Tab session after sign-out (the app cannot
+        // clear browser cookies), so it sends prompt=login. Keep in sync with the server-side prompt
+        // handling.
         OAuthPrompt.Login -> RustOAuthPrompt.Login
         OAuthPrompt.Create -> RustOAuthPrompt.Create
         is OAuthPrompt.Unknown -> RustOAuthPrompt.Unknown(value)

@@ -65,6 +65,7 @@ import kotlinx.collections.immutable.ImmutableList
 @Composable
 fun RoomListContentView(
     contentState: RoomListContentState,
+    // GUA FORK: shown above every other banner, whatever the content state, and not dismissible.
     accountRecoveryBannerState: AccountRecoveryBannerState,
     filtersState: RoomListFiltersState,
     spaceFiltersState: SpaceFiltersState,
@@ -77,11 +78,13 @@ fun RoomListContentView(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
-    // GUA FORK: navigation follows the repair's verdict, not the tap.
+    // GUA FORK: navigation follows the repair's verdict, not the tap. It lives here once, above the
+    // branch, so every content state consumes the one-shot flag.
     val onNeedsReset by rememberUpdatedState(onConfirmRecoveryKeyClick)
     val onNavigated by rememberUpdatedState(eventSink)
     LaunchedEffect(contentState.encryptionSetupNeedsReset) {
         if (contentState.encryptionSetupNeedsReset) {
+            // Consume first: leaving the one-shot flag set would stop the effect from ever firing again.
             onNavigated(RoomListEvent.EncryptionResetNavigated)
             onNeedsReset()
         }
@@ -177,6 +180,8 @@ private fun EmptyView(
             AccountRecoveryBanner(state = accountRecoveryBannerState)
             when (state.securityBannerState) {
                 SecurityBannerState.SetUpRecovery,
+                // GUA FORK: SetUpRecovery renders the same silent-repair banner, so no path can reach
+                // upstream's flow that hands a user a recovery key to write down.
                 SecurityBannerState.RecoveryKeyConfirmation -> {
                     ConfirmRecoveryKeyBanner(
                         onContinueClick = { eventSink(RoomListEvent.FinishEncryptionSetup) },
@@ -258,6 +263,8 @@ private fun RoomsViewList(
         modifier = modifier,
         contentPadding = contentPadding,
     ) {
+        // GUA FORK: above the other banners and independent of them, so neither the encryption
+        // banner nor any dismissal can push it out.
         if (accountRecoveryBannerState.pendingRecovery != null) {
             item {
                 AccountRecoveryBanner(state = accountRecoveryBannerState)
@@ -265,6 +272,7 @@ private fun RoomsViewList(
         }
         when (state.securityBannerState) {
             SecurityBannerState.SetUpRecovery,
+            // GUA FORK: the same silent-repair banner as in EmptyView.
             SecurityBannerState.RecoveryKeyConfirmation -> {
                 item {
                     ConfirmRecoveryKeyBanner(

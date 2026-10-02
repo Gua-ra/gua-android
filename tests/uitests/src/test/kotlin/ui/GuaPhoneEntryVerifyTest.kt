@@ -17,6 +17,11 @@ import io.element.android.libraries.phonenumberentry.Country
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * Records a focused screenshot of the phone-first entry screen with a typed, valid Brazilian number:
+ * the country selector, the masked phone field, and no homeserver or Matrix copy anywhere on the
+ * entry surface. Records to its own snapshot file.
+ */
 class GuaPhoneEntryVerifyTest {
     @get:Rule
     val paparazzi = Paparazzi(

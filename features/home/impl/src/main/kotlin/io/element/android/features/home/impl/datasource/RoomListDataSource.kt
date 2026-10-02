@@ -211,6 +211,8 @@ class RoomListDataSource(
     }
 
     private fun buildAndCacheItem(roomSummaries: List<RoomSummary>, index: Int): RoomListRoomSummary? {
+        // GUA FORK: Gua has no Spaces concept, so m.space container rooms are hidden from the chat list.
+        // Stray empty "orphan" rooms (a half-created or never-joined chat) are hidden too.
         val roomListSummary = roomSummaries.getOrNull(index)
             ?.takeUnless { it.info.isSpace || it.isEmptyOrphanRoom() }
             ?.let { roomListRoomSummaryFactory.create(it) }
@@ -218,15 +220,17 @@ class RoomListDataSource(
         return roomListSummary
     }
 
-    // GUA FORK: `latestEvent` includes state events, so "no message" means absent or state-like.
+    // GUA FORK: a stray empty room: no heroes, at most the local user plus one peer, and no real
+    // message. `latestEvent` also includes state events, so "no message" means absent or state-like.
     private fun RoomSummary.isEmptyOrphanRoom(): Boolean =
         info.heroes.isEmpty() &&
             info.activeMembersCount <= 2 &&
             !hasRealMessage()
 
+    /** A genuine conversation: the latest event is an actual message, not absent or a state change. */
     private fun RoomSummary.hasRealMessage(): Boolean = when (val ev = latestEvent) {
         is LatestEventValue.None -> false
-        is LatestEventValue.RoomInvite -> true
+        is LatestEventValue.RoomInvite -> true // a real invite, never treated as empty
         is LatestEventValue.Remote -> ev.content.isRealMessage()
         is LatestEventValue.Local -> ev.content.isRealMessage()
     }

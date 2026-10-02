@@ -37,6 +37,15 @@ private val GuaGreen = Color(0xFF11512F)
 private val GuaBrightGreen = Color(0xFF1F9D5B)
 private val GuaTeal = Color(0xFF0D9AA6)
 
+/**
+ * A slowly drifting "aurora" background in Gua greens for the welcome screen: two large radial glows
+ * (a bright green and a teal accent) over a deep-green canvas.
+ *
+ * Respects the system "remove animations" setting (and snapshot/preview builds) by falling back to a
+ * still composition of the same glows, so screenshot references stay stable.
+ *
+ * @param animated when false the aurora is drawn static.
+ */
 @Suppress("ModifierMissing")
 @Composable
 fun GuaWelcomeBackground(
@@ -45,6 +54,8 @@ fun GuaWelcomeBackground(
     val context = LocalContext.current
     val isLive = remember(animated) { animated && context.areAnimationsEnabled() }
 
+    // A single slowly-advancing phase drives both glows. When not live it stays at 0, so the aurora is
+    // a stable still composition.
     val transition = rememberInfiniteTransition(label = "gua-aurora")
     val animatedPhase by transition.animateFloat(
         initialValue = 0f,
@@ -119,6 +130,7 @@ fun GuaWelcomeBackground(
 @Composable
 internal fun GuaWelcomeBackgroundPreview() = ElementPreview {
     Box(modifier = Modifier.fillMaxSize()) {
+        // Static in previews/snapshots for stable references.
         GuaWelcomeBackground(animated = false)
     }
 }

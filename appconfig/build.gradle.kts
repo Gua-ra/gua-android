@@ -20,7 +20,9 @@ android {
     }
 
     defaultConfig {
-        // GUA FORK: an empty value disables the feature.
+        // GUA FORK: always source these from BuildTimeConfig (gua.global) instead of the
+        // upstream element.io fallbacks that applied to non-enterprise builds. An empty value
+        // means the feature is simply inert (e.g. rageshake has no endpoint), never element.io.
         buildConfigFieldStr(
             name = "URL_POLICY",
             value = BuildTimeConfig.URL_POLICY ?: "",

@@ -9,19 +9,34 @@ package io.element.android.features.home.impl.accountrecovery
 
 import io.element.android.libraries.architecture.AsyncAction
 
-/** Never dismissible: stays up until the recovery is cancelled, finished or expires. */
+/**
+ * The warning shown while someone is recovering this account with the delayed recovery. Independent
+ * of the encryption banner and never dismissible: it stays up until the recovery is cancelled,
+ * finished or runs out.
+ */
 data class AccountRecoveryBannerState(
+    /** The live recovery, or null when there is none and the banner is hidden. */
     val pendingRecovery: PendingAccountRecovery?,
+    /** Confirming while the confirmation dialog is up, Loading while the cancel request runs. */
     val cancelAction: AsyncAction<Unit>,
     val eventSink: (AccountRecoveryBannerEvent) -> Unit,
 )
 
-/** "The server named no moment" and "the moment has passed" are distinct. Only the second means finishable now. */
+/**
+ * What the banner can say about when this live recovery can be finished.
+ *
+ * Three cases rather than a nullable date, because "the server named no moment" and "the moment has
+ * passed" are different facts and only the second means the recovery can be finished now. The fields
+ * decode with null defaults for older servers, so the first case is reachable.
+ */
 sealed interface PendingAccountRecovery {
+    /** [date] is the localised long date from which the recovery can be finished, with the year and no time of day. */
     data class FinishableFrom(val date: String) : PendingAccountRecovery
 
+    /** The moment the server named has passed, so the recovery can be finished right now. */
     data object FinishableNow : PendingAccountRecovery
 
+    /** The server reported the recovery but no moment for it, so the banner claims no timing. */
     data object FinishableUnknown : PendingAccountRecovery
 }
 

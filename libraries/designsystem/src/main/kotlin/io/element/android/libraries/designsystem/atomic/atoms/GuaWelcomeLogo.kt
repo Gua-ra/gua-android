@@ -30,10 +30,21 @@ import io.element.android.libraries.designsystem.modifiers.rememberDeviceTilt
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 
+// Max resting parallax rotation, in degrees, at full device tilt.
 private const val PARALLAX_DEGREES = 5f
 
+// The Y-axis angle the logo starts at during the entrance.
 private const val ENTRANCE_FLIP_DEGREES = 60f
 
+/**
+ * The Gua welcome logo: the app-icon mark with a soft drop shadow. It arrives with a one-shot 3D
+ * entrance (flies in from the side while flipping on its Y axis), then moves only with the device tilt.
+ *
+ * All motion is gated on
+ * [areAnimationsEnabled][io.element.android.libraries.androidutils.system.areAnimationsEnabled]: under
+ * Reduce Motion and in snapshots it is a static mark. The resting tilt needs a gyroscope, so on the
+ * emulator only the entrance shows.
+ */
 @Composable
 fun GuaWelcomeLogo(
     modifier: Modifier = Modifier,
@@ -42,6 +53,7 @@ fun GuaWelcomeLogo(
     val context = LocalContext.current
     val animationsEnabled = remember { context.areAnimationsEnabled() }
 
+    // rememberDeviceTilt() returns Offset.Zero with no sensor (emulator) or when motion is disabled.
     val tilt by rememberDeviceTilt()
 
     val entrance = remember { Animatable(if (animationsEnabled) 0f else 1f) }
@@ -70,6 +82,7 @@ fun GuaWelcomeLogo(
                 scaleX = scale
                 scaleY = scale
                 alpha = p
+                // A nearer camera makes the Y-flip read as real perspective rather than a flat skew.
                 cameraDistance = 12f * density
             },
     )

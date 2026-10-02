@@ -79,6 +79,8 @@ val MessageShieldData.isCritical: Boolean
 
 @Composable
 internal fun MessageShieldData.toIconColor(): Color {
+    // GUA FORK: this icon sits beside the send-failure icon, so red here reads as "did not send". Only
+    // the states that mean this may not be who you think keep the critical colour.
     return when (isCritical && shield.isAlarming) {
         true -> ElementTheme.colors.iconCriticalPrimary
         false -> ElementTheme.colors.iconSecondary
@@ -87,6 +89,7 @@ internal fun MessageShieldData.toIconColor(): Color {
 
 @Composable
 private fun MessageShieldData.toTextColor(): Color {
+    // GUA FORK: same reasoning as toIconColor.
     return when (isCritical && shield.isAlarming) {
         true -> ElementTheme.colors.textCriticalPrimary
         false -> ElementTheme.colors.textSecondary
@@ -126,6 +129,8 @@ internal fun MessageShieldData.toText(): String {
 @Composable
 internal fun MessageShieldData.toIcon(): ImageVector {
     return when (shield) {
+        // GUA FORK: only the two states that mean "this may not be who you think" keep the solid alarm
+        // glyph. The rest describe how a message was encrypted, which is context rather than a warning.
         is MessageShield.VerificationViolation,
         is MessageShield.MismatchedSender -> CompoundIcons.HelpSolid()
         is MessageShield.AuthenticityNotGuaranteed,

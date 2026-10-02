@@ -7,7 +7,14 @@
 
 package io.element.android.libraries.guaresolver.genesis
 
-/** Keeps the exact bytes it was decoded from. The client never mints one; the server does. */
+/**
+ * A decoded `BootstrapGenesis` (suite 0x00), together with the exact bytes it was decoded from. Port
+ * of the identity-service `BootstrapGenesis`.
+ *
+ * It commits nothing. Its job is to give an account that predates account authority an accountId that
+ * is re-derivable and auditable, with the root class byte 0x00 marking it as a bootstrap account. The
+ * client never mints one: the server does, for a signup that presented no handle.
+ */
 class BootstrapGenesis internal constructor(
     val version: Int,
     val suite: Int,
@@ -16,17 +23,22 @@ class BootstrapGenesis internal constructor(
 ) {
     fun entropy(): ByteArray = entropyBytes.copyOf()
 
+    /** The bytes as received. Stored so the id stays re-derivable and auditable. */
     fun canonicalBytes(): ByteArray = bytes.copyOf()
 
+    /** Bootstrap-class accountId over those bytes. */
     fun accountId(): AccountId = AccountId.derive(AccountId.CLASS_BOOTSTRAP, bytes)
 
     companion object {
+        /** Total canonical length. Any other length is rejected. */
         const val LENGTH = 22
 
+        /** ASCII `GUAB`, the domain separator. */
         const val MAGIC = "GUAB"
 
         const val VERSION = 0x01
 
+        /** No authority key. */
         const val SUITE_NONE = 0x00
 
         const val ENTROPY_LENGTH = 16

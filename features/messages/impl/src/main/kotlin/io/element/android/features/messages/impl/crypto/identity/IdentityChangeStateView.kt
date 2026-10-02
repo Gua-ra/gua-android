@@ -41,6 +41,9 @@ fun IdentityChangeStateView(
         it.identityState.isAViolation()
     }
     when (identityChangeViolation?.identityState) {
+        // GUA FORK: both violations read as one calm, informational notice with a single acknowledging
+        // action. The action still differs underneath (pin the new identity, or withdraw a stale
+        // verification) so sending works immediately after the tap.
         IdentityState.PinViolation -> ViolationAlert(
             identityChangeViolation = identityChangeViolation,
             onLinkClick = onLinkClick,

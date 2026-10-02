@@ -115,6 +115,8 @@ class PreferencesRootPresenterTest {
             val finalState = awaitItem()
             accountManagementUrlResult.assertions().isCalledOnce()
                 .with(value(null))
+            // GUA FORK: the shared browser tab can hold another account's session, so the URL names
+            // this account for the page to refuse any other.
             assertThat(finalState.accountManagementUrl)
                 .isEqualTo("tweaked null url?org.matrix.msc4198.login_hint=mxid%3A%40alice%3Aserver.org")
         }
@@ -349,6 +351,8 @@ class PreferencesRootPresenterTest {
         skipItems(1)
         return awaitItem()
     }
+
+    // GUA FORK: the two-step-verification nudge is gated on the account's factors.
 
     @Test
     fun `present - the nudge is shown to an account with no strong factor`() = runTest {

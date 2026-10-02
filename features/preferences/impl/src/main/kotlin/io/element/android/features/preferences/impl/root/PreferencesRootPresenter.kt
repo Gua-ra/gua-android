@@ -124,6 +124,9 @@ class PreferencesRootPresenter(
             lockScreenService.isPinSetup()
         }.collectAsState(initial = true)
 
+        // GUA FORK: the nudge banner advertises two-step verification, so it is gated on the account's
+        // factors from the identity service, not the local app-lock and not a lone hasPin.
+        // Null is "not known yet, or could not be read", and the banner shows only on an explicit false.
         val hasAccountStrongFactor by produceState<Boolean?>(initialValue = null) {
             val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken ?: return@produceState
             identityServiceClient.accountFactorStatus(accessToken, matrixClient.sessionId.value)
@@ -183,6 +186,8 @@ class PreferencesRootPresenter(
             ?.let {
                 sessionEnterpriseService.tweakMasUrl(it)
             }
+            // GUA FORK: account management opens in the browser's shared tab, so it can meet a browser
+            // session for another account. Naming this one lets the page refuse that session.
             ?.withMxidLoginHint(matrixClient.sessionId.value)
     }
 }

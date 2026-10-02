@@ -307,6 +307,7 @@ private fun RoomMemberListItem(
                     IdentityState.VerificationViolation -> {
                         Icon(
                             modifier = Modifier.size(20.dp),
+                            // GUA FORK: an informational marker, not an error badge.
                             imageVector = CompoundIcons.InfoSolid(),
                             contentDescription = stringResource(
                                 R.string.gua_identity_change_member_list,

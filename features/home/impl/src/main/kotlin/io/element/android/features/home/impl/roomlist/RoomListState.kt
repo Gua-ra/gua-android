@@ -33,6 +33,7 @@ data class RoomListState(
     val acceptDeclineInviteState: AcceptDeclineInviteState,
     val hideInvitesAvatars: Boolean,
     val canReportRoom: Boolean,
+    /** GUA FORK: the delayed account recovery warning. Separate from the encryption banner. */
     val accountRecoveryBannerState: AccountRecoveryBannerState,
     val eventSink: (RoomListEvent) -> Unit,
 ) {
@@ -73,12 +74,14 @@ sealed interface RoomListContentState {
 
     data class Empty(
         val securityBannerState: SecurityBannerState,
+        /** GUA FORK: true while the encryption setup banner's repair is running. */
         val isFinishingEncryptionSetup: Boolean = false,
         override val encryptionSetupNeedsReset: Boolean = false,
     ) : RoomListContentState
 
     data class Rooms(
         val securityBannerState: SecurityBannerState,
+        /** GUA FORK: true while the encryption setup banner's repair is running. */
         val isFinishingEncryptionSetup: Boolean = false,
         override val encryptionSetupNeedsReset: Boolean = false,
         val fullScreenIntentPermissionsState: FullScreenIntentPermissionsState,

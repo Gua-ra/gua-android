@@ -23,8 +23,14 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * The Ed25519 seed is sealed with AES-GCM under a non-exportable Android keystore key. Only the sealed blob is persisted.
- * Both slots share that keystore key, so [clear] deletes it only when nothing is attached.
+ * The Android keystore does not generate or sign with Ed25519 at this module's minSdk, so the private
+ * key cannot be keystore-resident. Instead the Ed25519 seed is sealed with AES-GCM under a
+ * non-exportable keystore key (hardware-backed where the device offers it), and only the sealed blob
+ * is persisted. The application sets `android:allowBackup="false"`, so nothing stored here is backed
+ * up or transferred to another device.
+ *
+ * Both slots are sealed under the same keystore key, so [clear] deletes that key only once nothing is
+ * attached: deleting it earlier would leave an attached blob nothing can open.
  */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
@@ -47,6 +53,7 @@ class DefaultAccountAuthorityKeyStore(
         val sealedAuthority = encryptionDecryptionService.encrypt(secretKey, authority.privateKey).toBase64()
         val sealedRecovery = encryptionDecryptionService.encrypt(secretKey, recovery.privateKey).toBase64()
         dataStore.edit { preferences ->
+            // The signup slot only. The attached entries are never written from here.
             preferences[sealedAuthoritySeedKey] = sealedAuthority
             preferences[sealedRecoverySeedKey] = sealedRecovery
         }
@@ -64,6 +71,7 @@ class DefaultAccountAuthorityKeyStore(
                 error("Another account is already attached on this device")
             }
             if (alreadyAttached == accountId.value && preferences[attachedAuthoritySeedKey] != null) {
+                // Already recorded, so a retried attach step is a no-op rather than a second promotion.
                 return@withLock
             }
             val sealedAuthority = preferences[sealedAuthoritySeedKey]
@@ -74,6 +82,7 @@ class DefaultAccountAuthorityKeyStore(
                 edited[attachedAccountIdKey] = accountId.value
                 edited[attachedAuthoritySeedKey] = sealedAuthority
                 edited[attachedRecoverySeedKey] = sealedRecovery
+                // The pair is the account's now, not the signup's, so the signup slot is emptied.
                 edited.remove(sealedAuthoritySeedKey)
                 edited.remove(sealedRecoverySeedKey)
             }
@@ -94,6 +103,7 @@ class DefaultAccountAuthorityKeyStore(
     override suspend fun clear() {
         mutex.withLock {
             dataStore.edit { preferences ->
+                // The signup slot only: an attached pair is an account's authority and outlives a signup.
                 preferences.remove(sealedAuthoritySeedKey)
                 preferences.remove(sealedRecoverySeedKey)
             }
@@ -115,7 +125,11 @@ class DefaultAccountAuthorityKeyStore(
         )
     }
 
-    /** Null when no seed is stored or the keystore key that sealed it is gone. */
+    /**
+     * Unseals one stored seed. Returns null when none is stored or the keystore key that sealed it is
+     * gone (a restored install, or a device where the user cleared credentials). A missing seed is
+     * reported as "no key", never as a signature.
+     */
     private suspend fun readSeed(key: Preferences.Key<String>): ByteArray? {
         val sealed = dataStore.data.first()[key] ?: return null
         return try {

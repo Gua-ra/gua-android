@@ -1,5 +1,11 @@
 name: Gua CI
 
+# GUA FORK: the fork's single, self-contained pipeline. It does not depend on any upstream
+# (element-hq) org secrets, the enterprise submodule, Localazy, codecov, Diawi, Firebase or Sonar.
+# The upstream workflows that do are restricted to workflow_dispatch.
+#
+# Jobs: constraint guard, build (assembleGplayDebug), unit tests + screenshot verification, and
+# lint/ktlint/detekt. All on JDK 21.
 on:
   workflow_dispatch:
   pull_request:
@@ -13,6 +19,7 @@ env:
   CI_GRADLE_ARG_PROPERTIES: --stacktrace --no-configuration-cache
 
 jobs:
+  # 1. Constraint guard: must pass before anything else builds.
   constraints:
     name: Constraint guard
     runs-on: ubuntu-latest
@@ -22,7 +29,9 @@ jobs:
           # Need full history so the guard can scan commit messages for AI attribution.
           fetch-depth: 0
           persist-credentials: false
-      # The guard checks the commit messages this event adds for AI co-author trailers and generated-by notices.
+      # The guard only scans the commit messages this event adds. A full-history scan can never pass:
+      # the fork descends from upstream and its own early history carries trailers that cannot be
+      # rewritten. The tracked-file and keystore scans still cover the whole tree.
       - name: Work out which commits this event adds
         id: scan_range
         env:
@@ -41,6 +50,8 @@ jobs:
             fi
           fi
           if [ -z "$base" ]; then
+            # Nothing sensible to diff against (new branch, force push, manual dispatch). The scan is
+            # skipped rather than falling back to the whole history.
             echo "::notice::No usable base for this event; skipping the commit-message scan."
           fi
           echo "base=$base" >> "$GITHUB_OUTPUT"
@@ -50,6 +61,7 @@ jobs:
           GUA_CONSTRAINTS_BASE_REF: ${{ steps.scan_range.outputs.base }}
           GUA_CONSTRAINTS_SKIP_HISTORY: ${{ steps.scan_range.outputs.base == '' && '1' || '' }}
 
+  # 2. Build the primary fork artifact.
   build:
     name: Assemble Gplay debug APK
     runs-on: ubuntu-latest
@@ -76,6 +88,10 @@ jobs:
           name: gua-gplay-debug
           path: app/build/outputs/apk/gplay/debug/*-universal-debug.apk
 
+  # 3. Unit tests + screenshot verification. Two screenshot tools run here. :tests:uitests uses
+  # Paparazzi against plain committed PNGs. :libraries:compound uses Roborazzi against goldens that
+  # are in Git LFS, which is why this job checks out with lfs: true. Roborazzi cannot decode an LFS
+  # pointer and crashes on it.
   tests:
     name: Unit tests + screenshots
     runs-on: ubuntu-latest
@@ -107,6 +123,7 @@ jobs:
             **/build/paparazzi/failures/
             **/build/reports/tests/*UnitTest/
 
+  # 4. Static analysis: lint, ktlint, detekt.
   quality:
     name: Lint / ktlint / detekt
     runs-on: ubuntu-latest
@@ -126,10 +143,12 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
       - name: ktlint
+        # --continue so every offending module is reported in one run.
         run: ./gradlew ktlintCheck $CI_GRADLE_ARG_PROPERTIES --continue
       - name: Android lint (gplay debug)
         run: ./gradlew :app:lintGplayDebug $CI_GRADLE_ARG_PROPERTIES --continue
       - name: detekt
+        # --continue for the same reason as ktlint.
         run: ./gradlew detekt $CI_GRADLE_ARG_PROPERTIES --continue
       - name: Upload quality reports
         if: failure()

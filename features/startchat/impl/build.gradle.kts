@@ -43,6 +43,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(projects.libraries.featureflag.api)
     implementation(projects.features.createroom.api)
+    // GUA FORK: surface Find friends from the new-chat / "+" flow.
     implementation(projects.features.findfriends.api)
     implementation(projects.features.userprofile.api)
     api(projects.features.startchat.api)

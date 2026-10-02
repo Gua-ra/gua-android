@@ -69,6 +69,12 @@ internal fun TimelineItem.Event.canBeGrouped(): Boolean {
     }
 }
 
+/**
+ * GUA FORK: true for the rendered "room change" events (membership churn, profile changes and other
+ * state changes) that are suppressed in 1:1 direct chats. The same content types the timeline factory
+ * drops, kept as a single classification so the runtime drop and its verification share one source
+ * of truth.
+ */
 internal fun TimelineItem.Event.isDirectOneToOneRoomChangeEvent(): Boolean {
     return when (content) {
         is TimelineItemProfileChangeContent,

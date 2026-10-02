@@ -1,6 +1,7 @@
 name: Validate Git LFS
 
-# GUA FORK: manual dispatch only.
+# GUA FORK: manual dispatch only. Upstream LFS goldens are not pulled in the fork, so this would
+# fail on LFS-pointer files.
 on:
   workflow_dispatch:
 

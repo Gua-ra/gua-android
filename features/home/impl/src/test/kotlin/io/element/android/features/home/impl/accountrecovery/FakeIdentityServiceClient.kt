@@ -15,6 +15,7 @@ import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.PhoneChangeChallenge
 import io.element.android.tests.testutils.lambda.lambdaError
 
+/** Only the status read and the cancel are expected. Anything else fails the test. */
 class FakeIdentityServiceClient(
     private val accountFactorStatusResult: suspend (String, String) -> Result<AccountFactorStatus> = { _, _ -> lambdaError() },
     private val cancelAccountRecoveryResult: suspend (String) -> Result<Unit> = { lambdaError() },

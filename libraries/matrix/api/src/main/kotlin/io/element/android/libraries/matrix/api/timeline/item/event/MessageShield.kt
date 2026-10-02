@@ -34,7 +34,13 @@ sealed interface MessageShield {
     data class MismatchedSender(val isCritical: Boolean) : MessageShield
 }
 
-/** GUA FORK: whether this shield warrants the alarm colour, reserved for states that mean "this may not be who you think". */
+/**
+ * GUA FORK: whether this shield warrants alarm colour in the timeline.
+ *
+ * The timestamp slot is shared with "failed to send", so red is reserved for the states that mean
+ * this may not be who you think, plus an unencrypted message in an encrypted room. An unsigned or
+ * unknown device is a statement about the sender's setup, not a risk to the reader.
+ */
 val MessageShield.isAlarming: Boolean
     get() = when (this) {
         is MessageShield.VerificationViolation,

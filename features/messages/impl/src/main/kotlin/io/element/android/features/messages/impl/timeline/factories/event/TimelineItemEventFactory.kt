@@ -56,7 +56,10 @@ class TimelineItemEventFactory(
         fun create(config: TimelineItemsFactoryConfig): TimelineItemEventFactory
     }
 
-    /** GUA FORK: returns null for state, membership and profile-change events in a 1:1 chat. */
+    /**
+     * GUA FORK: returns null in 1:1 direct chats for state, membership and profile-change events, so
+     * they are never grouped into a collapsed "N room changes" summary either.
+     */
     suspend fun create(
         currentTimelineItem: MatrixTimelineItem.Event,
         index: Int,
@@ -268,6 +271,10 @@ class TimelineItemEventFactory(
     }
 }
 
+/**
+ * GUA FORK: true for the state, membership and profile-change events that must not appear in a 1:1
+ * direct chat timeline. Classified on the raw SDK [EventContent] so dropped items are never built.
+ */
 private fun EventContent.isSuppressedInDirectOneToOneRoom(): Boolean = when (this) {
     is StateContent,
     is RoomMembershipContent,

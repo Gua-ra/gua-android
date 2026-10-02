@@ -8,6 +8,7 @@
 package io.element.android.features.home.impl.accountrecovery
 
 sealed interface AccountRecoveryBannerEvent {
+    /** The banner's button. Asks for confirmation first. */
     data object CancelRecovery : AccountRecoveryBannerEvent
 
     data object ConfirmCancelRecovery : AccountRecoveryBannerEvent

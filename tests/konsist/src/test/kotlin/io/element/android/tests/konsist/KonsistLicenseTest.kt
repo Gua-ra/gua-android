@@ -95,7 +95,8 @@ class KonsistLicenseTest {
                     it.name.startsWith("Template ").not()
             }
             .assertTrue {
-                // <= 1: a Gua-authored file carries no Element notice.
+                // <= 1 rather than == 1: a Gua-authored file carries no Element notice at all. This test
+                // exists to catch a file that ended up with two.
                 it.text.count("Element Creations Ltd.") <= 1
             }
     }

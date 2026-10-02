@@ -1,5 +1,5 @@
 name: Sync Localazy
-# GUA FORK: manual dispatch only.
+# GUA FORK: manual dispatch only. Localazy translation sync is an upstream-only integration (needs Localazy keys).
 on:
   workflow_dispatch:
 

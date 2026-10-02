@@ -31,6 +31,13 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * The overview reads the account's factors, not its PIN: a passkey holder with no PIN has two-step
+ * verification on, and a status that could not be read is unknown rather than off.
+ *
+ * A first PIN can only come from the authenticated web ceremony, so no path on this screen may reach
+ * a native first-PIN call.
+ */
 class TwoStepVerificationPresenterTest {
     @get:Rule
     val warmUpRule = WarmUpRule()

@@ -84,7 +84,10 @@ data class RoomInfo(
     val aliases: List<RoomAlias>
         get() = listOfNotNull(canonicalAlias) + alternativeAliases
 
-    /** GUA FORK: a direct room with at most two active members. */
+    /**
+     * GUA FORK: true when this is a 1:1 direct chat (a direct room with at most two active members).
+     * The UI suppresses state and membership churn for them.
+     */
     val isDirectOneToOneRoom: Boolean
         get() = isDirect && activeMembersCount <= 2
 }

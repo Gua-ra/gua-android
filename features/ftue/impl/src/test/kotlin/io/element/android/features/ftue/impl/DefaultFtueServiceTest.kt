@@ -114,6 +114,8 @@ class DefaultFtueServiceTest {
 
         service.ftueStepStateFlow.test {
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Unknown)
+            // GUA FORK: session verification never gates onboarding. Even though the session is NotVerified,
+            // onboarding skips to the first required non-verification step.
             // Notifications opt in
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Incomplete(FtueStep.NotificationsOptIn))
             permissionStateProvider.setPermissionGranted()

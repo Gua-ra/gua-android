@@ -6,15 +6,24 @@
   -->
 <resources>
 
+    <!-- GUA FORK: the encryption repair banner. Replaces upstream's "confirm your recovery key"
+         copy, which asks for a key Gua never shows anyone. -->
     <string name="gua_encryption_repair_title">Finish setting up this device</string>
     <string name="gua_encryption_repair_message">Complete setup to access encrypted chats and message history available on this device.</string>
     <string name="gua_encryption_repair_action">Finish setup</string>
 
-    <!-- Translate this group as a whole or leave it out as a whole. -->
+    <!-- GUA FORK: shown on every signed-in device while someone is recovering this account with the
+         delayed recovery, so the owner can stop it. Not dismissible.
+
+         Only the four Gua languages (en, es, fr, pt-BR) carry this group; every other locale falls back
+         to these strings. Translate the group as a whole or leave it out as a whole. -->
     <string name="gua_account_recovery_banner_title">Someone started recovering your account</string>
-    <!-- %1$s is a localised long date including the year, never a time of day. -->
+    <!-- %1$s is a localised long date including the year, for example "6 April 2026", never a time
+         of day. "from" and not "after", because the server's instant falls somewhere inside that date. -->
     <string name="gua_account_recovery_banner_message_later">It can be finished from %1$s. If this was you, you can ignore this. If it wasn\'t, cancel it from a device where you are still signed in.</string>
     <string name="gua_account_recovery_banner_message_now">It can be finished now. If this was you, you can ignore this. If it wasn\'t, cancel it from a device where you are still signed in.</string>
+    <!-- The server reported no moment this recovery can be finished, so the banner says nothing
+         about timing. -->
     <string name="gua_account_recovery_banner_message_generic">If this was you, you can ignore this. If it wasn\'t, cancel it from a device where you are still signed in.</string>
     <string name="gua_account_recovery_banner_action">Cancel recovery</string>
     <string name="gua_account_recovery_cancel_title">Cancel recovery?</string>

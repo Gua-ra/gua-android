@@ -7,10 +7,17 @@
 
 package io.element.android.libraries.guaresolver.genesis
 
-/** RFC 4648 base32, lowercase and unpadded. The decoder is strict so one byte string has exactly one spelling. */
+/**
+ * RFC 4648 base32, lowercase and unpadded, which is the spelling of an accountId. Port of the
+ * identity-service `Base32`.
+ *
+ * The decoder is strict so one byte string has exactly one spelling: only the lowercase alphabet,
+ * only a character count an unpadded encoding can produce, and only zero trailing bits.
+ */
 internal object Base32 {
     private const val ALPHABET = "abcdefghijklmnopqrstuvwxyz234567"
 
+    /** Reverse lookup, -1 for every character outside the alphabet. */
     private val values = IntArray(128) { -1 }.apply {
         ALPHABET.forEachIndexed { index, character -> this[character.code] = index }
     }
@@ -29,12 +36,19 @@ internal object Base32 {
             }
         }
         if (bits > 0) {
+            // Left-over bits are left-aligned and zero-padded on the right.
             val shift = 5 - bits
             out.append(ALPHABET[buffer shl shift and 0x1F])
         }
         return out.toString()
     }
 
+    /**
+     * Decodes lowercase unpadded base32.
+     *
+     * @throws InvalidGenesisException with reason `bad_base32` on any character outside the alphabet,
+     * a character count no unpadded encoding produces, or non-zero trailing bits.
+     */
     fun decode(encoded: String): ByteArray {
         val remainder = encoded.length % 8
         // 1, 3 and 6 left-over characters cannot come out of any byte string.

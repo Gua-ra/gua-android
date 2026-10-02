@@ -48,7 +48,11 @@ fun TimelineEventTimestampView(
 ) {
     val formattedTime = event.sentTime
     val hasError = event.failedToSend
+    // GUA FORK: a shield about the sender's own setup says nothing actionable on your own
+    // message, and sitting in the delivery-status slot it reads as "this failed to send".
     val shield = event.messageShield?.takeUnless { event.isMine && it.shield.describesOwnSetup }
+    // GUA FORK: only genuinely alarming shields borrow the critical colour, which this slot
+    // otherwise uses to mean "did not send".
     val hasEncryptionCritical = shield?.let { it.isCritical && it.shield.isAlarming }.orFalse()
     val isMessageEdited = event.content.isEdited()
     val isMessageRedacted = event.content.isRedacted()

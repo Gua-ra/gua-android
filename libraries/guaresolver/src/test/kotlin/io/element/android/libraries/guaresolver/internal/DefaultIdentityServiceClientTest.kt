@@ -63,6 +63,7 @@ class DefaultIdentityServiceClientTest {
         val body = request.body.readUtf8()
         assertThat(body).contains("hash1")
         assertThat(body).contains("hash2")
+        // Privacy: only the hashed key is sent.
         assertThat(body).doesNotContain("+")
         server.shutdown()
     }
@@ -155,6 +156,7 @@ class DefaultIdentityServiceClientTest {
 
         client.startPinEnrollment("secret-token").getOrThrow()
 
+        // `{}`, not `{"redirectUri":null}`: the server is left to its own configured default.
         assertThat(server.takeRequest().body.readUtf8()).isEqualTo("{}")
         server.shutdown()
     }
@@ -236,6 +238,7 @@ class DefaultIdentityServiceClientTest {
 
         val error = client.startPinEnrollment("secret-token").exceptionOrNull()
 
+        // A bare 409 would have mapped to PhoneAlreadyLinked, which is another account's number.
         assertThat(error).isInstanceOf(ResolverError.PinAlreadySet::class.java)
         server.shutdown()
     }
@@ -309,6 +312,8 @@ class DefaultIdentityServiceClientTest {
 
         assertThat(status.passkeyRegistered).isFalse()
         assertThat(status.preferredFactor).isEqualTo(AuthFactor.PIN)
+        // Derived, not defaulted to empty: an empty list would hard-block a change the old server
+        // would have allowed.
         assertThat(status.phoneChangeStepUpOptions).containsExactly(AuthFactor.PIN)
         assertThat(status.changePhoneCooldownRemainingSeconds).isEqualTo(42)
         server.shutdown()
@@ -427,6 +432,7 @@ class DefaultIdentityServiceClientTest {
         val body = verifyRequest.body.readUtf8()
         assertThat(body).contains("\"code\":\"123456\"")
         assertThat(body).contains("\"phone\":\"+15551234567\"")
+        // Never left to the server default: a token scoped elsewhere cannot be spent here.
         assertThat(body).contains("\"operation\":\"PHONE_CHANGE\"")
         server.shutdown()
     }
@@ -519,6 +525,7 @@ class DefaultIdentityServiceClientTest {
 
         val body = server.takeRequest().body.readUtf8()
         assertThat(body).contains("\"passkeyStepUpId\":\"stepup-1\"")
+        // An object, not a re-encoded string: the server verifies the assertion it was handed.
         assertThat(body).contains("\"passkeyCredential\":{\"id\":\"cred\",\"type\":\"public-key\"}")
         assertThat(body).doesNotContain("\"pin\"")
         server.shutdown()
@@ -566,6 +573,7 @@ class DefaultIdentityServiceClientTest {
             language = null,
         ).exceptionOrNull()
 
+        // The body wins over the header: they are the same number, but only the body is authoritative.
         assertThat(error).isEqualTo(ResolverError.TwoFactorCooldown(retryAfterSeconds = 604_800))
         server.shutdown()
     }
@@ -648,6 +656,7 @@ class DefaultIdentityServiceClientTest {
         val request = server.takeRequest()
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.path).isEqualTo("/account/genesis")
+        // Self-authenticating: the proof inside the body is the credential, so no bearer token is sent.
         assertThat(request.getHeader("Authorization")).isNull()
         val body = request.body.readUtf8()
         assertThat(body).contains("\"genesis\":\"R1VBRw\"")

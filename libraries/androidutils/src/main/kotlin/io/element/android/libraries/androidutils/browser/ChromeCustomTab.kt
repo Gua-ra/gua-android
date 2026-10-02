@@ -28,6 +28,8 @@ fun Activity.openUrlInChromeCustomTab(
     session: CustomTabsSession?,
     darkTheme: Boolean,
     url: String,
+    // GUA FORK: open in a private tab that shares no cookies with the browser, where the browser
+    // supports one. See [ephemeralCustomTabsProvider].
     ephemeral: Boolean = false,
 ) {
     val ephemeralProvider = if (ephemeral) ephemeralCustomTabsProvider(this) else null

@@ -94,6 +94,7 @@ fun UserProfileHeaderSection(
         }
         Text(
             modifier = Modifier.niceClickable { onUserIdClick() },
+            // GUA FORK: hide the homeserver suffix in the user handle.
             text = userId.displayHandle,
             style = ElementTheme.typography.fontBodyLgRegular,
             color = ElementTheme.colors.textSecondary,
@@ -116,6 +117,8 @@ fun UserProfileHeaderSection(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
+                    // GUA FORK: plain wording, not styled as critical. A contact reinstalling Gua is information,
+                    // not an error.
                     text = stringResource(R.string.gua_identity_change_profile, userName ?: userId.displayHandle),
                     color = ElementTheme.colors.textSecondary,
                     style = ElementTheme.typography.fontBodyMdMedium,

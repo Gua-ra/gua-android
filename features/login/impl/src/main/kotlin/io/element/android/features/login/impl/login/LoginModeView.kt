@@ -101,6 +101,8 @@ fun LoginModeView(
                         onSubmit = onClearError,
                     )
                 }
+                // GUA FORK: the device meant to register an account genesis and could not, so the signup
+                // stopped rather than creating an account without one.
                 is AccountGenesisSignupError -> {
                     ErrorDialog(
                         content = stringResource(R.string.gua_account_setup_failed),

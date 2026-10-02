@@ -1,6 +1,7 @@
 name: Record screenshots
 
-# GUA FORK: manual dispatch only.
+# GUA FORK: manual dispatch only. Screenshot recording is a maintenance task; verification runs in
+# gua-ci.yml.
 on:
   workflow_dispatch:
 
@@ -67,5 +68,6 @@ jobs:
         run: ./.github/workflows/scripts/recordScreenshots.sh
         env:
           GITHUB_TOKEN: ${{ secrets.DANGER_GITHUB_API_TOKEN || secrets.GITHUB_TOKEN }}
+          # github.repository is a built-in context value, not a secret: secrets.GITHUB_REPOSITORY resolves to empty.
           GITHUB_REPOSITORY: ${{ github.repository }}
           GRADLE_ARGS: ${{ env.CI_GRADLE_ARG_PROPERTIES }}

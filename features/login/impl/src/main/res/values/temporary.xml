@@ -5,6 +5,7 @@
   ~ Please see LICENSE files in the repository root for full details.
   -->
 <resources>
+    <!-- Gua onboarding and phone-first entry. English source of truth lives here; translations are in values-*/gua_translations.xml. -->
     <string name="gua_onboarding_welcome_title">Welcome to Gua</string>
     <string name="gua_onboarding_welcome_message">Private messaging, made simple.</string>
     <string name="screen_onboarding_trust_encrypted">End-to-end encrypted</string>
@@ -16,7 +17,11 @@
     <string name="screen_phone_entry_phone_number_label">Phone number</string>
     <string name="screen_phone_entry_country_picker_a11y">Select country</string>
 
+    <!-- Button on the phone-entry screen. The passkey is a discoverable credential, so it identifies
+         the account on its own: choosing this sends no code. -->
     <string name="gua_sign_in_with_passkey">Sign in with a passkey</string>
 
+    <!-- Shown only when the device meant to register its own account key and could not. Deliberately
+         says nothing about keys or genesis, which are not user-facing ideas. -->
     <string name="gua_account_setup_failed">We could not finish setting up your account on this device. Please try again.</string>
 </resources>

@@ -1,5 +1,5 @@
 name: Pull Request
-# GUA FORK: manual dispatch only.
+# GUA FORK: manual dispatch only. Depends on the element-hq org (Vector Core team membership, ELEMENT_BOT_TOKEN).
 on:
   workflow_dispatch:
 

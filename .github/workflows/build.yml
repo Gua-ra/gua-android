@@ -1,6 +1,7 @@
 name: APK Build
 
-# GUA FORK: manual dispatch only.
+# GUA FORK: manual dispatch only. Replaced by gua-ci.yml (assembleGplayDebug), and it relies on upstream
+# Maptiler/Sentry/Diawi/Firebase secrets the fork does not have.
 on:
   workflow_dispatch:
 

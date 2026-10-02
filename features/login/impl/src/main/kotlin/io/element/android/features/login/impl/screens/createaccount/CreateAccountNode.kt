@@ -38,6 +38,7 @@ class CreateAccountNode(
     private val presenter = presenterFactory.create(inputs<Inputs>().url)
 
     private fun onOpenExternalUrl(activity: Activity, darkTheme: Boolean, url: String) {
+        // GUA FORK: private tab, for the same reason as the sign-in tab in LoginFlowNode.
         activity.openUrlInChromeCustomTab(null, darkTheme, url, ephemeral = true)
     }
 

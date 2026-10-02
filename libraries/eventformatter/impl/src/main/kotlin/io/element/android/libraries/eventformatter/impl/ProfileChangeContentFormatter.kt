@@ -37,6 +37,7 @@ class ProfileChangeContentFormatter(
                 "$message\n$avatarChangedToo"
             }
             displayNameChanged -> {
+                // GUA FORK: identify the sender by the homeserver-stripped handle, never `@user:server`.
                 val senderHandle = senderId.displayHandle
                 if (displayName != null && prevDisplayName != null) {
                     if (senderIsYou) {

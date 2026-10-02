@@ -24,10 +24,22 @@ import androidx.core.content.getSystemService
 import io.element.android.libraries.androidutils.system.areAnimationsEnabled
 import timber.log.Timber
 
+// The maximum tilt magnitude (in radians) mapped to the full -1..1 range. Roughly 35 degrees of
+// roll or pitch reaches the extremes. Beyond that the value is clamped.
 private const val MAX_TILT_RADIANS = 0.6f
 
+// Low-pass easing factor: `current += (target - current) * 0.15f` on each sensor sample.
 private const val TILT_EASING = 0.15f
 
+/**
+ * Returns a smoothed device-tilt [Offset] where `x` is roll and `y` is pitch, each roughly in the
+ * range -1..1.
+ *
+ * Prefers [Sensor.TYPE_GAME_ROTATION_VECTOR] (drift-free, no magnetometer) and falls back to
+ * [Sensor.TYPE_ACCELEROMETER]. Returns [Offset.Zero] and registers nothing when no usable sensor is
+ * present (e.g. an emulator) or the system "remove animations" setting is on. No manifest permission
+ * is required for these sensors.
+ */
 @Composable
 fun rememberDeviceTilt(): State<Offset> {
     val context = LocalContext.current
@@ -69,6 +81,7 @@ fun rememberDeviceTilt(): State<Offset> {
                         targetRoll = (orientation[2] / MAX_TILT_RADIANS).coerceIn(-1f, 1f)
                     }
                     Sensor.TYPE_ACCELEROMETER -> {
+                        // Map the gravity vector to roll/pitch. x left/right, y up/down, gravity ~9.81.
                         targetRoll = (-event.values[0] / SensorManager.GRAVITY_EARTH).coerceIn(-1f, 1f)
                         targetPitch = (event.values[1] / SensorManager.GRAVITY_EARTH - 1f).coerceIn(-1f, 1f)
                     }

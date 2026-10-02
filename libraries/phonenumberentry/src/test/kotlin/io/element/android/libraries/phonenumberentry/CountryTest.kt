@@ -89,6 +89,8 @@ class CountryTest {
 
     @Test
     fun `normalize - coincidental dial-code prefix is not stripped`() {
+        // "11234567890": leading "1" matches +1, remainder "1234567890" is exactly 10 digits, but it
+        // itself starts with the dial code, so the safety guard keeps it intact (no false strip).
         val (country, local) = Country.normalize("11234567890", Country("US", "1"))
         assertThat(country.isoCode).isEqualTo("US")
         assertThat(local).isEqualTo("11234567890")

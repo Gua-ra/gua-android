@@ -23,7 +23,14 @@ import java.security.Signature
 import java.security.spec.PKCS8EncodedKeySpec
 import java.util.Base64
 
-/** A byte-identical copy of the identity service's published golden vectors. The keys are the RFC 8032 section 7.1 test constants. */
+/**
+ * The published golden vectors are the contract. The identity service ships them at
+ * docs/specs/genesis-vectors.v1.json and this is a byte-identical copy, kept in the module's own test
+ * resources so the test is hermetic.
+ *
+ * The keys are the RFC 8032 section 7.1 test constants, which makes the signatures reproducible.
+ * Signing uses the JDK provider, independent of the Ed25519 the app itself signs with.
+ */
 class GenesisVectorsTest {
     private val vectors: JsonObject by lazy {
         val stream = checkNotNull(javaClass.classLoader?.getResourceAsStream(VECTORS_RESOURCE)) {

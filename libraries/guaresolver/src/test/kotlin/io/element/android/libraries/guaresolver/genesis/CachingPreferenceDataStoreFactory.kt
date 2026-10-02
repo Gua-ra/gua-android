@@ -14,7 +14,11 @@ import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory as AndroidPreferenceDataStoreFactory
 
-/** Returns the same store for the same name, so two instances see each other's writes. */
+/**
+ * Returns the same store for the same name, so two instances see each other's writes.
+ * `FakePreferenceDataStoreFactory` creates a fresh temp file on every call, which would turn a
+ * "stored key survives a restart" test into a test that a new empty store is empty.
+ */
 class CachingPreferenceDataStoreFactory : PreferenceDataStoreFactory {
     private val stores = ConcurrentHashMap<String, DataStore<Preferences>>()
 

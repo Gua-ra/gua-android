@@ -84,6 +84,8 @@ fun PreferencesRootView(
             },
             matrixUser = state.myUser,
         )
+        // GUA FORK: the nudge sets up two-step verification, not the local app-lock, so it is gated on the
+        // account's factors. Only an explicit "no strong factor" shows it: null means the status is unknown.
         if (state.hasAccountStrongFactor == false) {
             SetupPinBanner(onSetupTwoStepVerification)
         }
@@ -198,11 +200,13 @@ private fun ColumnScope.ManageAppSection(
                 )
             )
         },
+        // GUA FORK: no subtitle. Two-step verification is more than a PIN, so no "6-digit PIN" is advertised here.
         supportingContent = null,
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Lock())),
         // GUA FORK: without an app-lock PIN this row opens account two-step verification.
         onClick = if (state.isLockScreenPinSetup) onOpenLockScreenSettings else onSetupTwoStepVerification,
     )
+    // GUA FORK: change phone number, which re-binds the account to a new number.
     ListItem(
         headlineContent = { Text(stringResource(id = R.string.screen_change_phone_title)) },
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Edit())),

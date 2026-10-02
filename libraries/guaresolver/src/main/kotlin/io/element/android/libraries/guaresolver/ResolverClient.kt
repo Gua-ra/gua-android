@@ -9,7 +9,16 @@ package io.element.android.libraries.guaresolver
 
 import kotlinx.serialization.Serializable
 
+/**
+ * Talks to the Gua resolver (`POST /resolve`), the federation front door that maps a phone number to
+ * a homeserver so the client never hardcodes one.
+ */
 interface ResolverClient {
+    /**
+     * Resolves a verified E.164 phone number (e.g. `+15551234567`) to the homeserver it belongs to
+     * (login) or should be created on (register). Fails with a [ResolverError], notably
+     * [ResolverError.NotConfigured] when no resolver URL is configured.
+     */
     suspend fun resolve(e164Phone: String): Result<HomeserverResolution>
 
     /** Resolve with the additive v1 contract fields. */
@@ -37,7 +46,11 @@ data class ResolverRoutingClaimsEnvelope(
     val issuedAt: String,
     val expiresAt: String,
     val nonce: String,
-    /** The subject is part of the signed canonical bytes, so an envelope cannot be replayed against another number. */
+    /**
+     * The E.164 phone this envelope was issued for. The resolver rejects an envelope whose subject
+     * does not match the resolved phone, and the subject is part of the signed canonical bytes, so
+     * a captured envelope cannot be replayed against another number.
+     */
     val subject: String,
     val affiliations: List<String>? = null,
     val attributes: Map<String, String>? = null,

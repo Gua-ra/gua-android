@@ -79,7 +79,8 @@ fun ChangePhoneNumberView(
             ChangePhoneNumberPhase.Intro -> IntroSection(state = state, eventSink = eventSink)
             ChangePhoneNumberPhase.NeedsStepUp -> NeedsStepUpSection(state = state, eventSink = eventSink)
             ChangePhoneNumberPhase.Cooldown -> CooldownSection(state = state)
-            // Not pre-filled: the user must produce the current number.
+            // The same field serves the current number and the new one. The first is not pre-filled: the
+            // point is for the user to produce the current number.
             ChangePhoneNumberPhase.EnteringCurrentPhone -> PhoneEntrySection(
                 state = state,
                 eventSink = eventSink,
@@ -101,6 +102,7 @@ fun ChangePhoneNumberView(
     }
 }
 
+/** Hero message card reused by the intro, done, step-up and cooldown screens so they read as one design. */
 @Composable
 private fun MessageCard(
     icon: ImageVector,
@@ -162,6 +164,7 @@ private fun IntroSection(
             heading = stringResource(id = R.string.screen_change_phone_intro_header),
             body = stringResource(id = R.string.screen_change_phone_intro_message),
         )
+        // A spent reauth token sends the user back here, so the reason has to be readable from this screen.
         state.errorMessage?.let { errorMessage ->
             Text(
                 text = stringResource(id = errorMessage),
@@ -183,6 +186,10 @@ private fun IntroSection(
     }
 }
 
+/**
+ * The hard block. The change stops here and the only buttons are ways to register a factor: a
+ * passkey first where it is possible, the PIN as the fallback.
+ */
 @Composable
 private fun NeedsStepUpSection(
     state: ChangePhoneNumberState,
@@ -382,6 +389,11 @@ private fun ContinueButton(
     )
 }
 
+/**
+ * Turns a remaining-cooldown second count into a short phrase, e.g. "6 days, 3 hours", "5 hours",
+ * "1 minute". Keeps the largest two non-zero units and never renders "0 minutes" (falls back to
+ * "a moment").
+ */
 internal fun humanizeDuration(totalSeconds: Long): String {
     if (totalSeconds <= 0) return "a moment"
     val days = totalSeconds / 86_400
@@ -393,6 +405,7 @@ internal fun humanizeDuration(totalSeconds: Long): String {
     val parts = buildList {
         if (days > 0) add(unit(days, "day"))
         if (hours > 0) add(unit(hours, "hour"))
+        // Only show minutes when they add precision and we are not already showing days.
         if (minutes > 0 && days == 0L) add(unit(minutes, "minute"))
     }
     return when {

@@ -17,6 +17,14 @@ import io.element.android.libraries.designsystem.preview.ElementPreview
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * Records the delayed account recovery warning shown on the room list: once with the date it can be
+ * finished from, once when it can be finished now, and once for a recovery the server named no
+ * moment for.
+ *
+ * Records to its own snapshot files and adds no preview, so the shared preview-driven golden set is
+ * not re-sharded.
+ */
 class GuaAccountRecoveryBannerVerifyTest {
     @get:Rule
     val paparazzi = Paparazzi(

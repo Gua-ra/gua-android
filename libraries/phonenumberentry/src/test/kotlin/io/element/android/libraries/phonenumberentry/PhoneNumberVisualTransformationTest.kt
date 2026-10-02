@@ -63,6 +63,8 @@ class PhoneNumberVisualTransformationTest {
     @Test
     fun `cursor at a separator maps back to the digit boundary so backspace deletes a digit`() {
         val mapping = transform(us, "4152731234").offsetMapping
+        // "(415) 273-1234": placing the cursor after "(415) " (transformed 6) is after 3 digits, so
+        // backspace removes the "5"; after the "-" (transformed 10) it is after 6 digits.
         assertThat(mapping.transformedToOriginal(6)).isEqualTo(3)
         assertThat(mapping.transformedToOriginal(10)).isEqualTo(6)
     }

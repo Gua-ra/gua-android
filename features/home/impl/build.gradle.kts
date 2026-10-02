@@ -47,6 +47,7 @@ dependencies {
     implementation(projects.libraries.preferences.api)
     implementation(projects.libraries.push.api)
     implementation(projects.libraries.sessionStorage.api)
+    // GUA FORK: the delayed account recovery banner reads and cancels recovery at the identity service.
     implementation(projects.libraries.guaresolver)
     implementation(projects.services.toolbox.api)
     implementation(projects.features.announcement.api)

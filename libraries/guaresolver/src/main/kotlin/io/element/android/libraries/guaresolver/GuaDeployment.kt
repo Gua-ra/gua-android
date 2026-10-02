@@ -7,11 +7,22 @@
 
 package io.element.android.libraries.guaresolver
 
+/**
+ * The Gua backend deployment a build talks to: the service endpoints plus the default account
+ * provider, so the rest of the app never hardcodes a host.
+ *
+ * The deployment is chosen at build time, see [GuaResolverConfig.current]. Production endpoints are
+ * the public `gua.global` domain and are committed. Development endpoints are injected per machine
+ * through `local.properties` and `BuildConfig`, so the dev host is never committed to this public repo.
+ */
 interface GuaDeployment {
+    /** Federation resolver base URL, or `null` when the deployment is unconfigured. */
     val resolverBaseUrl: String?
 
+    /** Default account provider (homeserver host) for the deployment, or `null` when unconfigured. */
     val defaultAccountProvider: String?
 
+    /** Identity-service base URL (phone/OTP IdP + contact discovery), or `null` when unconfigured. */
     val identityServiceBaseUrl: String?
 
     data object Production : GuaDeployment {

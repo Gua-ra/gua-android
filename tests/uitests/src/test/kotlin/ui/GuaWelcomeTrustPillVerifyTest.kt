@@ -15,6 +15,11 @@ import io.element.android.features.login.impl.screens.onboarding.anOnBoardingSta
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * Records the welcome screen: the title followed by the "End-to-end encrypted" pill, with no
+ * marketing subtitle. Uses no custom logo so the title and pill are rendered. Records to its own
+ * snapshot file.
+ */
 class GuaWelcomeTrustPillVerifyTest {
     @get:Rule
     val paparazzi = Paparazzi(

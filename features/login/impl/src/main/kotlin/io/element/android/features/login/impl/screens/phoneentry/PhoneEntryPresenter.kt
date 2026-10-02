@@ -42,7 +42,8 @@ class PhoneEntryPresenter(
     override fun present(): PhoneEntryState {
         val coroutineScope = rememberCoroutineScope()
 
-        // The local number is held as raw digits. The mask is applied visually by the field.
+        // Seed country and local number from any pre-populated E.164 number, else the device locale.
+        // The local number is held as raw digits. The national mask is applied visually by the field.
         val initial = remember { deviceCountryProvider.parse(params.initialPhoneNumber) }
         var selectedCountry by rememberSaveable { mutableStateOf(initial.first) }
         var localPhoneNumber by rememberSaveable { mutableStateOf(initial.second) }
@@ -60,6 +61,9 @@ class PhoneEntryPresenter(
         fun handleEvent(event: PhoneEntryEvents) {
             when (event) {
                 is PhoneEntryEvents.PhoneNumberChanged -> {
+                    // Normalize first: strip a redundant country code from a pasted or autofilled number and switch
+                    // country when the input is unambiguously international. Then auto-detect on the stripped digits
+                    // (longest-prefix dial code, NANP US/CA area code).
                     val (normalizedCountry, normalizedDigits) = Country.normalize(
                         rawInput = event.value,
                         current = selectedCountry,

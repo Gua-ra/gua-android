@@ -33,7 +33,10 @@ class ResetIdentityFlowManager(
 
     fun whenResetIsDone(block: () -> Unit) {
         whenResetIsDoneWaitingJob = sessionCoroutineScope.launch {
-            // GUA FORK: skip the replayed value, which is already ENABLED when the flow starts from the setup banner.
+            // GUA FORK: wait for the backup to become enabled, not to already be enabled. The StateFlow
+            // replays its current value, which is already ENABLED when this flow starts from the setup
+            // banner. The reset destroys the backup on its way through, so completion always produces
+            // a transition.
             encryptionService.backupStateStateFlow.drop(1).first { it == BackupState.ENABLED }
             block()
         }

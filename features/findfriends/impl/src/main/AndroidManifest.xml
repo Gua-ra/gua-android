@@ -6,6 +6,7 @@
   -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- GUA FORK: Find friends reads the device address book to match contacts against Gua. -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
 </manifest>

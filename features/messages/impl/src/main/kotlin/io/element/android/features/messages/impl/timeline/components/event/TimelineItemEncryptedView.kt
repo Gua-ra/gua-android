@@ -36,6 +36,8 @@ fun TimelineItemEncryptedView(
                     CommonStrings.common_unable_to_decrypt_no_access to CompoundDrawables.ic_compound_block
                 }
                 UtdCause.VerificationViolation -> {
+                    // GUA FORK: upstream said the sender's "verified digital identity was reset".
+                    // Same plain wording as the conversation banner.
                     R.string.gua_identity_change_undecryptable to CompoundDrawables.ic_compound_block
                 }
                 UtdCause.UnsignedDevice,

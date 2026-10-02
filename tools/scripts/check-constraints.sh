@@ -3,8 +3,19 @@
 # Copyright (c) 2025 Element Creations Ltd.
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
 #
-# GUA FORK constraint guard: fails on forbidden identifiers, AI attribution in commit messages or a committed keystore.
-# Set GUA_CONSTRAINTS_BASE_REF=<ref> to scan only the commit messages in <ref>..HEAD.
+# GUA FORK constraint guard.
+#
+# Fails the build if forbidden content has leaked into the tree or git history:
+#   * scrubbed personal / infra identifiers
+#   * co-author trailers or generated-by notices in commit messages
+#   * a committed keystore / signing secret (other than the known upstream debug & nightly keystores)
+#
+# Runnable locally:  ./tools/scripts/check-constraints.sh
+# Exit code 0 = clean, 1 = at least one violation found.
+#
+# By default it scans the tracked working tree (git ls-files) plus the commit-message history
+# reachable from HEAD. Set GUA_CONSTRAINTS_BASE_REF=<ref> to scan only the commit messages in
+# <ref>..HEAD.
 
 set -uo pipefail
 
@@ -39,6 +50,7 @@ SELF_REL="tools/scripts/check-constraints.sh"
 
 echo "→ Scanning tracked file content for forbidden identifiers..."
 for needle in "${FORBIDDEN_STRINGS[@]}"; do
+    # -F fixed string, -I skip binary, -n line numbers. Tracked files only, via git ls-files.
     matches="$(git ls-files -z \
         | grep -zZv "^${SELF_REL}\$" \
         | xargs -0 grep -F -I -n -- "$needle" 2>/dev/null || true)"
@@ -53,7 +65,8 @@ done
 # 2. No AI co-author trailers or generated-by notices in commit messages.
 echo "→ Scanning commit messages for AI attribution..."
 if [ -n "${GUA_CONSTRAINTS_SKIP_HISTORY:-}" ]; then
-    # Set when the caller has no meaningful range to scan.
+    # Set when the caller has no meaningful range to scan (a new branch, a force push, a manual
+    # run). Scanning the whole history instead would fail on commits that are already merged.
     LOG_RANGE=""
 elif [ -n "${GUA_CONSTRAINTS_BASE_REF:-}" ]; then
     LOG_RANGE="${GUA_CONSTRAINTS_BASE_REF}..HEAD"
@@ -64,6 +77,7 @@ fi
 if [ -z "$LOG_RANGE" ]; then
     echo "${YELLOW}-${RESET} commit-message scan skipped (no range to scan)"
 else
+    # -i case-insensitive, -E extended regex over the full commit message bodies.
     ai_attr="$(git log "$LOG_RANGE" --format='%H%n%B' 2>/dev/null \
         | grep -i -E 'Co-Authored-By:[[:space:]]*Claude|Generated with .*(Claude|AI|Anthropic)|🤖 Generated with' || true)"
     if [ -n "$ai_attr" ]; then
@@ -74,7 +88,10 @@ else
     fi
 fi
 
-# 3. Committed keystores or signing secrets, except the two upstream keystores under app/signature.
+# 3. Committed keystores or signing secrets. Any tracked *.keystore, *.jks, *.p12 or
+#    keystore.properties is a violation, except the two upstream keystores:
+#      - app/signature/debug.keystore   (the public Android debug key)
+#      - app/signature/nightly.keystore (upstream nightly key; passwords come from env)
 echo "→ Scanning for committed keystores / signing secrets..."
 ALLOWED_KEYSTORES=(
     "app/signature/debug.keystore"

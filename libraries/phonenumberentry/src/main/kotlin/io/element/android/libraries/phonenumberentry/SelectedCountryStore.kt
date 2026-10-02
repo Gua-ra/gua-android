@@ -14,7 +14,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** Carries the picked country back to the screen that opened the picker. */
+/**
+ * Bridges the country picked in [CountryPickerNode] back to the screen that opened it across the
+ * Appyx pop. Scoped to the app so the picker and its caller share one instance.
+ */
 @SingleIn(AppScope::class)
 @Inject
 class SelectedCountryStore {
@@ -25,6 +28,7 @@ class SelectedCountryStore {
         country.value = value
     }
 
+    /** Clear the pending selection once consumed, so re-opening the picker doesn't re-apply it. */
     fun consume() {
         country.value = null
     }

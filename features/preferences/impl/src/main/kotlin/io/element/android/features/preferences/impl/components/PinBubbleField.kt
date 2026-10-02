@@ -27,8 +27,16 @@ import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.designsystem.theme.components.Text
 
+/** Filled dot used to mask each entered PIN digit (U+2022 BULLET). */
 private const val MASK_CHARACTER = "•"
 
+/**
+ * GUA FORK: the bubble code field shared by the two-step-verification and change-phone PIN/OTP steps.
+ *
+ * [length] bubbles are drawn over a single hidden [BasicTextField]. Set [masked] to render each
+ * filled position as a dot instead of the digit: used for the secret PIN steps and left `false` for
+ * the OTP step, where the user needs to read back the code they were sent.
+ */
 @Composable
 fun PinBubbleField(
     code: String,
@@ -77,6 +85,7 @@ fun PinBubbleField(
                 }
             }
         }
+        // Invisible input layered over the bubbles to capture the keyboard.
         BasicTextField(
             value = code,
             onValueChange = { onValueChange(it) },

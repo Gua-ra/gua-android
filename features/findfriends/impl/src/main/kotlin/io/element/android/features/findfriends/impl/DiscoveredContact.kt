@@ -9,6 +9,11 @@ package io.element.android.features.findfriends.impl
 
 import io.element.android.libraries.matrix.api.core.UserId
 
+/**
+ * A device address-book contact matched to a Gua account. [localName] is how the user knows the
+ * person (their address-book name), falling back to the Gua display name. [handle] is the
+ * homeserver-abstracted global handle and the only id ever shown.
+ */
 data class DiscoveredContact(
     val localName: String,
     val userId: UserId,

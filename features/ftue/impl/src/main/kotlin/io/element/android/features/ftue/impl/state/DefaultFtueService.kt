@@ -77,6 +77,7 @@ class DefaultFtueService(
         when (completedStep) {
             // GUA FORK: never wait for the verification state. It never arrives on a device whose identity was reset elsewhere.
             null -> getNextStep(FtueStep.WaitingForInitialState)
+            // GUA FORK: the session-verification ceremony is never presented, so this skips straight past it.
             FtueStep.WaitingForInitialState -> getNextStep(FtueStep.SessionVerification)
             FtueStep.SessionVerification -> if (shouldAskNotificationPermissions()) {
                 FtueStep.NotificationsOptIn

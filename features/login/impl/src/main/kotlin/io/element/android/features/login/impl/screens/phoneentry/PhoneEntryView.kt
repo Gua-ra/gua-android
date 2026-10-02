@@ -102,6 +102,8 @@ fun PhoneEntryView(
                         .fillMaxWidth()
                         .testTag(TestTags.loginContinue),
                 )
+                // The text button takes its colour from LocalContentColor, so hand it the on-aurora white: the
+                // theme's textPrimary is near-black in light mode.
                 CompositionLocalProvider(LocalContentColor provides OnAuroraPrimary) {
                     TextButton(
                         text = stringResource(id = R.string.gua_sign_in_with_passkey),
@@ -216,7 +218,10 @@ private fun PhoneInput(
     enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    // The caret lives here: the String overload of BasicTextField resets it whenever the presenter's value arrives late.
+    // The caret lives here rather than in the presenter. The String overload of BasicTextField carries
+    // no selection, so it puts the caret at the end whenever the value it is handed differs from what it
+    // last emitted. The presenter's value arrives a frame or more later, so fast typing made the caret
+    // jump mid-number. Editing locally keeps every keystroke immediate.
     var fieldValue by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
     if (fieldValue.text != value) {
         // The presenter changed the digits (paste normalised or country switched): adopt them with the caret at the end.

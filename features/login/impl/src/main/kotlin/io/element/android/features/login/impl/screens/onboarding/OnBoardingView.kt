@@ -133,6 +133,7 @@ private fun AddFirstAccountScaffold(
 ) {
     OnBoardingPage(
         modifier = modifier,
+        // GUA FORK: the Gua aurora replaces the default Element onboarding image.
         background = { GuaWelcomeBackground() },
         content = {
             Box(
@@ -196,6 +197,10 @@ private fun AddOtherAccountScaffold(
     )
 }
 
+/**
+ * GUA FORK: the branded welcome content: the Gua logo, a centered title and subtitle, and an
+ * "end-to-end encrypted" trust pill, over the [GuaWelcomeBackground] aurora.
+ */
 @Composable
 private fun OnBoardingContent() {
     // The aurora is dark in both themes, so text colours are fixed.
@@ -212,6 +217,7 @@ private fun OnBoardingContent() {
         ) {
             ElementLogoAtom(
                 size = ElementLogoAtomSize.Large,
+                // Force the lighter glass treatment so the logo reads on the dark aurora in both themes.
                 darkTheme = false,
                 modifier = Modifier.padding(top = ElementLogoAtomSize.Large.shadowRadius / 2),
             )

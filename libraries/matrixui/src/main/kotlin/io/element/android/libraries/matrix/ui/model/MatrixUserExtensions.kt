@@ -23,6 +23,7 @@ fun MatrixUser.getAvatarData(size: AvatarSize) = AvatarData(
 )
 
 fun MatrixUser.getBestName(): String {
+    // GUA FORK: fall back to the homeserver-stripped handle, never `@user:server`.
     return displayName?.takeIf { it.isNotEmpty() } ?: userId.displayHandle
 }
 
@@ -30,6 +31,7 @@ fun MatrixUser.getBestName(): String {
 fun MatrixUser.getFullName(): String {
     return displayName.let { name ->
         if (name.isNullOrBlank()) {
+            // GUA FORK: hide the homeserver suffix in the user handle.
             userId.displayHandle
         } else {
             stringResource(CommonStrings.common_name_and_id, name, userId.displayHandle)

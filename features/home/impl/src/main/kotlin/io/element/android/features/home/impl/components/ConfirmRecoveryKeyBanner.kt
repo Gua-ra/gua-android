@@ -31,6 +31,7 @@ internal fun ConfirmRecoveryKeyBanner(
         title = stringResource(R.string.gua_encryption_repair_title),
         description = stringResource(R.string.gua_encryption_repair_message),
         type = AnnouncementType.Actionable(
+            // GUA FORK: the label stays put and the button itself shows the work.
             actionText = stringResource(R.string.gua_encryption_repair_action),
             onActionClick = onContinueClick,
             onDismissClick = onDismissClick,

@@ -39,6 +39,8 @@ fun ResetIdentityRootView(
     FlowStepPage(
         modifier = modifier,
         iconStyle = BigIcon.Style.AlertSolid,
+        // GUA FORK: when the keys can come from another device, this screen is about
+        // getting them back, not about what is lost.
         title = stringResource(
             if (state.canRecoverFromOtherDevice) {
                 R.string.gua_encryption_recover_from_other_device_title
@@ -49,6 +51,8 @@ fun ResetIdentityRootView(
         isScrollable = true,
         content = { Content(canRecoverFromOtherDevice = state.canRecoverFromOtherDevice) },
         buttons = {
+            // GUA FORK: offered only when another device of this account holds the keys. Otherwise the
+            // reset is the only option shown, and it goes straight through.
             if (state.canRecoverFromOtherDevice) {
                 Button(
                     modifier = Modifier.fillMaxWidth(),
@@ -80,6 +84,8 @@ private fun Content(canRecoverFromOtherDevice: Boolean) {
         modifier = Modifier.padding(top = 8.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
+        // GUA FORK: one plain sentence about what is lost, instead of upstream's three bullets about
+        // identities and recovery keys.
         Text(
             modifier = Modifier.fillMaxWidth(),
             text = stringResource(

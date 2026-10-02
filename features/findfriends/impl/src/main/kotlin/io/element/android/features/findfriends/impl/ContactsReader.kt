@@ -14,7 +14,12 @@ import dev.zacsweers.metro.ContributesBinding
 import io.element.android.libraries.di.annotations.ApplicationContext
 import timber.log.Timber
 
+/**
+ * Reads the device address book as a map of normalized E.164 number to best local display name.
+ * A one-shot read: the address book is never persisted and phone numbers are never logged.
+ */
 interface ContactsReader {
+    /** @return E.164 number -> the best local name for it, or an empty map if none/unreadable. */
     fun readContacts(): Map<String, String>
 }
 
@@ -45,6 +50,7 @@ class AndroidContactsReader(
                 while (cursor.moveToNext()) {
                     val rawNumber = cursor.getString(numberIndex)
                     val e164 = rawNumber?.let { PhoneNumberNormalizer.normalize(it, defaultDialCode) }
+                    // First non-empty name wins; never overwrite a real name with a blank.
                     if (e164 != null && nameByNumber[e164].isNullOrEmpty()) {
                         val name = (if (nameIndex >= 0) cursor.getString(nameIndex) else null).orEmpty()
                         nameByNumber[e164] = name.ifEmpty { e164 }

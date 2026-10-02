@@ -34,6 +34,7 @@ class FakeUserListDataSource : UserListDataSource {
         this.profile = matrixUser
     }
 
+    // GUA FORK: per-user profile lookups for the federated fan-out tests.
     fun givenProfileLookup(lookup: suspend (UserId) -> MatrixUser?) {
         this.profileLookup = lookup
     }

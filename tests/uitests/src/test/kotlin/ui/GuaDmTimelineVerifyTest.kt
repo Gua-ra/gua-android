@@ -21,6 +21,12 @@ import sergio.sastre.composable.preview.scanner.android.AndroidComposablePreview
 import sergio.sastre.composable.preview.scanner.android.AndroidPreviewInfo
 import sergio.sastre.composable.preview.scanner.core.preview.ComposablePreview
 
+/**
+ * Confirms that in a 1:1 direct chat the timeline suppresses membership, profile and state "room
+ * change" events (and never renders a collapsed "N room changes" group), while a group room still
+ * renders them. Records the single suppression preview from the messages impl module to its own
+ * snapshot files.
+ */
 @RunWith(TestParameterInjector::class)
 class GuaDmTimelineVerifyTest(
     @TestParameter(valuesProvider = GuaDmTimelinePreviewProvider::class)

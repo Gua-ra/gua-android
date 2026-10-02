@@ -14,6 +14,7 @@ sealed interface FindFriendsEvents {
 
     data object Retry : FindFriendsEvents
 
+    /** Start (or open an existing) chat with the selected contact. */
     data class StartChat(val contact: DiscoveredContact) : FindFriendsEvents
 
     data class OpenProfile(val contact: DiscoveredContact) : FindFriendsEvents

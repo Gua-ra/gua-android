@@ -150,6 +150,7 @@ private fun ReactionSummaryViewContent(
                     val user = sender.user ?: MatrixUser(userId = sender.senderId)
                     SenderRow(
                         avatarData = user.getAvatarData(AvatarSize.UserListItem),
+                        // GUA FORK: hide the homeserver suffix in the user handle.
                         name = user.displayName ?: user.userId.displayHandle,
                         userId = user.userId.displayHandle,
                         sentTime = sender.sentTime

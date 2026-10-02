@@ -14,6 +14,10 @@ import io.element.android.libraries.guaresolver.ContactMatch
 import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.PhoneChangeChallenge
 
+/**
+ * Records the calls it receives, so tests can assert what was sent and what was not: no SMS may be
+ * requested for the new number before a step-up factor has been offered.
+ */
 class FakeIdentityServiceClient(
     private val factorStatusResult: () -> Result<AccountFactorStatus> = { Result.success(aFactorStatus()) },
     private val startReauthResult: () -> Result<Unit> = { Result.success(Unit) },
@@ -29,6 +33,7 @@ class FakeIdentityServiceClient(
 
     val verifyReauthCalls: MutableList<Pair<String, String>> = mutableListOf()
 
+    /** Every phone-change start, in order. This is the only call that can text the NEW number. */
     val startPhoneChangeCalls: MutableList<StartCall> = mutableListOf()
 
     val completePhoneChangeCalls: MutableList<Pair<String, String>> = mutableListOf()

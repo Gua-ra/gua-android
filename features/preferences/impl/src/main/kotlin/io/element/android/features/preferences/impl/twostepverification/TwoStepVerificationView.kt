@@ -90,6 +90,14 @@ fun TwoStepVerificationView(
     }
 }
 
+/**
+ * The landing rows. The status row reads the account's factors, not its PIN: a registered passkey
+ * turns two-step verification on by itself, and a status that could not be read says so rather than
+ * claiming "off".
+ *
+ * The PIN row is about the PIN, and the passkey row is only offered while the account has none. Both
+ * action rows are withheld while the status is unknown.
+ */
 @Composable
 private fun OverviewSection(
     state: TwoStepVerificationState,
@@ -116,6 +124,8 @@ private fun OverviewSection(
                     stringResource(
                         id = when {
                             state.twoStepVerificationOn == null -> R.string.screen_two_step_verification_overview_footer_unknown
+                            // Named for the factor that is actually on, so a passkey holder is not
+                            // told their PIN is protecting them.
                             passkeyRegistered == true && hasPin == true -> R.string.screen_two_step_verification_overview_footer_on_both
                             passkeyRegistered == true -> R.string.screen_two_step_verification_overview_footer_on_passkey
                             hasPin == true -> R.string.screen_two_step_verification_overview_footer_on
@@ -126,6 +136,8 @@ private fun OverviewSection(
             },
             leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Lock())),
         )
+        // Only once the status is known: enrolling a first PIN on an account that already holds one is
+        // refused by the server.
         if (hasPin != null) {
             HorizontalDivider()
             ListItem(
@@ -142,6 +154,7 @@ private fun OverviewSection(
                 },
                 supportingContent = if (!hasPin && passkeyRegistered == true) {
                     {
+                        // The PIN is the fallback here, not the missing requirement.
                         Text(stringResource(id = R.string.screen_two_step_verification_set_footer_fallback))
                     }
                 } else {
@@ -156,7 +169,8 @@ private fun OverviewSection(
                 },
             )
         }
-        // Hidden once a passkey is registered: the ceremony excludes credentials the account already holds.
+        // Hidden once a passkey is registered: the ceremony excludes credentials the account already
+        // holds. Hidden on an unknown status for the same reason.
         if (passkeyRegistered == false) {
             HorizontalDivider()
             ListItem(
@@ -173,6 +187,7 @@ private fun OverviewSection(
                 },
             )
         }
+        // Anything that fails from this screen surfaces here.
         if (errorMessage != null) {
             Text(
                 text = stringResource(id = errorMessage),

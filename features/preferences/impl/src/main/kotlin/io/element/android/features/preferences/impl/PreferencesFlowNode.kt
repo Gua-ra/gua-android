@@ -101,12 +101,15 @@ class PreferencesFlowNode(
         @Parcelize
         data object LockScreenSettings : NavTarget
 
+        // GUA FORK: Two-step verification (account PIN), distinct from the local 4-digit app-lock above.
         @Parcelize
         data object TwoStepVerification : NavTarget
 
+        // GUA FORK: Change phone number (OTP to the new number, account PIN as the second factor).
         @Parcelize
         data object ChangePhoneNumber : NavTarget
 
+        // GUA FORK: shared country picker for the change-phone new-number field.
         @Parcelize
         data object CountryPicker : NavTarget
 

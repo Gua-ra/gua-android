@@ -65,6 +65,9 @@ class OutgoingVerificationPresenter(
         val step by remember {
             derivedStateOf {
                 when (verificationRequest) {
+                    // GUA FORK: when asked to, verify regardless of the verified status. Being
+                    // verified says nothing about holding the keys, and a retry must run the
+                    // emoji step again rather than exit at once.
                     is VerificationRequest.Outgoing.CurrentSession if forceVerification -> {
                         val step = stateAndDispatch.state.value.toVerificationStep()
                         if (step == OutgoingVerificationState.Step.Completed && !showDeviceVerifiedScreen) {

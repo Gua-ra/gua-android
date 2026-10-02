@@ -30,6 +30,11 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 
+/**
+ * Drives the READ_CONTACTS permission flow, runs [ContactDiscoveryService] once permission is
+ * granted, and starts (or reuses) a DM with the selected contact. Navigation results are forwarded
+ * to the [callback].
+ */
 @AssistedInject
 class FindFriendsPresenter(
     @Assisted private val callback: FindFriendsEntryPoint.Callback,
@@ -53,6 +58,7 @@ class FindFriendsPresenter(
         var phase by remember { mutableStateOf(FindFriendsPhase.Loading) }
         var contacts by remember { mutableStateOf(persistentListOf<DiscoveredContact>().toImmutableList()) }
         var startingChatUserId by remember { mutableStateOf<UserId?>(null) }
+        // Bumped to force a re-run of discovery on Retry.
         var discoverNonce by remember { mutableIntStateOf(0) }
 
         LaunchedEffect(permissionsState.permissionGranted, discoverNonce) {

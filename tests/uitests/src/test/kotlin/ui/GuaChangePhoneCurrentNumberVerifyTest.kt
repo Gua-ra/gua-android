@@ -18,6 +18,14 @@ import io.element.android.libraries.phonenumberentry.Country
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * Records the step that asks the signed-in user which number is on their account.
+ *
+ * The third shot is the refusal. The server answers "unknown number", "someone else's number" and
+ * "not this account's number" identically, so the recorded wording is the one neutral sentence.
+ *
+ * Records to its own snapshot files and adds no preview.
+ */
 class GuaChangePhoneCurrentNumberVerifyTest {
     @get:Rule
     val paparazzi = Paparazzi(

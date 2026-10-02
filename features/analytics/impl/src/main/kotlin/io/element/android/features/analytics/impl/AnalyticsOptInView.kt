@@ -59,6 +59,8 @@ fun AnalyticsOptInView(
     }
 
     BackHandler(onBack = ::onDeclineTerms)
+    // GUA FORK: the buttons live in the content area and the bottom gradient is dropped, so the dark
+    // filled buttons sit on `bgCanvasDefault` instead of the gradient.
     HeaderFooterPage(
         modifier = modifier
             .fillMaxSize()
@@ -119,6 +121,7 @@ private fun AnalyticsOptInContent(
     onAcceptTerms: () -> Unit,
     onDeclineTerms: () -> Unit,
 ) {
+    // GUA FORK: checklist and buttons are a top-anchored column directly under the header.
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -144,6 +147,7 @@ private fun AnalyticsOptInContent(
             textStyle = ElementTheme.typography.fontBodyLgMedium,
             iconTint = ElementTheme.colors.iconSuccessPrimary,
         )
+        // GUA FORK: the OK / Not now buttons live here in the content area, not over the bottom gradient.
         AnalyticsOptInButtons(
             onAcceptTerms = onAcceptTerms,
             onDeclineTerms = onDeclineTerms,

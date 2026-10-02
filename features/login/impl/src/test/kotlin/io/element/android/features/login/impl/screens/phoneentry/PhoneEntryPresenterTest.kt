@@ -68,6 +68,8 @@ class PhoneEntryPresenterTest {
         val presenter = createPhoneEntryPresenter()
         presenter.test {
             val initialState = awaitItem()
+            // 555 is not a diallable NANP area code, so libphonenumber (and the backend, which runs the same
+            // isValidNumber check) rejects it.
             initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("5551234567"))
             val state = awaitItem()
             assertThat(state.localPhoneNumber).isEqualTo("5551234567")
@@ -298,6 +300,10 @@ class PhoneEntryPresenterTest {
     }
 }
 
+/**
+ * Drains intermediate emissions until the login mode settles into a terminal Success/Failure. The
+ * intermediate ordering is a Molecule recomposition detail.
+ */
 private suspend fun app.cash.turbine.ReceiveTurbine<PhoneEntryState>.awaitTerminalLoginMode(): PhoneEntryState {
     while (true) {
         val state = awaitItem()
@@ -307,6 +313,10 @@ private suspend fun app.cash.turbine.ReceiveTurbine<PhoneEntryState>.awaitTermin
     }
 }
 
+/**
+ * Drains recomposition frames after a country switch until the local number has settled. A country
+ * change updates two pieces of saved state, so a frame with the new country can precede the digits.
+ */
 private suspend fun app.cash.turbine.ReceiveTurbine<PhoneEntryState>.awaitSettledNonEmpty(): PhoneEntryState {
     while (true) {
         val state = awaitItem()

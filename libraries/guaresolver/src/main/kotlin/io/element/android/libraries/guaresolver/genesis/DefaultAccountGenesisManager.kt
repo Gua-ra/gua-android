@@ -15,7 +15,10 @@ import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.ResolverError
 import timber.log.Timber
 
-/** The server-derived accountId is compared against the one derived here from the same bytes. */
+/**
+ * The accountId the server derived and returned is compared against the one derived here from the
+ * same bytes, so a disagreement is caught at registration rather than at the attach step.
+ */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class DefaultAccountGenesisManager(
@@ -27,11 +30,14 @@ class DefaultAccountGenesisManager(
 
     override suspend fun registerForSignup(): GenesisRegistration {
         return try {
+            // A fresh pair per signup. This mints into the store's signup slot, so a pair that already owns an
+            // account is left where it is.
             val keys = keyStore.createKeyPair()
             val canonicalBytes = AccountGenesisCodec.mint(
                 authorityPublicKey = keys.authorityPublicKey(),
                 recoveryAuthorityPublicKey = keys.recoveryAuthorityPublicKey(),
             )
+            // Decode what was just built, so a mint the server would refuse fails here rather than as an opaque 400.
             val genesis = AccountGenesisCodec.decode(canonicalBytes)
             val derivedAccountId = genesis.accountId()
             val proof = keyStore.signWithAuthorityKey(GenesisProofs.genesisProofPreimage(canonicalBytes))
@@ -42,7 +48,10 @@ class DefaultAccountGenesisManager(
             ).getOrElse { error ->
                 return when {
                     isGenesisUnsupported(error) -> {
+                        // Not a failure: the deployment does not do genesis, so this signup continues with no handle and
+                        // nothing shown to the user.
                         Timber.i("This deployment does not issue an account genesis; continuing without one")
+                        // Drops the pair minted just above. An attached pair is not part of this.
                         keyStore.clear()
                         GenesisRegistration.Unavailable
                     }
@@ -79,7 +88,11 @@ class DefaultAccountGenesisManager(
         }
     }
 
-    /** 503 and 403 both mean the deployment issues no genesis, so the signup continues without a handle. */
+    /**
+     * True when the deployment said it does not do account genesis. 503 is the answer while
+     * `identity.genesis.enabled` is off, 403 while the deployment declines to issue under the current
+     * recovery framework. Both mean no handle exists, so the signup continues silently.
+     */
     private fun isGenesisUnsupported(error: Throwable): Boolean =
         error is ResolverError.Server && (error.status == 503 || error.status == 403)
 }

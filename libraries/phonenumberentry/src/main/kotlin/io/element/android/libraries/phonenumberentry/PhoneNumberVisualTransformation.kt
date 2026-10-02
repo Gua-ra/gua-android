@@ -12,7 +12,11 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 
-/** Applies the national mask visually. The field value stays digits-only. */
+/**
+ * Renders raw national digits with the country's national mask (e.g. "5551234567" ->
+ * "(555) 123-4567") purely visually. The field value stays digits-only, so typing never rewrites the
+ * text buffer. [OffsetMapping] translates cursor positions between the digit string and the mask.
+ */
 data class PhoneNumberVisualTransformation(private val country: Country) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val raw = text.text
@@ -25,7 +29,8 @@ data class PhoneNumberVisualTransformation(private val country: Country) : Visua
     }
 
     private class MaskOffsetMapping(private val formatted: String) : OffsetMapping {
-        // digitEnds[i] is the transformed offset just after the i-th digit.
+        // digitEnds[i] = transformed offset just after the i-th digit. formatNational() never emits
+        // a trailing literal, so the last entry is always formatted.length.
         private val digitEnds: IntArray = run {
             val ends = IntArray(formatted.count { it.isDigit() })
             var digit = 0
@@ -38,8 +43,12 @@ data class PhoneNumberVisualTransformation(private val country: Country) : Visua
             ends
         }
 
+        // A cursor after the n-th digit lands just after that digit in the mask, so a just-typed
+        // digit is followed by the cursor even when the mask inserts literals before or after it.
         override fun originalToTransformed(offset: Int): Int = if (offset == 0) 0 else digitEnds[offset - 1]
 
+        // A cursor in the mask maps back to how many digits precede it; deleting backwards over a
+        // literal (space/dash/paren) therefore deletes the digit before the literal, never nothing.
         override fun transformedToOriginal(offset: Int): Int = formatted.take(offset).count { it.isDigit() }
     }
 }

@@ -20,6 +20,11 @@ import kotlinx.collections.immutable.toImmutableList
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * Records focused screenshots of the Find friends screen (results, empty, permission-denied) and
+ * confirms that only the homeserver-abstracted handle (e.g. "@alice") is shown. Records to its own
+ * snapshot files and does not touch the shared preview-driven golden set.
+ */
 class GuaFindFriendsVerifyTest {
     @get:Rule
     val paparazzi = Paparazzi(

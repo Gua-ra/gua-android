@@ -82,7 +82,8 @@ captures/
 #*.jks
 #*.keystore
 
-# GUA FORK: release signing material.
+# GUA FORK: release signing material must never be committed. The debug keystore
+# (app/signature/debug.keystore) is intentionally still tracked; everything else is ignored.
 keystore.properties
 *.jks
 *.p12

@@ -33,6 +33,10 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * While the feature flag is off the `login_hint` must be byte-identical to the bare E.164 number,
+ * and nothing in the genesis path may run at all.
+ */
 class LoginHelperAccountGenesisTest {
     @get:Rule
     val warmUpRule = WarmUpRule()

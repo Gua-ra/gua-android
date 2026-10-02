@@ -32,7 +32,8 @@ class DefaultIsPlayServiceAvailable(
     @ApplicationContext private val context: Context,
 ) : IsPlayServiceAvailable {
     override fun isAvailable(): Boolean {
-        // GUA FORK: without a Firebase configuration for this build there is no push provider.
+        // GUA FORK: Play Services alone is not enough. Without a Firebase configuration for this build
+        // there is no app to fetch a token from, so the build simply has no push provider.
         if (FirebaseApp.getApps(context).isEmpty()) {
             Timber.w("Firebase is not configured for this build, push is unavailable")
             return false

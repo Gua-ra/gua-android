@@ -37,8 +37,21 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 
 /**
- * The reauth token is single-use and the server spends it before weighing the step-up, so any later failure restarts the flow.
- * Only the call that spends the step-up factor texts the new number.
+ * Drives the identity-service phone-change contract: `POST /account/reauth/start` and
+ * `/account/reauth/verify` for the single-use, phone-change-scoped token, then
+ * `POST /account/phone/change/start` and `/complete`.
+ *
+ * Security shape, in the order it runs:
+ *  1. The account's factors are read first. An account that holds no factor a phone change accepts
+ *     is blocked outright, and one still inside a cooldown is held.
+ *  2. The user says which number is on the account. The server texts it only on a match and refuses
+ *     a miss with one wording for "unknown", "someone else's" and "not this one".
+ *  3. The OTP that number received buys a token. That proof alone is not enough to re-point the
+ *     number, since a SIM-swapper holds that number too.
+ *  4. The step-up factor is spent together with the new number. Only that call texts the new number.
+ *
+ * The token is single-use and the server spends it before it weighs the step-up, so any failure in
+ * step 4 restarts the flow, and a `step_up_required` refusal ends the operation.
  */
 @AssistedInject
 class ChangePhoneNumberPresenter(
@@ -64,6 +77,8 @@ class ChangePhoneNumberPresenter(
 
         var phase by remember { mutableStateOf(ChangePhoneNumberPhase.Intro) }
         var code by remember { mutableStateOf("") }
+        // Whichever number is being typed, current or new, held as (country, raw national digits). The
+        // national mask is applied visually by PhoneNumberEntryField.
         var selectedCountry by remember { mutableStateOf(deviceCountryProvider.current()) }
         var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
@@ -79,9 +94,14 @@ class ChangePhoneNumberPresenter(
             }
         }
 
+        // The number the user says is on the account, in E.164. Both reauth calls carry it.
         var currentPhone by remember { mutableStateOf("") }
+        // Single-use token from /account/reauth/verify. The server spends it on the first /start attempt
+        // whatever the outcome, so it is cleared every time and a retry always mints a fresh one.
         var reauthToken by remember { mutableStateOf("") }
+        // The step-up factor, held only between the PIN step and the /start call that spends it.
         var stepUpPin by remember { mutableStateOf("") }
+        // Proof that the step-up was accepted and the new-number OTP went out.
         var challengeId by remember { mutableStateOf("") }
 
         fun resetFlowState() {
@@ -96,7 +116,11 @@ class ChangePhoneNumberPresenter(
             stepUpBlock = null
         }
 
-        /** Drops every credential and returns to the start. Never re-sends automatically. */
+        /**
+         * The token is gone and the flow cannot continue: drops every credential and returns to the start,
+         * where the factor and cooldown pre-checks run again. Never re-sends automatically: a spent token
+         * must cost a deliberate restart, not a silent SMS.
+         */
         fun abortSpentReauth(@StringRes errorRes: Int) {
             currentPhone = ""
             reauthToken = ""
@@ -107,6 +131,8 @@ class ChangePhoneNumberPresenter(
             phase = ChangePhoneNumberPhase.Intro
         }
 
+        // Hard block: everything the flow was carrying is dropped, and the only ways forward are registering
+        // a factor or leaving.
         fun blockOnStepUp(block: StepUpBlock) {
             currentPhone = ""
             reauthToken = ""
@@ -128,7 +154,10 @@ class ChangePhoneNumberPresenter(
             phase = ChangePhoneNumberPhase.Cooldown
         }
 
-        /** A refusal shows the server's neutral reason only: saying whose number it is would be an ownership oracle. */
+        /**
+         * Sends the reauth OTP, but only if [enteredPhone] is the number the account is bound to. A refusal
+         * shows the server's neutral reason only: saying whose number it is would be an ownership oracle.
+         */
         fun requestReauthOtp(enteredPhone: String) {
             // Claim the screen before suspending, so a double tap cannot send two reauth starts.
             phase = ChangePhoneNumberPhase.Submitting
@@ -148,6 +177,8 @@ class ChangePhoneNumberPresenter(
                         currentPhone = enteredPhone
                         code = ""
                         errorMessage = null
+                        // The new-number step reuses the same field, so it starts empty rather than
+                        // pre-filled with the number being replaced.
                         localPhoneNumber = ""
                         phase = ChangePhoneNumberPhase.EnteringReauthOtp
                     }
@@ -183,6 +214,7 @@ class ChangePhoneNumberPresenter(
             }
         }
 
+        /** Gate on the server's factor signal BEFORE anything is sent. */
         fun checkFactorsAndProceed() {
             coroutineScope.launch {
                 val accessToken = accessToken()
@@ -203,6 +235,8 @@ class ChangePhoneNumberPresenter(
                             is ResolverError.TwoFactorCooldown -> showCooldown(error.retryAfterSeconds)
                             is ResolverError.PhoneChangeCooldown -> showCooldown(error.retryAfterSeconds)
                             else -> {
+                                // The factors are unknown, not absent. Stop on the intro with an error
+                                // rather than guessing "no factor".
                                 errorMessage = CommonStrings.error_unknown
                                 phase = ChangePhoneNumberPhase.Intro
                             }
@@ -211,7 +245,10 @@ class ChangePhoneNumberPresenter(
             }
         }
 
-        /** A failed read changes nothing. */
+        /**
+         * Re-decides the interstitial the user is looking at from a fresh read. A failed read changes
+         * nothing: the interstitial on screen is still the last thing the server said.
+         */
         suspend fun refreshBlockingPhase() {
             val accessToken = accessToken() ?: return
             identityServiceClient.accountFactorStatus(
@@ -237,6 +274,7 @@ class ChangePhoneNumberPresenter(
             refreshBlockingPhase()
         }
 
+        /** Exchanges the reauth OTP for the single-use, phone-change-scoped token. No SMS here. */
         fun verifyReauthOtp(enteredOtp: String) {
             phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
@@ -260,6 +298,8 @@ class ChangePhoneNumberPresenter(
                     .onFailure { error ->
                         code = ""
                         when (error) {
+                            // The number stopped matching between the two calls, so there is no code
+                            // left to retry: the current-number step is where this can be fixed.
                             is ResolverError.ReauthPhoneMismatch -> {
                                 errorMessage = R.string.screen_change_phone_current_mismatch
                                 currentPhone = ""
@@ -283,6 +323,10 @@ class ChangePhoneNumberPresenter(
             }
         }
 
+        /**
+         * Spends the reauth token and the step-up factor, and only on success does an OTP reach the
+         * new number. Every failure leaves the token spent, so each one restarts the flow.
+         */
         fun startPhoneChange(enteredPhone: String) {
             phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
@@ -294,6 +338,7 @@ class ChangePhoneNumberPresenter(
                 }
                 val token = reauthToken
                 if (token.isEmpty()) {
+                    // Should never happen: the token is minted before this step.
                     abortSpentReauth(CommonStrings.error_unknown)
                     return@launch
                 }
@@ -307,6 +352,7 @@ class ChangePhoneNumberPresenter(
                     passkeyCredentialJson = null,
                     language = Locale.getDefault().toLanguageTag(),
                 )
+                // Spent by the server before it weighed the step-up, so it is gone either way.
                 reauthToken = ""
                 stepUpPin = ""
                 result
@@ -366,6 +412,8 @@ class ChangePhoneNumberPresenter(
                                 code = ""
                                 phase = ChangePhoneNumberPhase.EnteringOtp
                             }
+                            // The challenge is gone, or the number was taken in the meantime. Either
+                            // way there is nothing left to redeem, so the whole flow restarts.
                             is ResolverError.PhoneChangeChallengeInvalid ->
                                 abortSpentReauth(R.string.screen_change_phone_challenge_invalid)
                             is ResolverError.PhoneAlreadyLinked ->
@@ -408,6 +456,8 @@ class ChangePhoneNumberPresenter(
             when (phase) {
                 ChangePhoneNumberPhase.EnteringReauthOtp -> verifyReauthOtp(submitted)
                 ChangePhoneNumberPhase.EnteringPin -> {
+                    // Captured, not verified: the server weighs it as the step-up factor on
+                    // /account/phone/change/start, in the same call that texts the new number.
                     stepUpPin = submitted
                     code = ""
                     errorMessage = null
@@ -429,6 +479,9 @@ class ChangePhoneNumberPresenter(
                     }
                 }
                 is ChangePhoneNumberEvents.PhoneChanged -> {
+                    // Normalise (strip a redundant country code from a paste or autofill, switch country
+                    // if unambiguously international), then auto-detect the country. Only raw digits
+                    // are stored.
                     val (normalizedCountry, normalizedDigits) = Country.normalize(
                         rawInput = event.value,
                         current = selectedCountry,
@@ -510,9 +563,14 @@ class ChangePhoneNumberPresenter(
         sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
 
     private companion object {
-        /** Steers the UI only. Never sent to the identity service. */
+        /**
+         * The step-up factors this client can produce. Asserting a passkey needs a WebAuthn ceremony this
+         * Android build does not have yet, so the PIN is the only one it can offer. Steers the UI only and
+         * is never sent to the identity service.
+         */
         val PRODUCIBLE_STEP_UP_FACTORS = setOf(AuthFactor.PIN)
 
+        /** The accepted step-up factors this account holds AND this client can produce, strongest first. */
         fun producibleStepUpFactors(status: AccountFactorStatus): List<AuthFactor> =
             status.phoneChangeStepUpOptions.filter { it in PRODUCIBLE_STEP_UP_FACTORS }
     }

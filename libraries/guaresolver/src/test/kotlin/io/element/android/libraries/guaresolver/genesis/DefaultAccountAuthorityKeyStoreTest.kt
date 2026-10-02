@@ -48,6 +48,7 @@ class DefaultAccountAuthorityKeyStoreTest {
 
         assertThat(signature).hasLength(64)
         assertThat(verify(keys.authorityPublicKey(), message, signature)).isTrue()
+        // The recovery key is committed, not used to sign: a proof under it must not pass as authority.
         assertThat(verify(keys.recoveryAuthorityPublicKey(), message, signature)).isFalse()
     }
 
@@ -57,6 +58,7 @@ class DefaultAccountAuthorityKeyStoreTest {
         val secretKeyRepository = SimpleSecretKeyRepository()
         val created = createKeyStore(factory, secretKeyRepository).createKeyPair()
 
+        // A second instance reads what the first one sealed, which is what a restarted app does.
         val reopened = createKeyStore(factory, secretKeyRepository)
 
         assertThat(reopened.hasKeyPair()).isTrue()
@@ -224,6 +226,7 @@ class DefaultAccountAuthorityKeyStoreTest {
         private const val SPKI_PREFIX = "302a300506032b6570032100"
         private const val SECRET_KEY_ALIAS = "gua.SECRET_KEY_ALIAS_ACCOUNT_AUTHORITY"
 
+        // Derived rather than written out, so they are canonical by construction.
         private val AN_ACCOUNT_ID = AccountId.derive(AccountId.CLASS_GENESIS, "an attached account".toByteArray())
         private val ANOTHER_ACCOUNT_ID = AccountId.derive(AccountId.CLASS_GENESIS, "a second account".toByteArray())
 

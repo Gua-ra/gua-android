@@ -1,5 +1,5 @@
 name: Sync SAS strings
-# GUA FORK: manual dispatch only.
+# GUA FORK: manual dispatch only. Upstream SAS-string sync.
 on:
   workflow_dispatch:
 

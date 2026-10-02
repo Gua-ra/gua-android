@@ -7,7 +7,10 @@
 
 package io.element.android.libraries.guaresolver.genesis
 
-/** [reason] uses the vocabulary of the golden vectors' `rejections` block. */
+/**
+ * A value that is not a well-formed account object. [reason] is the machine-readable rule that
+ * refused it, in the vocabulary of the golden vectors' `rejections` block.
+ */
 class InvalidGenesisException(
     val reason: String,
     val detail: String,

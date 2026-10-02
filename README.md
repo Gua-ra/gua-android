@@ -30,6 +30,11 @@ This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://git
 | Area | Upstream (Element X) | Gua |
 |---|---|---|
 | Brand | Element / New Vector | Gua (`global.gua` application id) |
+| Login flow | Matrix password / SSO with manual homeserver selection | Phone number and verification code, no homeserver picking. Institutional SSO planned |
+| Welcome screen | Element onboarding | Gua aurora welcome with native phone entry and country picker |
+| Account home | user selects a homeserver | resolved automatically behind the scenes (`libraries/guaresolver`) |
+| Contact discovery | user directory search | Find Friends (hashed phone lookups) wired into Start Chat (`features/findfriends`) |
+| Two-step verification | device verification | account passkey or 6-digit PIN (`features/preferences` two-step verification) |
 | Settings identity | full user id with server suffix | username only, server abstracted |
 | Chat list | all rooms, including Spaces and empty rooms | chats-first: Spaces and state-only rooms are hidden |
 | 1:1 conversations | state events visible in the timeline | configuration noise suppressed for clean 1:1 chats |
@@ -38,7 +43,27 @@ This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://git
 
 ### How sign-in works
 
-Sign-in is a resolver lookup, then an OIDC authorization-code flow with PKCE against the Gua fork of Matrix Authentication Service, which delegates to the Gua Identity Service. See [Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md).
+```
+Gua Android app
+    |  1. resolver lookup by phone number: which homeserver to use
+    v
+gua-resolver
+    |  2. OIDC authorization code + PKCE (Custom Tab) against the resolved server
+    v
+Matrix Authentication Service (Gua fork: gua-auth-service)
+    |  3. delegated sign-in
+    v
+Gua Identity Service
+    |  provisioning, account factors, contact lookup, phone-number changes
+    v
+Synapse homeserver in the Gua federation
+```
+
+- Before sign-in, the app asks [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) which homeserver to use (`libraries/guaresolver`). The client never hardcodes a server. The federation layout stays out of the UI.
+- The app registers as a public OIDC client and requires PKCE. It opens the sign-in flow in a private (ephemeral) Custom Tab when the browser supports one, so no earlier browser session is carried into it. Account management stays in the shared tab and names the signed-in account (`org.matrix.msc4198.login_hint`). The [Gua fork of MAS](https://github.com/Gua-ra/gua-auth-service) and the [Gua Identity Service](https://github.com/Gua-ra/identity-service) serve that flow.
+- Find Friends, two-step verification and phone number changes talk to the Gua Identity Service, not the resolver.
+
+The design behind this is described in [Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md).
 
 ---
 

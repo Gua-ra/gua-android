@@ -31,6 +31,7 @@ class ChangePhoneNumberNode(
     interface Callback : Plugin {
         fun navigateToCountryPicker()
 
+        /** Opens the two-step-verification PIN setup. One of the two ways out of the step-up block, alongside registering a passkey. */
         fun navigateToPinSetup()
     }
 

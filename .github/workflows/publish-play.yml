@@ -1,8 +1,21 @@
 name: Publish to Google Play
 
+# GUA FORK: the app repo's deploy paths.
+#   - label a PR `release-qa` -> builds that PR's branch and ships it to the QA app (global.gua.dev,
+#                               "Gua QA") on the internal track. Pushing more commits with the label
+#                               on re-ships it.
+#   - merge to main          -> stages a production publish that waits for an approver on the
+#                               `production` environment. `develop` merges never touch Play.
+#   - workflow_dispatch      -> either path by hand, with the app, track and status pickable.
+#
+# This is a separate file from release.yml because release.yml is upstream's dispatch-only
+# "unsigned artifacts on demand" workflow. Keeping the fork's publishing here leaves release.yml
+# diffable against element-hq and gives the deploy paths one file to review.
 on:
+  # main is the release branch. Day-to-day work merges to develop, which is not a trigger here.
   push:
     branches: ["main"]
+  # `labeled` is what makes the release-qa label work: adding it re-runs this workflow.
   pull_request:
     types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
@@ -29,9 +42,13 @@ permissions:
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx8g -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8 -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC -Dkotlin.daemon.jvm.options=-Xmx4g
   CI_GRADLE_ARG_PROPERTIES: --stacktrace --no-daemon -Dsonar.gradle.skipCompile=true --no-configuration-cache
+  # Put this label on a PR to ship that PR's branch to the QA app. Only people with write access can
+  # label, which keeps this from being an open door on a public repo.
   DEPLOY_LABEL: release-qa
 
 jobs:
+  # Cheap, secret-less job that decides what the event asked for. An unlabelled PR gets no further
+  # than this: no release build, no keystore, no Play call.
   gate:
     name: Decide what this event asks for
     runs-on: ubuntu-latest
@@ -60,21 +77,31 @@ jobs:
 
           case "$EVENT" in
             pull_request)
-              # A fork PR must never reach the upload keystore or the Play service account.
+              # Same-repo check: a fork PR must never reach the upload keystore or the Play service account.
+              # GitHub already withholds secrets from fork PRs; asserting it here makes a labelled fork PR
+              # fail closed.
               if [ "$HEAD_REPO" = "$THIS_REPO" ] && [ "$IS_LABELLED" = "true" ]; then
                 qa=true
+                # A QA ship exists to be installed, so it goes out completed rather than as a draft.
                 track=internal
                 status=completed
               fi
               ;;
             push)
+              # Merge to main stages prod. The `production` environment is what holds it.
               prod=true
               track=production
+              # Uploaded but not rolled out: the roll-out is a decision made in Play Console.
+              # Dispatch with status=completed to roll out from the workflow.
               status=draft
               ;;
             workflow_dispatch)
               if [ "$INPUT_APP" = "qa" ]; then
                 qa=true
+                # The QA job runs under the unprotected `dev` environment on purpose: shipping a branch to
+                # internal testers should not need an approver. `production` is a public Play track, so
+                # app=qa + track=production would publish global.gua.dev with no approval gate. Anything
+                # aimed at a production track goes through publish-prod and its `production` environment.
                 if [ "$INPUT_TRACK" = "production" ]; then
                   echo "::error::app=qa cannot publish to the production track: the QA job has no approval gate. Dispatch app=prod (which waits on the production environment), or pick internal/alpha/beta."
                   exit 1
@@ -95,6 +122,12 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "qa=$qa prod=$prod track=$track status=$status"
 
+  # QA app (global.gua.dev, "Gua QA", dev backend). Fires for a PR labelled `release-qa` and for a
+  # dispatch with app=qa. Requires these repository secrets:
+  #   GUA_RELEASE_KEYSTORE_BASE64  - base64 of the upload keystore
+  #   GUA_RELEASE_KEYSTORE_PASSWORD, GUA_RELEASE_KEY_ALIAS, GUA_RELEASE_KEY_PASSWORD
+  #   PLAY_SERVICE_ACCOUNT_JSON    - a Play Console service-account JSON with "Release to testing tracks"
+  #   GUA_DEV_LOCAL_PROPERTIES     - the gua.* dev-host lines normally kept in local.properties
   publish-qa:
     name: Publish QA to Google Play (${{ needs.gate.outputs.track }})
     needs: gate
@@ -103,11 +136,16 @@ jobs:
     environment: dev
     permissions:
       contents: read
+      # So a labelled PR can be told where it landed.
       pull-requests: write
+    # A newer push to the same PR supersedes the build in flight.
     concurrency:
       group: publish-play-qa-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     steps:
+      # Newly granted Play Console permissions take a while to propagate, and until they do the API
+      # answers "The caller does not have permission". Check first so a run fails in a minute instead
+      # of after a ~35 minute build.
       - name: Check Play API access
         env:
           PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
@@ -134,6 +172,8 @@ jobs:
                                          "assertion": assertion}).encode()
           with urllib.request.urlopen(urllib.request.Request(sa["token_uri"], data=body)) as r:
               token = json.load(r)["access_token"]
+          # This repo is public, so run logs are world-readable and the service-account address carries
+          # the GCP project id. Mask it before anything else prints.
           print(f"::add-mask::{sa['client_email']}")
           print("authenticated as", sa["client_email"].split("@")[0], "(domain masked: public repo logs)")
 
@@ -150,6 +190,8 @@ jobs:
                   print("::notice::Permissions are most likely still propagating. Retry later; do not widen the service account's access.")
               sys.exit(1)
 
+          # Creating the edit is the permission check. Deleting the throwaway edit is best-effort: an edit
+          # that outlives this step expires by itself, so a cleanup failure must never fail the publish.
           try:
               urllib.request.urlopen(urllib.request.Request(
                   f"{url}/{edit['id']}", method="DELETE", headers={"Authorization": f"Bearer {token}"}))
@@ -183,10 +225,14 @@ jobs:
         env:
           GUA_RELEASE_KEYSTORE_BASE64: ${{ secrets.GUA_RELEASE_KEYSTORE_BASE64 }}
         run: echo "$GUA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/gua-upload.jks"
+      # The QA app bakes the dev-deployment hosts, which live outside the public repo. Write the
+      # same local.properties lines a dev machine has.
       - name: Inject dev deployment hosts
         env:
           GUA_DEV_LOCAL_PROPERTIES: ${{ secrets.GUA_DEV_LOCAL_PROPERTIES }}
         run: printf '%s\n' "$GUA_DEV_LOCAL_PROPERTIES" >> local.properties
+      # gua.versionCodeOffset makes a label usable more than once: Play rejects a versionCode it has
+      # already accepted, and the run number is unique and always increasing.
       - name: Build release-signed App Bundle (QA)
         env:
           GUA_RELEASE_KEYSTORE: ${{ runner.temp }}/gua-upload.jks
@@ -218,16 +264,22 @@ jobs:
               body: `Shipped to **Gua QA** (\`global.gua.dev\`), track \`${{ needs.gate.outputs.track }}\`, status \`${{ needs.gate.outputs.status }}\`, from commit \`${{ github.event.pull_request.head.sha }}\`.\n\nInternal testers get it once Play finishes processing. The QA app keeps this build until something else is shipped to it. Pushing more commits while the \`${{ env.DEPLOY_LABEL }}\` label is on rebuilds and supersedes this build.`
             })
 
+  # Production app (global.gua, gua.global backend). Approval gate: fires on every merge to main and
+  # on a dispatch with app=prod, then pauses until a maintainer approves the `production` GitHub
+  # Environment. The reviewer rule is configured on the environment itself, so nothing in this file
+  # can loosen it.
   publish-prod:
     name: Publish Gua to Google Play (${{ needs.gate.outputs.track }})
     needs: gate
     if: needs.gate.outputs.prod == 'true'
     runs-on: ubuntu-latest
     environment: production
+    # Never cancel a prod publish an approver has already approved, and never let two race for the same Play edit.
     concurrency:
       group: publish-play-prod
       cancel-in-progress: false
     steps:
+      # Same fail-fast reason as the QA job.
       - name: Check Play API access
         env:
           PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
@@ -254,6 +306,7 @@ jobs:
                                          "assertion": assertion}).encode()
           with urllib.request.urlopen(urllib.request.Request(sa["token_uri"], data=body)) as r:
               token = json.load(r)["access_token"]
+          # Masked for the same reason as in the QA job.
           print(f"::add-mask::{sa['client_email']}")
           print("authenticated as", sa["client_email"].split("@")[0], "(domain masked: public repo logs)")
 
@@ -301,6 +354,9 @@ jobs:
         env:
           GUA_RELEASE_KEYSTORE_BASE64: ${{ secrets.GUA_RELEASE_KEYSTORE_BASE64 }}
         run: echo "$GUA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/gua-upload.jks"
+      # No versionCode offset and no dev hosts: a production build is exactly the CalVer version in
+      # Versions.kt, pointing at gua.global. If Play rejects the versionCode as already used, the
+      # release number in Versions.kt needs bumping.
       - name: Build release-signed App Bundle (prod)
         env:
           GUA_RELEASE_KEYSTORE: ${{ runner.temp }}/gua-upload.jks

@@ -14,6 +14,10 @@ import io.element.android.libraries.architecture.FeatureEntryPoint
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.UserId
 
+/**
+ * Entry point for the "Find friends" contact-discovery screen: lets the user see which of their phone
+ * contacts are already on Gua and start a chat with them. Surfaced from the new-chat flow.
+ */
 interface FindFriendsEntryPoint : FeatureEntryPoint {
     fun createNode(
         parentNode: Node,
@@ -22,8 +26,10 @@ interface FindFriendsEntryPoint : FeatureEntryPoint {
     ): Node
 
     interface Callback : Plugin {
+        /** A direct chat with the selected contact is ready; open it. */
         fun onStartChat(roomId: RoomId)
 
+        /** The user tapped a contact's avatar: open their profile. */
         fun onOpenProfile(userId: UserId)
     }
 }

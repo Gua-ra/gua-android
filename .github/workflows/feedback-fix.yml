@@ -1,5 +1,15 @@
 name: Feedback fix
 
+# feedback-bot (in gua-deploy) files crashes and tester feedback as issues here. A human reads one
+# and, if it is worth acting on, adds the `feedback:approved` label. This workflow waits for that.
+#
+# It then runs the agent CLI headlessly against this repository to investigate, fix, build and test
+# the change, and opens a pull request that links back to the issue. Review happens on that pull
+# request. Shipping it to QA is still the `release-qa` label, and production is still gated on the
+# `production` environment.
+#
+# FIX_RUNNER selects the runner. A hosted ubuntu runner can build and run the unit and screenshot
+# tests. Driving the app on an emulator needs a self-hosted runner with one attached.
 on:
   issues:
     types: [labeled]
@@ -10,6 +20,7 @@ on:
         required: true
         type: string
 
+# One fix at a time per issue. Two runs on the same issue would race on the same branch name.
 concurrency:
   group: feedback-fix-${{ github.event.issue.number || inputs.issue }}
   cancel-in-progress: false
@@ -19,6 +30,8 @@ permissions:
 
 jobs:
   fix:
+    # `labeled` fires for every label, so gate on the one that means "approved". Manual dispatch skips
+    # the label check on purpose: that path is already a deliberate human action.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       github.event.label.name == 'feedback:approved'
@@ -34,9 +47,11 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-          # The :libraries:compound screenshot goldens are in Git LFS.
+          # The :libraries:compound screenshot goldens are in Git LFS. Without this they arrive as pointer
+          # stubs and Roborazzi crashes trying to decode one.
           lfs: true
 
+      # Fail on the missing prerequisite here rather than 20 minutes later inside the model call.
       - name: Check the credentials this needs are present
         run: |
           missing=""
@@ -66,6 +81,7 @@ jobs:
           gh auth setup-git
           git config --global user.name "gua-feedback-bot"
           git config --global user.email "feedback-bot@users.noreply.github.com"
+          # Commits carry no co-author trailer and no generated-by footer.
           mkdir -p "$HOME/.claude"
           printf '{ "includeCoAuthoredBy": false }\n' > "$HOME/.claude/settings.json"
 

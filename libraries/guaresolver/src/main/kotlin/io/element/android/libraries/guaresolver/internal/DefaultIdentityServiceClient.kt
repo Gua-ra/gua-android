@@ -27,6 +27,12 @@ import kotlinx.serialization.json.Json
 import retrofit2.HttpException
 import timber.log.Timber
 
+/**
+ * Talks to the active [GuaDeployment]'s identity service through Retrofit.
+ *
+ * Only hashed phone digests are sent for contact discovery, the address book is never persisted and
+ * nothing about the contacts is logged.
+ */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class DefaultIdentityServiceClient(
@@ -64,6 +70,8 @@ class DefaultIdentityServiceClient(
                 ContactMatch(
                     hashedPhone = match.hashedPhone,
                     userId = match.userId,
+                    // Homeserver abstraction: prefer the assigned global username, otherwise strip the ":homeserver"
+                    // suffix from the Matrix id. Never surface the homeserver to users.
                     displayHandle = displayHandle(username = match.username, userId = match.userId),
                     displayName = match.displayName,
                     avatarUrl = match.avatarUrl,
@@ -91,7 +99,9 @@ class DefaultIdentityServiceClient(
             AccountFactorStatus(
                 hasPin = hasPin,
                 passkeyRegistered = passkeyRegistered,
-                // An identity service that predates the factor policy sends neither field: derive them from what the account holds.
+                // An identity service that predates the factor policy sends neither field. Derive them from what
+                // the account is known to hold rather than defaulting to "nothing", which would hard-block a phone
+                // change the old server would have allowed.
                 preferredFactor = AuthFactor.fromWire(response.preferredFactor)
                     ?: strongestHeld(passkeyRegistered = passkeyRegistered, hasPin = hasPin),
                 phoneChangeStepUpFactors = response.phoneChangeStepUpFactors
@@ -157,7 +167,8 @@ class DefaultIdentityServiceClient(
         runPinCall { api ->
             api.verifyAccountReauth(
                 authorization = "Bearer $accessToken",
-                // Always scoped: the server refuses to spend a token minted for another operation.
+                // Always scoped. The server binds the token to this operation, so the default (DEACTIVATE) would
+                // hand back a token the phone change cannot spend.
                 body = AccountReauthVerifyRequest(phone = phone, code = code, operation = PHONE_CHANGE_OPERATION),
             ).reauthToken
         }
@@ -202,7 +213,14 @@ class DefaultIdentityServiceClient(
             api.startPasskeyEnrollment(authorization = "Bearer $accessToken", body = body).enrollUrl
         }
 
-    /** Names this build's redirect. On `invalid_redirect_uri` it retries once without one. */
+    /**
+     * Runs a factor-enrollment start, naming this build's own redirect so the ceremony comes back to the
+     * app it was opened from.
+     *
+     * A server that predates the field ignores it. One that has not allowlisted this variant refuses the
+     * call with 400 `invalid_redirect_uri`, which is answered once by asking again with no redirect. A
+     * second refusal is surfaced rather than looped on.
+     */
     private inline fun startFactorEnrollment(
         call: (IdentityServiceApi, FactorEnrollStartRequest) -> String,
     ): Result<String> {
@@ -212,7 +230,7 @@ class DefaultIdentityServiceClient(
         val named = runPinCall { api -> call(api, FactorEnrollStartRequest(redirectUri = redirectUri)) }
         if (named.exceptionOrNull() !is ResolverError.InvalidRedirectUri) return named
 
-        // Never log the value itself.
+        // Never log the value itself: it names the build, and the server does not echo it back either.
         Timber.w("The identity service refused this build's enrollment redirect, starting again without one")
         return runPinCall { api -> call(api, FactorEnrollStartRequest()) }
     }
@@ -227,6 +245,10 @@ class DefaultIdentityServiceClient(
             AccountGenesisRegistration(accountId = response.accountId, attachHandle = response.attachHandle)
         }
 
+    /**
+     * Runs an identity-service call against a freshly built [IdentityServiceApi], mapping HTTP failures
+     * onto the typed [ResolverError] cases and everything else onto [ResolverError.Transport].
+     */
     private inline fun <T> runPinCall(block: (IdentityServiceApi) -> T): Result<T> {
         val baseUrl = deployment.identityServiceBaseUrl
             ?: return Result.failure(ResolverError.NotConfigured)
@@ -248,6 +270,7 @@ class DefaultIdentityServiceClient(
         }
     }
 
+    /** Maps an [HttpException] onto a typed [ResolverError] by parsing the JSON `code` field of the error body. */
     private fun HttpException.toPinError(): ResolverError {
         val rawBody = response()?.errorBody()?.string()
         val errorBody = rawBody?.let {
@@ -271,13 +294,15 @@ class DefaultIdentityServiceClient(
             "pin_already_set" -> ResolverError.PinAlreadySet
             "passkey_already_registered" -> ResolverError.PasskeyAlreadyRegistered
             "step_up_unavailable" -> ResolverError.StepUpUnavailable
+            // Named so `startFactorEnrollment` can tell this refusal apart from every other 400 and retry without a redirect.
             "invalid_redirect_uri" -> ResolverError.InvalidRedirectUri
             "step_up_required" -> ResolverError.StepUpRequired
             "pin_setup_required" -> ResolverError.PinSetupRequired
             "phone_change_cooldown" -> ResolverError.PhoneChangeCooldown(retryAfterSeconds = cooldownRetryAfter)
             "twofa_cooldown_active" -> ResolverError.TwoFactorCooldown(retryAfterSeconds = cooldownRetryAfter)
             "rate_limited" -> ResolverError.RateLimited
-            // Status-only fallbacks for a response with no `code`. A bare 403 stays a plain server error.
+            // Status-only fallbacks, for a response that carried no `code`. Deliberately narrow: a bare 403 stays
+            // a plain server error, because other endpoints answer 403 for reasons of their own.
             else -> when (code()) {
                 409 -> ResolverError.PhoneAlreadyLinked
                 425 -> ResolverError.PinChangeCooldown(retryAfterSeconds = retryAfter)
@@ -293,9 +318,14 @@ class DefaultIdentityServiceClient(
         /** Re-serialises the authenticator's assertion response without reinterpreting it. */
         private val credentialJson = Json { ignoreUnknownKeys = true }
 
+        /** The reauth scope a phone change demands; anything else the server refuses to spend here. */
         private const val PHONE_CHANGE_OPERATION = "PHONE_CHANGE"
 
-        /** What a phone change accepts when the identity service is too old to say, strongest first. */
+        /**
+         * What a phone change accepts when the identity-service is too old to say. Strongest first,
+         * matching the server's own order; [AccountFactorStatus.phoneChangeStepUpOptions] then keeps
+         * only the ones the account actually holds.
+         */
         private val DEFAULT_PHONE_CHANGE_STEP_UP_FACTORS = listOf(AuthFactor.PASSKEY, AuthFactor.PIN)
     }
 }

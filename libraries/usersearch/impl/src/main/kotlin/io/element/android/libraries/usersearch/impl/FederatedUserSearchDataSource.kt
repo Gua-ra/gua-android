@@ -21,7 +21,15 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.seconds
 
-/** Lookups run in parallel. Failures and timeouts are dropped, so one slow server cannot stall the search. */
+/**
+ * Exact-handle matches for a bare username on the other homeservers of the Gua federation, honouring
+ * each server's discoverability policy. When the query is not a bare handle or the roster is
+ * unavailable the search yields nothing, so it degrades to local-only.
+ *
+ * Each candidate `@handle:server` is resolved through the same profile lookup used when a full
+ * address is typed. Lookups run in parallel. Failures and lookups exceeding the timeout are dropped,
+ * so one slow server cannot stall the search.
+ */
 @Inject
 class FederatedUserSearchDataSource(
     private val client: MatrixClient,

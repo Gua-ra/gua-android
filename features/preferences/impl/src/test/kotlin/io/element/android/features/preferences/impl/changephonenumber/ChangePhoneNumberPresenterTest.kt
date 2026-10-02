@@ -39,6 +39,14 @@ import org.junit.Rule
 import org.junit.Test
 import java.util.Locale
 
+/**
+ * Three things these tests hold down. The ordering: nothing may ask the identity service to text the
+ * new number before a step-up factor has been offered, and `startPhoneChange` is the only call that
+ * can. The factor branch: an account with a passkey and no PIN is not told to create a PIN, and a
+ * status that could not be read is unknown rather than "no factor". The reauthentication: both reauth
+ * calls carry the number the user typed, and a number that is not the account's is refused with one
+ * wording that says nothing about who else might hold it.
+ */
 class ChangePhoneNumberPresenterTest {
     @get:Rule
     val warmUpRule = WarmUpRule()
@@ -588,6 +596,7 @@ class ChangePhoneNumberPresenterTest {
         deviceCountryProvider = FakeDeviceCountryProvider(Country(isoCode = "US", dialCode = "1")),
     )
 
+    /** A [SessionStore] whose read can be held in flight, the way the database-backed one lags. */
     private class GatedSessionStore(private val delegate: SessionStore) : SessionStore by delegate {
         var gate: CompletableDeferred<Unit>? = null
 

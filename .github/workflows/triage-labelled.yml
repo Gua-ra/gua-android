@@ -1,6 +1,6 @@
 name: Move labelled issues to correct boards and columns
 
-# GUA FORK: manual dispatch only.
+# GUA FORK: manual dispatch only. Upstream issue-board automation (element-hq project boards).
 on:
   workflow_dispatch:
 

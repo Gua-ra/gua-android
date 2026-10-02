@@ -20,5 +20,7 @@ interface LogoutEntryPoint : FeatureEntryPoint {
         callback: Callback,
     ): Node
 
+    // GUA FORK: empty. Upstream's navigateToSecureBackup went away with the sign-out screen's "Settings"
+    // button. Kept as a marker so the createNode signature does not churn.
     interface Callback : Plugin
 }

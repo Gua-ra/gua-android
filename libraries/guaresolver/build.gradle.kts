@@ -21,11 +21,15 @@ android {
         buildConfig = true
     }
 
+    // Production values are the public `gua.global` domain and are committed below.
     // Development values come from the per-machine `local.properties`, so the dev host is never committed to this public repo.
+    // When the dev keys are absent the fields stay empty and `GuaDeployment` treats the deployment as unconfigured.
     val devResolverBaseUrl = readLocalProperty("gua.resolverBaseUrl").orEmpty()
     val devDefaultAccountProvider = readLocalProperty("gua.defaultAccountProvider").orEmpty()
     val devIdentityServiceBaseUrl = readLocalProperty("gua.identityServiceBaseUrl").orEmpty()
 
+    // `-Pgua.deployment=dev` makes release builds target the development deployment: the QA build
+    // distributed through the Play internal-testing track. Without the property the release build targets production.
     val useDevDeployment = (project.findProperty("gua.deployment") as? String) == "dev"
 
     defaultConfig {
@@ -46,7 +50,9 @@ dependencies {
     implementation(projects.libraries.core)
     implementation(projects.libraries.di)
     implementation(projects.libraries.network)
-    // Tink supplies Ed25519, which the Android keystore does not provide at this minSdk.
+    // Tink supplies Ed25519, which the Android keystore does not generate or sign with at this minSdk.
+    // The cryptography module supplies the non-exportable keystore key the Ed25519 seed is sealed under,
+    // and the preferences store holds only that sealed blob.
     implementation(projects.libraries.cryptography.api)
     implementation(projects.libraries.preferences.api)
     implementation(libs.androidx.datastore.preferences)

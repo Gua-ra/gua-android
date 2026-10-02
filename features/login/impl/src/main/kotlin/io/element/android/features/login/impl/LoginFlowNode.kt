@@ -73,6 +73,9 @@ class LoginFlowNode(
     private val preferencesEntryPoint: PreferencesEntryPoint,
 ) : BaseFlowNode<LoginFlowNode.NavTarget>(
     backstack = BackStack(
+        // GUA FORK: phone-first onboarding is the only supported path. Do not expose
+        // Element's account-provider selection because Gua sign-in must stay pinned to
+        // Gua MAS/resolver.
         initialElement = NavTarget.PhoneEntry,
         savedStateMap = buildContext.savedStateMap,
     ),
@@ -110,6 +113,7 @@ class LoginFlowNode(
     }
 
     sealed interface NavTarget : Parcelable {
+        // GUA FORK: phone-first entry (active path) + its country picker.
         @Parcelize
         data object PhoneEntry : NavTarget
 

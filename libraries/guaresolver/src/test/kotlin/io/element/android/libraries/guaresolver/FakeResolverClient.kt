@@ -33,6 +33,7 @@ data class FakeGuaDeployment(
     override val identityServiceBaseUrl: String? = "https://identity.gua.global",
 ) : GuaDeployment
 
+/** Defaults to the QA build's scheme. Pass null for a build that names no redirect. */
 class FakeEnrollmentRedirectProvider(
     private val redirectUri: String? = "global.gua.dev:/oidc",
 ) : EnrollmentRedirectProvider {
@@ -122,8 +123,10 @@ class FakeIdentityServiceClient(
         registerAccountGenesisResult(genesisB64Url, proofB64Url)
 
     companion object {
+        /** A genesis-rooted accountId from the published golden vectors, so it is a canonical spelling. */
         const val A_FAKE_ACCOUNT_ID = "ga1aea6aqb5opmzmutench3ggzepkhgwmkajb3epqqrhckkf7bcbcwl2cy"
 
+        /** Shaped like what identity-service issues: 32 CSPRNG bytes as unpadded base64url. */
         const val A_FAKE_ATTACH_HANDLE = "Zm9vYmFyYmF6cXV1eGNvcmdlZ3JhdWx0"
 
         const val A_FAKE_REAUTH_TOKEN = "reauth-token"
@@ -141,6 +144,11 @@ data class PhoneChangeStartCall(
     val language: String?,
 )
 
+/**
+ * An [AccountFactorStatus] with the server's own defaults. Overriding [hasPin] or
+ * [passkeyRegistered] alone keeps [preferredFactor] and [phoneChangeStepUpFactors] consistent with
+ * them, which is what the real endpoint does.
+ */
 fun anAccountFactorStatus(
     hasPin: Boolean = false,
     passkeyRegistered: Boolean = false,

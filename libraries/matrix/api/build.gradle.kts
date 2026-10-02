@@ -24,6 +24,8 @@ android {
     }
 
     defaultConfig {
+        // GUA FORK: fall back to the Gua pages so no element.io link can ever ship,
+        // even if the BuildTimeConfig values are unset.
         buildConfigFieldStr(
             name = "CLIENT_URI",
             value = BuildTimeConfig.URL_WEBSITE ?: "https://gua.global"

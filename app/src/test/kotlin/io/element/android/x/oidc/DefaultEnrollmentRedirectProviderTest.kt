@@ -40,6 +40,8 @@ class DefaultEnrollmentRedirectProviderTest {
             oAuthRedirectUrlProvider = FakeOAuthRedirectUrlProvider(provideResult = ""),
         )
 
+        // The client then sends no redirect at all and the server keeps its own default, which is
+        // better than asking to be returned to ":/oidc".
         assertThat(sut.provide()).isNull()
     }
 }

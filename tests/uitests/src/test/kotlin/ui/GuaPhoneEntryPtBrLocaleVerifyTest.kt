@@ -17,7 +17,14 @@ import io.element.android.libraries.phonenumberentry.Country
 import org.junit.Rule
 import org.junit.Test
 
-/** Paparazzi resolves the locale by language only, so this renders `values-pt`. It is not a pt-BR guarantee. */
+/**
+ * Records the phone-first entry screen with the Brazilian Portuguese (pt-BR) resource qualifier.
+ *
+ * Known limitation, not a pt-BR guarantee: Paparazzi resolves the locale by language only, so with
+ * both `values-pt` and `values-pt-rBR` present it renders `values-pt`. A real device set to pt-BR
+ * prefers `values-pt-rBR`. What this test covers is that the screen picks up fork translations at all
+ * rather than falling back to English.
+ */
 class GuaPhoneEntryPtBrLocaleVerifyTest {
     @get:Rule
     val paparazzi = Paparazzi(

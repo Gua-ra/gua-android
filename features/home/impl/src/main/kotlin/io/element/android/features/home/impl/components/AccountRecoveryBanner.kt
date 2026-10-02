@@ -20,7 +20,11 @@ import io.element.android.libraries.designsystem.components.AnnouncementType
 import io.element.android.libraries.designsystem.components.dialogs.ConfirmationDialog
 import io.element.android.libraries.ui.strings.CommonStrings
 
-/** Public so `GuaAccountRecoveryBannerVerifyTest` can record it. */
+/**
+ * Warns that someone started recovering this account, with a way to cancel it. Renders nothing while
+ * no recovery is live. Public, with no preview of its own, so `GuaAccountRecoveryBannerVerifyTest`
+ * can record it without adding a preview to the sharded screenshot set.
+ */
 @Composable
 fun AccountRecoveryBanner(
     state: AccountRecoveryBannerState,
@@ -41,12 +45,15 @@ fun AccountRecoveryBanner(
         type = AnnouncementType.Actionable(
             actionText = stringResource(R.string.gua_account_recovery_banner_action),
             onActionClick = { state.eventSink(AccountRecoveryBannerEvent.CancelRecovery) },
+            // Not dismissible: a warning about someone taking over the account stays up until
+            // the recovery is cancelled or ends.
             onDismissClick = null,
             actionInProgress = state.cancelAction is AsyncAction.Loading,
         ),
     )
 }
 
+/** Asks before cancelling, since the owner may have started the recovery themselves. */
 @Composable
 internal fun AccountRecoveryCancelConfirmation(
     state: AccountRecoveryBannerState,

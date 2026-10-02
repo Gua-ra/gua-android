@@ -502,6 +502,10 @@ private fun AndroidComposeUiTest<ComponentActivity>.setView(
     }
 }
 
+/**
+ * The settings page scrolls, and the rows near the bottom sit outside the viewport at test window
+ * size, where a plain click never reaches them. Scroll the row into view first.
+ */
 private fun AndroidComposeUiTest<ComponentActivity>.scrollAndClickOn(@StringRes res: Int) {
     val text = activity!!.getString(res)
     onNode(hasText(text) and hasClickAction()).performScrollTo().performClick()

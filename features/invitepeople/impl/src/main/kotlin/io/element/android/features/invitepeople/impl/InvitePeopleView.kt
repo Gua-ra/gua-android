@@ -149,6 +149,7 @@ private fun InvitePeopleContentView(
                             data = CheckableUserRowData.Resolved(
                                 avatarData = invitableUser.matrixUser.getAvatarData(AvatarSize.UserListItem),
                                 name = invitableUser.matrixUser.getBestName(),
+                                // GUA FORK: hide the homeserver suffix in the user handle.
                                 subtext = invitableUser.matrixUser.userId.displayHandle,
                             ),
                         )

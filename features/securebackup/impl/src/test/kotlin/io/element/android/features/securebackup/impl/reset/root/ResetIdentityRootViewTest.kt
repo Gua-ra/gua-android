@@ -50,6 +50,7 @@ class ResetIdentityRootViewTest : RobolectricTest() {
     @Test
     @Config(qualifiers = "h720dp")
     fun `clicking the reset button goes straight through`() = runAndroidComposeUiTest {
+        // GUA FORK: no second confirmation. This screen already names what is lost and its button is destructive.
         ensureCalledOnce {
             setResetRootView(
                 ResetIdentityRootState(displayConfirmationDialog = false, canRecoverFromOtherDevice = false, eventSink = {}),
@@ -59,6 +60,7 @@ class ResetIdentityRootViewTest : RobolectricTest() {
         }
     }
 
+    // GUA FORK: the recovery option appears only when the state says another device holds the keys.
     @Test
     fun `clicking on recover from another device invokes the expected callback`() = runAndroidComposeUiTest {
         ensureCalledOnce {

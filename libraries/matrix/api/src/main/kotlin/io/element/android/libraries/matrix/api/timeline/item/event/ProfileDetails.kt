@@ -35,6 +35,8 @@ sealed interface ProfileDetails {
  * Otherwise, the display name is returned.
  */
 fun ProfileDetails.getDisambiguatedDisplayName(userId: UserId): String {
+    // GUA FORK: never surface the ":homeserver" suffix to end users. Fall back to,
+    // and disambiguate with, the homeserver-stripped handle instead of the raw id.
     return when (this) {
         is ProfileDetails.Ready -> when {
             displayName == null -> userId.displayHandle

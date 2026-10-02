@@ -16,7 +16,11 @@ import io.element.android.libraries.guaresolver.FederationRosterProvider
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-/** Short-TTL in-memory cache. Keeps serving the last good roster when a refresh fails. */
+/**
+ * Short-TTL in-memory roster cache, so a burst of searches does not hammer the resolver. The roster
+ * only changes when servers join or leave the federation. Keeps serving the last good roster when a
+ * refresh fails.
+ */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class DefaultFederationRosterProvider(

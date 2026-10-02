@@ -25,6 +25,11 @@ import io.element.android.features.home.impl.spacefilters.aDisabledSpaceFiltersS
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.Test
 
+/**
+ * The setup banner's reset verdict must be consumed on every content state. Without
+ * [RoomListEvent.EncryptionResetNavigated] the flag stays set, the effect never re-keys and the next
+ * tap of Finish setup is a no-op. It only reproduces on an account that has chats.
+ */
 class RoomListContentViewEncryptionResetTest : RobolectricTest() {
     @Test
     fun `a reset verdict on the rooms list is consumed, not left latched`() = runAndroidComposeUiTest<ComponentActivity> {

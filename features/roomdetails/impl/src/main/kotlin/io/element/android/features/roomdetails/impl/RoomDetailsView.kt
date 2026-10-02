@@ -533,6 +533,7 @@ private fun DmHeaderSection(
         )
         TitleAndSubtitle(
             title = roomName,
+            // GUA FORK: hide the homeserver suffix in the user handle.
             subtitle = otherMember.userId.displayHandle,
             onSubtitleClick = onSubtitleClick,
         )

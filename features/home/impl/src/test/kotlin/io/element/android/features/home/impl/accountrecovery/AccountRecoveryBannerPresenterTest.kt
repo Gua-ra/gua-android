@@ -47,6 +47,7 @@ class AccountRecoveryBannerPresenterTest {
     private val defaultLocale = Locale.getDefault()
     private val defaultTimeZone = TimeZone.getDefault()
 
+    // The banner formats the date in the reader's own locale and zone, so both are pinned here.
     @Before
     fun pinLocaleAndZone() {
         Locale.setDefault(Locale.US)

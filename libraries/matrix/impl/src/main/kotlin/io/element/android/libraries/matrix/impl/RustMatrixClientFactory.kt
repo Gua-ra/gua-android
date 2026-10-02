@@ -155,7 +155,10 @@ class RustMatrixClientFactory(
             .addRootCertificates(userCertificatesProvider.provides())
             .autoEnableBackups(true)
             .autoEnableCrossSigning(true)
-            // GUA FORK: an identity change informs but never blocks sending. Upstream uses ERROR_ON_VERIFIED_USER_PROBLEM here.
+            // GUA FORK: upstream uses ERROR_ON_VERIFIED_USER_PROBLEM here, which makes sending fail
+            // whenever a verified contact reinstalls or gets a new phone. In Gua an identity change
+            // informs (banner and message shields) but never obstructs sending. The strict behaviour
+            // stays available through the OnlySignedDeviceIsolationMode flag.
             .roomKeyRecipientStrategy(
                 strategy = if (featureFlagService.isFeatureEnabled(FeatureFlags.OnlySignedDeviceIsolationMode)) {
                     CollectStrategy.IDENTITY_BASED_STRATEGY

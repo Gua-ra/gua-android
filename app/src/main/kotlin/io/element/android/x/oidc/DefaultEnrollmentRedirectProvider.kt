@@ -12,12 +12,20 @@ import dev.zacsweers.metro.ContributesBinding
 import io.element.android.libraries.guaresolver.EnrollmentRedirectProvider
 import io.element.android.libraries.matrix.api.auth.OAuthRedirectUrlProvider
 
-/** This build's factor-enrollment redirect: the sign-in redirect scheme with the `/oidc` path the identity service allowlists. */
+/**
+ * Names this build's own factor-enrollment redirect: `global.gua:/oidc` for the production app,
+ * `global.gua.dev:/oidc` for the QA one and `global.gua.debug:/oidc` for a debug build.
+ *
+ * The scheme is taken from [OAuthRedirectUrlProvider], which reads the same `login_redirect_scheme`
+ * resource the OAuth intent filter in the manifest is declared with, so the two can never disagree.
+ * The `/oidc` path is the shape the identity service allowlists.
+ */
 @ContributesBinding(AppScope::class)
 class DefaultEnrollmentRedirectProvider(
     private val oAuthRedirectUrlProvider: OAuthRedirectUrlProvider,
 ) : EnrollmentRedirectProvider {
     override fun provide(): String? {
+        // The sign-in redirect is "<scheme>:/", so the scheme is everything before the colon.
         val scheme = oAuthRedirectUrlProvider.provide().substringBefore(':')
         if (scheme.isEmpty()) return null
         return "$scheme:$ENROLLMENT_REDIRECT_PATH"

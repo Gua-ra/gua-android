@@ -18,6 +18,11 @@ import io.element.android.libraries.matrix.ui.components.MatrixUserRow
 import org.junit.Rule
 import org.junit.Test
 
+/**
+ * Confirms that the homeserver suffix of a Matrix user id is never rendered in user-facing UI. The
+ * user has no display name, so the rendered handle comes straight from [UserId.displayHandle]. If the
+ * abstraction regressed, the screenshot would show `@ana:dev.local` instead of `@ana`.
+ */
 class GuaHomeserverAbstractionVerifyTest {
     @get:Rule
     val paparazzi = Paparazzi(

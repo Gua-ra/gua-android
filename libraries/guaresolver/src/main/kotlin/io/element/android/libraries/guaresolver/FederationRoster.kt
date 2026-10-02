@@ -9,14 +9,20 @@ package io.element.android.libraries.guaresolver
 
 import kotlinx.serialization.Serializable
 
+/**
+ * One homeserver in the resolver's signed federation roster (`GET /roster`). Only the fields
+ * federated user search consumes are decoded.
+ */
 @Serializable
 data class FederationRosterServer(
     val serverName: String,
-    /** Absent means globally discoverable. */
+    /** Raw discoverability policy, interpreted by [RosterSearchVisibility]. Absent means globally discoverable. */
     val searchVisibility: String? = null,
+    /** Discovery groups compared against the searcher's own server's groups when the policy is `group`. */
     val searchGroups: List<String>? = null,
 )
 
+/** A roster entry: a homeserver plus its membership status in the federation. */
 @Serializable
 data class FederationRosterEntry(
     val homeserver: FederationRosterServer,
@@ -26,6 +32,7 @@ data class FederationRosterEntry(
         get() = status == "ACTIVE"
 }
 
+/** The resolver's view of the federation: every homeserver it routes to. */
 @Serializable
 data class FederationRoster(
     val entries: List<FederationRosterEntry> = emptyList(),

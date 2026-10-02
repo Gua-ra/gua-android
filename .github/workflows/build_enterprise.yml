@@ -1,6 +1,6 @@
 name: Enterprise APK Build
 
-# GUA FORK: manual dispatch only.
+# GUA FORK: manual dispatch only. Needs the private element-hq enterprise submodule and deploy key.
 on:
   workflow_dispatch:
 

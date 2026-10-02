@@ -17,7 +17,14 @@ import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.withContext
 
-/** Raw phone numbers never leave the device: they are hashed by [PhoneHasher] before the lookup. The address book is never persisted. */
+/**
+ * Reads the device address book, protects the numbers, looks them up against Gua and returns the
+ * matching contacts.
+ *
+ * Privacy: the address book is read once and never persisted. Raw phone numbers never leave the
+ * device: they are hashed by [PhoneHasher] before the lookup. The hashes are mapped back to local
+ * names on the device, so matches are labelled with how the user knows the person.
+ */
 sealed interface ContactDiscoveryResult {
     data class Success(val contacts: List<DiscoveredContact>) : ContactDiscoveryResult
     data object NoContactsWithNumbers : ContactDiscoveryResult
@@ -46,6 +53,8 @@ class DefaultContactDiscoveryService(
         val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
             ?: return ContactDiscoveryResult.Failure
 
+        // Map hashed digest -> best local name so matches can be labelled locally without the server
+        // ever seeing the raw number.
         val nameByHash = nameByNumber.entries.mapNotNull { (e164, name) ->
             PhoneHasher.hash(e164)?.let { it to name }
         }.toMap()

@@ -15,7 +15,13 @@ import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
 
-/** Every case is asserted against this implementation and against the JDK Ed25519 provider, the decoder the server runs. */
+/**
+ * Every case is asserted against this implementation and against the JDK Ed25519 provider, the
+ * decoder the server runs.
+ *
+ * The published vectors do not cover the sign bit: x = 0 has a single root, so the encoding that asks
+ * for its negative names no point. Only y = 1 and y = p - 1 can reach that, and both are pinned below.
+ */
 class Ed25519PublicKeysTest {
     @Test
     fun `x is zero with the sign bit set is refused, exactly as the server refuses it`() {

@@ -10,8 +10,16 @@ package io.element.android.libraries.guaresolver
 import java.security.MessageDigest
 import java.util.Locale
 
-/** SHA-256 of the E.164 number under a fixed public domain tag. Privacy hardening, not irreversibility: the phone keyspace is small. */
+/**
+ * Client-side phone-number protection for contact discovery: the [IdentityServiceClient] only ever
+ * sees a SHA-256 digest of each E.164 number, prefixed with a fixed public domain-separation tag.
+ *
+ * The tag is not a secret: client and identity service must derive the same digest, so a per-device
+ * salt is impossible. Phone numbers are a small keyspace, so this is privacy hardening, not a
+ * guarantee of irreversibility.
+ */
 object PhoneHasher {
+    /** Public, fixed domain-separation tag agreed with the identity-service contact-discovery table. */
     private const val DOMAIN_TAG = "gua-contact-discovery-v1:"
 
     /** Lowercase hex digest, or null for blank input. Input is normalized to `+` and digits first. */
@@ -22,6 +30,7 @@ object PhoneHasher {
         return digest.joinToString("") { "%02x".format(it) }
     }
 
+    /** Hashes a batch, dropping blanks and de-duplicating. Order is not significant. */
     fun hashAll(e164Phones: Collection<String>): List<String> =
         e164Phones.mapNotNull { hash(it) }.distinct()
 

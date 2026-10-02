@@ -1,6 +1,6 @@
 name: Danger CI
 
-# GUA FORK: manual dispatch only.
+# GUA FORK: manual dispatch only. Danger already self-skips on forks.
 on:
   workflow_dispatch:
 

@@ -45,7 +45,8 @@ class TwoStepVerificationNode(
         TwoStepVerificationView(
             state = state,
             onBackClick = ::navigateUp,
-            // The enrollUrl is self-authenticating, so it opens in a private Custom Tab.
+            // The enrollUrl is self-authenticating, so it opens in a private Custom Tab. It needs no browser
+            // session, and must not pick up one that belongs to someone else.
             onOpenEnrollUrl = { url ->
                 activity.openUrlInChromeCustomTab(session = null, darkTheme = isDark, url = url, ephemeral = true)
             },

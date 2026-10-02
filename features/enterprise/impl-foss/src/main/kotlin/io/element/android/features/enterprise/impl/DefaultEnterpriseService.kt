@@ -19,6 +19,10 @@ import io.element.android.libraries.matrix.api.core.SessionId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
+/**
+ * GUA FORK: Gua brand greens. The deep green is used for accents on light surfaces and the bright
+ * green for accents on dark surfaces, following the Compound light/dark contrast logic.
+ */
 internal val GUA_GREEN_BRIGHT = Color(0xFF00CC8A)
 internal val GUA_GREEN_DEEP = Color(0xFF006042)
 private val GUA_GREEN_BRIGHT_PRESSED = Color(0xFF00A872)
@@ -26,6 +30,7 @@ private val GUA_GREEN_DEEP_PRESSED = Color(0xFF004D35)
 private val GUA_GREEN_SUBTLE_LIGHT = Color(0xFF0BC491)
 private val GUA_GREEN_SUBTLE_DARK = Color(0xFF1FC090)
 
+/** GUA FORK: replaces the green accent tokens with the Gua brand green. Everything else stays the Compound default. */
 private fun SemanticColors.withGuaAccent(): SemanticColors {
     val primary = if (isLight) GUA_GREEN_DEEP else GUA_GREEN_BRIGHT
     val pressed = if (isLight) GUA_GREEN_DEEP_PRESSED else GUA_GREEN_BRIGHT_PRESSED
