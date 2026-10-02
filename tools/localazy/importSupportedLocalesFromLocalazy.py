@@ -52,7 +52,8 @@ def normalizeForLocalConfig(locale):
         case "zh#Hans":
             return "zh-CN"
         case _:
-            return locale
+            # GUA FORK: locales_config needs BCP 47 tags ("pt-BR"); Android reads "pt_BR" as undefined.
+            return locale.replace("_", "-")
 
 
 def generateLocaleFile(locales, file):
