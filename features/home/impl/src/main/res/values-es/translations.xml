@@ -3,8 +3,8 @@
   <string name="banner_battery_optimization_content_android">"Deshabilita la optimización de la batería en esta aplicación para asegurarte de que recibes notificaciones."</string>
   <string name="banner_battery_optimization_submit_android">"Deshabilitar la optimización"</string>
   <string name="banner_battery_optimization_title_android">"¿No llegan las notificaciones?"</string>
-  <string name="banner_new_sound_message">"Se ha actualizado tu sonido de notificación: más claro, rápido y menos disruptivo."</string>
-  <string name="banner_new_sound_title">"Hemos actualizado tus sonidos"</string>
+  <string name="banner_new_sound_message">"Tu sonido de notificación ahora es más claro, más rápido y menos molesto."</string>
+  <string name="banner_new_sound_title">"Actualizamos tus sonidos"</string>
   <string name="banner_set_up_recovery_content">"Recupera tu identidad criptográfica y tu historial de mensajes con una clave de recuperación si has perdido todos tus dispositivos actuales."</string>
   <string name="banner_set_up_recovery_submit">"Configurar la recuperación"</string>
   <string name="banner_set_up_recovery_title">"Configura la recuperación para proteger tu cuenta"</string>

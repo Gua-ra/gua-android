@@ -14,7 +14,7 @@
     <string name="screen_find_friends_permission_title">Permitir acceso a contactos</string>
     <string name="screen_find_friends_permission_message">Gua consulta tus contactos de forma privada para saber cuáles ya están aquí. Tus contactos nunca se almacenan.</string>
     <string name="screen_find_friends_permission_action">Permitir acceso</string>
-    <string name="screen_find_friends_permission_denied_action">Abrir ajustes</string>
+    <string name="screen_find_friends_permission_denied_action">Abrir configuración</string>
     <string name="screen_find_friends_empty_title">Todavía no hay contactos en Gua</string>
     <string name="screen_find_friends_empty_message">Ninguno de tus contactos está en Gua todavía. Invítalos y aparecerán aquí.</string>
     <string name="screen_find_friends_empty_action">Volver a comprobar</string>

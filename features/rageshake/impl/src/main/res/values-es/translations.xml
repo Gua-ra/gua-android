@@ -8,7 +8,7 @@
   <string name="screen_bug_report_editor_placeholder">"Describe el problema…"</string>
   <string name="screen_bug_report_editor_supporting">"Si es posible, escribe la descripción en inglés."</string>
   <string name="screen_bug_report_error_description_too_short">"La descripción es demasiado corta. Proporciona más detalles sobre lo sucedido. ¡Gracias!"</string>
-  <string name="screen_bug_report_github_issue_description">"Puedes introducir el número de una incidencia de GitHub asociada, si la hubiere."</string>
+  <string name="screen_bug_report_github_issue_description">"Si hay una incidencia de GitHub relacionada, puedes ingresar su número."</string>
   <string name="screen_bug_report_github_issue_label">"Incidencia de GitHub"</string>
   <string name="screen_bug_report_include_crash_logs">"Enviar registros de fallos"</string>
   <string name="screen_bug_report_include_logs">"Permitir registros"</string>

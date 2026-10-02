@@ -7,5 +7,5 @@
 <!-- GUA FORK: es translations for this module's Gua strings. The English source of truth
      lives in values/temporary.xml. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="gua_error_registering_pusher">Algo ha fallado y puede que no recibas notificaciones de mensajes nuevos. Puedes revisar las notificaciones en Ajustes.</string>
+    <string name="gua_error_registering_pusher">Algo salió mal y es posible que no recibas notificaciones de mensajes nuevos. Puedes revisar las notificaciones en Ajustes.</string>
 </resources>

@@ -11,11 +11,11 @@
   <string name="a11y_duration">"Duración: %1$s"</string>
   <string name="a11y_edit_avatar">"Editar avatar"</string>
   <string name="a11y_encryption_details">"Detalles de cifrado"</string>
-  <string name="a11y_expand_message_text_field">"Expandir campo de texto del mensaje"</string>
+  <string name="a11y_expand_message_text_field">"Expandir el campo de texto del mensaje"</string>
   <string name="a11y_hide_password">"Ocultar contraseña"</string>
   <string name="a11y_join_call">"Unirse a la llamada"</string>
   <string name="a11y_jump_to_bottom">"Ir al final"</string>
-  <string name="a11y_move_the_map_to_my_location">"Desplazar el mapa a mi ubicación"</string>
+  <string name="a11y_move_the_map_to_my_location">"Mover el mapa a mi ubicación"</string>
   <string name="a11y_notifications_mentions_only">"Sólo menciones"</string>
   <string name="a11y_notifications_muted">"Silenciado"</string>
   <string name="a11y_notifications_new_mentions">"Menciones nuevas"</string>
@@ -43,7 +43,7 @@
   <string name="a11y_room_avatar">"Avatar de la sala"</string>
   <string name="a11y_send_files">"Enviar archivos"</string>
   <string name="a11y_sent_by_sender_at_date">"Enviado por %1$s a las %2$s"</string>
-  <string name="a11y_session_verification_time_limited_action_required">"Acción de tiempo limitado requerida, tienes un minuto para hacer la verificación"</string>
+  <string name="a11y_session_verification_time_limited_action_required">"Acción con tiempo limitado: tienes un minuto para completar la verificación"</string>
   <string name="a11y_settings_with_required_action">"Ajustes, acción requerida"</string>
   <string name="a11y_show_password">"Mostrar contraseña"</string>
   <string name="a11y_start_call">"Iniciar llamada"</string>
@@ -159,7 +159,7 @@
   <string name="action_send_voice_message">"Enviar mensaje de voz"</string>
   <string name="action_share">"Compartir"</string>
   <string name="action_share_link">"Compartir enlace"</string>
-  <string name="action_share_live_location">"Compartir ubicación en directo"</string>
+  <string name="action_share_live_location">"Compartir ubicación en tiempo real"</string>
   <string name="action_show">"Mostrar"</string>
   <string name="action_sign_in_again">"Inicia sesión de nuevo"</string>
   <string name="action_signout">"Cerrar sesión"</string>
@@ -191,7 +191,7 @@
   <string name="common_an_image">"una imagen"</string>
   <string name="common_analytics">"Estadísticas"</string>
   <string name="common_android_shortcuts_remove_reason_left_room">"Saliste de la sala"</string>
-  <string name="common_android_shortcuts_remove_reason_session_logged_out">"Se te ha desconectado de la sesión"</string>
+  <string name="common_android_shortcuts_remove_reason_session_logged_out">"Se cerró tu sesión"</string>
   <string name="common_appearance">"Apariencia"</string>
   <string name="common_audio">"Sonido"</string>
   <string name="common_blocked_users">"Usuarios bloqueados"</string>
@@ -249,7 +249,7 @@ Motivo: %1$s."</string>
   <string name="common_line_copied_to_clipboard">"Línea copiada al portapapeles"</string>
   <string name="common_link_copied_to_clipboard">"Enlace copiado al portapapeles"</string>
   <string name="common_link_new_device">"Vincular un dispositivo nuevo"</string>
-  <string name="common_live_location">"Location en directo"</string>
+  <string name="common_live_location">"Ubicación en tiempo real"</string>
   <string name="common_live_location_ended">"La ubicación en tiempo real ha terminado"</string>
   <string name="common_loading">"Cargando…"</string>
   <string name="common_loading_more">"Cargando más…"</string>
@@ -341,7 +341,7 @@ Motivo: %1$s."</string>
   <string name="common_settings">"Ajustes"</string>
   <string name="common_share_space">"Compartir espacio"</string>
   <string name="common_shared_history">"Los miembros nuevos ven el historial"</string>
-  <string name="common_shared_live_location">"Ubicación compartida en directo"</string>
+  <string name="common_shared_live_location">"Ubicación en tiempo real compartida"</string>
   <string name="common_shared_location">"Ubicación compartida"</string>
   <string name="common_signing_out">"Cerrando sesión"</string>
   <string name="common_something_went_wrong">"Algo salió mal"</string>
@@ -392,7 +392,7 @@ Motivo: %1$s."</string>
   <string name="common_voice_message">"Mensaje de voz"</string>
   <string name="common_waiting">"Esperando…"</string>
   <string name="common_waiting_for_decryption_key">"Esperando este mensaje"</string>
-  <string name="common_waiting_live_location">"Esperando la ubicación en directo…"</string>
+  <string name="common_waiting_live_location">"Esperando la ubicación en tiempo real…"</string>
   <string name="common_world_readable_history">"Cualquiera puede ver el historial"</string>
   <string name="common_you">"Tú"</string>
   <string name="crypto_event_key_forwarded_known_profile_dialog_content">"%1$s (%2$s) compartió este mensaje ya que no estabas en la sala cuando se envió."</string>
@@ -407,9 +407,9 @@ Motivo: %1$s."</string>
 
 ¿Estás seguro de que quieres continuar?"</string>
   <string name="dialog_confirm_link_title">"Revisa este enlace"</string>
-  <string name="dialog_default_video_quality_selector_subtitle">"Selecciona la calidad por defecto de los vídeos que subas."</string>
+  <string name="dialog_default_video_quality_selector_subtitle">"Selecciona la calidad predeterminada de los videos que subas."</string>
   <string name="dialog_file_too_large_to_upload_subtitle">"El tamaño máximo de archivo permitido es: %1$s"</string>
-  <string name="dialog_file_too_large_to_upload_title">"El archivo es demasiado grande para ser subido"</string>
+  <string name="dialog_file_too_large_to_upload_title">"El archivo es demasiado grande para subirlo"</string>
   <string name="dialog_room_reported">"Sala denunciada"</string>
   <string name="dialog_room_reported_and_left">"Denunciaste y saliste de la sala"</string>
   <string name="dialog_title_confirmation">"Confirmar"</string>
@@ -420,10 +420,10 @@ Motivo: %1$s."</string>
   <string name="dialog_unsaved_changes_description_android">"Tus cambios no se han guardado. ¿Estás seguro de que quieres volver atrás?"</string>
   <string name="dialog_unsaved_changes_title">"¿Guardar cambios?"</string>
   <string name="dialog_video_quality_selector_subtitle_file_size">"El tamaño máximo de archivo permitido es: %1$s"</string>
-  <string name="dialog_video_quality_selector_subtitle_no_file_size">"Selecciona la calidad del vídeo que quieres subir."</string>
-  <string name="dialog_video_quality_selector_title">"Selecciona la calidad de subida del vídeo"</string>
+  <string name="dialog_video_quality_selector_subtitle_no_file_size">"Selecciona la calidad del video que quieres subir."</string>
+  <string name="dialog_video_quality_selector_title">"Selecciona la calidad de subida del video"</string>
   <string name="emoji_picker_search_placeholder">"Buscar emojis"</string>
-  <string name="error_account_already_logged_in">"Ya has iniciado sesión en este dispositivo como %1$s."</string>
+  <string name="error_account_already_logged_in">"Ya iniciaste sesión en este dispositivo como %1$s."</string>
   <string name="error_account_creation_not_possible">"Tu servidor base debe actualizarse para admitir Matrix Authentication Service y la creación de cuentas."</string>
   <string name="error_failed_creating_the_permalink">"No se pudo crear el enlace permanente"</string>
   <string name="error_failed_loading_map">"%1$s no pudo cargar el mapa. Por favor vuelve a intentarlo más tarde."</string>
@@ -443,7 +443,7 @@ Motivo: %1$s."</string>
   <string name="error_unknown">"Lo siento, se ha producido un error"</string>
   <string name="invite_friends_rich_title">"🔐️ Únete a mí en %1$s"</string>
   <string name="invite_friends_text">"Hola, puedes hablar conmigo en %1$s: %2$s"</string>
-  <string name="live_location_sharing_foreground_service_channel_title_android">"Compartir la ubicación en directo"</string>
+  <string name="live_location_sharing_foreground_service_channel_title_android">"Compartir ubicación en tiempo real"</string>
   <string name="live_location_sharing_foreground_service_message_android">"Se está compartiendo actualmente la ubicación"</string>
   <string name="live_location_sharing_foreground_service_title_android">"%1$s Ubicación en tiempo real"</string>
   <string name="login_initial_device_name_android">"%1$s Android"</string>
@@ -487,7 +487,7 @@ Motivo: %1$s."</string>
   <string name="screen_share_open_google_maps">"Abrir en Google Maps"</string>
   <string name="screen_share_open_osm_maps">"Abrir en OpenStreetMap"</string>
   <string name="screen_share_this_location_action">"Compartir esta ubicación"</string>
-  <string name="screen_space_list_description">"Espacios que has creado o a los que te has unido."</string>
+  <string name="screen_space_list_description">"Espacios que creaste o a los que te uniste."</string>
   <string name="screen_space_list_empty_state_title">"Crea espacios para organizar salas"</string>
   <string name="screen_space_list_title">"Espacios"</string>
   <string name="screen_static_location_sheet_timestamp_description">"Compartida %1$s"</string>

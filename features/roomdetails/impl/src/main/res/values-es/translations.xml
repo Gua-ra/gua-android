@@ -53,7 +53,7 @@
   <string name="screen_room_details_error_loading_notification_settings">"Se ha producido un error al cargar la configuración de las notificaciones."</string>
   <string name="screen_room_details_error_muting">"No se ha podido silenciar esta sala, inténtalo de nuevo."</string>
   <string name="screen_room_details_error_unmuting">"Error al dejar de silenciar esta sala, por favor inténtalo de nuevo."</string>
-  <string name="screen_room_details_invite_people_dont_close">"No cierres la aplicación hasta que se haya finalizado."</string>
+  <string name="screen_room_details_invite_people_dont_close">"No cierres la app hasta que termine."</string>
   <string name="screen_room_details_invite_people_preparing">"Preparando invitaciones…"</string>
   <string name="screen_room_details_invite_people_title">"Invitar personas"</string>
   <string name="screen_room_details_invite_title">"Invitar"</string>
