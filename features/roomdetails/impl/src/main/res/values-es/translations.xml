@@ -48,7 +48,7 @@
   <string name="screen_room_details_edit_room_title">"Editar detalles"</string>
   <string name="screen_room_details_edition_error">"Se ha producido un error desconocido y no se ha podido cambiar la información."</string>
   <string name="screen_room_details_edition_error_title">"No se puede actualizar la sala"</string>
-  <string name="screen_room_details_encryption_enabled_subtitle">"Los mensajes están protegidos con \"candados\". Sólo tú y los destinatarios tenéis las llaves únicas para abrirlos."</string>
+  <string name="screen_room_details_encryption_enabled_subtitle">"Los mensajes están protegidos con candados. Solo tú y los destinatarios tienen las llaves únicas para abrirlos."</string>
   <string name="screen_room_details_encryption_enabled_title">"Cifrado de mensajes activado"</string>
   <string name="screen_room_details_error_loading_notification_settings">"Se ha producido un error al cargar la configuración de las notificaciones."</string>
   <string name="screen_room_details_error_muting">"No se ha podido silenciar esta sala, inténtalo de nuevo."</string>

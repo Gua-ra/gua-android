@@ -12,6 +12,7 @@ es:common_error
 es:common_name_and_id
 es:common_sentence_delimiter
 es:common_sticker
+es:common_video
 es:dialog_title_error
 es:notification_ticker_text_dm
 es:notification_ticker_text_group

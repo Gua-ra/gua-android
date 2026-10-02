@@ -9,7 +9,7 @@
   <string name="screen_media_browser_list_loading_media">"Cargando medios…"</string>
   <string name="screen_media_browser_list_mode_files">"Archivos"</string>
   <string name="screen_media_browser_list_mode_media">"Medios"</string>
-  <string name="screen_media_browser_media_empty_state_subtitle">"Las imágenes y vídeos subidos a esta sala se mostrarán aquí."</string>
+  <string name="screen_media_browser_media_empty_state_subtitle">"Las imágenes y videos subidos a esta sala se mostrarán aquí."</string>
   <string name="screen_media_browser_media_empty_state_title">"Aún no se ha subido ningún medio"</string>
   <string name="screen_media_browser_title">"Medios y archivos"</string>
   <string name="screen_media_details_file_format">"Formato de archivo"</string>

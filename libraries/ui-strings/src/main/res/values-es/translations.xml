@@ -5,8 +5,8 @@
   <string name="a11y_collapse_message_text_field">"Minimizar el campo de texto del mensaje"</string>
   <string name="a11y_delete">"Borrar"</string>
   <plurals name="a11y_digits_entered">
-    <item quantity="one">"%1$d dígito introducido"</item>
-    <item quantity="other">"%1$d dígitos introducidos"</item>
+    <item quantity="one">"%1$d dígito ingresado"</item>
+    <item quantity="other">"%1$d dígitos ingresados"</item>
   </plurals>
   <string name="a11y_duration">"Duración: %1$s"</string>
   <string name="a11y_edit_avatar">"Editar avatar"</string>
@@ -16,7 +16,7 @@
   <string name="a11y_join_call">"Unirse a la llamada"</string>
   <string name="a11y_jump_to_bottom">"Ir al final"</string>
   <string name="a11y_move_the_map_to_my_location">"Mover el mapa a mi ubicación"</string>
-  <string name="a11y_notifications_mentions_only">"Sólo menciones"</string>
+  <string name="a11y_notifications_mentions_only">"Solo menciones"</string>
   <string name="a11y_notifications_muted">"Silenciado"</string>
   <string name="a11y_notifications_new_mentions">"Menciones nuevas"</string>
   <string name="a11y_notifications_new_messages">"Mensajes nuevos"</string>
@@ -37,7 +37,7 @@
     <item quantity="other">"Leído por %1$s y %2$d otros"</item>
   </plurals>
   <string name="a11y_read_receipts_single">"Leído por %1$s"</string>
-  <string name="a11y_read_receipts_tap_to_show_all">"Pulsa para mostrar todo"</string>
+  <string name="a11y_read_receipts_tap_to_show_all">"Toca para mostrar todo"</string>
   <string name="a11y_remove_reaction">"Elimina la reacción con %1$s"</string>
   <string name="a11y_remove_reaction_with">"Retirar la reacción con %1$s"</string>
   <string name="a11y_room_avatar">"Avatar de la sala"</string>
@@ -99,7 +99,7 @@
   <string name="action_edit_poll">"Editar encuesta"</string>
   <string name="action_enable">"Activar"</string>
   <string name="action_end_poll">"Finalizar encuesta"</string>
-  <string name="action_enter_pin">"Introducir PIN"</string>
+  <string name="action_enter_pin">"Ingresar PIN"</string>
   <string name="action_explore_public_spaces">"Explorar espacios públicos"</string>
   <string name="action_finish">"Finalizar"</string>
   <string name="action_forgot_password">"¿Olvidaste tu contraseña?"</string>
@@ -169,7 +169,7 @@
   <string name="action_start_chat">"Iniciar chat"</string>
   <string name="action_start_over">"Empezar de nuevo"</string>
   <string name="action_start_verification">"Iniciar la verificación"</string>
-  <string name="action_static_map_load">"Pulsa para cargar el mapa"</string>
+  <string name="action_static_map_load">"Toca para cargar el mapa"</string>
   <string name="action_stop">"Parar"</string>
   <string name="action_take_photo">"Hacer foto"</string>
   <string name="action_tap_for_options">"Toca para ver opciones"</string>
@@ -224,7 +224,7 @@
   <string name="common_encryption">"Cifrado"</string>
   <string name="common_encryption_enabled">"Cifrado activado"</string>
   <string name="common_ends_at">"Termina a las %1$s"</string>
-  <string name="common_enter_your_pin">"Introduce tu PIN"</string>
+  <string name="common_enter_your_pin">"Ingresa tu PIN"</string>
   <string name="common_error">"Error"</string>
   <string name="common_error_registering_pusher_android">"Se ha producido un error, es posible que no recibas notificaciones de mensajes nuevos. Soluciona los problemas con las notificaciones desde los ajustes.
 
@@ -382,7 +382,7 @@ Motivo: %1$s."</string>
   <string name="common_verify_device">"Verificar dispositivo"</string>
   <string name="common_verify_identity">"Verificar identidad"</string>
   <string name="common_verify_user">"Verificar usuario"</string>
-  <string name="common_video">"Vídeo"</string>
+  <string name="common_video">"Video"</string>
   <string name="common_video_quality_high">"Calidad alta"</string>
   <string name="common_video_quality_high_description">"La mejor calidad, pero mayor tamaño de archivo"</string>
   <string name="common_video_quality_low">"Calidad baja"</string>

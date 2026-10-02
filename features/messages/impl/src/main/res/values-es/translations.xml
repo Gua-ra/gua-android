@@ -40,7 +40,7 @@
   <string name="screen_room_attachment_source_camera_photo">"Hacer foto"</string>
   <string name="screen_room_attachment_source_camera_video">"Grabar video"</string>
   <string name="screen_room_attachment_source_files">"Archivo adjunto"</string>
-  <string name="screen_room_attachment_source_gallery">"Biblioteca de fotos y vídeos"</string>
+  <string name="screen_room_attachment_source_gallery">"Biblioteca de fotos y videos"</string>
   <string name="screen_room_attachment_source_location">"Ubicación"</string>
   <string name="screen_room_attachment_source_poll">"Encuesta"</string>
   <string name="screen_room_attachment_text_formatting">"Formato de texto"</string>

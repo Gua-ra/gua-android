@@ -18,7 +18,7 @@
     <item quantity="one">"Cada %1$d metro"</item>
     <item quantity="other">"Cada %1$d metros"</item>
   </plurals>
-  <string name="screen_advanced_settings_media_compression_description">"Sube fotos y vídeos más rápido y reduce el uso de datos"</string>
+  <string name="screen_advanced_settings_media_compression_description">"Sube fotos y videos más rápido y reduce el uso de datos"</string>
   <string name="screen_advanced_settings_media_compression_title">"Optimizar la calidad de los medios"</string>
   <string name="screen_advanced_settings_moderation_and_safety_section_title">"Moderación y seguridad"</string>
   <string name="screen_advanced_settings_optimise_image_upload_quality_description">"Optimizar automáticamente las imágenes para subidas más rápidas y tamaños de archivo más pequeños."</string>
@@ -37,7 +37,7 @@
   <string name="screen_advanced_settings_show_media_timeline_always_hide">"Ocultar siempre"</string>
   <string name="screen_advanced_settings_show_media_timeline_always_show">"Mostrar siempre"</string>
   <string name="screen_advanced_settings_show_media_timeline_private_rooms">"En las salas privadas"</string>
-  <string name="screen_advanced_settings_show_media_timeline_subtitle">"Siempre se puede mostrar un ítem multimedia oculto pulsando sobre él"</string>
+  <string name="screen_advanced_settings_show_media_timeline_subtitle">"Siempre puedes mostrar un archivo multimedia oculto tocándolo"</string>
   <string name="screen_advanced_settings_show_media_timeline_title">"Mostrar multimedia en la cronología"</string>
   <string name="screen_advanced_settings_view_source_description">"Habilita la opción para ver el contenido en bruto del mensaje en la cronología."</string>
   <string name="screen_blocked_users_empty">"No tienes usuarios bloqueados"</string>
@@ -58,7 +58,7 @@
   <string name="screen_labs_title">"Experimental"</string>
   <string name="screen_notification_settings_additional_settings_section_title">"Ajustes adicionales"</string>
   <string name="screen_notification_settings_call_ringtone_label">"Tono de llamada"</string>
-  <string name="screen_notification_settings_calls_label">"Llamadas de audio y vídeo"</string>
+  <string name="screen_notification_settings_calls_label">"Llamadas de audio y video"</string>
   <string name="screen_notification_settings_configuration_mismatch">"La configuración no coincide"</string>
   <string name="screen_notification_settings_configuration_mismatch_description">"Hemos simplificado la Configuración de Notificaciones para hacer las opciones más fáciles de encontrar. Algunas configuraciones personalizadas que has elegido en el pasado no se muestran aquí, pero siguen activas.
 

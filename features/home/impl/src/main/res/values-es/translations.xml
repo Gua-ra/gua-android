@@ -9,7 +9,7 @@
   <string name="banner_set_up_recovery_submit">"Configurar la recuperación"</string>
   <string name="banner_set_up_recovery_title">"Configura la recuperación para proteger tu cuenta"</string>
   <string name="confirm_recovery_key_banner_message">"Confirma tu clave de recuperación para mantener el acceso a tu almacén de claves y al historial de mensajes."</string>
-  <string name="confirm_recovery_key_banner_primary_button_title">"Introduce tu clave de recuperación"</string>
+  <string name="confirm_recovery_key_banner_primary_button_title">"Ingresa tu clave de recuperación"</string>
   <string name="confirm_recovery_key_banner_secondary_button_title">"¿Olvidaste tu clave de recuperación?"</string>
   <string name="confirm_recovery_key_banner_title">"Tu almacén de claves no está sincronizado"</string>
   <string name="full_screen_intent_banner_message">"Para asegurarte de que nunca te pierdas una llamada importante, modifica tus ajustes para permitir notificaciones a pantalla completa cuando el teléfono esté bloqueado."</string>
