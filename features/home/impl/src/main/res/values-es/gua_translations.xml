@@ -8,7 +8,7 @@
      lives in values/temporary.xml. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="gua_encryption_repair_title">Termina de configurar este dispositivo</string>
-    <string name="gua_encryption_repair_message">Completa la configuración para acceder a los chats cifrados y al historial de mensajes disponibles en este dispositivo.</string>
+    <string name="gua_encryption_repair_message">Termina la configuración para ver tus chats cifrados y el historial de mensajes en este dispositivo.</string>
     <string name="gua_encryption_repair_action">Completar configuración</string>
     <string name="gua_account_recovery_banner_title">Alguien ha empezado a recuperar tu cuenta</string>
     <string name="gua_account_recovery_banner_message_later">Se podrá completar a partir del %1$s. Si fuiste tú, puedes ignorar este aviso. Si no fuiste tú, cancélala desde un dispositivo en el que sigas con la sesión iniciada.</string>

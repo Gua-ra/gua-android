@@ -21,7 +21,7 @@
     <string name="screen_change_phone_pin_incorrect">Esse PIN está incorreto. Tente novamente.</string>
     <string name="screen_change_phone_otp_header">Verifique seu novo número</string>
     <string name="screen_change_phone_otp_footer">Digite o código de 6 dígitos que enviamos para o seu novo número.</string>
-    <string name="screen_change_phone_otp_invalid">Esse código é inválido ou expirou. Tente novamente.</string>
+    <string name="screen_change_phone_otp_invalid">Esse código está errado ou expirou. Tente novamente.</string>
     <string name="screen_change_phone_already_linked">Esse número de telefone já está vinculado a outra conta.</string>
     <string name="screen_change_phone_updated">Seu número de telefone foi atualizado.</string>
     <string name="screen_change_phone_done_header">Tudo pronto</string>
@@ -36,7 +36,7 @@
     <string name="screen_two_step_verification_overview_footer_unknown">Verifique sua conexão e tente novamente.</string>
     <string name="screen_two_step_verification_set_footer_fallback">Uma alternativa para quando sua chave de acesso não estiver disponível.</string>
     <string name="screen_two_step_verification_overview_footer_on">Seu PIN de 6 dígitos adiciona uma camada extra de segurança à sua conta.</string>
-    <string name="screen_two_step_verification_overview_footer_off">Adicione um PIN de 6 dígitos para uma camada extra de segurança na sua conta.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Adicione um PIN de 6 dígitos para deixar sua conta mais segura.</string>
     <string name="screen_two_step_verification_set_button">Configurar PIN</string>
     <string name="screen_two_step_verification_change_button">Alterar PIN</string>
     <string name="screen_two_step_verification_passkey_button">Configurar uma chave de acesso</string>
@@ -54,10 +54,10 @@
     <string name="screen_two_step_verification_phone_label">Número de telefone</string>
     <string name="screen_two_step_verification_phone_invalid">Digite um número de telefone válido.</string>
     <string name="screen_two_step_verification_current_incorrect">Esse PIN está incorreto. Tente novamente.</string>
-    <string name="screen_two_step_verification_otp_invalid">O código digitado é inválido ou expirou.</string>
+    <string name="screen_two_step_verification_otp_invalid">Esse código está errado ou expirou. Tente novamente.</string>
     <string name="screen_two_step_verification_locked">PIN bloqueado por excesso de tentativas incorretas. Tente novamente mais tarde.</string>
     <string name="screen_two_step_verification_cooldown">Por segurança, você só pode alterar seu PIN uma vez por dia.</string>
-    <string name="screen_two_step_verification_challenge_invalid">Sua sessão de alteração de PIN expirou. Comece de novo.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Isso demorou demais. Comece de novo.</string>
     <string name="screen_two_step_verification_weak_error">Esse PIN é fácil demais de adivinhar. Escolha outro.</string>
     <string name="screen_two_step_verification_mismatch_error">Os PINs não coincidem. Tente novamente.</string>
     <string name="screen_two_step_verification_same_as_current">Seu novo PIN precisa ser diferente do atual.</string>
@@ -88,9 +88,9 @@
     <string name="screen_change_phone_current_mismatch">Esse não é o número da sua conta.</string>
     <string name="screen_change_phone_reauth_header">Confirme que é você</string>
     <string name="screen_change_phone_reauth_footer">Digite o código de 6 dígitos que enviamos para o seu número atual.</string>
-    <string name="screen_change_phone_reauth_invalid">Esse código é inválido ou expirou. Tente novamente.</string>
+    <string name="screen_change_phone_reauth_invalid">Esse código está errado ou expirou. Tente novamente.</string>
     <string name="screen_change_phone_reauth_expired">Sua confirmação expirou. Comece de novo.</string>
-    <string name="screen_change_phone_challenge_invalid">Sua alteração de número expirou. Comece de novo.</string>
+    <string name="screen_change_phone_challenge_invalid">Isso demorou demais. Comece de novo.</string>
     <string name="screen_change_phone_needs_step_up_header">Primeiro, configure a verificação em duas etapas</string>
     <string name="screen_change_phone_needs_step_up_message">Para alterar seu número, você precisa de uma chave de acesso ou de um PIN da conta de 6 dígitos. Configure um deles e volte aqui.</string>
     <string name="screen_change_phone_needs_step_up_passkey_action">Configurar uma chave de acesso</string>
