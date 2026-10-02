@@ -67,7 +67,7 @@ open class PreferencesRootStateProvider : PreviewParameterProvider<PreferencesRo
             aPreferencesRootState(
                 isLockScreenPinSetup = false,
             ),
-            // GUA FORK: account PIN not yet set up -> the set-up-2SV nudge banner is shown.
+            // GUA FORK: no strong factor yet, so the two-step verification nudge banner is shown.
             aPreferencesRootState(
                 hasAccountStrongFactor = false,
             ),

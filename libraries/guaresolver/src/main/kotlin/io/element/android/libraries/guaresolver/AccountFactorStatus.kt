@@ -8,11 +8,9 @@
 package io.element.android.libraries.guaresolver
 
 /**
- * GUA FORK: an authentication factor, as named by the identity service.
- *
- * A passkey is the preferred strong factor; the PIN is the fallback for everyone who cannot produce
- * one; the phone OTP is possession of the number and is never on its own enough to re-point that
- * same number.
+ * An authentication factor, as named by the identity service. A passkey is the preferred strong
+ * factor and the PIN is the fallback. The phone OTP only proves possession of the number, so it is
+ * never enough on its own to re-point that same number.
  */
 enum class AuthFactor {
     PASSKEY,
@@ -20,27 +18,15 @@ enum class AuthFactor {
     PHONE_OTP;
 
     companion object {
-        /**
-         * Parse a factor name as sent by the identity service, returning null for anything this
-         * build does not know. Unknown names are dropped rather than guessed: a factor we cannot
-         * name is a factor we cannot produce.
-         */
+        /** Returns null for a factor name this build does not know. Unknown names are dropped, never guessed. */
         fun fromWire(raw: String?): AuthFactor? = entries.firstOrNull { it.name == raw }
     }
 }
 
 /**
- * GUA FORK: what the account holds, as returned by `GET /security/pin/status`. Android counterpart
- * of the iOS account factor status.
- *
- * This is the server's factor signal and the only thing a client should branch on. Registration is
- * server truth. Whether a registered passkey can actually be produced on THIS device is something
- * only the client knows, is never sent back, and may steer the UI but never a security decision.
- *
- * [changePhoneCooldownRemainingSeconds] is the fresh-2FA hold: after a PIN is created, changed or
- * reset it cannot be spent as the phone-change step-up for a window, so someone who just set a PIN
- * cannot immediately use it to take over the number. `0` means no active hold. It is separate from
- * the minimum gap between two successful phone changes, which the change endpoint reports itself.
+ * What the account holds, as returned by `GET /security/pin/status`. This is the server's factor
+ * signal and the only thing a client should branch on. Whether a registered passkey can be produced
+ * on this device may steer the UI but never a security decision.
  */
 data class AccountFactorStatus(
     /** True once the account has configured a 6-digit account PIN. */
@@ -51,12 +37,14 @@ data class AccountFactorStatus(
     val preferredFactor: AuthFactor,
     /** The factors a phone change accepts as its step-up, strongest first. */
     val phoneChangeStepUpFactors: List<AuthFactor>,
-    /** Seconds still to run on the fresh-2FA hold before the PIN may settle a phone change. */
+    /**
+     * Seconds left on the fresh-2FA hold: a PIN that was just created, changed or reset cannot settle a
+     * phone change yet. `0` means no hold. Separate from the minimum gap between two phone changes.
+     */
     val changePhoneCooldownRemainingSeconds: Long,
     /**
-     * True while a delayed account recovery is live on this account: someone who could not present
-     * a factor asked to set a new PIN, and it has neither been cancelled nor run out. Every
-     * signed-in device warns about it and offers to cancel it.
+     * True while a delayed account recovery is live: someone who could not present a factor asked to
+     * set a new PIN, and it has neither been cancelled nor run out.
      */
     val accountRecoveryPending: Boolean = false,
     /** When the live recovery can be finished, in epoch seconds. Null when none is live. */
@@ -64,7 +52,6 @@ data class AccountFactorStatus(
     /** When the live recovery stops being finishable, in epoch seconds. Null when none is live. */
     val accountRecoveryExpiresAtEpochSeconds: Long? = null,
 ) {
-    /** Whether the account holds [factor] right now. */
     fun holds(factor: AuthFactor): Boolean = when (factor) {
         AuthFactor.PASSKEY -> passkeyRegistered
         AuthFactor.PIN -> hasPin
@@ -73,15 +60,11 @@ data class AccountFactorStatus(
     }
 
     /**
-     * The factors a phone change accepts AND this account actually holds, strongest first. Empty
-     * means the account can settle no step-up at all, which the server answers with
-     * `step_up_required` (403) and which the client must treat as a hard block.
+     * The factors a phone change accepts and this account holds, strongest first. Empty means the
+     * account can settle no step-up: a hard block, matching the server's `step_up_required` (403).
      */
     val phoneChangeStepUpOptions: List<AuthFactor> get() = phoneChangeStepUpFactors.filter(::holds)
 
-    /**
-     * Whether the account holds any strong factor at all. This, not [hasPin], is what decides
-     * whether to nudge someone to set up two-step verification: a passkey holder already has it.
-     */
+    /** Decides the two-step-verification nudge: a passkey holder already has it. */
     val hasStrongFactor: Boolean get() = passkeyRegistered || hasPin
 }

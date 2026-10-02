@@ -372,8 +372,7 @@ class LoginFlowNode(
     private fun navigateToMas(oAuthDetails: OAuthDetails) {
         activity?.let {
             externalAppStarted = true
-            // GUA FORK: a private tab, so the sign-in page can never continue as whoever last
-            // signed in on this phone's browser.
+            // GUA FORK: a private tab, so the sign-in page cannot continue as whoever last signed in on this phone's browser.
             it.openUrlInChromeCustomTab(null, darkTheme, oAuthDetails.url, ephemeral = true)
         }
     }

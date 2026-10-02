@@ -41,11 +41,9 @@ fun IdentityChangeStateView(
         it.identityState.isAViolation()
     }
     when (identityChangeViolation?.identityState) {
-        // GUA FORK: both violations read as one calm, informational notice with a single
-        // acknowledging action. The action still differs underneath (pin the new identity, or
-        // withdraw a stale verification) so sending works immediately after the tap, but a
-        // contact reinstalling Gua is not an alarm and is never styled as critical.
-        // Matches gua-ios RoomScreenFooterView.
+        // GUA FORK: both violations read as one calm, informational notice with a single acknowledging
+        // action. The action still differs underneath (pin the new identity, or withdraw a stale
+        // verification) so sending works immediately after the tap.
         IdentityState.PinViolation -> ViolationAlert(
             identityChangeViolation = identityChangeViolation,
             onLinkClick = onLinkClick,
@@ -82,9 +80,7 @@ private fun ViolationAlert(
         modifier = modifier,
         avatar = identityChangeViolation.identityRoomMember.avatarData,
         content = buildAnnotatedString {
-            // GUA FORK: the handle is deliberately absent. Upstream printed the full user id
-            // in bold next to the name; Gua never surfaces one in conversation copy, and the
-            // display name is what identifies the contact to the reader.
+            // GUA FORK: the user id is not shown. The display name identifies the contact.
             val learnMoreStr = stringResource(CommonStrings.action_learn_more)
             val displayName = identityChangeViolation.identityRoomMember.displayNameOrDefault
             val fullText = stringResource(textId, displayName, learnMoreStr)

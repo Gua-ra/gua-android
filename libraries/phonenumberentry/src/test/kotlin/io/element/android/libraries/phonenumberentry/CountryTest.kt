@@ -49,7 +49,6 @@ class CountryTest {
 
     @Test
     fun `nationalDigitLength is null with no curated example`() {
-        // ZW has a dial code but no nationalExamples entry, so it stays conservative.
         assertThat(Country("ZW", "263").nationalDigitLength).isNull()
     }
 

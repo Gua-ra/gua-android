@@ -11,8 +11,6 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
 class FederatedUserSearchTest {
-    // region Bare handle detection
-
     @Test
     fun `bare handle accepts a plain username`() {
         assertThat(FederatedUserSearch.bareHandle("ana-souza")).isEqualTo("ana-souza")
@@ -55,10 +53,6 @@ class FederatedUserSearchTest {
         assertThat(FederatedUserSearch.bareHandle("año-souza")).isNull()
     }
 
-    // endregion
-
-    // region Search visibility
-
     @Test
     fun `absent visibility is global`() {
         assertThat(RosterSearchVisibility.parse(null)).isEqualTo(RosterSearchVisibility.Global)
@@ -73,7 +67,6 @@ class FederatedUserSearchTest {
 
     @Test
     fun `visibility matching is case insensitive`() {
-        // The resolver serializes the policy uppercase, like the entry status.
         assertThat(RosterSearchVisibility.parse("GLOBAL")).isEqualTo(RosterSearchVisibility.Global)
         assertThat(RosterSearchVisibility.parse("GROUP")).isEqualTo(RosterSearchVisibility.Group)
         assertThat(RosterSearchVisibility.parse("SERVER")).isEqualTo(RosterSearchVisibility.Server)
@@ -83,10 +76,6 @@ class FederatedUserSearchTest {
     fun `unrecognized visibility is preserved`() {
         assertThat(RosterSearchVisibility.parse("invite")).isEqualTo(RosterSearchVisibility.Unrecognized("invite"))
     }
-
-    // endregion
-
-    // region Candidate construction
 
     @Test
     fun `candidates lead with the own server and follow roster order`() {
@@ -187,6 +176,4 @@ class FederatedUserSearchTest {
 
         assertThat(candidates).containsExactly("@ana-souza:nowhere.example", "@ana-souza:ca.gua.example")
     }
-
-    // endregion
 }

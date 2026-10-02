@@ -64,8 +64,7 @@ import io.element.android.libraries.testtags.TestTags
 import io.element.android.libraries.testtags.testTag
 import io.element.android.libraries.ui.strings.CommonStrings
 
-// The aurora canvas is dark in both themes, so the welcome uses light, brand-fixed colours rather
-// than theme tokens (which would be near-black in light mode and vanish against the green).
+// The aurora canvas is dark in both themes, so the welcome uses fixed light colours instead of theme tokens.
 private val OnAuroraPrimary = Color.White
 private val OnAuroraSecondary = Color.White.copy(alpha = 0.78f)
 private val OnAuroraHint = Color.White.copy(alpha = 0.5f)
@@ -89,7 +88,6 @@ fun PhoneEntryView(
 
     HeaderFooterPage(
         modifier = modifier,
-        // Paint the branded Gua aurora behind everything, and let it show through the page.
         background = { GuaWelcomeBackground() },
         containerColor = Color.Transparent,
         header = { WelcomeHeader() },
@@ -104,9 +102,8 @@ fun PhoneEntryView(
                         .fillMaxWidth()
                         .testTag(TestTags.loginContinue),
                 )
-                // Tertiary action, as on iOS. The text button takes its colour from LocalContentColor,
-                // so hand it the on-aurora white: the theme's textPrimary is near-black in light mode
-                // and would vanish against the dark canvas.
+                // The text button takes its colour from LocalContentColor, so hand it the on-aurora white: the
+                // theme's textPrimary is near-black in light mode.
                 CompositionLocalProvider(LocalContentColor provides OnAuroraPrimary) {
                     TextButton(
                         text = stringResource(id = R.string.gua_sign_in_with_passkey),
@@ -137,10 +134,6 @@ fun PhoneEntryView(
     }
 }
 
-/**
- * The branded welcome header: the clean [GuaWelcomeLogo] above the title + message, in light text
- * over the dark [GuaWelcomeBackground] aurora.
- */
 @Composable
 private fun WelcomeHeader(
     modifier: Modifier = Modifier,
@@ -183,7 +176,6 @@ private fun PhoneNumberField(
             .fillMaxWidth()
             .padding(top = 28.dp),
     ) {
-        // Single label above the whole row, so it reads over BOTH the country code and the field.
         Text(
             text = stringResource(R.string.screen_phone_entry_phone_number_label),
             color = OnAuroraSecondary,
@@ -208,7 +200,6 @@ private fun PhoneNumberField(
                     .testTag(TestTags.loginEmailUsername),
             )
         }
-        // Footer under the field, mirroring iOS ("We'll text a verification code to this number.").
         Text(
             text = stringResource(R.string.screen_phone_entry_footer),
             color = OnAuroraSecondary,
@@ -218,7 +209,6 @@ private fun PhoneNumberField(
     }
 }
 
-/** A translucent "glass" phone input that reads on the dark aurora — never a white-on-green box. */
 @Composable
 private fun PhoneInput(
     value: String,
@@ -228,16 +218,13 @@ private fun PhoneInput(
     enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    // GUA FORK: the caret lives here rather than in the presenter. The String overload of
-    // BasicTextField carries no selection, so it puts the caret back at the end every time the value
-    // it is handed differs from what it last emitted. The presenter is a Molecule presenter, so that
-    // value arrives a frame or more later; typing quickly means keystroke N+1 lands while the field
-    // is still showing N-1, and the caret jumps mid-number. Editing locally keeps every keystroke
-    // immediate, and the presenter still sees each change.
+    // The caret lives here rather than in the presenter. The String overload of BasicTextField carries
+    // no selection, so it puts the caret at the end whenever the value it is handed differs from what it
+    // last emitted. The presenter's value arrives a frame or more later, so fast typing made the caret
+    // jump mid-number. Editing locally keeps every keystroke immediate.
     var fieldValue by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
     if (fieldValue.text != value) {
-        // The presenter changed the digits behind our back (a pasted number was normalised, or the
-        // country switched), so adopt its version and put the caret at the end.
+        // The presenter changed the digits (paste normalised or country switched): adopt them with the caret at the end.
         fieldValue = TextFieldValue(value, TextRange(value.length))
     }
     BasicTextField(

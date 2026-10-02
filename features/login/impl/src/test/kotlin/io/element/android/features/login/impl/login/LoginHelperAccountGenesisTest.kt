@@ -34,11 +34,8 @@ import org.junit.Rule
 import org.junit.Test
 
 /**
- * GUA FORK: the account-genesis half of the phone submission (ADM-008 Phase 3).
- *
- * The contract with the most consequence is the flag-off one: while the feature flag is off the
- * `login_hint` must be byte-identical to the bare E.164 number the client has always sent, and nothing
- * in the genesis path may run at all.
+ * While the feature flag is off the `login_hint` must be byte-identical to the bare E.164 number,
+ * and nothing in the genesis path may run at all.
  */
 class LoginHelperAccountGenesisTest {
     @get:Rule
@@ -53,7 +50,6 @@ class LoginHelperAccountGenesisTest {
         val presenter = createPhoneEntryPresenter(
             genesisManager = genesisManager,
             accountGenesisEnabled = false,
-            // A brand-new account, which is the only case that would ever register a genesis.
             accountExists = false,
             getOAuthUrlResult = hintRecorder,
         )
@@ -116,7 +112,6 @@ class LoginHelperAccountGenesisTest {
 
         assertThat(capturedHint).isEqualTo(A_PHONE_NUMBER)
         assertThat(genesisManager.registerCount).isEqualTo(1)
-        // Silent: the user sees the ordinary OIDC handoff, not an error.
         assertThat(state.loginMode).isInstanceOf(AsyncData.Success::class.java)
     }
 
@@ -138,7 +133,6 @@ class LoginHelperAccountGenesisTest {
         val state = submitNumber(presenter)
 
         val error = (state.loginMode as AsyncData.Failure).error
-        // Surfaced as itself, so the screen can show the account-setup message rather than a generic one.
         assertThat(error).isEqualTo(AccountGenesisSignupError.SetupFailed)
         oAuthRecorder.assertions().isNeverCalled()
     }
@@ -150,7 +144,6 @@ class LoginHelperAccountGenesisTest {
         Result.success(AN_OAUTH_DATA)
     }
 
-    /** Types a valid number and taps continue, draining to the terminal login mode. */
     private suspend fun submitNumber(presenter: PhoneEntryPresenter): PhoneEntryState {
         var terminal: PhoneEntryState? = null
         presenter.test {

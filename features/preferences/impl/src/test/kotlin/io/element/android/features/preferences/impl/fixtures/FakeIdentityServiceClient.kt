@@ -15,9 +15,8 @@ import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.PhoneChangeChallenge
 
 /**
- * GUA FORK: an [IdentityServiceClient] that records the calls it receives, so tests can assert both
- * what was sent and, just as importantly, what was NOT: no SMS may be requested for the new number
- * before a step-up factor has been offered.
+ * Records the calls it receives, so tests can assert what was sent and what was not: no SMS may be
+ * requested for the new number before a step-up factor has been offered.
  */
 class FakeIdentityServiceClient(
     private val factorStatusResult: () -> Result<AccountFactorStatus> = { Result.success(aFactorStatus()) },
@@ -30,13 +29,8 @@ class FakeIdentityServiceClient(
     private val passkeyEnrollmentResult: () -> Result<String> = { Result.success(AN_ENROLL_URL) },
     private val pinEnrollmentResult: () -> Result<String> = { Result.success(A_PIN_ENROLL_URL) },
 ) : IdentityServiceClient {
-    /**
-     * The reauth OTPs requested, as (submitted current number, language), in order. Each one is an
-     * SMS to the number already on file, and only when what was submitted matches it.
-     */
     val startReauthCalls: MutableList<Pair<String, String?>> = mutableListOf()
 
-    /** Every reauth verify, as (submitted current number, code), in order. */
     val verifyReauthCalls: MutableList<Pair<String, String>> = mutableListOf()
 
     /** Every phone-change start, in order. This is the only call that can text the NEW number. */
@@ -46,10 +40,8 @@ class FakeIdentityServiceClient(
 
     val passkeyEnrollmentCalls: MutableList<String> = mutableListOf()
 
-    /** Every factor-status read, in order, so a test can see the screen read it again on resume. */
     val factorStatusCalls: MutableList<String> = mutableListOf()
 
-    /** Every first-PIN enrollment start, in order. This is the only way to set a first PIN now. */
     val pinEnrollmentCalls: MutableList<String> = mutableListOf()
 
     data class StartCall(
@@ -131,7 +123,6 @@ class FakeIdentityServiceClient(
     }
 }
 
-/** An [AccountFactorStatus] whose derived fields stay consistent with the factors it is given. */
 fun aFactorStatus(
     hasPin: Boolean = true,
     passkeyRegistered: Boolean = false,

@@ -8,12 +8,12 @@
 package io.element.android.libraries.guaresolver.genesis
 
 /**
- * GUA FORK: a decoded `AccountGenesis` (ADM-008 suite 0x01), together with the exact bytes it was
- * decoded from. Port of the identity-service `AccountGenesis`.
+ * A decoded `AccountGenesis` (suite 0x01), together with the exact bytes it was decoded from. Port of
+ * the identity-service `AccountGenesis`.
  *
- * It commits the initial authority key, the algorithm identifiers and the initial recovery authority and
- * framework, and it holds no identifier and no homeserver (ADM-001 L4). Every accessor hands back a
- * copy, so nothing downstream can mutate the bytes the accountId is derived from.
+ * It commits the initial authority key, the algorithm identifiers and the initial recovery authority
+ * and framework. It holds no identifier and no homeserver. Every accessor hands back a copy, so
+ * nothing downstream can mutate the bytes the accountId is derived from.
  */
 class AccountGenesis internal constructor(
     val genesisVersion: Int,
@@ -49,7 +49,7 @@ class AccountGenesis internal constructor(
         /** Ed25519 authority, Ed25519 recovery, SHA-256. */
         const val SUITE_ED25519_SHA256 = 0x01
 
-        /** One committed recovery authority key (ADM-008 decision 4). */
+        /** One committed recovery authority key. */
         const val RECOVERY_FRAMEWORK_COMMITTED_KEY = 0x01
 
         const val ENTROPY_LENGTH = 16

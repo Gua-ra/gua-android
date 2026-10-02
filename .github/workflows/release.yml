@@ -1,9 +1,9 @@
 name: Create release App Bundle and APKs
 
 # GUA FORK: manual dispatch only. These jobs build UNSIGNED artifacts for inspection and nothing
-# else. Anything that reaches Google Play lives in publish-play.yml instead, so that every path
-# to the store passes the same gates: the `release-qa` label for the QA app, and the approval-gated
-# `production` environment for the real one. A publish path in here would sit outside both.
+# else. Anything that reaches Google Play lives in publish-play.yml, so every path to the store
+# passes the same gates: the `release-qa` label for the QA app, and the approval-gated
+# `production` environment for the real one.
 on:
   workflow_dispatch:
 
@@ -68,9 +68,7 @@ jobs:
   enterprise:
     name: Create App Bundle Enterprise
     runs-on: ubuntu-latest
-    # GUA FORK: the enterprise bundle needs the upstream private submodule and its deploy key, which
-    # this fork does not have, so the job can only ever fail here. Restrict it to the upstream repo
-    # instead of failing every dispatched release run.
+    # GUA FORK: the enterprise bundle needs upstream's private submodule, so this job runs only in the upstream repo.
     if: ${{ github.repository == 'element-hq/element-x-android' }}
     concurrency:
       group: ${{ format('build-release-main-enterprise-{0}', github.sha) }}

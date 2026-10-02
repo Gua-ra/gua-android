@@ -173,8 +173,7 @@ private fun CreateRoomActionButtonsList(
     onDmClick: (RoomId) -> Unit,
 ) {
     LazyColumn {
-        // GUA FORK: Discover which phone contacts are already on Gua. Mirrors iOS' top-of-list
-        // "Find friends" entry in the new-chat / "+" screen.
+        // GUA FORK: discover which phone contacts are already on Gua.
         item {
             CreateRoomActionButton(
                 iconRes = CompoundDrawables.ic_compound_user_add,

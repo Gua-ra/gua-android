@@ -10,8 +10,8 @@ package io.element.android.libraries.guaresolver.genesis
 import java.security.SecureRandom
 
 /**
- * GUA FORK: the canonical codec for `AccountGenesis`, suite 0x01 (ADM-008 encoding tables). Port of the
- * identity-service `AccountGenesisCodec`, and verified against the published golden vectors.
+ * The canonical codec for `AccountGenesis`, suite 0x01. Port of the identity-service
+ * `AccountGenesisCodec`, verified against the published golden vectors.
  *
  * ```
  * off len field
@@ -26,8 +26,7 @@ import java.security.SecureRandom
  * ```
  *
  * The layout is fixed rather than length-prefixed because the accountId is a permanent hash of these
- * bytes, so the bytes that are hashed must be the bytes that crossed the wire; a framing with a
- * parse-then-re-serialize step invites exactly the re-encoding this must never do.
+ * bytes: the bytes that are hashed must be the bytes that crossed the wire, never a re-encoding.
  */
 object AccountGenesisCodec {
     private val magic = AccountGenesis.MAGIC.toByteArray(Charsets.US_ASCII)
@@ -44,7 +43,7 @@ object AccountGenesisCodec {
      * Strictly decodes canonical bytes. The returned object keeps the bytes exactly as passed in, so the
      * accountId is derived from what was received.
      *
-     * @throws InvalidGenesisException on any rule ADM-008 decision 1 states.
+     * @throws InvalidGenesisException on any violated encoding rule.
      */
     fun decode(bytes: ByteArray): AccountGenesis {
         if (bytes.size != AccountGenesis.LENGTH) {
@@ -70,8 +69,7 @@ object AccountGenesisCodec {
         val recoveryKey = bytes.copyOfRange(OFFSET_RECOVERY_KEY, OFFSET_ENTROPY)
         val entropy = bytes.copyOfRange(OFFSET_ENTROPY, AccountGenesis.LENGTH)
 
-        // The all-zero rule is separate from point decoding on purpose: the all-zero encoding decodes to
-        // a valid low-order point, so point decoding alone would let it through.
+        // The all-zero encoding decodes to a valid low-order point, so it is checked separately.
         if (Ed25519PublicKeys.isAllZero(authorityKey)) {
             throw InvalidGenesisException("zero_authority_key", "authority key is all zero")
         }
@@ -111,10 +109,9 @@ object AccountGenesisCodec {
     }
 
     /**
-     * Mints canonical bytes for a fresh genesis over the two device-generated keys.
-     *
-     * Every genesis carries 16 bytes of CSPRNG entropy (ADM-008 decision 3), so two devices that somehow
-     * generated the same key pair would still get distinct accountIds.
+     * Mints canonical bytes for a fresh genesis over the two device-generated keys. Every genesis carries
+     * 16 bytes of CSPRNG entropy, so two devices that generated the same key pair would still get
+     * distinct accountIds.
      */
     fun mint(authorityPublicKey: ByteArray, recoveryAuthorityPublicKey: ByteArray): ByteArray {
         val entropy = ByteArray(AccountGenesis.ENTROPY_LENGTH)

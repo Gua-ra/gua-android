@@ -22,7 +22,6 @@ class DefaultFederationRosterFetcherTest {
     @Test
     fun `roster decoding ignores unknown fields and keeps the search policy`() = runTest {
         val server = MockWebServer()
-        // A realistic resolver payload: the client only decodes what it needs and ignores the rest.
         server.enqueue(
             MockResponse().setBody(
                 """

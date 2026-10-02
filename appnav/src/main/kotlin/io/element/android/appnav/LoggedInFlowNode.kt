@@ -298,9 +298,7 @@ class LoggedInFlowNode(
 
         @Parcelize
         data class SecureBackup(
-            // GUA FORK: no default. When Root was the default, `NavTarget.SecureBackup()` read as
-            // "open secure backup" while silently meaning "open the recovery-key console", and a
-            // grep for InitialTarget.Root never surfaced the sign-out route that used it.
+            // GUA FORK: no default, so every call site names its target.
             val initialElement: SecureBackupEntryPoint.InitialTarget
         ) : NavTarget
 
@@ -356,9 +354,7 @@ class LoggedInFlowNode(
                     }
 
                     override fun navigateToEnterRecoveryKey() {
-                        // GUA FORK: never a recovery-key prompt. The repair itself now runs in the
-                        // room list presenter, which owns the banner's progress state, and only
-                        // calls this once it has established that a reset is genuinely required.
+                        // GUA FORK: never a recovery-key prompt. The room list presenter runs the repair.
                         backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.ResetIdentity))
                     }
 

@@ -14,11 +14,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 
-/**
- * GUA FORK: Retrofit surface for the Gua resolver endpoints. Internal to the module; the public
- * API only ever exposes [io.element.android.libraries.guaresolver.HomeserverResolution] and
- * [FederationRoster].
- */
+/** Retrofit surface for the Gua resolver endpoints. Internal to the module. */
 internal interface ResolverApi {
     @POST("resolve")
     suspend fun resolve(@Body body: ResolveRequest): ResolveResponse

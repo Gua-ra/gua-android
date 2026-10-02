@@ -1,7 +1,7 @@
 name: Validate Git LFS
 
-# GUA FORK: disabled — upstream LFS goldens are not pulled in the fork; only Gua record-tests carry
-# real PNGs. Avoids false failures on LFS-pointer files. Manual only.
+# GUA FORK: manual dispatch only. Upstream LFS goldens are not pulled in the fork, so this would
+# fail on LFS-pointer files.
 on:
   workflow_dispatch:
 

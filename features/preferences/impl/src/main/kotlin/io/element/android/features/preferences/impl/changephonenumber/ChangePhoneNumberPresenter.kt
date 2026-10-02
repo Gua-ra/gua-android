@@ -37,25 +37,21 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 
 /**
- * GUA FORK: presenter for the change-phone-number screen, driving the real identity-service
- * contract: `POST /account/reauth/start` + `/account/reauth/verify` for the single-use,
- * phone-change-scoped token, then `POST /account/phone/change/start` + `/complete`.
+ * Drives the identity-service phone-change contract: `POST /account/reauth/start` and
+ * `/account/reauth/verify` for the single-use, phone-change-scoped token, then
+ * `POST /account/phone/change/start` and `/complete`.
  *
  * Security shape, in the order it runs:
- *  1. The account's FACTORS are read first. An account that holds no factor a phone change accepts
- *     is blocked outright, and one still inside a cooldown is held; neither goes any further.
- *  2. The user says which number is on the account. The server never publishes that number, so this
- *     is the only way to check it: identity-service digests what arrives and compares it against the
- *     account's own binding, and only a match is texted. A miss is refused with one wording for
- *     "unknown", "someone else's" and "not this one", and this screen adds nothing to it.
- *  3. The OTP that number received proves possession of it and buys a token. That proof alone is not
- *     enough to re-point the number, since a SIM-swapper holds that number too.
- *  4. The step-up factor is collected and spent together with the new number. Only that call texts
- *     the NEW number, so no SMS reaches it until the server has accepted the factor.
+ *  1. The account's factors are read first. An account that holds no factor a phone change accepts
+ *     is blocked outright, and one still inside a cooldown is held.
+ *  2. The user says which number is on the account. The server texts it only on a match and refuses
+ *     a miss with one wording for "unknown", "someone else's" and "not this one".
+ *  3. The OTP that number received buys a token. That proof alone is not enough to re-point the
+ *     number, since a SIM-swapper holds that number too.
+ *  4. The step-up factor is spent together with the new number. Only that call texts the new number.
  *
- * The token is single-use and the server spends it BEFORE it weighs the step-up, so it is gone on
- * every outcome of step 4. Any failure there therefore restarts the flow rather than retrying, and
- * a `step_up_required` refusal terminates the operation instead of falling back to the token alone.
+ * The token is single-use and the server spends it before it weighs the step-up, so any failure in
+ * that last call restarts the flow, and a `step_up_required` refusal ends the operation.
  */
 @AssistedInject
 class ChangePhoneNumberPresenter(
@@ -81,18 +77,15 @@ class ChangePhoneNumberPresenter(
 
         var phase by remember { mutableStateOf(ChangePhoneNumberPhase.Intro) }
         var code by remember { mutableStateOf("") }
-        // Whichever number is being typed, current or new, held as (country, RAW national digits)
-        // like the welcome PhoneEntry screen. The national mask is applied purely visually by
-        // PhoneNumberEntryField.
+        // Whichever number is being typed, current or new, held as (country, raw national digits). The
+        // national mask is applied visually by PhoneNumberEntryField.
         var selectedCountry by remember { mutableStateOf(deviceCountryProvider.current()) }
         var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
-        // Remaining cooldown surfaced on the Cooldown interstitial (0 otherwise).
         var cooldownRemainingSeconds by remember { mutableLongStateOf(0L) }
         var stepUpBlock by remember { mutableStateOf<StepUpBlock?>(null) }
         var passkeyEnrollUrl by remember { mutableStateOf<String?>(null) }
 
-        // Apply any country picked in the shared CountryPicker child screen, then clear it.
         val pickedCountry by selectedCountryStore.flow.collectAsState()
         LaunchedEffect(pickedCountry) {
             pickedCountry?.let { country ->
@@ -101,13 +94,10 @@ class ChangePhoneNumberPresenter(
             }
         }
 
-        // Flow scratch state.
-        // The number the user says is on the account, in E.164. Both reauth calls carry it: the
-        // server stores nothing between them and re-derives the digest from what arrives each time.
+        // The number the user says is on the account, in E.164. Both reauth calls carry it.
         var currentPhone by remember { mutableStateOf("") }
-        // Single-use token from /account/reauth/verify, scoped to PHONE_CHANGE. The server spends it
-        // on the first /start attempt whether or not the step-up that follows is accepted, so it is
-        // cleared on every outcome and a retry always mints a fresh one.
+        // Single-use token from /account/reauth/verify. The server spends it on the first /start attempt
+        // whatever the outcome, so it is cleared every time and a retry always mints a fresh one.
         var reauthToken by remember { mutableStateOf("") }
         // The step-up factor, held only between the PIN step and the /start call that spends it.
         var stepUpPin by remember { mutableStateOf("") }
@@ -127,10 +117,9 @@ class ChangePhoneNumberPresenter(
         }
 
         /**
-         * The token is gone and the flow cannot continue: drop every credential it was holding and
-         * send the user back to the start, where the factor and cooldown pre-checks run again before
-         * a fresh reauth OTP is sent. Deliberately NOT an automatic re-send: a spent token must cost
-         * a deliberate restart, not a silent SMS.
+         * The token is gone and the flow cannot continue: drops every credential and returns to the start,
+         * where the factor and cooldown pre-checks run again. Never re-sends automatically: a spent token
+         * must cost a deliberate restart, not a silent SMS.
          */
         fun abortSpentReauth(@StringRes errorRes: Int) {
             currentPhone = ""
@@ -142,9 +131,9 @@ class ChangePhoneNumberPresenter(
             phase = ChangePhoneNumberPhase.Intro
         }
 
+        // Hard block: everything the flow was carrying is dropped, and the only ways forward are registering
+        // a factor or leaving.
         fun blockOnStepUp(block: StepUpBlock) {
-            // Hard block. Everything the flow was carrying is dropped, and the only ways forward are
-            // registering a factor or leaving. There is no branch from here into the change itself.
             currentPhone = ""
             reauthToken = ""
             stepUpPin = ""
@@ -166,19 +155,11 @@ class ChangePhoneNumberPresenter(
         }
 
         /**
-         * Sends the reauth OTP, but only if [enteredPhone] is the number the account is bound to.
-         * Never touches the new number.
-         *
-         * A refusal keeps the user on the current-number step with the server's own neutral reason.
-         * Nothing here distinguishes a number nobody holds from one somebody else holds, because the
-         * server does not either, and inventing that distinction on the client would hand a stolen
-         * session an oracle over who owns which number.
+         * Sends the reauth OTP, but only if [enteredPhone] is the number the account is bound to. A refusal
+         * shows the server's neutral reason only: saying whose number it is would be an ownership oracle.
          */
         fun requestReauthOtp(enteredPhone: String) {
-            // Claim the screen BEFORE suspending. Reading the session token suspends, and until this
-            // moved the button stayed enabled across that wait, so a double tap sent two reauth
-            // starts: two texts to the account's own number, and two of the wrong-number attempts
-            // the server meters per account instead of one.
+            // Claim the screen before suspending, so a double tap cannot send two reauth starts.
             phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
                 val accessToken = accessToken()
@@ -213,12 +194,7 @@ class ChangePhoneNumberPresenter(
             }
         }
 
-        /**
-         * The single branch over the server's factor signal. The branch is over the factors a phone
-         * change accepts and the account actually holds, never over a lone `hasPin`: an account with
-         * a passkey and no PIN already has two-step verification and must not be sent to set up a
-         * PIN as though it had nothing.
-         */
+        /** Branches over the factors a phone change accepts, never over a lone `hasPin`: a passkey-only account already has two-step verification. */
         fun applyFactorStatus(status: AccountFactorStatus) {
             when {
                 status.phoneChangeStepUpOptions.isEmpty() ->
@@ -228,8 +204,6 @@ class ChangePhoneNumberPresenter(
                 producibleStepUpFactors(status).isEmpty() ->
                     blockOnStepUp(StepUpBlock.PasskeyNotUsableHere)
                 else -> {
-                    // Still nothing sent: the user has to say which number is on the account before
-                    // anything is texted anywhere.
                     code = ""
                     localPhoneNumber = ""
                     errorMessage = null
@@ -256,16 +230,13 @@ class ChangePhoneNumberPresenter(
                     .onSuccess { status -> applyFactorStatus(status) }
                     .onFailure { error ->
                         when (error) {
-                            // The account can settle no step-up: the same hard block, whichever
-                            // spelling the identity-service uses for it.
                             is ResolverError.StepUpRequired,
                             is ResolverError.PinSetupRequired -> blockOnStepUp(StepUpBlock.NoFactorRegistered)
                             is ResolverError.TwoFactorCooldown -> showCooldown(error.retryAfterSeconds)
                             is ResolverError.PhoneChangeCooldown -> showCooldown(error.retryAfterSeconds)
                             else -> {
-                                // The factors are UNKNOWN, not absent. Stop on the intro with an
-                                // error rather than guessing, because guessing "no factor" is how a
-                                // passkey holder gets told to create a PIN.
+                                // The factors are unknown, not absent. Stop on the intro with an error
+                                // rather than guessing "no factor".
                                 errorMessage = CommonStrings.error_unknown
                                 phase = ChangePhoneNumberPhase.Intro
                             }
@@ -275,11 +246,8 @@ class ChangePhoneNumberPresenter(
         }
 
         /**
-         * Re-decides the interstitial the user is looking at from a fresh read, and lets the flow
-         * carry on once nothing is blocking it any more.
-         *
-         * A read that fails changes nothing. The interstitial on screen is still the last thing the
-         * server said, and unlike the screen's first read it has something to show meanwhile.
+         * Re-decides the interstitial the user is looking at from a fresh read. A failed read changes
+         * nothing: the interstitial on screen is still the last thing the server said.
          */
         suspend fun refreshBlockingPhase() {
             val accessToken = accessToken() ?: return
@@ -290,25 +258,17 @@ class ChangePhoneNumberPresenter(
                 .onSuccess { status -> applyFactorStatus(status) }
         }
 
-        // Both step-up factors are registered away from this screen, a passkey in a Custom Tab and a
-        // PIN on the two-step verification screen, so the block the user is looking at can be out of
-        // date by the time they come back to it. Without this, someone who went and registered a
-        // passkey returned to a screen still saying their account had no factor, and tapping the
-        // button again only got the server's "you already have one". The two-step verification
-        // screen re-reads on every resume for the same reason.
+        // Factors are registered away from this screen, so the block is re-read on resume.
         var isResumed by remember { mutableStateOf(false) }
         LifecycleResumeEffect(Unit) {
             isResumed = true
             onPauseOrDispose { isResumed = false }
         }
-        // Keyed on the value this composition saw, not on a read inside the effect: the resume
-        // callback can flip the state before the effect starts.
+        // Keyed on the value this composition saw: the resume callback can flip the state before the effect starts.
         val resumed = isResumed
         LaunchedEffect(resumed) {
             if (!resumed) return@LaunchedEffect
-            // Only the two interstitials, which this one read decides in full and which send
-            // nothing. A read landing on any other phase would drop the user out of the step they
-            // are on, and on the intro Continue makes the same read anyway.
+            // Only the two interstitials: a read landing on any other phase would drop the user out of their step.
             val isBlocked = phase == ChangePhoneNumberPhase.NeedsStepUp || phase == ChangePhoneNumberPhase.Cooldown
             if (!isBlocked) return@LaunchedEffect
             refreshBlockingPhase()
@@ -316,8 +276,6 @@ class ChangePhoneNumberPresenter(
 
         /** Exchanges the reauth OTP for the single-use, phone-change-scoped token. No SMS here. */
         fun verifyReauthOtp(enteredOtp: String) {
-            // Claimed before suspending, like requestReauthOtp: reading the token suspends, and a
-            // second tap in that window spent the same code twice and burned an OTP attempt.
             phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
                 val accessToken = accessToken()
@@ -335,7 +293,6 @@ class ChangePhoneNumberPresenter(
                         reauthToken = token
                         code = ""
                         errorMessage = null
-                        // Still no SMS to the new number: the step-up comes first.
                         phase = ChangePhoneNumberPhase.EnteringPin
                     }
                     .onFailure { error ->
@@ -348,9 +305,6 @@ class ChangePhoneNumberPresenter(
                                 currentPhone = ""
                                 phase = ChangePhoneNumberPhase.EnteringCurrentPhone
                             }
-                            // Not a wrong code: the number itself stopped parsing, so there is
-                            // nothing to retry here either. iOS sends both refusals back to the
-                            // number step, and the two apps must explain one refusal one way.
                             is ResolverError.InvalidPhoneNumber -> {
                                 errorMessage = R.string.screen_two_step_verification_phone_invalid
                                 currentPhone = ""
@@ -374,8 +328,6 @@ class ChangePhoneNumberPresenter(
          * new number. Every failure leaves the token spent, so each one restarts the flow.
          */
         fun startPhoneChange(enteredPhone: String) {
-            // Claimed before the suspending token read, for the same reason as the current-number
-            // step: this is the call that texts the NEW number, and it spends the reauth token.
             phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
                 val accessToken = accessToken()
@@ -395,9 +347,7 @@ class ChangePhoneNumberPresenter(
                     reauthToken = token,
                     newPhone = enteredPhone,
                     pin = stepUpPin,
-                    // No passkey assertion is produced on Android yet; the PIN is this client's
-                    // step-up factor. The server ranks the passkey above it and still accepts one
-                    // from any client that can assert it.
+                    // Android produces no passkey assertion yet, so the PIN is this client's step-up factor.
                     passkeyStepUpId = null,
                     passkeyCredentialJson = null,
                     language = Locale.getDefault().toLanguageTag(),
@@ -407,7 +357,6 @@ class ChangePhoneNumberPresenter(
                 stepUpPin = ""
                 result
                     .onSuccess { challenge ->
-                        // SMS to the NEW number fired here, and only here.
                         challengeId = challenge.challengeId
                         code = ""
                         errorMessage = null
@@ -415,11 +364,9 @@ class ChangePhoneNumberPresenter(
                     }
                     .onFailure { error ->
                         when (error) {
-                            // Hard block: the account holds no step-up factor. The operation ends,
-                            // it is never retried on the reauth token alone.
                             is ResolverError.StepUpRequired,
                             is ResolverError.PinSetupRequired -> blockOnStepUp(StepUpBlock.NoFactorRegistered)
-                            // Defense in depth: a cooldown that started after the pre-check.
+                            // A cooldown that started after the pre-check.
                             is ResolverError.TwoFactorCooldown -> showCooldown(error.retryAfterSeconds)
                             is ResolverError.PhoneChangeCooldown -> showCooldown(error.retryAfterSeconds)
                             is ResolverError.InvalidPin -> abortSpentReauth(R.string.screen_change_phone_pin_incorrect)
@@ -434,7 +381,6 @@ class ChangePhoneNumberPresenter(
         }
 
         fun completePhoneChange(enteredOtp: String) {
-            // Claimed before suspending, for the same reason as the steps above.
             phase = ChangePhoneNumberPhase.Submitting
             coroutineScope.launch {
                 val accessToken = accessToken()
@@ -496,13 +442,8 @@ class ChangePhoneNumberPresenter(
                     }
                     .onFailure { error ->
                         errorMessage = when (error) {
-                            // The block was stale rather than the user being wrong: they already
-                            // registered the passkey it is asking for. The resume re-read normally
-                            // clears the block first, so this is the race, not the common path.
                             is ResolverError.PasskeyAlreadyRegistered ->
                                 R.string.screen_two_step_verification_passkey_already_registered
-                            // Nothing this account can produce settles a step-up here, so there is
-                            // no factor to register and the way forward is the delayed recovery.
                             is ResolverError.StepUpUnavailable ->
                                 R.string.screen_two_step_verification_step_up_unavailable
                             else -> CommonStrings.error_unknown
@@ -538,10 +479,9 @@ class ChangePhoneNumberPresenter(
                     }
                 }
                 is ChangePhoneNumberEvents.PhoneChanged -> {
-                    // Mirror the welcome PhoneEntry pipeline: normalise (strip a redundant country
-                    // code from a paste/autofill and switch country if unambiguously international),
-                    // then auto-detect the country. Only raw digits are stored; the national mask is
-                    // visual-only. No-op for ordinary local typing.
+                    // Normalise (strip a redundant country code from a paste or autofill, switch country
+                    // if unambiguously international), then auto-detect the country. Only raw digits
+                    // are stored.
                     val (normalizedCountry, normalizedDigits) = Country.normalize(
                         rawInput = event.value,
                         current = selectedCountry,
@@ -564,7 +504,6 @@ class ChangePhoneNumberPresenter(
                 ChangePhoneNumberEvents.Continue -> {
                     when (phase) {
                         ChangePhoneNumberPhase.Intro -> {
-                            // Gate FIRST on the account's factors; nothing is sent before that.
                             errorMessage = null
                             code = ""
                             stepUpBlock = null
@@ -625,11 +564,9 @@ class ChangePhoneNumberPresenter(
 
     private companion object {
         /**
-         * The step-up factors this client can actually produce. Asserting a passkey needs a WebAuthn
-         * ceremony this Android build does not have yet, so the PIN is the only one it can offer.
-         *
-         * This steers the UI and nothing else. It is never sent to the identity service, which does
-         * not accept "my passkey is unavailable" as an input and weighs only what actually arrives.
+         * The step-up factors this client can produce. Asserting a passkey needs a WebAuthn ceremony this
+         * Android build does not have yet, so the PIN is the only one it can offer. Steers the UI only and
+         * is never sent to the identity service.
          */
         val PRODUCIBLE_STEP_UP_FACTORS = setOf(AuthFactor.PIN)
 

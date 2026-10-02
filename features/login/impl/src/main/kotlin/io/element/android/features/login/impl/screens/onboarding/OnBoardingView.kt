@@ -133,8 +133,7 @@ private fun AddFirstAccountScaffold(
 ) {
     OnBoardingPage(
         modifier = modifier,
-        // We paint our own full-bleed Gua-green "aurora" (see GuaWelcomeBackground) rather than the
-        // default Element onboarding image, for the branded welcome look that matches Gua iOS.
+        // GUA FORK: the Gua aurora replaces the default Element onboarding image.
         background = { GuaWelcomeBackground() },
         content = {
             Box(
@@ -199,14 +198,12 @@ private fun AddOtherAccountScaffold(
 }
 
 /**
- * The branded Gua welcome content: the premium Gua logo, a centered title + subtitle, and a quiet
- * "end-to-end encrypted" trust pill. Sits over the [GuaWelcomeBackground] aurora, so text uses
- * light, brand-fixed colours (the aurora is dark green in both light and dark themes).
+ * GUA FORK: the branded welcome content: the Gua logo, a centered title and subtitle, and an
+ * "end-to-end encrypted" trust pill, over the [GuaWelcomeBackground] aurora.
  */
 @Composable
 private fun OnBoardingContent() {
-    // The aurora canvas is dark in both themes, so we use light text rather than theme tokens
-    // (which would be near-black in light mode and disappear).
+    // The aurora is dark in both themes, so text colours are fixed.
     val titleColor = Color.White
     val subtitleColor = Color.White.copy(alpha = 0.78f)
 
@@ -220,8 +217,7 @@ private fun OnBoardingContent() {
         ) {
             ElementLogoAtom(
                 size = ElementLogoAtomSize.Large,
-                // Force the lighter glass treatment so the logo reads as a premium object on the
-                // dark aurora regardless of the active light/dark theme.
+                // Force the lighter glass treatment so the logo reads on the dark aurora in both themes.
                 darkTheme = false,
                 modifier = Modifier.padding(top = ElementLogoAtomSize.Large.shadowRadius / 2),
             )
@@ -250,7 +246,6 @@ private fun OnBoardingContent() {
 private fun TrustEncryptedPill(
     modifier: Modifier = Modifier,
 ) {
-    // A quiet translucent capsule that reads cleanly on the dark aurora.
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(percent = 50))

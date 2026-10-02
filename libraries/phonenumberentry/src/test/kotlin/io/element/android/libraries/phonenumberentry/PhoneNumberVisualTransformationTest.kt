@@ -29,7 +29,6 @@ class PhoneNumberVisualTransformationTest {
 
     @Test
     fun `single digit maps the cursor after the digit, past any mask prefix`() {
-        // "4" renders as "(4": the cursor must land after the digit (offset 2), not inside "(".
         val transformed = transform(us, "4")
         assertThat(transformed.text.text).isEqualTo("(4")
         assertThat(transformed.offsetMapping.originalToTransformed(0)).isEqualTo(0)
@@ -41,11 +40,9 @@ class PhoneNumberVisualTransformationTest {
 
     @Test
     fun `typing the digit that closes a group jumps the cursor past the inserted separators`() {
-        // 3 digits: "(415", cursor after the last digit.
         val three = transform(us, "415")
         assertThat(three.text.text).isEqualTo("(415")
         assertThat(three.offsetMapping.originalToTransformed(3)).isEqualTo(4)
-        // 4th digit closes the area-code group: "(415) 2", cursor lands after the "2" (offset 7).
         val four = transform(us, "4152")
         assertThat(four.text.text).isEqualTo("(415) 2")
         assertThat(four.offsetMapping.originalToTransformed(4)).isEqualTo(7)
@@ -57,7 +54,6 @@ class PhoneNumberVisualTransformationTest {
         assertThat(transformed.text.text).isEqualTo("(415) 273-1234")
         val mapping = transformed.offsetMapping
         for (offset in 0..10) {
-            // Mapping a digit-cursor into the mask and back must always return the same position.
             assertThat(mapping.transformedToOriginal(mapping.originalToTransformed(offset))).isEqualTo(offset)
         }
         assertThat(mapping.originalToTransformed(10)).isEqualTo(14)
@@ -102,8 +98,6 @@ class PhoneNumberVisualTransformationTest {
 
     @Test
     fun `non-digit content passes through untransformed`() {
-        // A pasted "+..." can sit in the buffer for a frame before the presenter normalises it;
-        // formatting would drop the "+" and desync the offsets, so those frames are identity.
         val transformed = transform(us, "+5511912345678")
         assertThat(transformed.text.text).isEqualTo("+5511912345678")
         assertThat(transformed.offsetMapping.originalToTransformed(5)).isEqualTo(5)

@@ -11,9 +11,6 @@ import io.element.android.features.enterprise.api.SessionEnterpriseService
 import io.element.android.libraries.androidutils.browser.withMxidLoginHint
 import io.element.android.libraries.matrix.api.core.SessionId
 
-/**
- * GUA FORK: the address the new-device approval page opens at. It names this account, so the page
- * refuses to approve the new device under a browser session that belongs to someone else.
- */
+/** Names this account so the approval page refuses a browser session that belongs to someone else. */
 internal suspend fun SessionEnterpriseService.linkNewDeviceBrowserUrl(verificationUri: String, sessionId: SessionId): String =
     tweakMasUrl(verificationUri).withMxidLoginHint(sessionId.value)

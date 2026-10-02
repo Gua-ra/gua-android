@@ -11,9 +11,6 @@ import io.element.android.libraries.guaresolver.HomeserverResolution
 import io.element.android.libraries.guaresolver.ResolvedHomeserver
 import io.element.android.libraries.guaresolver.ResolverClient
 
-/**
- * GUA FORK: lambda-overridable fake [ResolverClient] for login presenter/flow tests.
- */
 class FakeResolverClient(
     private val resolveResult: (String) -> Result<HomeserverResolution> = {
         Result.success(

@@ -15,9 +15,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * GUA FORK: bridges the country picked in [CountryPickerNode] back to the screen that opened it
- * (the welcome phone-entry screen or the change-phone-number screen) across the Appyx pop. Scoped to
- * the app so the picker and its caller share one instance regardless of which flow hosts them.
+ * Bridges the country picked in [CountryPickerNode] back to the screen that opened it across the
+ * Appyx pop. Scoped to the app so the picker and its caller share one instance.
  */
 @SingleIn(AppScope::class)
 @Inject

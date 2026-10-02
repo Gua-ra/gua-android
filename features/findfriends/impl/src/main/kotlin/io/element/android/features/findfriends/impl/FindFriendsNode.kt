@@ -19,11 +19,6 @@ import io.element.android.annotations.ContributesNode
 import io.element.android.features.findfriends.api.FindFriendsEntryPoint
 import io.element.android.libraries.di.SessionScope
 
-/**
- * GUA FORK: Appyx node for the Find friends screen. Android counterpart of iOS'
- * `FindFriendsScreenCoordinator`. Wires [FindFriendsPresenter] to [FindFriendsView] and forwards
- * navigation results to the [FindFriendsEntryPoint.Callback] supplied by the surrounding flow.
- */
 @ContributesNode(SessionScope::class)
 @AssistedInject
 class FindFriendsNode(

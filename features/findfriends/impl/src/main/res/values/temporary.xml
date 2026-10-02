@@ -5,28 +5,23 @@
   ~ Please see LICENSE files in the repository root for full details.
   -->
 <resources>
-    <!-- Gua Find friends (S12 contact discovery). English source of truth lives here (temporary.xml);
-         mirrors Element X iOS FindFriendsScreen copy. -->
+    <!-- Gua Find friends (contact discovery). English source of truth lives here; translations are in values-*/gua_translations.xml. -->
     <string name="screen_find_friends_title">Find friends</string>
 
-    <!-- New-chat / "+" menu entry. -->
     <string name="screen_find_friends_action">Find friends</string>
     <string name="screen_find_friends_action_description">See which of your contacts are on Gua</string>
 
     <string name="screen_find_friends_loading">Looking for your contacts on Gua…</string>
 
-    <!-- Permission states. -->
     <string name="screen_find_friends_permission_title">Allow access to Contacts</string>
     <string name="screen_find_friends_permission_message">Gua checks your contacts privately to find which of them are already here. Your contacts are never stored.</string>
     <string name="screen_find_friends_permission_action">Allow access</string>
     <string name="screen_find_friends_permission_denied_action">Open settings</string>
 
-    <!-- Empty state. -->
     <string name="screen_find_friends_empty_title">No contacts on Gua yet</string>
     <string name="screen_find_friends_empty_message">None of your contacts are on Gua yet. Invite them and they\'ll show up here.</string>
     <string name="screen_find_friends_empty_action">Check again</string>
 
-    <!-- Error state. -->
     <string name="screen_find_friends_error_title">Something went wrong</string>
     <string name="screen_find_friends_error_message">We couldn\'t check your contacts right now. Please try again.</string>
     <string name="screen_find_friends_error_action">Try again</string>

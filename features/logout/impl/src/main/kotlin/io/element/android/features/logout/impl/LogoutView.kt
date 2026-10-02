@@ -82,9 +82,8 @@ fun LogoutView(
 private fun title(state: LogoutState): String {
     return when {
         state.backupUploadState.isBackingUp() -> stringResource(id = R.string.screen_signout_key_backup_ongoing_title)
-        // GUA FORK: one line, whatever the key-storage state. Upstream branches three ways here
-        // and the healthy branch reads "Make sure you have access to your recovery key before
-        // removing this device" - a key Gua has never shown this user and never will.
+        // GUA FORK: one line, whatever the key-storage state. Upstream's copy asks for a recovery key,
+        // which Gua never shows.
         state.isLastDevice -> stringResource(id = R.string.gua_signout_last_device_title)
         else -> stringResource(CommonStrings.action_signout)
     }
@@ -96,8 +95,7 @@ private fun subtitle(state: LogoutState): String? {
         (state.backupUploadState as? BackupUploadState.SteadyException)?.exception is SteadyStateException.Connection ->
             stringResource(id = R.string.screen_signout_key_backup_offline_subtitle)
         state.backupUploadState.isBackingUp() -> stringResource(id = R.string.screen_signout_key_backup_ongoing_subtitle)
-        // GUA FORK: upstream's line here says "you'll need a recovery key in order to confirm your
-        // digital identity and restore your encrypted chats".
+        // GUA FORK: upstream's line here says a recovery key is needed to restore encrypted chats.
         state.isLastDevice -> stringResource(id = R.string.gua_signout_last_device_subtitle)
         else -> null
     }
@@ -108,10 +106,8 @@ private fun ColumnScope.Buttons(
     state: LogoutState,
     onLogoutClick: () -> Unit,
 ) {
-    // GUA FORK: no "Settings" button. It opened the secure-backup console, which is the screen
-    // that generates a recovery key and asks the user to save it, and it did so regardless of the
-    // developer gate on the Settings row. Signing out of your only device is the one moment this
-    // fork most needs NOT to hand someone a key.
+    // GUA FORK: no "Settings" button. It opened the secure-backup console, which generates a recovery
+    // key and asks the user to save it.
     val logoutAction = state.logoutAction
     val signOutSubmitRes = when {
         logoutAction is AsyncAction.Loading -> R.string.screen_signout_in_progress_dialog_content

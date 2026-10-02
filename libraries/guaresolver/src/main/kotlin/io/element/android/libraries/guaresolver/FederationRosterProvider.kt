@@ -7,11 +7,7 @@
 
 package io.element.android.libraries.guaresolver
 
-/**
- * GUA FORK: provides the current federation roster to user search, or `null` when it isn't
- * available. Unavailability is not an error: federated search silently degrades to local-only.
- * Android counterpart of iOS `FederationRosterProviding`.
- */
+/** Null when the roster is unavailable. Federated search then degrades to local-only. */
 interface FederationRosterProvider {
     suspend fun currentRoster(): FederationRoster?
 }

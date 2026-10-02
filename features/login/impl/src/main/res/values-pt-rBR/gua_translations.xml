@@ -4,18 +4,10 @@
   ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
   ~ Please see LICENSE files in the repository root for full details.
   -->
-<!-- GUA FORK: Brazilian Portuguese (pt-BR) translations for Gua-custom login/onboarding strings.
-     English source of truth lives in values/temporary.xml. This file is the fork analogue of
-     Localazy translations.xml for Gua-only keys (which Localazy cannot regenerate for a fork).
-     Welcome strings ported from Element X iOS pt-BR.lproj; phone-entry ported from iOS
-     screen_phone_login_* keys; country picker translated to match iOS tone. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <!-- Onboarding / welcome (ported from iOS screen_onboarding_welcome_title + the end-to-end
-         encrypted trust pill shown below it). -->
     <string name="gua_onboarding_welcome_title">Bem-vindo ao Gua</string>
     <string name="screen_onboarding_trust_encrypted">Criptografado de ponta a ponta</string>
 
-    <!-- Phone-first entry (ported from iOS screen_phone_login_* / screen_phone_entry_*). -->
     <string name="screen_phone_entry_welcome_title">Bem-vindo ao Gua</string>
     <string name="screen_phone_entry_title">Qual é o seu número?</string>
     <string name="screen_phone_entry_message">Digite seu número de telefone</string>
@@ -25,9 +17,7 @@
 
     <string name="gua_onboarding_welcome_message">Mensagens privadas, de um jeito simples.</string>
 
-    <!-- Sign in with a passkey ("chave de acesso", the term the preferences module already uses). -->
     <string name="gua_sign_in_with_passkey">Entrar com chave de acesso</string>
 
-    <!-- Falha ao preparar a conta neste aparelho (ADM-008). -->
     <string name="gua_account_setup_failed">Não foi possível concluir a configuração da sua conta neste dispositivo. Tente novamente.</string>
 </resources>

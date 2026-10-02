@@ -55,12 +55,7 @@ class DefaultFtueService(
 
     init {
         combine(
-            // Gua: encryption is set up on first sign-in and restored on re-login entirely in the
-            // background (see SilentSessionEncryptionBootstrapper in the matrix impl module), so we
-            // never gate the user on the identity-confirmation / verify ceremony. We therefore do
-            // NOT flip userNeedsToConfirmSessionVerificationSuccess when the session is not verified;
-            // the FtueStep.SessionVerification step is unreachable below. This mirrors iOS
-            // OnboardingFlowCoordinator.requiresVerification == false exactly.
+            // GUA FORK: session verification never gates onboarding; encryption is set up in the background.
             sessionVerificationService.sessionVerifiedStatus,
             userNeedsToConfirmSessionVerificationSuccess,
             analyticsService.didAskUserConsentFlow.distinctUntilChanged(),
@@ -80,16 +75,9 @@ class DefaultFtueService(
 
     private suspend fun getNextStep(completedStep: FtueStep? = null): FtueStep? =
         when (completedStep) {
-            // GUA FORK: never wait for the verification state. The only step that needed it is
-            // the session-verification ceremony below, which this fork does not present, and the
-            // wait held a device whose identity was reset from ANOTHER device on a blank screen
-            // for good (the SDK's encryption set-up never reports ready there). The room list
-            // handles an unverified or incomplete device with its setup banner instead.
+            // GUA FORK: never wait for the verification state. It never arrives on a device whose identity was reset elsewhere.
             null -> getNextStep(FtueStep.WaitingForInitialState)
-            // Gua: never gate onboarding on session verification. Encryption is bootstrapped /
-            // restored silently in the background, mirroring iOS requiresVerification == false, so
-            // the ChooseSelfVerificationMode ceremony is never presented. Device verification /
-            // recovery remains reachable from Settings (see SecureBackup / PreferencesRootPresenter).
+            // GUA FORK: the session-verification ceremony is never presented, so this skips straight past it.
             FtueStep.WaitingForInitialState -> getNextStep(FtueStep.SessionVerification)
             FtueStep.SessionVerification -> if (shouldAskNotificationPermissions()) {
                 FtueStep.NotificationsOptIn

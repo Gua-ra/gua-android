@@ -15,11 +15,8 @@ import io.element.android.libraries.di.annotations.ApplicationContext
 import timber.log.Timber
 
 /**
- * GUA FORK: reads the device address book and returns a map of normalized E.164 number -> best local
- * display name. Android counterpart of iOS `ContactDiscoveryService.readAddressBook`.
- *
- * PRIVACY: this is a one-shot read used only to build the lookup payload. The address book is never
- * persisted, and individual phone numbers are never logged.
+ * Reads the device address book as a map of normalized E.164 number to best local display name.
+ * A one-shot read: the address book is never persisted and phone numbers are never logged.
  */
 interface ContactsReader {
     /** @return E.164 number -> the best local name for it, or an empty map if none/unreadable. */

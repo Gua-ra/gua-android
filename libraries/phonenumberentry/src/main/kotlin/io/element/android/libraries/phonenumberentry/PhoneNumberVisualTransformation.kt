@@ -13,17 +13,14 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 
 /**
- * GUA FORK: renders raw national digits with the country's national mask (e.g. "5551234567" ->
- * "(555) 123-4567") purely visually. The field value stays digits-only, so ordinary typing never
- * rewrites the text buffer (which is what used to garble the cursor at group boundaries and reorder
- * rapid input); [OffsetMapping] translates cursor positions between the digit string and the mask.
+ * Renders raw national digits with the country's national mask (e.g. "5551234567" ->
+ * "(555) 123-4567") purely visually. The field value stays digits-only, so typing never rewrites the
+ * text buffer. [OffsetMapping] translates cursor positions between the digit string and the mask.
  */
 data class PhoneNumberVisualTransformation(private val country: Country) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val raw = text.text
-        // The presenters keep the value digits-only, but the field's internal buffer can briefly
-        // hold other characters (e.g. a pasted "+55...") before normalisation lands. Formatting
-        // would drop them and desync the offsets, so pass those frames through untransformed.
+        // The buffer can briefly hold non-digits (a pasted "+55..."): pass those frames through untransformed.
         if (raw.isEmpty() || raw.any { !it.isDigit() }) {
             return TransformedText(text, OffsetMapping.Identity)
         }

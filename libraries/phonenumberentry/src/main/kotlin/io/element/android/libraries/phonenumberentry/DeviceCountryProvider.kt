@@ -13,11 +13,9 @@ import dev.zacsweers.metro.ContributesBinding
 import io.element.android.libraries.di.annotations.ApplicationContext
 
 /**
- * GUA FORK: resolves the country to preselect on the phone number field.
- *
- * Injected rather than read from `LocalContext` inside the presenter, because presenter tests run
- * without an Android context and reading the composition local throws there. It also keeps the
- * SIM lookup out of composition.
+ * Resolves the country to preselect on the phone number field. Injected rather than read from
+ * `LocalContext` inside the presenter, because presenter tests run without an Android context. It
+ * also keeps the SIM lookup out of composition.
  */
 interface DeviceCountryProvider {
     fun current(): Country

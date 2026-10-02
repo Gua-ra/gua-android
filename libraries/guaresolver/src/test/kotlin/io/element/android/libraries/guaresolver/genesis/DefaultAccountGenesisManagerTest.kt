@@ -22,13 +22,6 @@ import java.security.spec.X509EncodedKeySpec
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
-/**
- * GUA FORK: the client half of ADM-008 decision 6, end to end against a recorded identity-service.
- *
- * The two branches that matter are the ones that look alike and are not: a deployment which says it does
- * not do genesis continues silently with no handle, and a client which meant to register one and could
- * not fails the signup.
- */
 @OptIn(ExperimentalEncodingApi::class)
 class DefaultAccountGenesisManagerTest {
     private var sentGenesis: String? = null
@@ -44,14 +37,12 @@ class DefaultAccountGenesisManagerTest {
         val registered = registration as GenesisRegistration.Registered
         assertThat(registered.attachHandle).isEqualTo(FakeIdentityServiceClient.A_FAKE_ATTACH_HANDLE)
 
-        // What crossed the wire must decode under the server's own rules and re-derive the same id.
         val canonicalBytes = decodeBase64Url(checkNotNull(sentGenesis))
         val genesis = AccountGenesisCodec.decode(canonicalBytes)
         assertThat(genesis.accountId().value).isEqualTo(registered.accountId.value)
         assertThat(genesis.recoveryFrameworkId).isEqualTo(AccountGenesis.RECOVERY_FRAMEWORK_COMMITTED_KEY)
         assertThat(canonicalBytes).hasLength(AccountGenesis.LENGTH)
 
-        // The registration proof is a signature by the committed authority key over the domain and bytes.
         val proof = decodeBase64Url(checkNotNull(sentProof))
         assertThat(verify(genesis.authorityPublicKey(), GenesisProofs.genesisProofPreimage(canonicalBytes), proof)).isTrue()
     }
@@ -157,10 +148,6 @@ class DefaultAccountGenesisManagerTest {
         assertThat(manager.signAttachProof(encodeBase64Url(ByteArray(31))).isFailure).isTrue()
     }
 
-    /**
-     * The shared fake, wired to record what crossed the wire and, by default, to derive the accountId
-     * from the bytes it received exactly as identity-service does.
-     */
     private fun capturingClient(
         result: ((String) -> Result<AccountGenesisRegistration>)? = null,
         handleOverride: String? = null,

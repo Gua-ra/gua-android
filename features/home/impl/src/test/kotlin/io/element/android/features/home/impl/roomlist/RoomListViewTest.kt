@@ -181,11 +181,10 @@ class RoomListViewTest : RobolectricTest() {
         eventsRecorder.assertSingle(RoomListEvent.DismissBanner)
     }
 
+    // GUA FORK: the tap asks the presenter to run the silent repair. It only navigates if a reset turns
+    // out to be required.
     @Test
     fun `clicking the finish setup banner asks the presenter to repair`() = runAndroidComposeUiTest {
-        // GUA FORK: the tap no longer navigates. It asks the presenter to run the silent repair,
-        // which owns the button's progress state and only navigates if a reset turns out to be
-        // genuinely required.
         val eventsRecorder = EventsRecorder<RoomListEvent>()
         setRoomListView(
             state = aRoomListState(
@@ -202,11 +201,10 @@ class RoomListViewTest : RobolectricTest() {
         eventsRecorder.assertSingle(RoomListEvent.FinishEncryptionSetup)
     }
 
+    // GUA FORK: SetUpRecovery must still show the banner that finishes setup silently, never upstream's
+    // screen that hands out a recovery key.
     @Test
     fun `the set up recovery state shows the silent repair banner, never the key one`() = runAndroidComposeUiTest {
-        // GUA FORK: the presenter no longer produces SetUpRecovery, but if anything ever did, the
-        // user must still get the banner that finishes setup silently rather than upstream's,
-        // which walks them into a screen that hands out a recovery key.
         val eventsRecorder = EventsRecorder<RoomListEvent>()
         setRoomListView(
             state = aRoomListState(

@@ -28,13 +28,10 @@ import retrofit2.HttpException
 import timber.log.Timber
 
 /**
- * GUA FORK: default [IdentityServiceClient]. Talks to the active [GuaDeployment]'s identity-service
- * via Retrofit, reusing the app-wide [RetrofitFactory] (OkHttp + kotlinx-serialization). Mirrors iOS
- * `IdentityServiceClient.lookupContacts`.
+ * Talks to the active [GuaDeployment]'s identity service through Retrofit.
  *
- * PRIVACY: only hashed phone digests are sent (the caller is expected to protect raw E.164 numbers
- * via `PhoneHasher` first), the address book is never persisted, and nothing about the contacts is
- * logged. The lookup is authenticated with the caller's Matrix access token over TLS.
+ * Only hashed phone digests are sent for contact discovery, the address book is never persisted and
+ * nothing about the contacts is logged.
  */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
@@ -73,9 +70,8 @@ class DefaultIdentityServiceClient(
                 ContactMatch(
                     hashedPhone = match.hashedPhone,
                     userId = match.userId,
-                    // Homeserver abstraction: prefer the assigned global username, otherwise strip
-                    // the ":homeserver" suffix from the Matrix id (mirrors iOS `DiscoveredContact.handle`
-                    // and the Android `UserId.displayHandle`). Never surface the homeserver to users.
+                    // Homeserver abstraction: prefer the assigned global username, otherwise strip the ":homeserver"
+                    // suffix from the Matrix id. Never surface the homeserver to users.
                     displayHandle = displayHandle(username = match.username, userId = match.userId),
                     displayName = match.displayName,
                     avatarUrl = match.avatarUrl,
@@ -95,8 +91,6 @@ class DefaultIdentityServiceClient(
         }
     }
 
-    // GUA FORK: Two-step verification (account PIN). Mirrors iOS `IdentityServiceClient` PIN methods.
-
     override suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus> =
         runPinCall { api ->
             val response = api.pinStatus(authorization = "Bearer $accessToken")
@@ -105,9 +99,9 @@ class DefaultIdentityServiceClient(
             AccountFactorStatus(
                 hasPin = hasPin,
                 passkeyRegistered = passkeyRegistered,
-                // An identity-service that predates the factor policy sends neither field. Derive
-                // them from what the account is known to hold rather than defaulting to "nothing",
-                // which would hard-block a phone change the old server would have allowed.
+                // An identity service that predates the factor policy sends neither field. Derive them from what
+                // the account is known to hold rather than defaulting to "nothing", which would hard-block a phone
+                // change the old server would have allowed.
                 preferredFactor = AuthFactor.fromWire(response.preferredFactor)
                     ?: strongestHeld(passkeyRegistered = passkeyRegistered, hasPin = hasPin),
                 phoneChangeStepUpFactors = response.phoneChangeStepUpFactors
@@ -160,12 +154,6 @@ class DefaultIdentityServiceClient(
             )
         }
 
-    // GUA FORK: Change phone number, against the real `/account` contract: the current number, then
-    // a reauth OTP to it, then a token, then a step-up factor plus the new number, then the
-    // new-number OTP. The SMS to the new number is sent by `startPhoneChange`, which the server only
-    // reaches once it has accepted a step-up factor, so nothing earlier in this sequence can text
-    // the new number.
-
     override suspend fun startPhoneChangeReauth(accessToken: String, phone: String, language: String?): Result<Unit> =
         runPinCall { api ->
             api.startAccountReauth(
@@ -179,9 +167,8 @@ class DefaultIdentityServiceClient(
         runPinCall { api ->
             api.verifyAccountReauth(
                 authorization = "Bearer $accessToken",
-                // Always scoped. The server binds the token to this operation and refuses to spend a
-                // token minted for another one, so leaving the default (DEACTIVATE) in place would
-                // hand back a token that the phone change cannot use.
+                // Always scoped. The server binds the token to this operation, so the default (DEACTIVATE) would
+                // hand back a token the phone change cannot spend.
                 body = AccountReauthVerifyRequest(phone = phone, code = code, operation = PHONE_CHANGE_OPERATION),
             ).reauthToken
         }
@@ -221,24 +208,18 @@ class DefaultIdentityServiceClient(
             )
         }
 
-    // GUA FORK: Passkey enrollment. Mirrors iOS `IdentityServiceClient.startPasskeyEnrollment`.
-
     override suspend fun startPasskeyEnrollment(accessToken: String): Result<String> =
         startFactorEnrollment { api, body ->
             api.startPasskeyEnrollment(authorization = "Bearer $accessToken", body = body).enrollUrl
         }
 
     /**
-     * Runs a factor-enrollment start, naming this build's own redirect so the ceremony comes back to
-     * the app it was opened from rather than to whichever variant the deployment happens to have
-     * configured.
+     * Runs a factor-enrollment start, naming this build's own redirect so the ceremony comes back to the
+     * app it was opened from.
      *
-     * The named value is only ever a request. A server that predates the field ignores it, and one
-     * that has not allowlisted this variant refuses the whole call with 400 `invalid_redirect_uri`,
-     * so that refusal is answered once by asking again with no redirect at all. Enrollment then
-     * proceeds exactly as it did before this existed, which is what keeps a QA build off a dead end
-     * on a deployment nobody has updated yet. The retry runs at most once: a second refusal is
-     * surfaced rather than looped on.
+     * A server that predates the field ignores it. One that has not allowlisted this variant refuses the
+     * call with 400 `invalid_redirect_uri`, which is answered once by asking again with no redirect. A
+     * second refusal is surfaced rather than looped on.
      */
     private inline fun startFactorEnrollment(
         call: (IdentityServiceApi, FactorEnrollStartRequest) -> String,
@@ -249,14 +230,12 @@ class DefaultIdentityServiceClient(
         val named = runPinCall { api -> call(api, FactorEnrollStartRequest(redirectUri = redirectUri)) }
         if (named.exceptionOrNull() !is ResolverError.InvalidRedirectUri) return named
 
-        // Never log the value itself: it names the build, and the server deliberately does not echo
-        // it back either.
+        // Never log the value itself: it names the build, and the server does not echo it back either.
         Timber.w("The identity service refused this build's enrollment redirect, starting again without one")
         return runPinCall { api -> call(api, FactorEnrollStartRequest()) }
     }
 
-    // GUA FORK: account genesis registration (ADM-008 Phase 3). No access token: the request carries its
-    // own possession proof, because it runs before any login session exists.
+    // No access token: the request carries its own possession proof.
 
     override suspend fun registerAccountGenesis(genesisB64Url: String, proofB64Url: String): Result<AccountGenesisRegistration> =
         runPinCall { api ->
@@ -267,9 +246,8 @@ class DefaultIdentityServiceClient(
         }
 
     /**
-     * Runs an identity-service PIN call against a freshly-built [IdentityServiceApi], mapping HTTP
-     * failures onto the typed [ResolverError] PIN cases (mirroring iOS' status-code + `code`-field
-     * handling) and everything else onto [ResolverError.Transport].
+     * Runs an identity-service call against a freshly built [IdentityServiceApi], mapping HTTP failures
+     * onto the typed [ResolverError] cases and everything else onto [ResolverError.Transport].
      */
     private inline fun <T> runPinCall(block: (IdentityServiceApi) -> T): Result<T> {
         val baseUrl = deployment.identityServiceBaseUrl
@@ -292,10 +270,7 @@ class DefaultIdentityServiceClient(
         }
     }
 
-    /**
-     * Maps an [HttpException] from a PIN endpoint onto a typed [ResolverError], parsing the JSON
-     * `code` field from the error body. Mirrors iOS `sendAuthenticated`'s status-code switch.
-     */
+    /** Maps an [HttpException] onto a typed [ResolverError] by parsing the JSON `code` field of the error body. */
     private fun HttpException.toPinError(): ResolverError {
         val rawBody = response()?.errorBody()?.string()
         val errorBody = rawBody?.let {
@@ -314,30 +289,20 @@ class DefaultIdentityServiceClient(
             "phone_change_challenge_invalid" -> ResolverError.PhoneChangeChallengeInvalid
             "phone_already_linked" -> ResolverError.PhoneAlreadyLinked
             "invalid_reauth_token" -> ResolverError.InvalidReauthToken
-            // The submitted number is not the account's. One case for "unknown", "someone else's"
-            // and "not this one", because the server answers all three the same way on purpose.
             "reauth_phone_mismatch" -> ResolverError.ReauthPhoneMismatch
             "invalid_phone_number" -> ResolverError.InvalidPhoneNumber
             "pin_already_set" -> ResolverError.PinAlreadySet
-            // The enrollment refusals that are not the caller's fault. Left unnamed they became the
-            // generic "Something went wrong", which is exactly wrong for the one account that
-            // genuinely cannot enroll here and for the one that already finished enrolling.
             "passkey_already_registered" -> ResolverError.PasskeyAlreadyRegistered
             "step_up_unavailable" -> ResolverError.StepUpUnavailable
-            // Named so `startFactorEnrollment` can tell this refusal apart from every other 400 and
-            // start again without a redirect. Left as a bare server error it would have dead-ended
-            // the one flow it exists to keep open.
+            // Named so `startFactorEnrollment` can tell this refusal apart from every other 400 and retry without a redirect.
             "invalid_redirect_uri" -> ResolverError.InvalidRedirectUri
-            // The account holds neither a PIN nor a passkey. A hard block, mapped to its own case so
-            // no caller can mistake it for one of the retryable PIN failures below.
             "step_up_required" -> ResolverError.StepUpRequired
             "pin_setup_required" -> ResolverError.PinSetupRequired
             "phone_change_cooldown" -> ResolverError.PhoneChangeCooldown(retryAfterSeconds = cooldownRetryAfter)
             "twofa_cooldown_active" -> ResolverError.TwoFactorCooldown(retryAfterSeconds = cooldownRetryAfter)
             "rate_limited" -> ResolverError.RateLimited
-            // Status-only fallbacks, for a response that carried no `code` at all. Deliberately
-            // narrow: a bare 403 is left as a plain server error, because 403 is not on its own a
-            // step-up refusal and other endpoints answer with it for reasons of their own.
+            // Status-only fallbacks, for a response that carried no `code`. Deliberately narrow: a bare 403 stays
+            // a plain server error, because other endpoints answer 403 for reasons of their own.
             else -> when (code()) {
                 409 -> ResolverError.PhoneAlreadyLinked
                 425 -> ResolverError.PinChangeCooldown(retryAfterSeconds = retryAfter)

@@ -22,13 +22,7 @@ import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
 
-/**
- * GUA FORK: the account authority key store round trip (ADM-008 decision 5).
- *
- * Signatures are verified with the JDK Ed25519 provider rather than with the same library that produced
- * them, so this really checks interoperability with the server that will verify them, not that one
- * implementation agrees with itself.
- */
+/** Signatures are verified with the JDK Ed25519 provider, which is what the server verifies with. */
 class DefaultAccountAuthorityKeyStoreTest {
     @Test
     fun `creating a key pair yields two distinct 32-byte public keys`() = runTest {
@@ -38,9 +32,7 @@ class DefaultAccountAuthorityKeyStoreTest {
 
         assertThat(keys.authorityPublicKey()).hasLength(32)
         assertThat(keys.recoveryAuthorityPublicKey()).hasLength(32)
-        // ADM-008 decision 4: the recovery key must differ from the authority key.
         assertThat(keys.authorityPublicKey()).isNotEqualTo(keys.recoveryAuthorityPublicKey())
-        // Both must be genuine curve points, or the server's decoder would refuse the genesis.
         assertThat(Ed25519PublicKeys.isOnCurve(keys.authorityPublicKey())).isTrue()
         assertThat(Ed25519PublicKeys.isOnCurve(keys.recoveryAuthorityPublicKey())).isTrue()
         assertThat(Ed25519PublicKeys.isAllZero(keys.authorityPublicKey())).isFalse()
@@ -92,8 +84,6 @@ class DefaultAccountAuthorityKeyStoreTest {
 
         val thrown = runCatchingExceptions { keyStore.signWithAuthorityKey("anything".toByteArray()) }.exceptionOrNull()
 
-        // A missing key must never be mistaken for a successful signature: that is the silent bootstrap
-        // ADM-008 decision 6 warns about.
         assertThat(thrown).isInstanceOf(IllegalStateException::class.java)
     }
 
@@ -120,8 +110,6 @@ class DefaultAccountAuthorityKeyStoreTest {
         val persisted = factory.create("gua_account_genesis").data.first()[stringPreferencesKey("sealed_authority_seed")]
         assertThat(persisted).isNotNull()
 
-        // Unsealing with the same keystore-held key gives back the seed whose public half was published,
-        // which is what proves the stored blob is the key and that it was stored sealed.
         val seed = encryptionDecryptionService.decrypt(
             secretKeyRepository.getOrCreateKey(SECRET_KEY_ALIAS, false),
             EncryptionResult.fromBase64(persisted!!),
@@ -129,7 +117,6 @@ class DefaultAccountAuthorityKeyStoreTest {
         assertThat(seed).hasLength(32)
         assertThat(Ed25519Sign.KeyPair.newKeyPairFromSeed(seed).publicKey).isEqualTo(keys.authorityPublicKey())
 
-        // And the seed itself appears nowhere in what was written.
         assertThat(persisted).doesNotContain(seed.toHexForTest())
         assertThat(persisted).doesNotContain(String(seed, Charsets.ISO_8859_1))
     }
@@ -140,13 +127,11 @@ class DefaultAccountAuthorityKeyStoreTest {
         val attached = keyStore.createKeyPair()
         keyStore.markAttached(AN_ACCOUNT_ID)
 
-        // A second signup on the same device: this is the call that used to overwrite both seeds.
         val forTheNextSignup = keyStore.createKeyPair()
 
         assertThat(forTheNextSignup.authorityPublicKey()).isNotEqualTo(attached.authorityPublicKey())
         val kept = checkNotNull(keyStore.attachedPublicKeys())
         assertThat(kept.authorityPublicKey()).isEqualTo(attached.authorityPublicKey())
-        // Framework 0x01 seals the recovery key beside it, so it has to survive the same way.
         assertThat(kept.recoveryAuthorityPublicKey()).isEqualTo(attached.recoveryAuthorityPublicKey())
         assertThat(keyStore.attachedAccountId()).isEqualTo(AN_ACCOUNT_ID.value)
     }
@@ -158,7 +143,6 @@ class DefaultAccountAuthorityKeyStoreTest {
         keyStore.markAttached(AN_ACCOUNT_ID)
         keyStore.createKeyPair()
 
-        // The no-genesis branch calls this after minting a pair. It must not take the account with it.
         keyStore.clear()
 
         assertThat(keyStore.hasKeyPair()).isFalse()
@@ -228,7 +212,6 @@ class DefaultAccountAuthorityKeyStoreTest {
         preferenceDataStoreFactory = preferenceDataStoreFactory,
     )
 
-    /** Verifies with the JDK provider, which is what identity-service verifies with. */
     private fun verify(rawPublicKey: ByteArray, message: ByteArray, signature: ByteArray): Boolean {
         val spki = SPKI_PREFIX.hexToBytesForTest() + rawPublicKey
         val publicKey = KeyFactory.getInstance("Ed25519").generatePublic(X509EncodedKeySpec(spki))

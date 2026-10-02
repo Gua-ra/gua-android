@@ -8,9 +8,8 @@
 package io.element.android.libraries.guaresolver
 
 /**
- * GUA FORK: thin accessor over the generated [BuildConfig] fields, plus the build-time selection of
- * the active [GuaDeployment]. Production values are committed; development values come from
- * `local.properties` via the module's `build.gradle.kts` and are empty when absent.
+ * Accessor over the generated [BuildConfig] fields. Production values are committed. Development
+ * values come from `local.properties` through the module's `build.gradle.kts` and are empty when absent.
  */
 object GuaResolverConfig {
     const val PROD_RESOLVER_BASE_URL: String = BuildConfig.GUA_PROD_RESOLVER_BASE_URL
@@ -21,10 +20,9 @@ object GuaResolverConfig {
     const val DEV_IDENTITY_SERVICE_BASE_URL: String = BuildConfig.GUA_DEV_IDENTITY_SERVICE_BASE_URL
 
     /**
-     * The active deployment for this build: [GuaDeployment.Development] for debug builds and for
-     * release builds produced with `-Pgua.deployment=dev` (the Play internal-testing / QA build,
-     * mirroring the iOS dev TestFlight app), [GuaDeployment.Production] otherwise. Mirrors iOS
-     * `GuaDeployment.current`.
+     * The active deployment for this build: [GuaDeployment.Development] for debug builds and for release
+     * builds produced with `-Pgua.deployment=dev` (the Play internal-testing QA build),
+     * [GuaDeployment.Production] otherwise.
      */
     val current: GuaDeployment
         get() = if (BuildConfig.DEBUG || BuildConfig.GUA_USE_DEV_DEPLOYMENT) GuaDeployment.Development else GuaDeployment.Production

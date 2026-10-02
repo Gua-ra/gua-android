@@ -59,13 +59,8 @@ fun AnalyticsOptInView(
     }
 
     BackHandler(onBack = ::onDeclineTerms)
-    // GUA FORK: match iOS `AnalyticsPromptScreen`, which renders the header, checklist AND buttons
-    // together in the main (white) content area. iOS' gradient is only a thin TOP breaker behind the
-    // header; Android's `OnboardingBackground` is a 220dp BOTTOM band, so the dark filled buttons —
-    // which naturally fall near the bottom of the content flow — landed ON that teal/blue gradient,
-    // giving an ugly dark-on-blue contrast. We therefore (1) move the buttons up into the content
-    // (no separate footer over the gradient) and (2) drop the bottom gradient entirely so everything
-    // sits on the white `bgCanvasDefault`, matching the iOS result.
+    // GUA FORK: the buttons live in the content area and the bottom gradient is dropped, so the dark
+    // filled buttons sit on `bgCanvasDefault` instead of the gradient.
     HeaderFooterPage(
         modifier = modifier
             .fillMaxSize()
@@ -126,10 +121,7 @@ private fun AnalyticsOptInContent(
     onAcceptTerms: () -> Unit,
     onDeclineTerms: () -> Unit,
 ) {
-    // GUA FORK: lay the checklist and buttons out as a top-anchored column directly under the
-    // header, matching iOS' `VStack(spacing: 40)`. The buttons therefore sit immediately below the
-    // checklist in the white content area, NOT at the very bottom over the `OnboardingBackground`
-    // gradient (the previous bottom-biased Box pushed them down onto the gradient).
+    // GUA FORK: checklist and buttons are a top-anchored column directly under the header.
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -155,9 +147,7 @@ private fun AnalyticsOptInContent(
             textStyle = ElementTheme.typography.fontBodyLgMedium,
             iconTint = ElementTheme.colors.iconSuccessPrimary,
         )
-        // GUA FORK: the OK / Not now buttons live here in the white content area (matching iOS,
-        // where they sit in `mainContent` rather than over the bottom gradient) so the dark
-        // filled buttons stay high-contrast against `bgCanvasDefault`.
+        // GUA FORK: the OK / Not now buttons live here in the content area, not over the bottom gradient.
         AnalyticsOptInButtons(
             onAcceptTerms = onAcceptTerms,
             onDeclineTerms = onDeclineTerms,
@@ -176,8 +166,7 @@ private fun AnalyticsOptInButtons(
             onClick = onAcceptTerms,
             modifier = Modifier.fillMaxWidth(),
         )
-        // GUA FORK: both choices are equal filled primary buttons (matching iOS, which uses
-        // `.compound(.primary)` on both) so neither option is visually nudged.
+        // GUA FORK: both choices are filled primary buttons so neither is nudged.
         Button(
             text = stringResource(id = CommonStrings.action_not_now),
             onClick = onDeclineTerms,

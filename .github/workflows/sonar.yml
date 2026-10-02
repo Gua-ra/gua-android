@@ -1,6 +1,6 @@
 name: Sonar
 
-# GUA FORK: disabled — depends on the upstream SonarCloud project + SONAR_TOKEN. Manual only.
+# GUA FORK: manual dispatch only. Depends on the upstream SonarCloud project and SONAR_TOKEN.
 on:
   workflow_dispatch:
 

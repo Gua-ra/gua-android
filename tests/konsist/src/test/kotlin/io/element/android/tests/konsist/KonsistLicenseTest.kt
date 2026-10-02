@@ -23,10 +23,7 @@ class KonsistLicenseTest {
          \*/
         """.trimIndent().toRegex()
 
-    // GUA FORK: files written for this fork carry the fork's own copyright rather than
-    // Element's, per the project's header policy. Upstream files keep their Element notice,
-    // and a file modified rather than authored here keeps it too. The SPDX terms are
-    // unchanged either way, so the licence itself is identical.
+    // GUA FORK: files written for this fork carry the fork's own copyright. Upstream and modified files keep the Element notice.
     private val guaLicense = """
         /\*
          \* Copyright 20\d\d((, |-)20\d\d)? Gua
@@ -98,9 +95,8 @@ class KonsistLicenseTest {
                     it.name.startsWith("Template ").not()
             }
             .assertTrue {
-                // <= 1 rather than == 1: a Gua-authored file carries no Element notice at
-                // all, and zero is not a double header. This test exists to catch a file
-                // that ended up with two, which is still caught.
+                // <= 1 rather than == 1: a Gua-authored file carries no Element notice at all. This test
+                // exists to catch a file that ended up with two.
                 it.text.count("Element Creations Ltd.") <= 1
             }
     }

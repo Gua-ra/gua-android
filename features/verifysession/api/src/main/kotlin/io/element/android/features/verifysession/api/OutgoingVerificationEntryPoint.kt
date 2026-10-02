@@ -19,11 +19,7 @@ interface OutgoingVerificationEntryPoint : FeatureEntryPoint {
     data class Params(
         val showDeviceVerifiedScreen: Boolean,
         val verificationRequest: VerificationRequest.Outgoing,
-        /**
-         * GUA FORK: run the verification even when this device already counts as verified. A
-         * device can be verified yet still lack its keys (a first attempt whose keys never
-         * arrived); without this a retry exited the screen at once, with nothing on it.
-         */
+        /** GUA FORK: run the verification even when this device already counts as verified. It can still lack its keys. */
         val forceVerification: Boolean = false,
     ) : NodeInputs
 

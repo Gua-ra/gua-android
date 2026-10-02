@@ -30,8 +30,6 @@ class DefaultEnrollmentRedirectProviderTest {
             oAuthRedirectUrlProvider = FakeOAuthRedirectUrlProvider(provideResult = "global.gua.debug:/"),
         )
 
-        // Without these the enrollment sheet returns to production's scheme, which on a QA device is
-        // an app that is not installed.
         assertThat(qa.provide()).isEqualTo("global.gua.dev:/oidc")
         assertThat(debug.provide()).isEqualTo("global.gua.debug:/oidc")
     }

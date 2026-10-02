@@ -15,7 +15,7 @@ object FirebaseConfig {
      *
      * GUA FORK: Gua's own gateway. The upstream value is matrix.org's Sygnal, which
      * holds none of Gua's Firebase credentials and rejects every notification from
-     * this app. Deployed from gua-deploy k8s/services/sygnal.yaml.
+     * this app.
      */
     const val PUSHER_HTTP_URL: String = "https://push.gua.global/_matrix/push/v1/notify"
 

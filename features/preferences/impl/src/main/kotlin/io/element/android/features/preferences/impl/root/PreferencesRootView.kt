@@ -84,10 +84,8 @@ fun PreferencesRootView(
             },
             matrixUser = state.myUser,
         )
-        // GUA FORK: the nudge sets up two-step verification, not the local app-lock, so it is gated on
-        // the account's factors rather than isLockScreenPinSetup. Only an explicit "no strong factor"
-        // shows it: a null means the status is unknown, and nagging on unknown is how a passkey
-        // holder ends up being told to create a PIN.
+        // GUA FORK: the nudge sets up two-step verification, not the local app-lock, so it is gated on the
+        // account's factors. Only an explicit "no strong factor" shows it: null means the status is unknown.
         if (state.hasAccountStrongFactor == false) {
             SetupPinBanner(onSetupTwoStepVerification)
         }
@@ -202,14 +200,13 @@ private fun ColumnScope.ManageAppSection(
                 )
             )
         },
-        // GUA FORK: no subtitle — 2SV is more than a PIN, so we don't advertise a "6-digit PIN" here.
+        // GUA FORK: no subtitle. Two-step verification is more than a PIN, so no "6-digit PIN" is advertised here.
         supportingContent = null,
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Lock())),
-        // GUA FORK: when no PIN is set this row offers account 2SV (6-digit), not the
-        // local 4-digit app-lock. When an app-lock PIN exists it manages the screen lock.
+        // GUA FORK: without an app-lock PIN this row opens account two-step verification.
         onClick = if (state.isLockScreenPinSetup) onOpenLockScreenSettings else onSetupTwoStepVerification,
     )
-    // GUA FORK: Change phone number — re-bind the account to a new number.
+    // GUA FORK: change phone number, which re-binds the account to a new number.
     ListItem(
         headlineContent = { Text(stringResource(id = R.string.screen_change_phone_title)) },
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Edit())),

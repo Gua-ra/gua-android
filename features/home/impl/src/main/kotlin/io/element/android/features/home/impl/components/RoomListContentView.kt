@@ -78,18 +78,13 @@ fun RoomListContentView(
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
-    // GUA FORK: navigation is driven by the repair's verdict, not by the tap, and it lives HERE --
-    // once, above the branch -- rather than inside each state's own composable.
-    //
-    // It used to be written twice. EmptyView consumed the flag by sending EncryptionResetNavigated;
-    // RoomsView, the branch every account with any chats takes, navigated and never sent it. The
-    // flag stayed true, so its LaunchedEffect key never changed again, and every later tap of
-    // Finish setup set an already-true flag and did nothing. That is the dead button.
+    // GUA FORK: navigation follows the repair's verdict, not the tap. It lives here once, above the
+    // branch, so every content state consumes the one-shot flag.
     val onNeedsReset by rememberUpdatedState(onConfirmRecoveryKeyClick)
     val onNavigated by rememberUpdatedState(eventSink)
     LaunchedEffect(contentState.encryptionSetupNeedsReset) {
         if (contentState.encryptionSetupNeedsReset) {
-            // Consume first: the flag is one-shot, and leaving it set is what wedged the button.
+            // Consume first: leaving the one-shot flag set would stop the effect from ever firing again.
             onNavigated(RoomListEvent.EncryptionResetNavigated)
             onNeedsReset()
         }
@@ -185,9 +180,8 @@ private fun EmptyView(
             AccountRecoveryBanner(state = accountRecoveryBannerState)
             when (state.securityBannerState) {
                 SecurityBannerState.SetUpRecovery,
-                // GUA FORK: the presenter no longer produces SetUpRecovery, but render the same
-                // silent-repair banner here rather than upstream's, so no future path can reach
-                // the flow that hands a user a recovery key to write down.
+                // GUA FORK: SetUpRecovery renders the same silent-repair banner, so no path can reach
+                // upstream's flow that hands a user a recovery key to write down.
                 SecurityBannerState.RecoveryKeyConfirmation -> {
                     ConfirmRecoveryKeyBanner(
                         onContinueClick = { eventSink(RoomListEvent.FinishEncryptionSetup) },
@@ -278,9 +272,7 @@ private fun RoomsViewList(
         }
         when (state.securityBannerState) {
             SecurityBannerState.SetUpRecovery,
-            // GUA FORK: the presenter no longer produces SetUpRecovery, but render the same
-            // silent-repair banner here rather than upstream's, so no future path can reach
-            // the flow that hands a user a recovery key to write down.
+            // GUA FORK: the same silent-repair banner as in EmptyView.
             SecurityBannerState.RecoveryKeyConfirmation -> {
                 item {
                     ConfirmRecoveryKeyBanner(

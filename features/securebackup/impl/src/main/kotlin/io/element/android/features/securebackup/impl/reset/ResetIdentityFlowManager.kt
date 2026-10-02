@@ -33,19 +33,10 @@ class ResetIdentityFlowManager(
 
     fun whenResetIsDone(block: () -> Unit) {
         whenResetIsDoneWaitingJob = sessionCoroutineScope.launch {
-            // GUA FORK: wait for the backup to BECOME enabled, not to already be enabled.
-            //
-            // backupStateStateFlow is a StateFlow, so `first { it == ENABLED }` also matches the
-            // value it is replaying right now. Upstream that is harmless, because you only reach
-            // this flow after a reset has destroyed the backup. Gua reaches it from the setup
-            // banner, and the account the banner fires on is one whose cross-signing keys are
-            // missing while the key backup is perfectly healthy -- so the state was ALREADY
-            // ENABLED, this matched on the replayed value, and the reset screen finished itself
-            // about a tenth of a second after it opened. What the user sees is Finish setup
-            // flashing and doing nothing at all.
-            //
-            // Dropping that first emission makes this wait for a transition. The reset destroys
-            // the backup on its way through, so a genuine completion always produces one.
+            // GUA FORK: wait for the backup to become enabled, not to already be enabled. The StateFlow
+            // replays its current value, which is already ENABLED when this flow starts from the setup
+            // banner. The reset destroys the backup on its way through, so completion always produces
+            // a transition.
             encryptionService.backupStateStateFlow.drop(1).first { it == BackupState.ENABLED }
             block()
         }

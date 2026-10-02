@@ -42,12 +42,10 @@ val guaKeystoreProperties = Properties().apply {
 fun guaSigningValue(envName: String, propName: String): String? =
     System.getenv(envName) ?: guaKeystoreProperties.getProperty(propName)
 
-// GUA FORK: Play permanently refuses a versionCode it has already accepted for a package, while
-// Versions.VERSION_CODE is CalVer and only moves when the release script bumps it. Without this,
-// shipping the same branch to the QA app twice would be rejected by Play after a ~35 minute R8
-// build. CI passes the workflow run number here (see .github/workflows/publish-play.yml), so QA
-// uploads are unique and still ordered. Production builds leave it unset: a production release is
-// exactly the CalVer code, and a rejection there correctly means "bump the release number".
+// GUA FORK: Play permanently refuses a versionCode it has already accepted for a package, and
+// Versions.VERSION_CODE only moves when the release script bumps it. CI passes the workflow run
+// number here (see .github/workflows/publish-play.yml) so QA uploads are unique and ordered.
+// Production builds leave it unset: a production release is exactly the CalVer code.
 val guaVersionCodeOffset = (project.findProperty("gua.versionCodeOffset") as? String)?.toInt() ?: 0
 
 plugins {
@@ -153,10 +151,8 @@ android {
         }
 
         getByName("release") {
-            // GUA FORK: `-Pgua.deployment=dev` builds the QA app — the Android mirror of the iOS
-            // dev variant (Variants/Dev/dev.yml): applicationId global.gua.dev, display name
-            // "Gua QA", OIDC redirect scheme global.gua.dev (which MAS pairs with client_uri
-            // https://gua.global, same as iOS), talking to the dev deployment (see the
+            // GUA FORK: `-Pgua.deployment=dev` builds the QA app: applicationId global.gua.dev, display
+            // name "Gua QA", OIDC redirect scheme global.gua.dev, talking to the dev deployment (see the
             // guaresolver module). Without the property this stays the production app.
             val useDevDeployment = (project.findProperty("gua.deployment") as? String) == "dev"
             if (useDevDeployment) {

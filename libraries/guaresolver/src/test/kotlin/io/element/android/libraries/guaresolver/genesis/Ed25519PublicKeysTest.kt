@@ -16,13 +16,11 @@ import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
 
 /**
- * GUA FORK: this decoder exists to refuse exactly what identity-service refuses (ADM-008 decision 1), so
- * every case here is asserted twice: once against this implementation and once against the JDK Ed25519
- * provider, which is the decoder the server actually runs.
+ * Every case is asserted against this implementation and against the JDK Ed25519 provider, the
+ * decoder the server runs.
  *
- * The published vectors do not cover the sign bit, and a decoder that ignored it accepted two encodings
- * the server rejects: x = 0 has a single root, so the encoding that asks for its negative names no point.
- * Only y = 1 and y = p - 1 can reach that, and both are pinned below.
+ * The published vectors do not cover the sign bit: x = 0 has a single root, so the encoding that asks
+ * for its negative names no point. Only y = 1 and y = p - 1 can reach that, and both are pinned below.
  */
 class Ed25519PublicKeysTest {
     @Test
@@ -45,7 +43,6 @@ class Ed25519PublicKeysTest {
 
     @Test
     fun `real keys still decode on both sides, sign bit set or not`() {
-        // Half of these carry the sign bit, which is the path the rule above must not have broken.
         repeat(REAL_KEY_SAMPLES) {
             val raw = Ed25519Sign.KeyPair.newKeyPair().publicKey
             assertThat(Ed25519PublicKeys.isOnCurve(raw)).isTrue()
@@ -61,7 +58,6 @@ class Ed25519PublicKeysTest {
         assertThat(decodesWithTheJdk(raw)).isFalse()
     }
 
-    /** Decodes the way identity-service does: the JDK provider, through to a verifier. */
     private fun decodesWithTheJdk(rawPublicKey: ByteArray): Boolean = runCatchingExceptions {
         val spki = SPKI_PREFIX.hexToBytes() + rawPublicKey
         val publicKey = KeyFactory.getInstance("Ed25519").generatePublic(X509EncodedKeySpec(spki))

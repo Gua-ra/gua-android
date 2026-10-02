@@ -13,11 +13,7 @@ import android.telephony.TelephonyManager
 import kotlinx.parcelize.Parcelize
 import java.util.Locale
 
-/**
- * GUA FORK: a country/region for phone entry — its ISO 3166-1 alpha-2 code plus its E.164 dial code.
- * Android counterpart of iOS `Country`. Provides the flag emoji, a localized name, a national-format
- * example used as the input placeholder, and live national-format masking.
- */
+/** A country or region for phone entry: its ISO 3166-1 alpha-2 code plus its E.164 dial code. */
 @Parcelize
 data class Country(
     val isoCode: String,
@@ -87,22 +83,16 @@ data class Country(
         val fallback = Country(isoCode = "US", dialCode = "1")
 
         /**
-         * Resolves the user's country from the device locale, falling back to [fallback].
-         *
-         * Prefer [deviceDefault] with a context: the locale is a language preference, not a location,
-         * so someone in Brazil running their phone in English lands on the wrong dial code here.
+         * Resolves the user's country from the device locale, falling back to [fallback]. Prefer
+         * [deviceDefault] with a context: the locale is a language preference, not a location.
          */
         val deviceDefault: Country
             get() = fromRegion(Locale.getDefault().country)
 
         /**
-         * GUA FORK: resolves the user's country from the SIM first, then the network they are
-         * camped on, and only then the locale.
-         *
-         * The SIM is the one signal that actually tracks where the number comes from. Locale is a
-         * language choice: a Brazilian phone set to English reports US, and the login screen then
-         * offers +1 for a +55 number. Network is the middle ground, correct while roaming is not
-         * involved and still better than a language setting.
+         * Resolves the user's country from the SIM first, then the network they are camped on, and only then
+         * the locale. The SIM is the one signal that tracks where the number comes from. Locale is a language
+         * choice: a Brazilian phone set to English reports US.
          */
         fun deviceDefault(context: Context?): Country {
             val telephony = context?.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
@@ -219,9 +209,7 @@ data class Country(
             val nationalLength = current.nationalDigitLength
             if (digits.length > dial.length && digits.startsWith(dial) && nationalLength != null) {
                 val remainder = digits.drop(dial.length)
-                // Only strip when the remaining digits are exactly a full national number AND the
-                // remainder doesn't itself start with the dial code (which would make it ambiguous,
-                // e.g. a genuine local number that happens to begin with the dial-code digits).
+                // Only when the remainder is exactly a full national number and does not itself start with the dial code.
                 if (remainder.length == nationalLength && !remainder.startsWith(dial)) {
                     return current to remainder
                 }

@@ -1,13 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  GUA FORK: the upstream file committed Element's live Firebase project (vector-alpha) and a real
-  Google API key. Those third-party credentials must never ship in the Gua binary, so they are
-  removed here. Empty api-key/app-id values make FirebaseApp skip auto-initialization (no crash,
-  no push) until Gua's own Firebase project is wired in.
-
-  These are Gua's own, from project "Gua Global" (gua-global, 511804071315). They are
-  project-wide: one Android API key serves all three packages, and which app a push reaches
-  is decided by google_app_id, which BuildTimeConfig.GOOGLE_APP_ID_* sets per build.
+  GUA FORK: Gua's own Firebase project values, replacing upstream's Element project. They are
+  project-wide: one Android API key serves all three packages, and which app a push reaches is
+  decided by google_app_id, which BuildTimeConfig.GOOGLE_APP_ID_* sets per build.
 
   google_api_key is not a secret in the usual sense: it ships inside every APK, and Google
   restricts it by package name and signing certificate rather than by keeping it hidden.

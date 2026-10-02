@@ -50,9 +50,7 @@ class ResetIdentityRootViewTest : RobolectricTest() {
     @Test
     @Config(qualifiers = "h720dp")
     fun `clicking the reset button goes straight through`() = runAndroidComposeUiTest {
-        // GUA FORK: no second confirmation. This screen already names what is lost and its button
-        // is destructive, so the "are you sure you want to reset your digital identity?" dialog
-        // that used to sit in between was jargon on top of a confirmation the user had just given.
+        // GUA FORK: no second confirmation. This screen already names what is lost and its button is destructive.
         ensureCalledOnce {
             setResetRootView(
                 ResetIdentityRootState(displayConfirmationDialog = false, canRecoverFromOtherDevice = false, eventSink = {}),

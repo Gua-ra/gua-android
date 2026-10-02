@@ -56,8 +56,6 @@ fun ChangePhoneNumberView(
 ) {
     val eventSink = state.eventSink
 
-    // GUA FORK: hand the authenticated passkey-enrollment URL to the Node exactly once, mirroring
-    // the two-step-verification screen.
     val currentOnOpenPasskeyEnrollUrl by rememberUpdatedState(onOpenPasskeyEnrollUrl)
     LaunchedEffect(state.passkeyEnrollUrl) {
         state.passkeyEnrollUrl?.let { url ->
@@ -81,9 +79,8 @@ fun ChangePhoneNumberView(
             ChangePhoneNumberPhase.Intro -> IntroSection(state = state, eventSink = eventSink)
             ChangePhoneNumberPhase.NeedsStepUp -> NeedsStepUpSection(state = state, eventSink = eventSink)
             ChangePhoneNumberPhase.Cooldown -> CooldownSection(state = state)
-            // GUA FORK: the same field twice, once for the number the account already has and once
-            // for the one replacing it. Only the labels differ; the first is the reauth check, and
-            // it is deliberately not pre-filled, since the point is for the user to produce it.
+            // The same field serves the current number and the new one. The first is not pre-filled: the
+            // point is for the user to produce the current number.
             ChangePhoneNumberPhase.EnteringCurrentPhone -> PhoneEntrySection(
                 state = state,
                 eventSink = eventSink,
@@ -105,11 +102,7 @@ fun ChangePhoneNumberView(
     }
 }
 
-/**
- * GUA FORK: a first-class "hero" message card mirroring the iOS `ChangePhoneScreen` ListRow look — an
- * icon inside a rounded tinted badge above a clear heading + body, wrapped in a `bgSubtleSecondary`
- * card. Reused by the Intro, Done, no-PIN and cooldown screens so they all read as one design.
- */
+/** Hero message card reused by the intro, done, step-up and cooldown screens so they read as one design. */
 @Composable
 private fun MessageCard(
     icon: ImageVector,
@@ -171,8 +164,7 @@ private fun IntroSection(
             heading = stringResource(id = R.string.screen_change_phone_intro_header),
             body = stringResource(id = R.string.screen_change_phone_intro_message),
         )
-        // GUA FORK: a spent reauth token sends the user back here, so the reason has to be readable
-        // from this screen. Without it a restart looked like the Continue button had done nothing.
+        // A spent reauth token sends the user back here, so the reason has to be readable from this screen.
         state.errorMessage?.let { errorMessage ->
             Text(
                 text = stringResource(id = errorMessage),
@@ -195,11 +187,8 @@ private fun IntroSection(
 }
 
 /**
- * GUA FORK: the hard block. The account cannot settle the step-up the server demands, so the change
- * stops here and the only buttons are ways to register a factor. Which ones are offered comes from
- * [ChangePhoneNumberState.canSetUpPasskey] / [ChangePhoneNumberState.canSetUpPin]: a passkey first
- * where it is possible, the PIN as the fallback, never the PIN alone as though it were the only
- * factor two-step verification has.
+ * The hard block. The change stops here and the only buttons are ways to register a factor: a
+ * passkey first where it is possible, the PIN as the fallback.
  */
 @Composable
 private fun NeedsStepUpSection(
@@ -285,7 +274,6 @@ private fun PhoneEntrySection(
     @StringRes footerRes: Int,
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        // Header label above the whole row, reading over both the selector and the field.
         Text(
             text = stringResource(id = labelRes),
             style = ElementTheme.typography.fontBodyMdMedium,
@@ -320,7 +308,7 @@ private fun CodeEntrySection(
             hasError = state.errorMessage != null,
             enabled = !state.isWorking,
             onValueChange = { eventSink(ChangePhoneNumberEvents.CodeChanged(it)) },
-            // GUA FORK: mask the secret account PIN, but keep both OTPs readable.
+            // Mask the account PIN. OTPs stay readable.
             masked = state.phase == ChangePhoneNumberPhase.EnteringPin,
             modifier = Modifier
                 .fillMaxWidth()
@@ -402,10 +390,9 @@ private fun ContinueButton(
 }
 
 /**
- * GUA FORK: turns a remaining-cooldown second count into a short human phrase for the Cooldown
- * interstitial, e.g. "6 days, 3 hours", "5 hours", "1 minute". Keeps the largest two non-zero units
- * and never renders "0 minutes" (falls back to "a moment"). English copy lives here since these are
- * temporary fork strings; humanisation mirrors the iOS view model.
+ * Turns a remaining-cooldown second count into a short phrase, e.g. "6 days, 3 hours", "5 hours",
+ * "1 minute". Keeps the largest two non-zero units and never renders "0 minutes" (falls back to
+ * "a moment").
  */
 internal fun humanizeDuration(totalSeconds: Long): String {
     if (totalSeconds <= 0) return "a moment"

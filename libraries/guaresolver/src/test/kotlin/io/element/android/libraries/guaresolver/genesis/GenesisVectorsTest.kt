@@ -24,18 +24,12 @@ import java.security.spec.PKCS8EncodedKeySpec
 import java.util.Base64
 
 /**
- * GUA FORK: the published golden vectors are the contract, not prose (ADM-008). identity-service ships
- * them at docs/specs/genesis-vectors.v1.json and this is a byte-identical copy, kept in the module's own
- * test resources so the test is hermetic.
+ * The published golden vectors are the contract. The identity service ships them at
+ * docs/specs/genesis-vectors.v1.json and this is a byte-identical copy, kept in the module's own test
+ * resources so the test is hermetic.
  *
- * Every byte of them is recomputed here: canonical bytes, object hashes, accountIds, the two
- * deterministic proof signatures, and every case a conforming decoder must refuse together with the rule
- * that refuses it.
- *
- * The keys are the RFC 8032 section 7.1 test constants, which is what makes the signatures reproducible.
- * They are published values and sign nothing real. Signing here uses the JDK provider (Ed25519 is JDK
- * 15+ and the tests run on 21), which keeps the expected values independent of the Ed25519 the app
- * itself signs with.
+ * The keys are the RFC 8032 section 7.1 test constants, which makes the signatures reproducible.
+ * Signing uses the JDK provider, independent of the Ed25519 the app itself signs with.
  */
 class GenesisVectorsTest {
     private val vectors: JsonObject by lazy {
@@ -78,7 +72,6 @@ class GenesisVectorsTest {
             assertWithName(name, genesis.accountId().value, vector.string("accountId"))
             assertWithName(name, genesis.accountId().isGenesisRooted, true)
 
-            // Deterministic Ed25519: the published registration proof is reproducible.
             val seed = seedOf(vector.string("authorityPublicKeyHex"))
             val signature = sign(seed, GenesisProofs.genesisProofPreimage(canonical))
             assertWithName(name, signature, vector.string("genesisProofSignatureB64"))
@@ -171,7 +164,6 @@ class GenesisVectorsTest {
     private fun rejections(group: String): List<JsonObject> =
         (vectors["rejections"]!!.jsonObject[group] as JsonArray).map { it.jsonObject }
 
-    /** Asserts equality and names the failing vector, so a mismatch says which one broke. */
     private fun <T> assertWithName(name: String, actual: T, expected: T) {
         assertWithMessage(name).that(actual).isEqualTo(expected)
     }
@@ -185,7 +177,6 @@ class GenesisVectorsTest {
         error("the vectors name a key they do not publish")
     }
 
-    /** Signs with the JDK Ed25519 provider, independent of what the app signs with. */
     private fun sign(seedHex: String, message: ByteArray): String {
         val privateKey = KeyFactory.getInstance("Ed25519")
             .generatePrivate(PKCS8EncodedKeySpec((PKCS8_PREFIX + seedHex).hexToBytes()))

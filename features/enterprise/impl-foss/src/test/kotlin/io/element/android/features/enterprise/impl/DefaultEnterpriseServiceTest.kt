@@ -47,7 +47,7 @@ class DefaultEnterpriseServiceTest {
         val defaultEnterpriseService = DefaultEnterpriseService()
         defaultEnterpriseService.semanticColorsFlow(null).test {
             val initialState = awaitItem()
-            // Gua overrides the accent tokens, so this differs from the stock Compound default.
+            // GUA FORK: Gua overrides the accent tokens, so this differs from the stock Compound default.
             assertThat(initialState).isNotEqualTo(SemanticColorsLightDark.default)
             assertThat(initialState.dark.iconAccentPrimary).isEqualTo(GUA_GREEN_BRIGHT)
             assertThat(initialState.light.iconAccentPrimary).isEqualTo(GUA_GREEN_DEEP)

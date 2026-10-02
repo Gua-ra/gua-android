@@ -24,35 +24,27 @@ import androidx.core.content.getSystemService
 import io.element.android.libraries.androidutils.system.areAnimationsEnabled
 import timber.log.Timber
 
-// The maximum tilt magnitude (in radians) we map to the full -1..1 range. Roughly 35 degrees of
-// roll/pitch reaches the extremes; beyond that we clamp so the effect stays subtle and stable.
+// The maximum tilt magnitude (in radians) mapped to the full -1..1 range. Roughly 35 degrees of
+// roll or pitch reaches the extremes. Beyond that the value is clamped.
 private const val MAX_TILT_RADIANS = 0.6f
 
-// Low-pass easing factor for the smoothed value. Mirrors the iOS DeviceTiltMotion analogue:
-// `current += (target - current) * 0.15f` on each sensor sample.
+// Low-pass easing factor: `current += (target - current) * 0.15f` on each sensor sample.
 private const val TILT_EASING = 0.15f
 
 /**
  * Returns a smoothed device-tilt [Offset] where `x` is roll and `y` is pitch, each roughly in the
- * range -1..1. This is the Android analogue of the iOS welcome screen's DeviceTiltMotion, used to
- * drive a tasteful parallax/highlight on the Gua logo.
+ * range -1..1.
  *
- * Sensor selection prefers [Sensor.TYPE_GAME_ROTATION_VECTOR] (drift-free, no magnetometer) and
- * falls back to [Sensor.TYPE_ACCELEROMETER]. The listener is registered/unregistered in a
- * [DisposableEffect] tied to composition lifetime.
- *
- * Returns [Offset.Zero] (and registers nothing) when:
- * - no usable sensor is present (e.g. an emulator), or
- * - the system "remove animations" accessibility setting is on (also covers snapshot/preview builds).
- *
- * No manifest permission is required for these motion sensors.
+ * Prefers [Sensor.TYPE_GAME_ROTATION_VECTOR] (drift-free, no magnetometer) and falls back to
+ * [Sensor.TYPE_ACCELEROMETER]. Returns [Offset.Zero] and registers nothing when no usable sensor is
+ * present (e.g. an emulator) or the system "remove animations" setting is on. No manifest permission
+ * is required for these sensors.
  */
 @Composable
 fun rememberDeviceTilt(): State<Offset> {
     val context = LocalContext.current
     val tilt = remember { mutableStateOf(Offset.Zero) }
 
-    // Honour Reduce Motion / snapshot builds: stay perfectly still.
     val animationsEnabled = remember { context.areAnimationsEnabled() }
 
     DisposableEffect(animationsEnabled) {
@@ -66,13 +58,10 @@ fun rememberDeviceTilt(): State<Offset> {
             ?: sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
         if (sensorManager == null || sensor == null) {
-            // No usable sensor (typically an emulator): leave the logo perfectly still.
             tilt.value = Offset.Zero
             return@DisposableEffect onDispose { }
         }
 
-        // Smoothed (low-passed) state, updated on each sample. We keep it local so the easing is
-        // continuous across emissions and never re-allocates per frame.
         var smoothedRoll = 0f
         var smoothedPitch = 0f
 

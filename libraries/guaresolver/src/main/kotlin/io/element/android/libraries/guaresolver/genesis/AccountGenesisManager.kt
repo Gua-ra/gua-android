@@ -8,22 +8,20 @@
 package io.element.android.libraries.guaresolver.genesis
 
 /**
- * GUA FORK: the client half of ADM-008 Phase 3. Generates the account authority key, registers the
- * genesis it commits, and signs the attach proof the sign-in page asks for.
+ * The client half of account genesis: generates the account authority key, registers the genesis it
+ * commits, and signs the attach proof the sign-in page asks for.
  *
- * Nothing here runs unless the caller has checked the account-genesis feature flag: with the flag off
- * the sign-up and sign-in paths are byte-identical to what they were before this existed.
+ * Nothing here runs unless the caller has checked the account-genesis feature flag.
  */
 interface AccountGenesisManager {
     /**
      * Generates the authority key if needed, mints a genesis over it and registers it, all before the
      * OIDC flow starts.
      *
-     * @return [GenesisRegistration.Registered] with the single-use handle to put in the `login_hint`,
+     * Returns [GenesisRegistration.Registered] with the single-use handle to put in the `login_hint`,
      * [GenesisRegistration.Unavailable] when the deployment does not do genesis (the signup continues
-     * unchanged, which is the bootstrap branch and not a failure), or [GenesisRegistration.Failed] when
-     * the client meant to register one and could not, which must fail the signup rather than silently
-     * create an account with no genesis.
+     * unchanged), or [GenesisRegistration.Failed] when the client meant to register one and could not.
+     * That must fail the signup rather than silently create an account with no genesis.
      */
     suspend fun registerForSignup(): GenesisRegistration
 
@@ -47,10 +45,7 @@ sealed interface GenesisRegistration {
         val attachHandle: String,
     ) : GenesisRegistration
 
-    /**
-     * The deployment answered that it does not issue account genesis. The client continues with today's
-     * signup and no handle, with nothing shown to the user.
-     */
+    /** The deployment does not issue account genesis. The signup continues with no handle and nothing shown to the user. */
     data object Unavailable : GenesisRegistration
 
     /** The client meant to register a genesis and could not. The signup must fail. */

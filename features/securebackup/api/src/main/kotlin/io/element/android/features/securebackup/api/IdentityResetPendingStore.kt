@@ -8,15 +8,12 @@
 package io.element.android.features.securebackup.api
 
 /**
- * GUA FORK: remembers that an identity reset was started for this account and has not landed on
- * the server.
+ * Remembers that an identity reset was started for this account and has not landed on the server.
  *
  * Starting a reset is destructive before anything is approved: the SDK deletes the key backup,
- * disables secret storage and mints a brand new local identity, all before the user has seen the
- * approval page. If the approval never happens, that identity exists only on this device. The
- * setup banner's ordinary repair path would then export it into fresh key storage and report
- * success for an identity the server has never accepted. While this is set, that path must refuse
- * and ask for the reset to be finished instead.
+ * disables secret storage and mints a new local identity before the user has seen the approval page.
+ * If the approval never happens, that identity exists only on this device. While this is set, the
+ * setup banner's repair path must refuse and ask for the reset to be finished instead.
  *
  * Persisted per account, so it survives the app being killed between the reset starting and the
  * approval coming back.

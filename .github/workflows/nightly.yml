@@ -1,6 +1,6 @@
 name: Build and release nightly application
 
-# GUA FORK: scheduled nightly disabled — needs Firebase App Distribution + nightly signing secrets. Manual only.
+# GUA FORK: manual dispatch only. Needs Firebase App Distribution and nightly signing secrets.
 on:
   workflow_dispatch:
 

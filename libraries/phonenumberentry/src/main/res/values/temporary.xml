@@ -5,8 +5,8 @@
   ~ Please see LICENSE files in the repository root for full details.
   -->
 <resources>
-    <!-- Gua country picker. Shared by the welcome phone-entry flow and the change-phone-number
-         flow. English source of truth lives here (temporary.xml). -->
+    <!-- Gua country picker, shared by the welcome phone-entry flow and the change-phone-number flow.
+         English source of truth lives here. -->
     <string name="screen_country_picker_title">Select country</string>
     <string name="screen_country_picker_search_placeholder">Search country</string>
     <string name="screen_country_picker_empty">No matching countries</string>

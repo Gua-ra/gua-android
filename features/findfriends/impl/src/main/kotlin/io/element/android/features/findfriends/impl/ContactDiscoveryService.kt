@@ -18,14 +18,12 @@ import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.withContext
 
 /**
- * GUA FORK: reads the device address book, protects the numbers, looks them up against Gua, and
- * returns the matching contacts. Android counterpart of iOS `ContactDiscoveryService.discover`.
+ * Reads the device address book, protects the numbers, looks them up against Gua and returns the
+ * matching contacts.
  *
- * PRIVACY (mirrors iOS):
- * - The address book is read once and never persisted.
- * - Raw phone numbers never leave the device — they are hashed via [PhoneHasher] before the lookup.
- * - The hashes the device produced are mapped back to local names so matches are labelled with how
- *   the user actually knows the person; the server only ever sees the hashes.
+ * Privacy: the address book is read once and never persisted. Raw phone numbers never leave the
+ * device: they are hashed by [PhoneHasher] before the lookup. The hashes are mapped back to local
+ * names on the device, so matches are labelled with how the user knows the person.
  */
 sealed interface ContactDiscoveryResult {
     data class Success(val contacts: List<DiscoveredContact>) : ContactDiscoveryResult
@@ -45,7 +43,7 @@ class DefaultContactDiscoveryService(
     private val sessionStore: SessionStore,
     private val dispatchers: CoroutineDispatchers,
 ) : ContactDiscoveryService {
-    /** Identity-service caps the batch; stay under it (mirrors iOS' 1000). */
+    /** The identity service caps the batch size. */
     private val maxNumbersPerRequest = 1000
 
     override suspend fun discover(): ContactDiscoveryResult {

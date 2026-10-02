@@ -124,14 +124,9 @@ class PreferencesRootPresenter(
             lockScreenService.isPinSetup()
         }.collectAsState(initial = true)
 
-        // GUA FORK: the nudge banner advertises two-step verification, so gate it on the account's
-        // FACTORS from the identity service (mirrors TwoStepVerificationPresenter), not the local
-        // app-lock and not a lone hasPin: a passkey holder already has two-step verification and
-        // must not be nudged to add a PIN.
-        //
-        // Null is "not known yet, or could not be read", and the banner shows only on an explicit
-        // false. The old initial value of false with no failure handler meant a slow or failing
-        // status read rendered as "no two-step verification" and nagged people who already had it.
+        // GUA FORK: the nudge banner advertises two-step verification, so it is gated on the account's
+        // factors from the identity service, not the local app-lock and not a lone hasPin.
+        // Null is "not known yet, or could not be read", and the banner shows only on an explicit false.
         val hasAccountStrongFactor by produceState<Boolean?>(initialValue = null) {
             val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken ?: return@produceState
             identityServiceClient.accountFactorStatus(accessToken, matrixClient.sessionId.value)
@@ -164,14 +159,7 @@ class PreferencesRootPresenter(
             deviceId = matrixClient.deviceId,
             isMultiAccountEnabled = isMultiAccountEnabled,
             otherSessions = otherSessions,
-            // GUA FORK: hidden from users, developer-only.
-            //
-            // This screen is upstream's recovery-key console: a key-storage toggle, "set up
-            // recovery", "change recovery key", "confirm recovery key". Every one of those is a
-            // thing Gua promises never to put in front of anyone. An earlier version of this fork
-            // forced it visible on the grounds that it was the only way back from broken key
-            // storage; that is no longer true, because the setup banner now repairs the account
-            // silently and escalates to a reset on its own when it has to.
+            // GUA FORK: developer-only. Gua never shows users the recovery-key console.
             showSecureBackup = buildMeta.buildType != BuildType.RELEASE,
             showSecureBackupBadge = showSecureBackupIndicator,
             accountManagementUrl = accountManagementUrl.value,
@@ -198,9 +186,8 @@ class PreferencesRootPresenter(
             ?.let {
                 sessionEnterpriseService.tweakMasUrl(it)
             }
-            // GUA FORK: account management opens in the browser's shared tab, so it can meet a
-            // browser session for another account. Naming this one lets the page refuse that
-            // session instead of showing someone else's account.
+            // GUA FORK: account management opens in the browser's shared tab, so it can meet a browser
+            // session for another account. Naming this one lets the page refuse that session.
             ?.withMxidLoginHint(matrixClient.sessionId.value)
     }
 }

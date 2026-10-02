@@ -34,25 +34,13 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
 /**
- * GUA FORK Stage 4 verification.
+ * 1:1 direct chats are conversations, not "rooms", so membership, profile and state churn must not
+ * appear in the timeline, and must never be collapsed into a "N room changes" summary either.
  *
- * 1:1 direct chats are conversations, not "rooms", so membership/profile/state churn
- * (joined/left/invited, display-name/avatar updates, name/topic/encryption changes) must
- * NOT appear in the timeline — and therefore must never be collapsed into a "N room changes"
- * summary either. At runtime this is enforced in [io.element.android.features.messages.impl
- * .timeline.factories.event.TimelineItemEventFactory], which drops those events before they
- * reach the grouper. Mirrors the iOS `isDM` guards in `RoomTimelineItemFactory`.
- *
- * This preview exercises the SAME production classification ([isDirectOneToOneRoomChangeEvent])
- * and the SAME production grouper ([TimelineItemGrouper]) over an identical "raw" set of items:
- *
- *  - Left column ("Group room"): nothing is dropped, so the three room-change events collapse
- *    into a single "N room changes" grouped block above the visible message.
- *  - Right column ("1:1 chat"): the room-change events are suppressed, so only the message
- *    remains and there is no "room changes" block at all.
- *
- * If the suppression regressed, the 1:1 column would render the membership/state lines (or a
- * "room changes" group) and the recorded screenshot would diff.
+ * This preview runs one identical item set through the production classifier
+ * ([isDirectOneToOneRoomChangeEvent]) and grouper ([TimelineItemGrouper]): as a group room the three
+ * room-change events collapse into one grouped block above the message, as a 1:1 chat only the
+ * message remains. If the suppression regressed, the recorded screenshot would diff.
  */
 private val guaRoomChangeEvents = listOf(
     aTimelineItemEvent(
@@ -75,10 +63,8 @@ private val guaMessageEvent = aTimelineItemEvent(
 )
 
 private fun guaGroupedTimeline(grouper: TimelineItemGrouper, isDirectOneToOneRoom: Boolean): ImmutableList<TimelineItem> {
-    // Identical "raw" timeline for both cases: message + the three room-change events.
     val rawItems = guaRoomChangeEvents + guaMessageEvent
     val itemsForRoom = if (isDirectOneToOneRoom) {
-        // Mirror the factory: drop the room-change events for a 1:1 DM.
         rawItems.filterNot { it.isDirectOneToOneRoomChangeEvent() }
     } else {
         rawItems

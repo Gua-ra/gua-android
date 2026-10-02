@@ -18,23 +18,12 @@ import org.junit.Rule
 import org.junit.Test
 
 /**
- * GUA FORK Stage 5 (Localization) verification: records a focused screenshot of the phone-first
- * entry screen rendered with the Brazilian Portuguese (pt-BR) resource qualifier, confirming the
- * Gua-custom strings are translated per device locale (mirroring iOS).
+ * Records the phone-first entry screen with the Brazilian Portuguese (pt-BR) resource qualifier.
  *
- * Sibling of [GuaPhoneEntryVerifyTest] (which renders the same screen in `en`); only the locale
- * differs.
- *
- * KNOWN LIMITATION, do not read this as a pt-BR guarantee. Paparazzi resolves the locale by
- * LANGUAGE only: with both `values-pt` and `values-pt-rBR` present it renders `values-pt`, the
- * European Portuguese copy, whichever qualifier form is used here (`pt-BR` is rejected outright,
- * `b+pt+BR` resolves the same as `pt-rBR`). Before `values-pt` existed this happened to render the
- * Brazilian strings, which is why the recorded image changed when the fork was translated.
- *
- * A real device set to pt-BR is unaffected: Android prefers `values-pt-rBR`, and both variants ship
- * in the APK (`aapt2 dump resources` shows `(pt) "Introduza o seu número de telemóvel"` alongside
- * `(pt-rBR) "Digite seu número de telefone"`). What this test still covers is that the screen picks
- * up fork translations at all rather than falling back to English.
+ * Known limitation, not a pt-BR guarantee: Paparazzi resolves the locale by language only, so with
+ * both `values-pt` and `values-pt-rBR` present it renders `values-pt`. A real device set to pt-BR
+ * prefers `values-pt-rBR`. The test still covers that the screen picks up fork translations at all
+ * rather than falling back to English.
  */
 class GuaPhoneEntryPtBrLocaleVerifyTest {
     @get:Rule

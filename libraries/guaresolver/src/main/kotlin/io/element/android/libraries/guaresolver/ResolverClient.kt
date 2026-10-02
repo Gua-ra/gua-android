@@ -10,25 +10,18 @@ package io.element.android.libraries.guaresolver
 import kotlinx.serialization.Serializable
 
 /**
- * GUA FORK: talks to the Gua resolver (`POST /resolve`) — the federation front door that maps a
- * phone number to a homeserver, so the client never hardcodes one. Android counterpart of iOS
- * `ResolverClientProtocol` / `ResolverClient`.
+ * Talks to the Gua resolver (`POST /resolve`), the federation front door that maps a phone number to
+ * a homeserver so the client never hardcodes one.
  */
 interface ResolverClient {
     /**
-     * Resolve a verified E.164 phone number to the homeserver it belongs to (login) or should be
-     * created on (register).
-     *
-     * @param e164Phone the phone number in E.164 form (e.g. `+15551234567`).
-     * @return [Result.success] with the [HomeserverResolution], or [Result.failure] with a
-     * [ResolverError] (notably [ResolverError.NotConfigured] when no resolver URL is configured).
+     * Resolves a verified E.164 phone number (e.g. `+15551234567`) to the homeserver it belongs to
+     * (login) or should be created on (register). Fails with a [ResolverError], notably
+     * [ResolverError.NotConfigured] when no resolver URL is configured.
      */
     suspend fun resolve(e164Phone: String): Result<HomeserverResolution>
 
-    /**
-     * Resolve with additive v1 contract fields. Existing callers should keep using
-     * [resolve] until they have verified identity/OIDC claims to transport.
-     */
+    /** Resolve with the additive v1 contract fields. */
     suspend fun resolve(e164Phone: String, options: ResolverResolveOptions): Result<HomeserverResolution> =
         resolve(e164Phone)
 }

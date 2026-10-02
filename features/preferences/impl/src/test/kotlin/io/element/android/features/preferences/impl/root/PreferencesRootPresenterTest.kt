@@ -100,12 +100,7 @@ class PreferencesRootPresenterTest {
                     avatarUrl = AN_AVATAR_URL
                 )
             )
-            // GUA FORK: Encryption is always reachable now. Upstream hid it whenever the session
-            // still needed verifying, but Gua never presents that ceremony, so the row would have
-            // been hidden forever, taking recovery-key entry with it.
-            // GUA FORK: the Encryption screen is upstream's recovery-key console, so it now
-            // tracks developer settings, which this default (debug) fixture has on. The
-            // user-facing case is covered by `the encryption screen is hidden from users`.
+            // GUA FORK: the Encryption screen tracks developer settings, which this debug fixture has on.
             assertThat(loadedState.showSecureBackup).isTrue()
             assertThat(loadedState.showSecureBackupBadge).isFalse()
             assertThat(loadedState.accountManagementUrl).isNull()
@@ -203,9 +198,7 @@ class PreferencesRootPresenterTest {
             showDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.RELEASE)),
             buildMeta = aBuildMeta(BuildType.RELEASE),
         ).test {
-            // GUA FORK: gated on build TYPE, not the seven-tap developer unlock. That unlock
-            // works in any build, so gating on it would still let a release user reach the
-            // recovery-key console.
+            // GUA FORK: gated on build type. The seven-tap developer unlock works in any build.
             assertThat(awaitFirstItem().showSecureBackup).isFalse()
         }
     }
@@ -359,9 +352,7 @@ class PreferencesRootPresenterTest {
         return awaitItem()
     }
 
-    // GUA FORK: the two-step-verification nudge is gated on the account's FACTORS. It used to start
-    // at false with no failure handler, so a passkey holder, and anyone whose status read was slow
-    // or failed, was told to set up a PIN they did not need.
+    // GUA FORK: the two-step-verification nudge is gated on the account's factors.
 
     @Test
     fun `present - the nudge is shown to an account with no strong factor`() = runTest {
@@ -402,8 +393,6 @@ class PreferencesRootPresenterTest {
                 factorStatusResult = { Result.failure(ResolverError.Transport(RuntimeException("offline"))) },
             ),
         ).test {
-            // Unknown stays null: nothing writes a value on the failure path, and the View only
-            // shows the banner on an explicit false, so nobody is nagged on a failed read.
             assertThat(awaitItem().hasAccountStrongFactor).isNull()
             assertThat(awaitItem().hasAccountStrongFactor).isNull()
             cancelAndIgnoreRemainingEvents()

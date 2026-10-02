@@ -114,9 +114,8 @@ class DefaultFtueServiceTest {
 
         service.ftueStepStateFlow.test {
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Unknown)
-            // Gua: the session verification ceremony is never gated on (mirrors iOS
-            // requiresVerification == false). Even though the session is NotVerified, onboarding
-            // skips straight to the first non-verification step that is required.
+            // GUA FORK: session verification never gates onboarding. Even though the session is NotVerified,
+            // onboarding skips to the first required non-verification step.
             // Notifications opt in
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Incomplete(FtueStep.NotificationsOptIn))
             permissionStateProvider.setPermissionGranted()
@@ -139,7 +138,6 @@ class DefaultFtueServiceTest {
     fun `Gua - session verification ceremony is never shown even when the session is NotVerified`() = runTest {
         val sessionVerificationService = FakeSessionVerificationService()
         val analyticsService = FakeAnalyticsService()
-        // Grant everything else so the only candidate gate would be SessionVerification.
         val permissionStateProvider = FakePermissionStateProvider(permissionGranted = true)
         val lockScreenService = FakeLockScreenService().apply { setIsPinSetup(true) }
         val service = createDefaultFtueService(
@@ -149,16 +147,13 @@ class DefaultFtueServiceTest {
             lockScreenService = lockScreenService,
         )
 
-        // Session is explicitly NotVerified (returning user on a new device).
         sessionVerificationService.emitVerifiedStatus(SessionVerifiedStatus.NotVerified)
         permissionStateProvider.setPermissionGranted()
 
         service.ftueStepStateFlow.test {
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Unknown)
-            // We jump straight to AnalyticsOptIn: SessionVerification is never produced.
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Incomplete(FtueStep.AnalyticsOptIn))
             analyticsService.setDidAskUserConsent()
-            // ...and onboarding completes without ever surfacing the verification step.
             assertThat(awaitItem()).isEqualTo(InternalFtueState.Complete)
         }
     }

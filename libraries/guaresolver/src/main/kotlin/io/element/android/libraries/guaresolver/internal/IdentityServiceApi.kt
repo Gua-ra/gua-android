@@ -15,13 +15,8 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 
 /**
- * GUA FORK: Retrofit surface for the Gua identity-service `POST /directory/lookup` contact-discovery
- * endpoint. Internal to the module; the public API only ever exposes
- * [io.element.android.libraries.guaresolver.ContactMatch].
- *
- * The request carries **hashed** phone digests only (see
- * [io.element.android.libraries.guaresolver.PhoneHasher]) and is authenticated with the caller's
- * Matrix access token, mirroring iOS' `lookupContacts(accessToken:phones:)`.
+ * Retrofit surface for the Gua identity service. Internal to the module: the public API is
+ * [io.element.android.libraries.guaresolver.IdentityServiceClient].
  */
 internal interface IdentityServiceApi {
     @POST("directory/lookup")
@@ -30,17 +25,14 @@ internal interface IdentityServiceApi {
         @Body body: LookupRequest,
     ): LookupResponse
 
-    // GUA FORK: Two-step verification (account PIN). Mirrors iOS' `security/pin*` endpoints.
-
     @GET("security/pin/status")
     suspend fun pinStatus(
         @Header("Authorization") authorization: String,
     ): PinStatusResponse
 
-    // GUA FORK: the first PIN is no longer set from a bearer session. `POST /security/pin` now
-    // answers 403 `step_up_required` for every caller, because a stolen access token alone must not
-    // be able to add a durable factor. The first PIN is enrolled through the same authenticated web
-    // ceremony as a passkey, which is the only place a step-up can be asked for on every platform.
+    // The first PIN is never set from a bearer session: `POST /security/pin` answers 403
+    // `step_up_required` for every caller, because a stolen access token alone must not be able to add a
+    // durable factor. It is enrolled through the same authenticated web ceremony as a passkey.
     @POST("security/pin/enroll/start")
     suspend fun startPinEnrollment(
         @Header("Authorization") authorization: String,
@@ -59,18 +51,14 @@ internal interface IdentityServiceApi {
         @Body body: CompletePinChangeRequest,
     )
 
-    // GUA FORK: the account owner cancels a live delayed recovery from a signed-in device. Answers
-    // 204 whether or not one was live.
+    // The account owner cancels a live delayed recovery from a signed-in device. Answers 204 whether or
+    // not one was live.
     @POST("security/recovery/cancel")
     suspend fun cancelAccountRecovery(
         @Header("Authorization") authorization: String,
     )
 
-    // GUA FORK: change phone number, against the real `/account` contract.
-    //
-    // An earlier revision of this file called `security/pin/reauth`, `otp/change-number/request` and
-    // `otp/change-number`. The identity service has never served any of those three, so every phone
-    // change failed at the first call. The real sequence is:
+    // Change phone number. The sequence is:
     //   1. account/reauth/start   takes the number the signed-in user says is theirs and, only if it
     //      matches the one bound to the account, sends an OTP to it (proof of possession only),
     //   2. account/reauth/verify  takes that number again with the OTP and exchanges them for a
@@ -78,13 +66,11 @@ internal interface IdentityServiceApi {
     //   3. account/phone/change/start   spends the token AND a step-up factor (a passkey assertion,
     //      else the account PIN), and only then sends the OTP to the NEW number,
     //   4. account/phone/change/complete   redeems the challenge with that OTP.
-    // No SMS reaches the new number before step 3 has accepted a step-up factor.
+    // No SMS reaches the new number before account/phone/change/start has accepted a step-up factor.
     //
-    // The number is submitted rather than read back from the server: identity-service compares its
-    // digest against the account's own directory binding and never reveals whose number it is, so a
-    // wrong one is refused with the same `reauth_phone_mismatch` whether it is unknown or someone
-    // else's. Nothing is stored between the two calls, which is why both of them carry it.
-
+    // The number is submitted rather than read back from the server: the identity service compares its
+    // digest against the account's own binding and never reveals whose number it is. Nothing is stored
+    // between the two reauth calls, which is why both of them carry it.
     @POST("account/reauth/start")
     suspend fun startAccountReauth(
         @Header("Authorization") authorization: String,
@@ -111,24 +97,17 @@ internal interface IdentityServiceApi {
         @Body body: PhoneChangeCompleteRequest,
     )
 
-    // GUA FORK: passkey enrollment. Returns the authenticated web-ceremony URL the client opens to
-    // complete WebAuthn registration at the IdP.
-    //
-    // POST, not GET: the identity service maps this as @PostMapping("/passkey/enroll/start"), and
-    // iOS reaches it through a helper that always sends POST. An earlier comment here described it
-    // as a GET, which is what the declaration was written to match, so every tap was answered with
-    // 405 before any ceremony could start. The access token in the Authorization header is the
-    // whole input apart from the optional redirect in the body.
+    // Returns the authenticated web-ceremony URL the client opens to complete WebAuthn registration at
+    // the IdP. POST, not GET: the access token in the Authorization header is the whole input apart from
+    // the optional redirect in the body.
     @POST("security/passkey/enroll/start")
     suspend fun startPasskeyEnrollment(
         @Header("Authorization") authorization: String,
         @Body body: FactorEnrollStartRequest,
     ): FactorEnrollStartResponse
 
-    // GUA FORK: account genesis registration (ADM-008 decision 6, step 1). Deliberately unauthenticated:
-    // it runs before any OIDC flow exists to authenticate against, and the body carries its own
-    // possession proof under the key committed inside the genesis itself.
-
+    // Deliberately unauthenticated: it runs before any OIDC flow exists to authenticate against, and the
+    // body carries its own possession proof under the key committed inside the genesis itself.
     @POST("account/genesis")
     suspend fun registerAccountGenesis(
         @Body body: AccountGenesisRegisterRequest,
@@ -137,7 +116,7 @@ internal interface IdentityServiceApi {
 
 @Serializable
 internal data class LookupRequest(
-    /** Hashed phone digests — never raw numbers. */
+    /** Hashed phone digests, never raw numbers. */
     val hashedPhones: List<String>,
 )
 
@@ -205,11 +184,7 @@ internal data class CompletePinChangeRequest(
 
 @Serializable
 internal data class AccountReauthStartRequest(
-    /**
-     * The number the signed-in user says is theirs. The server normalizes and digests it and only
-     * texts it when it matches the account's own binding, so nothing here can send an SMS to a
-     * number the account does not already hold.
-     */
+    /** The number the signed-in user says is theirs. The server only texts it when it matches the account's own binding. */
     val phone: String,
 )
 
@@ -219,10 +194,7 @@ internal data class AccountReauthVerifyRequest(
     val phone: String,
     /** OTP delivered by SMS to the number currently on file. */
     val code: String,
-    /**
-     * The privileged operation the issued token may be spent on. The server binds the token to it
-     * and refuses to spend a token scoped elsewhere, so this is never left to the default.
-     */
+    /** The server binds the token to this operation, so it is never left to the default. */
     val operation: String,
 )
 
@@ -284,27 +256,20 @@ internal data class AccountGenesisRegisterResponse(
 )
 
 /**
- * What both factor-enrollment start endpoints accept. The body is optional on the wire and the only
- * field in it is optional too: [redirectUri] is left out of the JSON entirely when it is null,
- * because kotlinx-serialization does not encode a property that still holds its default, so an
- * enrollment that names nothing sends `{}` and the server keeps its configured default.
+ * What both factor-enrollment start endpoints accept. A null [redirectUri] is left out of the JSON
+ * (kotlinx-serialization does not encode a property that still holds its default), so an enrollment
+ * that names nothing sends `{}` and the server keeps its configured default.
  */
 @Serializable
 internal data class FactorEnrollStartRequest(
     /**
-     * Where the ceremony returns to when it is finished: this build's own custom scheme, which the
-     * deployment has to have allowlisted. A value it has not is refused with 400
-     * `invalid_redirect_uri` and never stamped on the session, which is what the client's single
-     * retry without one is for.
+     * Where the ceremony returns to: this build's own custom scheme, which the deployment must have
+     * allowlisted. Otherwise the call is refused with 400 `invalid_redirect_uri`.
      */
     val redirectUri: String? = null,
 )
 
-/**
- * What both factor-enrollment start endpoints return. Passkey and PIN enrollment share one shape
- * because they share one ceremony: the URL parks a session at the step-up, and only once that is
- * settled does the web move on to registering the factor.
- */
+/** What both factor-enrollment start endpoints return. Passkey and PIN enrollment share one ceremony. */
 @Serializable
 internal data class FactorEnrollStartResponse(
     /** Authenticated web-ceremony URL to open at the IdP to complete the enrollment. */
@@ -313,7 +278,7 @@ internal data class FactorEnrollStartResponse(
 
 /**
  * Identity-service error envelope. The typed [io.element.android.libraries.guaresolver.ResolverError]
- * PIN cases are derived from the `code` field, mirroring iOS' `ErrorBody.code` handling.
+ * cases are derived from the `code` field.
  */
 @Serializable
 internal data class IdentityServiceErrorBody(

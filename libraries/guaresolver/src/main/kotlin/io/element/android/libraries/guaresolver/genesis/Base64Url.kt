@@ -13,13 +13,11 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 /**
- * GUA FORK: base64url without padding, which is how identity-service carries the genesis bytes, the
+ * Base64url without padding, which is how the identity service carries the genesis bytes, the
  * registration proof, the attach challenge and the attach proof.
  *
- * The Kotlin stdlib encoder, not `android.util.Base64` and not `java.util.Base64`: the first is absent
- * from a plain unit-test JVM and the second needs API 26 while this module builds down to 24. The same
- * encoder already backs `EncryptionResult`. Padding is trimmed and restored here rather than through the
- * experimental padding option, so nothing depends on an API that is still moving.
+ * Uses the Kotlin stdlib encoder: `android.util.Base64` is absent from a plain unit-test JVM and
+ * `java.util.Base64` needs API 26 while this module builds down to 24.
  */
 internal object Base64Url {
     fun encode(value: ByteArray): String = Base64.UrlSafe.encode(value).trimEnd('=')

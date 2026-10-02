@@ -8,11 +8,9 @@
 package io.element.android.libraries.guaresolver
 
 /**
- * GUA FORK: how a federation homeserver lets its users be found by bare-handle search from other
- * servers. An absent value means [Global] — the default for roster entries that predate the policy.
- * Values this client doesn't recognize are treated as **not** discoverable, so a stricter policy
- * introduced server-side is never widened by an older client. Android counterpart of iOS
- * `RosterSearchVisibility`.
+ * How a federation homeserver lets its users be found by bare-handle search from other servers.
+ * An absent value means [Global]. Unrecognized values are treated as not discoverable, so an older
+ * client never widens a stricter policy.
  */
 sealed interface RosterSearchVisibility {
     /** Discoverable from every federation server. */
@@ -27,10 +25,7 @@ sealed interface RosterSearchVisibility {
     data class Unrecognized(val rawValue: String) : RosterSearchVisibility
 
     companion object {
-        /**
-         * The resolver serializes the policy like the entry status, i.e. uppercase (`GLOBAL`);
-         * match case-insensitively so either casing works.
-         */
+        /** The resolver sends the policy uppercase. Match case-insensitively. */
         fun parse(rawValue: String?): RosterSearchVisibility = when (rawValue?.lowercase()) {
             null, "global" -> Global
             "group" -> Group
@@ -41,18 +36,16 @@ sealed interface RosterSearchVisibility {
 }
 
 /**
- * GUA FORK: pure logic for Gua's federated bare-username search: when someone types a handle with
- * no homeserver (`ana-souza`), the client fans out an exact-match lookup to the other federation
- * servers from the resolver roster, honouring each server's discoverability policy. Android
- * counterpart of iOS `FederatedUserSearch`.
+ * Pure logic for federated bare-username search: when someone types a handle with no homeserver
+ * (`ana-souza`), the client fans out an exact-match lookup to the federation servers from the
+ * resolver roster, honouring each server's discoverability policy.
  */
 object FederatedUserSearch {
     private val BARE_HANDLE_REGEX = Regex("^[a-z0-9._=\\-/]{3,}$")
 
     /**
-     * Normalizes a search query into a bare handle, or `null` when the query isn't one.
-     * A bare handle is an optional leading `@` followed by at least 3 localpart characters —
-     * and crucially no `:`, otherwise the user is already typing a full address.
+     * Normalizes a search query into a bare handle, or `null` when the query is not one. A bare handle
+     * is an optional `@`, at least 3 localpart characters and no `:`.
      */
     fun bareHandle(query: String): String? {
         var handle = query.trim().lowercase()
@@ -62,16 +55,11 @@ object FederatedUserSearch {
     }
 
     /**
-     * The full user IDs to look up for a bare handle: the searcher's own server first, then one
-     * per ACTIVE roster server that allows discovery from it, in roster order.
+     * The full user IDs to look up for a bare handle: the searcher's own server first, then each ACTIVE
+     * roster server that allows discovery from it, in roster order.
      *
-     * The searcher's own server used to be skipped here, on the assumption that the local
-     * directory already covered it. It does not. Synapse's user directory only returns people you
-     * already share a room with unless `search_all_users` is on, so a bare handle found nobody on
-     * your own server while the full `@handle:server` worked, because that path is an exact
-     * profile lookup instead. Looking our own server up by the same exact-match route makes a bare
-     * handle behave the same way everywhere. Duplicates are dropped downstream, so a local hit
-     * costs nothing.
+     * The own server is included because Synapse's user directory only returns people you already share
+     * a room with unless `search_all_users` is on. Duplicates are dropped downstream.
      */
     fun candidates(handle: String, roster: FederationRoster, ownServerName: String): List<String> {
         val ownGroups = roster.entries
@@ -94,7 +82,6 @@ object FederatedUserSearch {
             }
             .map { "@$handle:${it.homeserver.serverName}" }
 
-        // Own server first: it is the likeliest match and the one a person expects to be instant.
         return listOf("@$handle:$ownServerName") + federated
     }
 }

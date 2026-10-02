@@ -20,11 +20,7 @@ import io.element.android.libraries.network.RetrofitFactory
 import retrofit2.HttpException
 import timber.log.Timber
 
-/**
- * GUA FORK: default [FederationRosterFetcher]. Fetches `GET /roster` from the active
- * [GuaDeployment]'s resolver via Retrofit, reusing the app-wide [RetrofitFactory] (OkHttp +
- * kotlinx-serialization). Mirrors iOS `ResolverClient.fetchRoster`.
- */
+/** Fetches `GET /roster` from the active [GuaDeployment]'s resolver. */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class DefaultFederationRosterFetcher(

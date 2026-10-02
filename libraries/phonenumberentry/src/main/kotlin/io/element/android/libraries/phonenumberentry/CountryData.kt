@@ -8,9 +8,8 @@
 package io.element.android.libraries.phonenumberentry
 
 /**
- * GUA FORK: the hand-curated country database for phone entry — ISO 3166-1 alpha-2 codes paired with
- * ITU-T E.164 dial codes. Ported from iOS `Country.swift`. The list order matters only for dial-code
- * ambiguity (most-populous listed first, e.g. US before CA for +1).
+ * The hand-curated country database for phone entry: ISO 3166-1 alpha-2 codes paired with ITU-T E.164
+ * dial codes. Order matters only for dial-code ambiguity (most populous first, e.g. US before CA for +1).
  */
 internal val all: List<Country> = listOf(
         Country(isoCode = "US", dialCode = "1"),

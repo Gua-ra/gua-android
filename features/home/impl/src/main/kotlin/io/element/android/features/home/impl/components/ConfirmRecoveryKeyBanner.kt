@@ -21,23 +21,17 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 internal fun ConfirmRecoveryKeyBanner(
     onContinueClick: () -> Unit,
     onDismissClick: () -> Unit,
-    // GUA FORK: owned by the presenter, not by this composable. As local state it was set on tap
-    // and never cleared, so the NotYet outcome left the button reading "Setting up…" for good, and
-    // on an empty room list nothing ever disposes this banner to reset it.
+    // GUA FORK: owned by the presenter so every outcome can clear it.
     isWorking: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Announcement(
         modifier = modifier.roomListBannerPadding(),
-        // GUA FORK: upstream asks the user to confirm a recovery key. Gua never shows one, so
-        // this says what is actually wrong and what the button will do.
+        // GUA FORK: Gua never shows a recovery key, so the copy says what is wrong and what the button does.
         title = stringResource(R.string.gua_encryption_repair_title),
         description = stringResource(R.string.gua_encryption_repair_message),
         type = AnnouncementType.Actionable(
-            // GUA FORK: the label stays put and the button itself shows the work. Swapping the
-            // label alone left the button live and rippling under every further press, and the
-            // replacement word shipped in one locale out of forty, so a Brazilian tester watched
-            // Portuguese flip to English mid-tap.
+            // GUA FORK: the label stays put and the button itself shows the work.
             actionText = stringResource(R.string.gua_encryption_repair_action),
             onActionClick = onContinueClick,
             onDismissClick = onDismissClick,

@@ -8,19 +8,14 @@
 package io.element.android.libraries.guaresolver.genesis
 
 /**
- * GUA FORK: the device-only account authority key pair ADM-008 decision 5 commits, and the recovery
- * authority key framework 0x01 commits beside it.
- *
+ * The device-only account authority key pair and the recovery authority key committed beside it.
  * The keys are generated on device before the OIDC flow starts and never leave it. There is no escrow
- * and no sync: ADM-008's own consequences section states that a lost device loses authority, which is
- * the deliberate cost of the key being unexportable.
+ * and no sync: a lost device loses authority.
  *
- * There are two slots, and the difference between them is the difference between a key that can be
- * thrown away and one that cannot. The SIGNUP slot holds the pair minted for the signup in flight,
- * which owns nothing until the server attaches it, so a later signup may replace it and [clear] may
- * drop it. The ATTACHED slot holds the pair that owns an account: it is what that account's authority
- * IS, and under recovery framework 0x01 the recovery key is sealed beside it, so nothing here ever
- * overwrites or deletes it. [markAttached] is what moves a pair from the first slot to the second.
+ * There are two slots. The signup slot holds the pair minted for the signup in flight, which owns
+ * nothing until the server attaches it, so a later signup may replace it and [clear] may drop it.
+ * The attached slot holds the pair that owns an account and is never overwritten or deleted.
+ * [markAttached] moves a pair from the first slot to the second.
  */
 interface AccountAuthorityKeyStore {
     /** True when a pair for the signup in flight has been generated and is still readable. */
@@ -28,12 +23,8 @@ interface AccountAuthorityKeyStore {
 
     /**
      * Generates a fresh authority and recovery key pair for a signup, replacing any earlier pair in the
-     * signup slot, which by definition was never attached to an account.
-     *
-     * An attached pair is not touched, because replacing it would destroy the authority of the account
-     * that already owns it and, with it, the recovery key sealed beside it.
-     *
-     * @return the two raw 32-byte Ed25519 PUBLIC keys, which are the only halves that ever leave here.
+     * signup slot. An attached pair is not touched. Returns the two raw 32-byte Ed25519 public keys, the
+     * only halves that ever leave here.
      */
     suspend fun createKeyPair(): AccountAuthorityPublicKeys
 
@@ -42,12 +33,10 @@ interface AccountAuthorityKeyStore {
 
     /**
      * Records that the pair in the signup slot now owns [accountId], moving it to the attached slot
-     * where no later signup and no [clear] can reach it. Calling it again for the same account does
-     * nothing, so an attach step that is retried is safe.
+     * where no later signup and no [clear] can reach it. Idempotent for the same account.
      *
-     * @throws IllegalStateException when the signup slot is empty, or when a DIFFERENT account is
-     * already attached on this device: promoting over that pair would be the one loss ADM-008 decision
-     * 5 offers no recovery from, so it is refused rather than performed.
+     * @throws IllegalStateException when the signup slot is empty, or when a different account is
+     * already attached on this device. Promoting over that pair would destroy its authority.
      */
     suspend fun markAttached(accountId: AccountId)
 
@@ -58,11 +47,11 @@ interface AccountAuthorityKeyStore {
     suspend fun attachedPublicKeys(): AccountAuthorityPublicKeys?
 
     /**
-     * Signs [message] with the account authority key of the signup in flight.
+     * Signs [message] with the account authority key of the signup in flight and returns the 64-byte
+     * detached Ed25519 signature.
      *
-     * @return the 64-byte detached Ed25519 signature.
-     * @throws IllegalStateException when the signup slot is empty, so a caller can never mistake a
-     * missing key for a successful signature.
+     * @throws IllegalStateException when the signup slot is empty, so a missing key is never mistaken
+     * for a successful signature.
      */
     suspend fun signWithAuthorityKey(message: ByteArray): ByteArray
 

@@ -1,14 +1,11 @@
 name: Gua CI
 
-# GUA FORK: single, self-contained pipeline for the fork.
+# GUA FORK: the fork's single, self-contained pipeline. It does not depend on any upstream
+# (element-hq) org secrets, the enterprise submodule, Localazy, codecov, Diawi, Firebase or Sonar.
+# The upstream workflows that do are restricted to workflow_dispatch.
 #
-# It deliberately does NOT depend on any upstream (element-hq) org secrets, LFS goldens,
-# the enterprise submodule, Localazy, codecov, Diawi, Firebase, or Sonar — those upstream
-# workflows are disabled to workflow_dispatch-only so the fork pipeline is green out of the box.
-#
-# Jobs: constraint guard -> build (assembleGplayDebug) + unit tests + lint/ktlint/detekt +
-# Paparazzi screenshot verification. All on JDK 21 (the upstream default).
-
+# Jobs: constraint guard, build (assembleGplayDebug), unit tests + screenshot verification, and
+# lint/ktlint/detekt. All on JDK 21.
 on:
   workflow_dispatch:
   pull_request:
@@ -22,7 +19,7 @@ env:
   CI_GRADLE_ARG_PROPERTIES: --stacktrace --no-configuration-cache
 
 jobs:
-  # --- 1. Constraint guard: must pass before anything else builds. ----------
+  # 1. Constraint guard: must pass before anything else builds.
   constraints:
     name: Constraint guard
     runs-on: ubuntu-latest
@@ -32,12 +29,9 @@ jobs:
           # Need full history so the guard can scan commit messages for AI attribution.
           fetch-depth: 0
           persist-credentials: false
-      # The guard exists to stop NEW violations landing, so it only ever scans the commits an
-      # event actually adds. A full-history scan can never pass: the fork descends from upstream
-      # element-x-android, and the fork's own early history carries Co-Authored-By trailers that
-      # cannot be rewritten now that branches are published. Scanning everything meant every push
-      # to develop failed on commits that are already merged, which is what kept develop red.
-      # The tracked-file and keystore scans are unaffected and still cover the whole tree.
+      # The guard only scans the commit messages this event adds. A full-history scan can never pass:
+      # the fork descends from upstream and its own early history carries trailers that cannot be
+      # rewritten. The tracked-file and keystore scans still cover the whole tree.
       - name: Work out which commits this event adds
         id: scan_range
         env:
@@ -50,17 +44,14 @@ jobs:
           if [ "$EVENT" = "pull_request" ]; then
             base="origin/${BASE_REF}"
           elif [ -n "${BEFORE:-}" ] && ! printf '%s' "$BEFORE" | grep -qE '^0+$'; then
-            # A brand new branch reports an all-zero "before", and a force push can leave it
-            # pointing at a commit that is no longer reachable, so only trust it if git can
-            # actually resolve it.
+            # A new branch or a force push can leave `before` unresolvable.
             if git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
               base="$BEFORE"
             fi
           fi
           if [ -z "$base" ]; then
-            # Nothing sensible to diff against (new branch, force push, manual dispatch). The
-            # commit-message scan is skipped rather than falling back to the whole history,
-            # which would fail on commits the pull request gate already cleared.
+            # Nothing sensible to diff against (new branch, force push, manual dispatch). The scan is
+            # skipped rather than falling back to the whole history.
             echo "::notice::No usable base for this event; skipping the commit-message scan."
           fi
           echo "base=$base" >> "$GITHUB_OUTPUT"
@@ -70,7 +61,7 @@ jobs:
           GUA_CONSTRAINTS_BASE_REF: ${{ steps.scan_range.outputs.base }}
           GUA_CONSTRAINTS_SKIP_HISTORY: ${{ steps.scan_range.outputs.base == '' && '1' || '' }}
 
-  # --- 2. Build the primary fork artifact. ----------------------------------
+  # 2. Build the primary fork artifact.
   build:
     name: Assemble Gplay debug APK
     runs-on: ubuntu-latest
@@ -97,13 +88,10 @@ jobs:
           name: gua-gplay-debug
           path: app/build/outputs/apk/gplay/debug/*-universal-debug.apk
 
-  # --- 3. Unit tests + screenshot verification. -----------------------------
-  #
-  # Two different screenshot tools run here. :tests:uitests uses Paparazzi against ~3100 plain
-  # committed PNGs. :libraries:compound uses Roborazzi against 22 goldens that ARE in Git LFS,
-  # which is why this job checks out with lfs: true. An earlier note here claimed pointer files
-  # "simply compare against their pointer files" and are therefore harmless. They are not:
-  # Roborazzi cannot decode a pointer and crashes on it.
+  # 3. Unit tests + screenshot verification. Two screenshot tools run here. :tests:uitests uses
+  # Paparazzi against plain committed PNGs. :libraries:compound uses Roborazzi against goldens that
+  # are in Git LFS, which is why this job checks out with lfs: true. Roborazzi cannot decode an LFS
+  # pointer and crashes on it.
   tests:
     name: Unit tests + screenshots
     runs-on: ubuntu-latest
@@ -113,11 +101,7 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
-          # :libraries:compound's screenshot goldens are LFS-tracked (.gitattributes). Without this
-          # they arrive as 130-byte pointer stubs, Roborazzi hands the pointer text to ImageIO,
-          # gets null back, and throws NullPointerException while LOADING the golden, before any
-          # pixel is compared. That is what the ten "screenshots FAILED" results in this job were:
-          # not a rendering regression, just an unreadable file.
+          # The :libraries:compound screenshot goldens are in Git LFS.
           lfs: true
       - name: Use JDK 21
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
@@ -139,7 +123,7 @@ jobs:
             **/build/paparazzi/failures/
             **/build/reports/tests/*UnitTest/
 
-  # --- 4. Static analysis: lint, ktlint, detekt. ----------------------------
+  # 4. Static analysis: lint, ktlint, detekt.
   quality:
     name: Lint / ktlint / detekt
     runs-on: ubuntu-latest
@@ -159,17 +143,12 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
       - name: ktlint
-        # --continue so every offending module is reported in one run. Without it Gradle stops at
-        # the first failing ktlint task, which made the job look like a single-file problem when
-        # several modules were affected, and turned fixing lint into one round trip per module.
+        # --continue so every offending module is reported in one run.
         run: ./gradlew ktlintCheck $CI_GRADLE_ARG_PROPERTIES --continue
       - name: Android lint (gplay debug)
         run: ./gradlew :app:lintGplayDebug $CI_GRADLE_ARG_PROPERTIES --continue
       - name: detekt
-        # --continue for the same reason ktlint has it: without it Gradle stops at the
-        # first failing module, so a fix just moves the failure to the next one. The
-        # ktlint findings were fixed once already and detekt's were still hidden behind
-        # two modules that happened to fail first.
+        # --continue for the same reason as ktlint.
         run: ./gradlew detekt $CI_GRADLE_ARG_PROPERTIES --continue
       - name: Upload quality reports
         if: failure()

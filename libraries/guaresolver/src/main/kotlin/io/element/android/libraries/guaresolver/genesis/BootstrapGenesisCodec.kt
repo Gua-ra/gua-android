@@ -8,7 +8,7 @@
 package io.element.android.libraries.guaresolver.genesis
 
 /**
- * GUA FORK: the canonical codec for `BootstrapGenesis`, suite 0x00 (ADM-008 encoding tables).
+ * The canonical codec for `BootstrapGenesis`, suite 0x00.
  *
  * ```
  * off len field
@@ -52,7 +52,6 @@ object BootstrapGenesisCodec {
         return BootstrapGenesis(version, suite, entropy, bytes)
     }
 
-    /** Builds canonical bytes over the given entropy. */
     fun encode(entropy: ByteArray): ByteArray {
         require(entropy.size == BootstrapGenesis.ENTROPY_LENGTH) { "entropy is ${BootstrapGenesis.ENTROPY_LENGTH} bytes" }
         val out = ByteArray(BootstrapGenesis.LENGTH)

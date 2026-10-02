@@ -18,15 +18,9 @@ import org.junit.Rule
 import org.junit.Test
 
 /**
- * GUA FORK Stage 3 verification: records a focused screenshot of the phone-first entry screen
- * (the active iOS-today onboarding path), so the visual can be reviewed without recording the whole
- * golden set. Mirrors the precedent of [GuaHomeserverAbstractionVerifyTest].
- *
- * The state is a typed, valid Brazilian number with national-format masking applied — confirming the
- * country selector (flag + dial code), the masked phone field, and that NO homeserver/Matrix copy is
- * shown anywhere on the entry surface (homeserver abstraction).
- *
- * Records to its own snapshot file and does not touch the shared preview-driven golden set.
+ * Records a focused screenshot of the phone-first entry screen with a typed, valid Brazilian number:
+ * the country selector, the masked phone field, and no homeserver or Matrix copy anywhere on the
+ * entry surface. Records to its own snapshot file.
  */
 class GuaPhoneEntryVerifyTest {
     @get:Rule

@@ -44,10 +44,9 @@ private val DefaultFieldShape = RoundedCornerShape(12.dp)
 private val DefaultFieldHeight = 56.dp
 
 /**
- * GUA FORK: visual styling for [PhoneNumberEntryField], so the same field renders correctly on two
- * very different surfaces: the dark welcome aurora (light, brand-fixed colours over a green canvas)
- * and the standard settings surface (ElementTheme tokens). Callers pass the appropriate preset;
- * [settings] mirrors the original private settings copy, [aurora] mirrors the welcome screen.
+ * GUA FORK: visual styling for [PhoneNumberEntryField], so the same field renders on two different
+ * surfaces: the dark welcome aurora (fixed light colours) and the standard settings surface
+ * (ElementTheme tokens).
  */
 data class PhoneNumberEntryStyle(
     val fieldFill: Color,
@@ -74,15 +73,12 @@ data class PhoneNumberEntryStyle(
 }
 
 /**
- * GUA FORK: the shared settings-style phone-entry field — a country-selector pill (flag + dial code
- * + chevron) beside a national-format phone input. Extracted from the duplicated private copies in
- * the change-phone-number and welcome phone-entry screens so the change-phone and two-step
- * verification flows share one implementation. Styling is parameterised via [style] so the same
- * field works on the settings surface (ElementTheme tokens) without disturbing the welcome screen.
+ * GUA FORK: the shared phone-entry field: a country-selector pill (flag, dial code, chevron) beside a
+ * national-format phone input, used by the change-phone and two-step verification flows.
  *
- * The country is selected by the caller (typically by opening [CountryPickerNode] from [onSelectCountry]).
- * [localPhoneNumber] is the raw national digits; the national-format mask is applied purely visually
- * via [PhoneNumberVisualTransformation], so typing never rewrites the buffer and the cursor stays put.
+ * The country is selected by the caller, typically by opening [CountryPickerNode] from
+ * [onSelectCountry]. [localPhoneNumber] is the raw national digits. The mask is applied visually by
+ * [PhoneNumberVisualTransformation], so typing never rewrites the buffer and the cursor stays put.
  */
 @Composable
 fun PhoneNumberEntryField(
@@ -117,10 +113,6 @@ fun PhoneNumberEntryField(
     }
 }
 
-/**
- * The country pill: flag + "+"+dialCode (+ optional chevron) in a rounded surface. Styling tokens
- * come from [style] so it adapts to the settings surface or the welcome aurora.
- */
 @Composable
 private fun CountrySelectorButton(
     country: Country,
@@ -168,7 +160,6 @@ private fun CountrySelectorButton(
     }
 }
 
-/** A rounded phone field matching the selector pill, styled via [style]. */
 @Composable
 private fun PhoneInput(
     value: String,
@@ -180,16 +171,13 @@ private fun PhoneInput(
     modifier: Modifier = Modifier,
 ) {
     val textStyle: TextStyle = ElementTheme.typography.fontBodyLgRegular.copy(color = style.textColor)
-    // GUA FORK: the caret lives here rather than in the presenter. The String overload of
-    // BasicTextField carries no selection, so it puts the caret back at the end every time the value
-    // it is handed differs from what it last emitted. The presenter is a Molecule presenter, so that
-    // value arrives a frame or more later; typing quickly means keystroke N+1 lands while the field
-    // is still showing N-1, and the caret jumps mid-number. Editing locally keeps every keystroke
-    // immediate, and the presenter still sees each change.
+    // GUA FORK: the caret lives here rather than in the presenter. The String overload of BasicTextField
+    // carries no selection, so it puts the caret at the end whenever the value it is handed differs from
+    // what it last emitted. The presenter's value arrives a frame or more later, so fast typing made the
+    // caret jump mid-number. Editing locally keeps every keystroke immediate.
     var fieldValue by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
     if (fieldValue.text != value) {
-        // The presenter changed the digits behind our back (a pasted number was normalised, or the
-        // country switched), so adopt its version and put the caret at the end.
+        // The presenter changed the digits (paste normalised or country switched): adopt them with the caret at the end.
         fieldValue = TextFieldValue(value, TextRange(value.length))
     }
     BasicTextField(

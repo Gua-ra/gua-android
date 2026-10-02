@@ -21,11 +21,9 @@ import io.element.android.libraries.designsystem.components.dialogs.Confirmation
 import io.element.android.libraries.ui.strings.CommonStrings
 
 /**
- * GUA FORK: warns that someone started recovering this account, with a way to cancel it. Renders
- * nothing while no recovery is live.
- *
- * Public, with no preview of its own, so that `GuaAccountRecoveryBannerVerifyTest` can record it
- * without adding a preview to the sharded screenshot set.
+ * Warns that someone started recovering this account, with a way to cancel it. Renders nothing while
+ * no recovery is live. Public, with no preview of its own, so `GuaAccountRecoveryBannerVerifyTest`
+ * can record it without adding a preview to the sharded screenshot set.
  */
 @Composable
 fun AccountRecoveryBanner(
@@ -36,8 +34,6 @@ fun AccountRecoveryBanner(
     Announcement(
         modifier = modifier.roomListBannerPadding(),
         title = stringResource(R.string.gua_account_recovery_banner_title),
-        // "It can be finished now" is said only for a moment the server named and that has passed.
-        // A recovery whose moment is missing gets the wording that makes no claim about timing.
         description = when (pendingRecovery) {
             is PendingAccountRecovery.FinishableFrom ->
                 stringResource(R.string.gua_account_recovery_banner_message_later, pendingRecovery.date)
@@ -57,7 +53,7 @@ fun AccountRecoveryBanner(
     )
 }
 
-/** GUA FORK: asks before cancelling, since the owner may have started the recovery themselves. */
+/** Asks before cancelling, since the owner may have started the recovery themselves. */
 @Composable
 internal fun AccountRecoveryCancelConfirmation(
     state: AccountRecoveryBannerState,

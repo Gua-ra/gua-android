@@ -8,13 +8,9 @@
 package io.element.android.libraries.guaresolver
 
 /**
- * GUA FORK: a homeserver as advertised by the Gua resolver — where a phone's account lives (login)
- * or should be created (register). The homeserver is identified by its Matrix `serverName`; the
- * client configures OIDC against the [baseUrl] and discovers the MAS issuer via well-known, exactly
- * as it would for any account provider. Mirrors iOS `ResolvedHomeserver`.
- *
- * The resolver output is never surfaced in the UI (homeserver abstraction, see the
- * `gua-abstract-matrix-details` convention).
+ * A homeserver as advertised by the Gua resolver: where a phone's account lives (login) or should be
+ * created (register). The client configures OIDC against [baseUrl] and discovers the MAS issuer
+ * through well-known, as it would for any account provider. Never surfaced in the UI.
  */
 data class ResolvedHomeserver(
     val serverName: String,
@@ -23,12 +19,9 @@ data class ResolvedHomeserver(
     val region: String?,
 )
 
-/**
- * GUA FORK: outcome of resolving a phone number against the Gua resolver. Mirrors iOS
- * `HomeserverResolution`.
- */
+/** Outcome of resolving a phone number against the Gua resolver. */
 data class HomeserverResolution(
-    /** `true` when an account already exists for this phone (-> login); `false` -> register. */
+    /** `true` when an account already exists for this phone (login), `false` to register. */
     val exists: Boolean,
     /** The homeserver to authenticate against (login) or create the account on (register). */
     val homeserver: ResolvedHomeserver,

@@ -33,22 +33,17 @@ import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.coroutines.launch
 
 /**
- * GUA FORK: presenter for the two-step-verification (account PIN) screen. Mirrors the iOS
- * `TwoStepVerificationScreenViewModel` state machine: it loads the factor status, then drives the
- * PIN-first change flow, translating typed [ResolverError]s into per-error phase transitions.
+ * Loads the account's factor status, then drives the PIN change flow.
  *
- * Setting the FIRST PIN is not one of those flows any more. It leaves the app for the same
- * authenticated web ceremony a passkey uses ([IdentityServiceClient.startPinEnrollment]), because a
- * bearer session alone must never be able to add a durable factor: the ceremony asks for a step-up
- * first, and a passkey assertion only works in the browser. The native path it replaces called an
- * endpoint that now refuses every caller. Because the factor is registered outside the app, the
- * status is read again every time the screen resumes rather than once when it opens.
+ * Setting the first PIN leaves the app for the same authenticated web ceremony a passkey uses
+ * ([IdentityServiceClient.startPinEnrollment]), because a bearer session alone must never add a
+ * durable factor. The factor is registered outside the app, so the status is read again every time
+ * the screen resumes.
  *
- * The change flow is PIN-FIRST so identity is proven before any SMS goes out: the user enters their
- * current PIN, then confirms their on-file number (which is what actually fires the OTP via
- * [IdentityServiceClient.startPinChange]), then enters that OTP and chooses a new PIN. The captured
- * current PIN gates the SMS: `startPinChange` only runs once a PIN has been supplied, and a wrong
- * PIN routes the user back to the PIN step with no further SMS.
+ * The change flow is PIN-first so identity is proven before any SMS goes out: the user enters their
+ * current PIN, then confirms their on-file number (which fires the OTP through
+ * [IdentityServiceClient.startPinChange]), then enters that OTP and chooses a new PIN. A wrong PIN
+ * routes back to the PIN step with no further SMS.
  */
 @AssistedInject
 class TwoStepVerificationPresenter(
@@ -72,16 +67,12 @@ class TwoStepVerificationPresenter(
 
         var phase by remember { mutableStateOf(TwoStepVerificationPhase.Loading) }
         var code by remember { mutableStateOf("") }
-        // The on-file number being confirmed, held as (country, RAW national digits) like the welcome
-        // PhoneEntry screen and the change-phone screen. The national mask is visual-only.
         var selectedCountry by remember { mutableStateOf(deviceCountryProvider.current()) }
         var localPhoneNumber by remember { mutableStateOf("") }
         var errorMessage by remember { mutableStateOf<Int?>(null) }
         var showSuccess by remember { mutableStateOf(false) }
-        // The authenticated enrollment URL to hand to the View for the web ceremony, passkey or PIN.
         var factorEnrollUrl by remember { mutableStateOf<String?>(null) }
 
-        // Apply any country picked in the shared CountryPicker child screen, then clear it.
         val pickedCountry by selectedCountryStore.flow.collectAsState()
         LaunchedEffect(pickedCountry) {
             pickedCountry?.let { country ->
@@ -90,37 +81,27 @@ class TwoStepVerificationPresenter(
             }
         }
 
-        // Flow scratch state, mirroring the iOS view-state fields.
-        // The server's factor signal, or null when it could not be read. Null is UNKNOWN, never
-        // "no factors": defaulting a failed read to false is what told a passkey holder their
-        // account had no two-step verification and pushed them to create a PIN.
+        // The server's factor signal, or null when it could not be read. Null is unknown, never "no factors".
         var factors by remember { mutableStateOf<AccountFactorStatus?>(null) }
         var currentPin by remember { mutableStateOf("") }
         var stagedNewPin by remember { mutableStateOf("") }
         var challengeId by remember { mutableStateOf<String?>(null) }
         var otpCode by remember { mutableStateOf("") }
 
-        // Whether the PIN flows act as "set up" or "change". Nullable on purpose: null is UNKNOWN,
-        // and neither flow may run on it. Collapsing unknown to false picked "set up", which for an
-        // account that already holds a PIN is a call the server refuses.
+        // Nullable on purpose: null is unknown, and neither the set-up nor the change flow may run on it.
         val userHasPin: Boolean? = factors?.hasPin
 
-        // Read on every resume, not once. Both factors are now registered in a Custom Tab, so the
-        // account gains one while this screen sits in the background: a screen that only read at
-        // creation went on telling someone who had just set a PIN up that they had none. The
-        // account-recovery banner reads on resume the same way.
+        // Read on every resume: factors are registered in a Custom Tab while this screen is in the background.
         var isResumed by remember { mutableStateOf(false) }
         LifecycleResumeEffect(Unit) {
             isResumed = true
             onPauseOrDispose { isResumed = false }
         }
-        // Keyed on the value this composition saw, not on a read inside the effect: the resume
-        // callback can flip the state before the effect starts.
+        // Keyed on the value this composition saw: the resume callback can flip the state before the effect starts.
         val resumed = isResumed
         LaunchedEffect(resumed) {
             if (!resumed) return@LaunchedEffect
-            // Only an idle screen refreshes. A read landing mid-flow would drop the user out of the
-            // step they are on, and only the first read has nothing to show while it waits.
+            // Only an idle screen refreshes: a read landing mid-flow would drop the user out of their step.
             val isFirstRead = phase == TwoStepVerificationPhase.Loading
             if (!isFirstRead && phase != TwoStepVerificationPhase.Overview) return@LaunchedEffect
             val accessToken = accessToken()
@@ -139,8 +120,7 @@ class TwoStepVerificationPresenter(
                     phase = TwoStepVerificationPhase.Overview
                 }
                 .onFailure {
-                    // A refresh that fails keeps the status the screen already holds: it is still
-                    // the last thing the server said, and only the first read has no fallback.
+                    // A failed refresh keeps the status the screen already holds.
                     if (isFirstRead) {
                         factors = null
                         errorMessage = CommonStrings.error_unknown
@@ -160,9 +140,8 @@ class TwoStepVerificationPresenter(
             code = ""
         }
 
-        // GUA FORK: PIN-first gate. Called only once the user has confirmed their number AFTER entering
-        // their current PIN. `startPinChange` verifies the PIN and fires the OTP in one call, so the SMS
-        // never goes out until a PIN has been supplied; a wrong PIN routes back to the PIN step.
+        // PIN-first gate. `startPinChange` verifies the PIN and fires the OTP in one call, so the SMS never
+        // goes out until a PIN has been supplied. A wrong PIN routes back to the PIN step.
         fun confirmNumberAndRequestOtp(e164Phone: String) {
             coroutineScope.launch {
                 val accessToken = accessToken()
@@ -171,7 +150,6 @@ class TwoStepVerificationPresenter(
                     return@launch
                 }
                 if (currentPin.isEmpty()) {
-                    // Should never happen: PIN is captured before this step. Belt-and-suspenders.
                     errorMessage = CommonStrings.error_unknown
                     phase = TwoStepVerificationPhase.EnteringCurrent
                     return@launch
@@ -188,7 +166,6 @@ class TwoStepVerificationPresenter(
                     .onFailure { error ->
                         when (error) {
                             is ResolverError.InvalidPin -> {
-                                // The captured PIN was wrong: clear it and go back to the PIN step. No SMS.
                                 errorMessage = R.string.screen_two_step_verification_current_incorrect
                                 currentPin = ""
                                 code = ""
@@ -224,9 +201,6 @@ class TwoStepVerificationPresenter(
                 }
                 val activeChallengeId = challengeId
                 if (userHasPin != true || activeChallengeId == null) {
-                    // Belt-and-suspenders: only the change flow reaches this, and it starts from a
-                    // known PIN and an OTP challenge. Setting a first PIN never gets here at all now
-                    // that it is enrolled in the web ceremony.
                     errorMessage = CommonStrings.error_unknown
                     phase = TwoStepVerificationPhase.Overview
                     return@launch
@@ -281,11 +255,8 @@ class TwoStepVerificationPresenter(
             }
         }
 
-        // GUA FORK: factor enrollment, passkey or first PIN. Mirrors iOS' coordinator action: fetch
-        // the authenticated web-ceremony URL from the identity-service and hand it to the View to
-        // open in a Chrome Custom Tab (the Android counterpart of iOS' ASWebAuthenticationSession).
-        // The URL is self-authenticating, so the user settles the step-up and registers the factor
-        // in-browser at the IdP.
+        // Factor enrollment, passkey or first PIN: fetch the authenticated web-ceremony URL from the
+        // identity service and hand it to the View to open in a Chrome Custom Tab.
         fun startFactorEnrollment(start: suspend (String) -> Result<String>) {
             coroutineScope.launch {
                 val accessToken = accessToken()
@@ -300,21 +271,15 @@ class TwoStepVerificationPresenter(
                     }
                     .onFailure { error ->
                         when (error) {
-                            // Our view of the account was stale rather than the user being wrong.
-                            // Correct the row so it offers the change they actually want.
+                            // The view of the account was stale. Correct the row so it offers the change the user wants.
                             is ResolverError.PinAlreadySet -> {
                                 factors = factors?.copy(hasPin = true)
                                 errorMessage = R.string.screen_two_step_verification_pin_already_set
                             }
-                            // The same staleness on the passkey row. There is no "change passkey"
-                            // to offer, so correcting the row is what withdraws the dead button.
                             is ResolverError.PasskeyAlreadyRegistered -> {
                                 factors = factors?.copy(passkeyRegistered = true)
                                 errorMessage = R.string.screen_two_step_verification_passkey_already_registered
                             }
-                            // The account holds only a passkey and no passkey ceremony can run on
-                            // this deployment, so no factor can be enrolled here at all. Say that,
-                            // and point at the delayed recovery, which is the only way out.
                             is ResolverError.StepUpUnavailable ->
                                 errorMessage = R.string.screen_two_step_verification_step_up_unavailable
                             else -> errorMessage = CommonStrings.error_unknown
@@ -326,7 +291,6 @@ class TwoStepVerificationPresenter(
         fun handleSubmittedCode(submitted: String) {
             when (phase) {
                 TwoStepVerificationPhase.EnteringCurrent -> {
-                    // PIN-first: capture the PIN and advance to confirm the number. No SMS yet.
                     currentPin = submitted
                     code = ""
                     errorMessage = null
@@ -369,15 +333,12 @@ class TwoStepVerificationPresenter(
         fun handleEvent(event: TwoStepVerificationEvent) {
             when (event) {
                 TwoStepVerificationEvent.StartSetup -> {
-                    // Only on a KNOWN "no PIN". The row that emits this is withheld otherwise, and
-                    // an unknown status must not be guessed into an enrollment the server refuses.
+                    // Only on a known "no PIN": an unknown status must not be guessed into an enrollment the server refuses.
                     if (userHasPin == false) {
                         startFactorEnrollment(identityServiceClient::startPinEnrollment)
                     }
                 }
                 TwoStepVerificationEvent.StartChange -> {
-                    // PIN-FIRST: verify the current PIN BEFORE confirming the number / firing the SMS.
-                    // Only on a KNOWN "has PIN": there is nothing to verify otherwise.
                     if (userHasPin == true) {
                         resetFlowState()
                         phase = TwoStepVerificationPhase.EnteringCurrent
@@ -392,9 +353,6 @@ class TwoStepVerificationPresenter(
                     }
                 }
                 is TwoStepVerificationEvent.PhoneChanged -> {
-                    // Mirror the welcome/change-phone pipeline: normalise (strip a redundant country
-                    // code from a paste/autofill and switch country if unambiguously international),
-                    // then auto-detect the country. Only raw digits are stored; the mask is visual-only.
                     val (normalizedCountry, normalizedDigits) = Country.normalize(
                         rawInput = event.value,
                         current = selectedCountry,
@@ -435,8 +393,7 @@ class TwoStepVerificationPresenter(
                 TwoStepVerificationEvent.ClearSuccess -> {
                     showSuccess = false
                 }
-                // Only on a KNOWN "no passkey", matching the row: enrollment excludes credentials the
-                // account already holds, so an unknown status would send the user to a refusal.
+                // Only on a known "no passkey": enrollment excludes credentials the account already holds.
                 TwoStepVerificationEvent.SetUpPasskey -> if (factors?.passkeyRegistered == false) {
                     startFactorEnrollment(identityServiceClient::startPasskeyEnrollment)
                 }

@@ -5,8 +5,6 @@
   ~ Please see LICENSE files in the repository root for full details.
   -->
 <resources>
-    <!-- GUA FORK: "Find friends" entry in the new-chat / "+" screen. Mirrors Element X iOS
-         StartChatScreen's top-of-list Find friends row. -->
     <string name="screen_find_friends_action">Find friends</string>
 
     <!-- GUA FORK: hint under the "Join room by address" field. Replaces upstream's

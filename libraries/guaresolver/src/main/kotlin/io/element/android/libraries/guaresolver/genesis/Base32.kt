@@ -8,14 +8,11 @@
 package io.element.android.libraries.guaresolver.genesis
 
 /**
- * GUA FORK: RFC 4648 base32, lowercase and unpadded, which is the spelling ADM-008 decision 2 fixes
- * for an accountId. Port of the identity-service `Base32`, byte for byte.
+ * RFC 4648 base32, lowercase and unpadded, which is the spelling of an accountId. Port of the
+ * identity-service `Base32`.
  *
- * The decoder is strict in each direction an ambiguity could enter: only the lowercase alphabet (no
- * uppercase, no padding, no "extended hex" alphabet), only a character count an unpadded encoding can
- * actually produce, and only zero trailing bits. Those are the three ways a decoder that "helpfully"
- * accepts more would give one byte string several spellings, which ADM-001 L4 forbids for anything a
- * signature or a permanent identifier covers.
+ * The decoder is strict so one byte string has exactly one spelling: only the lowercase alphabet,
+ * only a character count an unpadded encoding can produce, and only zero trailing bits.
  */
 internal object Base32 {
     private const val ALPHABET = "abcdefghijklmnopqrstuvwxyz234567"
@@ -25,7 +22,6 @@ internal object Base32 {
         ALPHABET.forEachIndexed { index, character -> this[character.code] = index }
     }
 
-    /** Encodes [data] as lowercase unpadded base32. */
     fun encode(data: ByteArray): String {
         val out = StringBuilder((data.size * 8 + 4) / 5)
         var buffer = 0
@@ -76,7 +72,7 @@ internal object Base32 {
                 bits -= 8
             }
         }
-        // Whatever is left over is padding and must be zero, or one byte string has several spellings.
+        // Left-over bits must be zero, or one byte string has several spellings.
         if (bits > 0) {
             val mask = (1 shl bits) - 1
             if (buffer and mask != 0) {

@@ -10,10 +10,9 @@ package io.element.android.features.home.impl.accountrecovery
 import io.element.android.libraries.architecture.AsyncAction
 
 /**
- * GUA FORK: the warning shown while someone is recovering this account with the delayed recovery.
- *
- * Independent of the encryption banner and its dismissal, and never dismissible itself: it stays up
- * until the recovery is cancelled, finished or runs out.
+ * The warning shown while someone is recovering this account with the delayed recovery. Independent
+ * of the encryption banner and never dismissible: it stays up until the recovery is cancelled,
+ * finished or runs out.
  */
 data class AccountRecoveryBannerState(
     /** The live recovery, or null when there is none and the banner is hidden. */
@@ -27,16 +26,11 @@ data class AccountRecoveryBannerState(
  * What the banner can say about when this live recovery can be finished.
  *
  * Three cases rather than a nullable date, because "the server named no moment" and "the moment has
- * passed" are different facts and only the second one means the recovery can be finished now. The
- * fields decode with null defaults for older servers, so the first case is reachable, and collapsing
- * it into the second told the owner the takeover could be completed immediately when nothing said so.
+ * passed" are different facts and only the second means the recovery can be finished now. The fields
+ * decode with null defaults for older servers, so the first case is reachable.
  */
 sealed interface PendingAccountRecovery {
-    /**
-     * [date] is the localised long DATE from which the recovery can be finished, with the year and
-     * no time of day. The waits run in days, so an exact moment would be more precision than the
-     * owner can use and more than the server should publish.
-     */
+    /** [date] is the localised long date from which the recovery can be finished, with the year and no time of day. */
     data class FinishableFrom(val date: String) : PendingAccountRecovery
 
     /** The moment the server named has passed, so the recovery can be finished right now. */

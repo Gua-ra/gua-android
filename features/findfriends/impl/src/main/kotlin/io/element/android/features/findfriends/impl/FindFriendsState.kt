@@ -10,10 +10,6 @@ package io.element.android.features.findfriends.impl
 import io.element.android.libraries.matrix.api.core.UserId
 import kotlinx.collections.immutable.ImmutableList
 
-/**
- * GUA FORK: immutable UI state for the Find friends screen. Android counterpart of iOS
- * `FindFriendsScreenViewState` / `FindFriendsScreenPhase`.
- */
 data class FindFriendsState(
     val phase: FindFriendsPhase,
     val contacts: ImmutableList<DiscoveredContact>,
@@ -26,10 +22,10 @@ enum class FindFriendsPhase {
     /** Reading contacts and looking them up. */
     Loading,
 
-    /** Contacts permission has not been granted yet — show a CTA to request it. */
+    /** Contacts permission has not been granted yet: show a CTA to request it. */
     NeedsPermission,
 
-    /** Contacts permission was permanently denied — show a CTA to open system settings. */
+    /** Contacts permission was permanently denied: show a CTA to open system settings. */
     PermissionDenied,
 
     /** Discovery ran but none of the user's contacts are on Gua yet. */

@@ -9,9 +9,6 @@ package io.element.android.features.preferences.impl.changephonenumber
 
 import io.element.android.libraries.phonenumberentry.Country
 
-/**
- * GUA FORK: UI actions for the change-phone-number screen.
- */
 sealed interface ChangePhoneNumberEvents {
     /** The user edited the 6-digit code field (account PIN or OTP). */
     data class CodeChanged(val code: String) : ChangePhoneNumberEvents
@@ -25,10 +22,8 @@ sealed interface ChangePhoneNumberEvents {
     /** The user tapped the country-selector pill; the Node opens the shared country picker. */
     data object SelectCountry : ChangePhoneNumberEvents
 
-    /** A country was picked from the shared country picker. */
     data class CountrySelected(val country: Country) : ChangePhoneNumberEvents
 
-    /** The user tapped the primary "Continue" button. */
     data object Continue : ChangePhoneNumberEvents
 
     /** The user chose "Set up PIN" on the step-up block; the Node opens the 2SV PIN-setup flow. */
@@ -43,7 +38,6 @@ sealed interface ChangePhoneNumberEvents {
     /** The passkey enrollment URL has been opened; clear it so it is not opened twice. */
     data object ClearPasskeyEnrollUrl : ChangePhoneNumberEvents
 
-    /** The user cancelled the in-progress flow. */
     data object CancelEntry : ChangePhoneNumberEvents
 
     /** The user tapped "Done" on the success screen; finish and pop back to settings. */
