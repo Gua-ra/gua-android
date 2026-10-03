@@ -309,31 +309,34 @@ private fun SoundsPreferenceCategory(state: NotificationSettingsState) {
             MessageSoundDialog(state)
         }
 
-        val launchCallRingtonePicker = rememberSoundPickerOnClick(
-            type = RingtoneManager.TYPE_RINGTONE,
-            current = state.callRingtone.sound,
-            defaultUri = Settings.System.DEFAULT_RINGTONE_URI,
-            onSoundPick = { sound -> state.eventSink(NotificationSettingsEvents.SetCallRingtone(sound)) },
-        )
-        // Skip the initial 0 emission so the picker doesn't auto-open on screen entry; only
-        // increments fired by LaunchCallRingtonePicker should launch it.
-        LaunchedEffect(state.pendingCallRingtonePickerLaunch) {
-            if (state.pendingCallRingtonePickerLaunch > 0) {
-                launchCallRingtonePicker()
-            }
-        }
-        ListItem(
-            headlineContent = { Text(stringResource(id = R.string.screen_notification_settings_call_ringtone_label)) },
-            supportingContent = { Text(state.callRingtone.displayName) },
-            onClick = { state.eventSink(NotificationSettingsEvents.ShowCallRingtoneDialog) },
-        )
-        if (state.callRingtone.copyError) {
-            SoundCopyErrorRow(
-                onDismissClick = { state.eventSink(NotificationSettingsEvents.DismissCallRingtoneCopyError) },
+        // GUA FORK: no call ringtone setting where calls never ring.
+        if (state.showCallRingtone) {
+            val launchCallRingtonePicker = rememberSoundPickerOnClick(
+                type = RingtoneManager.TYPE_RINGTONE,
+                current = state.callRingtone.sound,
+                defaultUri = Settings.System.DEFAULT_RINGTONE_URI,
+                onSoundPick = { sound -> state.eventSink(NotificationSettingsEvents.SetCallRingtone(sound)) },
             )
-        }
-        if (state.showCallRingtoneDialog) {
-            CallRingtoneDialog(state)
+            // Skip the initial 0 emission so the picker doesn't auto-open on screen entry; only
+            // increments fired by LaunchCallRingtonePicker should launch it.
+            LaunchedEffect(state.pendingCallRingtonePickerLaunch) {
+                if (state.pendingCallRingtonePickerLaunch > 0) {
+                    launchCallRingtonePicker()
+                }
+            }
+            ListItem(
+                headlineContent = { Text(stringResource(id = R.string.screen_notification_settings_call_ringtone_label)) },
+                supportingContent = { Text(state.callRingtone.displayName) },
+                onClick = { state.eventSink(NotificationSettingsEvents.ShowCallRingtoneDialog) },
+            )
+            if (state.callRingtone.copyError) {
+                SoundCopyErrorRow(
+                    onDismissClick = { state.eventSink(NotificationSettingsEvents.DismissCallRingtoneCopyError) },
+                )
+            }
+            if (state.showCallRingtoneDialog) {
+                CallRingtoneDialog(state)
+            }
         }
     }
 }

@@ -9,6 +9,8 @@
 package io.element.android.libraries.push.impl.notifications
 
 import com.google.common.truth.Truth.assertThat
+import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.GOOGLE_PLAY_FLAVOR_DESCRIPTION
 import io.element.android.libraries.matrix.api.notification.CallIntent
 import io.element.android.libraries.matrix.api.notification.NotificationContent
 import io.element.android.libraries.matrix.api.notification.RtcNotificationType
@@ -20,6 +22,7 @@ import io.element.android.libraries.matrix.test.A_USER_ID_2
 import io.element.android.libraries.matrix.test.A_USER_NAME_2
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.FakeMatrixClientProvider
+import io.element.android.libraries.matrix.test.core.aBuildMeta
 import io.element.android.libraries.matrix.test.notification.aNotificationData
 import io.element.android.libraries.matrix.test.room.FakeBaseRoom
 import io.element.android.libraries.matrix.test.room.FakeJoinedRoom
@@ -163,13 +166,60 @@ class DefaultCallNotificationEventResolverTest {
         assertThat(result.getOrNull()).isEqualTo(expectedResult)
     }
 
+    @Test
+    fun `resolve CallNotify - RING in the Google Play build displays the same as NOTIFY`() = runTest {
+        val room = FakeJoinedRoom(
+            baseRoom = FakeBaseRoom(
+                sessionId = A_SESSION_ID,
+                roomId = A_ROOM_ID,
+                // The call is still ongoing
+                initialRoomInfo = aRoomInfo(hasRoomCall = true),
+            )
+        )
+        val client = FakeMatrixClient().apply {
+            givenGetRoomResult(A_ROOM_ID, room)
+        }
+
+        val resolver = createDefaultNotifiableEventResolver(
+            clientProvider = FakeMatrixClientProvider(getClient = { Result.success(client) }),
+            buildMeta = aBuildMeta(flavorDescription = GOOGLE_PLAY_FLAVOR_DESCRIPTION),
+        )
+        val expectedResult = NotifiableMessageEvent(
+            sessionId = A_SESSION_ID,
+            roomId = A_ROOM_ID,
+            eventId = AN_EVENT_ID,
+            senderId = A_USER_ID_2,
+            roomName = A_ROOM_NAME,
+            editedEventId = null,
+            body = "📹 Incoming call",
+            timestamp = 567L,
+            canBeReplaced = false,
+            isRedacted = false,
+            isUpdated = false,
+            senderDisambiguatedDisplayName = A_USER_NAME_2,
+            noisy = true,
+            imageUriString = null,
+            imageMimeType = null,
+            threadId = null,
+            type = "org.matrix.msc4075.rtc.notification",
+        )
+
+        val notificationData = aNotificationData(
+            content = NotificationContent.MessageLike.RtcNotification(A_USER_ID_2, RtcNotificationType.RING, CallIntent.VIDEO, 1567)
+        )
+        val result = resolver.resolveEvent(A_SESSION_ID, notificationData)
+        assertThat(result.getOrNull()).isEqualTo(expectedResult)
+    }
+
     private fun createDefaultNotifiableEventResolver(
         stringProvider: FakeStringProvider = FakeStringProvider(defaultResult = "\uD83D\uDCF9 Incoming call"),
         appForegroundStateService: FakeAppForegroundStateService = FakeAppForegroundStateService(),
         clientProvider: FakeMatrixClientProvider = FakeMatrixClientProvider(),
+        buildMeta: BuildMeta = aBuildMeta(),
     ) = DefaultCallNotificationEventResolver(
         stringProvider = stringProvider,
         appForegroundStateService = appForegroundStateService,
         clientProvider = clientProvider,
+        buildMeta = buildMeta,
     )
 }

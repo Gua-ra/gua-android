@@ -25,6 +25,7 @@ import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.isGooglePlayBuild
 import io.element.android.libraries.fullscreenintent.api.FullScreenIntentPermissionsEvents
 import io.element.android.libraries.fullscreenintent.api.FullScreenIntentPermissionsState
 import io.element.android.libraries.preferences.api.store.PreferenceDataStoreFactory
@@ -61,7 +62,8 @@ class FullScreenIntentPermissionsPresenter(
     @Composable
     override fun present(): FullScreenIntentPermissionsState {
         val coroutineScope = rememberCoroutineScope()
-        val isGranted = notificationManagerCompat.canUseFullScreenIntent()
+        // GUA FORK: the Play build declares no full-screen intent permission and never asks for it.
+        val isGranted = buildMeta.isGooglePlayBuild || notificationManagerCompat.canUseFullScreenIntent()
         val isBannerDismissed by isFullScreenIntentBannerDismissed.collectAsState(initial = true)
 
         fun handleEvent(event: FullScreenIntentPermissionsEvents) {

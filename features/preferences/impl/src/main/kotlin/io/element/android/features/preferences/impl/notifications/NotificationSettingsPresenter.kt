@@ -27,6 +27,8 @@ import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.architecture.runUpdatingStateNoSuccess
 import io.element.android.libraries.core.extensions.runCatchingExceptions
+import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.isGooglePlayBuild
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.fullscreenintent.api.FullScreenIntentPermissionsState
 import io.element.android.libraries.matrix.api.MatrixClient
@@ -73,6 +75,7 @@ class NotificationSettingsPresenter(
     private val stringProvider: StringProvider,
     @SessionCoroutineScope
     private val sessionCoroutineScope: CoroutineScope,
+    private val buildMeta: BuildMeta,
 ) : Presenter<NotificationSettingsState> {
     // Serializes the pick → copy → persist → recreate pipeline per slot. The copier already locks
     // its `<slot>.tmp` file, but the persist+recreate window outside the copier is unprotected;
@@ -300,6 +303,7 @@ class NotificationSettingsPresenter(
                 displayName = callRingtoneDisplayName,
                 copyError = callRingtoneCopyError,
             ),
+            showCallRingtone = !buildMeta.isGooglePlayBuild,
             showMessageSoundDialog = showMessageSoundDialog,
             showCallRingtoneDialog = showCallRingtoneDialog,
             pendingMessageSoundPickerLaunch = pendingMessageSoundPickerLaunch,
