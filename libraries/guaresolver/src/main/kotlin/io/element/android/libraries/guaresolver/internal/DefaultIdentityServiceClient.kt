@@ -11,6 +11,7 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
 import io.element.android.libraries.core.data.tryOrNull
+import io.element.android.libraries.core.locale.UiLanguage
 import io.element.android.libraries.core.uri.ensureProtocol
 import io.element.android.libraries.guaresolver.AccountFactorStatus
 import io.element.android.libraries.guaresolver.AccountGenesisRegistration
@@ -50,7 +51,7 @@ class DefaultIdentityServiceClient(
             ?: return Result.failure(ResolverError.NotConfigured)
 
         val api = try {
-            retrofitFactory.create(baseUrl.ensureProtocol()).create(IdentityServiceApi::class.java)
+            createApi(baseUrl)
         } catch (e: Exception) {
             Timber.e(e, "Failed to create identity-service Retrofit instance")
             return Result.failure(ResolverError.Transport(e))
@@ -267,6 +268,26 @@ class DefaultIdentityServiceClient(
         }
 
     /**
+     * An [IdentityServiceApi] whose requests carry the app's UI language as `Accept-Language`, unless
+     * the call sets its own. The identity-service picks the SMS language from it.
+     */
+    private fun createApi(baseUrl: String): IdentityServiceApi {
+        val retrofit = retrofitFactory.create(baseUrl.ensureProtocol())
+        val callFactory = retrofit.callFactory()
+        return retrofit.newBuilder()
+            .callFactory { request ->
+                val localized = if (request.header("Accept-Language") == null) {
+                    request.newBuilder().header("Accept-Language", UiLanguage.tag()).build()
+                } else {
+                    request
+                }
+                callFactory.newCall(localized)
+            }
+            .build()
+            .create(IdentityServiceApi::class.java)
+    }
+
+    /**
      * Runs an identity-service PIN call against a freshly-built [IdentityServiceApi], mapping HTTP
      * failures onto the typed [ResolverError] PIN cases (mirroring iOS' status-code + `code`-field
      * handling) and everything else onto [ResolverError.Transport].
@@ -276,7 +297,7 @@ class DefaultIdentityServiceClient(
             ?: return Result.failure(ResolverError.NotConfigured)
 
         val api = try {
-            retrofitFactory.create(baseUrl.ensureProtocol()).create(IdentityServiceApi::class.java)
+            createApi(baseUrl)
         } catch (e: Exception) {
             Timber.e(e, "Failed to create identity-service Retrofit instance")
             return Result.failure(ResolverError.Transport(e))

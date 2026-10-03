@@ -17,7 +17,7 @@ import androidx.browser.customtabs.CustomTabsIntent
 import androidx.browser.customtabs.CustomTabsSession
 import androidx.core.net.toUri
 import io.element.android.libraries.androidutils.system.openUrlInExternalApp
-import java.util.Locale
+import io.element.android.libraries.core.locale.UiLanguage
 
 /**
  * Open url in custom tab or, if not available, in the default browser.
@@ -63,7 +63,8 @@ fun Activity.openUrlInChromeCustomTab(
                 // Disable bookmark button
                 intent.putExtra("org.chromium.chrome.browser.customtabs.EXTRA_DISABLE_STAR_BUTTON", true)
                 intent.putExtra(Browser.EXTRA_HEADERS, Bundle().apply {
-                    putString("Accept-Language", Locale.getDefault().toLanguageTag())
+                    // GUA FORK: the language the app shows, without Unicode extensions.
+                    putString("Accept-Language", UiLanguage.tag())
                 })
             }
             .launchUrl(this, url.toUri())

@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import io.element.android.features.messages.api.timeline.voicemessages.composer.VoiceMessageComposerEvent
@@ -29,6 +30,7 @@ import io.element.android.libraries.textcomposer.TextComposer
 import io.element.android.libraries.textcomposer.model.Suggestion
 import io.element.android.libraries.textcomposer.model.VoiceMessagePlayerEvent
 import io.element.android.libraries.textcomposer.model.VoiceMessageRecorderEvent
+import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.coroutines.launch
 
 @Composable
@@ -121,6 +123,8 @@ internal fun MessageComposerView(
     AsyncActionView(
         async = state.slashCommandAction,
         onSuccess = {},
+        // GUA FORK: slash commands are a developer feature, and their parse errors carry their own text.
+        errorMessage = { it.message ?: stringResource(CommonStrings.error_unknown) },
         onErrorDismiss = { state.eventSink(MessageComposerEvent.ClearSlashError) },
     )
 }

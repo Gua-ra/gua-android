@@ -146,7 +146,8 @@ internal fun CallScreenView(
             is AsyncData.Failure -> {
                 Timber.e(state.urlState.error, "WebView failed to load URL: ${state.urlState.error.message}")
                 ErrorDialog(
-                    content = state.urlState.error.message.orEmpty(),
+                    // GUA FORK: never the exception's message, which is English whatever the app language.
+                    content = stringResource(CommonStrings.error_unknown),
                     onSubmit = { state.eventSink(CallScreenEvent.Hangup) },
                 )
             }

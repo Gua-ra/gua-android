@@ -69,6 +69,8 @@ jobs:
         env:
           GUA_CONSTRAINTS_BASE_REF: ${{ steps.scan_range.outputs.base }}
           GUA_CONSTRAINTS_SKIP_HISTORY: ${{ steps.scan_range.outputs.base == '' && '1' || '' }}
+      - name: Check translations
+        run: python3 tools/scripts/check-translations.py
 
   # --- 2. Build the primary fork artifact. ----------------------------------
   build:

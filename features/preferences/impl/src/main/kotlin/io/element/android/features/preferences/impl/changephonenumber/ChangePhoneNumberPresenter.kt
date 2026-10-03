@@ -23,6 +23,7 @@ import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.features.preferences.impl.R
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.core.locale.UiLanguage
 import io.element.android.libraries.guaresolver.AccountFactorStatus
 import io.element.android.libraries.guaresolver.AuthFactor
 import io.element.android.libraries.guaresolver.IdentityServiceClient
@@ -34,7 +35,6 @@ import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 /**
  * GUA FORK: presenter for the change-phone-number screen, driving the real identity-service
@@ -190,7 +190,7 @@ class ChangePhoneNumberPresenter(
                 identityServiceClient.startPhoneChangeReauth(
                     accessToken = accessToken,
                     phone = enteredPhone,
-                    language = Locale.getDefault().toLanguageTag(),
+                    language = UiLanguage.tag(),
                 )
                     .onSuccess {
                         currentPhone = enteredPhone
@@ -400,7 +400,7 @@ class ChangePhoneNumberPresenter(
                     // from any client that can assert it.
                     passkeyStepUpId = null,
                     passkeyCredentialJson = null,
-                    language = Locale.getDefault().toLanguageTag(),
+                    language = UiLanguage.tag(),
                 )
                 // Spent by the server before it weighed the step-up, so it is gone either way.
                 reauthToken = ""

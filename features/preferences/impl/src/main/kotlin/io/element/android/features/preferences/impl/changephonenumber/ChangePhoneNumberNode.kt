@@ -19,6 +19,7 @@ import io.element.android.annotations.ContributesNode
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
 import io.element.android.libraries.architecture.callback
+import io.element.android.libraries.core.locale.withUiLocales
 import io.element.android.libraries.di.SessionScope
 
 @ContributesNode(SessionScope::class)
@@ -57,7 +58,7 @@ class ChangePhoneNumberNode(
             // GUA FORK: the enrollUrl is self-authenticating, so it opens in a private Custom Tab for
             // the user to complete WebAuthn registration, exactly as the 2SV screen does.
             onOpenPasskeyEnrollUrl = { url ->
-                activity.openUrlInChromeCustomTab(session = null, darkTheme = isDark, url = url, ephemeral = true)
+                activity.openUrlInChromeCustomTab(session = null, darkTheme = isDark, url = url.withUiLocales(), ephemeral = true)
             },
             modifier = modifier,
         )

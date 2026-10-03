@@ -2,7 +2,7 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
   <string name="screen_account_provider_change">"Cambiar proveedor de cuentas"</string>
   <string name="screen_account_provider_form_hint">"Dirección del servidor base"</string>
-  <string name="screen_account_provider_form_notice">"Introduce un término de búsqueda o una dirección de dominio."</string>
+  <string name="screen_account_provider_form_notice">"Ingresa un término de búsqueda o una dirección de dominio."</string>
   <string name="screen_account_provider_form_subtitle">"Busca una empresa, comunidad o servidor privado."</string>
   <string name="screen_account_provider_form_title">"Encontrar un proveedor de cuentas"</string>
   <string name="screen_account_provider_signin_subtitle">"Aquí es donde se alojarán tus conversaciones — justo como utilizarías un proveedor de correo electrónico para guardar tus correos electrónicos."</string>
@@ -13,7 +13,9 @@
   <string name="screen_change_account_provider_other">"Otro"</string>
   <string name="screen_change_account_provider_subtitle">"Usa un proveedor de cuentas diferente, como tu propio servidor privado o una cuenta de trabajo."</string>
   <string name="screen_change_account_provider_title">"Cambiar proveedor de cuentas"</string>
-  <string name="screen_change_server_error_invalid_homeserver">"No hemos podido acceder a este servidor base. Comprueba que has introducido correctamente la dirección. Si es correcta, ponte en contacto con el administrador de tu servidor base para obtener más ayuda."</string>
+  <string name="screen_change_server_error_element_pro_required_message">"%1$s requiere la aplicación Element Pro. Descárgala de la tienda."</string>
+  <string name="screen_change_server_error_element_pro_required_title">"Se requiere Element Pro"</string>
+  <string name="screen_change_server_error_invalid_homeserver">"No hemos podido acceder a este servidor base. Comprueba que ingresaste correctamente la dirección. Si es correcta, ponte en contacto con el administrador de tu servidor base para obtener más ayuda."</string>
   <string name="screen_change_server_error_invalid_well_known">"El servidor no está disponible debido a un problema en el archivo .well-known:
 %1$s"</string>
   <string name="screen_change_server_error_no_sliding_sync_message">"El proveedor de cuentas seleccionado no admite sliding sync. Es necesario actualizar el servidor para usar %1$s."</string>
@@ -21,7 +23,7 @@
   <string name="screen_change_server_error_unauthorized_homeserver_content">"Esta aplicación se ha configurado para permitir: %1$s."</string>
   <string name="screen_change_server_error_unauthorized_homeserver_title">"No se permite el proveedor de cuentas %1$s."</string>
   <string name="screen_change_server_form_header">"URL del servidor base"</string>
-  <string name="screen_change_server_form_notice">"Introduce una dirección de dominio."</string>
+  <string name="screen_change_server_form_notice">"Ingresa una dirección de dominio."</string>
   <string name="screen_change_server_subtitle">"¿Cuál es la dirección de tu servidor?"</string>
   <string name="screen_change_server_title">"Selecciona tu servidor"</string>
   <string name="screen_create_account_title">"Crear cuenta"</string>
@@ -30,15 +32,23 @@
   <string name="screen_login_error_invalid_user_id">"Este no es un id de usuario válido. Formato esperado: \'@user:homeserver.org\'"</string>
   <string name="screen_login_error_refresh_tokens">"Este servidor está configurado para utilizar tokens de actualización. Estos no son compatibles cuando se utiliza el inicio de sesión basado en contraseña."</string>
   <string name="screen_login_error_unsupported_authentication">"El servidor base seleccionado no admite el inicio de sesión usando contraseña ni OAuth. Ponte en contacto con tu administrador o elige otro servidor base."</string>
-  <string name="screen_login_form_header">"Introduce tus datos"</string>
+  <string name="screen_login_form_header">"Ingresa tus datos"</string>
   <string name="screen_login_subtitle">"Matrix es una red abierta para una comunicación segura y descentralizada."</string>
   <string name="screen_login_title">"¡Hola de nuevo!"</string>
   <string name="screen_login_title_with_homeserver">"Iniciar sesión en %1$s"</string>
+  <string name="screen_missing_key_backup_open_element_classic">"Abrir Element Classic"</string>
+  <string name="screen_missing_key_backup_step_1">"Abre Element Classic en tu dispositivo"</string>
+  <string name="screen_missing_key_backup_step_2_android">"Ve a Ajustes &gt; Seguridad y privacidad"</string>
+  <string name="screen_missing_key_backup_step_3_android">"En «Gestión de claves criptográficas», selecciona «Recuperación de mensajes cifrados»"</string>
+  <string name="screen_missing_key_backup_step_4">"Sigue las instrucciones para activar tu almacén de claves"</string>
+  <string name="screen_missing_key_backup_step_5">"Vuelve a %1$s"</string>
+  <string name="screen_missing_key_backup_title">"Activa tu almacén de claves antes de continuar con %1$s"</string>
   <string name="screen_onboarding_app_version">"Versión %1$s"</string>
   <string name="screen_onboarding_sign_in_manually">"Iniciar sesión manualmente"</string>
   <string name="screen_onboarding_sign_in_to">"Iniciar sesión en %1$s"</string>
   <string name="screen_onboarding_sign_in_with_qr_code">"Iniciar sesión con un código QR"</string>
   <string name="screen_onboarding_sign_up">"Crear cuenta"</string>
+  <string name="screen_onboarding_welcome_back">"¡Hola de nuevo!"</string>
   <string name="screen_onboarding_welcome_message">"Bienvenido al %1$s más rápido de todos los tiempos. Diseñado para la velocidad y la simplicidad."</string>
   <string name="screen_onboarding_welcome_subtitle">"Bienvenido a %1$s. Vitaminado, para mayor rapidez y sencillez."</string>
   <string name="screen_onboarding_welcome_title">"Siéntete en tu Elemento"</string>
@@ -50,7 +60,7 @@
   <string name="screen_qr_code_login_connection_note_secure_state_list_item_3">"Si eso no funciona, inicia sesión manualmente"</string>
   <string name="screen_qr_code_login_connection_note_secure_state_title">"La conexión no es segura"</string>
   <string name="screen_qr_code_login_device_code_subtitle">"Se te pedirá que introduzcas los dos dígitos mostrados en este dispositivo."</string>
-  <string name="screen_qr_code_login_device_code_title">"Introduce el número que aparece a continuación en tu otro dispositivo"</string>
+  <string name="screen_qr_code_login_device_code_title">"Ingresa el número que aparece a continuación en tu otro dispositivo"</string>
   <string name="screen_qr_code_login_device_not_signed_in_scan_state_description">"Inicia sesión en tu otro dispositivo e inténtalo de nuevo, o usa otro dispositivo en el que ya hayas iniciado sesión."</string>
   <string name="screen_qr_code_login_device_not_signed_in_scan_state_subtitle">"El otro dispositivo no tiene iniciada la sesión"</string>
   <string name="screen_qr_code_login_error_cancelled_subtitle">"El inicio de sesión se canceló en el otro dispositivo."</string>
@@ -71,7 +81,7 @@ Intenta iniciar sesión manualmente o escanea el código QR con otro dispositivo
   <string name="screen_qr_code_login_initial_state_item_3">"Selecciona %1$s"</string>
   <string name="screen_qr_code_login_initial_state_item_3_action">"«Vincular un dispositivo nuevo»"</string>
   <string name="screen_qr_code_login_initial_state_item_4">"Escanea el código QR con este dispositivo"</string>
-  <string name="screen_qr_code_login_initial_state_subtitle">"Sólo disponible si tu proveedor de cuentas lo admite."</string>
+  <string name="screen_qr_code_login_initial_state_subtitle">"Solo disponible si tu proveedor de cuentas lo admite."</string>
   <string name="screen_qr_code_login_initial_state_title">"Abre %1$s en otro dispositivo para obtener el código QR"</string>
   <string name="screen_qr_code_login_invalid_scan_state_description">"Usa el código QR que se muestra en el otro dispositivo."</string>
   <string name="screen_qr_code_login_invalid_scan_state_retry_button">"Intentar de nuevo"</string>

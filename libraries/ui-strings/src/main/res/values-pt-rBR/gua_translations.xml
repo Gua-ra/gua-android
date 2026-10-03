@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: translations of upstream strings that Element has not translated. Remove an entry when upstream ships one. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="a11y_duration">Duração: %1$s</string>
+    <string name="a11y_info">Informações</string>
+    <string name="a11y_position">Posição: %1$s</string>
+    <string name="a11y_sent_by_sender_at_date">Enviado por %1$s em %2$s</string>
+    <string name="a11y_settings_with_required_action">Configurações, ação necessária</string>
+    <string name="a11y_start_voice_call">Iniciar uma chamada de voz</string>
+    <string name="action_delete">Excluir</string>
+    <string name="action_delete_account">Excluir conta</string>
+    <string name="action_delete_file">Excluir arquivo</string>
+    <string name="action_download">Baixar</string>
+    <string name="action_manage_account_and_devices">Gerenciar conta e dispositivos</string>
+    <string name="common_call_declined">Chamada recusada</string>
+    <string name="common_call_you_declined">Você recusou uma chamada</string>
+    <string name="common_ends_at">Termina às %1$s</string>
+    <string name="common_fetching_notifications_title_android">Sincronizando notificações…</string>
+    <string name="common_live_location">Localização em tempo real</string>
+    <string name="common_live_location_ended">Localização em tempo real encerrada</string>
+    <string name="common_poll_summary_prefix">Enquete</string>
+    <string name="common_shared_history">Novos membros veem o histórico</string>
+    <string name="common_shared_live_location">Localização em tempo real compartilhada</string>
+    <string name="common_world_readable_history">Qualquer pessoa pode ver o histórico</string>
+</resources>

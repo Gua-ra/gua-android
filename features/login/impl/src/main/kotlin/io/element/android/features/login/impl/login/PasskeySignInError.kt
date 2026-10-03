@@ -8,9 +8,8 @@
 package io.element.android.features.login.impl.login
 
 /**
- * GUA FORK: errors specific to signing in with a passkey. Same shape as the resolver's
- * `ResolverError`: a typed object with a fixed message, which `ChangeServerError.from` surfaces
- * as a plain error dialog.
+ * GUA FORK: errors specific to signing in with a passkey. The message is for logs only;
+ * `ChangeServerError.from` shows the generic translated error.
  */
 sealed class PasskeySignInError(message: String) : Exception(message) {
     /** The deployment has no default account provider configured (dev deployment keys absent). */

@@ -31,10 +31,9 @@ import org.junit.Test
  * `b+pt+BR` resolves the same as `pt-rBR`). Before `values-pt` existed this happened to render the
  * Brazilian strings, which is why the recorded image changed when the fork was translated.
  *
- * A real device set to pt-BR is unaffected: Android prefers `values-pt-rBR`, and both variants ship
- * in the APK (`aapt2 dump resources` shows `(pt) "Introduza o seu número de telemóvel"` alongside
- * `(pt-rBR) "Digite seu número de telefone"`). What this test still covers is that the screen picks
- * up fork translations at all rather than falling back to English.
+ * A real device is unaffected: the app does not ship `values-pt` (app/build.gradle.kts excludes it),
+ * so every Portuguese device reads `values-pt-rBR`. What this test still covers is that the screen
+ * picks up fork translations at all rather than falling back to English.
  */
 class GuaPhoneEntryPtBrLocaleVerifyTest {
     @get:Rule
