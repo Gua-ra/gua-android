@@ -1,1 +1,1 @@
-Private, end-to-end encrypted messaging on an open network.
+Private, end-to-end encrypted messaging built on an open protocol.
