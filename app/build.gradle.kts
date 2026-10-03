@@ -256,6 +256,7 @@ android {
             dimension = "store"
             isDefault = true
             buildConfigFieldStr("SHORT_FLAVOR_DESCRIPTION", "G")
+            // GUA FORK: BuildMeta.isGooglePlayBuild matches this value.
             buildConfigFieldStr("FLAVOR_DESCRIPTION", "GooglePlay")
         }
         create("fdroid") {
