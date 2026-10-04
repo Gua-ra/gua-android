@@ -8,12 +8,16 @@
 
 package io.element.android.features.login.impl.error
 
+import androidx.annotation.StringRes
 import io.element.android.features.login.impl.changeserver.AccountProviderAccessException
+import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.matrix.api.auth.AuthenticationException
+import io.element.android.libraries.ui.strings.CommonStrings
 
 sealed class ChangeServerError : Exception() {
+    // GUA FORK: a string resource, never an exception message, so the dialog follows the app language.
     data class Error(
-        val messageStr: String? = null,
+        @StringRes val messageId: Int = CommonStrings.error_unknown,
     ) : ChangeServerError()
 
     data class NeedElementPro(
@@ -39,11 +43,13 @@ sealed class ChangeServerError : Exception() {
                     is AuthenticationException.InvalidServerName,
                     is AuthenticationException.ServerUnreachable -> InvalidServer
                     // AccountAlreadyLoggedIn error should not happen at this point
-                    is AuthenticationException.AccountAlreadyLoggedIn -> Error(messageStr = error.message)
-                    is AuthenticationException.Generic -> Error(messageStr = error.message)
-                    is AuthenticationException.OAuth -> Error(messageStr = error.message)
+                    is AuthenticationException.AccountAlreadyLoggedIn,
+                    is AuthenticationException.Generic,
+                    is AuthenticationException.OAuth -> Error()
                 }
             }
+            is ResolverError.Transport,
+            is ResolverError.Server -> Error(messageId = CommonStrings.error_network_or_server_issue)
             is AccountProviderAccessException.NeedElementProException -> NeedElementPro(
                 unauthorisedAccountProviderTitle = error.unauthorisedAccountProviderTitle,
                 applicationId = error.applicationId,
@@ -52,7 +58,7 @@ sealed class ChangeServerError : Exception() {
                 unauthorisedAccountProviderTitle = error.unauthorisedAccountProviderTitle,
                 authorisedAccountProviderTitles = error.authorisedAccountProviderTitles,
             )
-            else -> Error(messageStr = error.message)
+            else -> Error()
         }
     }
 }

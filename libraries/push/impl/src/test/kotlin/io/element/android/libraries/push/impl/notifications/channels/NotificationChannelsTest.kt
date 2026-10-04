@@ -16,7 +16,10 @@ import androidx.core.net.toUri
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.features.enterprise.test.FakeEnterpriseService
+import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.GOOGLE_PLAY_FLAVOR_DESCRIPTION
 import io.element.android.libraries.matrix.test.A_SESSION_ID
+import io.element.android.libraries.matrix.test.core.aBuildMeta
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
 import io.element.android.libraries.preferences.api.store.NotificationSound
 import io.element.android.libraries.preferences.test.InMemoryAppPreferencesStore
@@ -54,6 +57,30 @@ class NotificationChannelsTest : RobolectricTest() {
 
         val normalChannel = notificationChannels.getChannelForIncomingCall(ring = false)
         assertThat(normalChannel).isEqualTo(CALL_NOTIFICATION_CHANNEL_ID)
+    }
+
+    @Test
+    @Config(sdk = [Build.VERSION_CODES.TIRAMISU])
+    fun `the Google Play build keeps no ringing call channel`() {
+        val existingRingingChannel = mockk<android.app.NotificationChannel>(relaxed = true) {
+            every { id } returns RINGING_CALL_NOTIFICATION_CHANNEL_ID_BASE
+        }
+        val notificationManager = mockk<NotificationManagerCompat>(relaxed = true) {
+            every { notificationChannels } returns listOf(existingRingingChannel)
+        }
+        val channels = createNotificationChannels(
+            notificationManager = notificationManager,
+            buildMeta = aBuildMeta(flavorDescription = GOOGLE_PLAY_FLAVOR_DESCRIPTION),
+        )
+        channels.recreateRingingCallChannel(sound = NotificationSound.SystemDefault, version = 1)
+
+        verify { notificationManager.deleteNotificationChannel(RINGING_CALL_NOTIFICATION_CHANNEL_ID_BASE) }
+        assertThat(channels.getChannelForIncomingCall(ring = true)).isEqualTo(CALL_NOTIFICATION_CHANNEL_ID)
+        verify(exactly = 0) {
+            notificationManager.createNotificationChannel(
+                match<NotificationChannelCompat> { it.id.startsWith(RINGING_CALL_NOTIFICATION_CHANNEL_ID_BASE) }
+            )
+        }
     }
 
     @Test
@@ -493,11 +520,13 @@ class NotificationChannelsTest : RobolectricTest() {
         // doesn't fire and silently rewrite the prefs store. Tests that exercise the migration
         // construct their own store explicitly.
         appPreferencesStore: AppPreferencesStore = InMemoryAppPreferencesStore(messageSound = NotificationSound.ElementDefault),
+        buildMeta: BuildMeta = aBuildMeta(),
     ) = DefaultNotificationChannels(
         notificationManager = notificationManager,
         stringProvider = FakeStringProvider(),
         context = RuntimeEnvironment.getApplication(),
         enterpriseService = enterpriseService,
         appPreferencesStore = appPreferencesStore,
+        buildMeta = buildMeta,
     )
 }

@@ -1,17 +1,17 @@
 Gua is private messaging without the walled garden.
 
-Simple and secure: send messages, share photos, videos and files, and keep up with the people who matter, all protected with end-to-end encryption by default. Your conversations stay between you and the people you are talking to.
+Simple and secure: send messages, share photos, videos and files, and keep up with the people who matter. Direct messages and private groups are end-to-end encrypted by default, so those conversations stay between you and the people you are talking to.
 
 Why Gua
 
  • End-to-end encrypted by default. Messages are encrypted on your device, so no one in between can read them.
- • Sign in with your phone number and start talking in seconds.
+ • Sign in with your phone number or a passkey.
  • Find people you already know who are on Gua, and start a private chat or a group.
  • Rich messaging: replies, reactions, edits, voice messages, and photo, video and file sharing.
  • Built on the open Matrix protocol, and designed as a network of independently run servers rather than one company's silo.
 
 <b>Private by design</b>
-Gua does not mine your conversations and does not sell your data. Encryption is on from the very first message, with nothing to set up. You are not the product.
+Gua does not mine your conversations and does not sell your data. Direct messages and private groups are encrypted from the very first message, with nothing to set up. You are not the product.
 
 <b>Open and verifiable</b>
 Gua is open source and built on the open, federated Matrix protocol. Anyone can study how it works and check how their data is handled. The network is designed so that organizations will be able to run their own trusted servers within it, giving communities and institutions control of their own data.

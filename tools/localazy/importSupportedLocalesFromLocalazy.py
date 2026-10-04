@@ -9,6 +9,10 @@
 import os
 import subprocess
 
+# GUA FORK: the languages Gua ships. Android shows English for any other language, and Brazilian
+# Portuguese for any Portuguese one.
+SHIPPED_LOCALES = {"en", "en_US", "es", "fr", "pt_BR"}
+
 
 def getLocalesFromLocalazy():
     command = subprocess.run(
@@ -52,7 +56,8 @@ def normalizeForLocalConfig(locale):
         case "zh#Hans":
             return "zh-CN"
         case _:
-            return locale
+            # GUA FORK: locales_config needs BCP 47 tags ("pt-BR"); Android reads "pt_BR" as undefined.
+            return locale.replace("_", "-")
 
 
 def generateLocaleFile(locales, file):
@@ -76,7 +81,7 @@ def generateLocalesConfigFile(locales, file):
 
 def main():
     file = os.path.basename(__file__)
-    locales = getLocalesFromLocalazy()
+    locales = [locale for locale in getLocalesFromLocalazy() if locale in SHIPPED_LOCALES]
     generateLocaleFile(locales, file)
     generateLocalesConfigFile(locales, file)
 

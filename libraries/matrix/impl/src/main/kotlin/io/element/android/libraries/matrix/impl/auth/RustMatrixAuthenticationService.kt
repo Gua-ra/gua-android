@@ -16,6 +16,7 @@ import io.element.android.libraries.androidutils.crypto.ClientSecret
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.core.extensions.mapFailure
 import io.element.android.libraries.core.extensions.runCatchingExceptions
+import io.element.android.libraries.core.locale.withUiLocales
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.auth.AuthenticationException
 import io.element.android.libraries.matrix.api.auth.ElementClassicSession
@@ -275,6 +276,8 @@ class RustMatrixAuthenticationService(
                             homeserver = client.server() ?: client.homeserver(),
                         )
                     }
+                    // GUA FORK: the sign-in pages follow the app's language, not the browser's.
+                    .withUiLocales()
                 pendingOAuthAuthorizationData = oAuthAuthorizationData
                 OAuthDetails(url)
             }.mapFailure { failure ->

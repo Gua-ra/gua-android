@@ -15,6 +15,7 @@
   <string name="screen_join_room_fail_reason">"O es necesario estar invitado para unirse o puede haber restricciones de acceso."</string>
   <string name="screen_join_room_forget_action">"Olvidar"</string>
   <string name="screen_join_room_invite_required_message">"Necesitas una invitación para unirte"</string>
+  <string name="screen_join_room_invited_by">"Te invitó"</string>
   <string name="screen_join_room_join_action">"Unirse"</string>
   <string name="screen_join_room_join_restricted_message">"Es posible que necesites ser invitado o ser miembro de un espacio para poder unirte."</string>
   <string name="screen_join_room_knock_action">"Enviar solicitud de unión"</string>

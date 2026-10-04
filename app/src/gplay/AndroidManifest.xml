@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: declarations the Play build does not ship. The feature behind each removal stays off
+     while BuildMeta.isGooglePlayBuild is true. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Location sharing (DefaultLocationService). -->
+    <uses-permission
+        android:name="android.permission.ACCESS_COARSE_LOCATION"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.ACCESS_FINE_LOCATION"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_LOCATION"
+        tools:node="remove" />
+
+    <!-- Calls (DefaultSessionEnterpriseService, DefaultCallNotificationEventResolver,
+         FullScreenIntentPermissionsPresenter). -->
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.USE_FULL_SCREEN_INTENT"
+        tools:node="remove" />
+
+    <application>
+        <service
+            android:name="io.element.android.features.location.impl.live.service.LiveLocationSharingService"
+            tools:node="remove" />
+
+        <service
+            android:name="io.element.android.features.call.impl.services.CallForegroundService"
+            tools:node="remove" />
+    </application>
+
+</manifest>

@@ -19,6 +19,7 @@ import io.element.android.annotations.ContributesNode
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
 import io.element.android.libraries.architecture.callback
+import io.element.android.libraries.core.locale.withUiLocales
 import io.element.android.libraries.di.SessionScope
 
 @ContributesNode(SessionScope::class)
@@ -51,7 +52,7 @@ class TwoStepVerificationNode(
             // the factor, passkey or first PIN. It needs no browser session, and must not pick up
             // one that belongs to someone else.
             onOpenEnrollUrl = { url ->
-                activity.openUrlInChromeCustomTab(session = null, darkTheme = isDark, url = url, ephemeral = true)
+                activity.openUrlInChromeCustomTab(session = null, darkTheme = isDark, url = url.withUiLocales(), ephemeral = true)
             },
             modifier = modifier,
         )

@@ -28,6 +28,8 @@ import dev.zacsweers.metro.binding
 import io.element.android.appconfig.NotificationConfig
 import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.libraries.core.extensions.runCatchingExceptions
+import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.isGooglePlayBuild
 import io.element.android.libraries.di.annotations.ApplicationContext
 import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
@@ -98,7 +100,11 @@ class DefaultNotificationChannels(
     private val context: Context,
     private val enterpriseService: EnterpriseService,
     private val appPreferencesStore: AppPreferencesStore,
+    private val buildMeta: BuildMeta,
 ) : NotificationChannels {
+    // GUA FORK: the Play build never rings and keeps no ringing-call channel.
+    private val hasRingingCallChannel = !buildMeta.isGooglePlayBuild
+
     @Volatile private var currentNoisyChannelId: String = NOISY_NOTIFICATION_CHANNEL_ID_BASE
     @Volatile private var currentRingingCallChannelId: String = RINGING_CALL_NOTIFICATION_CHANNEL_ID_BASE
 
@@ -162,7 +168,7 @@ class DefaultNotificationChannels(
         }
         // Drop older versioned channels; only the current one remains.
         deleteStaleVersionedChannels(NOISY_NOTIFICATION_CHANNEL_ID_BASE, currentNoisyChannelId)
-        deleteStaleVersionedChannels(RINGING_CALL_NOTIFICATION_CHANNEL_ID_BASE, currentRingingCallChannelId)
+        deleteStaleVersionedChannels(RINGING_CALL_NOTIFICATION_CHANNEL_ID_BASE, currentRingingCallChannelId.takeIf { hasRingingCallChannel })
 
         // Default notification importance: shows everywhere, makes noise, but does not visually intrude.
         val noisySoundUri = resolveNoisySoundUri(config.messageSound)
@@ -204,15 +210,17 @@ class DefaultNotificationChannels(
         )
 
         // Register a channel for incoming call notifications which will ring the device when received
-        val ringingSoundUri = resolveRingingSoundUri(config.callRingtone)
-        grantSoundUriToSystem(ringingSoundUri)
-        notificationManager.createNotificationChannel(
-            buildRingingCallChannel(
-                channelId = currentRingingCallChannelId,
-                soundUri = ringingSoundUri,
-                accentColor = accentColor,
+        if (hasRingingCallChannel) {
+            val ringingSoundUri = resolveRingingSoundUri(config.callRingtone)
+            grantSoundUriToSystem(ringingSoundUri)
+            notificationManager.createNotificationChannel(
+                buildRingingCallChannel(
+                    channelId = currentRingingCallChannelId,
+                    soundUri = ringingSoundUri,
+                    accentColor = accentColor,
+                )
             )
-        )
+        }
     }
 
     private fun buildNoisyChannel(channelId: String, soundUri: Uri?, accentColor: Int): NotificationChannelCompat {
@@ -304,7 +312,8 @@ class DefaultNotificationChannels(
                 fallback()
             }
 
-    private fun deleteStaleVersionedChannels(baseId: String, currentId: String) {
+    /** Deletes every channel of [baseId] except [currentId]; a null [currentId] deletes them all. */
+    private fun deleteStaleVersionedChannels(baseId: String, currentId: String?) {
         if (!supportNotificationChannels()) return
         for (channel in notificationManager.notificationChannels) {
             val id = channel.id
@@ -317,7 +326,7 @@ class DefaultNotificationChannels(
     }
 
     override fun getChannelForIncomingCall(ring: Boolean): String {
-        return if (ring) currentRingingCallChannelId else CALL_NOTIFICATION_CHANNEL_ID
+        return if (ring && hasRingingCallChannel) currentRingingCallChannelId else CALL_NOTIFICATION_CHANNEL_ID
     }
 
     override fun getChannelIdForMessage(sessionId: SessionId, noisy: Boolean): String {
@@ -349,7 +358,7 @@ class DefaultNotificationChannels(
     }
 
     override fun recreateRingingCallChannel(sound: NotificationSound, version: Int) {
-        if (!supportNotificationChannels()) return
+        if (!supportNotificationChannels() || !hasRingingCallChannel) return
         synchronized(recreateLock) {
             val accentColor = NotificationConfig.NOTIFICATION_ACCENT_COLOR
             val newChannelId = ringingCallNotificationChannelId(version)

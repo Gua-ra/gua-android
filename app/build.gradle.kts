@@ -100,6 +100,10 @@ android {
 
         androidResources {
             localeFilters += locales
+            // GUA FORK: a locale filter keeps every region of a language, so "pt-rBR" also keeps
+            // values-pt, which Android prefers over values-pt-rBR on a pt or pt-PT device. Excluding
+            // it makes every Portuguese device show Brazilian Portuguese.
+            additionalParameters += listOf("--exclude-configs", "pt")
         }
     }
 
@@ -252,6 +256,7 @@ android {
             dimension = "store"
             isDefault = true
             buildConfigFieldStr("SHORT_FLAVOR_DESCRIPTION", "G")
+            // GUA FORK: BuildMeta.isGooglePlayBuild matches this value.
             buildConfigFieldStr("FLAVOR_DESCRIPTION", "GooglePlay")
         }
         create("fdroid") {

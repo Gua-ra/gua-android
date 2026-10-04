@@ -9,13 +9,14 @@
 package io.element.android.features.login.impl.error
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import io.element.android.libraries.ui.strings.CommonStrings
 
 class ChangeServerErrorProvider : PreviewParameterProvider<ChangeServerError> {
     override val values: Sequence<ChangeServerError>
         get() = sequenceOf(
             ChangeServerError.InvalidServer,
             ChangeServerError.Error(
-                messageStr = "An error description",
+                messageId = CommonStrings.error_network_or_server_issue,
             ),
             ChangeServerError.NeedElementPro(
                 unauthorisedAccountProviderTitle = "element.io",

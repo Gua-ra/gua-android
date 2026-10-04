@@ -22,6 +22,7 @@ dependencies {
     implementation(projects.libraries.compound)
     api(projects.features.enterprise.api)
     implementation(projects.libraries.architecture)
+    implementation(projects.libraries.core)
     implementation(projects.libraries.matrix.api)
 
     testCommonDependencies(libs)

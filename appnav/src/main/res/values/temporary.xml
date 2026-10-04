@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <!-- GUA FORK: the push registration error without the technical reason upstream appends. -->
+    <string name="gua_error_registering_pusher">Something went wrong, so you might not get notifications for new messages. You can check notifications in Settings.</string>
+</resources>

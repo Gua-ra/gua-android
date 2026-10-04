@@ -11,6 +11,8 @@ package io.element.android.libraries.push.impl.notifications
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import io.element.android.libraries.core.extensions.runCatchingExceptions
+import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.isGooglePlayBuild
 import io.element.android.libraries.matrix.api.MatrixClientProvider
 import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.api.exception.NotificationResolverException
@@ -52,6 +54,7 @@ class DefaultCallNotificationEventResolver(
     private val stringProvider: StringProvider,
     private val appForegroundStateService: AppForegroundStateService,
     private val clientProvider: MatrixClientProvider,
+    private val buildMeta: BuildMeta,
 ) : CallNotificationEventResolver {
     override suspend fun resolveEvent(
         sessionId: SessionId,
@@ -60,11 +63,13 @@ class DefaultCallNotificationEventResolver(
     ): Result<NotifiableEvent> = runCatchingExceptions {
         val content = notificationData.content as? NotificationContent.MessageLike.RtcNotification
             ?: throw NotificationResolverException.UnknownError("content is not a call notify")
+        // GUA FORK: the Play build has no calls and never rings.
+        val notifyOnly = forceNotify || buildMeta.isGooglePlayBuild
 
         val previousRingingCallStatus = appForegroundStateService.hasRingingCall.value
         // We need the sync service working to get the updated room info
         val isRoomCallActive = runCatchingExceptions {
-            if (content.type == RtcNotificationType.RING) {
+            if (content.type == RtcNotificationType.RING && !notifyOnly) {
                 appForegroundStateService.updateHasRingingCall(true)
 
                 val client = clientProvider.getOrRestore(
@@ -90,7 +95,7 @@ class DefaultCallNotificationEventResolver(
         }.getOrDefault(false)
 
         notificationData.run {
-            if (content.type == RtcNotificationType.RING && isRoomCallActive && !forceNotify) {
+            if (content.type == RtcNotificationType.RING && isRoomCallActive && !notifyOnly) {
                 Timber.d("Ringing call notification intent ${content.callIntent} in room $roomId")
                 NotifiableRingingCallEvent(
                     sessionId = sessionId,

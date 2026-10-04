@@ -4,4 +4,16 @@
   <!-- GUA FORK: replaces upstream's "Sender's verified digital identity was reset".
        Says what the reader can and cannot do, in plain language. -->
   <string name="gua_identity_change_undecryptable">Não é possível abrir esta mensagem porque os dados de segurança de quem enviou mudaram.</string>
+  <!-- GUA FORK: translations of upstream strings that Element has not translated. Remove an entry when upstream ships one. -->
+  <string name="screen_image_edition_a11y_flip_image_horizontally">Espelhar imagem na horizontal</string>
+  <string name="screen_image_edition_a11y_flip_image_horizontally_state_flipped">Espelhada na horizontal</string>
+  <string name="screen_image_edition_a11y_flip_image_vertically">Espelhar imagem na vertical</string>
+  <string name="screen_image_edition_a11y_flip_image_vertically_state_flipped">Espelhada na vertical</string>
+  <string name="screen_image_edition_a11y_rotate_to_the_left">Girar imagem para a esquerda</string>
+  <plurals name="screen_image_edition_a11y_rotation_state">
+    <item quantity="one">%1$d grau</item>
+    <item quantity="other">%1$d graus</item>
+  </plurals>
+  <string name="screen_image_edition_title">Editar foto</string>
+  <string name="screen_media_upload_preview_title">Adicionar mídia</string>
 </resources>

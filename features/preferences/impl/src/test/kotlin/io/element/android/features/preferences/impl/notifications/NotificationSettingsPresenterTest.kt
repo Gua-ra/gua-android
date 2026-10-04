@@ -10,12 +10,15 @@ package io.element.android.features.preferences.impl.notifications
 
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.architecture.AsyncData
+import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.GOOGLE_PLAY_FLAVOR_DESCRIPTION
 import io.element.android.libraries.fullscreenintent.api.FullScreenIntentPermissionsState
 import io.element.android.libraries.fullscreenintent.api.aFullScreenIntentPermissionsState
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.room.RoomNotificationMode
 import io.element.android.libraries.matrix.test.AN_EXCEPTION
 import io.element.android.libraries.matrix.test.FakeMatrixClient
+import io.element.android.libraries.matrix.test.core.aBuildMeta
 import io.element.android.libraries.matrix.test.notificationsettings.FakeNotificationSettingsService
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
 import io.element.android.libraries.preferences.api.store.NotificationSound
@@ -66,6 +69,18 @@ class NotificationSettingsPresenterTest {
             assertThat(valid?.inviteForMeNotificationsEnabled).isFalse()
             assertThat(valid?.defaultGroupNotificationMode).isEqualTo(RoomNotificationMode.MENTIONS_AND_KEYWORDS_ONLY)
             assertThat(valid?.defaultOneToOneNotificationMode).isEqualTo(RoomNotificationMode.ALL_MESSAGES)
+            assertThat(loadedState.showCallRingtone).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - the Google Play build hides the call ringtone`() = runTest {
+        val presenter = createNotificationSettingsPresenter(
+            buildMeta = aBuildMeta(flavorDescription = GOOGLE_PLAY_FLAVOR_DESCRIPTION),
+        )
+        presenter.test {
+            assertThat(awaitItem().showCallRingtone).isFalse()
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -1117,6 +1132,7 @@ class NotificationSettingsPresenterTest {
             NotificationSoundCopier.CopyResult.Success(source, source)
         }),
         soundDisplayNameResolver: FakeSoundDisplayNameResolver = FakeSoundDisplayNameResolver(),
+        buildMeta: BuildMeta = aBuildMeta(),
     ): NotificationSettingsPresenter {
         val matrixClient = FakeMatrixClient(notificationSettingsService = notificationSettingsService)
         return NotificationSettingsPresenter(
@@ -1132,6 +1148,7 @@ class NotificationSettingsPresenterTest {
             soundDisplayNameResolver = soundDisplayNameResolver,
             stringProvider = FakeStringProvider(),
             sessionCoroutineScope = backgroundScope,
+            buildMeta = buildMeta,
         )
     }
 }

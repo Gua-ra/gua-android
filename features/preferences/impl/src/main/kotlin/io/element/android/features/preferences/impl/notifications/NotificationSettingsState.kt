@@ -26,6 +26,8 @@ data class NotificationSettingsState(
     val fullScreenIntentPermissionsState: FullScreenIntentPermissionsState,
     val messageSound: SoundChannelUiState,
     val callRingtone: SoundChannelUiState,
+    /** GUA FORK: false where calls never ring, which hides the call ringtone setting. */
+    val showCallRingtone: Boolean,
     val showMessageSoundDialog: Boolean,
     val showCallRingtoneDialog: Boolean,
     /**

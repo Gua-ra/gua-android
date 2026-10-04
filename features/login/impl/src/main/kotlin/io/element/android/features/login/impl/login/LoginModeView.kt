@@ -55,7 +55,7 @@ fun LoginModeView(
                         }
                         is ChangeServerError.Error -> {
                             ErrorDialog(
-                                content = error.messageStr ?: stringResource(CommonStrings.error_unknown),
+                                content = stringResource(error.messageId),
                                 onSubmit = onClearError,
                             )
                         }

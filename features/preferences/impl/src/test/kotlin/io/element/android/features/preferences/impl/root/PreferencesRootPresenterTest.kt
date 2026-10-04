@@ -311,6 +311,24 @@ class PreferencesRootPresenterTest {
     }
 
     @Test
+    fun `present - labs is hidden in release builds`() = runTest {
+        createPresenter(
+            featureFlagService = FakeFeatureFlagService(
+                getAvailableFeaturesResult = { _, _ ->
+                    listOf(FakeFeature(key = "feature_1", title = "Feature 1", isInLabs = true, isFinished = false))
+                }
+            ),
+            matrixClient = FakeMatrixClient(
+                canDeactivateAccountResult = { true },
+                accountManagementUrlResult = { Result.success(null) },
+            ),
+            buildMeta = aBuildMeta(BuildType.RELEASE),
+        ).test {
+            assertThat(awaitFirstItem().showLabsItem).isFalse()
+        }
+    }
+
+    @Test
     fun `present - multiple accounts`() = runTest {
         createPresenter(
             matrixClient = FakeMatrixClient(
