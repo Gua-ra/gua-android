@@ -33,10 +33,8 @@ object ModulesConfig {
             AnalyticsConfig.Disabled
         }
     } else {
-        println("Analytics enabled with Posthog and Sentry")
-        AnalyticsConfig.Enabled(
-            withPosthog = true,
-            withSentry = true,
-        )
+        // GUA FORK: Gua builds ship no analytics, so onboarding and settings never ask for consent.
+        println("Analytics disabled")
+        AnalyticsConfig.Disabled
     }
 }

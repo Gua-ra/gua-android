@@ -17,7 +17,7 @@
 
     <!-- Permission states. -->
     <string name="screen_find_friends_permission_title">Allow access to Contacts</string>
-    <string name="screen_find_friends_permission_message">Gua checks your contacts privately to find which of them are already here. Your contacts are never stored.</string>
+    <string name="screen_find_friends_permission_message">Gua reads phone numbers from your contacts only when you open Find friends and allow access, to show which contacts already use Gua. Contact names never leave your device. Numbers are sent securely to Gua\'s server only to check for matches and are not stored.</string>
     <string name="screen_find_friends_permission_action">Allow access</string>
     <string name="screen_find_friends_permission_denied_action">Open settings</string>
 

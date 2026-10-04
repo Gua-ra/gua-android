@@ -16,7 +16,7 @@
     <string name="screen_find_friends_loading">Recherche de vos contacts sur Gua…</string>
 
     <string name="screen_find_friends_permission_title">Autoriser l\'accès aux contacts</string>
-    <string name="screen_find_friends_permission_message">Gua consulte vos contacts de manière privée pour savoir lesquels sont déjà ici. Vos contacts ne sont jamais conservés.</string>
+    <string name="screen_find_friends_permission_message">Gua lit les numéros de téléphone de vos contacts seulement quand vous ouvrez Trouver des amis et autorisez l\'accès, afin de montrer lesquels de vos contacts utilisent déjà Gua. Les noms de vos contacts ne quittent jamais votre appareil. Les numéros sont envoyés de façon sécurisée au serveur de Gua uniquement pour vérifier les correspondances et ne sont pas conservés.</string>
     <string name="screen_find_friends_permission_action">Autoriser l\'accès</string>
     <string name="screen_find_friends_permission_denied_action">Ouvrir les réglages</string>
 
