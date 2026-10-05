@@ -297,6 +297,20 @@ class NotificationSettingsViewTest : RobolectricTest() {
 
     @Config(qualifiers = "h1280dp")
     @Test
+    fun `sounds preference category has no call ringtone row when showCallRingtone is false`() = runAndroidComposeUiTest {
+        setNotificationSettingsView(
+            state = aValidNotificationSettingsState(
+                showCallRingtone = false,
+                callRingtoneDisplayName = "Pixel ringtone",
+            ),
+        )
+        onNodeWithText("Message sound").assertIsDisplayed()
+        onNodeWithText("Call ringtone").assertDoesNotExist()
+        onNodeWithText("Pixel ringtone").assertDoesNotExist()
+    }
+
+    @Config(qualifiers = "h1280dp")
+    @Test
     fun `clicking the message sound row opens the preset dialog`() = runAndroidComposeUiTest {
         val eventsRecorder = EventsRecorder<NotificationSettingsEvents>()
         setNotificationSettingsView(

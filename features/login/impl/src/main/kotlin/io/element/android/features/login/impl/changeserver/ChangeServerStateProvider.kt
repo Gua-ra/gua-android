@@ -16,7 +16,7 @@ open class ChangeServerStateProvider : PreviewParameterProvider<ChangeServerStat
     override val values: Sequence<ChangeServerState>
         get() = sequenceOf(
             aChangeServerState(),
-            aChangeServerState(changeServerAction = AsyncData.Failure(ChangeServerError.Error(null))),
+            aChangeServerState(changeServerAction = AsyncData.Failure(ChangeServerError.Error())),
             aChangeServerState(changeServerAction = AsyncData.Failure(ChangeServerError.SlidingSyncAlert)),
             aChangeServerState(
                 changeServerAction = AsyncData.Failure(

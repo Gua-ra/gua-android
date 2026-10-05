@@ -8,6 +8,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- GUA FORK: Gua uses no advertising ID, so no dependency may add this permission. -->
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+
     <application
         android:name=".ElementXApplication"
         android:allowBackup="false"

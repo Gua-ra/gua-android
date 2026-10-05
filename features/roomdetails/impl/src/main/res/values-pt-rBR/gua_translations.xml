@@ -3,4 +3,8 @@
   <!-- GUA FORK: replaces upstream's "%1$s's digital identity was reset."
        Same plain wording as the conversation banner. %1$s is the display name. -->
   <string name="gua_identity_change_member_list">Os dados de segurança de %1$s mudaram</string>
+  <!-- GUA FORK: translations of upstream strings that Element has not translated. Remove an entry when upstream ships one. -->
+  <string name="crypto_history_sharing_room_info_hidden_badge_content">Novos membros não veem o histórico</string>
+  <string name="crypto_history_sharing_room_info_shared_badge_content">Novos membros veem o histórico</string>
+  <string name="crypto_history_sharing_room_info_world_readable_badge_content">Qualquer pessoa pode ver o histórico</string>
 </resources>

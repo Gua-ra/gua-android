@@ -146,7 +146,7 @@ private fun RoomMemberList(
             }
         }
         when (roomMembersData) {
-            is AsyncData.Failure -> failureItem(roomMembersData.error)
+            is AsyncData.Failure -> failureItem()
             is AsyncData.Loading,
             is AsyncData.Success -> {
                 val roomMembers = roomMembersData.dataOrNull() ?: return@LazyColumn
@@ -215,13 +215,14 @@ private fun LazyListScope.memberItems(
     }
 }
 
-private fun LazyListScope.failureItem(failure: Throwable) {
+// GUA FORK: no exception message after the generic error; it is English whatever the app language.
+private fun LazyListScope.failureItem() {
     item {
         Text(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 32.dp),
-            text = stringResource(id = CommonStrings.error_unknown) + "\n\n" + failure.localizedMessage,
+            text = stringResource(id = CommonStrings.error_unknown),
             color = ElementTheme.colors.textCriticalPrimary,
             textAlign = TextAlign.Center,
         )

@@ -23,6 +23,7 @@ import io.element.android.features.logout.api.direct.DirectLogoutEvents
 import io.element.android.features.logout.api.direct.DirectLogoutView
 import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
 import io.element.android.libraries.architecture.callback
+import io.element.android.libraries.core.locale.withUiLocales
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.matrix.api.user.MatrixUser
 
@@ -67,7 +68,7 @@ class PreferencesRootNode(
             activity.openUrlInChromeCustomTab(
                 null,
                 darkTheme = isDark,
-                url = it
+                url = it.withUiLocales()
             )
         }
     }

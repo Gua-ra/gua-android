@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: translations of upstream strings that Element has not translated. Remove an entry when upstream ships one. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <plurals name="notification_fallback_n_content">
+        <item quantity="one">Você tem %d mensagem nova.</item>
+        <item quantity="other">Você tem %d mensagens novas.</item>
+    </plurals>
+    <string name="notification_incoming_audio_call">📞 Chamada recebida</string>
+</resources>

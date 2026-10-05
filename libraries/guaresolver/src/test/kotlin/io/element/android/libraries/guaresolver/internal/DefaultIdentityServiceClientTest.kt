@@ -20,6 +20,7 @@ import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
+import java.util.Locale
 
 class DefaultIdentityServiceClientTest {
     @Test
@@ -727,6 +728,27 @@ class DefaultIdentityServiceClientTest {
         val error = client.registerAccountGenesis("R1VBRw", "c2ln").exceptionOrNull()
 
         assertThat(error).isInstanceOf(ResolverError.NotConfigured::class.java)
+    }
+
+    @Test
+    fun `requests carry the app language so the SMS is sent in it`() = runTest {
+        val default = Locale.getDefault()
+        Locale.setDefault(Locale.forLanguageTag("pt-PT-u-mu-celsius"))
+        try {
+            val server = MockWebServer()
+            server.enqueue(MockResponse().setBody("""{ "challengeId": "c1" }"""))
+            server.enqueue(MockResponse().setBody("""{ "matches": [] }"""))
+            val client = createClient(server)
+
+            client.startPinChange("secret-token", "+5511999990000", "123456").getOrThrow()
+            client.lookupContacts("secret-token", listOf("hash")).getOrThrow()
+
+            assertThat(server.takeRequest().getHeader("Accept-Language")).isEqualTo("pt-BR")
+            assertThat(server.takeRequest().getHeader("Accept-Language")).isEqualTo("pt-BR")
+            server.shutdown()
+        } finally {
+            Locale.setDefault(default)
+        }
     }
 
     private fun createClient(

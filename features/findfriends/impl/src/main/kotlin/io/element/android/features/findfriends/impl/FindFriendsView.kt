@@ -9,15 +9,19 @@ package io.element.android.features.findfriends.impl
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -197,46 +201,51 @@ private fun MessageState(
     actionTitle: String? = null,
     onAction: (() -> Unit)? = null,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        if (showSpinner) {
-            CircularProgressIndicator()
-            Spacer(modifier = Modifier.size(16.dp))
-        } else if (icon != null) {
-            Icon(
-                modifier = Modifier.size(44.dp),
-                imageVector = icon,
-                contentDescription = null,
-                tint = ElementTheme.colors.iconSecondary,
-            )
-            Spacer(modifier = Modifier.size(16.dp))
-        }
-        Text(
-            text = title,
-            style = ElementTheme.typography.fontHeadingSmMedium,
-            color = ElementTheme.colors.textPrimary,
-            textAlign = TextAlign.Center,
-        )
-        if (message != null) {
-            Spacer(modifier = Modifier.size(8.dp))
+    // Centered when the content fits, scrollable when it does not.
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .heightIn(min = maxHeight)
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            if (showSpinner) {
+                CircularProgressIndicator()
+                Spacer(modifier = Modifier.size(16.dp))
+            } else if (icon != null) {
+                Icon(
+                    modifier = Modifier.size(44.dp),
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = ElementTheme.colors.iconSecondary,
+                )
+                Spacer(modifier = Modifier.size(16.dp))
+            }
             Text(
-                text = message,
-                style = ElementTheme.typography.fontBodyMdRegular,
-                color = ElementTheme.colors.textSecondary,
+                text = title,
+                style = ElementTheme.typography.fontHeadingSmMedium,
+                color = ElementTheme.colors.textPrimary,
                 textAlign = TextAlign.Center,
             )
-        }
-        if (actionTitle != null && onAction != null) {
-            Spacer(modifier = Modifier.size(24.dp))
-            Button(
-                text = actionTitle,
-                onClick = onAction,
-            )
+            if (message != null) {
+                Spacer(modifier = Modifier.size(8.dp))
+                Text(
+                    text = message,
+                    style = ElementTheme.typography.fontBodyMdRegular,
+                    color = ElementTheme.colors.textSecondary,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            if (actionTitle != null && onAction != null) {
+                Spacer(modifier = Modifier.size(24.dp))
+                Button(
+                    text = actionTitle,
+                    onClick = onAction,
+                )
+            }
         }
     }
 }

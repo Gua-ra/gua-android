@@ -21,7 +21,7 @@
     <string name="screen_change_phone_pin_incorrect">Esse PIN está incorreto. Tente novamente.</string>
     <string name="screen_change_phone_otp_header">Verifique seu novo número</string>
     <string name="screen_change_phone_otp_footer">Digite o código de 6 dígitos que enviamos para o seu novo número.</string>
-    <string name="screen_change_phone_otp_invalid">Esse código é inválido ou expirou. Tente novamente.</string>
+    <string name="screen_change_phone_otp_invalid">Esse código está incorreto ou expirou. Tente novamente.</string>
     <string name="screen_change_phone_already_linked">Esse número de telefone já está vinculado a outra conta.</string>
     <string name="screen_change_phone_updated">Seu número de telefone foi atualizado.</string>
     <string name="screen_change_phone_done_header">Tudo pronto</string>
@@ -30,8 +30,13 @@
     <string name="screen_two_step_verification_overview_header">PIN da conta</string>
     <string name="screen_two_step_verification_status_on">A verificação em duas etapas está ativada</string>
     <string name="screen_two_step_verification_status_off">A verificação em duas etapas está desativada</string>
+    <string name="screen_two_step_verification_status_unknown">Não foi possível verificar suas configurações de segurança</string>
+    <string name="screen_two_step_verification_overview_footer_on_passkey">Sua chave de acesso adiciona uma camada extra de segurança à sua conta.</string>
+    <string name="screen_two_step_verification_overview_footer_on_both">Sua chave de acesso e seu PIN de 6 dígitos protegem sua conta.</string>
+    <string name="screen_two_step_verification_overview_footer_unknown">Verifique sua conexão e tente novamente.</string>
+    <string name="screen_two_step_verification_set_footer_fallback">Uma alternativa para quando sua chave de acesso não estiver disponível.</string>
     <string name="screen_two_step_verification_overview_footer_on">Seu PIN de 6 dígitos adiciona uma camada extra de segurança à sua conta.</string>
-    <string name="screen_two_step_verification_overview_footer_off">Adicione um PIN de 6 dígitos para uma camada extra de segurança na sua conta.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Adicione um PIN de 6 dígitos para deixar sua conta mais segura.</string>
     <string name="screen_two_step_verification_set_button">Configurar PIN</string>
     <string name="screen_two_step_verification_change_button">Alterar PIN</string>
     <string name="screen_two_step_verification_passkey_button">Configurar uma chave de acesso</string>
@@ -49,10 +54,10 @@
     <string name="screen_two_step_verification_phone_label">Número de telefone</string>
     <string name="screen_two_step_verification_phone_invalid">Digite um número de telefone válido.</string>
     <string name="screen_two_step_verification_current_incorrect">Esse PIN está incorreto. Tente novamente.</string>
-    <string name="screen_two_step_verification_otp_invalid">O código digitado é inválido ou expirou.</string>
+    <string name="screen_two_step_verification_otp_invalid">Esse código está incorreto ou expirou. Tente novamente.</string>
     <string name="screen_two_step_verification_locked">PIN bloqueado por excesso de tentativas incorretas. Tente novamente mais tarde.</string>
     <string name="screen_two_step_verification_cooldown">Por segurança, você só pode alterar seu PIN uma vez por dia.</string>
-    <string name="screen_two_step_verification_challenge_invalid">Sua sessão de alteração de PIN expirou. Comece de novo.</string>
+    <string name="screen_two_step_verification_challenge_invalid">Isso demorou demais. Comece de novo.</string>
     <string name="screen_two_step_verification_weak_error">Esse PIN é fácil demais de adivinhar. Escolha outro.</string>
     <string name="screen_two_step_verification_mismatch_error">Os PINs não coincidem. Tente novamente.</string>
     <string name="screen_two_step_verification_same_as_current">Seu novo PIN precisa ser diferente do atual.</string>
@@ -64,7 +69,53 @@
     <string name="screen_change_phone_needs_step_up_pin_action">Configurar PIN</string>
     <string name="screen_change_phone_cooldown_header">Ainda não</string>
     <string name="screen_change_phone_cooldown_message">Por segurança, você poderá alterar seu número em %1$s.</string>
+    <plurals name="gua_duration_days">
+        <item quantity="one">%1$d dia</item>
+        <item quantity="other">%1$d dias</item>
+    </plurals>
+    <plurals name="gua_duration_hours">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="other">%1$d horas</item>
+    </plurals>
+    <plurals name="gua_duration_minutes">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
+    <string name="gua_duration_moment">alguns instantes</string>
+    <string name="gua_duration_pair">%1$s e %2$s</string>
     <string name="screen_change_phone_current_header">Confirme seu número atual</string>
     <string name="screen_change_phone_current_footer">Digite o número que sua conta usa agora. Vamos enviar um código para ele.</string>
     <string name="screen_change_phone_current_mismatch">Esse não é o número da sua conta.</string>
+    <string name="screen_change_phone_reauth_header">Confirme que é você</string>
+    <string name="screen_change_phone_reauth_footer">Digite o código de 6 dígitos que enviamos para o seu número atual.</string>
+    <string name="screen_change_phone_reauth_invalid">Esse código está incorreto ou expirou. Tente novamente.</string>
+    <string name="screen_change_phone_reauth_expired">Sua confirmação expirou. Comece de novo.</string>
+    <string name="screen_change_phone_challenge_invalid">Isso demorou demais. Comece de novo.</string>
+    <string name="screen_change_phone_needs_step_up_header">Primeiro, configure a verificação em duas etapas</string>
+    <string name="screen_change_phone_needs_step_up_message">Para alterar seu número, você precisa ter uma chave de acesso ou um PIN de 6 dígitos na sua conta. Configure um deles e volte aqui.</string>
+    <string name="screen_change_phone_needs_step_up_passkey_action">Configurar uma chave de acesso</string>
+    <string name="screen_change_phone_passkey_unavailable_header">Sua chave de acesso ainda não pode ser usada aqui</string>
+    <string name="screen_change_phone_passkey_unavailable_message">Ainda não é possível confirmar sua chave de acesso neste dispositivo. Adicione um PIN de 6 dígitos à sua conta e use-o para alterar seu número.</string>
+    <string name="gua_notification_sound_default">Padrão do Gua</string>
+    <string name="gua_notification_sound_soft">Gua suave</string>
+    <!-- GUA FORK: translations of upstream strings that Element has not translated. Remove an entry when upstream ships one. -->
+    <string name="screen_advanced_settings_live_location_section_title">Atualizações da localização em tempo real</string>
+    <string name="screen_advanced_settings_live_location_section_description">A distância que você precisa percorrer para gerar uma atualização.</string>
+    <string name="screen_advanced_settings_live_location_section_footer">Verifique se a opção “Usar local exato” está ativada para este app. Para mudar a permissão, acesse %1$s.</string>
+    <string name="screen_advanced_settings_live_location_section_footer_link">Configurações do app</string>
+    <plurals name="screen_advanced_settings_live_location_update_distance">
+        <item quantity="one">A cada %1$d metro</item>
+        <item quantity="other">A cada %1$d metros</item>
+    </plurals>
+    <string name="screen_notification_settings_call_ringtone_label">Toque de chamada</string>
+    <string name="screen_notification_settings_message_sound_dialog_choose_other">Escolher outro som…</string>
+    <string name="screen_notification_settings_message_sound_dialog_current_subtitle">Som atual: %1$s</string>
+    <string name="screen_notification_settings_message_sound_dialog_title">Som de mensagem</string>
+    <string name="screen_notification_settings_message_sound_label">Som de mensagem</string>
+    <string name="screen_notification_settings_sound_custom_fallback">Personalizado</string>
+    <string name="screen_notification_settings_sound_section_title">Som</string>
+    <string name="screen_notification_settings_sound_set_sound_error_dismiss_a11y">Fechar o erro do som de alerta</string>
+    <string name="screen_notification_settings_sound_set_sound_error_title">Não foi possível definir o som de alerta</string>
+    <string name="screen_notification_settings_sound_silent">Silencioso</string>
+    <string name="screen_notification_settings_sound_system_default">Padrão do sistema</string>
 </resources>

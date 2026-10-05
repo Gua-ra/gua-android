@@ -16,6 +16,7 @@ import app.cash.molecule.moleculeFlow
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.GOOGLE_PLAY_FLAVOR_DESCRIPTION
 import io.element.android.libraries.fullscreenintent.api.FullScreenIntentPermissionsEvents
 import io.element.android.libraries.fullscreenintent.impl.FullScreenIntentPermissionsPresenter
 import io.element.android.libraries.matrix.test.core.aBuildMeta
@@ -67,6 +68,24 @@ class FullScreenIntentPermissionsPresenterTest {
             skipItems(1)
             val initialItem = awaitItem()
             assertThat(initialItem.shouldDisplayBanner).isFalse()
+        }
+    }
+
+    @Test
+    fun `shouldDisplay - is false and permission counts as granted in the Google Play build`() = runTest {
+        val presenter = createPresenter(
+            buildMeta = aBuildMeta(flavorDescription = GOOGLE_PLAY_FLAVOR_DESCRIPTION),
+            notificationManagerCompat = mockk {
+                every { canUseFullScreenIntent() } returns false
+            }
+        )
+        moleculeFlow(RecompositionMode.Immediate) {
+            presenter.present()
+        }.test {
+            skipItems(1)
+            val initialItem = awaitItem()
+            assertThat(initialItem.shouldDisplayBanner).isFalse()
+            assertThat(initialItem.permissionGranted).isTrue()
         }
     }
 

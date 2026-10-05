@@ -34,6 +34,7 @@ import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
 import io.element.android.libraries.matrix.api.auth.OAuthPrompt
 import io.element.android.libraries.oauth.api.OAuthAction
 import io.element.android.libraries.oauth.api.OAuthActionFlow
+import io.element.android.libraries.ui.strings.CommonStrings
 
 /**
  * This class is responsible for managing the login flow, including handling OIDC actions and
@@ -148,7 +149,7 @@ class LoginHelper(
             errorTransform = {
                 // A genesis the device meant to register and could not must reach the user as itself,
                 // not as a generic server error, because it is the one case that stops the signup.
-                if (it is AccountGenesisSignupError) it else ChangeServerError.from(it)
+                if (it is AccountGenesisSignupError) it else signInError(it)
             }
         )
     }
@@ -211,8 +212,17 @@ class LoginHelper(
                 .getOrThrow()
         }.runCatchingUpdatingState(
             state = loginModeState,
-            errorTransform = { ChangeServerError.from(it) }
+            errorTransform = { signInError(it) }
         )
+    }
+
+    /**
+     * GUA FORK: the user never typed a server address on the phone or passkey path, so an
+     * unreachable server is reported as a connection problem, not with the homeserver copy.
+     */
+    private fun signInError(error: Throwable): ChangeServerError = when (val mapped = ChangeServerError.from(error)) {
+        ChangeServerError.InvalidServer -> ChangeServerError.Error(messageId = CommonStrings.error_network_or_server_issue)
+        else -> mapped
     }
 
     private suspend fun onOAuthAction(oAuthAction: OAuthAction) {

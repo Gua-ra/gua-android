@@ -12,10 +12,15 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import io.element.android.features.location.api.BuildConfig
 import io.element.android.features.location.api.LocationService
+import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.isGooglePlayBuild
 
 @ContributesBinding(AppScope::class)
-class DefaultLocationService : LocationService {
+class DefaultLocationService(
+    private val buildMeta: BuildMeta,
+) : LocationService {
     override fun isServiceAvailable(): Boolean {
-        return BuildConfig.MAPTILER_API_KEY.isNotEmpty()
+        // GUA FORK: location sharing is off in the Play build, which declares no location permission or service.
+        return !buildMeta.isGooglePlayBuild && BuildConfig.MAPTILER_API_KEY.isNotEmpty()
     }
 }

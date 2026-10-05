@@ -19,7 +19,7 @@
   <string name="screen_session_verification_complete_subtitle">"Ahora puedes leer o enviar mensajes de forma segura en tu otro dispositivo."</string>
   <string name="screen_session_verification_complete_user_subtitle">"Ahora puedes confiar en la identidad de este usuario al enviar o recibir mensajes."</string>
   <string name="screen_session_verification_device_verified">"Dispositivo verificado"</string>
-  <string name="screen_session_verification_enter_recovery_key">"Introduce la clave de recuperación"</string>
+  <string name="screen_session_verification_enter_recovery_key">"Ingresa la clave de recuperación"</string>
   <string name="screen_session_verification_failed_subtitle">"O bien se agotó el tiempo de solicitud, se rechazó la solicitud o hubo una discrepancia en la verificación."</string>
   <string name="screen_session_verification_open_existing_session_subtitle">"Demuestra que eres tú para acceder a tu historial de mensajes cifrados."</string>
   <string name="screen_session_verification_open_existing_session_title">"Abrir una sesión existente"</string>
@@ -40,7 +40,7 @@
   <string name="screen_session_verification_they_match">"Coinciden"</string>
   <string name="screen_session_verification_use_another_device_subtitle">"Asegúrate de tener la aplicación abierta en el otro dispositivo antes de iniciar la verificación desde aquí."</string>
   <string name="screen_session_verification_use_another_device_title">"Abre la aplicación en otro dispositivo verificado"</string>
-  <string name="screen_session_verification_user_initiator_subtitle">"Para mayor seguridad, verifica a este usuario comparando un conjunto de emojis en vuestros dispositivos. Hazlo utilizando una forma de comunicación de confianza."</string>
+  <string name="screen_session_verification_user_initiator_subtitle">"Para mayor seguridad, verifica a este usuario comparando un conjunto de emojis en ambos dispositivos. Hazlo usando una forma de comunicación de confianza."</string>
   <string name="screen_session_verification_user_initiator_title">"¿Verificar a este usuario?"</string>
   <string name="screen_session_verification_user_responder_subtitle">"Para mayor seguridad, otro usuario quiere verificar tu identidad. Se te mostrará un conjunto de emojis para compararlos."</string>
   <string name="screen_session_verification_waiting_another_device_subtitle">"Deberías ver una ventana emergente en el otro dispositivo. Inicia ahora la verificación desde allí."</string>

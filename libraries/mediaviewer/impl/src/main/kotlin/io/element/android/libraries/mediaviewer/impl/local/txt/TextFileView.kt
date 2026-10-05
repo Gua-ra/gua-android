@@ -82,7 +82,8 @@ private fun TextFileContentView(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = data.error.message ?: stringResource(id = CommonStrings.error_unknown))
+            // GUA FORK: never the exception's message, which is English whatever the app language.
+            Text(text = stringResource(id = CommonStrings.error_unknown))
         }
         is AsyncData.Success -> {
             textFileViewer.Render(

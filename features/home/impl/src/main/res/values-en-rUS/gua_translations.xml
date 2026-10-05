@@ -8,7 +8,7 @@
      lives in values/temporary.xml. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="gua_encryption_repair_title">Finish setting up this device</string>
-    <string name="gua_encryption_repair_message">Complete setup to access encrypted chats and message history available on this device.</string>
+    <string name="gua_encryption_repair_message">Finish setup to see your encrypted chats and message history on this device.</string>
     <string name="gua_encryption_repair_action">Finish setup</string>
     <string name="gua_account_recovery_banner_title">Someone started recovering your account</string>
     <string name="gua_account_recovery_banner_message_later">It can be finished from %1$s. If this was you, you can ignore this. If it wasn\'t, cancel it from a device where you are still signed in.</string>

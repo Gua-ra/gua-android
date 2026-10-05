@@ -11,7 +11,7 @@
     <string name="screen_two_step_verification_overview_footer_on">Your 6-digit PIN adds an extra layer of security to your account.</string>
     <string name="screen_two_step_verification_overview_footer_on_passkey">Your passkey adds an extra layer of security to your account.</string>
     <string name="screen_two_step_verification_overview_footer_on_both">Your passkey and your 6-digit PIN both protect your account.</string>
-    <string name="screen_two_step_verification_overview_footer_off">Add a 6-digit PIN for an extra layer of security to your account.</string>
+    <string name="screen_two_step_verification_overview_footer_off">Add a 6-digit PIN for extra security on your account.</string>
     <string name="screen_two_step_verification_overview_footer_unknown">Check your connection and try again.</string>
     <string name="screen_two_step_verification_set_footer_fallback">A backup for when your passkey isn\'t available.</string>
     <string name="screen_two_step_verification_set_button">Set up PIN</string>
@@ -31,10 +31,10 @@
     <string name="screen_two_step_verification_phone_label">Phone number</string>
     <string name="screen_two_step_verification_phone_invalid">Please enter a valid phone number.</string>
     <string name="screen_two_step_verification_current_incorrect">That PIN is incorrect. Please try again.</string>
-    <string name="screen_two_step_verification_otp_invalid">The code you entered is invalid or has expired.</string>
+    <string name="screen_two_step_verification_otp_invalid">That code is wrong or has expired. Please try again.</string>
     <string name="screen_two_step_verification_locked">PIN locked due to too many wrong attempts. Please try again later.</string>
     <string name="screen_two_step_verification_cooldown">For security, you can only change your PIN once per day.</string>
-    <string name="screen_two_step_verification_challenge_invalid">Your PIN change session expired. Please start over.</string>
+    <string name="screen_two_step_verification_challenge_invalid">This took too long. Please start again.</string>
     <string name="screen_two_step_verification_weak_error">That PIN is too easy to guess. Please choose another.</string>
     <string name="screen_two_step_verification_mismatch_error">The PINs do not match. Please try again.</string>
     <string name="screen_two_step_verification_same_as_current">Your new PIN must be different from your current PIN.</string>
@@ -56,7 +56,7 @@
     <string name="screen_change_phone_pin_incorrect">That PIN is incorrect. Please try again.</string>
     <string name="screen_change_phone_otp_header">Verify your new number</string>
     <string name="screen_change_phone_otp_footer">Enter the 6-digit code we sent to your new number.</string>
-    <string name="screen_change_phone_otp_invalid">That code is invalid or has expired. Please try again.</string>
+    <string name="screen_change_phone_otp_invalid">That code is wrong or has expired. Please try again.</string>
     <string name="screen_change_phone_already_linked">That phone number is already linked to another account.</string>
     <string name="screen_change_phone_updated">Your phone number has been updated.</string>
     <string name="screen_change_phone_done_header">All set</string>
@@ -66,9 +66,9 @@
     <string name="screen_change_phone_current_mismatch">That is not the number on your account.</string>
     <string name="screen_change_phone_reauth_header">Confirm it\'s you</string>
     <string name="screen_change_phone_reauth_footer">Enter the 6-digit code we sent to your current number.</string>
-    <string name="screen_change_phone_reauth_invalid">That code is invalid or has expired. Please try again.</string>
+    <string name="screen_change_phone_reauth_invalid">That code is wrong or has expired. Please try again.</string>
     <string name="screen_change_phone_reauth_expired">Your confirmation expired. Please start again.</string>
-    <string name="screen_change_phone_challenge_invalid">Your phone change session expired. Please start over.</string>
+    <string name="screen_change_phone_challenge_invalid">This took too long. Please start again.</string>
     <string name="screen_change_phone_needs_step_up_header">Set up two-step verification first</string>
     <string name="screen_change_phone_needs_step_up_message">To change your number you need a passkey or a 6-digit account PIN. Set one up, then come back.</string>
     <string name="screen_change_phone_needs_step_up_passkey_action">Set up a passkey</string>
@@ -77,4 +77,22 @@
     <string name="screen_change_phone_passkey_unavailable_message">This app can\'t confirm your passkey on this device yet. Add a 6-digit account PIN and use that to change your number.</string>
     <string name="screen_change_phone_cooldown_header">Not just yet</string>
     <string name="screen_change_phone_cooldown_message">For your security, you can change your number in %1$s.</string>
+    <plurals name="gua_duration_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <plurals name="gua_duration_hours">
+        <item quantity="one">%1$d hour</item>
+        <item quantity="other">%1$d hours</item>
+    </plurals>
+    <plurals name="gua_duration_minutes">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
+    <string name="gua_duration_moment">a moment</string>
+    <!-- Two durations from the plurals above, e.g. "6 days and 3 hours". -->
+    <string name="gua_duration_pair">%1$s and %2$s</string>
+    <!-- GUA FORK: names of the two bundled message sounds. -->
+    <string name="gua_notification_sound_default">Gua Default</string>
+    <string name="gua_notification_sound_soft">Gua Soft</string>
 </resources>

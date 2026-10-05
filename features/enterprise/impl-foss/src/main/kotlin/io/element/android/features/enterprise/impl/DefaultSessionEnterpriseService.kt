@@ -10,11 +10,17 @@ package io.element.android.features.enterprise.impl
 
 import dev.zacsweers.metro.ContributesBinding
 import io.element.android.features.enterprise.api.SessionEnterpriseService
+import io.element.android.libraries.core.meta.BuildMeta
+import io.element.android.libraries.core.meta.isGooglePlayBuild
 import io.element.android.libraries.di.SessionScope
 
 @ContributesBinding(SessionScope::class)
-class DefaultSessionEnterpriseService : SessionEnterpriseService {
+class DefaultSessionEnterpriseService(
+    private val buildMeta: BuildMeta,
+) : SessionEnterpriseService {
     override suspend fun init() = Unit
     override suspend fun tweakMasUrl(url: String): String = url
-    override suspend fun isElementCallAvailable(): Boolean = true
+
+    // GUA FORK: calls are off in the Play build, which declares no call foreground service.
+    override suspend fun isElementCallAvailable(): Boolean = !buildMeta.isGooglePlayBuild
 }

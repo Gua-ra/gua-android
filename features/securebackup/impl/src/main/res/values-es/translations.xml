@@ -9,9 +9,10 @@
   <string name="screen_chat_backup_key_storage_toggle_title">"Permitir almacenamiento de claves"</string>
   <string name="screen_chat_backup_recovery_action_change">"Cambiar la clave de recuperación"</string>
   <string name="screen_chat_backup_recovery_action_change_description">"Recupera tu identidad criptográfica y tu historial de mensajes con una clave de recuperación si has perdido todos tus dispositivos actuales."</string>
-  <string name="screen_chat_backup_recovery_action_confirm">"Introduce la clave de recuperación"</string>
+  <string name="screen_chat_backup_recovery_action_confirm">"Ingresa la clave de recuperación"</string>
   <string name="screen_chat_backup_recovery_action_confirm_description">"Tu almacén de claves no está sincronizado actualmente."</string>
   <string name="screen_chat_backup_recovery_action_setup">"Configurar la recuperación"</string>
+  <string name="screen_chat_backup_recovery_action_setup_description">"Tus chats se respaldan automáticamente con cifrado de extremo a extremo. Para restaurar esta copia de seguridad y conservar tu identidad digital si pierdes el acceso a todos tus dispositivos, necesitarás tu clave de recuperación."</string>
   <string name="screen_create_new_recovery_key_list_item_1">"Abre %1$s en un dispositivo de escritorio"</string>
   <string name="screen_create_new_recovery_key_list_item_2">"Vuelve a iniciar sesión en tu cuenta"</string>
   <string name="screen_create_new_recovery_key_list_item_3">"Cuando se te pida que verifiques tu dispositivo, selecciona %1$s"</string>
@@ -42,15 +43,15 @@
   <string name="screen_recovery_key_confirm_error_content">"Inténtalo de nuevo para confirmar el acceso a tu almacén de claves."</string>
   <string name="screen_recovery_key_confirm_error_title">"Clave de recuperación incorrecta"</string>
   <string name="screen_recovery_key_confirm_key_description">"Si tienes una clave o frase de seguridad, también funcionará."</string>
-  <string name="screen_recovery_key_confirm_key_placeholder">"Introducir…"</string>
+  <string name="screen_recovery_key_confirm_key_placeholder">"Ingresar…"</string>
   <string name="screen_recovery_key_confirm_lost_recovery_key">"¿Perdiste tu clave de recuperación?"</string>
   <string name="screen_recovery_key_confirm_success">"Clave de recuperación confirmada"</string>
-  <string name="screen_recovery_key_confirm_title">"Introduce tu clave de recuperación"</string>
+  <string name="screen_recovery_key_confirm_title">"Ingresa tu clave de recuperación"</string>
   <string name="screen_recovery_key_copied_to_clipboard">"Clave de recuperación copiada"</string>
   <string name="screen_recovery_key_generating_key">"Generando…"</string>
   <string name="screen_recovery_key_save_action">"Guardar clave de recuperación"</string>
   <string name="screen_recovery_key_save_description">"Anota esta clave de recuperación en un lugar seguro, como un administrador de contraseñas, una nota cifrada o una caja fuerte física."</string>
-  <string name="screen_recovery_key_save_key_description">"Pulsa para copiar la clave de recuperación"</string>
+  <string name="screen_recovery_key_save_key_description">"Toca para copiar la clave de recuperación"</string>
   <string name="screen_recovery_key_save_title">"Guardar tu clave de recuperación"</string>
   <string name="screen_recovery_key_setup_confirmation_description">"No podrás acceder a tu nueva clave de recuperación después de este paso."</string>
   <string name="screen_recovery_key_setup_confirmation_title">"¿Has guardado tu clave de recuperación?"</string>
@@ -63,7 +64,7 @@
   <string name="screen_reset_encryption_confirmation_alert_subtitle">"Este proceso es irreversible."</string>
   <string name="screen_reset_encryption_confirmation_alert_title">"¿Estás seguro de que quieres restablecer tu identidad?"</string>
   <string name="screen_reset_encryption_password_error">"Se ha producido un error desconocido. Comprueba que la contraseña de tu cuenta sea correcta y vuelve a intentarlo."</string>
-  <string name="screen_reset_encryption_password_placeholder">"Introducir…"</string>
+  <string name="screen_reset_encryption_password_placeholder">"Ingresar…"</string>
   <string name="screen_reset_encryption_password_subtitle">"Confirma que quieres restablecer tu identidad."</string>
-  <string name="screen_reset_encryption_password_title">"Introduce la contraseña de tu cuenta para continuar"</string>
+  <string name="screen_reset_encryption_password_title">"Ingresa la contraseña de tu cuenta para continuar"</string>
 </resources>

@@ -1,0 +1,9 @@
+Gua now speaks your language.
+
+ • Available in Brazilian Portuguese, Spanish and French
+ • Sign-in pages follow the language of the app
+ • Errors are shown as clear, translated messages
+ • Simpler wording for two-step verification and setup
+ • Fixes and improvements
+
+Thanks for helping us test Gua. Please send us your feedback.

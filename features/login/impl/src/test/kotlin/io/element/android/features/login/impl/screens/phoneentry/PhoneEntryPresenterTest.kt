@@ -13,12 +13,12 @@ import io.element.android.features.login.impl.login.FakeGuaDeployment
 import io.element.android.features.login.impl.login.FakeResolverClient
 import io.element.android.features.login.impl.login.LoginHelper
 import io.element.android.features.login.impl.login.LoginMode
-import io.element.android.features.login.impl.login.PasskeySignInError
 import io.element.android.features.login.impl.screens.onboarding.createLoginHelper
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.guaresolver.HomeserverResolution
 import io.element.android.libraries.guaresolver.ResolvedHomeserver
 import io.element.android.libraries.guaresolver.ResolverError
+import io.element.android.libraries.matrix.api.auth.AuthenticationException
 import io.element.android.libraries.matrix.api.auth.OAuthDetails
 import io.element.android.libraries.matrix.api.auth.OAuthPrompt
 import io.element.android.libraries.matrix.test.auth.AN_OAUTH_DATA
@@ -27,6 +27,7 @@ import io.element.android.libraries.matrix.test.auth.aMatrixHomeServerDetails
 import io.element.android.libraries.phonenumberentry.DeviceCountryProvider
 import io.element.android.libraries.phonenumberentry.FakeDeviceCountryProvider
 import io.element.android.libraries.phonenumberentry.SelectedCountryStore
+import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.lambda.lambdaRecorder
 import io.element.android.tests.testutils.test
@@ -286,9 +287,28 @@ class PhoneEntryPresenterTest {
             initialState.eventSink(PhoneEntryEvents.SignInWithPasskey)
             val failureState = awaitTerminalLoginMode()
             val error = (failureState.loginMode as AsyncData.Failure).error
-            assertThat(error).isEqualTo(ChangeServerError.Error(messageStr = PasskeySignInError.NotConfigured.message))
+            assertThat(error).isEqualTo(ChangeServerError.Error())
         }
         resolveRecorder.assertions().isNeverCalled()
+    }
+
+    @Test
+    fun `present - an unreachable server on passkey sign-in shows the connection message, not the homeserver one`() = runTest {
+        val presenter = createPhoneEntryPresenter(
+            loginHelper = createLoginHelper(
+                authenticationService = FakeMatrixAuthenticationService(
+                    setHomeserverResult = { Result.failure(AuthenticationException.ServerUnreachable("unreachable")) },
+                ),
+                resolverClient = FakeResolverClient(resolveResult = { error("resolver must not be called") }),
+            ),
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(PhoneEntryEvents.SignInWithPasskey)
+            val failureState = awaitTerminalLoginMode()
+            assertThat((failureState.loginMode as AsyncData.Failure).error)
+                .isEqualTo(ChangeServerError.Error(messageId = CommonStrings.error_network_or_server_issue))
+        }
     }
 
     @Test

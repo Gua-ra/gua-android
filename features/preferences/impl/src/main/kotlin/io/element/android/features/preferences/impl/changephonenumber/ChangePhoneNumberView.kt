@@ -7,6 +7,7 @@
 
 package io.element.android.features.preferences.impl.changephonenumber
 
+import android.content.res.Resources
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -271,7 +273,7 @@ private fun CooldownSection(
             heading = stringResource(id = R.string.screen_change_phone_cooldown_header),
             body = stringResource(
                 id = R.string.screen_change_phone_cooldown_message,
-                humanizeDuration(state.cooldownRemainingSeconds),
+                humanizeDuration(LocalResources.current, state.cooldownRemainingSeconds),
             ),
         )
     }
@@ -402,28 +404,23 @@ private fun ContinueButton(
 }
 
 /**
- * GUA FORK: turns a remaining-cooldown second count into a short human phrase for the Cooldown
- * interstitial, e.g. "6 days, 3 hours", "5 hours", "1 minute". Keeps the largest two non-zero units
- * and never renders "0 minutes" (falls back to "a moment"). English copy lives here since these are
- * temporary fork strings; humanisation mirrors the iOS view model.
+ * GUA FORK: a remaining cooldown as a short phrase, e.g. "6 days and 3 hours" or "5 hours".
+ * Keeps the two largest non-zero units, drops minutes once there are days, and never says
+ * "0 minutes".
  */
-internal fun humanizeDuration(totalSeconds: Long): String {
-    if (totalSeconds <= 0) return "a moment"
-    val days = totalSeconds / 86_400
-    val hours = totalSeconds % 86_400 / 3_600
-    val minutes = totalSeconds % 3_600 / 60
-
-    fun unit(value: Long, singular: String) = "$value $singular${if (value == 1L) "" else "s"}"
-
+internal fun humanizeDuration(resources: Resources, totalSeconds: Long): String {
+    val days = (totalSeconds / 86_400).toInt()
+    val hours = (totalSeconds % 86_400 / 3_600).toInt()
+    val minutes = (totalSeconds % 3_600 / 60).toInt()
     val parts = buildList {
-        if (days > 0) add(unit(days, "day"))
-        if (hours > 0) add(unit(hours, "hour"))
-        // Only show minutes when they add precision and we are not already showing days.
-        if (minutes > 0 && days == 0L) add(unit(minutes, "minute"))
+        if (days > 0) add(resources.getQuantityString(R.plurals.gua_duration_days, days, days))
+        if (hours > 0) add(resources.getQuantityString(R.plurals.gua_duration_hours, hours, hours))
+        if (minutes > 0 && days == 0) add(resources.getQuantityString(R.plurals.gua_duration_minutes, minutes, minutes))
     }
-    return when {
-        parts.isEmpty() -> "a moment"
-        else -> parts.take(2).joinToString(", ")
+    return when (parts.size) {
+        0 -> resources.getString(R.string.gua_duration_moment)
+        1 -> parts[0]
+        else -> resources.getString(R.string.gua_duration_pair, parts[0], parts[1])
     }
 }
 
