@@ -11,6 +11,8 @@ name: Publish to Google Play
 #                               approves; `develop` merges never touch Play at all.
 #   - workflow_dispatch      -> either path by hand from the Actions tab, with the app, track and
 #                               status pickable, so nobody needs the gh CLI to cut a build.
+#   Every successful production upload is followed by publish-firebase, which hands the same
+#   build to the Android beta testers through Firebase App Distribution.
 #
 # This is a separate file from release.yml because release.yml is upstream's "give me unsigned
 # artifacts on demand" workflow: it is dispatch-only by design, and adding PR/push triggers there
@@ -116,7 +118,7 @@ jobs:
                 # a branch to internal testers should not need an approver. That only holds
                 # while a QA ship stays a testing artefact. `production` is a public Play
                 # track, so app=qa + track=production would put global.gua.dev in front of the
-                # store with no approval gate at all — precisely the hole this file was split
+                # store with no approval gate at all, precisely the hole this file was split
                 # out of release.yml to close. Anything aimed at a production track goes
                 # through publish-prod and its `production` environment.
                 if [ "$INPUT_TRACK" = "production" ]; then
@@ -278,6 +280,8 @@ jobs:
           releaseFiles: app/build/outputs/bundle/gplayRelease/app-gplay-release.aab
           track: ${{ needs.gate.outputs.track }}
           status: ${{ needs.gate.outputs.status }}
+      - name: Firebase App Distribution
+        run: echo "::notice::Skipped Firebase App Distribution. Beta testers get the production app only; the QA app ships through Play internal testing."
       - name: Tell the PR where it went
         if: github.event_name == 'pull_request'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -306,6 +310,8 @@ jobs:
     concurrency:
       group: publish-play-prod
       cancel-in-progress: false
+    outputs:
+      version_code: ${{ steps.version.outputs.version_code }}
     steps:
       # Same fail-fast reason as the QA job: a permissions problem should surface in a minute, not
       # after an approver has waited out a ~35 minute build.
@@ -379,6 +385,27 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
+      # The bundle's versionCode is Versions.VERSION_CODE (the CalVer constants in Versions.kt) times
+      # 10, the bundle's ABI code being 0 (app/build.gradle.kts); a production build adds no offset.
+      # publish-firebase asks Play for the APKs of exactly this versionCode.
+      - name: Read the versionCode of this build
+        id: version
+        run: |
+          set -euo pipefail
+          read_const() { sed -n "s/^private const val $1 = //p" plugins/src/main/kotlin/Versions.kt; }
+          year=$(read_const versionYear)
+          month=$(read_const versionMonth)
+          release=$(read_const versionReleaseNumber)
+          for value in "$year" "$month" "$release"; do
+            case "$value" in
+              ''|*[!0-9]*)
+                echo "::error::Could not read versionYear, versionMonth and versionReleaseNumber from plugins/src/main/kotlin/Versions.kt"
+                exit 1 ;;
+            esac
+          done
+          version_code=$(( ((2000 + year) * 10000 + month * 100 + release) * 10 ))
+          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "versionCode $version_code"
       - name: Use JDK 21
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
@@ -392,7 +419,7 @@ jobs:
         run: echo "$GUA_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/gua-upload.jks"
       # No versionCode offset and no dev hosts: a production build is exactly the CalVer version in
       # Versions.kt, pointing at gua.global. If Play rejects the versionCode as already used, the
-      # release number in Versions.kt needs bumping — that is the intended signal, not a CI bug.
+      # release number in Versions.kt needs bumping; that is the intended signal, not a CI bug.
       - name: Build release-signed App Bundle (prod)
         env:
           GUA_RELEASE_KEYSTORE: ${{ runner.temp }}/gua-upload.jks
@@ -409,3 +436,45 @@ jobs:
           releaseFiles: app/build/outputs/bundle/gplayRelease/app-gplay-release.aab
           track: ${{ needs.gate.outputs.track }}
           status: ${{ needs.gate.outputs.status }}
+
+  # Android beta testers get every production release through Firebase App Distribution. What they
+  # get is the universal APK Play generated and signed for the versionCode publish-prod uploaded, so
+  # it is the approved build and nothing is rebuilt; its signing certificate is checked against
+  # PLAY_SIGNING_CERT_SHA256 before it is uploaded. Uploading the same bytes twice answers
+  # RELEASE_UNMODIFIED, so re-running this job alone (after a Play processing delay or an IAM fix) is
+  # safe. Requires:
+  #   secret GOOGLE_BETA_SA_JSON        - key of the beta-access service account, the same key
+  #                                       gua-support-inbox uses; Play Console "View app information"
+  #                                       on global.gua and roles/firebaseappdistro.admin on the
+  #                                       Firebase project
+  #   vars FIREBASE_PROJECT_NUMBER, FIREBASE_ANDROID_APP_ID (the global.gua app), FIREBASE_BETA_GROUP
+  #        (group alias, default android-beta), PLAY_SIGNING_CERT_SHA256 (the Play app signing
+  #        certificate, as shown in Play Console)
+  # Details and one-time setup: docs/gua/RELEASE_PLAY.md.
+  publish-firebase:
+    name: Publish to Firebase App Distribution
+    needs: [gate, publish-prod]
+    if: needs.gate.outputs.prod == 'true' && needs.publish-prod.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      # keytool and apksigner run on this JDK; the runner's default JDK 17 cannot read Play's APKs.
+      - name: Use JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Publish to Firebase App Distribution
+        env:
+          GOOGLE_BETA_SA_JSON: ${{ secrets.GOOGLE_BETA_SA_JSON }}
+          PLAY_PACKAGE: global.gua
+          VERSION_CODE: ${{ needs.publish-prod.outputs.version_code }}
+          PLAY_SIGNING_CERT_SHA256: ${{ vars.PLAY_SIGNING_CERT_SHA256 }}
+          FIREBASE_PROJECT_NUMBER: ${{ vars.FIREBASE_PROJECT_NUMBER }}
+          FIREBASE_ANDROID_APP_ID: ${{ vars.FIREBASE_ANDROID_APP_ID }}
+          FIREBASE_BETA_GROUP: ${{ vars.FIREBASE_BETA_GROUP || 'android-beta' }}
+          RELEASE_NOTES_FILE: fastlane/metadata/android/en-US/changelogs/${{ needs.publish-prod.outputs.version_code }}.txt
+          WORK_DIR: ${{ runner.temp }}
+        run: node .github/workflows/scripts/publish-firebase-app-distribution.mjs
