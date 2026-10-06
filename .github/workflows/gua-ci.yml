@@ -3,7 +3,7 @@ name: Gua CI
 # GUA FORK: single, self-contained pipeline for the fork.
 #
 # It deliberately does NOT depend on any upstream (element-hq) org secrets, LFS goldens,
-# the enterprise submodule, Localazy, codecov, Diawi, Firebase, or Sonar — those upstream
+# the enterprise submodule, Localazy, codecov, Diawi, Firebase, or Sonar; those upstream
 # workflows are disabled to workflow_dispatch-only so the fork pipeline is green out of the box.
 #
 # Jobs: constraint guard -> build (assembleGplayDebug) + unit tests + lint/ktlint/detekt +
@@ -71,6 +71,13 @@ jobs:
           GUA_CONSTRAINTS_SKIP_HISTORY: ${{ steps.scan_range.outputs.base == '' && '1' || '' }}
       - name: Check translations
         run: python3 tools/scripts/check-translations.py
+      # CI=true makes the Firebase tests fail, not skip, when the runner lacks the JDK or the Android
+      # build-tools, so green here means every case ran.
+      - name: Check workflow scripts
+        run: |
+          bash -n .github/workflows/scripts/publish-play-gate.sh
+          node --check .github/workflows/scripts/publish-firebase-app-distribution.mjs
+          node --test .github/workflows/scripts/publish-play-gate.test.mjs .github/workflows/scripts/publish-firebase-app-distribution.test.mjs
 
   # --- 2. Build the primary fork artifact. ----------------------------------
   build:
