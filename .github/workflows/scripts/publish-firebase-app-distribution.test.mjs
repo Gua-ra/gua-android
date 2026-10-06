@@ -7,7 +7,9 @@
 
 // Runs publish-firebase-app-distribution.mjs against a fake Google HTTP layer and APKs signed with
 // a throwaway key. JDK tools (keytool, jarsigner, jar) come from PATH; aapt2 and apksigner from the
-// Android SDK when one is installed, otherwise the APK-signature-scheme cases are skipped.
+// Android SDK. Locally, a case whose tools are missing is skipped; with CI=true (GitHub's runners
+// set it, and their image ships the JDK and the Android SDK) a missing tool fails the case instead,
+// so a green run always means every case ran.
 //
 //   node --test .github/workflows/scripts/publish-firebase-app-distribution.test.mjs
 
@@ -49,9 +51,23 @@ const SA = {
 
 const run = (command, args) => spawnSync(command, args, { encoding: "utf8" });
 const available = (command) => !run(command, ["-help"]).error;
+const JDK_TOOLS = ["keytool", "jarsigner", "jar"];
+const CI = process.env.CI === "true";
+
+const sdkRoot = () => process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT || join(homedir(), "Library/Android/sdk");
+
+/** True when the case can run; otherwise skips it, or fails it when CI=true says the tools must be there. */
+function toolsOrSkip(t, present, what) {
+  if (present) return true;
+  if (CI) assert.fail(`${what}: not available, and CI=true means the runner image must provide it`);
+  t.skip(`${what}: not available`);
+  return false;
+}
+const jdkTools = (t, fixtures) => toolsOrSkip(t, fixtures, `JDK tools (missing: ${JDK_TOOLS.filter((tool) => !available(tool)).join(", ") || "none"})`);
+const apkTools = (t, fixtures) => toolsOrSkip(t, fixtures?.v2, `Android SDK build-tools with aapt2 and apksigner under ${sdkRoot()}`);
 
 function androidTools() {
-  const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT || join(homedir(), "Library/Android/sdk");
+  const sdk = sdkRoot();
   const newest = (dir) => {
     try {
       return readdirSync(dir).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
@@ -70,7 +86,7 @@ function androidTools() {
 
 /** Throwaway key plus APKs signed with it: v1 (JAR signature) always, v2 when the Android SDK is available. */
 function buildFixtures() {
-  if (!available("keytool") || !available("jarsigner") || !available("jar")) return null;
+  if (!JDK_TOOLS.every(available)) return null;
   const dir = mkdtempSync(join(tmpdir(), "gua-fad-"));
   const keystore = join(dir, "ks.p12");
   const storeArgs = ["-keystore", keystore, "-storetype", "PKCS12", "-storepass", "changeit"];
@@ -200,6 +216,7 @@ const universalGroup = (cert) => ({
   targetingInfo: { packageName: "global.gua", variant: [{ variantId: 0 }] },
 });
 const archivedGroup = (cert) => ({ certificateSha256Hash: cert, generatedSplitApks: [{ moduleName: "base", downloadId: "dl-archived" }] });
+const withoutTargetingInfo = ({ targetingInfo, ...group }) => group;
 
 function envFor(fake, fixtures, overrides = {}) {
   return {
@@ -263,17 +280,27 @@ describe("readConfig", () => {
 
 describe("pickUniversalApk", () => {
   const expected = normalizeFingerprint(OTHER_CERT);
-  it("skips the archived variant and picks the targeted universal APK", () => {
+  const other = "05:DF:39:93:8C:C7:E2:AC:A6:C3:A5:F3:3A:DD:F4:D2:91:CF:F4:BA:F9:A3:91:06:FD:09:00:B1:D0:9C:77:92";
+  it("picks the universal APK of the group signed with the expected certificate, skipping the archived group", () => {
     assert.deepEqual(pickUniversalApk([archivedGroup(OTHER_CERT), universalGroup(OTHER_CERT)], expected), { downloadId: "dl-universal" });
   });
-  it("reports a certificate mismatch", () => {
-    const other = "05:DF:39:93:8C:C7:E2:AC:A6:C3:A5:F3:3A:DD:F4:D2:91:CF:F4:BA:F9:A3:91:06:FD:09:00:B1:D0:9C:77:92";
-    assert.deepEqual(pickUniversalApk([universalGroup(other)], expected), { mismatch: [other] });
+  it("does not require targetingInfo on the group", () => {
+    assert.deepEqual(pickUniversalApk([archivedGroup(OTHER_CERT), withoutTargetingInfo(universalGroup(OTHER_CERT))], expected), { downloadId: "dl-universal" });
   });
-  it("waits while nothing shippable is listed", () => {
+  it("never picks a universal APK signed with another key", () => {
+    assert.deepEqual(pickUniversalApk([universalGroup(other), universalGroup(OTHER_CERT)], expected), { downloadId: "dl-universal" });
+    assert.deepEqual(pickUniversalApk([universalGroup(other)], expected), { certificates: [other] });
+  });
+  it("names each certificate seen once when no group with the expected certificate has a universal APK", () => {
+    assert.deepEqual(pickUniversalApk([archivedGroup(OTHER_CERT)], expected), { certificates: [OTHER_CERT] });
+    assert.deepEqual(pickUniversalApk([archivedGroup(OTHER_CERT), archivedGroup(OTHER_CERT), universalGroup(other)], expected), {
+      certificates: [OTHER_CERT, other],
+    });
+    assert.deepEqual(pickUniversalApk([{ generatedSplitApks: [] }], expected), { certificates: ["(none)"] });
+  });
+  it("waits only while Play lists nothing", () => {
     assert.deepEqual(pickUniversalApk([], expected), {});
     assert.deepEqual(pickUniversalApk(undefined, expected), {});
-    assert.deepEqual(pickUniversalApk([archivedGroup(OTHER_CERT)], expected), {});
   });
 });
 
@@ -314,7 +341,7 @@ describe("publish flow", () => {
   });
 
   it("downloads the Play APK, checks its certificate, uploads, sets notes, creates the group and distributes", async (t) => {
-    if (!fixtures) return t.skip("JDK tools not available");
+    if (!jdkTools(t, fixtures)) return;
     const notes = join(fixtures.dir, `${VERSION_CODE}.txt`);
     writeFileSync(notes, "Beta build.\n");
     const output = join(fixtures.dir, "output.txt");
@@ -326,8 +353,8 @@ describe("publish flow", () => {
       apk,
       list: [
         { status: 404, json: { error: { status: "NOT_FOUND", message: "not found" } } },
-        { status: 200, json: { generatedApks: [archivedGroup(fixtures.fingerprint)] } },
-        { status: 200, json: { generatedApks: [archivedGroup(fixtures.fingerprint), universalGroup(fixtures.fingerprint)] } },
+        { status: 200, json: {} },
+        { status: 200, json: { generatedApks: [archivedGroup(fixtures.fingerprint), withoutTargetingInfo(universalGroup(fixtures.fingerprint))] } },
       ],
       polls: [{ name: "op1", done: false }, doneOperation("RELEASE_CREATED")],
       groupExists: false,
@@ -382,7 +409,7 @@ describe("publish flow", () => {
   });
 
   it("treats RELEASE_UNMODIFIED as success, keeps an existing group and skips absent notes", async (t) => {
-    if (!fixtures) return t.skip("JDK tools not available");
+    if (!jdkTools(t, fixtures)) return;
     const fake = await startFake({
       apk: readFileSync(fixtures.v1),
       list: [{ status: 200, json: { generatedApks: [universalGroup(fixtures.fingerprint)] } }],
@@ -403,21 +430,39 @@ describe("publish flow", () => {
     }
   });
 
-  it("fails before downloading when Play's certificate is not the production one", async (t) => {
-    if (!fixtures) return t.skip("JDK tools not available");
+  it("fails at once, before downloading, when Play's certificate is not the production one", async (t) => {
+    if (!jdkTools(t, fixtures)) return;
     const fake = await startFake({ apk: readFileSync(fixtures.v1), list: [{ status: 200, json: { generatedApks: [universalGroup(OTHER_CERT)] } }], polls: [] });
     try {
       const { error } = await runMain(envFor(fake, fixtures));
       assert.ok(error instanceof PublishError);
-      assert.match(error.message, /signed with AA:BB:CC.*not the expected production certificate/);
+      assert.match(error.message, /signed with AA:BB:CC.*but none signed with the expected production certificate .* has a universal APK/);
+      assert.equal(fake.calls.filter((c) => c.path.includes("generatedApks")).length, 1, "no second poll after a listing");
       assert.ok(!fake.calls.some((c) => c.path.includes(":download")));
     } finally {
       await fake.close();
     }
   });
 
+  it("fails at once when Play lists only the archived APK under the production certificate", async (t) => {
+    if (!jdkTools(t, fixtures)) return;
+    const fake = await startFake({ apk: readFileSync(fixtures.v1), list: [{ status: 200, json: { generatedApks: [archivedGroup(fixtures.fingerprint)] } }], polls: [] });
+    try {
+      const { error } = await runMain(envFor(fake, fixtures));
+      assert.ok(error instanceof PublishError);
+      const expected = fixtures.fingerprint.match(/.{2}/g).join(":");
+      assert.equal(
+        error.message,
+        `Play lists APKs for global.gua ${VERSION_CODE} signed with ${expected}, but none signed with the expected production certificate ${expected} has a universal APK`,
+      );
+      assert.equal(fake.calls.filter((c) => c.path.includes("generatedApks")).length, 1, "no second poll after a listing");
+    } finally {
+      await fake.close();
+    }
+  });
+
   it("fails when the downloaded APK is signed with another key", async (t) => {
-    if (!fixtures) return t.skip("JDK tools not available");
+    if (!jdkTools(t, fixtures)) return;
     const fake = await startFake({ apk: readFileSync(fixtures.v1), list: [{ status: 200, json: { generatedApks: [universalGroup(OTHER_CERT)] } }], polls: [] });
     try {
       const { error } = await runMain(envFor(fake, fixtures, { PLAY_SIGNING_CERT_SHA256: OTHER_CERT }));
@@ -430,7 +475,7 @@ describe("publish flow", () => {
   });
 
   it("fails on an unsigned APK when no apksigner is available", async (t) => {
-    if (!fixtures) return t.skip("JDK tools not available");
+    if (!jdkTools(t, fixtures)) return;
     const fake = await startFake({
       apk: readFileSync(fixtures.unsigned),
       list: [{ status: 200, json: { generatedApks: [universalGroup(fixtures.fingerprint)] } }],
@@ -446,7 +491,7 @@ describe("publish flow", () => {
   });
 
   it("reads an APK-signature-scheme-only APK with apksigner", async (t) => {
-    if (!fixtures?.v2) return t.skip("Android SDK build-tools not available");
+    if (!apkTools(t, fixtures)) return;
     const fake = await startFake({
       apk: readFileSync(fixtures.v2),
       list: [{ status: 200, json: { generatedApks: [universalGroup(fixtures.fingerprint)] } }],
@@ -467,7 +512,7 @@ describe("publish flow", () => {
   });
 
   it("stops on a 403 and names the reason", async (t) => {
-    if (!fixtures) return t.skip("JDK tools not available");
+    if (!jdkTools(t, fixtures)) return;
     const denied = {
       status: 403,
       json: { error: { status: "PERMISSION_DENIED", message: "The caller does not have permission", details: [{ reason: "IAM_PERMISSION_DENIED" }] } },
@@ -484,7 +529,7 @@ describe("publish flow", () => {
   });
 
   it("gives up when Play never lists the APK", async (t) => {
-    if (!fixtures) return t.skip("JDK tools not available");
+    if (!jdkTools(t, fixtures)) return;
     const fake = await startFake({ apk: Buffer.alloc(0), list: [{ status: 404, json: {} }], polls: [] });
     try {
       const { error } = await runMain(envFor(fake, fixtures));
@@ -497,7 +542,7 @@ describe("publish flow", () => {
   });
 
   it("fails when Firebase reports an operation error", async (t) => {
-    if (!fixtures) return t.skip("JDK tools not available");
+    if (!jdkTools(t, fixtures)) return;
     const fake = await startFake({
       apk: readFileSync(fixtures.v1),
       list: [{ status: 200, json: { generatedApks: [universalGroup(fixtures.fingerprint)] } }],

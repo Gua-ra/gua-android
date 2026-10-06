@@ -201,19 +201,21 @@ export function describeError(status, json) {
 }
 
 /**
- * The universal APK to ship, from generatedapks.list. Returns { downloadId } when a group signed
- * with the expected certificate has one, { mismatch: [fingerprints] } when Play lists APKs but none
- * under that certificate, and {} while nothing shippable is listed yet. Play's archived APK is a
- * lone base split without targetingInfo and is never picked.
+ * The universal APK to ship, from generatedapks.list: { downloadId } of the universal APK in the
+ * signing-key group whose certificate is the expected one. Only the certificate and the presence of
+ * generatedUniversalApk decide; targetingInfo is not required. Play's archived APK group (a lone base
+ * split under the same certificate) has no universal APK and a group signed with another key is
+ * never used. Returns { certificates } (each certificate listed, once) when Play lists groups but
+ * none qualifies: that listing is Play's answer for the versionCode, so the caller fails at once
+ * naming them instead of polling on. Returns {} while Play lists nothing.
  */
 export function pickUniversalApk(generatedApks, expectedFingerprint) {
   const groups = Array.isArray(generatedApks) ? generatedApks : [];
-  const signedByExpected = groups.filter((g) => normalizeFingerprint(g?.certificateSha256Hash) === expectedFingerprint);
-  if (groups.length && !signedByExpected.length) {
-    return { mismatch: groups.map((g) => formatFingerprint(normalizeFingerprint(g?.certificateSha256Hash)) || "(none)") };
-  }
-  const group = signedByExpected.find((g) => g.generatedUniversalApk?.downloadId && g.targetingInfo);
-  return group ? { downloadId: group.generatedUniversalApk.downloadId } : {};
+  const certificate = (g) => normalizeFingerprint(g?.certificateSha256Hash);
+  const group = groups.find((g) => certificate(g) === expectedFingerprint && g.generatedUniversalApk?.downloadId);
+  if (group) return { downloadId: group.generatedUniversalApk.downloadId };
+  if (!groups.length) return {};
+  return { certificates: [...new Set(groups.map((g) => formatFingerprint(certificate(g)) || "(none)"))] };
 }
 
 async function waitForUniversalApk(cfg, token, log, deps) {
@@ -226,13 +228,13 @@ async function waitForUniversalApk(cfg, token, log, deps) {
     if (res.ok) {
       const pick = pickUniversalApk(res.json.generatedApks, cfg.expectedFingerprint);
       if (pick.downloadId) return pick.downloadId;
-      if (pick.mismatch) {
+      if (pick.certificates) {
         throw new PublishError(
-          `Play's APKs for ${cfg.pkg} ${cfg.versionCode} are signed with ${pick.mismatch.join(", ")}, ` +
-            `not the expected production certificate ${formatFingerprint(cfg.expectedFingerprint)}`,
+          `Play lists APKs for ${cfg.pkg} ${cfg.versionCode} signed with ${pick.certificates.join(", ")}, ` +
+            `but none signed with the expected production certificate ${formatFingerprint(cfg.expectedFingerprint)} has a universal APK`,
         );
       }
-      log(`attempt ${attempt}/${PLAY_APK_ATTEMPTS}: Play lists no universal APK for versionCode ${cfg.versionCode} yet`);
+      log(`attempt ${attempt}/${PLAY_APK_ATTEMPTS}: Play lists no APKs for versionCode ${cfg.versionCode} yet`);
     } else if (res.status === 404) {
       log(`attempt ${attempt}/${PLAY_APK_ATTEMPTS}: Play has not generated APKs for versionCode ${cfg.versionCode} yet`);
     } else {
