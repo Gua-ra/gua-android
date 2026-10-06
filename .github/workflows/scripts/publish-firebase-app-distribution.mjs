@@ -261,9 +261,12 @@ export function parseKeytoolFingerprints(output) {
   return [...String(output).matchAll(/^\s*SHA256:\s*([0-9A-Fa-f:]{95})\s*$/gm)].map((m) => normalizeFingerprint(m[1]));
 }
 
-/** SHA-256 fingerprints of the APK signature scheme signers, from `apksigner verify --print-certs`. */
+/**
+ * SHA-256 fingerprints of the APK signature scheme signers, from `apksigner verify --print-certs`.
+ * The signer label varies by apksigner version ("Signer #1", "Signer (minSdkVersion=24, ...)").
+ */
 export function parseApksignerFingerprints(output) {
-  return [...String(output).matchAll(/^Signer #\d+ certificate SHA-256 digest:\s*([0-9A-Fa-f]{64})\s*$/gm)].map((m) => normalizeFingerprint(m[1]));
+  return [...String(output).matchAll(/certificate SHA-256 digest:\s*([0-9A-Fa-f]{64})\b/g)].map((m) => normalizeFingerprint(m[1]));
 }
 
 /** The newest apksigner under the Android SDK's build-tools, or "" when there is none. */
@@ -311,7 +314,11 @@ function signingFingerprints(cfg, apkPath, log) {
   const verify = runTool(apksigner, ["verify", "--print-certs", "--max-sdk-version", APKSIGNER_MAX_SDK, apkPath]);
   if (verify.status !== 0) throw new PublishError(`apksigner verify failed (exit ${verify.status}): ${firstLine(verify.stderr || verify.stdout)}`);
   const fromApksigner = parseApksignerFingerprints(verify.stdout);
-  if (!fromApksigner.length) throw new PublishError("neither keytool nor apksigner found a signing certificate in the APK");
+  if (!fromApksigner.length) {
+    throw new PublishError(
+      `apksigner printed no certificate digest for the APK; it said: ${firstLine(verify.stdout) || firstLine(verify.stderr) || "(nothing)"}`,
+    );
+  }
   log(`signing certificate read by apksigner (APK signature scheme): ${fromApksigner.map(formatFingerprint).join(", ")}`);
   return fromApksigner;
 }

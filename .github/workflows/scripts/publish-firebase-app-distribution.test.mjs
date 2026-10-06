@@ -455,7 +455,10 @@ describe("publish flow", () => {
     });
     try {
       const { outcome, error, logs } = await runMain(envFor(fake, fixtures, { APKSIGNER: fixtures.apksigner }));
-      assert.equal(error, undefined, error?.message);
+      if (error) {
+        const verify = run(fixtures.apksigner, ["verify", "--print-certs", "--max-sdk-version", "36", fixtures.v2]);
+        assert.fail(`${error.message}\napksigner exit ${verify.status}\nstdout:\n${verify.stdout}\nstderr:\n${verify.stderr}`);
+      }
       assert.equal(outcome.result, "RELEASE_UPDATED");
       assert.ok(logs.some((l) => l.includes("read by apksigner")));
     } finally {
