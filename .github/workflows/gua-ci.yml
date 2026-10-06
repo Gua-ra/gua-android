@@ -71,10 +71,13 @@ jobs:
           GUA_CONSTRAINTS_SKIP_HISTORY: ${{ steps.scan_range.outputs.base == '' && '1' || '' }}
       - name: Check translations
         run: python3 tools/scripts/check-translations.py
+      # CI=true makes the Firebase tests fail, not skip, when the runner lacks the JDK or the Android
+      # build-tools, so green here means every case ran.
       - name: Check workflow scripts
         run: |
+          bash -n .github/workflows/scripts/publish-play-gate.sh
           node --check .github/workflows/scripts/publish-firebase-app-distribution.mjs
-          node --test .github/workflows/scripts/publish-firebase-app-distribution.test.mjs
+          node --test .github/workflows/scripts/publish-play-gate.test.mjs .github/workflows/scripts/publish-firebase-app-distribution.test.mjs
 
   # --- 2. Build the primary fork artifact. ----------------------------------
   build:

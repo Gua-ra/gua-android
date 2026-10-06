@@ -113,15 +113,35 @@ allow it or debug-APK sign-in fails.
 - **Merge to `main`**: stages a production publish (track `production`, status `draft`) that waits
   for a `deploy-approvers` approval on the `production` environment.
 - **Actions > Publish to Google Play > Run workflow**: either app, with the track and status picked
-  by hand. `app=qa` cannot target the production track.
+  by hand. `app=qa` cannot target the production track. Every `app=prod` dispatch waits on the
+  `production` environment, whatever the track, and is followed by the Firebase step below.
+- **Firebase only** (`Run workflow` with `app=prod` and `firebase_version_code=<versionCode>`): no
+  build and no Play upload. The versionCode named must already be on Play (any track, draft
+  included); the `publish-firebase-only` job hands exactly that build to the beta group, after the
+  same `production` approval as any production action. `track` and `status` are ignored. The
+  environment lets only `main` deploy, so from the command line:
+
+  ```bash
+  gh workflow run publish-play.yml --repo Gua-ra/gua-android --ref main \
+    -f app=prod -f firebase_version_code=202606060
+  ```
+
+  then approve the waiting job under the run's **Review deployments**. This is how the beta channel
+  catches up with an upload that `publish-firebase` did not follow, such as one made before that
+  job existed.
 
 ### Firebase App Distribution
-After a production upload succeeds, the `publish-firebase` job hands the same build to the Android
-beta testers (`.github/workflows/scripts/publish-firebase-app-distribution.mjs`):
+The `FIREBASE_BETA_GROUP` group is the beta channel, and it is meant to receive every
+production-signed upload: after any successful `publish-prod`, whether a merge to `main` or an
+`app=prod` dispatch to `internal`, `alpha`, `beta` or `production`, the `publish-firebase` job hands
+the same build to the Android beta testers (`.github/workflows/scripts/publish-firebase-app-distribution.mjs`).
+The Firebase-only dispatch runs the same script for a versionCode that is already on Play.
 
-1. asks Play for the APKs it generated for that versionCode and takes the universal APK from the
-   signing-key group whose certificate equals `PLAY_SIGNING_CERT_SHA256` (Play needs a few minutes
-   after the upload; the job waits up to 15);
+1. asks Play for the APKs it generated for that versionCode and takes the universal APK of the
+   signing-key group whose certificate equals `PLAY_SIGNING_CERT_SHA256`. Play needs a few minutes
+   after an upload, so the job waits up to 15 while Play lists nothing; once Play lists APKs, the
+   job either has its universal APK or fails at once, naming the certificates it saw (the archived
+   APK group has no universal APK, and a group signed with another key is never used);
 2. downloads it and checks the signing certificate again on the runner, with `keytool -printcert
    -jarfile` or, for an APK without a JAR signature, `apksigner verify --max-sdk-version 36`;
 3. uploads it to App Distribution, sets the release notes from
@@ -129,7 +149,8 @@ beta testers (`.github/workflows/scripts/publish-firebase-app-distribution.mjs`)
    distributes the release to the `FIREBASE_BETA_GROUP` group, creating the group empty when it
    does not exist yet.
 
-The job prints the tester link and the Firebase console link of the release. Uploading the same
-bytes again answers `RELEASE_UNMODIFIED`, so **Re-run failed jobs** on the workflow run repeats only
-this job without rebuilding or re-uploading to Play. A QA publish never reaches Firebase. Testers
-join the group through the beta-invite workflow in `gua-support-inbox`, not here.
+The job prints the tester link and the Firebase console link of the release and exposes them as the
+job outputs `testing_uri` and `firebase_console_uri`. Uploading the same bytes again answers
+`RELEASE_UNMODIFIED`, so **Re-run failed jobs** on the workflow run repeats only this job without
+rebuilding or re-uploading to Play. A QA publish never reaches Firebase. Testers join the group
+through the beta-invite workflow in `gua-support-inbox`, not here.

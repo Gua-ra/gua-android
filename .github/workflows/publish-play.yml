@@ -11,8 +11,17 @@ name: Publish to Google Play
 #                               approves; `develop` merges never touch Play at all.
 #   - workflow_dispatch      -> either path by hand from the Actions tab, with the app, track and
 #                               status pickable, so nobody needs the gh CLI to cut a build.
-#   Every successful production upload is followed by publish-firebase, which hands the same
-#   build to the Android beta testers through Firebase App Distribution.
+#   - workflow_dispatch with firebase_version_code set (and app=prod)
+#                            -> Firebase only: no build and no Play upload. The versionCode named is
+#                               already on Play (any track, draft included) and publish-firebase-only
+#                               hands exactly that build to the beta group, after the same `production`
+#                               approval as any production action. The environment only lets `main`
+#                               deploy, so dispatch it with --ref main.
+#   Every successful production upload is followed by publish-firebase, which hands the same build
+#   to the Android beta testers through Firebase App Distribution. That holds for a merge to main
+#   and for every app=prod dispatch, to internal, alpha, beta or production alike: the Firebase group
+#   is the beta channel, and it is meant to receive every production-signed upload. Only the QA app
+#   never reaches it.
 #
 # This is a separate file from release.yml because release.yml is upstream's "give me unsigned
 # artifacts on demand" workflow: it is dispatch-only by design, and adding PR/push triggers there
@@ -45,6 +54,10 @@ on:
         type: choice
         default: draft
         options: [draft, inProgress, completed]
+      firebase_version_code:
+        description: "Firebase only: publish this versionCode, already on Play, to App Distribution. No build, no Play upload; needs app=prod; track and status are ignored"
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -59,16 +72,25 @@ env:
 jobs:
   # Cheap, secret-less job that decides what the event asked for. An unlabelled PR gets no further
   # than this: no release build, no keystore, no Play call. The PR's actual build and tests are
-  # gua-ci.yml's job, so stopping here costs a pull request nothing.
+  # gua-ci.yml's job, so stopping here costs a pull request nothing. The decision itself lives in
+  # scripts/publish-play-gate.sh so publish-play-gate.test.mjs can run it for every event shape;
+  # at most one of qa, prod and firebase_only is ever true.
   gate:
     name: Decide what this event asks for
     runs-on: ubuntu-latest
     outputs:
       qa: ${{ steps.gate.outputs.qa }}
       prod: ${{ steps.gate.outputs.prod }}
+      firebase_only: ${{ steps.gate.outputs.firebase_only }}
+      firebase_version_code: ${{ steps.gate.outputs.firebase_version_code }}
       track: ${{ steps.gate.outputs.track }}
       status: ${{ steps.gate.outputs.status }}
     steps:
+      # Only the scripts directory is checked out: the decision needs no source tree and no secret.
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          sparse-checkout: .github/workflows/scripts
+          persist-credentials: false
       - id: gate
         # Everything the decision reads comes in through env rather than being interpolated into
         # the script, so a branch or fork name can never be evaluated as shell.
@@ -80,66 +102,8 @@ jobs:
           INPUT_APP: ${{ inputs.app }}
           INPUT_TRACK: ${{ inputs.track }}
           INPUT_STATUS: ${{ inputs.status }}
-        run: |
-          set -euo pipefail
-          qa=false
-          prod=false
-          track=internal
-          status=draft
-
-          case "$EVENT" in
-            pull_request)
-              # Same-repo check: this is a public repo, so anyone can open a PR, and a fork PR must
-              # never be able to reach the upload keystore or the Play service account. GitHub
-              # already withholds secrets from fork PRs; asserting it here means the rule still
-              # holds if someone later widens the trigger, and a labelled fork PR fails closed
-              # instead of failing halfway through a signed build.
-              if [ "$HEAD_REPO" = "$THIS_REPO" ] && [ "$IS_LABELLED" = "true" ]; then
-                qa=true
-                # A QA ship exists to be installed, so it goes out completed rather than sitting as
-                # a draft that someone has to promote in the console before a tester sees it.
-                track=internal
-                status=completed
-              fi
-              ;;
-            push)
-              # Merge to main. This stages prod; the `production` environment is what holds it.
-              prod=true
-              track=production
-              # Uploaded but not rolled out: approval says "this build is the release", the roll-out
-              # percentage is still a decision someone makes in Play Console. Dispatch with
-              # status=completed when you want the workflow itself to roll it out.
-              status=draft
-              ;;
-            workflow_dispatch)
-              if [ "$INPUT_APP" = "qa" ]; then
-                qa=true
-                # The QA job runs under the unprotected `dev` environment on purpose: shipping
-                # a branch to internal testers should not need an approver. That only holds
-                # while a QA ship stays a testing artefact. `production` is a public Play
-                # track, so app=qa + track=production would put global.gua.dev in front of the
-                # store with no approval gate at all, precisely the hole this file was split
-                # out of release.yml to close. Anything aimed at a production track goes
-                # through publish-prod and its `production` environment.
-                if [ "$INPUT_TRACK" = "production" ]; then
-                  echo "::error::app=qa cannot publish to the production track: the QA job has no approval gate. Dispatch app=prod (which waits on the production environment), or pick internal/alpha/beta."
-                  exit 1
-                fi
-              else
-                prod=true
-              fi
-              track="$INPUT_TRACK"
-              status="$INPUT_STATUS"
-              ;;
-          esac
-
-          {
-            echo "qa=$qa"
-            echo "prod=$prod"
-            echo "track=$track"
-            echo "status=$status"
-          } >> "$GITHUB_OUTPUT"
-          echo "qa=$qa prod=$prod track=$track status=$status"
+          INPUT_FIREBASE_VERSION_CODE: ${{ inputs.firebase_version_code }}
+        run: bash .github/workflows/scripts/publish-play-gate.sh
 
   # QA app (global.gua.dev, "Gua QA", dev backend). Fires for a PR labelled `release-qa` and for a
   # dispatch with app=qa. Requires these repository secrets:
@@ -437,12 +401,13 @@ jobs:
           track: ${{ needs.gate.outputs.track }}
           status: ${{ needs.gate.outputs.status }}
 
-  # Android beta testers get every production release through Firebase App Distribution. What they
-  # get is the universal APK Play generated and signed for the versionCode publish-prod uploaded, so
-  # it is the approved build and nothing is rebuilt; its signing certificate is checked against
-  # PLAY_SIGNING_CERT_SHA256 before it is uploaded. Uploading the same bytes twice answers
-  # RELEASE_UNMODIFIED, so re-running this job alone (after a Play processing delay or an IAM fix) is
-  # safe. Requires:
+  # Android beta testers get every production-signed upload through Firebase App Distribution: this
+  # job follows every successful publish-prod, whether it went to production, internal, alpha or
+  # beta, because the Firebase group is the beta channel. What they get is the universal APK Play
+  # generated and signed for the versionCode publish-prod uploaded, so it is the approved build and
+  # nothing is rebuilt; its signing certificate is checked against PLAY_SIGNING_CERT_SHA256 before it
+  # is uploaded. Uploading the same bytes twice answers RELEASE_UNMODIFIED, so re-running this job
+  # alone (after a Play processing delay or an IAM fix) is safe. Requires:
   #   secret GOOGLE_BETA_SA_JSON        - key of the beta-access service account, the same key
   #                                       gua-support-inbox uses; Play Console "View app information"
   #                                       on global.gua and roles/firebaseappdistro.admin on the
@@ -456,6 +421,9 @@ jobs:
     needs: [gate, publish-prod]
     if: needs.gate.outputs.prod == 'true' && needs.publish-prod.result == 'success'
     runs-on: ubuntu-latest
+    outputs:
+      testing_uri: ${{ steps.firebase.outputs.testing_uri }}
+      firebase_console_uri: ${{ steps.firebase.outputs.console_uri }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -467,6 +435,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
       - name: Publish to Firebase App Distribution
+        id: firebase
         env:
           GOOGLE_BETA_SA_JSON: ${{ secrets.GOOGLE_BETA_SA_JSON }}
           PLAY_PACKAGE: global.gua
@@ -476,5 +445,55 @@ jobs:
           FIREBASE_ANDROID_APP_ID: ${{ vars.FIREBASE_ANDROID_APP_ID }}
           FIREBASE_BETA_GROUP: ${{ vars.FIREBASE_BETA_GROUP || 'android-beta' }}
           RELEASE_NOTES_FILE: fastlane/metadata/android/en-US/changelogs/${{ needs.publish-prod.outputs.version_code }}.txt
+          WORK_DIR: ${{ runner.temp }}
+        run: node .github/workflows/scripts/publish-firebase-app-distribution.mjs
+
+  # Firebase-only dispatch: `firebase_version_code` names a versionCode that is already on Play (any
+  # track, draft included) and this job hands exactly that build to the beta group; nothing is built
+  # and nothing is uploaded to Play. It is how the beta channel catches up with an upload that
+  # publish-firebase did not follow (a run from before that job existed, or one whose Firebase step
+  # cannot be re-run). Same script, same checks and same secret and variables as publish-firebase,
+  # and the same `production` approval as publish-prod: what reaches the beta testers is a production
+  # decision, and the environment's branch rule means the dispatch runs from main.
+  publish-firebase-only:
+    name: Publish Play versionCode ${{ needs.gate.outputs.firebase_version_code }} to Firebase App Distribution
+    needs: gate
+    if: needs.gate.outputs.firebase_only == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      testing_uri: ${{ steps.firebase.outputs.testing_uri }}
+      firebase_console_uri: ${{ steps.firebase.outputs.console_uri }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: State the mode
+        env:
+          VERSION_CODE: ${{ needs.gate.outputs.firebase_version_code }}
+        run: |
+          echo "::notice::Firebase-only publish of global.gua versionCode $VERSION_CODE, already on Play: nothing is built and nothing is uploaded to Play."
+          {
+            echo "## Firebase-only publish"
+            echo ""
+            echo "Dispatched with \`firebase_version_code=$VERSION_CODE\`: the universal APK Play already holds for global.gua versionCode $VERSION_CODE goes to the beta group. Nothing was built and nothing was uploaded to Play."
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Use JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Publish to Firebase App Distribution
+        id: firebase
+        env:
+          GOOGLE_BETA_SA_JSON: ${{ secrets.GOOGLE_BETA_SA_JSON }}
+          PLAY_PACKAGE: global.gua
+          VERSION_CODE: ${{ needs.gate.outputs.firebase_version_code }}
+          PLAY_SIGNING_CERT_SHA256: ${{ vars.PLAY_SIGNING_CERT_SHA256 }}
+          FIREBASE_PROJECT_NUMBER: ${{ vars.FIREBASE_PROJECT_NUMBER }}
+          FIREBASE_ANDROID_APP_ID: ${{ vars.FIREBASE_ANDROID_APP_ID }}
+          FIREBASE_BETA_GROUP: ${{ vars.FIREBASE_BETA_GROUP || 'android-beta' }}
+          RELEASE_NOTES_FILE: fastlane/metadata/android/en-US/changelogs/${{ needs.gate.outputs.firebase_version_code }}.txt
           WORK_DIR: ${{ runner.temp }}
         run: node .github/workflows/scripts/publish-firebase-app-distribution.mjs
