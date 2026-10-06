@@ -325,6 +325,25 @@ function signingFingerprints(cfg, apkPath, log) {
   return fromApksigner;
 }
 
+/**
+ * Components Google Play injects when automatic protection (the installer check) is on. A build that
+ * carries them shows "Get this app from Play" and exits when installed outside Google Play.
+ */
+const PLAY_PROTECTION_MARKERS = ["com.pairip.licensecheck", "com.pairip.application"];
+
+/** Markers of Play's automatic protection found in a binary AndroidManifest.xml (UTF-8 or UTF-16 string pool). */
+export function playProtectionMarkers(manifest) {
+  const text = manifest.toString("latin1") + manifest.toString("utf16le");
+  return PLAY_PROTECTION_MARKERS.filter((marker) => text.includes(marker));
+}
+
+function apkManifest(apkPath) {
+  const run = spawnSync("unzip", ["-p", apkPath, "AndroidManifest.xml"], { maxBuffer: 64 * 1024 * 1024 });
+  if (run.error) throw new PublishError(`unzip could not be run: ${run.error.message}`);
+  if (run.status !== 0 || !run.stdout.length) throw new PublishError(`could not read AndroidManifest.xml from the APK (unzip exit ${run.status})`);
+  return run.stdout;
+}
+
 const firstLine = (text) =>
   String(text ?? "")
     .split(/\r?\n/)
@@ -443,6 +462,15 @@ export async function main(env, deps = {}) {
     throw new PublishError(`the downloaded APK is not signed with the expected production certificate ${formatFingerprint(cfg.expectedFingerprint)}`);
   }
   log("signing certificate matches PLAY_SIGNING_CERT_SHA256");
+
+  const markers = playProtectionMarkers(apkManifest(apkPath));
+  if (markers.length) {
+    throw new PublishError(
+      `Google Play applied automatic protection to ${cfg.versionCode} (${markers.join(", ")}), so the APK closes with "Get this app from Play" when installed from Firebase. ` +
+        "Turn off Play Console > Protected with Play > Automatic protection > Installer check, then upload a new versionCode and publish that one",
+    );
+  }
+  log("no Play automatic protection in the APK");
 
   const firebaseToken = await googleToken(cfg, FIREBASE_SCOPE);
   const outcome = await uploadRelease(cfg, firebaseToken, apkPath, log, { sleep: wait });
