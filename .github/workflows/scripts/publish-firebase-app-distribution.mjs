@@ -14,8 +14,8 @@
 //
 //   node .github/workflows/scripts/publish-firebase-app-distribution.mjs
 //
-// Env: GOOGLE_BETA_SA_JSON (service account key with Play "View app information" on the package
-//      and roles/firebaseappdistro.admin on the Firebase project), VERSION_CODE,
+// Env: PLAY_SERVICE_ACCOUNT_JSON (the Play upload service account's key, which can read generated
+//      APKs, plus roles/firebaseappdistro.admin on the Firebase project), VERSION_CODE,
 //      PLAY_SIGNING_CERT_SHA256 (expected certificate, with or without colons),
 //      FIREBASE_PROJECT_NUMBER, FIREBASE_ANDROID_APP_ID, FIREBASE_BETA_GROUP (default android-beta),
 //      PLAY_PACKAGE (default global.gua; .dev and .debug packages are refused),
@@ -66,25 +66,25 @@ export const formatFingerprint = (hex) => hex.match(/.{2}/g)?.join(":") ?? hex;
 
 /** Reads and validates the settings. Error messages name settings, never their values. */
 export function readConfig(env) {
-  const missing = ["GOOGLE_BETA_SA_JSON", "VERSION_CODE", "PLAY_SIGNING_CERT_SHA256", "FIREBASE_PROJECT_NUMBER", "FIREBASE_ANDROID_APP_ID"].filter(
+  const missing = ["PLAY_SERVICE_ACCOUNT_JSON", "VERSION_CODE", "PLAY_SIGNING_CERT_SHA256", "FIREBASE_PROJECT_NUMBER", "FIREBASE_ANDROID_APP_ID"].filter(
     (name) => !env[name]?.trim(),
   );
   if (missing.length) throw new PublishError(`missing ${missing.join(", ")}`);
 
   let key;
   try {
-    key = JSON.parse(env.GOOGLE_BETA_SA_JSON);
+    key = JSON.parse(env.PLAY_SERVICE_ACCOUNT_JSON);
   } catch {
     key = undefined;
   }
   if (typeof key?.client_email !== "string" || typeof key?.private_key !== "string") {
-    throw new PublishError("GOOGLE_BETA_SA_JSON is not a service account key");
+    throw new PublishError("PLAY_SERVICE_ACCOUNT_JSON is not a service account key");
   }
   const tokenUri = key.token_uri || GOOGLE_TOKEN_URI;
   try {
     new URL(tokenUri);
   } catch {
-    throw new PublishError("GOOGLE_BETA_SA_JSON has an invalid token_uri");
+    throw new PublishError("PLAY_SERVICE_ACCOUNT_JSON has an invalid token_uri");
   }
 
   const versionCode = env.VERSION_CODE.trim();
@@ -147,7 +147,7 @@ async function googleToken(cfg, scope) {
   try {
     signature = createSign("RSA-SHA256").update(input).sign(createPrivateKey(cfg.key.private_key));
   } catch {
-    throw new PublishError("the private_key in GOOGLE_BETA_SA_JSON could not be used for signing");
+    throw new PublishError("the private_key in PLAY_SERVICE_ACCOUNT_JSON could not be used for signing");
   }
   const res = await fetch(cfg.tokenUri, {
     method: "POST",

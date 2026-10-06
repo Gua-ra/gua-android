@@ -220,7 +220,7 @@ const withoutTargetingInfo = ({ targetingInfo, ...group }) => group;
 
 function envFor(fake, fixtures, overrides = {}) {
   return {
-    GOOGLE_BETA_SA_JSON: JSON.stringify({ ...SA, token_uri: `${fake.base}/token` }),
+    PLAY_SERVICE_ACCOUNT_JSON: JSON.stringify({ ...SA, token_uri: `${fake.base}/token` }),
     VERSION_CODE,
     PLAY_SIGNING_CERT_SHA256: fixtures.fingerprint,
     FIREBASE_PROJECT_NUMBER: PROJECT,
@@ -246,7 +246,7 @@ async function runMain(env, logs = []) {
 
 describe("readConfig", () => {
   const base = {
-    GOOGLE_BETA_SA_JSON: JSON.stringify(SA),
+    PLAY_SERVICE_ACCOUNT_JSON: JSON.stringify(SA),
     VERSION_CODE,
     PLAY_SIGNING_CERT_SHA256: OTHER_CERT,
     FIREBASE_PROJECT_NUMBER: PROJECT,
@@ -255,7 +255,7 @@ describe("readConfig", () => {
   it("names missing settings without values", () => {
     assert.throws(
       () => readConfig({ VERSION_CODE }),
-      /missing GOOGLE_BETA_SA_JSON, PLAY_SIGNING_CERT_SHA256, FIREBASE_PROJECT_NUMBER, FIREBASE_ANDROID_APP_ID/,
+      /missing PLAY_SERVICE_ACCOUNT_JSON, PLAY_SIGNING_CERT_SHA256, FIREBASE_PROJECT_NUMBER, FIREBASE_ANDROID_APP_ID/,
     );
   });
   it("refuses QA and debug packages", () => {

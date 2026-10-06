@@ -50,9 +50,8 @@ app is ever distributed to the beta group.
 | --- | --- |
 | `GUA_RELEASE_KEYSTORE_BASE64` | the upload keystore (`base64 -i gua-upload.jks`) |
 | `GUA_RELEASE_KEYSTORE_PASSWORD`, `GUA_RELEASE_KEY_ALIAS`, `GUA_RELEASE_KEY_PASSWORD` | its passwords and alias |
-| `PLAY_SERVICE_ACCOUNT_JSON` | Play Console service account that uploads bundles; app permissions "Release to testing tracks" and "Release to production" on `global.gua` and `global.gua.dev` |
+| `PLAY_SERVICE_ACCOUNT_JSON` | Play Console service account that uploads bundles; app permissions "Release to testing tracks" and "Release to production" on `global.gua` and `global.gua.dev`. The Firebase step uses the same key, so the account also needs the role `roles/firebaseappdistro.admin` on the Firebase project |
 | `GUA_DEV_LOCAL_PROPERTIES` | the `gua.*` dev-host lines of `local.properties`, baked into the QA app |
-| `GOOGLE_BETA_SA_JSON` | key of the beta-access service account, the same key `gua-support-inbox` uses for beta invites. Needs Play Console "View app information" on `global.gua` and the role `roles/firebaseappdistro.admin` on the Firebase project |
 
 and these repository variables:
 

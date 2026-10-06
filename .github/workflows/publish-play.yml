@@ -408,9 +408,8 @@ jobs:
   # nothing is rebuilt; its signing certificate is checked against PLAY_SIGNING_CERT_SHA256 before it
   # is uploaded. Uploading the same bytes twice answers RELEASE_UNMODIFIED, so re-running this job
   # alone (after a Play processing delay or an IAM fix) is safe. Requires:
-  #   secret GOOGLE_BETA_SA_JSON        - key of the beta-access service account, the same key
-  #                                       gua-support-inbox uses; Play Console "View app information"
-  #                                       on global.gua and roles/firebaseappdistro.admin on the
+  #   secret PLAY_SERVICE_ACCOUNT_JSON  - the upload service account above, which can read generated
+  #                                       APKs; it also needs roles/firebaseappdistro.admin on the
   #                                       Firebase project
   #   vars FIREBASE_PROJECT_NUMBER, FIREBASE_ANDROID_APP_ID (the global.gua app), FIREBASE_BETA_GROUP
   #        (group alias, default android-beta), PLAY_SIGNING_CERT_SHA256 (the Play app signing
@@ -437,7 +436,7 @@ jobs:
       - name: Publish to Firebase App Distribution
         id: firebase
         env:
-          GOOGLE_BETA_SA_JSON: ${{ secrets.GOOGLE_BETA_SA_JSON }}
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           PLAY_PACKAGE: global.gua
           VERSION_CODE: ${{ needs.publish-prod.outputs.version_code }}
           PLAY_SIGNING_CERT_SHA256: ${{ vars.PLAY_SIGNING_CERT_SHA256 }}
@@ -487,7 +486,7 @@ jobs:
       - name: Publish to Firebase App Distribution
         id: firebase
         env:
-          GOOGLE_BETA_SA_JSON: ${{ secrets.GOOGLE_BETA_SA_JSON }}
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           PLAY_PACKAGE: global.gua
           VERSION_CODE: ${{ needs.gate.outputs.firebase_version_code }}
           PLAY_SIGNING_CERT_SHA256: ${{ vars.PLAY_SIGNING_CERT_SHA256 }}
