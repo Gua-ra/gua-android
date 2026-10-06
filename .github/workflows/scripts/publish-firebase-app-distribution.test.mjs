@@ -16,7 +16,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash, generateKeyPairSync } from "node:crypto";
-import { copyFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
@@ -31,6 +31,7 @@ import {
   pickUniversalApk,
   PublishError,
   readConfig,
+  playProtectionMarkers,
 } from "./publish-firebase-app-distribution.mjs";
 
 const PROJECT = "511804071315";
@@ -126,9 +127,17 @@ function buildFixtures() {
     );
     assert.equal(run(android.aapt2, ["link", "-o", unsigned, "--manifest", manifest, "-I", android.androidJar]).status, 0);
   } else {
-    writeFileSync(join(dir, "payload.txt"), "fixture");
-    assert.equal(run("jar", ["cf", unsigned, "-C", dir, "payload.txt"]).status, 0);
+    writeFileSync(join(dir, "AndroidManifest.xml"), "fixture");
+    assert.equal(run("jar", ["cf", unsigned, "-C", dir, "AndroidManifest.xml"]).status, 0);
   }
+
+  // A Play-protected build: its manifest names the injected license check (UTF-16, like aapt2's string pool).
+  const protectedDir = join(dir, "protected");
+  mkdirSync(protectedDir);
+  writeFileSync(join(protectedDir, "AndroidManifest.xml"), Buffer.from("com.pairip.licensecheck.LicenseActivity", "utf16le"));
+  const protectedApk = join(dir, "protected.apk");
+  assert.equal(run("jar", ["cf", protectedApk, "-C", protectedDir, "AndroidManifest.xml"]).status, 0);
+  assert.equal(run("jarsigner", ["-keystore", keystore, "-storepass", "changeit", protectedApk, "t"]).status, 0);
 
   const v1 = join(dir, "v1.apk");
   copyFileSync(unsigned, v1);
@@ -143,7 +152,7 @@ function buildFixtures() {
       0,
     );
   }
-  return { dir, fingerprint, unsigned, v1, v2, apksigner: android?.apksigner ?? "" };
+  return { dir, fingerprint, unsigned, v1, v2, protectedApk, apksigner: android?.apksigner ?? "" };
 }
 
 /**
@@ -461,6 +470,19 @@ describe("publish flow", () => {
     }
   });
 
+  it("refuses a Play-protected APK before anything reaches Firebase", async (t) => {
+    if (!jdkTools(t, fixtures)) return;
+    const fake = await startFake({ apk: readFileSync(fixtures.protectedApk), list: [{ status: 200, json: { generatedApks: [universalGroup(fixtures.fingerprint)] } }], polls: [] });
+    try {
+      const { error } = await runMain(envFor(fake, fixtures));
+      assert.ok(error instanceof PublishError);
+      assert.match(error.message, /applied automatic protection to 202\d+ \(com\.pairip\.licensecheck\).*Installer check/);
+      assert.ok(!fake.calls.some((c) => c.path.startsWith("/fb")), "no Firebase call");
+    } finally {
+      await fake.close();
+    }
+  });
+
   it("fails when the downloaded APK is signed with another key", async (t) => {
     if (!jdkTools(t, fixtures)) return;
     const fake = await startFake({ apk: readFileSync(fixtures.v1), list: [{ status: 200, json: { generatedApks: [universalGroup(OTHER_CERT)] } }], polls: [] });
@@ -556,5 +578,13 @@ describe("publish flow", () => {
     } finally {
       await fake.close();
     }
+  });
+});
+
+describe("playProtectionMarkers", () => {
+  it("finds the license check in UTF-16 and UTF-8 string pools and nothing in a clean manifest", () => {
+    assert.deepEqual(playProtectionMarkers(Buffer.from("x com.pairip.licensecheck.LicenseActivity y", "utf16le")), ["com.pairip.licensecheck"]);
+    assert.deepEqual(playProtectionMarkers(Buffer.from("com.pairip.application.Application", "utf8")), ["com.pairip.application"]);
+    assert.deepEqual(playProtectionMarkers(Buffer.from("io.element.android.x.MainActivity com.android.vending.CHECK_LICENSE", "utf16le")), []);
   });
 });
