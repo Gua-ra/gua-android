@@ -32,7 +32,6 @@ dependencies {
     implementation(projects.libraries.preferences.api)
     implementation(platform(libs.network.okhttp.bom))
     implementation(libs.network.okhttp)
-    implementation(libs.network.okhttp.logging)
     implementation(platform(libs.network.retrofit.bom))
     implementation(libs.network.retrofit)
     implementation(libs.network.retrofit.converter.serialization)
