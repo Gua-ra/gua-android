@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (c) 2025 Element Creations Ltd.
+# Copyright 2026 Gua
 # SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
 #
 # GUA FORK constraint guard.
