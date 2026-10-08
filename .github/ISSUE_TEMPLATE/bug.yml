@@ -1,13 +1,13 @@
-name: Bug report for the Element X Android app
-description: Report any issues that you have found with the Element X app. Please [check open issues](https://github.com/element-hq/element-x-android/issues) first, in case it has already been reported.
-labels: [T-Defect]
+name: Bug report for Gua for Android
+description: Report a problem with the Gua Android app. Please [check open issues](https://github.com/Gua-ra/gua-android/issues) first, in case it has already been reported.
+labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
         Thanks for taking the time to fill out this bug report!
 
-        Please report security issues by email to security@matrix.org
+        Do not report security problems here. Follow [SECURITY.md](https://github.com/Gua-ra/gua-android/blob/develop/SECURITY.md) instead.
   - type: textarea
     id: reproduction-steps
     attributes:
@@ -16,7 +16,7 @@ body:
       placeholder: Tell us what you see!
       value: |
         1. Where are you starting? What can you see?
-        2. What do you click?
+        2. What do you tap?
         3. More steps…
     validations:
       required: true
@@ -35,52 +35,31 @@ body:
     id: device
     attributes:
       label: Your phone model
-      placeholder: e.g. Samsung S6
+      placeholder: e.g. Pixel 8
     validations:
       required: false
   - type: input
     id: os
     attributes:
-      label: Operating system version
-      placeholder: e.g. Android 10.0
+      label: Android version
+      placeholder: e.g. Android 15
     validations:
       required: false
   - type: input
     id: version
     attributes:
-      label: Application version and app store
-      description: You can find the version information at the bottom of the Settings screen.
-      placeholder: e.g. Element X version 0.3.0
+      label: Application version
+      description: Shown at the bottom of the Settings screen.
+      placeholder: e.g. 26.06.7
     validations:
       required: false
-  - type: input
-    id: homeserver
-    attributes:
-      label: Homeserver
-      description: |
-        Which server is your account registered on? If it is a local or non-public homeserver, please tell us what is the homeserver implementation (ex: Synapse/Dendrite/etc.) and the version.
-      placeholder: e.g. matrix.org or Synapse 1.50.0rc1
-    validations:
-      required: false
-  - type: dropdown
-    id: rageshake
-    attributes:
-      label: Will you send logs?
-      description:  |
-        Trigger the defect, then click on the menu from the room list then "Report a bug". Describe the issue, mentioning that you have also filed a bug (it's helpful if you can include a link to the bug). Send the report to submit anonymous logs to the developers.
-      options:
-        - 'Yes'
-        - 'No'
-    validations:
-      required: true
   - type: dropdown
     id: pr
     attributes:
       label: Are you willing to provide a PR?
-      description:  |
-        Providing a PR can drastically speed up the process of fixing this bug. Don't worry, it's still OK to answer 'No' :).
+      description: It is fine to answer 'No'.
       options:
         - 'Yes'
         - 'No'
     validations:
-      required: true
+      required: false
