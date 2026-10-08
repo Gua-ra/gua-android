@@ -33,9 +33,8 @@ import timber.log.Timber
  * via Retrofit, reusing the app-wide [RetrofitFactory] (OkHttp + kotlinx-serialization). Mirrors iOS
  * `IdentityServiceClient.lookupContacts`.
  *
- * PRIVACY: only hashed phone digests are sent (the caller is expected to protect raw E.164 numbers
- * via `PhoneHasher` first), the address book is never persisted, and nothing about the contacts is
- * logged. The lookup is authenticated with the caller's Matrix access token over TLS.
+ * PRIVACY: the address book is never persisted and nothing about the contacts is logged. The lookup
+ * is authenticated with the caller's Matrix access token over TLS.
  */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
@@ -44,8 +43,8 @@ class DefaultIdentityServiceClient(
     private val enrollmentRedirectProvider: EnrollmentRedirectProvider,
     private val deployment: GuaDeployment = GuaResolverConfig.current,
 ) : IdentityServiceClient {
-    override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> {
-        if (hashedPhones.isEmpty()) return Result.success(emptyList())
+    override suspend fun lookupContacts(accessToken: String, phones: List<String>): Result<List<ContactMatch>> {
+        if (phones.isEmpty()) return Result.success(emptyList())
 
         val baseUrl = deployment.identityServiceBaseUrl
             ?: return Result.failure(ResolverError.NotConfigured)
@@ -60,7 +59,7 @@ class DefaultIdentityServiceClient(
         val response = try {
             api.lookupContacts(
                 authorization = "Bearer $accessToken",
-                body = LookupRequest(hashedPhones = hashedPhones),
+                body = LookupRequest(phones = phones),
             )
         } catch (e: HttpException) {
             return Result.failure(ResolverError.Server(e.code()))
@@ -72,7 +71,7 @@ class DefaultIdentityServiceClient(
         return Result.success(
             response.matches.map { match ->
                 ContactMatch(
-                    hashedPhone = match.hashedPhone,
+                    phoneNumber = match.phone,
                     userId = match.userId,
                     // Homeserver abstraction: prefer the assigned global username, otherwise strip
                     // the ":homeserver" suffix from the Matrix id (mirrors iOS `DiscoveredContact.handle`

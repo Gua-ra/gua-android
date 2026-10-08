@@ -19,9 +19,8 @@ import retrofit2.http.POST
  * endpoint. Internal to the module; the public API only ever exposes
  * [io.element.android.libraries.guaresolver.ContactMatch].
  *
- * The request carries **hashed** phone digests only (see
- * [io.element.android.libraries.guaresolver.PhoneHasher]) and is authenticated with the caller's
- * Matrix access token, mirroring iOS' `lookupContacts(accessToken:phones:)`.
+ * The lookup is authenticated with the caller's access token, mirroring iOS'
+ * `lookupContacts(accessToken:phones:)`.
  */
 internal interface IdentityServiceApi {
     @POST("directory/lookup")
@@ -137,14 +136,14 @@ internal interface IdentityServiceApi {
 
 @Serializable
 internal data class LookupRequest(
-    /** Hashed phone digests — never raw numbers. */
-    val hashedPhones: List<String>,
+    /** E.164 numbers; the server skips any entry that is not E.164. */
+    val phones: List<String>,
 )
 
 @Serializable
 internal data class LookupMatch(
-    /** Echoes back the submitted hashed digest so the client can map the hit onto the address book. */
-    val hashedPhone: String,
+    /** The submitted number that matched, so the client can map the hit onto the address book. */
+    val phone: String,
     val userId: String,
     val username: String? = null,
     val displayName: String? = null,
