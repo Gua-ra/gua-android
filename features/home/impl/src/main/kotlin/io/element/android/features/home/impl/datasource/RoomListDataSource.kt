@@ -222,16 +222,18 @@ class RoomListDataSource(
         return roomListSummary
     }
 
-    // GUA FORK: a stray empty room (a half-created/never-used chat, or a no-content room the user was
-    // joined to) — no visible joined members (heroes), at most the local user + one peer, and no real
-    // message. Mirrors iOS RoomSummary.isEmptyOrphanRoom (heroes empty && lastMessage == nil &&
-    // activeMembersCount <= 2). NOTE: unlike iOS's `lastMessage`, Android's `latestEvent` also includes
-    // state events (e.g. "You joined the room" = RoomMembershipContent), so "no message" means the
-    // latest event is absent OR a state-like (membership/profile/state) event, never a message.
+    // GUA FORK: a stray empty room: no hero, at most the local user and one peer, and no message.
+    // Android's latestEvent also carries state events, so a membership or state change is not a message.
     private fun RoomSummary.isEmptyOrphanRoom(): Boolean =
         info.heroes.isEmpty() &&
             info.activeMembersCount <= 2 &&
-            !hasRealMessage()
+            !hasRealMessage() &&
+            !mayHoldUnreadableMessages()
+
+    // The SDK never offers an undecryptable event as the latest event, so after an identity reset or on
+    // a new device an encrypted conversation that someone else joined looks exactly like an empty one.
+    private fun RoomSummary.mayHoldUnreadableMessages(): Boolean =
+        info.isEncrypted != false && info.joinedMembersCount > 1
 
     /** A genuine conversation: the latest event is an actual message, not absent / a state change. */
     private fun RoomSummary.hasRealMessage(): Boolean = when (val ev = latestEvent) {

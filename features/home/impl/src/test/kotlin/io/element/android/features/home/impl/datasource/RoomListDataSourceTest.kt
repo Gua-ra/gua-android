@@ -13,14 +13,20 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.features.home.impl.FakeDateTimeObserver
 import io.element.android.libraries.androidutils.system.DateTimeObserver
 import io.element.android.libraries.dateformatter.test.FakeDateFormatter
+import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.matrix.api.roomlist.LatestEventValue
 import io.element.android.libraries.matrix.api.roomlist.RoomListService
+import io.element.android.libraries.matrix.api.roomlist.RoomSummary
+import io.element.android.libraries.matrix.api.timeline.item.event.MembershipChange
 import io.element.android.libraries.matrix.test.A_ROOM_ID
 import io.element.android.libraries.matrix.test.A_ROOM_ID_2
 import io.element.android.libraries.matrix.test.A_ROOM_ID_3
 import io.element.android.libraries.matrix.test.notificationsettings.FakeNotificationSettingsService
+import io.element.android.libraries.matrix.test.room.aRemoteLatestEvent
 import io.element.android.libraries.matrix.test.room.aRoomSummary
 import io.element.android.libraries.matrix.test.roomlist.FakeDynamicRoomList
 import io.element.android.libraries.matrix.test.roomlist.FakeRoomListService
+import io.element.android.libraries.matrix.test.timeline.item.event.aRoomMembershipContent
 import io.element.android.services.analytics.test.FakeAnalyticsService
 import io.element.android.tests.testutils.testCoroutineDispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -258,6 +264,59 @@ class RoomListDataSourceTest {
             assertThat(newRoomList[2].roomId).isEqualTo(A_ROOM_ID_2)
             assertThat(newRoomList[2].timestamp).isEqualTo(dateFormatterResult)
         }
+    }
+
+    @Test
+    fun `an encrypted room someone else joined stays listed when no message can be read`() = runTest {
+        val summaries = listOf(
+            aRoomSummary(roomId = A_ROOM_ID, isEncrypted = true, activeMembersCount = 2, joinedMembersCount = 2, latestEvent = LatestEventValue.None),
+            aRoomSummary(
+                roomId = A_ROOM_ID_2,
+                isEncrypted = true,
+                activeMembersCount = 2,
+                joinedMembersCount = 2,
+                latestEvent = aRemoteLatestEvent(content = aRoomMembershipContent(change = MembershipChange.JOINED), isOwn = true),
+            ),
+            aRoomSummary(roomId = A_ROOM_ID_3, activeMembersCount = 2, joinedMembersCount = 2, latestEvent = LatestEventValue.None).let {
+                it.copy(info = it.info.copy(isEncrypted = null))
+            },
+        )
+
+        assertThat(listedRoomIds(summaries)).containsExactly(A_ROOM_ID, A_ROOM_ID_2, A_ROOM_ID_3).inOrder()
+    }
+
+    @Test
+    fun `a room with no message is hidden when nobody else joined or it is not encrypted`() = runTest {
+        val summaries = listOf(
+            aRoomSummary(
+                roomId = A_ROOM_ID,
+                isEncrypted = true,
+                activeMembersCount = 2,
+                joinedMembersCount = 1,
+                invitedMembersCount = 1,
+                latestEvent = LatestEventValue.None,
+            ),
+            aRoomSummary(roomId = A_ROOM_ID_2, isEncrypted = false, activeMembersCount = 2, joinedMembersCount = 2, latestEvent = LatestEventValue.None),
+            aRoomSummary(roomId = A_ROOM_ID_3, isEncrypted = true, activeMembersCount = 2, joinedMembersCount = 2),
+        )
+
+        assertThat(listedRoomIds(summaries)).containsExactly(A_ROOM_ID_3)
+    }
+
+    private suspend fun TestScope.listedRoomIds(summaries: List<RoomSummary>): List<RoomId> {
+        val roomList = FakeDynamicRoomList(summaries = MutableStateFlow(summaries))
+        val roomListService = FakeRoomListService(
+            createRoomListLambda = { roomList }
+        ).apply {
+            postState(RoomListService.State.Running)
+        }
+        val roomListDataSource = createRoomListDataSource(roomListService = roomListService)
+        var roomIds = emptyList<RoomId>()
+        roomListDataSource.roomSummariesFlow.test {
+            roomListDataSource.launchIn(backgroundScope)
+            roomIds = awaitItem().map { it.roomId }
+        }
+        return roomIds
     }
 
     private fun TestScope.createRoomListDataSource(
