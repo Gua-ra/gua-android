@@ -99,4 +99,5 @@
     <string name="gua_notification_sound_default">Predeterminado de Gua</string>
     <string name="gua_notification_sound_soft">Gua suave</string>
     <string name="gua_notification_settings_enable_failed">No se pudieron activar las notificaciones en este dispositivo. Inténtalo de nuevo.</string>
+    <string name="gua_notification_settings_no_push_service">Este dispositivo no tiene un servicio de notificaciones push, así que Gua no puede enviarle notificaciones.</string>
 </resources>

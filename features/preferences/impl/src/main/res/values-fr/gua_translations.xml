@@ -99,4 +99,5 @@
     <string name="gua_notification_sound_default">Gua par défaut</string>
     <string name="gua_notification_sound_soft">Gua doux</string>
     <string name="gua_notification_settings_enable_failed">Impossible d\'activer les notifications sur cet appareil. Réessayez.</string>
+    <string name="gua_notification_settings_no_push_service">Cet appareil ne dispose d\'aucun service de notifications push, Gua ne peut donc pas lui envoyer de notifications.</string>
 </resources>

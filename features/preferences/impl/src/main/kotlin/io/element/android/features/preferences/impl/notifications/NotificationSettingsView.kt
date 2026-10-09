@@ -106,10 +106,10 @@ fun NotificationSettingsView(
         AsyncActionView(
             async = state.changeNotificationSettingAction,
             errorMessage = {
-                if (it is EnableNotificationsFailure) {
-                    stringResource(R.string.gua_notification_settings_enable_failed)
-                } else {
-                    stringResource(R.string.screen_notification_settings_edit_failed_updating_default_mode)
+                when {
+                    it !is EnableNotificationsFailure -> stringResource(R.string.screen_notification_settings_edit_failed_updating_default_mode)
+                    it.hasNoPushService -> stringResource(R.string.gua_notification_settings_no_push_service)
+                    else -> stringResource(R.string.gua_notification_settings_enable_failed)
                 }
             },
             onErrorDismiss = { state.eventSink(NotificationSettingsEvents.ClearNotificationChangeError) },

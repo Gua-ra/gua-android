@@ -119,4 +119,5 @@
     <string name="screen_notification_settings_sound_silent">Silencioso</string>
     <string name="screen_notification_settings_sound_system_default">Padrão do sistema</string>
     <string name="gua_notification_settings_enable_failed">Não foi possível ativar as notificações neste dispositivo. Tente novamente.</string>
+    <string name="gua_notification_settings_no_push_service">Este dispositivo não tem um serviço de notificações push, então o Gua não consegue enviar notificações para ele.</string>
 </resources>

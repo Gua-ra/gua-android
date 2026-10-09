@@ -24,6 +24,7 @@ import io.element.android.libraries.preferences.api.store.AppPreferencesStore
 import io.element.android.libraries.preferences.api.store.NotificationSound
 import io.element.android.libraries.preferences.test.InMemoryAppPreferencesStore
 import io.element.android.libraries.push.api.PushService
+import io.element.android.libraries.push.api.PusherRegistrationFailure
 import io.element.android.libraries.push.api.notifications.NotificationSoundUpdater
 import io.element.android.libraries.push.api.notifications.sound.NotificationSoundCopier
 import io.element.android.libraries.push.test.FakePushService
@@ -209,11 +210,50 @@ class NotificationSettingsPresenterTest {
             val failure = errorState.changeNotificationSettingAction.errorOrNull()
             assertThat(failure).isInstanceOf(EnableNotificationsFailure::class.java)
             assertThat(failure?.cause).isEqualTo(AN_EXCEPTION)
+            assertThat((failure as EnableNotificationsFailure).hasNoPushService).isFalse()
             errorState.eventSink(NotificationSettingsEvents.ClearNotificationChangeError)
             consumeItemsUntilPredicate {
                 it.changeNotificationSettingAction.isUninitialized()
             }
             cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - set notifications enabled - no push service is surfaced and the switch stays on`() = runTest {
+        listOf(
+            PusherRegistrationFailure.NoProvidersAvailable(),
+            PusherRegistrationFailure.NoDistributorsAvailable(),
+        ).forEach { cause ->
+            val presenter = createNotificationSettingsPresenter(
+                pushService = FakePushService(
+                    currentPushProvider = {
+                        FakePushProvider(
+                            unregisterWithResult = { Result.success(Unit) },
+                        )
+                    },
+                    ensurePusherIsRegisteredResult = { Result.failure(cause) },
+                )
+            )
+            presenter.test {
+                val loadedState = consumeItemsUntilPredicate {
+                    it.matrixSettings is NotificationSettingsState.MatrixSettings.Valid
+                }.last()
+                loadedState.eventSink(NotificationSettingsEvents.SetNotificationsEnabled(false))
+                consumeItemsUntilPredicate {
+                    !it.appSettings.appNotificationsEnabled
+                }
+                loadedState.eventSink(NotificationSettingsEvents.SetNotificationsEnabled(true))
+                val errorState = consumeItemsUntilPredicate {
+                    it.changeNotificationSettingAction.isFailure()
+                }.last()
+                assertThat(errorState.appSettings.appNotificationsEnabled).isTrue()
+                val failure = errorState.changeNotificationSettingAction.errorOrNull()
+                assertThat(failure).isInstanceOf(EnableNotificationsFailure::class.java)
+                assertThat(failure?.cause).isSameInstanceAs(cause)
+                assertThat((failure as EnableNotificationsFailure).hasNoPushService).isTrue()
+                cancelAndIgnoreRemainingEvents()
+            }
         }
     }
 

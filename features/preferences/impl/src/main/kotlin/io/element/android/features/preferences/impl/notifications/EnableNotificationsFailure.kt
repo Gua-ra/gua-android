@@ -7,5 +7,10 @@
 
 package io.element.android.features.preferences.impl.notifications
 
+import io.element.android.libraries.push.api.PusherRegistrationFailure
+
 /** Lets the view tell a failed pusher registration apart from the other settings sharing its action state. */
-class EnableNotificationsFailure(cause: Throwable) : Exception(cause)
+class EnableNotificationsFailure(cause: Throwable) : Exception(cause) {
+    val hasNoPushService: Boolean = cause is PusherRegistrationFailure.NoProvidersAvailable ||
+        cause is PusherRegistrationFailure.NoDistributorsAvailable
+}
