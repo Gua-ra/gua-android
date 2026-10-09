@@ -14,6 +14,7 @@
     <string name="screen_phone_entry_title">¿Cuál es tu número?</string>
     <string name="screen_phone_entry_message">Ingresa tu número de teléfono</string>
     <string name="screen_phone_entry_footer">Te enviaremos un código de verificación por SMS a este número.</string>
+    <string name="screen_phone_entry_invalid_number_hint">Este número no es válido para el país seleccionado. Revisa el número o el código de país.</string>
     <string name="screen_phone_entry_phone_number_label">Número de teléfono</string>
     <string name="screen_phone_entry_country_picker_a11y">Seleccionar país</string>
     <!-- Sign in with a passkey. "llave de acceso" is the term Google and Apple use in Spanish. -->
