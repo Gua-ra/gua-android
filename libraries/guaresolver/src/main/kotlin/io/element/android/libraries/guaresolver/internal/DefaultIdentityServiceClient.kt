@@ -323,6 +323,12 @@ class DefaultIdentityServiceClient(
             tryOrNull { errorBodyJson.decodeFromString<IdentityServiceErrorBody>(it) }
         }
         val code = errorBody?.code
+        val loggableCode = when {
+            code == null -> "none"
+            code.matches(ERROR_CODE_SHAPE) -> code
+            else -> "<unrecognized>"
+        }
+        Timber.w("Identity-service call refused with HTTP ${code()}, code $loggableCode")
         val retryAfter = response()?.headers()?.get("Retry-After")?.toIntOrNull()
         // The cooldown retry window is carried in the JSON body, falling back to the Retry-After header.
         val cooldownRetryAfter = errorBody?.retryAfterSeconds ?: retryAfter?.toLong()
@@ -370,6 +376,9 @@ class DefaultIdentityServiceClient(
 
     private companion object {
         private val errorBodyJson = Json { ignoreUnknownKeys = true }
+
+        /** Error codes are a fixed snake_case vocabulary. A code of any other shape is not logged, as it may carry user data. */
+        private val ERROR_CODE_SHAPE = Regex("[a-z0-9_]{1,64}")
 
         /** Re-serialises the authenticator's assertion response without reinterpreting it. */
         private val credentialJson = Json { ignoreUnknownKeys = true }
