@@ -56,7 +56,9 @@ class DefaultContactDiscoveryService(
             result.getOrElse { return ContactDiscoveryResult.Failure }
         }
 
+        val ownUserId = matrixClient.sessionId.value
         val contacts = matches
+            .filterNot { it.userId.equals(ownUserId, ignoreCase = true) }
             .map { match ->
                 DiscoveredContact(
                     localName = nameByNumber[match.phoneNumber]

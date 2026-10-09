@@ -11,6 +11,7 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.guaresolver.ContactMatch
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.matrix.api.core.UserId
+import io.element.android.libraries.matrix.test.A_SESSION_ID
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.sessionstorage.api.SessionData
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
@@ -65,6 +66,28 @@ class DefaultContactDiscoveryServiceTest {
             DiscoveredContact(localName = "Aunt Zoe", userId = UserId("@zoe:gua.global"), handle = "@zoe", avatarUrl = null),
             DiscoveredContact(localName = "Bob", userId = UserId("@bob:gua.global"), handle = "@bob", avatarUrl = null),
         ).inOrder()
+    }
+
+    @Test
+    fun `the signed-in user is not listed`() = runTest {
+        val identityServiceClient = FakeIdentityServiceClient(
+            lookupContactsResult = {
+                Result.success(
+                    listOf(
+                        aContactMatch(phoneNumber = "+15555550100", userId = A_SESSION_ID.value.uppercase(), displayHandle = "@alice"),
+                        aContactMatch(phoneNumber = "+15555550101", userId = "@bob:gua.global", displayHandle = "@bob"),
+                    )
+                )
+            },
+        )
+        val service = createService(
+            contacts = mapOf("+15555550100" to "Me", "+15555550101" to "Bob"),
+            identityServiceClient = identityServiceClient,
+        )
+
+        val result = service.discover() as ContactDiscoveryResult.Success
+
+        assertThat(result.contacts.map { it.userId }).containsExactly(UserId("@bob:gua.global"))
     }
 
     @Test
