@@ -168,6 +168,7 @@ class NotificationSettingsPresenterTest {
                 !it.appSettings.appNotificationsEnabled
             }.last()
             assertThat(updatedState.appSettings.appNotificationsEnabled).isFalse()
+            assertThat(updatedState.changeNotificationSettingAction.isUninitialized()).isTrue()
             unregisterWithResult.assertions().isCalledOnce()
             // Enable notification again
             loadedState.eventSink(NotificationSettingsEvents.SetNotificationsEnabled(true))
@@ -175,7 +176,44 @@ class NotificationSettingsPresenterTest {
                 it.appSettings.appNotificationsEnabled
             }.last()
             assertThat(updatedState2.appSettings.appNotificationsEnabled).isTrue()
+            assertThat(updatedState2.changeNotificationSettingAction.isUninitialized()).isTrue()
             ensurePusherIsRegisteredResult.assertions().isCalledOnce()
+        }
+    }
+
+    @Test
+    fun `present - set notifications enabled - registration failure is surfaced`() = runTest {
+        val presenter = createNotificationSettingsPresenter(
+            pushService = FakePushService(
+                currentPushProvider = {
+                    FakePushProvider(
+                        unregisterWithResult = { Result.success(Unit) },
+                    )
+                },
+                ensurePusherIsRegisteredResult = { Result.failure(AN_EXCEPTION) },
+            )
+        )
+        presenter.test {
+            val loadedState = consumeItemsUntilPredicate {
+                it.matrixSettings is NotificationSettingsState.MatrixSettings.Valid
+            }.last()
+            loadedState.eventSink(NotificationSettingsEvents.SetNotificationsEnabled(false))
+            consumeItemsUntilPredicate {
+                !it.appSettings.appNotificationsEnabled
+            }
+            loadedState.eventSink(NotificationSettingsEvents.SetNotificationsEnabled(true))
+            val errorState = consumeItemsUntilPredicate {
+                it.changeNotificationSettingAction.isFailure()
+            }.last()
+            assertThat(errorState.appSettings.appNotificationsEnabled).isTrue()
+            val failure = errorState.changeNotificationSettingAction.errorOrNull()
+            assertThat(failure).isInstanceOf(EnableNotificationsFailure::class.java)
+            assertThat(failure?.cause).isEqualTo(AN_EXCEPTION)
+            errorState.eventSink(NotificationSettingsEvents.ClearNotificationChangeError)
+            consumeItemsUntilPredicate {
+                it.changeNotificationSettingAction.isUninitialized()
+            }
+            cancelAndIgnoreRemainingEvents()
         }
     }
 

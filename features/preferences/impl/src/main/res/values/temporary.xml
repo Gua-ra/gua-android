@@ -95,4 +95,5 @@
     <!-- GUA FORK: names of the two bundled message sounds. -->
     <string name="gua_notification_sound_default">Gua Default</string>
     <string name="gua_notification_sound_soft">Gua Soft</string>
+    <string name="gua_notification_settings_enable_failed">Couldn\'t turn on notifications on this device. Please try again.</string>
 </resources>

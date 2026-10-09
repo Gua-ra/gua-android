@@ -204,6 +204,26 @@ class NotificationSettingsViewTest : RobolectricTest() {
 
     @Config(qualifiers = "h1024dp")
     @Test
+    fun `a failed enable shows the registration error and OK clears it`() = runAndroidComposeUiTest {
+        val eventsRecorder = EventsRecorder<NotificationSettingsEvents>()
+        setNotificationSettingsView(
+            state = aValidNotificationSettingsState(
+                changeNotificationSettingAction = AsyncAction.Failure(EnableNotificationsFailure(AN_EXCEPTION)),
+                eventSink = eventsRecorder
+            ),
+        )
+        onNodeWithText(activity!!.getString(R.string.gua_notification_settings_enable_failed)).assertIsDisplayed()
+        clickOn(CommonStrings.action_ok)
+        eventsRecorder.assertList(
+            listOf(
+                NotificationSettingsEvents.RefreshSystemNotificationsEnabled,
+                NotificationSettingsEvents.ClearNotificationChangeError
+            )
+        )
+    }
+
+    @Config(qualifiers = "h1024dp")
+    @Test
     fun `with invalid configuration, clicking on continue emits the expected events`() = runAndroidComposeUiTest {
         val eventsRecorder = EventsRecorder<NotificationSettingsEvents>()
         setNotificationSettingsView(
