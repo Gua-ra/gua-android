@@ -24,6 +24,8 @@ import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureNeverCalled
 import io.element.android.tests.testutils.EnsureNeverCalledWithParam
 import io.element.android.tests.testutils.EventsRecorder
+import io.element.android.tests.testutils.assertNoNodeWithText
+import io.element.android.tests.testutils.assertNodeWithTextIsDisplayed
 import io.element.android.tests.testutils.clickOn
 import io.element.android.tests.testutils.ensureCalledOnce
 import io.element.android.tests.testutils.ensureCalledOnceWithParam
@@ -193,6 +195,8 @@ class NotificationSettingsViewTest : RobolectricTest() {
                 eventSink = eventsRecorder
             ),
         )
+        assertNodeWithTextIsDisplayed(R.string.screen_notification_settings_edit_failed_updating_default_mode)
+        assertNoNodeWithText(R.string.gua_notification_settings_enable_failed)
         clickOn(CommonStrings.action_ok)
         eventsRecorder.assertList(
             listOf(
@@ -212,7 +216,8 @@ class NotificationSettingsViewTest : RobolectricTest() {
                 eventSink = eventsRecorder
             ),
         )
-        onNodeWithText(activity!!.getString(R.string.gua_notification_settings_enable_failed)).assertIsDisplayed()
+        assertNodeWithTextIsDisplayed(R.string.gua_notification_settings_enable_failed)
+        assertNoNodeWithText(R.string.screen_notification_settings_edit_failed_updating_default_mode)
         clickOn(CommonStrings.action_ok)
         eventsRecorder.assertList(
             listOf(

@@ -159,6 +159,24 @@ class LoggedInPresenterTest {
     }
 
     @Test
+    fun `present - verifying the session later does not register the pusher again`() = runTest {
+        val lambda = lambdaRecorder<Result<Unit>> { Result.success(Unit) }
+        val verificationService = FakeSessionVerificationService(
+            initialSessionVerifiedStatus = SessionVerifiedStatus.NotVerified
+        )
+        createLoggedInPresenter(
+            pushService = createFakePushService(ensurePusherIsRegisteredResult = lambda),
+            sessionVerificationService = verificationService,
+        ).test {
+            assertThat(awaitFirstItem().pusherRegistrationState.isSuccess()).isTrue()
+            verificationService.emitVerifiedStatus(SessionVerifiedStatus.Verified)
+            advanceUntilIdle()
+            lambda.assertions().isCalledOnce()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `present - ensure default pusher is registered with default provider`() = runTest {
         val lambda = lambdaRecorder<Result<Unit>> { Result.success(Unit) }
         val sessionVerificationService = FakeSessionVerificationService(
