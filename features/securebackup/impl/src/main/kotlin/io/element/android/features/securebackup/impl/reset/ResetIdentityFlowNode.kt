@@ -54,7 +54,6 @@ import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.auth.OAuthRedirectUrlProvider
 import io.element.android.libraries.matrix.api.encryption.IdentityOAuthResetHandle
 import io.element.android.libraries.matrix.api.encryption.IdentityPasswordResetHandle
-import io.element.android.libraries.matrix.api.encryption.RecoveryState
 import io.element.android.libraries.matrix.api.verification.VerificationRequest
 import io.element.android.libraries.oauth.api.OAuthAction
 import io.element.android.libraries.oauth.api.OAuthActionFlow
@@ -133,6 +132,11 @@ class ResetIdentityFlowNode(
     /** Set once MAS is on screen, taken by the attempt that runs when the approval comes back. */
     private var pendingResetHandle: IdentityOAuthResetHandle? = null
 
+    private val recoveryFromOtherDevice = RecoveryFromOtherDevice(
+        encryptionService = matrixClient.encryptionService,
+        sessionVerificationService = matrixClient.sessionVerificationService,
+    )
+
     override fun onBuilt() {
         super.onBuilt()
 
@@ -182,6 +186,7 @@ class ResetIdentityFlowNode(
                             snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_reset_still_finishing))
                             return
                         }
+                        recoveryFromOtherDevice.recordStateBeforeVerification()
                         pendingResetHandle = null
                         cancelResetJob()
                         sessionCoroutineScope.launch {
@@ -195,8 +200,8 @@ class ResetIdentityFlowNode(
             }
             is NavTarget.RecoverFromOtherDevice -> {
                 // GUA FORK: once the two devices agree on the emojis, the SDK asks the other
-                // device for the keys and it hands them over; nothing is reset and no recovery
-                // key is involved. The verdict is the recovery state, checked when the flow ends.
+                // device for the keys this one is missing; nothing is reset and no recovery key
+                // is involved. The verdict is taken when the flow ends.
                 outgoingVerificationEntryPoint.createNode(
                     parentNode = this,
                     buildContext = buildContext,
@@ -400,26 +405,25 @@ class ResetIdentityFlowNode(
         snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_reset_failed))
     }
 
-    /**
-     * GUA FORK: judges a recovery from another device by the recovery state.
-     *
-     * Enabled means the keys (and the backup key with them) arrived; anything else within the
-     * bound is an honest "not yet", and the reset screen stays with both options.
-     */
+    /** GUA FORK: unless the outcome is a recovery, the reset screen stays with both options. */
     private fun finishRecoveryFromOtherDevice() {
         sessionCoroutineScope.launch {
             finishing.value = true
-            val recovered = withTimeoutOrNull(RECOVERY_FROM_OTHER_DEVICE_CEILING) {
-                matrixClient.encryptionService.recoveryStateStateFlow.first { it == RecoveryState.ENABLED }
-                true
-            } ?: false
+            val outcome = recoveryFromOtherDevice.awaitOutcome(RECOVERY_FROM_OTHER_DEVICE_CEILING)
             finishing.value = false
-            if (recovered) {
-                Timber.d("Keys arrived from the other device")
-                finishOnce()
-            } else {
-                Timber.w("Keys did not arrive from the other device within $RECOVERY_FROM_OTHER_DEVICE_CEILING")
-                snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_recover_from_other_device_failed))
+            when (outcome) {
+                RecoveryFromOtherDeviceOutcome.RECOVERED -> {
+                    Timber.d("Keys arrived from the other device")
+                    finishOnce()
+                }
+                RecoveryFromOtherDeviceOutcome.BACKUP_NOT_RESTORED -> {
+                    Timber.w("The identity arrived from the other device, but this device kept the key of a deleted backup")
+                    snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_recover_from_other_device_backup_failed))
+                }
+                RecoveryFromOtherDeviceOutcome.KEYS_DID_NOT_ARRIVE -> {
+                    Timber.w("Keys did not arrive from the other device within $RECOVERY_FROM_OTHER_DEVICE_CEILING")
+                    snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_recover_from_other_device_failed))
+                }
             }
         }
     }
