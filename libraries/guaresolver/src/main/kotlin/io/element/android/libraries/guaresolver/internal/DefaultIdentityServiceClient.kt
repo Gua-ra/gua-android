@@ -33,9 +33,8 @@ import timber.log.Timber
  * via Retrofit, reusing the app-wide [RetrofitFactory] (OkHttp + kotlinx-serialization). Mirrors iOS
  * `IdentityServiceClient.lookupContacts`.
  *
- * PRIVACY: only hashed phone digests are sent (the caller is expected to protect raw E.164 numbers
- * via `PhoneHasher` first), the address book is never persisted, and nothing about the contacts is
- * logged. The lookup is authenticated with the caller's Matrix access token over TLS.
+ * The contact lookup carries the user's contact numbers and the accounts they match, so it bypasses HTTP
+ * logging and its failures log only the exception type.
  */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
@@ -44,14 +43,14 @@ class DefaultIdentityServiceClient(
     private val enrollmentRedirectProvider: EnrollmentRedirectProvider,
     private val deployment: GuaDeployment = GuaResolverConfig.current,
 ) : IdentityServiceClient {
-    override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> {
-        if (hashedPhones.isEmpty()) return Result.success(emptyList())
+    override suspend fun lookupContacts(accessToken: String, phones: List<String>): Result<List<ContactMatch>> {
+        if (phones.isEmpty()) return Result.success(emptyList())
 
         val baseUrl = deployment.identityServiceBaseUrl
             ?: return Result.failure(ResolverError.NotConfigured)
 
         val api = try {
-            createApi(baseUrl)
+            createApi(baseUrl, logTraffic = false)
         } catch (e: Exception) {
             Timber.e(e, "Failed to create identity-service Retrofit instance")
             return Result.failure(ResolverError.Transport(e))
@@ -60,19 +59,20 @@ class DefaultIdentityServiceClient(
         val response = try {
             api.lookupContacts(
                 authorization = "Bearer $accessToken",
-                body = LookupRequest(hashedPhones = hashedPhones),
+                body = LookupRequest(phones = phones),
             )
         } catch (e: HttpException) {
             return Result.failure(ResolverError.Server(e.code()))
         } catch (e: Exception) {
-            Timber.e(e, "Contact lookup failed")
+            // A decoding error message quotes the response, which holds contact numbers.
+            Timber.e("Contact lookup failed with ${e.javaClass.name}")
             return Result.failure(ResolverError.Transport(e))
         }
 
         return Result.success(
             response.matches.map { match ->
                 ContactMatch(
-                    hashedPhone = match.hashedPhone,
+                    phoneNumber = match.phone,
                     userId = match.userId,
                     // Homeserver abstraction: prefer the assigned global username, otherwise strip
                     // the ":homeserver" suffix from the Matrix id (mirrors iOS `DiscoveredContact.handle`
@@ -271,8 +271,9 @@ class DefaultIdentityServiceClient(
      * An [IdentityServiceApi] whose requests carry the app's UI language as `Accept-Language`, unless
      * the call sets its own. The identity-service picks the SMS language from it.
      */
-    private fun createApi(baseUrl: String): IdentityServiceApi {
-        val retrofit = retrofitFactory.create(baseUrl.ensureProtocol())
+    private fun createApi(baseUrl: String, logTraffic: Boolean = true): IdentityServiceApi {
+        val url = baseUrl.ensureProtocol()
+        val retrofit = if (logTraffic) retrofitFactory.create(url) else retrofitFactory.createUnlogged(url)
         val callFactory = retrofit.callFactory()
         return retrofit.newBuilder()
             .callFactory { request ->

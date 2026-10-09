@@ -5,31 +5,33 @@
  * Please see LICENSE files in the repository root for full details.
  */
 
-package io.element.android.features.home.impl.accountrecovery
+package io.element.android.features.findfriends.impl
 
 import io.element.android.libraries.guaresolver.AccountFactorStatus
 import io.element.android.libraries.guaresolver.AccountGenesisRegistration
-import io.element.android.libraries.guaresolver.AuthFactor
 import io.element.android.libraries.guaresolver.ContactMatch
 import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.PhoneChangeChallenge
 import io.element.android.tests.testutils.lambda.lambdaError
 
 /**
- * GUA FORK: an [IdentityServiceClient] for the account recovery banner. Only the status read and the
- * cancel are expected; anything else fails the test.
+ * An [IdentityServiceClient] for contact discovery. Only the lookup is expected; anything else fails the test.
  */
 class FakeIdentityServiceClient(
-    private val accountFactorStatusResult: suspend (String, String) -> Result<AccountFactorStatus> = { _, _ -> lambdaError() },
-    private val cancelAccountRecoveryResult: suspend (String) -> Result<Unit> = { lambdaError() },
+    private val lookupContactsResult: (List<String>) -> Result<List<ContactMatch>> = { Result.success(emptyList()) },
 ) : IdentityServiceClient {
-    override suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus> =
-        accountFactorStatusResult(accessToken, userId)
+    data class LookupCall(val accessToken: String, val phones: List<String>)
 
-    override suspend fun cancelAccountRecovery(accessToken: String): Result<Unit> =
-        cancelAccountRecoveryResult(accessToken)
+    val lookupCalls = mutableListOf<LookupCall>()
 
-    override suspend fun lookupContacts(accessToken: String, phones: List<String>): Result<List<ContactMatch>> = lambdaError()
+    override suspend fun lookupContacts(accessToken: String, phones: List<String>): Result<List<ContactMatch>> {
+        lookupCalls += LookupCall(accessToken, phones)
+        return lookupContactsResult(phones)
+    }
+
+    override suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus> = lambdaError()
+
+    override suspend fun cancelAccountRecovery(accessToken: String): Result<Unit> = lambdaError()
 
     override suspend fun startPinEnrollment(accessToken: String): Result<String> = lambdaError()
 
@@ -59,20 +61,3 @@ class FakeIdentityServiceClient(
     override suspend fun registerAccountGenesis(genesisB64Url: String, proofB64Url: String): Result<AccountGenesisRegistration> =
         lambdaError()
 }
-
-/** An account holding a PIN, with or without a live delayed recovery. */
-fun aRecoveryStatus(
-    pending: Boolean,
-    completableAtEpochSeconds: Long? = if (pending) A_COMPLETABLE_AT_EPOCH_SECONDS else null,
-) = AccountFactorStatus(
-    hasPin = true,
-    passkeyRegistered = false,
-    preferredFactor = AuthFactor.PIN,
-    phoneChangeStepUpFactors = listOf(AuthFactor.PASSKEY, AuthFactor.PIN),
-    changePhoneCooldownRemainingSeconds = 0,
-    accountRecoveryPending = pending,
-    accountRecoveryCompletableAtEpochSeconds = completableAtEpochSeconds,
-    accountRecoveryExpiresAtEpochSeconds = completableAtEpochSeconds?.plus(7 * 24 * 3600L),
-)
-
-const val A_COMPLETABLE_AT_EPOCH_SECONDS = 1_790_000_000L

@@ -31,8 +31,8 @@ class DefaultIdentityServiceClientTest {
                 """
                 {
                   "matches": [
-                    { "hashedPhone": "aaa", "userId": "@alice:gua.global", "username": "alice", "displayName": "Alice", "avatarUrl": "mxc://x/y" },
-                    { "hashedPhone": "bbb", "userId": "@bob:matrix.gua.global" }
+                    { "phone": "+15555550101", "userId": "@alice:gua.global", "username": "alice", "displayName": "Alice", "avatarUrl": "mxc://x/y" },
+                    { "phone": "+5511999998888", "userId": "@bob:matrix.gua.global" }
                   ]
                 }
                 """.trimIndent()
@@ -40,9 +40,11 @@ class DefaultIdentityServiceClientTest {
         )
         val client = createClient(server)
 
-        val matches = client.lookupContacts("token", listOf("aaa", "bbb")).getOrThrow()
+        val matches = client.lookupContacts("token", listOf("+15555550101", "+5511999998888")).getOrThrow()
 
         assertThat(matches).hasSize(2)
+        assertThat(matches[0].phoneNumber).isEqualTo("+15555550101")
+        assertThat(matches[1].phoneNumber).isEqualTo("+5511999998888")
         assertThat(matches[0].displayHandle).isEqualTo("@alice")
         assertThat(matches[0].displayName).isEqualTo("Alice")
         assertThat(matches[0].avatarUrl).isEqualTo("mxc://x/y")
@@ -52,21 +54,18 @@ class DefaultIdentityServiceClientTest {
     }
 
     @Test
-    fun `request carries hashed phones and a bearer token but no raw numbers`() = runTest {
+    fun `request posts the E164 numbers as phones with a bearer token`() = runTest {
         val server = MockWebServer()
         server.enqueue(MockResponse().setBody("""{ "matches": [] }"""))
         val client = createClient(server)
 
-        client.lookupContacts("secret-token", listOf("hash1", "hash2")).getOrThrow()
+        client.lookupContacts("secret-token", listOf("+15555550101", "+5511999998888")).getOrThrow()
 
         val request = server.takeRequest()
+        assertThat(request.method).isEqualTo("POST")
         assertThat(request.path).isEqualTo("/directory/lookup")
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer secret-token")
-        val body = request.body.readUtf8()
-        assertThat(body).contains("hash1")
-        assertThat(body).contains("hash2")
-        // Privacy: only the hashed key is sent.
-        assertThat(body).doesNotContain("+")
+        assertThat(request.body.readUtf8()).isEqualTo("""{"phones":["+15555550101","+5511999998888"]}""")
         server.shutdown()
     }
 
@@ -89,7 +88,7 @@ class DefaultIdentityServiceClientTest {
         server.enqueue(MockResponse().setResponseCode(503))
         val client = createClient(server)
 
-        val result = client.lookupContacts("token", listOf("aaa"))
+        val result = client.lookupContacts("token", listOf("+15555550101"))
 
         val error = result.exceptionOrNull()
         assertThat(error).isInstanceOf(ResolverError.Server::class.java)
@@ -105,7 +104,7 @@ class DefaultIdentityServiceClientTest {
             deployment = FakeGuaDeployment(identityServiceBaseUrl = null),
         )
 
-        val result = client.lookupContacts("token", listOf("aaa"))
+        val result = client.lookupContacts("token", listOf("+15555550101"))
 
         assertThat(result.exceptionOrNull()).isInstanceOf(ResolverError.NotConfigured::class.java)
     }
@@ -741,7 +740,7 @@ class DefaultIdentityServiceClientTest {
             val client = createClient(server)
 
             client.startPinChange("secret-token", "+5511999990000", "123456").getOrThrow()
-            client.lookupContacts("secret-token", listOf("hash")).getOrThrow()
+            client.lookupContacts("secret-token", listOf("+15555550101")).getOrThrow()
 
             assertThat(server.takeRequest().getHeader("Accept-Language")).isEqualTo("pt-BR")
             assertThat(server.takeRequest().getHeader("Accept-Language")).isEqualTo("pt-BR")

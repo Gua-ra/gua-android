@@ -92,7 +92,7 @@ allow it or debug-APK sign-in fails.
 1. Create the app `global.gua`; enroll in **Play App Signing**.
 2. **App content** declarations (all required before a public track):
    - Privacy policy URL (`https://gua.global/privacy`).
-   - Data Safety: phone number, hashed contact identifiers, camera and microphone.
+   - Data Safety: phone number, contacts (phone numbers only, processed ephemerally), camera and microphone.
    - Export / encryption compliance (Gua is end-to-end encrypted).
    - Content rating (IARC) questionnaire.
    - Account deletion: in-app path exists; also add a public deletion URL.
