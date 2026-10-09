@@ -9,6 +9,7 @@ package io.element.android.features.findfriends.impl
 
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.findfriends.api.FindFriendsEntryPoint
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.test.A_ROOM_ID
@@ -118,6 +119,39 @@ class FindFriendsPresenterTest {
     }
 
     @Test
+    fun `a failed chat start keeps the list and shows a chat error`() = runTest {
+        var startedRoom: RoomId? = null
+        val callback = object : FindFriendsEntryPoint.Callback {
+            override fun onStartChat(roomId: RoomId) {
+                startedRoom = roomId
+            }
+
+            override fun onOpenProfile(userId: UserId) = Unit
+        }
+        val discovery = FakeContactDiscoveryService { ContactDiscoveryResult.Success(aDiscoveredContactList()) }
+        val matrixClient = FakeMatrixClient().apply {
+            givenFindDmResult(Result.success(null))
+            givenCreateDmResult(Result.failure(IllegalStateException("offline")))
+        }
+        val presenter = createPresenter(
+            permissionGranted = true,
+            discovery = discovery,
+            callback = callback,
+            matrixClient = matrixClient,
+        )
+        presenter.test {
+            val loaded = consumeItemsUntilPredicate { it.phase == FindFriendsPhase.Loaded }.last()
+            loaded.eventSink(FindFriendsEvents.StartChat(loaded.contacts.first()))
+            val failed = consumeItemsUntilPredicate { it.snackbarMessage != null && it.startingChatUserId == null }.last()
+            assertThat(failed.phase).isEqualTo(FindFriendsPhase.Loaded)
+            assertThat(failed.contacts).hasSize(3)
+            assertThat(failed.snackbarMessage?.messageResId).isEqualTo(R.string.screen_find_friends_start_chat_error)
+            assertThat(startedRoom).isNull()
+            assertThat(discovery.discoverCallCount).isEqualTo(1)
+        }
+    }
+
+    @Test
     fun `opening a profile notifies the callback`() = runTest {
         var openedProfile: UserId? = null
         val callback = object : FindFriendsEntryPoint.Callback {
@@ -146,10 +180,12 @@ class FindFriendsPresenterTest {
         ),
         discovery: FakeContactDiscoveryService = FakeContactDiscoveryService(),
         callback: FindFriendsEntryPoint.Callback = NoopCallback,
+        matrixClient: FakeMatrixClient = FakeMatrixClient(),
     ) = FindFriendsPresenter(
         callback = callback,
         contactDiscoveryService = discovery,
-        matrixClient = FakeMatrixClient(),
+        matrixClient = matrixClient,
+        snackbarDispatcher = SnackbarDispatcher(),
         permissionsPresenterFactory = FakePermissionsPresenterFactory(permissionsPresenter),
     )
 

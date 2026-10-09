@@ -7,6 +7,7 @@
 
 package io.element.android.features.findfriends.impl
 
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.matrix.api.core.UserId
 import kotlinx.collections.immutable.ImmutableList
 
@@ -19,6 +20,7 @@ data class FindFriendsState(
     val contacts: ImmutableList<DiscoveredContact>,
     /** User id of the contact whose chat is currently being opened (drives a per-row spinner). */
     val startingChatUserId: UserId?,
+    val snackbarMessage: SnackbarMessage?,
     val eventSink: (FindFriendsEvents) -> Unit,
 )
 

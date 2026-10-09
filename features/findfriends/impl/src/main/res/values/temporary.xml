@@ -30,6 +30,7 @@
     <string name="screen_find_friends_error_title">Something went wrong</string>
     <string name="screen_find_friends_error_message">We couldn\'t check your contacts right now. Please try again.</string>
     <string name="screen_find_friends_error_action">Try again</string>
+    <string name="screen_find_friends_start_chat_error">We couldn\'t start the chat. Please try again.</string>
 
     <!-- Results header. "%1$d" is the number of matched contacts. -->
     <plurals name="screen_find_friends_results_header_plural">
