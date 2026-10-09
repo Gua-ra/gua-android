@@ -16,10 +16,12 @@ import io.element.android.libraries.guaresolver.ResolverResolveOptions
 import io.element.android.libraries.guaresolver.ResolverRoutingClaimsEnvelope
 import io.element.android.libraries.network.RetrofitFactory
 import kotlinx.coroutines.test.runTest
+import okhttp3.Headers.Companion.headersOf
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Test
+import java.time.Instant
 
 class DefaultResolverClientTest {
     @Test
@@ -86,15 +88,122 @@ class DefaultResolverClientTest {
     @Test
     fun `server error is surfaced with the status code`() = runTest {
         val server = MockWebServer()
-        server.enqueue(MockResponse().setResponseCode(503))
+        server.enqueue(MockResponse().setResponseCode(502))
         val client = createClient(server)
 
         val result = client.resolve("+15551234567")
 
         val error = result.exceptionOrNull()
         assertThat(error).isInstanceOf(ResolverError.Server::class.java)
-        assertThat((error as ResolverError.Server).status).isEqualTo(503)
+        assertThat((error as ResolverError.Server).status).isEqualTo(502)
         server.shutdown()
+    }
+
+    @Test
+    fun `a 400 is not reported as a retry`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(400).setBody("""{"code":"invalid_phone","message":"phone must be E.164"}"""))
+        val client = createClient(server)
+
+        assertThat(client.resolve("+1555").exceptionOrNull()).isEqualTo(ResolverError.Server(400))
+        server.shutdown()
+    }
+
+    @Test
+    fun `rate limiting from the ingress carries Retry-After`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(429).setHeader("Retry-After", "30").setBody("Too Many Requests"))
+        val client = createClient(server)
+
+        assertThat(client.resolve("+15551234567").exceptionOrNull()).isEqualTo(ResolverError.ResolveRateLimited(30))
+        server.shutdown()
+    }
+
+    @Test
+    fun `rate limiting from the resolver carries Retry-After`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(429)
+                .setHeader("Retry-After", "1")
+                .setBody("""{"code":"rate_limited","message":"too many requests, retry after the Retry-After interval"}""")
+        )
+        val client = createClient(server)
+
+        assertThat(client.resolve("+15551234567").exceptionOrNull()).isEqualTo(ResolverError.ResolveRateLimited(1))
+        server.shutdown()
+    }
+
+    @Test
+    fun `rate limiting without Retry-After has no wait`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(429))
+        val client = createClient(server)
+
+        assertThat(client.resolve("+15551234567").exceptionOrNull()).isEqualTo(ResolverError.ResolveRateLimited(null))
+        server.shutdown()
+    }
+
+    @Test
+    fun `unavailable carries Retry-After`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(503)
+                .setHeader("Retry-After", "90")
+                .setBody("""{"code":"directory_unavailable","message":"routing directory is temporarily unavailable"}""")
+        )
+        val client = createClient(server)
+
+        assertThat(client.resolve("+15551234567").exceptionOrNull()).isEqualTo(ResolverError.TemporarilyUnavailable(90))
+        server.shutdown()
+    }
+
+    @Test
+    fun `an HTTP-date Retry-After is measured from the Date header`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(429)
+                .setHeader("Date", "Wed, 21 Oct 2026 07:26:30 GMT")
+                .setHeader("Retry-After", "Wed, 21 Oct 2026 07:28:00 GMT")
+        )
+        val client = createClient(server)
+
+        assertThat(client.resolve("+15551234567").exceptionOrNull()).isEqualTo(ResolverError.ResolveRateLimited(90))
+        server.shutdown()
+    }
+
+    @Test
+    fun `an unreadable Retry-After has no wait`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(503).setHeader("Retry-After", "soon"))
+        val client = createClient(server)
+
+        assertThat(client.resolve("+15551234567").exceptionOrNull()).isEqualTo(ResolverError.TemporarilyUnavailable(null))
+        server.shutdown()
+    }
+
+    @Test
+    fun `Retry-After is read as delta-seconds or an HTTP-date`() {
+        val retryAt = Instant.parse("2026-10-21T07:28:00Z").toEpochMilli()
+        fun retryAfter(vararg namesAndValues: String, nowMillis: Long = retryAt) = headersOf(*namesAndValues).retryAfterSeconds(nowMillis)
+
+        assertThat(retryAfter("Retry-After", "120")).isEqualTo(120L)
+        assertThat(retryAfter("Retry-After", " 0 ")).isEqualTo(0L)
+        assertThat(retryAfter()).isNull()
+        assertThat(retryAfter("Retry-After", "-5")).isNull()
+        assertThat(retryAfter("Retry-After", "1.5")).isNull()
+        assertThat(retryAfter("Retry-After", "99999999999999999999999")).isNull()
+        assertThat(retryAfter("Retry-After", "soon")).isNull()
+
+        assertThat(retryAfter("Retry-After", "Wed, 21 Oct 2026 07:28:00 GMT", nowMillis = retryAt - 45_000)).isEqualTo(45L)
+        assertThat(retryAfter("Retry-After", "Wed, 21 Oct 2026 07:28:00 GMT", nowMillis = retryAt - 44_500)).isEqualTo(45L)
+        assertThat(retryAfter("Retry-After", "Wednesday, 21-Oct-26 07:28:00 GMT", nowMillis = retryAt - 45_000)).isEqualTo(45L)
+        assertThat(retryAfter("Retry-After", "Wed Oct 21 07:28:00 2026", nowMillis = retryAt - 45_000)).isEqualTo(45L)
+        assertThat(retryAfter("Retry-After", "Wed, 21 Oct 2026 07:28:00 GMT")).isNull()
+        assertThat(retryAfter("Retry-After", "Wed, 21 Oct 2026 07:28:00 GMT", nowMillis = retryAt + 60_000)).isNull()
+        assertThat(retryAfter("Retry-After", "Wed, 21 Oct 2026 07:28:00 GMT", "Date", "Wed, 21 Oct 2026 07:26:30 GMT", nowMillis = 0)).isEqualTo(90L)
     }
 
     @Test
