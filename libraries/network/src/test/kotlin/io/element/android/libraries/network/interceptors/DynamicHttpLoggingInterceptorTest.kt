@@ -10,6 +10,7 @@ package io.element.android.libraries.network.interceptors
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.matrix.api.tracing.LogLevel
 import io.element.android.libraries.preferences.test.InMemoryAppPreferencesStore
+import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -81,17 +82,10 @@ class DynamicHttpLoggingInterceptorTest {
     }
 
     @Test
-    fun `info level logs nothing`() {
-        val output = exchange(LogLevel.INFO)
-
-        assertThat(output).isEmpty()
-    }
-
-    @Test
-    fun `error level logs nothing`() {
-        val output = exchange(LogLevel.ERROR)
-
-        assertThat(output).isEmpty()
+    fun `levels below debug log nothing`() {
+        for (logLevel in listOf(LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR)) {
+            assertThat(exchange(logLevel)).isEmpty()
+        }
     }
 
     @Test
@@ -130,6 +124,19 @@ class DynamicHttpLoggingInterceptorTest {
         assertThat(output).contains("--> GET ${origin()}/<redacted>")
         assertThat(output).contains("<-- 204 ${origin()}/<redacted> (")
         assertNoLocation(output)
+    }
+
+    @Test
+    fun `url credentials are never written`() {
+        server.enqueue(MockResponse().setResponseCode(204))
+        val baseUrl = server.url("/").newBuilder().username(USERINFO_USER).password(USERINFO_SECRET).build()
+
+        createApi(createClient(LogLevel.DEBUG), baseUrl).status().execute().body()?.close()
+
+        val output = logged.joinToString("\n")
+        assertThat(output).contains("--> GET ${origin()}/account/status")
+        assertThat(output).doesNotContain(USERINFO_USER)
+        assertThat(output).doesNotContain(USERINFO_SECRET)
     }
 
     @Test
@@ -179,7 +186,8 @@ class DynamicHttpLoggingInterceptorTest {
                 .addHeader("Content-Type", "application/json")
                 .setBody(RESPONSE_BODY)
         )
-        verify(createApi(createClient(logLevel))).execute().body()?.close()
+        val body = verify(createApi(createClient(logLevel))).execute().body()?.use { it.string() }
+        assertThat(body).isEqualTo(RESPONSE_BODY)
         return logged.joinToString("\n")
     }
 
@@ -187,8 +195,8 @@ class DynamicHttpLoggingInterceptorTest {
         .addInterceptor(DynamicHttpLoggingInterceptor(InMemoryAppPreferencesStore(logLevel = logLevel)))
         .build()
 
-    private fun createApi(client: OkHttpClient): TestApi = Retrofit.Builder()
-        .baseUrl(server.url("/"))
+    private fun createApi(client: OkHttpClient, baseUrl: HttpUrl = server.url("/")): TestApi = Retrofit.Builder()
+        .baseUrl(baseUrl)
         .client(client)
         .build()
         .create(TestApi::class.java)
@@ -238,6 +246,8 @@ class DynamicHttpLoggingInterceptorTest {
         const val OTP_CODE = "864209"
         const val PIN = "735102"
         const val QUERY_VALUE = "fake_query_secret"
+        const val USERINFO_USER = "fake_url_user"
+        const val USERINFO_SECRET = "fake_url_password"
         const val LONGITUDE = "-73.567256"
         const val LATITUDE = "45.501690"
         const val LOCATION = "$LONGITUDE,$LATITUDE,15.0"
