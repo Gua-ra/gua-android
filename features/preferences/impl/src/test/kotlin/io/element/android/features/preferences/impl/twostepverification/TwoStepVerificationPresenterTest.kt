@@ -23,6 +23,7 @@ import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
+import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.FakeLifecycleOwner
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.testWithLifecycleOwner
@@ -306,6 +307,44 @@ class TwoStepVerificationPresenterTest {
         }
     }
 
+    @Test
+    fun `present - a refused token on the first read is refreshed and the status read again`() = runTest {
+        var reads = 0
+        val client = FakeIdentityServiceClient(
+            factorStatusResult = {
+                reads++
+                if (reads == 1) Result.failure(ResolverError.Server(401)) else Result.success(aFactorStatus(hasPin = true))
+            },
+        )
+        val presenter = createTwoStepVerificationPresenter(client = client, matrixClient = aRefreshingMatrixClient())
+        presenter.test {
+            val state = awaitFirst { it.phase == TwoStepVerificationPhase.Overview }
+            assertThat(state.hasPin).isTrue()
+            assertThat(state.errorMessage).isNull()
+            assertThat(client.factorStatusCalls).containsExactly(A_STORED_TOKEN, A_REFRESHED_TOKEN).inOrder()
+        }
+    }
+
+    @Test
+    fun `present - a token refused at the number step is not reported as an invalid number`() = runTest {
+        val client = FakeIdentityServiceClient(
+            factorStatusResult = { Result.success(aFactorStatus(hasPin = true)) },
+            startPinChangeResult = { Result.failure(ResolverError.Server(401)) },
+        )
+        val presenter = createTwoStepVerificationPresenter(client = client, matrixClient = aRefreshingMatrixClient())
+        presenter.test {
+            awaitFirst { it.phase == TwoStepVerificationPhase.Overview }.eventSink(TwoStepVerificationEvent.StartChange)
+            awaitFirst { it.phase == TwoStepVerificationPhase.EnteringCurrent }.eventSink(TwoStepVerificationEvent.CodeChanged("246813"))
+            awaitFirst { it.phase == TwoStepVerificationPhase.EnteringPhone }.eventSink(TwoStepVerificationEvent.PhoneChanged(A_LOCAL_NUMBER))
+            awaitFirst { it.localPhoneNumber == A_LOCAL_NUMBER }.eventSink(TwoStepVerificationEvent.Continue)
+
+            val state = awaitFirst { it.errorMessage != null }
+            assertThat(state.errorMessage).isEqualTo(CommonStrings.gua_error_sign_in_not_confirmed)
+            assertThat(state.phase).isEqualTo(TwoStepVerificationPhase.EnteringPhone)
+            assertThat(client.startPinChangeCalls).containsExactly(A_STORED_TOKEN, A_REFRESHED_TOKEN).inOrder()
+        }
+    }
+
     private suspend fun ReceiveTurbine<TwoStepVerificationState>.awaitFirst(
         predicate: (TwoStepVerificationState) -> Boolean,
     ): TwoStepVerificationState {
@@ -325,17 +364,24 @@ class TwoStepVerificationPresenterTest {
 
     private fun createTwoStepVerificationPresenter(
         client: IdentityServiceClient = FakeIdentityServiceClient(),
-        sessionStore: SessionStore = InMemorySessionStore(listOf(aSessionData(sessionId = A_USER_ID.value))),
+        sessionStore: SessionStore = InMemorySessionStore(listOf(aSessionData(sessionId = A_USER_ID.value, accessToken = A_STORED_TOKEN))),
+        matrixClient: FakeMatrixClient = FakeMatrixClient(sessionId = A_USER_ID),
     ) = TwoStepVerificationPresenter(
         navigateToCountryPicker = {},
-        matrixClient = FakeMatrixClient(sessionId = A_USER_ID),
+        matrixClient = matrixClient,
         sessionStore = sessionStore,
         identityServiceClient = client,
         selectedCountryStore = SelectedCountryStore(),
         deviceCountryProvider = FakeDeviceCountryProvider(Country(isoCode = "US", dialCode = "1")),
     )
 
+    /** An SDK whose refresh hands out [A_REFRESHED_TOKEN]; until then the stored token is used. */
+    private fun aRefreshingMatrixClient() = FakeMatrixClient(sessionId = A_USER_ID, refreshAccessTokenLambda = { A_REFRESHED_TOKEN })
+
     private companion object {
         const val MAX_EMISSIONS = 20
+        const val A_STORED_TOKEN = "aStoredAccessToken"
+        const val A_REFRESHED_TOKEN = "aRefreshedAccessToken"
+        const val A_LOCAL_NUMBER = "5551234567"
     }
 }

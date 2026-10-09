@@ -20,6 +20,7 @@ import org.matrix.rustcomponents.sdk.Encryption
 import org.matrix.rustcomponents.sdk.HomeserverCapabilities
 import org.matrix.rustcomponents.sdk.HomeserverLoginDetails
 import org.matrix.rustcomponents.sdk.IgnoredUsersListener
+import org.matrix.rustcomponents.sdk.MediaPreviewConfig
 import org.matrix.rustcomponents.sdk.NoHandle
 import org.matrix.rustcomponents.sdk.NotificationClient
 import org.matrix.rustcomponents.sdk.NotificationProcessSetup
@@ -44,7 +45,7 @@ class FakeFfiClient(
     private val notificationClient: NotificationClient = FakeFfiNotificationClient(),
     private val notificationSettings: NotificationSettings = FakeFfiNotificationSettings(),
     private val encryption: Encryption = FakeFfiEncryption(),
-    private val session: Session = aRustSession(),
+    private val sessionResult: () -> Session = { aRustSession() },
     private val clearCachesResult: () -> Unit = { lambdaError() },
     private val withUtdHook: (UnableToDecryptDelegate) -> Unit = { lambdaError() },
     private val getProfileResult: (String) -> UserProfile = { UserProfile(userId = userId, displayName = null, avatarUrl = null) },
@@ -53,13 +54,14 @@ class FakeFfiClient(
     private val createRoomResult: (CreateRoomParameters) -> String = { lambdaError() },
     private val homeserverCapabilities: HomeserverCapabilities = FakeFfiHomeserverCapabilities(),
     private val closeResult: () -> Unit = {},
+    private val fetchMediaPreviewConfigResult: () -> MediaPreviewConfig? = { lambdaError() },
 ) : Client(NoHandle) {
     override fun userId(): String = userId
     override fun deviceId(): String = deviceId
     override suspend fun notificationClient(processSetup: NotificationProcessSetup) = notificationClient
     override suspend fun getNotificationSettings(): NotificationSettings = notificationSettings
     override fun encryption(): Encryption = encryption
-    override fun session(): Session = session
+    override fun session(): Session = sessionResult()
     override fun setDelegate(delegate: ClientDelegate?): TaskHandle = FakeFfiTaskHandle()
     override suspend fun cachedAvatarUrl(): String? = null
     override suspend fun restoreSession(session: Session) = Unit
@@ -111,4 +113,6 @@ class FakeFfiClient(
     }
 
     override fun close() = closeResult()
+
+    override suspend fun fetchMediaPreviewConfig(): MediaPreviewConfig? = fetchMediaPreviewConfigResult()
 }

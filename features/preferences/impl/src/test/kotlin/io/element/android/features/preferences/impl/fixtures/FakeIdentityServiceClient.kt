@@ -29,6 +29,7 @@ class FakeIdentityServiceClient(
     private val completePhoneChangeResult: () -> Result<Unit> = { Result.success(Unit) },
     private val passkeyEnrollmentResult: () -> Result<String> = { Result.success(AN_ENROLL_URL) },
     private val pinEnrollmentResult: () -> Result<String> = { Result.success(A_PIN_ENROLL_URL) },
+    private val startPinChangeResult: () -> Result<String> = { Result.success(A_PIN_CHANGE_CHALLENGE_ID) },
 ) : IdentityServiceClient {
     /**
      * The reauth OTPs requested, as (submitted current number, language), in order. Each one is an
@@ -51,6 +52,9 @@ class FakeIdentityServiceClient(
 
     /** Every first-PIN enrollment start, in order. This is the only way to set a first PIN now. */
     val pinEnrollmentCalls: MutableList<String> = mutableListOf()
+
+    /** The access token of every PIN-change start, in order. */
+    val startPinChangeCalls: MutableList<String> = mutableListOf()
 
     data class StartCall(
         val reauthToken: String,
@@ -75,8 +79,10 @@ class FakeIdentityServiceClient(
         return pinEnrollmentResult()
     }
 
-    override suspend fun startPinChange(accessToken: String, phone: String, currentPin: String): Result<String> =
-        Result.success("pin-change-challenge")
+    override suspend fun startPinChange(accessToken: String, phone: String, currentPin: String): Result<String> {
+        startPinChangeCalls += accessToken
+        return startPinChangeResult()
+    }
 
     override suspend fun completePinChange(accessToken: String, challengeId: String, otpCode: String, newPin: String): Result<Unit> =
         Result.success(Unit)
@@ -128,6 +134,7 @@ class FakeIdentityServiceClient(
         const val A_CHALLENGE_ID = "a-phone-change-challenge"
         const val AN_ENROLL_URL = "https://idp.example.org/passkey/enroll?token=abc"
         const val A_PIN_ENROLL_URL = "https://idp.example.org/login/enroll/abc"
+        const val A_PIN_CHANGE_CHALLENGE_ID = "pin-change-challenge"
     }
 }
 

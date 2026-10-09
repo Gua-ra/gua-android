@@ -14,6 +14,7 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.core.data.bytes
 import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
 import io.element.android.libraries.matrix.api.paths.SessionPaths
+import io.element.android.libraries.matrix.impl.fixtures.factories.aRustSession
 import io.element.android.libraries.matrix.impl.fixtures.fakes.FakeFfiClient
 import io.element.android.libraries.matrix.impl.fixtures.fakes.FakeFfiSyncService
 import io.element.android.libraries.matrix.impl.room.FakeTimelineEventFilterFactory
@@ -38,6 +39,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.matrix.rustcomponents.sdk.Client
 import org.matrix.rustcomponents.sdk.CreateRoomParameters
+import org.matrix.rustcomponents.sdk.MediaPreviewConfig
 import org.matrix.rustcomponents.sdk.RoomHistoryVisibility
 import org.matrix.rustcomponents.sdk.StoreSizes
 import org.matrix.rustcomponents.sdk.UserProfile
@@ -135,6 +137,59 @@ class RustMatrixClientTest {
         assertThat(createParameters?.historyVisibilityOverride).isEqualTo(RoomHistoryVisibility.Invited)
     }
 
+    @Test
+    fun `accessToken returns the token of the session the SDK holds`() = runTest {
+        val client = createRustMatrixClient(
+            client = FakeFfiClient(sessionResult = { aRustSession(accessToken = AN_ACCESS_TOKEN) }),
+        )
+        assertThat(client.accessToken()).isEqualTo(AN_ACCESS_TOKEN)
+        client.destroy()
+    }
+
+    @Test
+    fun `accessToken is null when the SDK cannot report a session`() = runTest {
+        var hasSession = true
+        val client = createRustMatrixClient(
+            client = FakeFfiClient(sessionResult = { if (hasSession) aRustSession() else error("No session") }),
+        )
+        hasSession = false
+        assertThat(client.accessToken()).isNull()
+        client.destroy()
+    }
+
+    @Test
+    fun `refreshAccessTokenIfExpired sends an authenticated request, then returns the token the SDK holds after it`() = runTest {
+        var session = aRustSession(accessToken = AN_ACCESS_TOKEN)
+        val fetchMediaPreviewConfig = lambdaRecorder<MediaPreviewConfig?> {
+            // The SDK swaps the token while it handles the request's 401.
+            session = aRustSession(accessToken = A_REFRESHED_ACCESS_TOKEN)
+            null
+        }
+        val client = createRustMatrixClient(
+            client = FakeFfiClient(
+                sessionResult = { session },
+                fetchMediaPreviewConfigResult = fetchMediaPreviewConfig,
+            ),
+        )
+
+        assertThat(client.refreshAccessTokenIfExpired()).isEqualTo(A_REFRESHED_ACCESS_TOKEN)
+        fetchMediaPreviewConfig.assertions().isCalledOnce()
+        client.destroy()
+    }
+
+    @Test
+    fun `refreshAccessTokenIfExpired ignores a failed request and returns the current token`() = runTest {
+        val client = createRustMatrixClient(
+            client = FakeFfiClient(
+                sessionResult = { aRustSession(accessToken = AN_ACCESS_TOKEN) },
+                fetchMediaPreviewConfigResult = { error("Offline") },
+            ),
+        )
+
+        assertThat(client.refreshAccessTokenIfExpired()).isEqualTo(AN_ACCESS_TOKEN)
+        client.destroy()
+    }
+
     private fun TestScope.createRustMatrixClient(
         client: Client = FakeFfiClient(),
         sessionStore: SessionStore = InMemorySessionStore(
@@ -157,4 +212,9 @@ class RustMatrixClientTest {
         analyticsService = FakeAnalyticsService(),
         workManagerScheduler = FakeWorkManagerScheduler(submitLambda = {}),
     )
+
+    private companion object {
+        const val AN_ACCESS_TOKEN = "anAccessToken"
+        const val A_REFRESHED_ACCESS_TOKEN = "aRefreshedAccessToken"
+    }
 }

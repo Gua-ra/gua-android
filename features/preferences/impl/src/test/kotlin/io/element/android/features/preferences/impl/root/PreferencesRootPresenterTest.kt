@@ -63,6 +63,7 @@ class PreferencesRootPresenterTest {
 
     private companion object {
         const val MAX_EMISSIONS = 10
+        const val A_REFRESHED_TOKEN = "aRefreshedAccessToken"
     }
 
     @Test
@@ -424,6 +425,27 @@ class PreferencesRootPresenterTest {
             // shows the banner on an explicit false, so nobody is nagged on a failed read.
             assertThat(awaitItem().hasAccountStrongFactor).isNull()
             assertThat(awaitItem().hasAccountStrongFactor).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - a refused token is refreshed before the factor status decides the nudge`() = runTest {
+        var reads = 0
+        val identityServiceClient = FakeIdentityServiceClient(
+            factorStatusResult = {
+                reads++
+                if (reads == 1) Result.failure(ResolverError.Server(401)) else Result.success(aFactorStatus(hasPin = false, passkeyRegistered = false))
+            },
+        )
+        createPresenter(
+            matrixClient = FakeMatrixClient(canDeactivateAccountResult = { false }, refreshAccessTokenLambda = { A_REFRESHED_TOKEN }),
+            sessionStore = InMemorySessionStore(listOf(aSessionData(sessionId = A_SESSION_ID.value))),
+            identityServiceClient = identityServiceClient,
+        ).test {
+            assertThat(awaitFactorStatus { it == false }).isFalse()
+            assertThat(identityServiceClient.factorStatusCalls).hasSize(2)
+            assertThat(identityServiceClient.factorStatusCalls.last()).isEqualTo(A_REFRESHED_TOKEN)
             cancelAndIgnoreRemainingEvents()
         }
     }

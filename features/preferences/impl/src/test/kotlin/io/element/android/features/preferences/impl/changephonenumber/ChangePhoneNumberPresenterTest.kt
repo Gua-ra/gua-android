@@ -30,6 +30,7 @@ import io.element.android.libraries.sessionstorage.api.SessionData
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
+import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.FakeLifecycleOwner
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.withFakeLifecycleOwner
@@ -615,6 +616,104 @@ class ChangePhoneNumberPresenterTest {
         error("No matching state after $MAX_EMISSIONS emissions")
     }
 
+    @Test
+    fun `present - a token that expired between screens costs a retry the user never sees`() = runTest {
+        var attempts = 0
+        val client = FakeIdentityServiceClient(
+            startReauthResult = {
+                attempts++
+                if (attempts == 1) Result.failure(ResolverError.Server(401)) else Result.success(Unit)
+            },
+        )
+        val presenter = createChangePhoneNumberPresenter(
+            client = client,
+            matrixClient = aRefreshingMatrixClient(),
+        )
+        presenter.test {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            submitCurrentNumber()
+
+            val state = awaitPhase(ChangePhoneNumberPhase.EnteringReauthOtp)
+            assertThat(state.errorMessage).isNull()
+            assertThat(attempts).isEqualTo(2)
+        }
+    }
+
+    @Test
+    fun `present - a token still refused after the refresh says the sign-in could not be confirmed`() = runTest {
+        val client = FakeIdentityServiceClient(
+            startReauthResult = { Result.failure(ResolverError.Server(401)) },
+        )
+        val presenter = createChangePhoneNumberPresenter(
+            client = client,
+            matrixClient = aRefreshingMatrixClient(),
+        )
+        presenter.test {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            submitCurrentNumber()
+
+            val state = awaitFirst { it.errorMessage != null }
+            assertThat(state.errorMessage).isEqualTo(CommonStrings.gua_error_sign_in_not_confirmed)
+            assertThat(state.phase).isEqualTo(ChangePhoneNumberPhase.EnteringCurrentPhone)
+            assertThat(client.startReauthCalls).hasSize(2)
+        }
+    }
+
+    @Test
+    fun `present - a token refused at the code step does not call the code wrong`() = runTest {
+        val client = FakeIdentityServiceClient(
+            verifyReauthResult = { Result.failure(ResolverError.Server(401)) },
+        )
+        val presenter = createChangePhoneNumberPresenter(client = client, matrixClient = aRefreshingMatrixClient())
+        presenter.test {
+            awaitItem().eventSink(ChangePhoneNumberEvents.Continue)
+            submitCurrentNumber()
+            awaitPhase(ChangePhoneNumberPhase.EnteringReauthOtp).eventSink(ChangePhoneNumberEvents.CodeChanged("111111"))
+
+            val state = awaitFirst { it.errorMessage != null }
+            assertThat(state.errorMessage).isEqualTo(CommonStrings.gua_error_sign_in_not_confirmed)
+            assertThat(state.phase).isEqualTo(ChangePhoneNumberPhase.EnteringReauthOtp)
+            assertThat(client.verifyReauthCalls).hasSize(2)
+            assertThat(client.startPhoneChangeCalls).isEmpty()
+        }
+    }
+
+    @Test
+    fun `present - a token refused when the new number is sent restarts without calling the number invalid`() = runTest {
+        val client = FakeIdentityServiceClient(
+            startPhoneChangeResult = { Result.failure(ResolverError.Server(401)) },
+        )
+        val presenter = createChangePhoneNumberPresenter(client = client, matrixClient = aRefreshingMatrixClient())
+        presenter.test {
+            runToNewPhoneStep(client)
+
+            val state = awaitFirst { it.phase == ChangePhoneNumberPhase.Intro && it.errorMessage != null }
+            assertThat(state.errorMessage).isEqualTo(CommonStrings.gua_error_sign_in_not_confirmed)
+            assertThat(client.startPhoneChangeCalls).hasSize(2)
+            assertThat(client.completePhoneChangeCalls).isEmpty()
+        }
+    }
+
+    @Test
+    fun `present - a token refused at the new-number code keeps the code step open`() = runTest {
+        val client = FakeIdentityServiceClient(
+            completePhoneChangeResult = { Result.failure(ResolverError.Server(401)) },
+        )
+        val presenter = createChangePhoneNumberPresenter(client = client, matrixClient = aRefreshingMatrixClient())
+        presenter.test {
+            runToNewPhoneStep(client)
+            awaitPhase(ChangePhoneNumberPhase.EnteringOtp).eventSink(ChangePhoneNumberEvents.CodeChanged("999999"))
+
+            val state = awaitFirst { it.errorMessage != null }
+            assertThat(state.errorMessage).isEqualTo(CommonStrings.gua_error_sign_in_not_confirmed)
+            assertThat(state.phase).isEqualTo(ChangePhoneNumberPhase.EnteringOtp)
+            assertThat(client.completePhoneChangeCalls).hasSize(2)
+        }
+    }
+
+    /** An SDK whose refresh hands out [A_REFRESHED_TOKEN]; until then the stored token is used. */
+    private fun aRefreshingMatrixClient() = FakeMatrixClient(sessionId = A_USER_ID, refreshAccessTokenLambda = { A_REFRESHED_TOKEN })
+
     /**
      * The screen re-reads the account's factors on every resume, so the composition needs a
      * lifecycle. It starts un-resumed by default, which is what keeps that read out of the tests
@@ -632,12 +731,13 @@ class ChangePhoneNumberPresenterTest {
     private fun createChangePhoneNumberPresenter(
         client: IdentityServiceClient = FakeIdentityServiceClient(),
         sessionStore: SessionStore = InMemorySessionStore(listOf(aSessionData(sessionId = A_USER_ID.value))),
+        matrixClient: FakeMatrixClient = FakeMatrixClient(sessionId = A_USER_ID),
         navigateToCountryPicker: () -> Unit = {},
         navigateToPinSetup: () -> Unit = {},
     ) = ChangePhoneNumberPresenter(
         navigateToCountryPicker = navigateToCountryPicker,
         navigateToPinSetup = navigateToPinSetup,
-        matrixClient = FakeMatrixClient(sessionId = A_USER_ID),
+        matrixClient = matrixClient,
         sessionStore = sessionStore,
         identityServiceClient = client,
         selectedCountryStore = SelectedCountryStore(),
@@ -664,5 +764,7 @@ class ChangePhoneNumberPresenterTest {
 
         /** What the presenter sends as Accept-Language; the tests run under the default locale. */
         val A_LANGUAGE_TAG: String = UiLanguage.tag()
+
+        const val A_REFRESHED_TOKEN = "aRefreshedAccessToken"
     }
 }
