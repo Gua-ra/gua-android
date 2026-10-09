@@ -8,6 +8,7 @@
 package io.element.android.features.login.impl.screens.phoneentry
 
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.error.ChangeServerError
 import io.element.android.features.login.impl.login.FakeGuaDeployment
 import io.element.android.features.login.impl.login.FakeResolverClient
@@ -24,6 +25,8 @@ import io.element.android.libraries.matrix.api.auth.OAuthPrompt
 import io.element.android.libraries.matrix.test.auth.AN_OAUTH_DATA
 import io.element.android.libraries.matrix.test.auth.FakeMatrixAuthenticationService
 import io.element.android.libraries.matrix.test.auth.aMatrixHomeServerDetails
+import io.element.android.libraries.oauth.api.OAuthAction
+import io.element.android.libraries.oauth.test.customtab.FakeOAuthActionFlow
 import io.element.android.libraries.phonenumberentry.DeviceCountryProvider
 import io.element.android.libraries.phonenumberentry.FakeDeviceCountryProvider
 import io.element.android.libraries.phonenumberentry.SelectedCountryStore
@@ -214,6 +217,50 @@ class PhoneEntryPresenterTest {
         }
         resolveRecorder.assertions().isCalledOnce()
         setHomeserverRecorder.assertions().isCalledOnce()
+    }
+
+    @Test
+    fun `present - a sign-in that cannot finish after the browser step asks to try again`() = runTest {
+        val oAuthActionFlow = FakeOAuthActionFlow()
+        val authenticationService = FakeMatrixAuthenticationService().apply {
+            givenLoginError(IllegalStateException("no pending OAuth client"))
+        }
+        val presenter = createPhoneEntryPresenter(
+            loginHelper = createLoginHelper(
+                oAuthActionFlow = oAuthActionFlow,
+                authenticationService = authenticationService,
+            ),
+        )
+        presenter.test {
+            awaitItem()
+            oAuthActionFlow.post(OAuthAction.Success("gua://oidc?code=a-code&state=a-state"))
+            val failureState = awaitTerminalLoginMode()
+            assertThat((failureState.loginMode as AsyncData.Failure).error)
+                .isEqualTo(ChangeServerError.Error(messageId = R.string.gua_sign_in_interrupted))
+            failureState.eventSink(PhoneEntryEvents.ClearError)
+            assertThat(awaitItem().loginMode).isEqualTo(AsyncData.Uninitialized)
+        }
+    }
+
+    @Test
+    fun `present - signing in to an account already on this device keeps its own message`() = runTest {
+        val oAuthActionFlow = FakeOAuthActionFlow()
+        val alreadyLoggedIn = AuthenticationException.AccountAlreadyLoggedIn("@alice:gua.global")
+        val authenticationService = FakeMatrixAuthenticationService().apply {
+            givenLoginError(alreadyLoggedIn)
+        }
+        val presenter = createPhoneEntryPresenter(
+            loginHelper = createLoginHelper(
+                oAuthActionFlow = oAuthActionFlow,
+                authenticationService = authenticationService,
+            ),
+        )
+        presenter.test {
+            awaitItem()
+            oAuthActionFlow.post(OAuthAction.Success("gua://oidc?code=a-code&state=a-state"))
+            val failureState = awaitTerminalLoginMode()
+            assertThat((failureState.loginMode as AsyncData.Failure).error).isEqualTo(alreadyLoggedIn)
+        }
     }
 
     @Test

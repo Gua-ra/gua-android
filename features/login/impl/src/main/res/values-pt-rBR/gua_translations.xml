@@ -30,4 +30,5 @@
 
     <!-- Falha ao preparar a conta neste aparelho (ADM-008). -->
     <string name="gua_account_setup_failed">Não foi possível concluir a configuração da sua conta neste dispositivo. Tente novamente.</string>
+    <string name="gua_sign_in_interrupted">O login foi interrompido. Tente novamente.</string>
 </resources>
