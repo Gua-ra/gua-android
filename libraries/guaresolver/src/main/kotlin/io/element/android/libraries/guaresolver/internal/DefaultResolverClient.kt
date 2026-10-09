@@ -19,6 +19,7 @@ import io.element.android.libraries.guaresolver.ResolverClient
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.guaresolver.ResolverResolveOptions
 import io.element.android.libraries.network.RetrofitFactory
+import okhttp3.Headers
 import retrofit2.HttpException
 import timber.log.Timber
 
@@ -88,12 +89,24 @@ class DefaultResolverClient(
     }
 
     private fun HttpException.toResolverError(): ResolverError {
-        // Only the delta-seconds form of Retry-After is read; the resolver and its ingress send that form.
-        val retryAfterSeconds = response()?.headers()?.get("Retry-After")?.trim()?.toLongOrNull()?.takeIf { it >= 0 }
+        val retryAfterSeconds = response()?.headers()?.retryAfterSeconds()
         return when (code()) {
             429 -> ResolverError.ResolveRateLimited(retryAfterSeconds)
             503 -> ResolverError.TemporarilyUnavailable(retryAfterSeconds)
             else -> ResolverError.Server(code())
         }
     }
+}
+
+/**
+ * The Retry-After delay in whole seconds, rounded up, from delta-seconds or an HTTP-date. An HTTP-date
+ * is measured from the response's Date header when there is one, so client clock skew does not change
+ * the wait.
+ */
+internal fun Headers.retryAfterSeconds(nowMillis: Long = System.currentTimeMillis()): Long? {
+    val value = get("Retry-After")?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    if (value.all { it in '0'..'9' }) return value.toLongOrNull()
+    val retryAtMillis = getDate("Retry-After")?.time ?: return null
+    val delayMillis = retryAtMillis - (getDate("Date")?.time ?: nowMillis)
+    return if (delayMillis > 0) (delayMillis + 999) / 1000 else null
 }

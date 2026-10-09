@@ -63,6 +63,8 @@ dependencies {
     implementation(libs.google.tink)
     implementation(libs.serialization.json)
     implementation(libs.timber)
+    implementation(platform(libs.network.okhttp.bom))
+    implementation(libs.network.okhttp)
     implementation(platform(libs.network.retrofit.bom))
     implementation(libs.network.retrofit)
     implementation(libs.network.retrofit.converter.serialization)
@@ -72,7 +74,5 @@ dependencies {
     testImplementation(projects.libraries.cryptography.impl)
     testImplementation(projects.libraries.cryptography.test)
     testImplementation(projects.libraries.preferences.test)
-    testImplementation(platform(libs.network.okhttp.bom))
-    testImplementation(libs.network.okhttp)
     testImplementation(libs.network.mockwebserver)
 }
