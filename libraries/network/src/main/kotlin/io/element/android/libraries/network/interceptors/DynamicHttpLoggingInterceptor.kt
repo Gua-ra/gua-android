@@ -19,6 +19,9 @@ import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
+import retrofit2.Invocation
+import retrofit2.http.Path
+import retrofit2.http.Url
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
@@ -48,9 +51,10 @@ private val visibleHeaders = setOf(
 )
 
 /**
- * Logs HTTP exchanges at the DEBUG log level and above as method, URL without query, status, timing and body sizes.
+ * Logs HTTP exchanges at the DEBUG log level and above as method, origin, path, status, timing and body sizes.
  * Bodies, query strings and header values outside [visibleHeaders] are never written: the log files are kept for days
- * on the device and attached to bug reports.
+ * on the device and attached to bug reports. The path is written only when a Retrofit service method declares it in
+ * full. Any other path can carry user data, such as the coordinates in a static map image URL.
  */
 @Inject
 @SingleIn(AppScope::class)
@@ -62,7 +66,7 @@ class DynamicHttpLoggingInterceptor(
         val logLevel = runBlocking { appPreferencesStore.getTracingLogLevelFlow().first() }
         val request = chain.request()
         if (logLevel < LogLevel.DEBUG) return chain.proceed(request)
-        val url = request.url.withoutQuery()
+        val url = request.loggableUrl()
         Timber.d(describeRequest(request, url))
         val startNs = System.nanoTime()
         val response = try {
@@ -105,9 +109,14 @@ class DynamicHttpLoggingInterceptor(
 
     private fun elapsedMs(startNs: Long): Long = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs)
 
-    private fun HttpUrl.withoutQuery(): String = buildString {
-        append(scheme).append("://").append(host)
-        if (port != HttpUrl.defaultPort(scheme)) append(':').append(port)
-        append(encodedPath)
+    private fun Request.loggableUrl(): String = buildString {
+        append(url.scheme).append("://").append(url.host)
+        if (url.port != HttpUrl.defaultPort(url.scheme)) append(':').append(url.port)
+        append(if (hasDeclaredPath()) url.encodedPath else "/$REDACTED")
+    }
+
+    private fun Request.hasDeclaredPath(): Boolean {
+        val method = tag(Invocation::class.java)?.method() ?: return false
+        return method.parameterAnnotations.none { annotations -> annotations.any { it is Path || it is Url } }
     }
 }

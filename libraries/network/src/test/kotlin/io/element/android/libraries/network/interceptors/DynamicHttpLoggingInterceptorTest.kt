@@ -13,7 +13,9 @@ import io.element.android.libraries.preferences.test.InMemoryAppPreferencesStore
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.ResponseBody
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
@@ -21,6 +23,15 @@ import org.junit.After
 import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
+import retrofit2.Call
+import retrofit2.Retrofit
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.POST
+import retrofit2.http.Path
+import retrofit2.http.Query
+import retrofit2.http.Url
 import timber.log.Timber
 import java.io.IOException
 
@@ -94,17 +105,31 @@ class DynamicHttpLoggingInterceptorTest {
     }
 
     @Test
-    fun `encoded path characters are written verbatim`() {
-        server.enqueue(MockResponse().setResponseCode(204))
-        val request = Request.Builder().url(server.url("/media/%20name%25?token=$QUERY_VALUE")).build()
+    fun `paths of requests not made by a Retrofit service are redacted`() {
+        server.enqueue(MockResponse().setResponseCode(403))
+        val request = Request.Builder().url(server.url(STATIC_MAP_PATH)).build()
 
         createClient(LogLevel.DEBUG).newCall(request).execute().close()
 
         val output = logged.joinToString("\n")
-        assertThat(output).contains("--> GET http://")
-        assertThat(output).contains("/media/%20name%25\n")
-        assertThat(output).contains("<-- 204 http://")
-        assertThat(output).doesNotContain(QUERY_VALUE)
+        assertThat(output).contains("--> GET ${origin()}/<redacted>")
+        assertThat(output).contains("<-- 403 ${origin()}/<redacted> (")
+        assertNoLocation(output)
+    }
+
+    @Test
+    fun `retrofit paths built from arguments are redacted`() {
+        server.enqueue(MockResponse().setResponseCode(204))
+        server.enqueue(MockResponse().setResponseCode(204))
+        val api = createApi(createClient(LogLevel.DEBUG))
+
+        api.staticMap(LOCATION).execute().body()?.close()
+        api.fetch(server.url(STATIC_MAP_PATH).toString()).execute().body()?.close()
+
+        val output = logged.joinToString("\n")
+        assertThat(output).contains("--> GET ${origin()}/<redacted>")
+        assertThat(output).contains("<-- 204 ${origin()}/<redacted> (")
+        assertNoLocation(output)
     }
 
     @Test
@@ -112,7 +137,7 @@ class DynamicHttpLoggingInterceptorTest {
         server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
         val client = createClient(LogLevel.DEBUG).newBuilder().retryOnConnectionFailure(false).build()
 
-        assertThrows(IOException::class.java) { client.newCall(createRequest()).execute() }
+        assertThrows(IOException::class.java) { verify(createApi(client)).execute() }
 
         val output = logged.joinToString("\n")
         assertThat(output).contains("--> POST http://")
@@ -128,7 +153,7 @@ class DynamicHttpLoggingInterceptorTest {
                 .addHeader("Content-Type", "application/json")
                 .setBody(RESPONSE_BODY)
         )
-        createClient(logLevel).newCall(createRequest()).execute().use { it.body.string() }
+        verify(createApi(createClient(logLevel))).execute().body()?.close()
         return logged.joinToString("\n")
     }
 
@@ -136,14 +161,27 @@ class DynamicHttpLoggingInterceptorTest {
         .addInterceptor(DynamicHttpLoggingInterceptor(InMemoryAppPreferencesStore(logLevel = logLevel)))
         .build()
 
-    private fun createRequest(): Request = Request.Builder()
-        .url(server.url("/account/reauth/verify?trace=$QUERY_VALUE#$FRAGMENT_VALUE"))
-        .header("Authorization", "Bearer $ACCESS_TOKEN")
-        .header("Cookie", "session=$COOKIE_VALUE")
-        .header("X-Gua-Token", X_TOKEN)
-        .header("User-Agent", USER_AGENT)
-        .post(REQUEST_BODY.toRequestBody("application/json".toMediaType()))
+    private fun createApi(client: OkHttpClient): TestApi = Retrofit.Builder()
+        .baseUrl(server.url("/"))
+        .client(client)
         .build()
+        .create(TestApi::class.java)
+
+    private fun verify(api: TestApi): Call<ResponseBody> = api.verify(
+        authorization = "Bearer $ACCESS_TOKEN",
+        cookie = "session=$COOKIE_VALUE",
+        token = X_TOKEN,
+        userAgent = USER_AGENT,
+        trace = QUERY_VALUE,
+        body = REQUEST_BODY.toRequestBody("application/json".toMediaType()),
+    )
+
+    private fun origin(): String = server.url("/").toString().removeSuffix("/")
+
+    private fun assertNoLocation(output: String) {
+        val leaked = listOf(LONGITUDE, LATITUDE, "static", QUERY_VALUE).filter { it in output }
+        assertThat(leaked).isEmpty()
+    }
 
     private fun assertNoSecrets(output: String) {
         val leaked = listOf(
@@ -156,7 +194,6 @@ class DynamicHttpLoggingInterceptorTest {
             OTP_CODE,
             PIN,
             QUERY_VALUE,
-            FRAGMENT_VALUE,
             "phone",
             "code",
             "pin",
@@ -175,8 +212,29 @@ class DynamicHttpLoggingInterceptorTest {
         const val OTP_CODE = "864209"
         const val PIN = "735102"
         const val QUERY_VALUE = "fake_query_secret"
-        const val FRAGMENT_VALUE = "fake_fragment_secret"
+        const val LONGITUDE = "-73.567256"
+        const val LATITUDE = "45.501690"
+        const val LOCATION = "$LONGITUDE,$LATITUDE,15.0"
+        const val STATIC_MAP_PATH = "/maps/basic-v2/static/$LOCATION/300x200@2x.webp?key=$QUERY_VALUE"
         const val REQUEST_BODY = """{"phone":"$PHONE","code":"$OTP_CODE","pin":"$PIN"}"""
         const val RESPONSE_BODY = """{"reauthToken":"$REAUTH_TOKEN"}"""
     }
+}
+
+private interface TestApi {
+    @POST("account/reauth/verify")
+    fun verify(
+        @Header("Authorization") authorization: String,
+        @Header("Cookie") cookie: String,
+        @Header("X-Gua-Token") token: String,
+        @Header("User-Agent") userAgent: String,
+        @Query("trace") trace: String,
+        @Body body: RequestBody,
+    ): Call<ResponseBody>
+
+    @GET("maps/static/{location}/map.webp")
+    fun staticMap(@Path("location") location: String): Call<ResponseBody>
+
+    @GET
+    fun fetch(@Url url: String): Call<ResponseBody>
 }
