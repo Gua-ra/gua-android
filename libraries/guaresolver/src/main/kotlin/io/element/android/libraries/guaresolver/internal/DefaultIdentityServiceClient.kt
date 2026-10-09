@@ -33,8 +33,8 @@ import timber.log.Timber
  * via Retrofit, reusing the app-wide [RetrofitFactory] (OkHttp + kotlinx-serialization). Mirrors iOS
  * `IdentityServiceClient.lookupContacts`.
  *
- * PRIVACY: the address book is never persisted and nothing about the contacts is logged. The lookup
- * is authenticated with the caller's Matrix access token over TLS.
+ * The contact lookup carries the user's contact numbers and the accounts they match, so it bypasses HTTP
+ * logging and its failures log only the exception type.
  */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
@@ -50,7 +50,7 @@ class DefaultIdentityServiceClient(
             ?: return Result.failure(ResolverError.NotConfigured)
 
         val api = try {
-            createApi(baseUrl)
+            createApi(baseUrl, logTraffic = false)
         } catch (e: Exception) {
             Timber.e(e, "Failed to create identity-service Retrofit instance")
             return Result.failure(ResolverError.Transport(e))
@@ -64,7 +64,8 @@ class DefaultIdentityServiceClient(
         } catch (e: HttpException) {
             return Result.failure(ResolverError.Server(e.code()))
         } catch (e: Exception) {
-            Timber.e(e, "Contact lookup failed")
+            // A decoding error message quotes the response, which holds contact numbers.
+            Timber.e("Contact lookup failed with ${e.javaClass.name}")
             return Result.failure(ResolverError.Transport(e))
         }
 
@@ -270,8 +271,9 @@ class DefaultIdentityServiceClient(
      * An [IdentityServiceApi] whose requests carry the app's UI language as `Accept-Language`, unless
      * the call sets its own. The identity-service picks the SMS language from it.
      */
-    private fun createApi(baseUrl: String): IdentityServiceApi {
-        val retrofit = retrofitFactory.create(baseUrl.ensureProtocol())
+    private fun createApi(baseUrl: String, logTraffic: Boolean = true): IdentityServiceApi {
+        val url = baseUrl.ensureProtocol()
+        val retrofit = if (logTraffic) retrofitFactory.create(url) else retrofitFactory.createUnlogged(url)
         val callFactory = retrofit.callFactory()
         return retrofit.newBuilder()
             .callFactory { request ->
