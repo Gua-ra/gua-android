@@ -33,6 +33,7 @@ import io.element.android.libraries.designsystem.utils.snackbar.collectSnackbarM
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.guaresolver.IdentityServiceClient
+import io.element.android.libraries.guaresolver.withFreshAccessToken
 import io.element.android.libraries.indicator.api.IndicatorService
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.UserId
@@ -136,8 +137,9 @@ class PreferencesRootPresenter(
         // false. The old initial value of false with no failure handler meant a slow or failing
         // status read rendered as "no two-step verification" and nagged people who already had it.
         val hasAccountStrongFactor by produceState<Boolean?>(initialValue = null) {
-            val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken ?: return@produceState
-            identityServiceClient.accountFactorStatus(accessToken, matrixClient.sessionId.value)
+            matrixClient.withFreshAccessToken(sessionStore) { accessToken ->
+                identityServiceClient.accountFactorStatus(accessToken, matrixClient.sessionId.value)
+            }
                 .onSuccess { value = it.hasStrongFactor }
                 .onFailure { value = null }
         }

@@ -24,6 +24,12 @@ sealed class ResolverError(message: String, cause: Throwable? = null) : Exceptio
     /** Transport or decoding failure while talking to the resolver. */
     data class Transport(val error: Throwable) : ResolverError("Could not reach the routing service.", error)
 
+    /** No access token exists for the signed-in session. Surfaced by [withFreshAccessToken]. */
+    data object NoSession : ResolverError("This device is not signed in.")
+
+    /** The access token was still refused after an SDK refresh. Surfaced by [withFreshAccessToken]. */
+    data object AccessTokenRefused : ResolverError("The identity service refused the access token after a refresh.")
+
     // GUA FORK: two-step verification (account PIN). Mirrors the typed iOS `IdentityServiceError`
     // cases so presenters can drive the PIN state machine per error. Surfaced by [IdentityServiceClient]
     // PIN methods from the identity-service's JSON `code` field (see `DefaultIdentityServiceClient`).

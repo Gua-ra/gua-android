@@ -12,6 +12,7 @@ import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.PhoneHasher
+import io.element.android.libraries.guaresolver.withFreshAccessToken
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.sessionstorage.api.SessionStore
@@ -52,9 +53,6 @@ class DefaultContactDiscoveryService(
         val nameByNumber = withContext(dispatchers.io) { contactsReader.readContacts() }
         if (nameByNumber.isEmpty()) return ContactDiscoveryResult.NoContactsWithNumbers
 
-        val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
-            ?: return ContactDiscoveryResult.Failure
-
         // Map hashed digest -> best local name so matches can be labelled locally without the server
         // ever seeing the raw number.
         val nameByHash = nameByNumber.entries.mapNotNull { (e164, name) ->
@@ -62,8 +60,11 @@ class DefaultContactDiscoveryService(
         }.toMap()
         if (nameByHash.isEmpty()) return ContactDiscoveryResult.NoContactsWithNumbers
 
+        // Each batch authenticates separately so a token that expires mid-sweep is refreshed, not fatal.
         val matches = nameByHash.keys.chunked(maxNumbersPerRequest).flatMap { batch ->
-            val result = identityServiceClient.lookupContacts(accessToken = accessToken, hashedPhones = batch)
+            val result = matrixClient.withFreshAccessToken(sessionStore) { accessToken ->
+                identityServiceClient.lookupContacts(accessToken = accessToken, hashedPhones = batch)
+            }
             result.getOrElse { return ContactDiscoveryResult.Failure }
         }
 

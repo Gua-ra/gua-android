@@ -4,8 +4,9 @@
   ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
   ~ Please see LICENSE files in the repository root for full details.
   -->
-<!-- GUA FORK: translations of upstream strings that Element has not translated. Remove an entry when upstream ships one. -->
+<!-- GUA FORK: Gua strings, plus upstream strings that Element has not translated. Remove an upstream entry when upstream ships one. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="gua_error_sign_in_not_confirmed">Não conseguimos confirmar seu acesso. Tente novamente.</string>
     <string name="a11y_duration">Duração: %1$s</string>
     <string name="a11y_info">Informações</string>
     <string name="a11y_position">Posição: %1$s</string>

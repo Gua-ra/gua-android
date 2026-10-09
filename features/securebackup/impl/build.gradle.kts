@@ -36,6 +36,8 @@ dependencies {
     implementation(projects.libraries.matrix.api)
     implementation(projects.libraries.matrixui)
     implementation(projects.libraries.designsystem)
+    // GUA FORK: identity-service token accessor for the app-side reset approval.
+    implementation(projects.libraries.guaresolver)
     implementation(projects.libraries.oauth.api)
     implementation(projects.libraries.network)
     implementation(platform(libs.network.okhttp.bom))
@@ -48,4 +50,6 @@ dependencies {
 
     testCommonDependencies(libs, true)
     testImplementation(projects.libraries.matrix.test)
+    testImplementation(projects.libraries.sessionStorage.test)
+    testImplementation(libs.network.mockwebserver)
 }

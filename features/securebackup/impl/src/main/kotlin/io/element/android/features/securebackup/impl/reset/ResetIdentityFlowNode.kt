@@ -43,7 +43,6 @@ import io.element.android.libraries.architecture.BaseFlowNode
 import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.architecture.createNode
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
-import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.core.locale.withUiLocales
 import io.element.android.libraries.designsystem.components.ProgressDialog
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
@@ -68,8 +67,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.parcelize.Parcelize
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import timber.log.Timber
 import kotlin.time.Duration.Companion.seconds
 
@@ -306,34 +303,8 @@ class ResetIdentityFlowNode(
         }
     }
 
-    /**
-     * Asks the server to open the reset window for this account, authenticated with the
-     * session's own access token. False when the server does not offer this (an older
-     * deployment) or refuses, in which case the approval page is the fallback.
-     */
     private suspend fun approveFromApp(approvalUrl: String): Boolean = withContext(dispatchers.io) {
-        val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
-        if (accessToken.isNullOrEmpty()) return@withContext false
-        val endpoint = runCatchingExceptions {
-            Uri.parse(approvalUrl).buildUpon().path(APP_APPROVAL_PATH).clearQuery().fragment(null).build().toString()
-        }.getOrNull() ?: return@withContext false
-        val request = Request.Builder()
-            .url(endpoint)
-            .header("Authorization", "Bearer $accessToken")
-            .post(ByteArray(0).toRequestBody(null))
-            .build()
-        runCatchingExceptions { okHttpClient().newCall(request).execute().use { it.code } }
-            .onFailure { Timber.w(it, "App-side approval failed; falling back to the approval page.") }
-            .map { code ->
-                if (code in 200..299) {
-                    Timber.d("Reset approved from the app's own session")
-                    true
-                } else {
-                    Timber.w("App-side approval answered $code; falling back to the approval page.")
-                    false
-                }
-            }
-            .getOrDefault(false)
+        approveIdentityResetFromApp(approvalUrl, matrixClient, sessionStore, okHttpClient)
     }
 
     /**
@@ -523,9 +494,6 @@ class ResetIdentityFlowNode(
          * upload cannot turn into minutes of spinner.
          */
         val RESET_CALL_CEILING = 20.seconds
-
-        /** The server endpoint that opens the reset window for the caller's own account. */
-        const val APP_APPROVAL_PATH = "/api/gua/identity-reset/allow"
 
         /**
          * The other device answers within a second or two once the emojis match, but the keys

@@ -124,6 +124,9 @@ class FakeMatrixClient(
     private val getMapStyleUrlResult: () -> Result<String?> = { lambdaError() },
     private val getDatabaseSizesLambda: () -> Result<SdkStoreSizes> = { lambdaError() },
     private val resetWellKnownConfigLambda: () -> Result<Unit> = { lambdaError() },
+    // GUA FORK: null by default so callers fall back to the session store token.
+    private val accessTokenLambda: () -> String? = { null },
+    private val refreshAccessTokenLambda: () -> String? = { null },
 ) : MatrixClient {
     var setDisplayNameCalled: Boolean = false
         private set
@@ -403,4 +406,8 @@ class FakeMatrixClient(
     override fun homeserverCapabilities(): HomeserverCapabilitiesProvider {
         return homeserverCapabilitiesProvider
     }
+
+    override fun accessToken(): String? = accessTokenLambda()
+
+    override suspend fun refreshAccessTokenIfExpired(): String? = refreshAccessTokenLambda()
 }

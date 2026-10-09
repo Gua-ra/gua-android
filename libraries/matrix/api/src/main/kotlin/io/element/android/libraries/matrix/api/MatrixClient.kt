@@ -236,6 +236,24 @@ interface MatrixClient {
     suspend fun resetWellKnownConfig(): Result<Unit>
 
     fun homeserverCapabilities(): HomeserverCapabilitiesProvider
+
+    /**
+     * GUA FORK: the access token the SDK is using now, or null when it cannot report a session.
+     * Prefer it to the session store copy, which can lag behind a refresh.
+     */
+    fun accessToken(): String?
+
+    /**
+     * GUA FORK: lets the SDK refresh an expired access token, then returns the current token.
+     *
+     * The SDK has no explicit refresh call, so this sends one authenticated read-only request
+     * ([MediaPreviewService.fetchMediaPreviewConfig]); automatic token refresh renews the token when
+     * the homeserver rejects it. The request's own result is ignored.
+     */
+    suspend fun refreshAccessTokenIfExpired(): String? {
+        mediaPreviewService.fetchMediaPreviewConfig()
+        return accessToken()
+    }
 }
 
 /**
