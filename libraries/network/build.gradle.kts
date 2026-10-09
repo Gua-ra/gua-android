@@ -1,4 +1,5 @@
 import extension.setupDependencyInjection
+import extension.testCommonDependencies
 
 /*
  * Copyright (c) 2025 Element Creations Ltd.
@@ -32,9 +33,12 @@ dependencies {
     implementation(projects.libraries.preferences.api)
     implementation(platform(libs.network.okhttp.bom))
     implementation(libs.network.okhttp)
-    implementation(libs.network.okhttp.logging)
     implementation(platform(libs.network.retrofit.bom))
     implementation(libs.network.retrofit)
     implementation(libs.network.retrofit.converter.serialization)
     implementation(libs.serialization.json)
+
+    testCommonDependencies(libs)
+    testImplementation(libs.network.mockwebserver)
+    testImplementation(projects.libraries.preferences.test)
 }
