@@ -86,14 +86,84 @@ class DefaultResolverClientTest {
     @Test
     fun `server error is surfaced with the status code`() = runTest {
         val server = MockWebServer()
-        server.enqueue(MockResponse().setResponseCode(503))
+        server.enqueue(MockResponse().setResponseCode(502))
         val client = createClient(server)
 
         val result = client.resolve("+15551234567")
 
         val error = result.exceptionOrNull()
         assertThat(error).isInstanceOf(ResolverError.Server::class.java)
-        assertThat((error as ResolverError.Server).status).isEqualTo(503)
+        assertThat((error as ResolverError.Server).status).isEqualTo(502)
+        server.shutdown()
+    }
+
+    @Test
+    fun `a 400 is not reported as a retry`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(400).setBody("""{"code":"invalid_phone","message":"phone must be E.164"}"""))
+        val client = createClient(server)
+
+        assertThat(client.resolve("+1555").exceptionOrNull()).isEqualTo(ResolverError.Server(400))
+        server.shutdown()
+    }
+
+    @Test
+    fun `rate limiting from the ingress carries Retry-After`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(429).setHeader("Retry-After", "30").setBody("Too Many Requests"))
+        val client = createClient(server)
+
+        assertThat(client.resolve("+15551234567").exceptionOrNull()).isEqualTo(ResolverError.ResolveRateLimited(30))
+        server.shutdown()
+    }
+
+    @Test
+    fun `rate limiting from the resolver carries Retry-After`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(429)
+                .setHeader("Retry-After", "1")
+                .setBody("""{"code":"rate_limited","message":"too many requests, retry after the Retry-After interval"}""")
+        )
+        val client = createClient(server)
+
+        assertThat(client.resolve("+15551234567").exceptionOrNull()).isEqualTo(ResolverError.ResolveRateLimited(1))
+        server.shutdown()
+    }
+
+    @Test
+    fun `rate limiting without Retry-After has no wait`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(429))
+        val client = createClient(server)
+
+        assertThat(client.resolve("+15551234567").exceptionOrNull()).isEqualTo(ResolverError.ResolveRateLimited(null))
+        server.shutdown()
+    }
+
+    @Test
+    fun `unavailable carries Retry-After`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(503)
+                .setHeader("Retry-After", "90")
+                .setBody("""{"code":"directory_unavailable","message":"routing directory is temporarily unavailable"}""")
+        )
+        val client = createClient(server)
+
+        assertThat(client.resolve("+15551234567").exceptionOrNull()).isEqualTo(ResolverError.TemporarilyUnavailable(90))
+        server.shutdown()
+    }
+
+    @Test
+    fun `an HTTP-date Retry-After is treated as no wait`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().setResponseCode(503).setHeader("Retry-After", "Wed, 21 Oct 2026 07:28:00 GMT"))
+        val client = createClient(server)
+
+        assertThat(client.resolve("+15551234567").exceptionOrNull()).isEqualTo(ResolverError.TemporarilyUnavailable(null))
         server.shutdown()
     }
 

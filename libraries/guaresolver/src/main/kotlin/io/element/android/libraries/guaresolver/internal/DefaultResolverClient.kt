@@ -65,7 +65,7 @@ class DefaultResolverClient(
                 )
             )
         } catch (e: HttpException) {
-            return Result.failure(ResolverError.Server(e.code()))
+            return Result.failure(e.toResolverError())
         } catch (e: Exception) {
             Timber.e(e, "Resolver lookup failed")
             return Result.failure(ResolverError.Transport(e))
@@ -85,5 +85,15 @@ class DefaultResolverClient(
                 ),
             )
         )
+    }
+
+    private fun HttpException.toResolverError(): ResolverError {
+        // Only the delta-seconds form of Retry-After is read; the resolver and its ingress send that form.
+        val retryAfterSeconds = response()?.headers()?.get("Retry-After")?.trim()?.toLongOrNull()?.takeIf { it >= 0 }
+        return when (code()) {
+            429 -> ResolverError.ResolveRateLimited(retryAfterSeconds)
+            503 -> ResolverError.TemporarilyUnavailable(retryAfterSeconds)
+            else -> ResolverError.Server(code())
+        }
     }
 }

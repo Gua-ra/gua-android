@@ -30,6 +30,14 @@ sealed class ChangeServerError : Exception() {
         val authorisedAccountProviderTitles: List<String>,
     ) : ChangeServerError()
 
+    // GUA FORK: the resolver asked the app to try again later; [wait] is null when it did not say how long.
+    sealed class RetryLater : ChangeServerError() {
+        abstract val wait: RetryWait?
+    }
+
+    data class RateLimited(override val wait: RetryWait?) : RetryLater()
+    data class TemporarilyUnavailable(override val wait: RetryWait?) : RetryLater()
+
     data object SlidingSyncAlert : ChangeServerError()
     data object InvalidServer : ChangeServerError()
     data object UnsupportedServer : ChangeServerError()
@@ -48,6 +56,8 @@ sealed class ChangeServerError : Exception() {
                     is AuthenticationException.OAuth -> Error()
                 }
             }
+            is ResolverError.ResolveRateLimited -> RateLimited(RetryWait.fromRetryAfter(error.retryAfterSeconds))
+            is ResolverError.TemporarilyUnavailable -> TemporarilyUnavailable(RetryWait.fromRetryAfter(error.retryAfterSeconds))
             is ResolverError.Transport,
             is ResolverError.Server -> Error(messageId = CommonStrings.error_network_or_server_issue)
             is AccountProviderAccessException.NeedElementProException -> NeedElementPro(
