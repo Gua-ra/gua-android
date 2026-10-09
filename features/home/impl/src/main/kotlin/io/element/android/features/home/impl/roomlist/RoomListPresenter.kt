@@ -282,11 +282,13 @@ class RoomListPresenter(
     ): State<SecurityBannerState> {
         val currentSecurityBannerDismissed by rememberUpdatedState(securityBannerDismissed)
         val recoveryState by encryptionService.recoveryStateStateFlow.collectAsState()
+        val isSettingUpKeyStorage by encryptionService.isSettingUpKeyStorage.collectAsState()
         return remember {
             derivedStateOf {
                 calculateBannerState(
                     securityBannerDismissed = currentSecurityBannerDismissed,
                     recoveryState = recoveryState,
+                    isSettingUpKeyStorage = isSettingUpKeyStorage,
                 )
             }
         }
@@ -295,8 +297,10 @@ class RoomListPresenter(
     private fun calculateBannerState(
         securityBannerDismissed: Boolean,
         recoveryState: RecoveryState,
+        isSettingUpKeyStorage: Boolean,
     ): SecurityBannerState {
-        if (securityBannerDismissed) {
+        // GUA FORK: a new account reads DISABLED until the silent setup lands, and a tap then would mint a second store.
+        if (securityBannerDismissed || isSettingUpKeyStorage) {
             return SecurityBannerState.None
         }
 

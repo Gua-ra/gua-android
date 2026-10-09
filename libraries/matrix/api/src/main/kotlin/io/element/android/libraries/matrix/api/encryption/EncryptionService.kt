@@ -23,6 +23,9 @@ interface EncryptionService {
     val isLastDevice: StateFlow<Boolean>
     val hasDevicesToVerifyAgainst: StateFlow<AsyncData<Boolean>>
 
+    /** GUA FORK: true while the silent key storage setup that runs when the session starts has not finished. */
+    val isSettingUpKeyStorage: StateFlow<Boolean>
+
     suspend fun enableBackups(): Result<Unit>
 
     /**

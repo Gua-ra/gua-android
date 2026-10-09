@@ -38,7 +38,7 @@ class SilentSessionEncryptionBootstrapperTest {
         )
         encryptionService.recoveryStateStateFlow.value = RecoveryState.DISABLED
 
-        SilentSessionEncryptionBootstrapper(A_SESSION_ID, encryptionService, backgroundScope).start()
+        SilentSessionEncryptionBootstrapper(A_SESSION_ID, encryptionService, backgroundScope, encryptionService.isSettingUpKeyStorage).start()
         advanceTimeBy(1.minutes)
         runCurrent()
         assertThat(enableCalls).isEqualTo(0)
@@ -47,6 +47,47 @@ class SilentSessionEncryptionBootstrapperTest {
         advanceTimeBy(1.seconds)
         runCurrent()
         assertThat(enableCalls).isEqualTo(1)
+    }
+
+    @Test
+    fun `setup reads as in progress until the bootstrap has finished`() = runTest {
+        var enableCalls = 0
+        val initialization = CompletableDeferred<Unit>()
+        val encryptionService = FakeEncryptionService(
+            enableRecoveryLambda = { _, _ ->
+                enableCalls++
+                Result.success("key")
+            },
+            awaitE2eeInitializationLambda = {
+                initialization.await()
+                true
+            },
+        )
+        encryptionService.recoveryStateStateFlow.value = RecoveryState.DISABLED
+
+        SilentSessionEncryptionBootstrapper(A_SESSION_ID, encryptionService, backgroundScope, encryptionService.isSettingUpKeyStorage).start()
+        assertThat(encryptionService.isSettingUpKeyStorage.value).isTrue()
+        advanceTimeBy(1.minutes)
+        runCurrent()
+        assertThat(encryptionService.isSettingUpKeyStorage.value).isTrue()
+
+        initialization.complete(Unit)
+        advanceTimeBy(1.seconds)
+        runCurrent()
+        assertThat(enableCalls).isEqualTo(1)
+        assertThat(encryptionService.isSettingUpKeyStorage.value).isFalse()
+    }
+
+    @Test
+    fun `setup is settled when the initialisation times out`() = runTest {
+        val encryptionService = FakeEncryptionService(awaitE2eeInitializationLambda = { false })
+        encryptionService.recoveryStateStateFlow.value = RecoveryState.DISABLED
+
+        SilentSessionEncryptionBootstrapper(A_SESSION_ID, encryptionService, backgroundScope, encryptionService.isSettingUpKeyStorage).start()
+        advanceTimeBy(1.seconds)
+        runCurrent()
+
+        assertThat(encryptionService.isSettingUpKeyStorage.value).isFalse()
     }
 
     @Test
@@ -61,7 +102,7 @@ class SilentSessionEncryptionBootstrapperTest {
         )
         encryptionService.recoveryStateStateFlow.value = RecoveryState.DISABLED
 
-        SilentSessionEncryptionBootstrapper(A_SESSION_ID, encryptionService, backgroundScope).start()
+        SilentSessionEncryptionBootstrapper(A_SESSION_ID, encryptionService, backgroundScope, encryptionService.isSettingUpKeyStorage).start()
         advanceTimeBy(1.seconds)
         runCurrent()
 
@@ -79,7 +120,7 @@ class SilentSessionEncryptionBootstrapperTest {
         )
         encryptionService.recoveryStateStateFlow.value = RecoveryState.ENABLED
 
-        SilentSessionEncryptionBootstrapper(A_SESSION_ID, encryptionService, backgroundScope).start()
+        SilentSessionEncryptionBootstrapper(A_SESSION_ID, encryptionService, backgroundScope, encryptionService.isSettingUpKeyStorage).start()
         advanceTimeBy(1.seconds)
         runCurrent()
 
