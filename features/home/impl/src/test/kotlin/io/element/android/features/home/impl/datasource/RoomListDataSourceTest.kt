@@ -267,17 +267,25 @@ class RoomListDataSourceTest {
     }
 
     @Test
-    fun `an encrypted room someone else joined stays listed when no message can be read`() = runTest {
+    fun `an unnamed encrypted room someone else joined stays listed when no message can be read`() = runTest {
         val summaries = listOf(
-            aRoomSummary(roomId = A_ROOM_ID, isEncrypted = true, activeMembersCount = 2, joinedMembersCount = 2, latestEvent = LatestEventValue.None),
             aRoomSummary(
-                roomId = A_ROOM_ID_2,
+                roomId = A_ROOM_ID,
+                rawName = null,
                 isEncrypted = true,
                 activeMembersCount = 2,
                 joinedMembersCount = 2,
-                latestEvent = aRemoteLatestEvent(content = aRoomMembershipContent(change = MembershipChange.JOINED), isOwn = true),
+                latestEvent = LatestEventValue.None,
             ),
-            aRoomSummary(roomId = A_ROOM_ID_3, activeMembersCount = 2, joinedMembersCount = 2, latestEvent = LatestEventValue.None).let {
+            aRoomSummary(
+                roomId = A_ROOM_ID_2,
+                rawName = null,
+                isEncrypted = true,
+                activeMembersCount = 2,
+                joinedMembersCount = 2,
+                latestEvent = anOwnJoin(),
+            ),
+            aRoomSummary(roomId = A_ROOM_ID_3, rawName = null, activeMembersCount = 2, joinedMembersCount = 2, latestEvent = LatestEventValue.None).let {
                 it.copy(info = it.info.copy(isEncrypted = null))
             },
         )
@@ -286,7 +294,33 @@ class RoomListDataSourceTest {
     }
 
     @Test
-    fun `a room with no message is hidden when nobody else joined or it is not encrypted`() = runTest {
+    fun `an unnamed room with no message is hidden when nobody else joined or it is not encrypted`() = runTest {
+        val summaries = listOf(
+            aRoomSummary(
+                roomId = A_ROOM_ID,
+                rawName = null,
+                isEncrypted = true,
+                activeMembersCount = 2,
+                joinedMembersCount = 1,
+                invitedMembersCount = 1,
+                latestEvent = LatestEventValue.None,
+            ),
+            aRoomSummary(
+                roomId = A_ROOM_ID_2,
+                rawName = "",
+                isEncrypted = false,
+                activeMembersCount = 2,
+                joinedMembersCount = 2,
+                latestEvent = LatestEventValue.None,
+            ),
+            aRoomSummary(roomId = A_ROOM_ID_3, rawName = null, isEncrypted = true, activeMembersCount = 2, joinedMembersCount = 2),
+        )
+
+        assertThat(listedRoomIds(summaries)).containsExactly(A_ROOM_ID_3)
+    }
+
+    @Test
+    fun `a named room stays listed when no message can be read and nobody else is joined`() = runTest {
         val summaries = listOf(
             aRoomSummary(
                 roomId = A_ROOM_ID,
@@ -294,14 +328,16 @@ class RoomListDataSourceTest {
                 activeMembersCount = 2,
                 joinedMembersCount = 1,
                 invitedMembersCount = 1,
-                latestEvent = LatestEventValue.None,
+                latestEvent = anOwnJoin(),
             ),
-            aRoomSummary(roomId = A_ROOM_ID_2, isEncrypted = false, activeMembersCount = 2, joinedMembersCount = 2, latestEvent = LatestEventValue.None),
-            aRoomSummary(roomId = A_ROOM_ID_3, isEncrypted = true, activeMembersCount = 2, joinedMembersCount = 2),
+            aRoomSummary(roomId = A_ROOM_ID_2, isEncrypted = true, activeMembersCount = 1, joinedMembersCount = 1, latestEvent = LatestEventValue.None),
+            aRoomSummary(roomId = A_ROOM_ID_3, isEncrypted = false, activeMembersCount = 1, joinedMembersCount = 1, latestEvent = LatestEventValue.None),
         )
 
-        assertThat(listedRoomIds(summaries)).containsExactly(A_ROOM_ID_3)
+        assertThat(listedRoomIds(summaries)).containsExactly(A_ROOM_ID, A_ROOM_ID_2, A_ROOM_ID_3).inOrder()
     }
+
+    private fun anOwnJoin() = aRemoteLatestEvent(content = aRoomMembershipContent(change = MembershipChange.JOINED), isOwn = true)
 
     private suspend fun TestScope.listedRoomIds(summaries: List<RoomSummary>): List<RoomId> {
         val roomList = FakeDynamicRoomList(summaries = MutableStateFlow(summaries))

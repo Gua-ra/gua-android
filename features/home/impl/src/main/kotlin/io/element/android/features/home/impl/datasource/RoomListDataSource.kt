@@ -211,10 +211,8 @@ class RoomListDataSource(
     }
 
     private fun buildAndCacheItem(roomSummaries: List<RoomSummary>, index: Int): RoomListRoomSummary? {
-        // GUA FORK: Gua has no Spaces concept (like iOS, where the room list never surfaces spaces), so
-        // hide m.space container rooms — otherwise they leak into the chat list looking like empty rooms.
-        // Also hide stray empty "orphan" rooms so a half-created or never-joined chat (e.g. a failed
-        // start-chat) doesn't clutter the list. Mirrors iOS RoomSummary.isEmptyOrphanRoom.
+        // GUA FORK: Gua has no Spaces, so space rooms stay out of the chat list, and so do empty
+        // orphan rooms left behind by a chat whose creation half-failed or that nobody else joined.
         val roomListSummary = roomSummaries.getOrNull(index)
             ?.takeUnless { it.info.isSpace || it.isEmptyOrphanRoom() }
             ?.let { roomListRoomSummaryFactory.create(it) }
@@ -222,10 +220,12 @@ class RoomListDataSource(
         return roomListSummary
     }
 
-    // GUA FORK: a stray empty room: no hero, at most the local user and one peer, and no message.
+    // GUA FORK: an unnamed room with no hero, at most the local user and one peer, and no message.
+    // A named room always stays, since heroes are kept only for direct chats.
     // Android's latestEvent also carries state events, so a membership or state change is not a message.
     private fun RoomSummary.isEmptyOrphanRoom(): Boolean =
-        info.heroes.isEmpty() &&
+        info.rawName.isNullOrEmpty() &&
+            info.heroes.isEmpty() &&
             info.activeMembersCount <= 2 &&
             !hasRealMessage() &&
             !mayHoldUnreadableMessages()
