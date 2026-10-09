@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit
 private const val REDACTED = "<redacted>"
 
 /**
- * Header names whose values may be written to the log. Every other header is written by name only.
+ * Header names whose values may be written to the log. Every other header value is written as [REDACTED].
  */
 private val visibleHeaders = setOf(
     "accept",
@@ -53,8 +53,8 @@ private val visibleHeaders = setOf(
 /**
  * Logs HTTP exchanges at the DEBUG log level and above as method, origin, path, status, timing and body sizes.
  * Bodies, query strings and header values outside [visibleHeaders] are never written: the log files are kept for days
- * on the device and attached to bug reports. The path is written only when a Retrofit service method declares it in
- * full. Any other path can carry user data, such as the coordinates in a static map image URL.
+ * on the device and attached to bug reports. A path is written only when a Retrofit service method declares it in
+ * full, since any other path can carry user data such as the coordinates in a static map URL.
  */
 @Inject
 @SingleIn(AppScope::class)
@@ -66,7 +66,8 @@ class DynamicHttpLoggingInterceptor(
         val logLevel = runBlocking { appPreferencesStore.getTracingLogLevelFlow().first() }
         val request = chain.request()
         if (logLevel < LogLevel.DEBUG) return chain.proceed(request)
-        val url = request.loggableUrl()
+        val showPath = request.hasDeclaredPath()
+        val url = request.url.loggable(showPath)
         Timber.d(describeRequest(request, url))
         val startNs = System.nanoTime()
         val response = try {
@@ -75,7 +76,7 @@ class DynamicHttpLoggingInterceptor(
             Timber.d("<-- HTTP FAILED ${e.javaClass.simpleName}: ${e.message} $url (${elapsedMs(startNs)}ms)")
             throw e
         }
-        Timber.d(describeResponse(response, url, elapsedMs(startNs)))
+        Timber.d(describeResponse(response, request.url, showPath, elapsedMs(startNs)))
         return response
     }
 
@@ -91,8 +92,13 @@ class DynamicHttpLoggingInterceptor(
         appendHeaders(request.headers)
     }
 
-    private fun describeResponse(response: Response, url: String, tookMs: Long): String = buildString {
-        append("<-- ").append(response.code).append(' ').append(url)
+    private fun describeResponse(response: Response, requestUrl: HttpUrl, showPath: Boolean, tookMs: Long): String = buildString {
+        val finalUrl = response.request.url
+        // A redirect target is chosen by the server, so its path is shown only when it is the declared one.
+        val showFinalPath = showPath && finalUrl.encodedPath == requestUrl.encodedPath
+        append("<-- ").append(response.code).append(' ').append(finalUrl.loggable(showFinalPath))
+        val priorCodes = generateSequence(response.priorResponse) { it.priorResponse }.map { it.code }.toList()
+        if (priorCodes.isNotEmpty()) append(" (after ").append(priorCodes.asReversed().joinToString()).append(')')
         append(" (").append(tookMs).append("ms, ").append(describeSize(response.body.contentLength())).append(" body)")
         appendHeaders(response.headers)
     }
@@ -109,10 +115,10 @@ class DynamicHttpLoggingInterceptor(
 
     private fun elapsedMs(startNs: Long): Long = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs)
 
-    private fun Request.loggableUrl(): String = buildString {
-        append(url.scheme).append("://").append(url.host)
-        if (url.port != HttpUrl.defaultPort(url.scheme)) append(':').append(url.port)
-        append(if (hasDeclaredPath()) url.encodedPath else "/$REDACTED")
+    private fun HttpUrl.loggable(showPath: Boolean): String = buildString {
+        append(scheme).append("://").append(host)
+        if (port != HttpUrl.defaultPort(scheme)) append(':').append(port)
+        append(if (showPath) encodedPath else "/$REDACTED")
     }
 
     private fun Request.hasDeclaredPath(): Boolean {

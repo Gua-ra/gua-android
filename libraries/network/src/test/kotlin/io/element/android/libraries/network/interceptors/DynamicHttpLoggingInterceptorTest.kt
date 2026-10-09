@@ -133,6 +133,32 @@ class DynamicHttpLoggingInterceptorTest {
     }
 
     @Test
+    fun `a redirect is logged at its final origin with the target path redacted`() {
+        MockWebServer().use { target ->
+            target.start()
+            target.enqueue(MockResponse().setResponseCode(200))
+            server.enqueue(MockResponse().setResponseCode(302).addHeader("Location", target.url(STATIC_MAP_PATH).toString()))
+
+            createApi(createClient(LogLevel.DEBUG)).status().execute().body()?.close()
+
+            val output = logged.joinToString("\n")
+            assertThat(output).contains("--> GET ${origin()}/account/status")
+            assertThat(output).contains("<-- 200 ${origin(target)}/<redacted> (after 302) (")
+            assertNoLocation(output)
+        }
+    }
+
+    @Test
+    fun `a redirect back to the declared path keeps the path`() {
+        server.enqueue(MockResponse().setResponseCode(307).addHeader("Location", "/account/status"))
+        server.enqueue(MockResponse().setResponseCode(200))
+
+        createApi(createClient(LogLevel.DEBUG)).status().execute().body()?.close()
+
+        assertThat(logged.joinToString("\n")).contains("<-- 200 ${origin()}/account/status (after 307) (")
+    }
+
+    @Test
     fun `failed request logs the failure without credentials`() {
         server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
         val client = createClient(LogLevel.DEBUG).newBuilder().retryOnConnectionFailure(false).build()
@@ -176,7 +202,7 @@ class DynamicHttpLoggingInterceptorTest {
         body = REQUEST_BODY.toRequestBody("application/json".toMediaType()),
     )
 
-    private fun origin(): String = server.url("/").toString().removeSuffix("/")
+    private fun origin(target: MockWebServer = server): String = target.url("/").toString().removeSuffix("/")
 
     private fun assertNoLocation(output: String) {
         val leaked = listOf(LONGITUDE, LATITUDE, "static", QUERY_VALUE).filter { it in output }
@@ -231,6 +257,9 @@ private interface TestApi {
         @Query("trace") trace: String,
         @Body body: RequestBody,
     ): Call<ResponseBody>
+
+    @GET("account/status")
+    fun status(): Call<ResponseBody>
 
     @GET("maps/static/{location}/map.webp")
     fun staticMap(@Path("location") location: String): Call<ResponseBody>
