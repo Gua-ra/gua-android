@@ -27,6 +27,7 @@
     <string name="screen_find_friends_error_title">Algo deu errado</string>
     <string name="screen_find_friends_error_message">Não conseguimos verificar seus contatos agora. Tente novamente.</string>
     <string name="screen_find_friends_error_action">Tentar novamente</string>
+    <string name="screen_find_friends_start_chat_error">Não conseguimos iniciar a conversa. Tente novamente.</string>
 
     <plurals name="screen_find_friends_results_header_plural">
         <item quantity="one">%1$d contato está no Gua</item>

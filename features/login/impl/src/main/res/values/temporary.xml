@@ -18,6 +18,7 @@
     <string name="screen_phone_entry_title">What\'s your number?</string>
     <string name="screen_phone_entry_message">Enter your phone number</string>
     <string name="screen_phone_entry_footer">We\'ll text a verification code to this number.</string>
+    <string name="screen_phone_entry_invalid_number_hint">This number isn\'t valid for the selected country. Check the number or the country code.</string>
     <string name="screen_phone_entry_phone_number_label">Phone number</string>
     <string name="screen_phone_entry_country_picker_a11y">Select country</string>
 
@@ -30,4 +31,5 @@
          account key and could not: the signup stops rather than quietly creating an account without
          one. Deliberately says nothing about keys or genesis, which are not user-facing ideas. -->
     <string name="gua_account_setup_failed">We could not finish setting up your account on this device. Please try again.</string>
+    <string name="gua_sign_in_interrupted">Sign-in was interrupted. Please try again.</string>
 </resources>

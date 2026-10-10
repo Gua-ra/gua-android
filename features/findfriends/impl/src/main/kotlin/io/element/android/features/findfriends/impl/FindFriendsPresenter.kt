@@ -20,6 +20,9 @@ import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.features.findfriends.api.FindFriendsEntryPoint
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
+import io.element.android.libraries.designsystem.utils.snackbar.collectSnackbarMessageAsState
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.room.StartDMResult
@@ -43,6 +46,7 @@ class FindFriendsPresenter(
     @Assisted private val callback: FindFriendsEntryPoint.Callback,
     private val contactDiscoveryService: ContactDiscoveryService,
     private val matrixClient: MatrixClient,
+    private val snackbarDispatcher: SnackbarDispatcher,
     permissionsPresenterFactory: PermissionsPresenter.Factory,
 ) : Presenter<FindFriendsState> {
     @AssistedFactory
@@ -57,6 +61,7 @@ class FindFriendsPresenter(
     override fun present(): FindFriendsState {
         val coroutineScope = rememberCoroutineScope()
         val permissionsState = contactsPermissionPresenter.present()
+        val snackbarMessage by snackbarDispatcher.collectSnackbarMessageAsState()
 
         var phase by remember { mutableStateOf(FindFriendsPhase.Loading) }
         var contacts by remember { mutableStateOf(persistentListOf<DiscoveredContact>().toImmutableList()) }
@@ -96,7 +101,7 @@ class FindFriendsPresenter(
                 try {
                     when (val result = matrixClient.startDM(contact.userId, createIfDmDoesNotExist = true)) {
                         is StartDMResult.Success -> callback.onStartChat(result.roomId)
-                        else -> phase = FindFriendsPhase.Error
+                        else -> snackbarDispatcher.post(SnackbarMessage(R.string.screen_find_friends_start_chat_error))
                     }
                 } finally {
                     startingChatUserId = null
@@ -120,6 +125,7 @@ class FindFriendsPresenter(
             phase = phase,
             contacts = contacts,
             startingChatUserId = startingChatUserId,
+            snackbarMessage = snackbarMessage,
             eventSink = ::handleEvent,
         )
     }

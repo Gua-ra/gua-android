@@ -41,6 +41,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.matrix.rustcomponents.sdk.BackupSteadyStateListener
@@ -99,6 +101,11 @@ class RustEncryptionService(
     }.stateIn(sessionCoroutineScope, SharingStarted.Eagerly, RecoveryState.WAITING_FOR_SYNC)
 
     override val enableRecoveryProgressStateFlow: MutableStateFlow<EnableRecoveryProgress> = MutableStateFlow(EnableRecoveryProgress.Starting)
+
+    override val isSettingUpKeyStorage: MutableStateFlow<Boolean> = MutableStateFlow(false)
+
+    // GUA FORK: secret storage writes run one at a time; two interleaved ones can leave the account INCOMPLETE.
+    private val secretStorageMutex = Mutex()
 
     /**
      * Check if the session is the last session every 5 seconds.
@@ -168,27 +175,29 @@ class RustEncryptionService(
             return@withContext Result.failure(RecoveryException.E2eeInitializationPending)
         }
         var sawDone = false
-        runCatchingExceptions {
-            // The key arrives as the suspend return value (like resetRecoveryKey), avoiding a
-            // flow/return-value race; the listener only feeds sub-progress.
-            enableRecoveryProgressStateFlow.value = EnableRecoveryProgress.Starting
-            val key = service.enableRecovery(
-                waitForBackupsToUpload = waitForBackupsToUpload,
-                progressListener = object : EnableRecoveryProgressListener {
-                    override fun onUpdate(status: RustEnableRecoveryProgress) {
-                        if (status is RustEnableRecoveryProgress.Done) sawDone = true
-                        enableRecoveryProgressStateFlow.value = enableRecoveryProgressMapper.map(status)
-                    }
-                },
-                passphrase = passphrase,
-            )
-            // Pin Done explicitly so observers get a coherent terminal value. For the passphrase
-            // path the user never sees the SDK base58 key, so keep it out of this session-scoped
-            // (in-memory) flow entirely; the caller still receives it as the return value and is
-            // responsible for scrubbing it. The auto-generated path must retain the key here since
-            // that is how it is surfaced to the user.
-            enableRecoveryProgressStateFlow.value = EnableRecoveryProgress.Done(if (passphrase != null) "" else key)
-            key
+        secretStorageMutex.withLock {
+            runCatchingExceptions {
+                // The key arrives as the suspend return value (like resetRecoveryKey), avoiding a
+                // flow/return-value race; the listener only feeds sub-progress.
+                enableRecoveryProgressStateFlow.value = EnableRecoveryProgress.Starting
+                val key = service.enableRecovery(
+                    waitForBackupsToUpload = waitForBackupsToUpload,
+                    progressListener = object : EnableRecoveryProgressListener {
+                        override fun onUpdate(status: RustEnableRecoveryProgress) {
+                            if (status is RustEnableRecoveryProgress.Done) sawDone = true
+                            enableRecoveryProgressStateFlow.value = enableRecoveryProgressMapper.map(status)
+                        }
+                    },
+                    passphrase = passphrase,
+                )
+                // Pin Done explicitly so observers get a coherent terminal value. For the passphrase
+                // path the user never sees the SDK base58 key, so keep it out of this session-scoped
+                // (in-memory) flow entirely; the caller still receives it as the return value and is
+                // responsible for scrubbing it. The auto-generated path must retain the key here since
+                // that is how it is surfaced to the user.
+                enableRecoveryProgressStateFlow.value = EnableRecoveryProgress.Done(if (passphrase != null) "" else key)
+                key
+            }
         }.mapFailure {
             val mapped = it.mapRecoveryException()
             if (sawDone) RecoveryException.MintedButUnconfirmed(mapped) else mapped
@@ -227,8 +236,10 @@ class RustEncryptionService(
     }
 
     override suspend fun disableRecovery(): Result<Unit> = withContext(dispatchers.io) {
-        runCatchingExceptions {
-            service.disableRecovery()
+        secretStorageMutex.withLock {
+            runCatchingExceptions {
+                service.disableRecovery()
+            }
         }.mapFailure {
             it.mapRecoveryException()
         }
@@ -255,8 +266,10 @@ class RustEncryptionService(
             Timber.w("Refusing to reset the recovery key: the encryption initialisation has not finished.")
             return@withContext Result.failure(RecoveryException.E2eeInitializationPending)
         }
-        runCatchingExceptions {
-            service.resetRecoveryKey()
+        secretStorageMutex.withLock {
+            runCatchingExceptions {
+                service.resetRecoveryKey()
+            }
         }.mapFailure {
             it.mapRecoveryException()
         }

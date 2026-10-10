@@ -41,6 +41,7 @@ internal fun aFindFriendsState(
     phase = phase,
     contacts = contacts.toImmutableList(),
     startingChatUserId = startingChatUserId,
+    snackbarMessage = null,
     eventSink = {},
 )
 

@@ -243,6 +243,32 @@ class RoomListPresenterTest {
     }
 
     @Test
+    fun `present - the setup banner waits for the silent key storage setup`() = runTest {
+        val encryptionService = FakeEncryptionService().apply {
+            emitRecoveryState(RecoveryState.DISABLED)
+            isSettingUpKeyStorage.value = true
+        }
+        val roomList = FakeDynamicRoomList(
+            loadingState = MutableStateFlow(RoomList.LoadingState.Loaded(1))
+        )
+        val presenter = createRoomListPresenter(
+            client = FakeMatrixClient(
+                roomListService = FakeRoomListService(createRoomListLambda = { roomList }),
+                encryptionService = encryptionService,
+                syncService = FakeSyncService(initialSyncState = SyncState.Running),
+            ),
+        )
+        presenter.test {
+            val roomsState = consumeItemsUntilPredicate {
+                it.contentState is RoomListContentState.Rooms
+            }.last()
+            assertThat(roomsState.contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.None)
+            encryptionService.isSettingUpKeyStorage.value = false
+            assertThat(awaitItem().contentAsRooms().securityBannerState).isEqualTo(SecurityBannerState.RecoveryKeyConfirmation)
+        }
+    }
+
+    @Test
     fun `present - show context menu`() = runTest {
         val room = FakeBaseRoom()
         val client = FakeMatrixClient().apply {

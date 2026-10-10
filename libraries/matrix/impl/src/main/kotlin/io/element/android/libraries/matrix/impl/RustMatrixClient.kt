@@ -317,6 +317,7 @@ class RustMatrixClient(
             sessionId = sessionId,
             encryptionService = encryptionService,
             sessionCoroutineScope = sessionCoroutineScope,
+            isSettingUp = encryptionService.isSettingUpKeyStorage,
         ).start()
     }
 

@@ -27,6 +27,7 @@
     <string name="screen_find_friends_error_title">Une erreur est survenue</string>
     <string name="screen_find_friends_error_message">Impossible de vérifier vos contacts pour le moment. Réessayez.</string>
     <string name="screen_find_friends_error_action">Réessayer</string>
+    <string name="screen_find_friends_start_chat_error">Impossible de démarrer la conversation. Réessayez.</string>
 
     <plurals name="screen_find_friends_results_header_plural">
         <item quantity="one">%1$d contact est sur Gua</item>
