@@ -7,51 +7,73 @@
 
 package io.element.android.features.securebackup.impl.reset
 
+import io.element.android.features.securebackup.impl.R
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.matrix.api.encryption.BackupState
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.RecoveryState
-import io.element.android.libraries.matrix.api.verification.SessionVerificationService
-import io.element.android.libraries.matrix.api.verification.SessionVerifiedStatus
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
+import timber.log.Timber
 import kotlin.time.Duration
 
 enum class RecoveryFromOtherDeviceOutcome {
     RECOVERED,
-    BACKUP_NOT_RESTORED,
+
+    /** The identity arrived, but the backup this device held before could not be confirmed as current. */
+    BACKUP_UNCONFIRMED,
     KEYS_DID_NOT_ARRIVE,
 }
 
 /** GUA FORK: judges a recovery from another device of the account by what this device holds afterwards. */
 class RecoveryFromOtherDevice(
     private val encryptionService: EncryptionService,
-    private val sessionVerificationService: SessionVerificationService,
+    private val snackbarDispatcher: SnackbarDispatcher,
 ) {
-    // Latched: once the identity arrives, this device is signed again and the signal is gone.
-    private var holdsDeletedBackupKey = false
+    private var heldBackupBeforeVerification = false
 
     /**
-     * Must run before the verification starts. Backup on while this device is no longer signed by the
-     * account's identity means the identity was reset elsewhere, and a reset deletes the backup this
-     * device holds the key of. The SDK requests a backup key from another device only when it holds none.
+     * Must run before each verification starts. The SDK asks the other device for a backup key only when
+     * this one holds none, so a backup enabled now is not refreshed by the verification and may be one a
+     * reset elsewhere deleted.
      */
     fun recordStateBeforeVerification() {
-        if (encryptionService.backupStateStateFlow.value == BackupState.ENABLED &&
-            sessionVerificationService.sessionVerifiedStatus.value == SessionVerifiedStatus.NotVerified
-        ) {
-            holdsDeletedBackupKey = true
-        }
+        heldBackupBeforeVerification = encryptionService.backupStateStateFlow.value == BackupState.ENABLED
     }
 
-    /** The SDK reports recovery enabled from the local backup alone, so with a deleted backup's key it only means the identity arrived. */
+    /**
+     * The SDK reports recovery enabled from the local backup alone. Confirming a backup held before the
+     * verification against the server takes a stored recovery key, and this app stores none.
+     */
     suspend fun awaitOutcome(timeout: Duration): RecoveryFromOtherDeviceOutcome {
         val recoveryEnabled = withTimeoutOrNull(timeout) {
             encryptionService.recoveryStateStateFlow.first { it == RecoveryState.ENABLED }
         } != null
         return when {
             !recoveryEnabled -> RecoveryFromOtherDeviceOutcome.KEYS_DID_NOT_ARRIVE
-            holdsDeletedBackupKey -> RecoveryFromOtherDeviceOutcome.BACKUP_NOT_RESTORED
+            heldBackupBeforeVerification -> RecoveryFromOtherDeviceOutcome.BACKUP_UNCONFIRMED
             else -> RecoveryFromOtherDeviceOutcome.RECOVERED
+        }
+    }
+
+    /** Only keys that did not arrive keep the reset screen up. */
+    fun report(outcome: RecoveryFromOtherDeviceOutcome, closeFlow: () -> Unit) {
+        when (outcome) {
+            RecoveryFromOtherDeviceOutcome.RECOVERED -> {
+                Timber.d("Keys arrived from the other device")
+                closeFlow()
+            }
+            RecoveryFromOtherDeviceOutcome.BACKUP_UNCONFIRMED -> {
+                Timber.w("Keys arrived from the other device, but the backup held before could not be confirmed as current")
+                snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_recover_from_other_device_backup_unconfirmed))
+                // The reset offered on this screen would delete the account's current backup.
+                closeFlow()
+            }
+            RecoveryFromOtherDeviceOutcome.KEYS_DID_NOT_ARRIVE -> {
+                Timber.w("Keys did not arrive from the other device in time")
+                snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_recover_from_other_device_failed))
+            }
         }
     }
 }

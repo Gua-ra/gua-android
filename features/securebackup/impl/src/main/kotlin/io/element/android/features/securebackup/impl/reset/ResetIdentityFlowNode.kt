@@ -134,7 +134,7 @@ class ResetIdentityFlowNode(
 
     private val recoveryFromOtherDevice = RecoveryFromOtherDevice(
         encryptionService = matrixClient.encryptionService,
-        sessionVerificationService = matrixClient.sessionVerificationService,
+        snackbarDispatcher = snackbarDispatcher,
     )
 
     override fun onBuilt() {
@@ -405,26 +405,12 @@ class ResetIdentityFlowNode(
         snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_reset_failed))
     }
 
-    /** GUA FORK: unless the outcome is a recovery, the reset screen stays with both options. */
     private fun finishRecoveryFromOtherDevice() {
         sessionCoroutineScope.launch {
             finishing.value = true
             val outcome = recoveryFromOtherDevice.awaitOutcome(RECOVERY_FROM_OTHER_DEVICE_CEILING)
             finishing.value = false
-            when (outcome) {
-                RecoveryFromOtherDeviceOutcome.RECOVERED -> {
-                    Timber.d("Keys arrived from the other device")
-                    finishOnce()
-                }
-                RecoveryFromOtherDeviceOutcome.BACKUP_NOT_RESTORED -> {
-                    Timber.w("The identity arrived from the other device, but this device kept the key of a deleted backup")
-                    snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_recover_from_other_device_backup_failed))
-                }
-                RecoveryFromOtherDeviceOutcome.KEYS_DID_NOT_ARRIVE -> {
-                    Timber.w("Keys did not arrive from the other device within $RECOVERY_FROM_OTHER_DEVICE_CEILING")
-                    snackbarDispatcher.post(SnackbarMessage(R.string.gua_encryption_recover_from_other_device_failed))
-                }
-            }
+            recoveryFromOtherDevice.report(outcome, closeFlow = ::finishOnce)
         }
     }
 
