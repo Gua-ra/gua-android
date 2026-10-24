@@ -9,6 +9,7 @@ package io.element.android.features.login.impl.screens.phoneentry
 
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.login.impl.error.ChangeServerError
+import io.element.android.features.login.impl.error.RetryWait
 import io.element.android.features.login.impl.login.FakeGuaDeployment
 import io.element.android.features.login.impl.login.FakeResolverClient
 import io.element.android.features.login.impl.login.LoginHelper
@@ -230,6 +231,24 @@ class PhoneEntryPresenterTest {
             typedState.eventSink(PhoneEntryEvents.Continue)
             val failureState = awaitTerminalLoginMode()
             assertThat(failureState.loginMode).isInstanceOf(AsyncData.Failure::class.java)
+        }
+    }
+
+    @Test
+    fun `present - a rate-limited resolver asks to retry after its wait`() = runTest {
+        val presenter = createPhoneEntryPresenter(
+            loginHelper = createLoginHelper(
+                resolverClient = FakeResolverClient(resolveResult = { Result.failure(ResolverError.ResolveRateLimited(30)) }),
+            ),
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(PhoneEntryEvents.PhoneNumberChanged("2015550123"))
+            val typedState = awaitItem()
+            typedState.eventSink(PhoneEntryEvents.Continue)
+            val failureState = awaitTerminalLoginMode()
+            assertThat((failureState.loginMode as AsyncData.Failure).error)
+                .isEqualTo(ChangeServerError.RateLimited(RetryWait.Seconds(30)))
         }
     }
 

@@ -30,4 +30,17 @@
 
     <!-- Échec de la préparation du compte sur cet appareil (ADM-008). -->
     <string name="gua_account_setup_failed">Nous n\'avons pas pu terminer la configuration de votre compte sur cet appareil. Veuillez réessayer.</string>
+
+    <string name="gua_resolver_routing_unavailable">Nous avons du mal à nous connecter pour le moment. Veuillez réessayer dans quelques instants.</string>
+    <string name="gua_resolver_routing_unavailable_retry_in">Nous avons du mal à nous connecter pour le moment. Veuillez réessayer dans %1$s.</string>
+    <string name="gua_resolver_rate_limited">Trop de tentatives. Veuillez patienter un moment, puis réessayer.</string>
+    <string name="gua_resolver_rate_limited_retry_in">Trop de tentatives. Veuillez réessayer dans %1$s.</string>
+    <plurals name="gua_retry_wait_seconds">
+        <item quantity="one">%1$d seconde</item>
+        <item quantity="other">%1$d secondes</item>
+    </plurals>
+    <plurals name="gua_retry_wait_minutes">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
 </resources>

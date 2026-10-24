@@ -45,6 +45,7 @@ fr:common_sentence_delimiter
 fr:common_suggestions
 fr:dialog_title_confirmation
 fr:gua_duration_minutes
+fr:gua_retry_wait_minutes
 fr:notification_compat_summary_title
 fr:rich_text_editor_composer_placeholder
 fr:screen_change_server_error_element_pro_required_action_android

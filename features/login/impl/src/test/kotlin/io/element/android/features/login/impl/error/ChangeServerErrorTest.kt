@@ -25,6 +25,29 @@ class ChangeServerErrorTest {
     }
 
     @Test
+    fun `a resolver asking to retry later keeps its wait`() {
+        assertThat(ChangeServerError.from(ResolverError.ResolveRateLimited(30)))
+            .isEqualTo(ChangeServerError.RateLimited(RetryWait.Seconds(30)))
+        assertThat(ChangeServerError.from(ResolverError.ResolveRateLimited(null)))
+            .isEqualTo(ChangeServerError.RateLimited(null))
+        assertThat(ChangeServerError.from(ResolverError.TemporarilyUnavailable(61)))
+            .isEqualTo(ChangeServerError.TemporarilyUnavailable(RetryWait.Minutes(2)))
+        assertThat(ChangeServerError.from(ResolverError.TemporarilyUnavailable(null)))
+            .isEqualTo(ChangeServerError.TemporarilyUnavailable(null))
+    }
+
+    @Test
+    fun `waits of a minute or more round up to whole minutes`() {
+        assertThat(RetryWait.fromRetryAfter(null)).isNull()
+        assertThat(RetryWait.fromRetryAfter(0)).isNull()
+        assertThat(RetryWait.fromRetryAfter(1)).isEqualTo(RetryWait.Seconds(1))
+        assertThat(RetryWait.fromRetryAfter(59)).isEqualTo(RetryWait.Seconds(59))
+        assertThat(RetryWait.fromRetryAfter(60)).isEqualTo(RetryWait.Minutes(1))
+        assertThat(RetryWait.fromRetryAfter(61)).isEqualTo(RetryWait.Minutes(2))
+        assertThat(RetryWait.fromRetryAfter(3600)).isEqualTo(RetryWait.Minutes(60))
+    }
+
+    @Test
     fun `other errors show the translated generic message, never their own text`() {
         listOf(
             ResolverError.NotConfigured,

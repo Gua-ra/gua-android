@@ -24,6 +24,20 @@ sealed class ResolverError(message: String, cause: Throwable? = null) : Exceptio
     /** Transport or decoding failure while talking to the resolver. */
     data class Transport(val error: Throwable) : ResolverError("Could not reach the routing service.", error)
 
+    /**
+     * The resolver or its ingress is rate limiting this client (HTTP 429). [retryAfterSeconds] is the
+     * `Retry-After` delay, when the response gave a usable one. Mirrors iOS `ResolverError.rateLimited`.
+     */
+    data class ResolveRateLimited(val retryAfterSeconds: Long? = null) :
+        ResolverError("The routing service is rate limiting requests.")
+
+    /**
+     * The resolver is temporarily unavailable (HTTP 503). [retryAfterSeconds] is the `Retry-After`
+     * delay, when the response gave a usable one. Mirrors iOS `ResolverError.temporarilyUnavailable`.
+     */
+    data class TemporarilyUnavailable(val retryAfterSeconds: Long? = null) :
+        ResolverError("The routing service is temporarily unavailable.")
+
     // GUA FORK: two-step verification (account PIN). Mirrors the typed iOS `IdentityServiceError`
     // cases so presenters can drive the PIN state machine per error. Surfaced by [IdentityServiceClient]
     // PIN methods from the identity-service's JSON `code` field (see `DefaultIdentityServiceClient`).

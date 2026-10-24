@@ -21,4 +21,17 @@
 
     <!-- Fallo al preparar la cuenta en este dispositivo (ADM-008). -->
     <string name="gua_account_setup_failed">No pudimos terminar de configurar tu cuenta en este dispositivo. Inténtalo de nuevo.</string>
+
+    <string name="gua_resolver_routing_unavailable">Estamos teniendo problemas para conectarnos. Vuelve a intentarlo en un momento.</string>
+    <string name="gua_resolver_routing_unavailable_retry_in">Estamos teniendo problemas para conectarnos. Vuelve a intentarlo en %1$s.</string>
+    <string name="gua_resolver_rate_limited">Demasiados intentos. Espera un momento y vuelve a intentarlo.</string>
+    <string name="gua_resolver_rate_limited_retry_in">Demasiados intentos. Vuelve a intentarlo en %1$s.</string>
+    <plurals name="gua_retry_wait_seconds">
+        <item quantity="one">%1$d segundo</item>
+        <item quantity="other">%1$d segundos</item>
+    </plurals>
+    <plurals name="gua_retry_wait_minutes">
+        <item quantity="one">%1$d minuto</item>
+        <item quantity="other">%1$d minutos</item>
+    </plurals>
 </resources>
