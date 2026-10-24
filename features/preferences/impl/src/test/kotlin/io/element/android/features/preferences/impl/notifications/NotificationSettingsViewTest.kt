@@ -20,10 +20,13 @@ import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.features.preferences.impl.R
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.matrix.test.AN_EXCEPTION
+import io.element.android.libraries.push.api.PusherRegistrationFailure
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureNeverCalled
 import io.element.android.tests.testutils.EnsureNeverCalledWithParam
 import io.element.android.tests.testutils.EventsRecorder
+import io.element.android.tests.testutils.assertNoNodeWithText
+import io.element.android.tests.testutils.assertNodeWithTextIsDisplayed
 import io.element.android.tests.testutils.clickOn
 import io.element.android.tests.testutils.ensureCalledOnce
 import io.element.android.tests.testutils.ensureCalledOnceWithParam
@@ -193,6 +196,61 @@ class NotificationSettingsViewTest : RobolectricTest() {
                 eventSink = eventsRecorder
             ),
         )
+        assertNodeWithTextIsDisplayed(R.string.screen_notification_settings_edit_failed_updating_default_mode)
+        assertNoNodeWithText(R.string.gua_notification_settings_enable_failed)
+        assertNoNodeWithText(R.string.gua_notification_settings_no_push_service)
+        clickOn(CommonStrings.action_ok)
+        eventsRecorder.assertList(
+            listOf(
+                NotificationSettingsEvents.RefreshSystemNotificationsEnabled,
+                NotificationSettingsEvents.ClearNotificationChangeError
+            )
+        )
+    }
+
+    @Config(qualifiers = "h1024dp")
+    @Test
+    fun `a failed enable shows the registration error and OK clears it`() = runAndroidComposeUiTest {
+        val eventsRecorder = EventsRecorder<NotificationSettingsEvents>()
+        setNotificationSettingsView(
+            state = aValidNotificationSettingsState(
+                changeNotificationSettingAction = AsyncAction.Failure(EnableNotificationsFailure(AN_EXCEPTION)),
+                eventSink = eventsRecorder
+            ),
+        )
+        assertNodeWithTextIsDisplayed(R.string.gua_notification_settings_enable_failed)
+        assertNoNodeWithText(R.string.gua_notification_settings_no_push_service)
+        assertNoNodeWithText(R.string.screen_notification_settings_edit_failed_updating_default_mode)
+        clickOn(CommonStrings.action_ok)
+        eventsRecorder.assertList(
+            listOf(
+                NotificationSettingsEvents.RefreshSystemNotificationsEnabled,
+                NotificationSettingsEvents.ClearNotificationChangeError
+            )
+        )
+    }
+
+    @Config(qualifiers = "h1024dp")
+    @Test
+    fun `a failed enable with no push provider shows the no push service error`() =
+        testNoPushServiceError(PusherRegistrationFailure.NoProvidersAvailable())
+
+    @Config(qualifiers = "h1024dp")
+    @Test
+    fun `a failed enable with no push distributor shows the no push service error`() =
+        testNoPushServiceError(PusherRegistrationFailure.NoDistributorsAvailable())
+
+    private fun testNoPushServiceError(cause: PusherRegistrationFailure) = runAndroidComposeUiTest {
+        val eventsRecorder = EventsRecorder<NotificationSettingsEvents>()
+        setNotificationSettingsView(
+            state = aValidNotificationSettingsState(
+                changeNotificationSettingAction = AsyncAction.Failure(EnableNotificationsFailure(cause)),
+                eventSink = eventsRecorder
+            ),
+        )
+        assertNodeWithTextIsDisplayed(R.string.gua_notification_settings_no_push_service)
+        assertNoNodeWithText(R.string.gua_notification_settings_enable_failed)
+        assertNoNodeWithText(R.string.screen_notification_settings_edit_failed_updating_default_mode)
         clickOn(CommonStrings.action_ok)
         eventsRecorder.assertList(
             listOf(

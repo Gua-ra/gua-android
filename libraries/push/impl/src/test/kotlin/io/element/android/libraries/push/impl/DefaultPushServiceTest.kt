@@ -344,17 +344,29 @@ class DefaultPushServiceTest {
     }
 
     @Test
-    fun `ensurePusher - error when account is not verified`() = runTest {
-        val sessionVerificationService = FakeSessionVerificationService(
-            initialSessionVerifiedStatus = SessionVerifiedStatus.NotVerified
+    fun `ensurePusher - registers when the session is not verified`() = runTest {
+        val lambda = lambdaRecorder<MatrixClient, Distributor, Result<Unit>> { _, _ ->
+            Result.success(Unit)
+        }
+        val pushService = createDefaultPushService(
+            pushProviders = setOf(
+                FakePushProvider(
+                    index = 0,
+                    name = "aFakePushProvider",
+                    distributors = listOf(Distributor("aDistributorValue0", "aDistributorName0")),
+                    registerWithResult = lambda,
+                )
+            ),
         )
-        val pushService = createDefaultPushService()
         val result = pushService.ensurePusherIsRegistered(
             FakeMatrixClient(
-                sessionVerificationService = sessionVerificationService,
+                sessionVerificationService = FakeSessionVerificationService(
+                    initialSessionVerifiedStatus = SessionVerifiedStatus.NotVerified
+                ),
             )
         )
-        assertThat(result.exceptionOrNull()!!).isInstanceOf(PusherRegistrationFailure.AccountNotVerified::class.java)
+        assertThat(result.isSuccess).isTrue()
+        lambda.assertions().isCalledOnce()
     }
 
     @Test
@@ -362,9 +374,6 @@ class DefaultPushServiceTest {
         val lambda = lambdaRecorder<MatrixClient, Distributor, Result<Unit>> { _, _ ->
             Result.success(Unit)
         }
-        val sessionVerificationService = FakeSessionVerificationService(
-            initialSessionVerifiedStatus = SessionVerifiedStatus.Verified
-        )
         val pushProvider0 = FakePushProvider(
             index = 0,
             name = "aFakePushProvider0",
@@ -383,11 +392,7 @@ class DefaultPushServiceTest {
                 pushProvider1,
             ),
         )
-        val result = pushService.ensurePusherIsRegistered(
-            FakeMatrixClient(
-                sessionVerificationService = sessionVerificationService,
-            )
-        )
+        val result = pushService.ensurePusherIsRegistered(FakeMatrixClient())
         assertThat(result.isSuccess).isTrue()
         lambda.assertions().isCalledOnce()
             .with(
@@ -403,9 +408,6 @@ class DefaultPushServiceTest {
         val lambda = lambdaRecorder<MatrixClient, Distributor, Result<Unit>> { _, _ ->
             Result.success(Unit)
         }
-        val sessionVerificationService = FakeSessionVerificationService(
-            initialSessionVerifiedStatus = SessionVerifiedStatus.Verified
-        )
         val pushProvider = FakePushProvider(
             index = 0,
             name = "aFakePushProvider",
@@ -415,11 +417,7 @@ class DefaultPushServiceTest {
         val pushService = createDefaultPushService(
             pushProviders = setOf(pushProvider),
         )
-        val result = pushService.ensurePusherIsRegistered(
-            FakeMatrixClient(
-                sessionVerificationService = sessionVerificationService,
-            )
-        )
+        val result = pushService.ensurePusherIsRegistered(FakeMatrixClient())
         assertThat(result.exceptionOrNull()).isInstanceOf(PusherRegistrationFailure.NoDistributorsAvailable::class.java)
         lambda.assertions().isNeverCalled()
     }
@@ -429,9 +427,6 @@ class DefaultPushServiceTest {
         val lambda = lambdaRecorder<MatrixClient, Distributor, Result<Unit>> { _, _ ->
             Result.success(Unit)
         }
-        val sessionVerificationService = FakeSessionVerificationService(
-            initialSessionVerifiedStatus = SessionVerifiedStatus.Verified
-        )
         val pushService = createDefaultPushService(
             pushProviders = setOf(
                 FakePushProvider(
@@ -442,11 +437,7 @@ class DefaultPushServiceTest {
                 )
             ),
         )
-        val result = pushService.ensurePusherIsRegistered(
-            FakeMatrixClient(
-                sessionVerificationService = sessionVerificationService,
-            )
-        )
+        val result = pushService.ensurePusherIsRegistered(FakeMatrixClient())
         assertThat(result.isSuccess).isTrue()
         lambda.assertions()
             .isCalledOnce()
@@ -463,9 +454,6 @@ class DefaultPushServiceTest {
         val lambda = lambdaRecorder<MatrixClient, Distributor, Result<Unit>> { _, _ ->
             Result.failure(AN_EXCEPTION)
         }
-        val sessionVerificationService = FakeSessionVerificationService(
-            initialSessionVerifiedStatus = SessionVerifiedStatus.Verified
-        )
         val pushService = createDefaultPushService(
             pushProviders = setOf(
                 FakePushProvider(
@@ -476,11 +464,7 @@ class DefaultPushServiceTest {
                 )
             ),
         )
-        val result = pushService.ensurePusherIsRegistered(
-            FakeMatrixClient(
-                sessionVerificationService = sessionVerificationService,
-            )
-        )
+        val result = pushService.ensurePusherIsRegistered(FakeMatrixClient())
         assertThat(result.isFailure).isTrue()
         lambda.assertions()
             .isCalledOnce()
@@ -497,9 +481,6 @@ class DefaultPushServiceTest {
         val lambda = lambdaRecorder<MatrixClient, Distributor, Result<Unit>> { _, _ ->
             Result.success(Unit)
         }
-        val sessionVerificationService = FakeSessionVerificationService(
-            initialSessionVerifiedStatus = SessionVerifiedStatus.Verified
-        )
         val pushProvider = FakePushProvider(
             index = 0,
             name = "aFakePushProvider0",
@@ -510,11 +491,7 @@ class DefaultPushServiceTest {
             pushProviders = setOf(pushProvider),
             getCurrentPushProvider = FakeGetCurrentPushProvider(currentPushProvider = pushProvider.name),
         )
-        val result = pushService.ensurePusherIsRegistered(
-            FakeMatrixClient(
-                sessionVerificationService = sessionVerificationService,
-            )
-        )
+        val result = pushService.ensurePusherIsRegistered(FakeMatrixClient())
         assertThat(result.exceptionOrNull())
             .isInstanceOf(PusherRegistrationFailure.NoDistributorsAvailable::class.java)
         lambda.assertions()
@@ -526,9 +503,6 @@ class DefaultPushServiceTest {
         val lambda = lambdaRecorder<MatrixClient, Distributor, Result<Unit>> { _, _ ->
             Result.success(Unit)
         }
-        val sessionVerificationService = FakeSessionVerificationService(
-            initialSessionVerifiedStatus = SessionVerifiedStatus.Verified
-        )
         val distributor = Distributor("aDistributorValue1", "aDistributorName1")
         val pushProvider = FakePushProvider(
             index = 0,
@@ -544,11 +518,7 @@ class DefaultPushServiceTest {
             pushProviders = setOf(pushProvider),
             getCurrentPushProvider = FakeGetCurrentPushProvider(currentPushProvider = pushProvider.name),
         )
-        val result = pushService.ensurePusherIsRegistered(
-            FakeMatrixClient(
-                sessionVerificationService = sessionVerificationService,
-            )
-        )
+        val result = pushService.ensurePusherIsRegistered(FakeMatrixClient())
         assertThat(result.isSuccess).isTrue()
         lambda.assertions()
             .isCalledOnce()
@@ -565,15 +535,10 @@ class DefaultPushServiceTest {
         val lambda = lambdaRecorder<MatrixClient, Distributor, Result<Unit>> { _, _ ->
             Result.success(Unit)
         }
-        val sessionVerificationService = FakeSessionVerificationService(SessionVerifiedStatus.Verified)
         val pushService = createDefaultPushService(
             pushProviders = emptySet(),
         )
-        val result = pushService.ensurePusherIsRegistered(
-            FakeMatrixClient(
-                sessionVerificationService = sessionVerificationService,
-            )
-        )
+        val result = pushService.ensurePusherIsRegistered(FakeMatrixClient())
         assertThat(result.exceptionOrNull())
             .isInstanceOf(PusherRegistrationFailure.NoProvidersAvailable::class.java)
         lambda.assertions()
@@ -585,9 +550,6 @@ class DefaultPushServiceTest {
         val lambda = lambdaRecorder<MatrixClient, Distributor, Result<Unit>> { _, _ ->
             Result.success(Unit)
         }
-        val sessionVerificationService = FakeSessionVerificationService(
-            initialSessionVerifiedStatus = SessionVerifiedStatus.Verified
-        )
         val pushProvider = FakePushProvider(
             index = 0,
             name = "aFakePushProvider0",
@@ -602,11 +564,7 @@ class DefaultPushServiceTest {
             pushProviders = setOf(pushProvider),
             getCurrentPushProvider = FakeGetCurrentPushProvider(currentPushProvider = pushProvider.name),
         )
-        val result = pushService.ensurePusherIsRegistered(
-            FakeMatrixClient(
-                sessionVerificationService = sessionVerificationService,
-            )
-        )
+        val result = pushService.ensurePusherIsRegistered(FakeMatrixClient())
         assertThat(result.isSuccess).isTrue()
         lambda.assertions()
             .isCalledOnce()

@@ -88,7 +88,6 @@ private fun Throwable.shouldBeShown(): Boolean {
     return when (this) {
         // When registering again, ignore network error
         is PusherRegistrationFailure.RegistrationFailure -> !(isRegisteringAgain && clientException.isNetworkError())
-        is PusherRegistrationFailure.AccountNotVerified -> false
         // GUA FORK: a build with no push provider is a known state, not an error the user can act
         // on. Upstream tells people to install a distributor; Gua offers none, so the dialog only
         // said that notifications were broken with nothing to do about it.

@@ -210,7 +210,11 @@ class NotificationSettingsPresenter(
                 is NotificationSettingsEvents.SetInviteForMeNotificationsEnabled -> {
                     localCoroutineScope.setInviteForMeNotificationsEnabled(event.enabled, changeNotificationSettingAction)
                 }
-                is NotificationSettingsEvents.SetNotificationsEnabled -> sessionCoroutineScope.setNotificationsEnabled(userPushStore, event.enabled)
+                is NotificationSettingsEvents.SetNotificationsEnabled -> sessionCoroutineScope.setNotificationsEnabled(
+                    userPushStore = userPushStore,
+                    enabled = event.enabled,
+                    action = changeNotificationSettingAction,
+                )
                 NotificationSettingsEvents.ClearConfigurationMismatchError -> {
                     matrixSettings.value = NotificationSettingsState.MatrixSettings.Invalid(fixFailed = false)
                 }
@@ -516,10 +520,15 @@ class NotificationSettingsPresenter(
         }
     }
 
-    private fun CoroutineScope.setNotificationsEnabled(userPushStore: UserPushStore, enabled: Boolean) = launch {
+    private fun CoroutineScope.setNotificationsEnabled(
+        userPushStore: UserPushStore,
+        enabled: Boolean,
+        action: MutableState<AsyncAction<Unit>>,
+    ) = launch {
         userPushStore.setNotificationEnabledForDevice(enabled)
         if (enabled) {
             pushService.ensurePusherIsRegistered(matrixClient)
+                .onFailure { action.value = AsyncAction.Failure(EnableNotificationsFailure(it)) }
         } else {
             pushService.getCurrentPushProvider(matrixClient.sessionId)?.unregister(matrixClient)
         }
