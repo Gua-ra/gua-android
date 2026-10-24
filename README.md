@@ -22,9 +22,9 @@ Gua for Android is in an invite-only beta. Request access with the beta form at 
 
 ## What the app does today
 
-- **Finds your homeserver for you.** Gua runs as a closed federation of homeservers. At sign-in, the app asks [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) which homeserver to use for your phone number. It then signs in through the Gua identity host and connects to that homeserver. You see usernames, never a server address.
-- **Simple sign-in with a second step.** You enter your phone number and confirm a verification code. A 6-digit PIN protects the account as a second step. The flow is built to stay flexible: institutional SSO is planned for organizations that bring their own identity.
-- **Private contact discovery.** Find Friends shows which of your contacts already use Gua and feeds straight into Start Chat. The app hashes phone numbers on the device and sends only the digests to the Gua identity service. It never sends the address book itself. Hashing makes the lookup more private. It does not make the numbers impossible to recover.
+- **Finds your homeserver for you.** The resolver's roster lists the Gua homeservers and decides where new Gua accounts are created. At sign-in, the app asks [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) which homeserver to use for your phone number. It then signs in through the Gua identity host and connects to that homeserver. You see usernames, never a server address.
+- **Simple sign-in with a second step.** You enter your phone number and confirm a verification code, then use the account's passkey or 6-digit PIN. A code alone never completes a sign-in. The flow is built to stay flexible: institutional SSO is planned for organizations that bring their own identity.
+- **Contact discovery.** Find Friends shows which of your contacts already use Gua and feeds straight into Start Chat. The app sends the phone numbers from your contacts over TLS to the Gua identity service, which digests them with a secret pepper, matches them in memory and does not store them. Contact names stay on the device.
 - **Phone number changes.** You can change the number linked to your account from Settings. The new number receives a one-time code. The account PIN is the second factor.
 - **Account recovery warnings.** While someone is recovering the account through the delayed recovery, the chat list on every signed-in device says so and offers to cancel it.
 - **A Gua welcome screen.** The app opens on a native welcome screen with the Gua aurora, phone entry and a country picker.
@@ -34,10 +34,10 @@ Gua for Android is in an invite-only beta. Request access with the beta form at 
 | Area | Upstream (Element X) | Gua |
 |---|---|---|
 | Brand | Element / New Vector | Gua (`global.gua` application id) |
-| Login flow | Matrix password / SSO with manual homeserver selection | Phone number and verification code, no homeserver picking. Institutional SSO planned |
+| Login flow | Matrix password / SSO with manual homeserver selection | Phone number and verification code, then passkey or PIN, no homeserver picking. Institutional SSO planned |
 | Welcome screen | Element onboarding | Gua aurora welcome with native phone entry and country picker |
 | Account home | user selects a homeserver | resolved automatically behind the scenes (`libraries/guaresolver`) |
-| Contact discovery | user directory search | Find Friends (hashed phone lookups) wired into Start Chat (`features/findfriends`) |
+| Contact discovery | user directory search | Find Friends (phone number lookups) wired into Start Chat (`features/findfriends`) |
 | Two-step verification | device verification | 6-digit account PIN: set, change, reset (`features/preferences` two-step verification) |
 | Settings identity | full user id with server suffix | username only, server abstracted |
 | Chat list | all rooms, including Spaces and empty rooms | chats-first: Spaces and state-only rooms are hidden |
@@ -55,10 +55,10 @@ gua-resolver
     |  2. OIDC authorization code + PKCE (Custom Tab) against the resolved server
     v
 Matrix Authentication Service (Gua fork: gua-auth-service)
-    |  3. delegated sign-in (phone + one-time code + PIN today; institutional SSO planned)
+    |  3. delegated sign-in (phone + one-time code, then passkey or PIN; institutional SSO planned)
     v
 Gua Identity Service
-    |  provisioning, account PIN, contact lookup, phone-number changes
+    |  provisioning, account PIN, passkeys, contact lookup, phone-number changes
     v
 Synapse homeserver in the Gua federation
 ```
@@ -75,9 +75,10 @@ Synapse homeserver in the Gua federation
 Everything above describes the current implementation. Parts of the target design are not shipped yet, including:
 
 - **Per-homeserver authentication.** Today every sign-in completes at the single Gua identity host.
-- **Verified routing.** Today the app follows the resolver's answer as given. It does not check that answer against signed federation state.
+- **Verified routing.** Today the app follows the resolver's answer as given. It does not check that answer against signed federation state, and it does not check the roster's signatures yet.
+- **Federation limited to the roster.** Today federation is open at the Matrix layer, so a Gua homeserver can also exchange messages with other Matrix servers. Limiting federation to the homeservers on the roster is a proposal and is not in place yet.
 
-[Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md) explains the target in plain language. [ADM-001](https://github.com/Gua-ra/gua-resolver/blob/main/docs/decisions/ADM-001-identifier-binding-placement-trust.md) records the decision behind it.
+[Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md) describes the system as it runs today, in plain language. [Planned federation work](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/planned-federation-work.md) describes the target and the rules it must keep.
 
 ---
 
