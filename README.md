@@ -20,7 +20,7 @@ This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://git
 
 - **Finds your homeserver for you.** Gua runs as a closed federation of homeservers. At sign-in, the app asks [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) which homeserver to use for your phone number. It then signs in through the Gua identity host and connects to that homeserver. You see usernames, never a server address.
 - **Simple sign-in with a second step.** You enter your phone number and confirm a verification code. A 6-digit PIN protects the account as a second step. The flow is built to stay flexible: institutional SSO is planned for organizations that bring their own identity.
-- **Private contact discovery.** Find Friends shows which of your contacts already use Gua and feeds straight into Start Chat. The app hashes phone numbers on the device and sends only the digests to the Gua identity service. It never sends the address book itself. Hashing makes the lookup more private. It does not make the numbers impossible to recover.
+- **Private contact discovery.** Find Friends shows which of your contacts already use Gua and feeds straight into Start Chat. The app sends the phone numbers from your contacts over an encrypted connection to the Gua identity service, which hashes them in memory with a secret key, compares them with Gua accounts and discards them. Contact names stay on the device.
 - **Phone number changes.** You can change the number linked to your account from Settings. The new number receives a one-time code. The account PIN is the second factor.
 - **Account recovery warnings.** While someone is recovering the account through the delayed recovery, the chat list on every signed-in device says so and offers to cancel it.
 - **A Gua welcome screen.** The app opens on a native welcome screen with the Gua aurora, phone entry and a country picker.
@@ -33,7 +33,7 @@ This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://git
 | Login flow | Matrix password / SSO with manual homeserver selection | Phone number and verification code, no homeserver picking. Institutional SSO planned |
 | Welcome screen | Element onboarding | Gua aurora welcome with native phone entry and country picker |
 | Account home | user selects a homeserver | resolved automatically behind the scenes (`libraries/guaresolver`) |
-| Contact discovery | user directory search | Find Friends (hashed phone lookups) wired into Start Chat (`features/findfriends`) |
+| Contact discovery | user directory search | Find Friends (phone number lookups) wired into Start Chat (`features/findfriends`) |
 | Two-step verification | device verification | 6-digit account PIN: set, change, reset (`features/preferences` two-step verification) |
 | Settings identity | full user id with server suffix | username only, server abstracted |
 | Chat list | all rooms, including Spaces and empty rooms | chats-first: Spaces and state-only rooms are hidden |

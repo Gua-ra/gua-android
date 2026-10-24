@@ -8,16 +8,15 @@
 package io.element.android.libraries.guaresolver
 
 /**
- * GUA FORK: a contact-discovery hit — a hashed address-book phone number that belongs to a Gua
- * account. Android counterpart of iOS `ContactMatch`.
+ * GUA FORK: a contact-discovery hit, an address-book phone number that belongs to a Gua account.
+ * Android counterpart of iOS `ContactMatch`.
  *
- * [hashedPhone] echoes back the submitted (protected) phone digest so the caller can map the hit
- * back onto the local address book without the server ever learning the raw number. [displayHandle]
- * is the homeserver-abstracted global handle (e.g. `@alice`), already stripped of any `:homeserver`
- * suffix by the client.
+ * [phoneNumber] is the submitted E.164 number that matched, so the caller can map the hit back onto
+ * the local address book. [displayHandle] is the homeserver-abstracted global handle (e.g. `@alice`),
+ * already stripped of any `:homeserver` suffix by the client.
  */
 data class ContactMatch(
-    val hashedPhone: String,
+    val phoneNumber: String,
     val userId: String,
     val displayHandle: String,
     val displayName: String?,

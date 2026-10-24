@@ -29,7 +29,7 @@ class FakeIdentityServiceClient(
     override suspend fun cancelAccountRecovery(accessToken: String): Result<Unit> =
         cancelAccountRecoveryResult(accessToken)
 
-    override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> = lambdaError()
+    override suspend fun lookupContacts(accessToken: String, phones: List<String>): Result<List<ContactMatch>> = lambdaError()
 
     override suspend fun startPinEnrollment(accessToken: String): Result<String> = lambdaError()
 

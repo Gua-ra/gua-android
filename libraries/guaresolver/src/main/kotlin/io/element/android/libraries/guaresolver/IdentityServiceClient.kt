@@ -12,24 +12,21 @@ package io.element.android.libraries.guaresolver
  * matching a batch of address-book phone numbers against Gua accounts. Android counterpart of iOS
  * `IdentityServiceClientProtocol.lookupContacts` (+ `ContactMatch`).
  *
- * PRIVACY: callers pass hashed phone digests, never raw numbers, see [PhoneHasher]. The address
- * book is never persisted; the digests are sent over TLS for a one-shot lookup and the raw numbers
- * never leave the device. The digest is a privacy-hardening step, not a guarantee of
- * irreversibility: the domain tag is public and the phone keyspace is small, so the identity-service
- * can match a digest back to a number. Only the contacts that are on Gua and discoverable come back.
+ * PRIVACY: the numbers are sent over TLS for a one-shot lookup. The identity service compares them
+ * in memory against keyed hashes held under a server-side secret and does not store them. Only the
+ * contacts that are on Gua and discoverable come back.
  */
 interface IdentityServiceClient {
     /**
-     * Look up which of the supplied hashed phone numbers belong to a Gua account.
+     * Look up which of the supplied phone numbers belong to a Gua account.
      *
      * @param accessToken the caller's Matrix access token (the lookup is authenticated, mirroring iOS).
-     * @param hashedPhones address-book phone numbers already protected via [PhoneHasher.hash]
-     * (E.164 -> stable, domain-tagged SHA-256 digest; the tag is public, not a salt). Raw numbers
-     * must never be passed here.
+     * @param phones address-book numbers in E.164 form, at most 1000 per call (the server rejects
+     * larger batches).
      * @return [Result.success] with the matched [ContactMatch]es, or [Result.failure] with a
      * [ResolverError] (notably [ResolverError.NotConfigured] when no identity-service URL is configured).
      */
-    suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>>
+    suspend fun lookupContacts(accessToken: String, phones: List<String>): Result<List<ContactMatch>>
 
     // GUA FORK: Two-step verification factors. Android counterpart of iOS
     // `IdentityServiceClientProtocol.accountFactorStatus / startPinEnrollment / startPinChange /
