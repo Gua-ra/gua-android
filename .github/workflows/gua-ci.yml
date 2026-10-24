@@ -138,7 +138,8 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
       - name: Run unit tests + screenshot verification
-        run: ./gradlew testDebugUnitTest :tests:uitests:verifyPaparazziDebug $CI_GRADLE_ARG_PROPERTIES
+        # Test tasks are build-cacheable; --rerun makes them execute instead of restoring a cached result.
+        run: ./gradlew testDebugUnitTest --rerun :tests:uitests:verifyPaparazziDebug --rerun $CI_GRADLE_ARG_PROPERTIES
       - name: Upload test/screenshot failures
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
