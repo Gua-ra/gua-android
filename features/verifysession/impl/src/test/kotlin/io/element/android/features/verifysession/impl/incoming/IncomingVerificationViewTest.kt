@@ -218,6 +218,22 @@ class IncomingVerificationViewTest : RobolectricTest() {
     }
 
     @Test
+    fun `comparing emojis with another device of this account uses the Gua subtitle`() = runAndroidComposeUiTest<ComponentActivity> {
+        setIncomingVerificationView(
+            anIncomingVerificationState(step = IncomingVerificationState.Step.Verifying(data = aEmojisSessionVerificationData(), isWaiting = false))
+        )
+        onNodeWithText(activity!!.getString(R.string.gua_verification_compare_emojis_subtitle)).assertExists()
+    }
+
+    @Test
+    fun `waiting for the other device of this account after the emoji check keeps the Gua subtitle`() = runAndroidComposeUiTest<ComponentActivity> {
+        setIncomingVerificationView(
+            anIncomingVerificationState(step = IncomingVerificationState.Step.Verifying(data = aEmojisSessionVerificationData(), isWaiting = true))
+        )
+        onNodeWithText(activity!!.getString(R.string.gua_verification_compare_emojis_subtitle)).assertExists()
+    }
+
+    @Test
     fun `a request from another user keeps the user verification copy`() = runAndroidComposeUiTest<ComponentActivity> {
         setIncomingVerificationView(anIncomingVerificationState(step = aStepInitial(), verificationRequest = anIncomingUserVerificationRequest()))
         onNodeWithText(activity!!.getString(R.string.screen_session_verification_request_title)).assertExists()
