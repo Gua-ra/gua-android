@@ -36,6 +36,10 @@ class IncomingVerificationStateMachine(
                 onEnterEffect {
                     sessionVerificationService.acceptVerificationRequest()
                 }
+                on<Event.OwnDeviceRequestAccepted> { _, state ->
+                    sessionVerificationService.startSasVerification()
+                    state.noChange()
+                }
                 on { event: Event.DidReceiveChallenge, state ->
                     state.override { State.ChallengeReceived(event.data).andLogStateChange() }
                 }
@@ -140,6 +144,9 @@ class IncomingVerificationStateMachine(
     sealed interface Event {
         /** User accepts the incoming request. */
         data object AcceptIncomingRequest : Event
+
+        /** GUA FORK: the acceptance of a request from one of this account's devices went through. */
+        data object OwnDeviceRequestAccepted : Event
 
         /** Has received data. */
         data class DidReceiveChallenge(val data: SessionVerificationData) : Event

@@ -12,4 +12,9 @@
     <string name="gua_verification_other_device_subtitle">Keep it open. You\'ll compare a few emojis on both devices to confirm it\'s you.</string>
     <string name="gua_verification_waiting_other_device_title">Waiting for your other device</string>
     <string name="gua_verification_compare_emojis_subtitle">Make sure the emojis below match the ones on your other device.</string>
+
+    <!-- GUA FORK: this device confirms a new sign-in of the same account. -->
+    <string name="gua_verification_new_sign_in_title">New sign-in to your account</string>
+    <string name="gua_verification_new_sign_in_subtitle">If this was you, confirm it to show your messages there. You\'ll compare a few emojis on both screens.</string>
+    <string name="gua_verification_new_sign_in_complete_subtitle">Your messages will now show up on your other device.</string>
 </resources>

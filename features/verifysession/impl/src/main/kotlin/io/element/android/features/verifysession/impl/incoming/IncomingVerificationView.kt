@@ -106,7 +106,10 @@ private fun IncomingVerificationHeader(step: Step, request: VerificationRequest.
     }
     val titleTextId = when (step) {
         Step.Canceled -> CommonStrings.common_verification_failed
-        is Step.Initial -> R.string.screen_session_verification_request_title
+        is Step.Initial -> when (request) {
+            is VerificationRequest.Incoming.OtherSession -> R.string.gua_verification_new_sign_in_title
+            is VerificationRequest.Incoming.User -> R.string.screen_session_verification_request_title
+        }
         is Step.Verifying -> when (step.data) {
             is SessionVerificationData.Decimals -> R.string.screen_session_verification_compare_numbers_title
             is SessionVerificationData.Emojis -> R.string.screen_session_verification_compare_emojis_title
@@ -117,18 +120,18 @@ private fun IncomingVerificationHeader(step: Step, request: VerificationRequest.
     val subtitleTextId = when (step) {
         Step.Canceled -> R.string.screen_session_verification_request_failure_subtitle
         is Step.Initial -> when (request) {
-            is VerificationRequest.Incoming.OtherSession -> R.string.screen_session_verification_request_subtitle
+            is VerificationRequest.Incoming.OtherSession -> R.string.gua_verification_new_sign_in_subtitle
             is VerificationRequest.Incoming.User -> R.string.screen_session_verification_user_responder_subtitle
         }
         is Step.Verifying -> when (step.data) {
             is SessionVerificationData.Decimals -> R.string.screen_session_verification_compare_numbers_subtitle
             is SessionVerificationData.Emojis -> when (request) {
-                is VerificationRequest.Incoming.OtherSession -> R.string.screen_session_verification_compare_emojis_subtitle
+                is VerificationRequest.Incoming.OtherSession -> R.string.gua_verification_compare_emojis_subtitle
                 is VerificationRequest.Incoming.User -> R.string.screen_session_verification_compare_emojis_user_subtitle
             }
         }
         Step.Completed -> when (request) {
-            is VerificationRequest.Incoming.OtherSession -> R.string.screen_session_verification_complete_subtitle
+            is VerificationRequest.Incoming.OtherSession -> R.string.gua_verification_new_sign_in_complete_subtitle
             is VerificationRequest.Incoming.User -> R.string.screen_session_verification_complete_user_subtitle
         }
         Step.Failure -> R.string.screen_session_verification_request_failure_subtitle
