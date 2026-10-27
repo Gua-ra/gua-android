@@ -100,9 +100,9 @@ import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.analytics.api.watchers.AnalyticsRoomListStateWatcher
 import io.element.android.services.appnavstate.api.AppNavigationStateService
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
@@ -182,9 +182,6 @@ class LoggedInFlowNode(
 
     private val verificationListener = object : SessionVerificationServiceListener {
         override fun onIncomingSessionRequest(verificationRequest: VerificationRequest.Incoming) {
-            if (verificationRequest is VerificationRequest.Incoming.OtherSession) {
-                newSignInMonitor.onVerificationRequestReceived(verificationRequest.details.deviceId)
-            }
             // Without this launch the rendering and actual state of this Appyx node's children gets out of sync, resulting in a crash.
             // This might be because this method is called back from Rust in a background thread.
             lifecycleScope.launch {
@@ -211,6 +208,8 @@ class LoggedInFlowNode(
                     }
                 }
 
+                // GUA FORK: recorded only once shown, so a discarded request does not hold back nudges to its device.
+                verificationRequest.ownDeviceIdOrNull()?.let(newSignInMonitor::onVerificationRequestReceived)
                 backstack.singleTop(NavTarget.IncomingVerificationRequest(verificationRequest))
             }
         }
@@ -231,11 +230,8 @@ class LoggedInFlowNode(
                 lifecycleScope.launch {
                     // GUA FORK: no nudge while a flow such as onboarding, a reset or a verification covers the main screens.
                     newSignInMonitor.run(
-                        isShowingMainScreens = backstack.elements.map { elements ->
-                            when (elements.activeElement) {
-                                NavTarget.Home, is NavTarget.Room -> true
-                                else -> false
-                            }
+                        isShowingMainScreens = combine(lifecycle.currentStateFlow, backstack.elements) { lifecycleState, elements ->
+                            isShowingMainScreens(lifecycleState, elements.activeElement)
                         }
                     )
                 }
