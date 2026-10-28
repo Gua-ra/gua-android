@@ -34,4 +34,6 @@
         <item quantity="one">%1$d minuto</item>
         <item quantity="other">%1$d minutos</item>
     </plurals>
+    <string name="screen_onboarding_add_account_subtitle">Puedes añadir varias cuentas a la aplicación y cambiar entre ellas fácilmente.</string>
+    <string name="screen_onboarding_add_account_title">Inicia sesión en otra cuenta</string>
 </resources>

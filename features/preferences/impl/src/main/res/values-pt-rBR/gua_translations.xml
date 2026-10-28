@@ -120,4 +120,22 @@
     <string name="screen_notification_settings_sound_system_default">Padrão do sistema</string>
     <string name="gua_notification_settings_enable_failed">Não foi possível ativar as notificações neste dispositivo. Tente novamente.</string>
     <string name="gua_notification_settings_no_push_service">Este dispositivo não tem um serviço de notificações push, então o Gua não consegue enviar notificações para ele.</string>
+    <string name="screen_labs_enable_gallery">Mensagens de galeria</string>
+    <string name="screen_labs_enable_gallery_description">Envie várias imagens ou vídeos de uma só vez. Estável no celular, mas ainda sem suporte na versão web.</string>
+    <string name="screen_labs_enable_knocking">Pedir para entrar</string>
+    <string name="screen_labs_enable_knocking_description">Usuários podem solicitar acesso a uma sala que não está aberta para qualquer pessoa entrar. Estável no celular; a versão web existe, mas ainda é experimental.</string>
+    <string name="screen_moderation_and_safety_invites_heading">Convites</string>
+    <string name="screen_moderation_and_safety_other_users_heading">Outros usuários</string>
+    <string name="screen_moderation_and_safety_share_presence_heading">Como você aparece</string>
+    <string name="screen_notification_settings_activity_section_title">Atividade</string>
+    <string name="screen_notification_settings_show_all_activity_subtitle">Pontos ou número de mensagens não lidas</string>
+    <string name="screen_notification_settings_show_all_activity_title">Mostrar toda a atividade na lista de conversas</string>
+    <string name="screen_settings_user_status_away">Ausente</string>
+    <string name="screen_settings_user_status_be_right_back">Volto logo</string>
+    <string name="screen_settings_user_status_custom">Personalizado…</string>
+    <string name="screen_settings_user_status_custom_hint">Status personalizado…</string>
+    <string name="screen_settings_user_status_focus_time">Tempo de foco</string>
+    <string name="screen_settings_user_status_in_a_meeting">Em uma reunião</string>
+    <string name="screen_settings_user_status_on_the_road">Na estrada</string>
+    <string name="screen_settings_user_status_placeholder">Qual é o seu status?</string>
 </resources>

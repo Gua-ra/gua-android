@@ -11,4 +11,7 @@
         <item quantity="other">Você tem %d mensagens novas.</item>
     </plurals>
     <string name="notification_incoming_audio_call">📞 Chamada recebida</string>
+    <string name="notification_knock_request_body">Pediu para entrar</string>
+    <string name="notification_live_location_started_body">Começou a compartilhar a localização em tempo real</string>
+    <string name="troubleshoot_notifications_test_push_loop_back_failure_rate_limit">Erro: o gateway de push está limitando as requisições deste dispositivo, então as notificações não serão confiáveis. Configure um gateway de push diferente.</string>
 </resources>

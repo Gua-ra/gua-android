@@ -9,4 +9,12 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="gua_identity_change_banner">Los datos de seguridad de %1$s han cambiado. Esto puede ocurrir cuando reinstala Gua o cambia de teléfono. %2$s</string>
     <string name="gua_identity_change_undecryptable">Este mensaje no se puede abrir porque los datos de seguridad del remitente han cambiado.</string>
+    <string name="error_sending_failure_invalid_mime_type">Tipo MIME no válido: %s</string>
+    <string name="error_sending_failure_missing_media_content">Falta el contenido multimedia</string>
+    <string name="error_sending_failure_other">Detalles del error: %s</string>
+    <string name="error_sending_failure_sending_from_unverified_device">Envío desde un dispositivo no verificado</string>
+    <string name="error_sending_failure_unknown">Error desconocido</string>
+    <string name="screen_room_confirm_removal_reason_placeholder">Escribe el motivo…</string>
+    <string name="screen_room_confirm_removal_reason_supporting_text">(Opcional)</string>
+    <string name="screen_room_confirm_removal_title">¿Eliminar mensaje?</string>
 </resources>
