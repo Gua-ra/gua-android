@@ -8,6 +8,7 @@
 
 @file:Suppress("UnstableApiUsage")
 
+import config.BuildTimeConfig
 import extension.setupDependencyInjection
 import extension.testCommonDependencies
 import org.gradle.kotlin.dsl.withType
