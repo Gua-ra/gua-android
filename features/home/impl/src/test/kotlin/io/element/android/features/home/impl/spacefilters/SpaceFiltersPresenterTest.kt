@@ -8,6 +8,7 @@
 package io.element.android.features.home.impl.spacefilters
 
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.space.test.FakeSpacesSwitch
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.spaces.FakeSpaceService
@@ -260,9 +261,11 @@ class SpaceFiltersPresenterTest {
 
     private fun createSpaceFiltersPresenter(
         matrixClient: FakeMatrixClient = FakeMatrixClient(),
+        spacesSwitch: FakeSpacesSwitch = FakeSpacesSwitch(initialValue = true),
     ): SpaceFiltersPresenter {
         return SpaceFiltersPresenter(
             matrixClient = matrixClient,
+            spacesSwitch = spacesSwitch,
         )
     }
 }

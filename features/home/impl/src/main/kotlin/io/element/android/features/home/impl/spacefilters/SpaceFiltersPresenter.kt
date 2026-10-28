@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.zacsweers.metro.Inject
+import io.element.android.features.space.api.SpacesSwitch
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.spaces.SpaceServiceFilter
@@ -26,14 +27,16 @@ import kotlinx.coroutines.flow.map
 @Inject
 class SpaceFiltersPresenter(
     private val matrixClient: MatrixClient,
+    private val spacesSwitch: SpacesSwitch,
 ) : Presenter<SpaceFiltersState> {
     @Composable
     override fun present(): SpaceFiltersState {
         val availableFilters by remember {
             matrixClient.spaceService.spaceFiltersFlow.map { it.toImmutableList() }
         }.collectAsState(initial = persistentListOf())
+        val isSpacesEnabled by spacesSwitch.isEnabled.collectAsState()
 
-        if (availableFilters.isEmpty()) {
+        if (!isSpacesEnabled || availableFilters.isEmpty()) {
             return SpaceFiltersState.Disabled
         }
 

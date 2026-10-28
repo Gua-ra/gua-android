@@ -45,6 +45,7 @@ import io.element.android.features.leaveroom.api.LeaveRoomEvent
 import io.element.android.features.leaveroom.api.LeaveRoomState
 import io.element.android.features.securebackup.api.IdentityResetPendingStore
 import io.element.android.features.securebackup.api.KeyStorageProvisioner
+import io.element.android.features.space.api.SpacesSwitch
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
@@ -106,6 +107,7 @@ class RoomListPresenter(
     private val keyStorageProvisioner: KeyStorageProvisioner,
     private val identityResetPendingStore: IdentityResetPendingStore,
     private val accountRecoveryBannerPresenter: Presenter<AccountRecoveryBannerState>,
+    private val spacesSwitch: SpacesSwitch,
 ) : Presenter<RoomListState> {
     private val encryptionService = client.encryptionService
 
@@ -225,6 +227,10 @@ class RoomListPresenter(
                 is RoomListEvent.MarkAsRead -> coroutineScope.markAsRead(event.roomId)
                 is RoomListEvent.MarkAsUnread -> coroutineScope.markAsUnread(event.roomId)
                 is RoomListEvent.AcceptInvite -> {
+                    // GUA FORK: joining a space turns the Spaces switch on, so the space has somewhere to appear.
+                    if (event.roomSummary.isSpace && !spacesSwitch.isEnabled.value) {
+                        coroutineScope.launch { spacesSwitch.setEnabled(true) }
+                    }
                     acceptDeclineInviteState.eventSink(
                         AcceptInvite(event.roomSummary.toInviteData())
                     )

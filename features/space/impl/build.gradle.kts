@@ -44,6 +44,7 @@ dependencies {
     implementation(projects.features.securityandprivacy.api)
     implementation(projects.features.rolesandpermissions.api)
     implementation(projects.features.roomdetailsedit.api)
+    implementation(libs.serialization.json)
     api(projects.features.space.api)
 
     testCommonDependencies(libs, true)
@@ -53,4 +54,5 @@ dependencies {
     testImplementation(projects.features.createroom.test)
     testImplementation(projects.features.invite.test)
     testImplementation(projects.features.rolesandpermissions.test)
+    testImplementation(projects.features.space.test)
 }

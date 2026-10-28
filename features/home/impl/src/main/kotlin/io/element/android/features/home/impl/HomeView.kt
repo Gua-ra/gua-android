@@ -196,39 +196,44 @@ private fun HomeScaffold(
             )
         },
         floatingActionButton = {
-            val coroutineScope = rememberCoroutineScope()
-            HomeBottomBar(
-                currentHomeNavigationBarItem = state.currentHomeNavigationBarItem,
-                onItemClick = { item ->
-                    // scroll to top if selecting the same item
-                    if (item == state.currentHomeNavigationBarItem) {
-                        val lazyListStateTarget = when (item) {
-                            HomeNavigationBarItem.Chats -> roomsLazyListState
-                            HomeNavigationBarItem.Spaces -> spacesLazyListState
-                        }
-                        coroutineScope.launch {
-                            if (lazyListStateTarget.firstVisibleItemIndex > 10) {
-                                lazyListStateTarget.scrollToItem(10)
+            // GUA FORK: the Chats/Spaces switcher appears only while the Spaces switch is on.
+            if (state.isSpacesEnabled) {
+                val coroutineScope = rememberCoroutineScope()
+                HomeBottomBar(
+                    currentHomeNavigationBarItem = state.currentHomeNavigationBarItem,
+                    onItemClick = { item ->
+                        // scroll to top if selecting the same item
+                        if (item == state.currentHomeNavigationBarItem) {
+                            val lazyListStateTarget = when (item) {
+                                HomeNavigationBarItem.Chats -> roomsLazyListState
+                                HomeNavigationBarItem.Spaces -> spacesLazyListState
                             }
-                            // Also reset the scrollBehavior height offset as it's not triggered by programmatic scrolls
-                            scrollBehavior.state.heightOffset = 0f
-                            lazyListStateTarget.animateScrollToItem(0)
+                            coroutineScope.launch {
+                                if (lazyListStateTarget.firstVisibleItemIndex > 10) {
+                                    lazyListStateTarget.scrollToItem(10)
+                                }
+                                // Also reset the scrollBehavior height offset as it's not triggered by programmatic scrolls
+                                scrollBehavior.state.heightOffset = 0f
+                                lazyListStateTarget.animateScrollToItem(0)
+                            }
+                        } else {
+                            state.eventSink(HomeEvent.SelectHomeNavigationBarItem(item))
                         }
-                    } else {
-                        state.eventSink(HomeEvent.SelectHomeNavigationBarItem(item))
-                    }
-                },
-                floatingActionButton = {
-                    when (state.currentHomeNavigationBarItem) {
-                        HomeNavigationBarItem.Chats -> {
-                            HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
+                    },
+                    floatingActionButton = {
+                        when (state.currentHomeNavigationBarItem) {
+                            HomeNavigationBarItem.Chats -> {
+                                HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
+                            }
+                            HomeNavigationBarItem.Spaces -> {
+                                HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
+                            }
                         }
-                        HomeNavigationBarItem.Spaces -> {
-                            HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
-                        }
-                    }
-                },
-            )
+                    },
+                )
+            } else {
+                HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
+            }
         },
         floatingActionButtonPosition = FabPosition.Center,
         content = { padding ->

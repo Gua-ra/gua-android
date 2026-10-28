@@ -148,7 +148,8 @@ class ConfigureRoomPresenter(
             when {
                 isSpace && parentSpace != null -> TODO("Adding a space to a parent space is not supported yet! How did you get here?")
                 parentSpace == null || parentSpace.joinRule == JoinRule.Public -> listOfNotNull(
-                    JoinRuleItem.PublicVisibility.Public,
+                    // GUA FORK: spaces are shared by invite or link only on mobile, so they are never public.
+                    JoinRuleItem.PublicVisibility.Public.takeIf { !isSpace },
                     JoinRuleItem.PublicVisibility.AskToJoin.takeIf { !isSpace && isKnockFeatureEnabled },
                     JoinRuleItem.PrivateVisibility.Private,
                 ).toImmutableList()

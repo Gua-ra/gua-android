@@ -21,6 +21,7 @@ import io.element.android.features.joinroom.impl.di.CancelKnockRoom
 import io.element.android.features.joinroom.impl.di.ForgetRoom
 import io.element.android.features.joinroom.impl.di.KnockRoom
 import io.element.android.features.roomdirectory.api.RoomDescription
+import io.element.android.features.space.test.FakeSpacesSwitch
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
@@ -57,6 +58,7 @@ import io.element.android.libraries.matrix.ui.model.InviteSender
 import io.element.android.libraries.matrix.ui.model.toInviteSender
 import io.element.android.libraries.previewutils.room.aSpaceRoom
 import io.element.android.tests.testutils.WarmUpRule
+import io.element.android.tests.testutils.awaitLastSequentialItem
 import io.element.android.tests.testutils.lambda.any
 import io.element.android.tests.testutils.lambda.assert
 import io.element.android.tests.testutils.lambda.lambdaRecorder
@@ -290,6 +292,40 @@ class JoinRoomPresenterTest {
                 )
             }
         }
+    }
+
+    @Test
+    fun `present - joining a space with the Spaces switch off turns it on`() = runTest {
+        val spacesSwitch = FakeSpacesSwitch(initialValue = false)
+        val matrixClient = FakeMatrixClient(
+            getNotJoinedRoomResult = { _, _ ->
+                Result.failure(Exception("Error"))
+            },
+            spaceService = FakeSpaceService(
+                spaceRoomListResult = {
+                    FakeSpaceRoomList(
+                        initialSpaceFlowValue = aSpaceRoom(),
+                    )
+                },
+            ),
+        ).apply {
+            getRoomInfoFlowLambda = { _ ->
+                flowOf(Optional.ofNullable(null))
+            }
+        }
+        val presenter = createJoinRoomPresenter(
+            matrixClient = matrixClient,
+            spacesSwitch = spacesSwitch,
+        )
+        presenter.test {
+            val state = awaitLastSequentialItem()
+            assertThat(state.joiningTurnsOnSpaces).isTrue()
+            state.eventSink(JoinRoomEvents.JoinRoom)
+            val joiningState = awaitLastSequentialItem()
+            assertThat(joiningState.isSpacesEnabled).isTrue()
+            assertThat(joiningState.joiningTurnsOnSpaces).isFalse()
+        }
+        assertThat(spacesSwitch.isEnabled.value).isTrue()
     }
 
     @Test
@@ -1233,6 +1269,7 @@ internal fun createJoinRoomPresenter(
     buildMeta: BuildMeta = aBuildMeta(applicationName = "AppName"),
     acceptDeclineInvitePresenter: Presenter<AcceptDeclineInviteState> = Presenter { anAcceptDeclineInviteState() },
     seenInvitesStore: SeenInvitesStore = InMemorySeenInvitesStore(),
+    spacesSwitch: FakeSpacesSwitch = FakeSpacesSwitch(initialValue = true),
 ): JoinRoomPresenter {
     return JoinRoomPresenter(
         roomId = roomId,
@@ -1248,6 +1285,7 @@ internal fun createJoinRoomPresenter(
         buildMeta = buildMeta,
         acceptDeclineInvitePresenter = acceptDeclineInvitePresenter,
         seenInvitesStore = seenInvitesStore,
+        spacesSwitch = spacesSwitch,
     )
 }
 

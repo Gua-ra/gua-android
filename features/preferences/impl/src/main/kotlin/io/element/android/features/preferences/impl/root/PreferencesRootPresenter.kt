@@ -24,6 +24,7 @@ import io.element.android.features.lockscreen.api.LockScreenService
 import io.element.android.features.logout.api.direct.DirectLogoutState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
+import io.element.android.features.space.api.SpacesSwitch
 import io.element.android.libraries.androidutils.browser.withMxidLoginHint
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
@@ -63,6 +64,7 @@ class PreferencesRootPresenter(
     private val lockScreenService: LockScreenService,
     private val identityServiceClient: IdentityServiceClient,
     private val buildMeta: BuildMeta,
+    private val spacesSwitch: SpacesSwitch,
 ) : Presenter<PreferencesRootState> {
     @Composable
     override fun present(): PreferencesRootState {
@@ -149,6 +151,7 @@ class PreferencesRootPresenter(
         }
 
         val showDeveloperSettings by showDeveloperSettingsProvider.showDeveloperSettings.collectAsState()
+        val isSpacesEnabled by spacesSwitch.isEnabled.collectAsState()
 
         fun handleEvent(event: PreferencesRootEvent) {
             when (event) {
@@ -157,6 +160,9 @@ class PreferencesRootPresenter(
                 }
                 is PreferencesRootEvent.SwitchToSession -> coroutineScope.launch {
                     sessionStore.setLatestSession(event.sessionId.value)
+                }
+                is PreferencesRootEvent.SetSpacesEnabled -> coroutineScope.launch {
+                    spacesSwitch.setEnabled(event.enabled)
                 }
             }
         }
@@ -187,6 +193,7 @@ class PreferencesRootPresenter(
             showLabsItem = showLabsItem,
             isLockScreenPinSetup = isLockScreenPinSetup,
             hasAccountStrongFactor = hasAccountStrongFactor,
+            isSpacesEnabled = isSpacesEnabled,
             directLogoutState = directLogoutState,
             snackbarMessage = snackbarMessage,
             eventSink = ::handleEvent,

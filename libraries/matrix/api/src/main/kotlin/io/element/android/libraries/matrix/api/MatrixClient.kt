@@ -198,6 +198,16 @@ interface MatrixClient {
     suspend fun addRecentEmoji(emoji: String): Result<Unit>
 
     /**
+     * Returns the JSON content of the global account data event of [eventType] from the local store, or null if unset.
+     */
+    suspend fun getAccountData(eventType: String): Result<String?>
+
+    /**
+     * Sets the global account data event of [eventType] to the JSON [content].
+     */
+    suspend fun setAccountData(eventType: String, content: String): Result<Unit>
+
+    /**
      * Marks the room with the provided [roomId] as read, sending a fully read receipt for [eventId].
      *
      * This method should be used with caution as providing the [eventId] ourselves can result in incorrect read receipts.

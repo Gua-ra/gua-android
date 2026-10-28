@@ -37,8 +37,12 @@ data class JoinRoomState(
     val knockMessage: String,
     val hideInviteAvatars: Boolean,
     val canReportRoom: Boolean,
+    val isSpacesEnabled: Boolean,
     val eventSink: (JoinRoomEvents) -> Unit
 ) {
+    // GUA FORK: joining a space while the Spaces switch is off turns it on.
+    val joiningTurnsOnSpaces = !isSpacesEnabled && (contentState as? ContentState.Loaded)?.isSpace == true
+
     val isJoinActionUnauthorized = joinAction is AsyncAction.Failure && joinAction.error is JoinRoom.Failures.UnauthorizedJoin
     val joinAuthorisationStatus = when (contentState) {
         is ContentState.Loaded -> {

@@ -36,6 +36,7 @@ data class PreferencesRootState(
     // app-lock PIN. Null means not known yet or unreadable, which is NOT the same as "none": the
     // nudge banner only appears on an explicit false.
     val hasAccountStrongFactor: Boolean?,
+    val isSpacesEnabled: Boolean,
     val directLogoutState: DirectLogoutState,
     val snackbarMessage: SnackbarMessage?,
     val eventSink: (PreferencesRootEvent) -> Unit,

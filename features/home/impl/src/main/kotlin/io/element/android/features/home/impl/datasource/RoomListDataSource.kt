@@ -19,6 +19,7 @@ import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.notificationsettings.NotificationSettingsService
+import io.element.android.libraries.matrix.api.room.CurrentUserMembership
 import io.element.android.libraries.matrix.api.roomlist.LatestEventValue
 import io.element.android.libraries.matrix.api.roomlist.RoomList
 import io.element.android.libraries.matrix.api.roomlist.RoomListFilter
@@ -211,12 +212,11 @@ class RoomListDataSource(
     }
 
     private fun buildAndCacheItem(roomSummaries: List<RoomSummary>, index: Int): RoomListRoomSummary? {
-        // GUA FORK: Gua has no Spaces concept (like iOS, where the room list never surfaces spaces), so
-        // hide m.space container rooms — otherwise they leak into the chat list looking like empty rooms.
-        // Also hide stray empty "orphan" rooms so a half-created or never-joined chat (e.g. a failed
-        // start-chat) doesn't clutter the list. Mirrors iOS RoomSummary.isEmptyOrphanRoom.
+        // GUA FORK: joined spaces live in the Spaces tab, never in Chats; space invites stay here so they can be
+        // accepted while the Spaces switch is off. Also hide stray empty "orphan" rooms so a half-created or
+        // never-joined chat (e.g. a failed start-chat) doesn't clutter the list. Mirrors iOS RoomSummary.isEmptyOrphanRoom.
         val roomListSummary = roomSummaries.getOrNull(index)
-            ?.takeUnless { it.info.isSpace || it.isEmptyOrphanRoom() }
+            ?.takeUnless { it.isJoinedSpace() || it.isEmptyOrphanRoom() }
             ?.let { roomListRoomSummaryFactory.create(it) }
         diffCache[index] = roomListSummary
         return roomListSummary
@@ -228,6 +228,9 @@ class RoomListDataSource(
     // activeMembersCount <= 2). NOTE: unlike iOS's `lastMessage`, Android's `latestEvent` also includes
     // state events (e.g. "You joined the room" = RoomMembershipContent), so "no message" means the
     // latest event is absent OR a state-like (membership/profile/state) event, never a message.
+    private fun RoomSummary.isJoinedSpace(): Boolean =
+        info.isSpace && info.currentUserMembership != CurrentUserMembership.INVITED
+
     private fun RoomSummary.isEmptyOrphanRoom(): Boolean =
         info.heroes.isEmpty() &&
             info.activeMembersCount <= 2 &&

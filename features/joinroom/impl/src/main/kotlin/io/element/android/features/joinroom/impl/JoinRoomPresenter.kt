@@ -33,6 +33,7 @@ import io.element.android.features.joinroom.impl.di.CancelKnockRoom
 import io.element.android.features.joinroom.impl.di.ForgetRoom
 import io.element.android.features.joinroom.impl.di.KnockRoom
 import io.element.android.features.roomdirectory.api.RoomDescription
+import io.element.android.features.space.api.SpacesSwitch
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.architecture.runUpdatingState
@@ -72,6 +73,7 @@ class JoinRoomPresenter(
     private val acceptDeclineInvitePresenter: Presenter<AcceptDeclineInviteState>,
     private val buildMeta: BuildMeta,
     private val seenInvitesStore: SeenInvitesStore,
+    private val spacesSwitch: SpacesSwitch,
 ) : Presenter<JoinRoomState> {
     fun interface Factory {
         fun create(
@@ -101,6 +103,7 @@ class JoinRoomPresenter(
         var isDismissingContent by remember { mutableStateOf(false) }
         val hideInviteAvatars by matrixClient.rememberHideInvitesAvatar()
         val canReportRoom by produceState(false) { value = matrixClient.canReportRoom() }
+        val isSpacesEnabled by spacesSwitch.isEnabled.collectAsState()
 
         var contentState by remember {
             mutableStateOf<ContentState>(ContentState.Loading)
@@ -151,11 +154,21 @@ class JoinRoomPresenter(
             contentState.markRoomInviteAsSeen()
         }
 
+        fun turnOnSpacesIfJoiningSpace() {
+            if (!isSpacesEnabled && (contentState as? ContentState.Loaded)?.isSpace == true) {
+                coroutineScope.launch { spacesSwitch.setEnabled(true) }
+            }
+        }
+
         fun handleEvent(event: JoinRoomEvents) {
             when (event) {
-                JoinRoomEvents.JoinRoom -> coroutineScope.joinRoom(joinAction)
+                JoinRoomEvents.JoinRoom -> {
+                    turnOnSpacesIfJoiningSpace()
+                    coroutineScope.joinRoom(joinAction)
+                }
                 is JoinRoomEvents.KnockRoom -> coroutineScope.knockRoom(knockAction, knockMessage)
                 is JoinRoomEvents.AcceptInvite -> {
+                    turnOnSpacesIfJoiningSpace()
                     acceptDeclineInviteState.eventSink(
                         AcceptDeclineInviteEvents.AcceptInvite(event.inviteData)
                     )
@@ -197,6 +210,7 @@ class JoinRoomPresenter(
             knockMessage = knockMessage,
             hideInviteAvatars = hideInviteAvatars,
             canReportRoom = canReportRoom,
+            isSpacesEnabled = isSpacesEnabled,
             eventSink = ::handleEvent,
         )
     }
