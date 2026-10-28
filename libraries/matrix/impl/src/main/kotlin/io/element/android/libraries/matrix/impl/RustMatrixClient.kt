@@ -139,6 +139,8 @@ import org.matrix.rustcomponents.sdk.CreateRoomParameters as RustCreateRoomParam
 import org.matrix.rustcomponents.sdk.RoomPreset as RustRoomPreset
 import org.matrix.rustcomponents.sdk.SyncService as ClientSyncService
 
+// GUA FORK: the account data calls take this class past detekt's size limit.
+@Suppress("LargeClass")
 class RustMatrixClient(
     override val sessionPaths: SessionPaths,
     private val innerClient: Client,

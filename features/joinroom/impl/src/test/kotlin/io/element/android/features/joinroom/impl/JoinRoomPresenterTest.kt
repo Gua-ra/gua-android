@@ -59,7 +59,7 @@ import io.element.android.libraries.matrix.ui.model.InviteSender
 import io.element.android.libraries.matrix.ui.model.toInviteSender
 import io.element.android.libraries.previewutils.room.aSpaceRoom
 import io.element.android.tests.testutils.WarmUpRule
-import io.element.android.tests.testutils.awaitLastSequentialItem
+import io.element.android.tests.testutils.consumeItemsUntilPredicate
 import io.element.android.tests.testutils.lambda.any
 import io.element.android.tests.testutils.lambda.assert
 import io.element.android.tests.testutils.lambda.lambdaRecorder
@@ -303,7 +303,7 @@ class JoinRoomPresenterTest {
             spacesSwitch = spacesSwitch,
         )
         presenter.test {
-            val state = awaitLastSequentialItem()
+            val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
             assertThat(state.joinAuthorisationStatus).isEqualTo(JoinAuthorisationStatus.CanJoin)
             assertThat(state.joiningTurnsOnSpaces).isTrue()
             state.eventSink(JoinRoomEvents.JoinRoom)
@@ -321,7 +321,7 @@ class JoinRoomPresenterTest {
             spacesSwitch = spacesSwitch,
         )
         presenter.test {
-            val state = awaitLastSequentialItem()
+            val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
             assertThat(state.joinAuthorisationStatus).isEqualTo(JoinAuthorisationStatus.Unknown)
             assertThat(state.joiningTurnsOnSpaces).isTrue()
             state.eventSink(JoinRoomEvents.JoinRoom)
@@ -338,7 +338,7 @@ class JoinRoomPresenterTest {
             spacesSwitch = spacesSwitch,
         )
         presenter.test {
-            val state = awaitLastSequentialItem()
+            val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
             assertThat(state.joiningTurnsOnSpaces).isFalse()
             state.eventSink(JoinRoomEvents.JoinRoom)
             cancelAndIgnoreRemainingEvents()
@@ -354,7 +354,7 @@ class JoinRoomPresenterTest {
             spacesSwitch = spacesSwitch,
         )
         presenter.test {
-            val state = awaitLastSequentialItem()
+            val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
             assertThat(state.joiningTurnsOnSpaces).isFalse()
             state.eventSink(JoinRoomEvents.JoinRoom)
             cancelAndIgnoreRemainingEvents()
@@ -369,9 +369,10 @@ class JoinRoomPresenterTest {
             spacesSwitch = FakeSpacesSwitch(initialValue = false),
         )
         presenter.test {
-            val state = awaitLastSequentialItem()
+            val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
             assertThat(state.joinAuthorisationStatus).isEqualTo(JoinAuthorisationStatus.CanKnock)
             assertThat(state.joiningTurnsOnSpaces).isFalse()
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
@@ -386,12 +387,13 @@ class JoinRoomPresenterTest {
             spacesSwitch = spacesSwitch,
         )
         presenter.test {
-            val state = awaitLastSequentialItem()
+            val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
             assertThat(state.joinAuthorisationStatus).isInstanceOf(JoinAuthorisationStatus.IsInvited::class.java)
             assertThat(state.joiningTurnsOnSpaces).isTrue()
             state.eventSink(JoinRoomEvents.AcceptInvite(roomInfo.toInviteData()))
             assertThat(spacesSwitch.enableWhenJoinedCalls).containsExactly(A_ROOM_ID)
             assert(acceptInviteRecorder).isCalledOnce()
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
@@ -408,9 +410,10 @@ class JoinRoomPresenterTest {
                 spacesSwitch = spacesSwitch,
             )
             presenter.test {
-                val state = awaitLastSequentialItem()
+                val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
                 assertThat(state.joiningTurnsOnSpaces).isFalse()
                 state.eventSink(JoinRoomEvents.AcceptInvite(roomInfo.toInviteData()))
+                cancelAndIgnoreRemainingEvents()
             }
             assertThat(spacesSwitch.enableWhenJoinedCalls).isEmpty()
         }
