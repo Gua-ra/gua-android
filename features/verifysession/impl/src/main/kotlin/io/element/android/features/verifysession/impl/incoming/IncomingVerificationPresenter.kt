@@ -116,7 +116,6 @@ class IncomingVerificationPresenter(
                 IncomingVerificationViewEvents.StartVerification ->
                     stateAndDispatch.dispatchAction(StateMachineEvent.AcceptIncomingRequest)
                 IncomingVerificationViewEvents.IgnoreVerification -> {
-                    // GUA FORK: an ignored sign-in of this account is never nudged to ask again.
                     if (verificationRequest is VerificationRequest.Incoming.OtherSession) {
                         sessionCoroutineScope.launch { dismissedSignInStore.dismiss(verificationRequest.details.deviceId) }
                     }
@@ -199,8 +198,7 @@ class IncomingVerificationPresenter(
                     VerificationFlowState.Initial,
                     VerificationFlowState.DidStartSasVerification -> Unit
                     VerificationFlowState.DidAcceptVerificationRequest -> {
-                        // GUA FORK: for this account's own devices this device starts the emoji comparison, so the other screen
-                        // shows the emojis without another tap.
+                        // GUA FORK: for our own devices this side starts SAS, so the other device shows the emojis without another tap.
                         if (verificationRequest is VerificationRequest.Incoming.OtherSession) {
                             stateMachine.dispatch(StateMachineEvent.OwnDeviceRequestAccepted)
                         }

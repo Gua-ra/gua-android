@@ -11,10 +11,7 @@ import androidx.lifecycle.Lifecycle
 import io.element.android.libraries.matrix.api.core.DeviceId
 import io.element.android.libraries.matrix.api.verification.VerificationRequest
 
-/**
- * Whether the chat list or a chat is on screen. A flow pushed above the logged-in flow at the root, such as a bug report
- * or adding an account, leaves [activeTarget] on Home but moves the logged-in flow below RESUMED.
- */
+/** A root flow such as a bug report leaves [activeTarget] on Home, so the lifecycle must be RESUMED too. */
 internal fun isShowingMainScreens(lifecycleState: Lifecycle.State, activeTarget: LoggedInFlowNode.NavTarget?): Boolean =
     lifecycleState.isAtLeast(Lifecycle.State.RESUMED) &&
         when (activeTarget) {
@@ -22,7 +19,6 @@ internal fun isShowingMainScreens(lifecycleState: Lifecycle.State, activeTarget:
             else -> false
         }
 
-/** The device the new sign-in monitor records for an incoming request: only requests from this account's own devices count. */
 internal fun VerificationRequest.Incoming.ownDeviceIdOrNull(): DeviceId? = when (this) {
     is VerificationRequest.Incoming.OtherSession -> details.deviceId
     is VerificationRequest.Incoming.User -> null

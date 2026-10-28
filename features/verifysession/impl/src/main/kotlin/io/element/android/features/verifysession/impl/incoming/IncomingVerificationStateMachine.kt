@@ -145,7 +145,6 @@ class IncomingVerificationStateMachine(
         /** User accepts the incoming request. */
         data object AcceptIncomingRequest : Event
 
-        /** GUA FORK: the acceptance of a request from one of this account's devices went through. */
         data object OwnDeviceRequestAccepted : Event
 
         /** Has received data. */

@@ -20,7 +20,6 @@ import io.element.android.libraries.sessionstorage.api.observer.SessionListener
 import io.element.android.libraries.sessionstorage.api.observer.SessionObserver
 import kotlinx.coroutines.withContext
 
-/** The devices of this account whose verification request the user ignored. Persisted per account and cleared on sign-out. */
 interface DismissedSignInStore {
     suspend fun dismissedDevices(): Set<DeviceId>
 

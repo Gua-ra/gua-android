@@ -92,7 +92,6 @@ class DefaultNewSignInMonitorTest {
 
         advance(5.seconds)
         assertThat(harness.client.sendAttempts).hasSize(1)
-        // 65 s: still inside the 120 s cooldown.
         advance(60.seconds)
         assertThat(harness.client.sendAttempts).hasSize(1)
         advance(60.seconds)

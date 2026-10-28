@@ -21,11 +21,6 @@ internal data class NudgeHistory(
     val lastAtMillis: Long,
 )
 
-/**
- * The device to nudge: another, non-dehydrated device of this account that the current self-signing key has not signed,
- * seen in the last [RECENTLY_SEEN], not dismissed, not nudged too often or too recently, and with no verification request
- * of its own in the last [RECENT_REQUEST]. The most recently seen one wins.
- */
 internal fun selectNudgeCandidate(
     ownDeviceId: DeviceId,
     devices: List<OwnDevice>,

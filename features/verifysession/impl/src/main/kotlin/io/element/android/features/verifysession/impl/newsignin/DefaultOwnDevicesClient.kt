@@ -53,7 +53,7 @@ class DefaultOwnDevicesClient(
         )
     }
 
-    // The client calls bypass the logging interceptors because they carry the access token.
+    // Unlogged, since every request carries the access token.
     private suspend fun <T> call(block: suspend (OwnDevicesApi, String) -> T): Result<T> = runCatchingExceptions {
         val session = sessionStore.getSession(userId) ?: error("No stored session")
         val api = retrofitFactory.createUnlogged(session.homeserverUrl).create(OwnDevicesApi::class.java)

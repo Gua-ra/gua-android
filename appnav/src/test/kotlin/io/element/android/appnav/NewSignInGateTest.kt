@@ -45,7 +45,6 @@ class NewSignInGateTest {
 
     @Test
     fun `the chat list is not shown while a root flow covers the logged-in flow`() {
-        // A flow pushed at the root (bug report, adding an account, account selection) stashes the logged-in flow in CREATED.
         listOf(Lifecycle.State.CREATED, Lifecycle.State.STARTED, Lifecycle.State.DESTROYED).forEach { state ->
             assertThat(isShowingMainScreens(state, NavTarget.Home)).isFalse()
         }

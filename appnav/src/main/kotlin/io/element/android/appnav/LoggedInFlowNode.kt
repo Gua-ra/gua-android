@@ -208,7 +208,7 @@ class LoggedInFlowNode(
                     }
                 }
 
-                // GUA FORK: recorded only once shown, so a discarded request does not hold back nudges to its device.
+                // GUA FORK: recorded only once shown, so a discarded request does not hold back nudges.
                 verificationRequest.ownDeviceIdOrNull()?.let(newSignInMonitor::onVerificationRequestReceived)
                 backstack.singleTop(NavTarget.IncomingVerificationRequest(verificationRequest))
             }
@@ -228,7 +228,6 @@ class LoggedInFlowNode(
                 loggedInFlowProcessor.observeEvents(sessionCoroutineScope)
                 matrixClient.sessionVerificationService.setListener(verificationListener)
                 lifecycleScope.launch {
-                    // GUA FORK: no nudge while a flow such as onboarding, a reset or a verification covers the main screens.
                     newSignInMonitor.run(
                         isShowingMainScreens = combine(lifecycle.currentStateFlow, backstack.elements) { lifecycleState, elements ->
                             isShowingMainScreens(lifecycleState, elements.activeElement)
@@ -312,9 +311,7 @@ class LoggedInFlowNode(
 
         @Parcelize
         data class SecureBackup(
-            // GUA FORK: no default. When Root was the default, `NavTarget.SecureBackup()` read as
-            // "open secure backup" while silently meaning "open the recovery-key console", and a
-            // grep for InitialTarget.Root never surfaced the sign-out route that used it.
+            // GUA FORK: no default, so every caller names the screen it opens.
             val initialElement: SecureBackupEntryPoint.InitialTarget
         ) : NavTarget
 
@@ -370,9 +367,7 @@ class LoggedInFlowNode(
                     }
 
                     override fun navigateToEnterRecoveryKey() {
-                        // GUA FORK: never a recovery-key prompt. The repair itself now runs in the
-                        // room list presenter, which owns the banner's progress state, and only
-                        // calls this once it has established that a reset is genuinely required.
+                        // GUA FORK: never a recovery-key prompt; callers only get here once a reset is required.
                         backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.ResetIdentity))
                     }
 
