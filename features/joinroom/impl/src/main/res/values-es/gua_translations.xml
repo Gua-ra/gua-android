@@ -6,5 +6,5 @@
   -->
 <resources>
     <string name="gua_join_space_action">Activar Espacios y unirse</string>
-    <string name="gua_join_space_turns_on_spaces">Este es un espacio. Al unirte, se activan los Espacios para que puedas ver sus chats.</string>
+    <string name="gua_join_space_turns_on_spaces">Este es un espacio. Al unirte, se activan los Espacios para que veas sus chats.</string>
 </resources>

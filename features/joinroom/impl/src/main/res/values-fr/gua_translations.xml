@@ -6,5 +6,5 @@
   -->
 <resources>
     <string name="gua_join_space_action">Activer les Espaces et rejoindre</string>
-    <string name="gua_join_space_turns_on_spaces">Ceci est un espace. Le rejoindre active les Espaces pour que vous puissiez voir ses discussions.</string>
+    <string name="gua_join_space_turns_on_spaces">Ceci est un espace. En le rejoignant, vous activez les Espaces pour voir ses conversations.</string>
 </resources>
