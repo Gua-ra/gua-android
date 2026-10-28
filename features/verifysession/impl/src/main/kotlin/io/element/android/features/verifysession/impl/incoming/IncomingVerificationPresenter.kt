@@ -22,6 +22,7 @@ import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.features.verifysession.impl.incoming.IncomingVerificationState.Step
+import io.element.android.features.verifysession.impl.newsignin.DismissedSignInStore
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.dateformatter.api.DateFormatter
 import io.element.android.libraries.dateformatter.api.DateFormatterMode
@@ -47,6 +48,7 @@ class IncomingVerificationPresenter(
     private val sessionVerificationService: SessionVerificationService,
     private val stateMachine: IncomingVerificationStateMachine,
     private val dateFormatter: DateFormatter,
+    private val dismissedSignInStore: DismissedSignInStore,
 ) : Presenter<IncomingVerificationState> {
     @AssistedFactory
     fun interface Factory {
@@ -113,8 +115,12 @@ class IncomingVerificationPresenter(
             when (event) {
                 IncomingVerificationViewEvents.StartVerification ->
                     stateAndDispatch.dispatchAction(StateMachineEvent.AcceptIncomingRequest)
-                IncomingVerificationViewEvents.IgnoreVerification ->
+                IncomingVerificationViewEvents.IgnoreVerification -> {
+                    if (verificationRequest is VerificationRequest.Incoming.OtherSession) {
+                        sessionCoroutineScope.launch { dismissedSignInStore.dismiss(verificationRequest.details.deviceId) }
+                    }
                     navigator.onFinish()
+                }
                 IncomingVerificationViewEvents.ConfirmVerification ->
                     stateAndDispatch.dispatchAction(StateMachineEvent.AcceptChallenge)
                 IncomingVerificationViewEvents.DeclineVerification ->
@@ -190,8 +196,13 @@ class IncomingVerificationPresenter(
             .onEach { verificationAttemptState ->
                 when (verificationAttemptState) {
                     VerificationFlowState.Initial,
-                    VerificationFlowState.DidAcceptVerificationRequest,
                     VerificationFlowState.DidStartSasVerification -> Unit
+                    VerificationFlowState.DidAcceptVerificationRequest -> {
+                        // GUA FORK: for our own devices this side starts SAS, so the other device shows the emojis without another tap.
+                        if (verificationRequest is VerificationRequest.Incoming.OtherSession) {
+                            stateMachine.dispatch(StateMachineEvent.OwnDeviceRequestAccepted)
+                        }
+                    }
                     is VerificationFlowState.DidReceiveVerificationData -> {
                         stateMachine.dispatch(StateMachineEvent.DidReceiveChallenge(verificationAttemptState.data))
                     }

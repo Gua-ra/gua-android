@@ -30,6 +30,7 @@ import com.bumble.appyx.navmodel.backstack.BackStack.State.CREATED
 import com.bumble.appyx.navmodel.backstack.BackStack.State.STASHED
 import com.bumble.appyx.navmodel.backstack.BackStackElement
 import com.bumble.appyx.navmodel.backstack.BackStackElements
+import com.bumble.appyx.navmodel.backstack.activeElement
 import com.bumble.appyx.navmodel.backstack.operation.BackStackOperation
 import com.bumble.appyx.navmodel.backstack.operation.Push
 import com.bumble.appyx.navmodel.backstack.operation.pop
@@ -67,6 +68,7 @@ import io.element.android.features.share.api.ShareIntentData
 import io.element.android.features.startchat.api.StartChatEntryPoint
 import io.element.android.features.userprofile.api.UserProfileEntryPoint
 import io.element.android.features.verifysession.api.IncomingVerificationEntryPoint
+import io.element.android.features.verifysession.api.NewSignInMonitor
 import io.element.android.libraries.architecture.BackstackView
 import io.element.android.libraries.architecture.BaseFlowNode
 import io.element.android.libraries.architecture.callback
@@ -98,6 +100,7 @@ import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.analytics.api.watchers.AnalyticsRoomListStateWatcher
 import io.element.android.services.appnavstate.api.AppNavigationStateService
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -153,6 +156,7 @@ class LoggedInFlowNode(
     private val analyticsRoomListStateWatcher: AnalyticsRoomListStateWatcher,
     private val createRoomEntryPoint: CreateRoomEntryPoint,
     private val activeLiveLocationShareManager: ActiveLiveLocationShareManager,
+    private val newSignInMonitor: NewSignInMonitor,
 ) : BaseFlowNode<LoggedInFlowNode.NavTarget>(
     backstack = BackStack(
         initialElement = NavTarget.Placeholder,
@@ -204,6 +208,8 @@ class LoggedInFlowNode(
                     }
                 }
 
+                // GUA FORK: recorded only once shown, so a discarded request does not hold back nudges.
+                verificationRequest.ownDeviceIdOrNull()?.let(newSignInMonitor::onVerificationRequestReceived)
                 backstack.singleTop(NavTarget.IncomingVerificationRequest(verificationRequest))
             }
         }
@@ -221,6 +227,13 @@ class LoggedInFlowNode(
                 appNavigationStateService.onNavigateToSession(id, matrixClient.sessionId)
                 loggedInFlowProcessor.observeEvents(sessionCoroutineScope)
                 matrixClient.sessionVerificationService.setListener(verificationListener)
+                lifecycleScope.launch {
+                    newSignInMonitor.run(
+                        isShowingMainScreens = combine(lifecycle.currentStateFlow, backstack.elements) { lifecycleState, elements ->
+                            isShowingMainScreens(lifecycleState, elements.activeElement)
+                        }
+                    )
+                }
                 mediaPreviewConfigMigration()
                 sessionCoroutineScope.launch {
                     // Wait for the network to be connected before pre-fetching the max file upload size
@@ -298,9 +311,7 @@ class LoggedInFlowNode(
 
         @Parcelize
         data class SecureBackup(
-            // GUA FORK: no default. When Root was the default, `NavTarget.SecureBackup()` read as
-            // "open secure backup" while silently meaning "open the recovery-key console", and a
-            // grep for InitialTarget.Root never surfaced the sign-out route that used it.
+            // GUA FORK: no default, so every caller names the screen it opens.
             val initialElement: SecureBackupEntryPoint.InitialTarget
         ) : NavTarget
 
@@ -356,9 +367,7 @@ class LoggedInFlowNode(
                     }
 
                     override fun navigateToEnterRecoveryKey() {
-                        // GUA FORK: never a recovery-key prompt. The repair itself now runs in the
-                        // room list presenter, which owns the banner's progress state, and only
-                        // calls this once it has established that a reset is genuinely required.
+                        // GUA FORK: never a recovery-key prompt; callers only get here once a reset is required.
                         backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.ResetIdentity))
                     }
 

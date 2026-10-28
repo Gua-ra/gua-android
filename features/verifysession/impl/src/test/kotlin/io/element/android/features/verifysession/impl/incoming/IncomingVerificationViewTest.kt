@@ -13,6 +13,7 @@ package io.element.android.features.verifysession.impl.incoming
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.features.verifysession.impl.R
 import io.element.android.features.verifysession.impl.ui.aEmojisSessionVerificationData
@@ -202,6 +203,41 @@ class IncomingVerificationViewTest : RobolectricTest() {
         eventsRecorder.assertSingle(IncomingVerificationViewEvents.GoBack)
     }
     // endregion
+
+    @Test
+    fun `a request from another device of this account reads as a new sign-in`() = runAndroidComposeUiTest<ComponentActivity> {
+        setIncomingVerificationView(anIncomingVerificationState(step = aStepInitial()))
+        onNodeWithText(activity!!.getString(R.string.gua_verification_new_sign_in_title)).assertExists()
+        onNodeWithText(activity!!.getString(R.string.gua_verification_new_sign_in_subtitle)).assertExists()
+    }
+
+    @Test
+    fun `confirming a new sign-in of this account says where the messages will show`() = runAndroidComposeUiTest<ComponentActivity> {
+        setIncomingVerificationView(anIncomingVerificationState(step = IncomingVerificationState.Step.Completed))
+        onNodeWithText(activity!!.getString(R.string.gua_verification_new_sign_in_complete_subtitle)).assertExists()
+    }
+
+    @Test
+    fun `comparing emojis with another device of this account uses the Gua subtitle`() = runAndroidComposeUiTest<ComponentActivity> {
+        setIncomingVerificationView(
+            anIncomingVerificationState(step = IncomingVerificationState.Step.Verifying(data = aEmojisSessionVerificationData(), isWaiting = false))
+        )
+        onNodeWithText(activity!!.getString(R.string.gua_verification_compare_emojis_subtitle)).assertExists()
+    }
+
+    @Test
+    fun `waiting for the other device of this account after the emoji check keeps the Gua subtitle`() = runAndroidComposeUiTest<ComponentActivity> {
+        setIncomingVerificationView(
+            anIncomingVerificationState(step = IncomingVerificationState.Step.Verifying(data = aEmojisSessionVerificationData(), isWaiting = true))
+        )
+        onNodeWithText(activity!!.getString(R.string.gua_verification_compare_emojis_subtitle)).assertExists()
+    }
+
+    @Test
+    fun `a request from another user keeps the user verification copy`() = runAndroidComposeUiTest<ComponentActivity> {
+        setIncomingVerificationView(anIncomingVerificationState(step = aStepInitial(), verificationRequest = anIncomingUserVerificationRequest()))
+        onNodeWithText(activity!!.getString(R.string.screen_session_verification_request_title)).assertExists()
+    }
 
     private fun AndroidComposeUiTest<ComponentActivity>.setIncomingVerificationView(
         state: IncomingVerificationState,

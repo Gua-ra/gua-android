@@ -9,6 +9,8 @@
 package io.element.android.features.verifysession.impl.incoming
 
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.verifysession.impl.newsignin.DismissedSignInStore
+import io.element.android.features.verifysession.impl.newsignin.InMemoryDismissedSignInStore
 import io.element.android.features.verifysession.impl.ui.aEmojisSessionVerificationData
 import io.element.android.libraries.dateformatter.api.DateFormatter
 import io.element.android.libraries.dateformatter.test.FakeDateFormatter
@@ -31,6 +33,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -294,6 +297,101 @@ class IncomingVerificationPresenterTest {
             navigatorLambda.assertions().isCalledOnce()
         }
     }
+
+    @Test
+    fun `present - ignoring a request from another device of this account dismisses that device`() = runTest {
+        val dismissedSignInStore = InMemoryDismissedSignInStore()
+        val navigatorLambda = lambdaRecorder<Unit> { }
+        createPresenter(
+            service = FakeSessionVerificationService(acknowledgeVerificationRequestLambda = { }, resetLambda = { }),
+            navigator = IncomingVerificationNavigator(navigatorLambda),
+            dismissedSignInStore = dismissedSignInStore,
+        ).test {
+            val initialState = awaitItem()
+            initialState.eventSink(IncomingVerificationViewEvents.IgnoreVerification)
+            skipItems(1)
+            runCurrent()
+            navigatorLambda.assertions().isCalledOnce()
+            assertThat(dismissedSignInStore.dismissed).containsExactly(A_DEVICE_ID)
+        }
+    }
+
+    @Test
+    fun `present - ignoring a request from another user dismisses nothing`() = runTest {
+        val dismissedSignInStore = InMemoryDismissedSignInStore()
+        val navigatorLambda = lambdaRecorder<Unit> { }
+        createPresenter(
+            verificationRequest = anIncomingUserVerificationRequest(),
+            service = FakeSessionVerificationService(acknowledgeVerificationRequestLambda = { }, resetLambda = { }),
+            navigator = IncomingVerificationNavigator(navigatorLambda),
+            dismissedSignInStore = dismissedSignInStore,
+        ).test {
+            val initialState = awaitItem()
+            initialState.eventSink(IncomingVerificationViewEvents.IgnoreVerification)
+            skipItems(1)
+            runCurrent()
+            navigatorLambda.assertions().isCalledOnce()
+            assertThat(dismissedSignInStore.dismissed).isEmpty()
+        }
+    }
+
+    @Test
+    fun `present - once a request from another device of this account is accepted, this device starts the emoji comparison`() = runTest {
+        val acceptVerificationRequestLambda = lambdaRecorder<Unit> { }
+        val startSasVerificationLambda = lambdaRecorder<Unit> { }
+        val service = FakeSessionVerificationService(
+            acknowledgeVerificationRequestLambda = { },
+            acceptVerificationRequestLambda = acceptVerificationRequestLambda,
+            startSasVerificationLambda = startSasVerificationLambda,
+            resetLambda = { },
+        )
+        createPresenter(service = service).test {
+            val initialState = awaitItem()
+            advanceTimeBy(1.seconds)
+            initialState.eventSink(IncomingVerificationViewEvents.StartVerification)
+            skipItems(1)
+            awaitItem()
+            advanceTimeBy(1.seconds)
+            acceptVerificationRequestLambda.assertions().isCalledOnce()
+            startSasVerificationLambda.assertions().isNeverCalled()
+
+            service.emitVerificationFlowState(VerificationFlowState.DidAcceptVerificationRequest)
+            advanceTimeBy(1.seconds)
+            startSasVerificationLambda.assertions().isCalledOnce()
+
+            service.emitVerificationFlowState(VerificationFlowState.DidStartSasVerification)
+            service.emitVerificationFlowState(VerificationFlowState.DidReceiveVerificationData(data = aEmojisSessionVerificationData()))
+            assertThat(awaitItem().step).isEqualTo(
+                IncomingVerificationState.Step.Verifying(data = aEmojisSessionVerificationData(), isWaiting = false)
+            )
+            startSasVerificationLambda.assertions().isCalledOnce()
+        }
+    }
+
+    @Test
+    fun `present - a request from another user is not started by this device`() = runTest {
+        val acceptVerificationRequestLambda = lambdaRecorder<Unit> { }
+        val startSasVerificationLambda = lambdaRecorder<Unit> { }
+        val service = FakeSessionVerificationService(
+            acknowledgeVerificationRequestLambda = { },
+            acceptVerificationRequestLambda = acceptVerificationRequestLambda,
+            startSasVerificationLambda = startSasVerificationLambda,
+            resetLambda = { },
+        )
+        createPresenter(verificationRequest = anIncomingUserVerificationRequest(), service = service).test {
+            val initialState = awaitItem()
+            advanceTimeBy(1.seconds)
+            initialState.eventSink(IncomingVerificationViewEvents.StartVerification)
+            skipItems(1)
+            awaitItem()
+            advanceTimeBy(1.seconds)
+            acceptVerificationRequestLambda.assertions().isCalledOnce()
+
+            service.emitVerificationFlowState(VerificationFlowState.DidAcceptVerificationRequest)
+            advanceTimeBy(1.seconds)
+            startSasVerificationLambda.assertions().isNeverCalled()
+        }
+    }
 }
 
 private val anIncomingSessionVerificationRequest = VerificationRequest.Incoming.OtherSession(
@@ -315,6 +413,7 @@ internal fun TestScope.createPresenter(
     navigator: IncomingVerificationNavigator = IncomingVerificationNavigator { lambdaError() },
     service: SessionVerificationService = FakeSessionVerificationService(),
     dateFormatter: DateFormatter = FakeDateFormatter(),
+    dismissedSignInStore: DismissedSignInStore = InMemoryDismissedSignInStore(),
 ) = IncomingVerificationPresenter(
     verificationRequest = verificationRequest,
     navigator = navigator,
@@ -322,4 +421,5 @@ internal fun TestScope.createPresenter(
     stateMachine = IncomingVerificationStateMachine(service),
     dateFormatter = dateFormatter,
     sessionCoroutineScope = backgroundScope,
+    dismissedSignInStore = dismissedSignInStore,
 )
