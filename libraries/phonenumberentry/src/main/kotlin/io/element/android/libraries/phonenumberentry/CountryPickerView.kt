@@ -121,7 +121,7 @@ private fun CountryRow(
 @PreviewsDayNight
 @Composable
 internal fun CountryPickerViewPreview(
-    @PreviewParameter(CountryPickerStateProvider::class) state: CountryPickerState,
+    @PreviewParameter(CountryPickerStatePreviewParam::class) state: CountryPickerState,
 ) = ElementPreview {
     CountryPickerView(
         state = state,

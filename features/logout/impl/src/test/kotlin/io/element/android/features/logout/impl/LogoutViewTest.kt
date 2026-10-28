@@ -52,7 +52,7 @@ class LogoutViewTest : RobolectricTest() {
                 eventSink = eventsRecorder
             ),
         )
-        clickOn(CommonStrings.action_signout)
+        clickOn(CommonStrings.gua_action_sign_out)
         eventsRecorder.assertSingle(LogoutEvent.Logout(false))
     }
 
@@ -92,7 +92,7 @@ class LogoutViewTest : RobolectricTest() {
                 eventSink = eventsRecorder
             ),
         )
-        clickOn(CommonStrings.action_signout_anyway)
+        clickOn(CommonStrings.gua_action_sign_out_anyway)
         eventsRecorder.assertSingle(LogoutEvent.Logout(true))
     }
 

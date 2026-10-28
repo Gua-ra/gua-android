@@ -17,7 +17,7 @@ import io.element.android.libraries.ui.strings.CommonStrings
 private val US = Country(isoCode = "US", dialCode = "1")
 private val BR = Country(isoCode = "BR", dialCode = "55")
 
-open class TwoStepVerificationStateProvider : PreviewParameterProvider<TwoStepVerificationState> {
+open class TwoStepVerificationStatePreviewParam : PreviewParameterProvider<TwoStepVerificationState> {
     override val values: Sequence<TwoStepVerificationState>
         get() = sequenceOf(
             // GUA FORK: exactly as many entries as before. Paparazzi shards @PreviewsDayNight by

@@ -77,4 +77,5 @@ dependencies {
     testImplementation(projects.libraries.sessionStorage.test)
     testImplementation(projects.libraries.push.test)
     testImplementation(projects.services.analytics.test)
+    testImplementation(projects.services.toolbox.test)
 }

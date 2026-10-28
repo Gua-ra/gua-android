@@ -394,10 +394,9 @@ class SyncOrchestratorTest {
         }
         val identityResetGuard = FakeIdentityResetGuard().apply { isHeld.value = true }
         val syncOrchestrator = createSyncOrchestrator(
-            matrixClient = FakeMatrixClient(syncService = syncService),
+            matrixClient = FakeMatrixClient(syncService = syncService, identityResetGuard = identityResetGuard),
             networkMonitor = FakeNetworkMonitor(initialStatus = NetworkStatus.Connected),
             appForegroundStateService = FakeAppForegroundStateService(initialForegroundValue = true),
-            identityResetGuard = identityResetGuard,
         )
 
         syncOrchestrator.observeStates()
@@ -421,10 +420,12 @@ class SyncOrchestratorTest {
             initialIsSyncingNotificationEventValue = false,
         )
         val syncOrchestrator = createSyncOrchestrator(
-            matrixClient = FakeMatrixClient(syncService = syncService),
+            matrixClient = FakeMatrixClient(
+                syncService = syncService,
+                identityResetGuard = FakeIdentityResetGuard().apply { isHeld.value = true },
+            ),
             networkMonitor = FakeNetworkMonitor(initialStatus = NetworkStatus.Connected),
             appForegroundStateService = appForegroundStateService,
-            identityResetGuard = FakeIdentityResetGuard().apply { isHeld.value = true },
         )
 
         syncOrchestrator.observeStates()
@@ -597,11 +598,9 @@ class SyncOrchestratorTest {
         matrixClient: FakeMatrixClient = FakeMatrixClient(),
         networkMonitor: FakeNetworkMonitor = FakeNetworkMonitor(),
         appForegroundStateService: FakeAppForegroundStateService = FakeAppForegroundStateService(),
-        identityResetGuard: FakeIdentityResetGuard = FakeIdentityResetGuard(),
     ) = SyncOrchestrator(
         matrixClient = matrixClient,
         sessionCoroutineScope = backgroundScope,
-        identityResetGuard = identityResetGuard,
         networkMonitor = networkMonitor,
         appForegroundStateService = appForegroundStateService,
         dispatchers = testCoroutineDispatchers(),

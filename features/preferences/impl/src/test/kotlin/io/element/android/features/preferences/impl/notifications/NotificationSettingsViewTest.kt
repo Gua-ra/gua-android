@@ -211,7 +211,7 @@ class NotificationSettingsViewTest : RobolectricTestParameter() {
     fun `a failed enable shows the registration error and OK clears it`() = runAndroidComposeUiTest {
         val eventsRecorder = EventsRecorder<NotificationSettingsEvent>()
         setNotificationSettingsView(
-            state = aValidNotificationSettingsState(
+            state = aNotificationSettingsState(
                 changeNotificationSettingAction = AsyncAction.Failure(EnableNotificationsFailure(AN_EXCEPTION)),
                 eventSink = eventsRecorder
             ),
@@ -241,7 +241,7 @@ class NotificationSettingsViewTest : RobolectricTestParameter() {
     private fun testNoPushServiceError(cause: PusherRegistrationFailure) = runAndroidComposeUiTest {
         val eventsRecorder = EventsRecorder<NotificationSettingsEvent>()
         setNotificationSettingsView(
-            state = aValidNotificationSettingsState(
+            state = aNotificationSettingsState(
                 changeNotificationSettingAction = AsyncAction.Failure(EnableNotificationsFailure(cause)),
                 eventSink = eventsRecorder
             ),
@@ -359,9 +359,9 @@ class NotificationSettingsViewTest : RobolectricTestParameter() {
     @Test
     fun `sounds preference category has no call ringtone row when showCallRingtone is false`() = runAndroidComposeUiTest {
         setNotificationSettingsView(
-            state = aValidNotificationSettingsState(
+            state = aNotificationSettingsState(
                 showCallRingtone = false,
-                callRingtoneDisplayName = "Pixel ringtone",
+                callRingtone = aSoundChannelUiState(displayName = "Pixel ringtone"),
             ),
         )
         onNodeWithText("Message sound").assertIsDisplayed()

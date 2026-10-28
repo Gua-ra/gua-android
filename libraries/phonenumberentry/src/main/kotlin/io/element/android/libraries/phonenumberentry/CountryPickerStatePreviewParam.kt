@@ -11,7 +11,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 
-open class CountryPickerStateProvider : PreviewParameterProvider<CountryPickerState> {
+open class CountryPickerStatePreviewParam : PreviewParameterProvider<CountryPickerState> {
     override val values: Sequence<CountryPickerState>
         get() = sequenceOf(
             // Full list.

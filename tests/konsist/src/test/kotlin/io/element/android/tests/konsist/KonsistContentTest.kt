@@ -49,9 +49,13 @@ class KonsistContentTest {
                 "DebugInfoSection",
                 "DeveloperSettingsView",
                 "EventDebugInfoView",
+                "GitCategory",
+                "MarkAllRoomsAsReadCategory",
+                "NotificationCategory",
                 "PushHistoryContent",
                 "PushHistoryView",
                 "RageshakePreferencesView",
+                "SessionCategory",
                 "ViewFolderView",
             )
             .assertFalse(additionalMessage = "Use a string resource instead of a literal in Text() or contentDescription.") { function ->

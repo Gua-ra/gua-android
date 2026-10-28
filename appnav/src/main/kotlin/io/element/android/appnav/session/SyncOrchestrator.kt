@@ -17,7 +17,6 @@ import io.element.android.features.networkmonitor.api.NetworkStatus
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.core.coroutine.childScope
 import io.element.android.libraries.matrix.api.MatrixClient
-import io.element.android.libraries.matrix.api.encryption.IdentityResetGuard
 import io.element.android.libraries.matrix.api.sync.SyncState
 import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.analytics.api.recordTransaction
@@ -44,7 +43,6 @@ import kotlin.time.Duration.Companion.seconds
 class SyncOrchestrator(
     @Assisted private val matrixClient: MatrixClient,
     @Assisted sessionCoroutineScope: CoroutineScope,
-    @Assisted private val identityResetGuard: IdentityResetGuard,
     private val appForegroundStateService: AppForegroundStateService,
     private val networkMonitor: NetworkMonitor,
     dispatchers: CoroutineDispatchers,
@@ -55,13 +53,13 @@ class SyncOrchestrator(
         fun create(
             matrixClient: MatrixClient,
             sessionCoroutineScope: CoroutineScope,
-            identityResetGuard: IdentityResetGuard,
         ): SyncOrchestrator
     }
 
     private val tag = "SyncOrchestrator"
 
     private val syncService = matrixClient.syncService
+    private val identityResetGuard = matrixClient.identityResetGuard
 
     private val coroutineScope = sessionCoroutineScope.childScope(dispatchers.io, tag)
 

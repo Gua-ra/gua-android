@@ -13,7 +13,7 @@ import io.element.android.features.login.impl.login.LoginMode
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.phonenumberentry.Country
 
-open class PhoneEntryStateProvider : PreviewParameterProvider<PhoneEntryState> {
+open class PhoneEntryStatePreviewParam : PreviewParameterProvider<PhoneEntryState> {
     override val values: Sequence<PhoneEntryState>
         get() = sequenceOf(
             // Empty US number.

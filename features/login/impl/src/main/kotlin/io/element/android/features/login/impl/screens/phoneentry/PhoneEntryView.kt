@@ -305,7 +305,7 @@ private fun CountrySelectorButton(
 @PreviewsDayNight
 @Composable
 internal fun PhoneEntryViewPreview(
-    @PreviewParameter(PhoneEntryStateProvider::class) state: PhoneEntryState,
+    @PreviewParameter(PhoneEntryStatePreviewParam::class) state: PhoneEntryState,
 ) = ElementPreview {
     PhoneEntryView(
         state = state,

@@ -74,9 +74,7 @@ class FullScreenIntentPermissionsPresenterTest {
                 every { canUseFullScreenIntent() } returns false
             }
         )
-        moleculeFlow(RecompositionMode.Immediate) {
-            presenter.present()
-        }.test {
+        presenter.testWithLifecycleOwner {
             skipItems(1)
             val initialItem = awaitItem()
             assertThat(initialItem.shouldDisplayBanner).isFalse()

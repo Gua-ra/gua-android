@@ -99,6 +99,7 @@ class TimelineItemsFactoryTest {
             config = TimelineItemsFactoryConfig(
                 computeReadReceipts = false,
                 computeReactions = false,
+                isDirectOneToOneRoom = false,
             )
         )
         val items = listOf(
@@ -135,6 +136,7 @@ class TimelineItemsFactoryTest {
             config = TimelineItemsFactoryConfig(
                 computeReadReceipts = false,
                 computeReactions = false,
+                isDirectOneToOneRoom = false,
             )
         )
         val items = listOf(
@@ -179,6 +181,7 @@ class TimelineItemsFactoryTest {
             config = TimelineItemsFactoryConfig(
                 computeReadReceipts = false,
                 computeReactions = false,
+                isDirectOneToOneRoom = false,
             )
         )
         val items = listOf(
@@ -216,6 +219,7 @@ class TimelineItemsFactoryTest {
             config = TimelineItemsFactoryConfig(
                 computeReadReceipts = false,
                 computeReactions = false,
+                isDirectOneToOneRoom = false,
             )
         )
         val items = listOf(
@@ -254,6 +258,7 @@ class TimelineItemsFactoryTest {
             config = TimelineItemsFactoryConfig(
                 computeReadReceipts = false,
                 computeReactions = false,
+                isDirectOneToOneRoom = false,
             )
         )
         val items = listOf(
@@ -283,6 +288,7 @@ class TimelineItemsFactoryTest {
             config = TimelineItemsFactoryConfig(
                 computeReadReceipts = false,
                 computeReactions = false,
+                isDirectOneToOneRoom = false,
             )
         )
         val items = timestamps.mapIndexed { index, timestamp ->

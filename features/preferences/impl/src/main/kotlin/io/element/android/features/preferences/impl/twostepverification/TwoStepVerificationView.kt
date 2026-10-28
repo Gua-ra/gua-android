@@ -347,7 +347,7 @@ private fun TwoStepVerificationPhase.footerRes(): Int? = when (this) {
 @PreviewsDayNight
 @Composable
 internal fun TwoStepVerificationViewPreview(
-    @PreviewParameter(TwoStepVerificationStateProvider::class) state: TwoStepVerificationState,
+    @PreviewParameter(TwoStepVerificationStatePreviewParam::class) state: TwoStepVerificationState,
 ) = ElementPreview {
     TwoStepVerificationView(
         state = state,

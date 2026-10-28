@@ -14,7 +14,7 @@ import io.element.android.libraries.phonenumberentry.Country
 private val US = Country(isoCode = "US", dialCode = "1")
 private val BR = Country(isoCode = "BR", dialCode = "55")
 
-open class ChangePhoneNumberStateProvider : PreviewParameterProvider<ChangePhoneNumberState> {
+open class ChangePhoneNumberStatePreviewParam : PreviewParameterProvider<ChangePhoneNumberState> {
     override val values: Sequence<ChangePhoneNumberState>
         get() = sequenceOf(
             // GUA FORK: exactly as many entries as before. Paparazzi shards @PreviewsDayNight by

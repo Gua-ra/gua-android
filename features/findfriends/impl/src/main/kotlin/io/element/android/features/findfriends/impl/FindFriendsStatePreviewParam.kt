@@ -16,7 +16,7 @@ import kotlinx.collections.immutable.toImmutableList
  * GUA FORK: sample states for previews + screenshot tests. Covers every Find friends phase, mirroring
  * iOS' `FindFriendsScreenPhase`.
  */
-open class FindFriendsStateProvider : PreviewParameterProvider<FindFriendsState> {
+open class FindFriendsStatePreviewParam : PreviewParameterProvider<FindFriendsState> {
     override val values: Sequence<FindFriendsState>
         get() = sequenceOf(
             aFindFriendsState(phase = FindFriendsPhase.Loaded, contacts = aDiscoveredContactList()),
