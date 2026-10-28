@@ -19,6 +19,8 @@ object GuaResolverConfig {
     const val DEV_RESOLVER_BASE_URL: String = BuildConfig.GUA_DEV_RESOLVER_BASE_URL
     const val DEV_DEFAULT_ACCOUNT_PROVIDER: String = BuildConfig.GUA_DEV_DEFAULT_ACCOUNT_PROVIDER
     const val DEV_IDENTITY_SERVICE_BASE_URL: String = BuildConfig.GUA_DEV_IDENTITY_SERVICE_BASE_URL
+    const val PROD_RESOLVER_TRUST_ROOTS: String = BuildConfig.GUA_PROD_RESOLVER_TRUST_ROOTS
+    const val DEV_RESOLVER_TRUST_ROOTS: String = BuildConfig.GUA_DEV_RESOLVER_TRUST_ROOTS
 
     /**
      * The active deployment for this build: [GuaDeployment.Development] for debug builds and for

@@ -17,4 +17,5 @@ data class FakeGuaDeployment(
     override val resolverBaseUrl: String? = "https://resolver.gua.global",
     override val defaultAccountProvider: String? = "gua.global",
     override val identityServiceBaseUrl: String? = "https://identity.gua.global",
+    override val resolverTrustRoots: String? = null,
 ) : GuaDeployment
