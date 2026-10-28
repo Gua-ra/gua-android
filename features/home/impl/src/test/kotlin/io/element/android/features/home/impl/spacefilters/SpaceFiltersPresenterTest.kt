@@ -48,6 +48,26 @@ class SpaceFiltersPresenterTest {
     }
 
     @Test
+    fun `present - when the Spaces switch is off returns Disabled state even with filters`() = runTest {
+        val spaceService = FakeSpaceService()
+        val spacesSwitch = FakeSpacesSwitch(initialValue = false)
+        val presenter = createSpaceFiltersPresenter(
+            matrixClient = FakeMatrixClient(spaceService = spaceService),
+            spacesSwitch = spacesSwitch,
+        )
+        presenter.test {
+            spaceService.emitSpaceFilters(listOf(aSpaceServiceFilter(displayName = "Test Space")))
+            assertThat(awaitLastSequentialItem()).isEqualTo(SpaceFiltersState.Disabled)
+
+            spacesSwitch.setEnabled(true)
+            assertThat(awaitLastSequentialItem()).isInstanceOf(SpaceFiltersState.Unselected::class.java)
+
+            spacesSwitch.setEnabled(false)
+            assertThat(awaitLastSequentialItem()).isEqualTo(SpaceFiltersState.Disabled)
+        }
+    }
+
+    @Test
     fun `present - ShowFilters event transitions from Unselected to Selecting`() = runTest {
         val spaceFilter = aSpaceServiceFilter(displayName = "Test Space")
         val spaceService = FakeSpaceService()

@@ -378,8 +378,8 @@ class FakeMatrixClient(
         return getAccountDataLambda(eventType)
     }
 
-    override suspend fun setAccountData(eventType: String, content: String): Result<Unit> {
-        return setAccountDataLambda(eventType, content)
+    override suspend fun setAccountData(eventType: String, content: String): Result<Unit> = simulateLongTask {
+        setAccountDataLambda(eventType, content)
     }
 
     override suspend fun markRoomAsFullyRead(roomId: RoomId, eventId: EventId): Result<Unit> {

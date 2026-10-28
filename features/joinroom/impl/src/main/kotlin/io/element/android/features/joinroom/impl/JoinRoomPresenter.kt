@@ -154,21 +154,19 @@ class JoinRoomPresenter(
             contentState.markRoomInviteAsSeen()
         }
 
-        fun turnOnSpacesIfJoiningSpace() {
-            if (!isSpacesEnabled && (contentState as? ContentState.Loaded)?.isSpace == true) {
-                coroutineScope.launch { spacesSwitch.setEnabled(true) }
-            }
-        }
+        // GUA FORK: set from the returned state, so taps use the same predicate the view shows.
+        var joiningTurnsOnSpaces = false
 
         fun handleEvent(event: JoinRoomEvents) {
             when (event) {
                 JoinRoomEvents.JoinRoom -> {
-                    turnOnSpacesIfJoiningSpace()
+                    // GUA FORK: session scoped, so it survives this screen closing as soon as the room is joined.
+                    if (joiningTurnsOnSpaces) spacesSwitch.enableWhenJoined(roomId)
                     coroutineScope.joinRoom(joinAction)
                 }
                 is JoinRoomEvents.KnockRoom -> coroutineScope.knockRoom(knockAction, knockMessage)
                 is JoinRoomEvents.AcceptInvite -> {
-                    turnOnSpacesIfJoiningSpace()
+                    if (joiningTurnsOnSpaces) spacesSwitch.enableWhenJoined(roomId)
                     acceptDeclineInviteState.eventSink(
                         AcceptDeclineInviteEvents.AcceptInvite(event.inviteData)
                     )
@@ -212,7 +210,7 @@ class JoinRoomPresenter(
             canReportRoom = canReportRoom,
             isSpacesEnabled = isSpacesEnabled,
             eventSink = ::handleEvent,
-        )
+        ).also { joiningTurnsOnSpaces = it.joiningTurnsOnSpaces }
     }
 
     private fun CoroutineScope.joinRoom(joinAction: MutableState<AsyncAction<Unit>>) = launch {

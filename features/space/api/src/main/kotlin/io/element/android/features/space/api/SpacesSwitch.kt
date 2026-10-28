@@ -7,6 +7,7 @@
 
 package io.element.android.features.space.api
 
+import io.element.android.libraries.matrix.api.core.RoomId
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -16,4 +17,9 @@ interface SpacesSwitch {
     val isEnabled: StateFlow<Boolean>
 
     suspend fun setEnabled(enabled: Boolean): Result<Unit>
+
+    /**
+     * Turns Spaces on once the current user's membership in [roomId] becomes joined. Outlives the calling screen.
+     */
+    fun enableWhenJoined(roomId: RoomId)
 }

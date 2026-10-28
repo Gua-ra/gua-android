@@ -141,6 +141,7 @@ class RoomListPresenter(
 
         // Avatar indicator
         val hideInvitesAvatar by client.rememberHideInvitesAvatar()
+        val isSpacesEnabled by spacesSwitch.isEnabled.collectAsState()
 
         val contextMenu = remember { mutableStateOf<RoomListState.ContextMenu>(RoomListState.ContextMenu.Hidden) }
         val declineInviteMenu = remember { mutableStateOf<RoomListState.DeclineInviteMenu>(RoomListState.DeclineInviteMenu.Hidden) }
@@ -227,13 +228,12 @@ class RoomListPresenter(
                 is RoomListEvent.MarkAsRead -> coroutineScope.markAsRead(event.roomId)
                 is RoomListEvent.MarkAsUnread -> coroutineScope.markAsUnread(event.roomId)
                 is RoomListEvent.AcceptInvite -> {
-                    // GUA FORK: joining a space turns the Spaces switch on, so the space has somewhere to appear.
-                    if (event.roomSummary.isSpace && !spacesSwitch.isEnabled.value) {
-                        coroutineScope.launch { spacesSwitch.setEnabled(true) }
+                    // GUA FORK: while Spaces is off, a space invite is accepted from its join screen, which the view opens instead.
+                    if (!event.roomSummary.isSpace || isSpacesEnabled) {
+                        acceptDeclineInviteState.eventSink(
+                            AcceptInvite(event.roomSummary.toInviteData())
+                        )
                     }
-                    acceptDeclineInviteState.eventSink(
-                        AcceptInvite(event.roomSummary.toInviteData())
-                    )
                 }
                 is RoomListEvent.DeclineInvite -> {
                     acceptDeclineInviteState.eventSink(
@@ -278,6 +278,7 @@ class RoomListPresenter(
             hideInvitesAvatars = hideInvitesAvatar,
             canReportRoom = canReportRoom,
             accountRecoveryBannerState = accountRecoveryBannerState,
+            isSpacesEnabled = isSpacesEnabled,
             eventSink = ::handleEvent,
         )
     }

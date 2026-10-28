@@ -62,6 +62,7 @@ internal fun aRoomListState(
     hideInvitesAvatars: Boolean = false,
     canReportRoom: Boolean = true,
     accountRecoveryBannerState: AccountRecoveryBannerState = aHiddenAccountRecoveryBannerState(),
+    isSpacesEnabled: Boolean = true,
     eventSink: (RoomListEvent) -> Unit = {}
 ) = RoomListState(
     contextMenu = contextMenu,
@@ -75,6 +76,7 @@ internal fun aRoomListState(
     hideInvitesAvatars = hideInvitesAvatars,
     canReportRoom = canReportRoom,
     accountRecoveryBannerState = accountRecoveryBannerState,
+    isSpacesEnabled = isSpacesEnabled,
     eventSink = eventSink,
 )
 

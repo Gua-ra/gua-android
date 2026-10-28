@@ -20,12 +20,14 @@ import io.element.android.features.home.impl.datasource.RoomListDataSource
 import io.element.android.features.home.impl.datasource.aRoomListRoomSummaryFactory
 import io.element.android.features.home.impl.filters.RoomListFiltersState
 import io.element.android.features.home.impl.filters.aRoomListFiltersState
+import io.element.android.features.home.impl.model.RoomListRoomSummary
 import io.element.android.features.home.impl.model.createRoomListRoomSummary
 import io.element.android.features.home.impl.search.RoomListSearchEvent
 import io.element.android.features.home.impl.search.RoomListSearchState
 import io.element.android.features.home.impl.search.aRoomListSearchState
 import io.element.android.features.home.impl.spacefilters.SpaceFiltersState
 import io.element.android.features.home.impl.spacefilters.aDisabledSpaceFiltersState
+import io.element.android.features.invite.api.InviteData
 import io.element.android.features.invite.api.SeenInvitesStore
 import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteEvents
 import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteState
@@ -578,6 +580,66 @@ class RoomListPresenterTest {
         }
     }
 
+    @Test
+    fun `present - with Spaces off, an inline accept of a space invite is left to the join screen`() = runTest {
+        val eventSinkRecorder = lambdaRecorder { _: AcceptDeclineInviteEvents -> }
+        awaitSpaceInviteState(
+            spacesSwitch = FakeSpacesSwitch(initialValue = false),
+            acceptDeclineEventSink = eventSinkRecorder,
+        ) { state, spaceInvite ->
+            assertThat(state.isSpacesEnabled).isFalse()
+            state.eventSink(RoomListEvent.AcceptInvite(spaceInvite))
+        }
+        assert(eventSinkRecorder).isNeverCalled()
+    }
+
+    @Test
+    fun `present - with Spaces on, an inline accept of a space invite accepts it`() = runTest {
+        val eventSinkRecorder = lambdaRecorder { _: AcceptDeclineInviteEvents -> }
+        var inviteData: InviteData? = null
+        awaitSpaceInviteState(
+            spacesSwitch = FakeSpacesSwitch(initialValue = true),
+            acceptDeclineEventSink = eventSinkRecorder,
+        ) { state, spaceInvite ->
+            assertThat(state.isSpacesEnabled).isTrue()
+            inviteData = spaceInvite.toInviteData()
+            state.eventSink(RoomListEvent.AcceptInvite(spaceInvite))
+        }
+        assert(eventSinkRecorder)
+            .isCalledOnce()
+            .with(value(AcceptDeclineInviteEvents.AcceptInvite(inviteData!!)))
+    }
+
+    private suspend fun TestScope.awaitSpaceInviteState(
+        spacesSwitch: FakeSpacesSwitch,
+        acceptDeclineEventSink: (AcceptDeclineInviteEvents) -> Unit,
+        block: (RoomListState, RoomListRoomSummary) -> Unit,
+    ) {
+        val roomSummary = aRoomSummary(
+            currentUserMembership = CurrentUserMembership.INVITED,
+            inviter = aRoomMember(),
+            isSpace = true,
+        )
+        val roomList = FakeDynamicRoomList(
+            summaries = MutableStateFlow(listOf(roomSummary)),
+            loadingState = MutableStateFlow(RoomList.LoadingState.Loaded(1))
+        )
+        val presenter = createRoomListPresenter(
+            client = FakeMatrixClient(roomListService = FakeRoomListService(createRoomListLambda = { roomList })),
+            acceptDeclineInvitePresenter = Presenter { anAcceptDeclineInviteState(eventSink = acceptDeclineEventSink) },
+            spacesSwitch = spacesSwitch,
+        )
+        presenter.test {
+            val state = consumeItemsUntilPredicate {
+                it.contentState is RoomListContentState.Rooms
+            }.last()
+            val spaceInvite = state.contentAsRooms().summaries.first { it.id == roomSummary.roomId.value }
+            assertThat(spaceInvite.isSpace).isTrue()
+            block(state, spaceInvite)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `present - UpdateVisibleRange will cancel the previous subscription if called too soon`() = runTest {
@@ -707,6 +769,7 @@ class RoomListPresenterTest {
         announcementService: AnnouncementService = FakeAnnouncementService(),
         featureFlagService: FeatureFlagService = FakeFeatureFlagService(),
         accountRecoveryBannerPresenter: Presenter<AccountRecoveryBannerState> = Presenter { aHiddenAccountRecoveryBannerState() },
+        spacesSwitch: FakeSpacesSwitch = FakeSpacesSwitch(),
     ) = RoomListPresenter(
         client = client,
         leaveRoomPresenter = { leaveRoomState },
@@ -740,6 +803,6 @@ class RoomListPresenterTest {
         keyStorageProvisioner = FakeKeyStorageProvisioner(),
         identityResetPendingStore = FakeIdentityResetPendingStore(),
         accountRecoveryBannerPresenter = accountRecoveryBannerPresenter,
-        spacesSwitch = FakeSpacesSwitch(),
+        spacesSwitch = spacesSwitch,
     )
 }

@@ -14,5 +14,6 @@ android {
 
 dependencies {
     implementation(projects.features.space.api)
+    implementation(projects.libraries.matrix.api)
     implementation(libs.coroutines.core)
 }

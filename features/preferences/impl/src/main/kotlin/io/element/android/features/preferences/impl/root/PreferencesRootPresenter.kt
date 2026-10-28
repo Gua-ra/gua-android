@@ -43,6 +43,7 @@ import io.element.android.services.analytics.api.AnalyticsService
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -161,7 +162,8 @@ class PreferencesRootPresenter(
                 is PreferencesRootEvent.SwitchToSession -> coroutineScope.launch {
                     sessionStore.setLatestSession(event.sessionId.value)
                 }
-                is PreferencesRootEvent.SetSpacesEnabled -> coroutineScope.launch {
+                // GUA FORK: started undispatched so the write is handed to the session scope before this screen can close.
+                is PreferencesRootEvent.SetSpacesEnabled -> coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
                     spacesSwitch.setEnabled(event.enabled)
                 }
             }

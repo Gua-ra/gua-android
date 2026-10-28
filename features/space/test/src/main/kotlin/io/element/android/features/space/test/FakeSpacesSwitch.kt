@@ -8,6 +8,7 @@
 package io.element.android.features.space.test
 
 import io.element.android.features.space.api.SpacesSwitch
+import io.element.android.libraries.matrix.api.core.RoomId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,5 +22,11 @@ class FakeSpacesSwitch(
 
     override suspend fun setEnabled(enabled: Boolean): Result<Unit> {
         return setEnabledResult(enabled).onSuccess { state.value = enabled }
+    }
+
+    val enableWhenJoinedCalls = mutableListOf<RoomId>()
+
+    override fun enableWhenJoined(roomId: RoomId) {
+        enableWhenJoinedCalls += roomId
     }
 }
