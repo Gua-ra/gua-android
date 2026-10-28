@@ -22,6 +22,7 @@ import io.element.android.features.login.impl.screens.onboarding.OnBoardingPrese
 import io.element.android.features.login.impl.web.WebClientUrlForAuthenticationRetriever
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.runCatchingUpdatingState
+import io.element.android.libraries.core.data.tryOrNull
 import io.element.android.libraries.di.annotations.AppCoroutineScope
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
@@ -132,7 +133,7 @@ class LoginHelper(
     suspend fun submitPhone(e164Phone: String) {
         suspend {
             val resolution = resolverClient.resolve(e164Phone).getOrThrow()
-            appCoroutineScope.launch { verifyResolution(e164Phone, resolution) }
+            appCoroutineScope.launch { tryOrNull { verifyResolution(e164Phone, resolution) } }
             val homeserverUrl = resolution.homeserver.baseUrl
             val isAccountCreation = !resolution.exists
             // GUA FORK: ADM-008 Phase 3. A brand-new account registers its on-device genesis BEFORE the

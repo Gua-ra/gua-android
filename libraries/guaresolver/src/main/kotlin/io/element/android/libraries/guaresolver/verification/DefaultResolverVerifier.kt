@@ -72,7 +72,7 @@ class DefaultResolverVerifier(
         val rootsValue = deployment.resolverTrustRoots?.takeIf { it.isNotBlank() } ?: return checks.abort(VerificationReason.NO_TRUST_ROOTS)
         val roots = tryOrNull { ResolverTrustRoots.parse(rootsValue) } ?: return checks.abort(VerificationReason.TRUST_ROOTS_MALFORMED)
         if (roots.authorityKeys.isEmpty()) return checks.abort(VerificationReason.NO_TRUST_ROOTS)
-        val api = retrofitFactory.create(baseUrl.ensureProtocol()).create(ResolverVerificationApi::class.java)
+        val api = retrofitFactory.createUnlogged(baseUrl.ensureProtocol()).create(ResolverVerificationApi::class.java)
         val now = System.currentTimeMillis()
 
         val roster = when (val fetched = fetch { api.roster() }) {

@@ -30,6 +30,7 @@ internal data class SignedRosterEntry(
     val claims: List<RosterClaim>? = null,
     val admittedAt: String? = null,
     val status: String,
+    // A JsonObject keeps the last of duplicate keys; the member signature is then checked over the values read.
     val member: JsonObject? = null,
 ) {
     val isActive: Boolean
