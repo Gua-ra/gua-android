@@ -43,9 +43,9 @@ import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteE
 import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteState
 import io.element.android.features.leaveroom.api.LeaveRoomEvent
 import io.element.android.features.leaveroom.api.LeaveRoomState
+import io.element.android.features.preferences.impl.tasks.MarkRoomAsRead
 import io.element.android.features.securebackup.api.IdentityResetPendingStore
 import io.element.android.features.securebackup.api.KeyStorageProvisioner
-import io.element.android.features.preferences.impl.tasks.MarkRoomAsRead
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
@@ -63,8 +63,8 @@ import io.element.android.libraries.matrix.api.roomlist.RoomList
 import io.element.android.libraries.matrix.api.roomlist.RoomListFilter
 import io.element.android.libraries.matrix.ui.safety.rememberHideInvitesAvatar
 import io.element.android.libraries.push.api.battery.BatteryOptimizationState
-import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.libraries.sessionstorage.api.SessionStore
+import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.analytics.api.watchers.AnalyticsColdStartWatcher
 import io.element.android.services.analyticsproviders.api.trackers.captureInteraction

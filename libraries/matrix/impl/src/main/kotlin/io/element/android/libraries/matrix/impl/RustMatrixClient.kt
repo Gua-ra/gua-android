@@ -59,8 +59,8 @@ import io.element.android.libraries.matrix.api.sync.SlidingSyncVersion
 import io.element.android.libraries.matrix.api.sync.SyncState
 import io.element.android.libraries.matrix.api.user.MatrixSearchUserResults
 import io.element.android.libraries.matrix.api.user.MatrixUser
-import io.element.android.libraries.matrix.impl.encryption.DefaultIdentityResetGuard
 import io.element.android.libraries.matrix.api.user.UserStatus
+import io.element.android.libraries.matrix.impl.encryption.DefaultIdentityResetGuard
 import io.element.android.libraries.matrix.impl.encryption.RustEncryptionService
 import io.element.android.libraries.matrix.impl.encryption.SilentSessionEncryptionBootstrapper
 import io.element.android.libraries.matrix.impl.exception.mapClientException

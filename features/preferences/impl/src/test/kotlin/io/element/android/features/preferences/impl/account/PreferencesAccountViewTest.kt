@@ -113,7 +113,6 @@ class PreferencesAccountViewTest : RobolectricTest() {
             onNode(hasText(text) and hasClickAction()).performClick()
         }
     }
-
 }
 
 private fun AndroidComposeUiTest<ComponentActivity>.setView(
