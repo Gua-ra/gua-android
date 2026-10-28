@@ -113,10 +113,10 @@ class AnnotatedStringPillificationTest : RobolectricTest() {
         val (id, mention) = result.inlineContent.entries.single()
         assertThat(
             mention
-        ).isEqualTo(MentionNodeContent.User(displayText = "@alice:example.org", userId = userId, permalinkUrl = "https://matrix.to/#/@alice:example.org"))
+        ).isEqualTo(MentionNodeContent.User(displayText = "@alice", userId = userId, permalinkUrl = "https://matrix.to/#/@alice:example.org"))
         // The url is replaced by the display text of the pill, the trailing punctuation is kept
-        assertThat(result.text.text).isEqualTo("Ask @alice:example.org.")
-        result.assertPlaceholder(id, start = 4, end = 22)
+        assertThat(result.text.text).isEqualTo("Ask @alice.")
+        result.assertPlaceholder(id, start = 4, end = 10)
     }
 
     @Test
@@ -200,17 +200,17 @@ class AnnotatedStringPillificationTest : RobolectricTest() {
             withAnnotation(LINK_ANNOTATION_TAG, "https://element.io") { append("link") }
         }
         val result = text.pillify(emptyMap(), permalinkParser, aPermalinkBuilder())
-        assertThat(result.text.text).isEqualTo("@alice:example.org and @room bold link")
+        assertThat(result.text.text).isEqualTo("@alice and @room bold link")
         assertThat(result.inlineContent.values).containsExactly(
-            MentionNodeContent.User(displayText = "@alice:example.org", userId = userId, permalinkUrl = "https://matrix.to/#/@alice:example.org"),
+            MentionNodeContent.User(displayText = "@alice", userId = userId, permalinkUrl = "https://matrix.to/#/@alice:example.org"),
             MentionNodeContent.Everyone(displayText = "@room"),
         )
         val bold = result.text.spanStyles.single()
-        assertThat(bold.start).isEqualTo(29)
-        assertThat(bold.end).isEqualTo(33)
+        assertThat(bold.start).isEqualTo(17)
+        assertThat(bold.end).isEqualTo(21)
         val link = result.text.getStringAnnotations(LINK_ANNOTATION_TAG, 0, result.text.length).single()
-        assertThat(link.start).isEqualTo(34)
-        assertThat(link.end).isEqualTo(38)
+        assertThat(link.start).isEqualTo(22)
+        assertThat(link.end).isEqualTo(26)
     }
 
     private fun PillifiedText.assertPlaceholder(id: String, start: Int, end: Int) {

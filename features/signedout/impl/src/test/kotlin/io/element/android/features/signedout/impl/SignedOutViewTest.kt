@@ -35,7 +35,7 @@ class SignedOutViewTest : RobolectricTest() {
             ),
         )
         onNodeWithText("Alice").assertIsDisplayed()
-        onNodeWithText("@alice:server.org").assertIsDisplayed()
+        onNodeWithText("@alice").assertIsDisplayed()
     }
 
     @Test
@@ -47,7 +47,7 @@ class SignedOutViewTest : RobolectricTest() {
                 eventSink = EventsRecorder(expectEvents = false),
             ),
         )
-        onNodeWithText("@alice:server.org").assertIsDisplayed()
+        onNodeWithText("@alice").assertIsDisplayed()
     }
 
     @Test

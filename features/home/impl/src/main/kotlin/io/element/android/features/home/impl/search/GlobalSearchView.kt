@@ -379,7 +379,8 @@ private fun LazyListScope.searchHistory(
                             val dmUserId = result.roomInfo.heroes.firstOrNull()?.userId
                             dmUserId?.let { userId ->
                                 Text(
-                                    text = userId.value,
+                                    // GUA FORK: show the homeserver-stripped handle, never `@user:server`.
+                                    text = userId.displayHandle,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     style = ElementTheme.typography.fontBodyMdRegular,

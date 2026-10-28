@@ -41,7 +41,7 @@ class LogoutViewTest : RobolectricTest() {
             ),
         )
         onNodeWithText("Alice").assertIsDisplayed()
-        onNodeWithText("@alice:server.org").assertIsDisplayed()
+        onNodeWithText("@alice").assertIsDisplayed()
     }
 
     @Test

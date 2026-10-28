@@ -150,7 +150,8 @@ private fun AnnotatedString.findPermalinkMatches(
         val mention = when (val permalink = permalinkParser.parse(text.substring(start, end))) {
             is PermalinkData.UserLink -> permalinkBuilder.permalinkForUser(permalink.userId).getOrNull()?.let {
                 MentionNodeContent.User(
-                    displayText = permalink.userId.value,
+                    // GUA FORK: the homeserver-stripped handle, never `@user:server`.
+                    displayText = permalink.userId.displayHandle,
                     userId = permalink.userId,
                     permalinkUrl = it,
                 )

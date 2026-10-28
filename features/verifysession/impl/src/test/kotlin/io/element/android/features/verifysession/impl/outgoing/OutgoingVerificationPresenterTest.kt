@@ -422,7 +422,7 @@ class OutgoingVerificationPresenterTest {
                 service,
                 SessionVerificationData.Emojis(emojis)
             )
-            state.eventSink(OutgoingVerificationViewEvents.ConfirmVerification)
+            state.eventSink(OutgoingVerificationViewEvent.ConfirmVerification)
             assertThat(awaitItem().step).isEqualTo(
                 Step.Verifying(
                     SessionVerificationData.Emojis(emojis),
