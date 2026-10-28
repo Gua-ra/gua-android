@@ -25,6 +25,7 @@ import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.utils.OnLifecycleEvent
 import io.element.android.libraries.matrix.api.exception.isNetworkError
+import io.element.android.libraries.permissions.api.localnetwork.LocalNetworkPermissionDialogView
 import io.element.android.libraries.push.api.PusherRegistrationFailure
 import io.element.android.libraries.ui.strings.CommonStrings
 
@@ -36,7 +37,7 @@ fun LoggedInView(
 ) {
     OnLifecycleEvent { _, event ->
          if (event == Lifecycle.Event.ON_RESUME) {
-            state.eventSink(LoggedInEvents.CheckSlidingSyncProxyAvailability)
+            state.eventSink(LoggedInEvent.CheckSlidingSyncProxyAvailability)
          }
     }
     Box(
@@ -46,7 +47,7 @@ fun LoggedInView(
     ) {
         SyncStateView(
             modifier = Modifier.align(Alignment.TopCenter),
-            isVisible = state.showSyncSpinner,
+            state = state.syncIndicatorState,
         )
     }
     when (state.pusherRegistrationState) {
@@ -61,10 +62,10 @@ fun LoggedInView(
                         content = stringResource(id = R.string.gua_error_registering_pusher),
                         cancelText = stringResource(id = CommonStrings.common_settings),
                         onDismiss = {
-                            state.eventSink(LoggedInEvents.CloseErrorDialog(it))
+                            state.eventSink(LoggedInEvent.CloseErrorDialog(it))
                         },
                         onCancel = {
-                            state.eventSink(LoggedInEvents.CloseErrorDialog(false))
+                            state.eventSink(LoggedInEvent.CloseErrorDialog(false))
                             navigateToNotificationTroubleshoot()
                         }
                     )
@@ -77,10 +78,16 @@ fun LoggedInView(
         ForceNativeSlidingSyncMigrationDialog(
             appName = state.appName,
             onSubmit = {
-                state.eventSink(LoggedInEvents.LogoutAndMigrateToNativeSlidingSync)
+                state.eventSink(LoggedInEvent.LogoutAndMigrateToNativeSlidingSync)
             }
         )
     }
+
+    LocalNetworkPermissionDialogView(
+        dialog = state.localNetworkPermissionDialog,
+        onSubmit = { state.eventSink(LoggedInEvent.RequestLocationNetworkPermission) },
+        onDismiss = { state.eventSink(LoggedInEvent.DismissLocalNetworkPermissionPrompt) },
+    )
 }
 
 // GUA FORK: the dialog shows no technical reason; the SDK gives it in English whatever the app language.
@@ -113,7 +120,7 @@ private fun ForceNativeSlidingSyncMigrationDialog(
 
 @PreviewsDayNight
 @Composable
-internal fun LoggedInViewPreview(@PreviewParameter(LoggedInStateProvider::class) state: LoggedInState) = ElementPreview {
+internal fun LoggedInViewPreview(@PreviewParameter(LoggedInStatePreviewParam::class) state: LoggedInState) = ElementPreview {
     LoggedInView(
         state = state,
         navigateToNotificationTroubleshoot = {},

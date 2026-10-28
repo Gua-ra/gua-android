@@ -17,8 +17,10 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -198,6 +200,7 @@ class DefaultIdentityResetGuardTest {
         val slowSyncService = object : SyncService {
             override val syncState: StateFlow<SyncState> = MutableStateFlow(SyncState.Running)
             override val isOnline: StateFlow<Boolean> = MutableStateFlow(true)
+            override val heartBeat: Flow<Unit> = emptyFlow()
             override suspend fun startSync(): Result<Unit> = Result.success(Unit)
             override suspend fun stopSync(): Result<Unit> {
                 stops++

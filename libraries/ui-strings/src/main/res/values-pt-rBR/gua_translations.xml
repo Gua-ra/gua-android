@@ -27,4 +27,68 @@
     <string name="common_shared_history">Novos membros veem o histórico</string>
     <string name="common_shared_live_location">Localização em tempo real compartilhada</string>
     <string name="common_world_readable_history">Qualquer pessoa pode ver o histórico</string>
+    <string name="gua_action_sign_out">Sair</string>
+    <string name="gua_action_sign_out_anyway">Sair mesmo assim</string>
+    <string name="a11y_active">Ativo</string>
+    <string name="a11y_clear_search_field">Limpar campo de pesquisa</string>
+    <string name="a11y_create_poll_votes_allowed_decrease">Diminuir votos permitidos por pessoa</string>
+    <string name="a11y_create_poll_votes_allowed_increase">Aumentar votos permitidos por pessoa</string>
+    <string name="a11y_inactive">Inativo</string>
+    <string name="a11y_jump_to_unread_messages">Ir para a primeira mensagem não lida</string>
+    <string name="a11y_photo_preview">Pré-visualização da foto</string>
+    <string name="a11y_read_receipts_tap_to_show_all_android">mostrar todas as confirmações de leitura</string>
+    <string name="a11y_state_collapsed">Recolhido</string>
+    <string name="a11y_state_expanded">Expandido</string>
+    <string name="a11y_video_preview">Pré-visualização do vídeo</string>
+    <string name="action_clear_all">Limpar tudo</string>
+    <string name="action_copy_to_clipboard">Copiar</string>
+    <string name="action_mark_as_read">Marcar como lida</string>
+    <string name="action_video_call">Chamada de vídeo</string>
+    <string name="common_account_settings">Configurações da conta</string>
+    <string name="common_app_settings">Configurações do app</string>
+    <string name="common_call_in_progress">Chamada em andamento</string>
+    <string name="common_code_block">Bloco de código</string>
+    <string name="common_forward_to">Encaminhar para</string>
+    <string name="common_gallery">Galeria</string>
+    <plurals name="common_gallery_reply_attachments">
+        <item quantity="one">%1$d anexo…</item>
+        <item quantity="other">%1$d anexos…</item>
+    </plurals>
+    <plurals name="common_gallery_reply_media_items">
+        <item quantity="one">%1$d item de mídia…</item>
+        <item quantity="other">%1$d itens de mídia…</item>
+    </plurals>
+    <string name="common_group_call_in_progress">Chamada em grupo em andamento</string>
+    <string name="common_header_rooms">Salas</string>
+    <string name="common_location_sharing">Compartilhamento de localização</string>
+    <string name="common_media_upload_quality">Qualidade de envio de mídia</string>
+    <string name="common_moderation_and_safety">Moderação e segurança</string>
+    <string name="common_no_results_for">Não há resultados para “%1$s”. Tente um novo termo de pesquisa.</string>
+    <string name="common_on_a_call">Em uma chamada</string>
+    <string name="common_results_for">Resultados para “%1$s”</string>
+    <string name="common_signed_in">Conectado</string>
+    <string name="common_switch_account">Alternar contas</string>
+    <string name="common_user_started_a_call">%1$s iniciou uma chamada</string>
+    <string name="content_scanner_not_found">Download indisponível.</string>
+    <string name="content_scanner_not_found_title">Algo deu errado</string>
+    <string name="content_scanner_scanning">Analisando…</string>
+    <string name="content_scanner_unsafe_message">A pré-visualização e o download foram desativados.</string>
+    <string name="content_scanner_unsafe_title">O arquivo não é seguro</string>
+    <string name="dialog_allow_access">Permitir acesso</string>
+    <string name="error_account_already_logged_in_title">Conta já conectada</string>
+    <string name="screen_local_network_opt_in_subtitle">Seu servidor está na sua rede local. Para se conectar, o %1$s precisa de permissão para acessar dispositivos nesta rede.</string>
+    <string name="screen_local_network_opt_in_title">Permitir acesso à rede local</string>
+    <string name="screen_room_maximum_messages_selected">Máximo de mensagens selecionadas</string>
+    <plurals name="screen_room_messages_forwarded">
+        <item quantity="one">%1$d mensagem encaminhada</item>
+        <item quantity="other">%1$d mensagens encaminhadas</item>
+    </plurals>
+    <plurals name="screen_room_selection_count">
+        <item quantity="one">%1$d mensagem selecionada</item>
+        <item quantity="other">%1$d mensagens selecionadas</item>
+    </plurals>
+    <plurals name="screen_timeline_active_call_joined_count">
+        <item quantity="one">%1$d entrou</item>
+        <item quantity="other">%1$d entraram</item>
+    </plurals>
 </resources>

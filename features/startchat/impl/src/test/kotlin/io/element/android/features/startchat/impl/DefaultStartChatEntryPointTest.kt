@@ -13,7 +13,7 @@ import com.bumble.appyx.core.modality.BuildContext
 import com.bumble.appyx.core.node.Node
 import com.bumble.appyx.testing.junit4.util.MainDispatcherRule
 import com.google.common.truth.Truth.assertThat
-import io.element.android.features.createroom.api.FakeCreateRoomEntryPoint
+import io.element.android.features.createroom.test.FakeCreateRoomEntryPoint
 import io.element.android.features.findfriends.test.FakeFindFriendsEntryPoint
 import io.element.android.features.startchat.api.StartChatEntryPoint
 import io.element.android.features.userprofile.api.UserProfileEntryPoint

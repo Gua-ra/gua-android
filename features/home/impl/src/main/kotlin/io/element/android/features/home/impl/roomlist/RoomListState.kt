@@ -12,6 +12,7 @@ import androidx.compose.runtime.Immutable
 import io.element.android.features.home.impl.accountrecovery.AccountRecoveryBannerState
 import io.element.android.features.home.impl.filters.RoomListFiltersState
 import io.element.android.features.home.impl.model.RoomListRoomSummary
+import io.element.android.features.home.impl.search.GlobalSearchState
 import io.element.android.features.home.impl.search.RoomListSearchState
 import io.element.android.features.home.impl.spacefilters.SpaceFiltersState
 import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteState
@@ -28,6 +29,7 @@ data class RoomListState(
     val leaveRoomState: LeaveRoomState,
     val filtersState: RoomListFiltersState,
     val searchState: RoomListSearchState,
+    val globalSearchState: GlobalSearchState,
     val spaceFiltersState: SpaceFiltersState,
     val contentState: RoomListContentState,
     val acceptDeclineInviteState: AcceptDeclineInviteState,
@@ -47,7 +49,6 @@ data class RoomListState(
             val isDm: Boolean,
             val isFavorite: Boolean,
             val hasNewContent: Boolean,
-            val displayClearRoomCacheAction: Boolean,
         ) : ContextMenu
     }
 
@@ -95,8 +96,10 @@ sealed interface RoomListContentState {
         val fullScreenIntentPermissionsState: FullScreenIntentPermissionsState,
         val batteryOptimizationState: BatteryOptimizationState,
         val showNewNotificationSoundBanner: Boolean,
+        val showSwipeAvatarBanner: Boolean,
         val showUnreadCount: Boolean,
         val summaries: ImmutableList<RoomListRoomSummary>,
         val seenRoomInvites: ImmutableSet<RoomId>,
+        val showAllActivity: Boolean,
     ) : RoomListContentState
 }

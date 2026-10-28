@@ -28,12 +28,14 @@ import io.element.android.libraries.dateformatter.api.DateFormatterMode
 import io.element.android.libraries.designsystem.components.avatar.AvatarData
 import io.element.android.libraries.designsystem.components.avatar.AvatarSize
 import io.element.android.libraries.matrix.api.MatrixClient
+import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.permalink.PermalinkParser
 import io.element.android.libraries.matrix.api.room.RoomMember
 import io.element.android.libraries.matrix.api.timeline.MatrixTimelineItem
 import io.element.android.libraries.matrix.api.timeline.item.EventThreadInfo
 import io.element.android.libraries.matrix.api.timeline.item.event.EventContent
 import io.element.android.libraries.matrix.api.timeline.item.event.ProfileChangeContent
+import io.element.android.libraries.matrix.api.timeline.item.event.ProfileDetails
 import io.element.android.libraries.matrix.api.timeline.item.event.RoomMembershipContent
 import io.element.android.libraries.matrix.api.timeline.item.event.StateContent
 import io.element.android.libraries.matrix.api.timeline.item.event.getAvatarUrl
@@ -41,6 +43,8 @@ import io.element.android.libraries.matrix.api.timeline.item.event.getDisambigua
 import io.element.android.libraries.matrix.ui.messages.reply.map
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+
+private const val GROUPING_TIMEOUT_MS = 5 * 60 * 1000L
 
 @AssistedInject
 class TimelineItemEventFactory(
@@ -78,7 +82,7 @@ class TimelineItemEventFactory(
         val currentSender = currentTimelineItem.event.sender
         val groupPosition =
             computeGroupPosition(currentTimelineItem, timelineItems, index)
-        val senderProfile = currentTimelineItem.event.senderProfile
+        val senderProfile = currentTimelineItem.event.senderProfile.orFallbackTo(roomMembers, currentSender)
         val sentTime = dateFormatter.format(
             timestamp = currentTimelineItem.event.timestamp,
             mode = DateFormatterMode.TimeOnly,
@@ -124,7 +128,7 @@ class TimelineItemEventFactory(
             senderId = currentSender,
             senderProfile = senderProfile,
             senderAvatar = senderAvatarData,
-            content = contentFactory.create(currentTimelineItem.event),
+            content = contentFactory.create(currentTimelineItem.event, roomMembers),
             isMine = currentTimelineItem.event.isOwn,
             isEditable = currentTimelineItem.event.isEditable,
             canBeRepliedTo = currentTimelineItem.event.canBeRepliedTo,
@@ -135,6 +139,8 @@ class TimelineItemEventFactory(
             reactionsState = currentTimelineItem.computeReactionsState(),
             readReceiptState = currentTimelineItem.computeReadReceiptState(roomMembers, renderReadReceipts),
             localSendState = currentTimelineItem.event.localSendState,
+            editSendState = currentTimelineItem.event.editSendState,
+            redactionSendState = currentTimelineItem.event.redactionSendState,
             inReplyTo = currentTimelineItem.event.inReplyTo()?.map(permalinkParser = permalinkParser),
             threadInfo = mappedThreadInfo,
             origin = currentTimelineItem.event.origin,
@@ -152,8 +158,29 @@ class TimelineItemEventFactory(
         roomMembers: List<RoomMember>,
         renderReadReceipts: Boolean,
     ): TimelineItem.Event {
+        val senderProfile = receivedMatrixTimelineItem.event.senderProfile.orFallbackTo(roomMembers, timelineItem.senderId)
         return timelineItem.copy(
+            senderProfile = senderProfile,
+            senderAvatar = timelineItem.senderAvatar.copy(
+                name = senderProfile.getDisambiguatedDisplayName(timelineItem.senderId),
+                url = senderProfile.getAvatarUrl(),
+            ),
             readReceiptState = receivedMatrixTimelineItem.computeReadReceiptState(roomMembers, renderReadReceipts)
+        )
+    }
+
+    /**
+     * The timeline only knows the profiles the SDK has resolved, so a sender it has nothing for is rendered as a raw
+     * user ID. The room member list usually knows that user, so use it rather than showing the ID.
+     */
+    private fun ProfileDetails.orFallbackTo(roomMembers: List<RoomMember>, senderId: UserId): ProfileDetails {
+        if (this is ProfileDetails.Ready) return this
+        val member = roomMembers.find { it.userId == senderId } ?: return this
+        return ProfileDetails.Ready(
+            displayName = member.displayName,
+            displayNameAmbiguous = member.isNameAmbiguous,
+            avatarUrl = member.avatarUrl,
+            displayedStatus = member.displayedStatus,
         )
     }
 
@@ -237,8 +264,14 @@ class TimelineItemEventFactory(
         val previousSender = prevTimelineItem?.event?.sender
         val nextSender = nextTimelineItem?.event?.sender
 
-        val previousIsGroupable = prevTimelineItem?.canBeDisplayedInBubbleBlock().orTrue()
-        val nextIsGroupable = nextTimelineItem?.canBeDisplayedInBubbleBlock().orTrue()
+        val previousIsGroupable = prevTimelineItem?.let {
+            it.canBeDisplayedInBubbleBlock() &&
+                currentTimelineItem.event.timestamp - it.event.timestamp <= GROUPING_TIMEOUT_MS
+        }.orTrue()
+        val nextIsGroupable = nextTimelineItem?.let {
+            it.canBeDisplayedInBubbleBlock() &&
+                it.event.timestamp - currentTimelineItem.event.timestamp <= GROUPING_TIMEOUT_MS
+        }.orTrue()
 
         return when {
             previousSender != currentSender && nextSender == currentSender -> {

@@ -24,6 +24,11 @@ android {
     }
 
     defaultConfig {
+        buildConfigField(
+            name = "OAUTH_CLIENT_URI_PATH",
+            type = "String",
+            value = BuildTimeConfig.OAUTH_CLIENT_URL_PATH?.let { "\"$it\"" } ?: "null",
+        )
         // GUA FORK: fall back to the Gua pages so no element.io link can ever ship,
         // even if the BuildTimeConfig values are unset.
         buildConfigFieldStr(
@@ -50,8 +55,8 @@ dependencies {
     implementation(libs.serialization.json)
     implementation(projects.libraries.androidutils)
     implementation(projects.libraries.architecture)
-    implementation(projects.libraries.sessionStorage.api)
     implementation(projects.services.analytics.api)
+    implementation(projects.libraries.sessionStorage.api)
 
     testCommonDependencies(libs)
     testImplementation(projects.libraries.matrix.test)

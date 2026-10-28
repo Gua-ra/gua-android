@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: es translations of Gua's shared strings. The English source lives in values/gua_strings.xml. -->
+<resources>
+    <string name="gua_action_sign_out">Cerrar sesión</string>
+    <string name="gua_action_sign_out_anyway">Cerrar sesión de todos modos</string>
+    <string name="a11y_active">Activo</string>
+    <string name="a11y_inactive">Inactivo</string>
+    <string name="a11y_state_collapsed">Contraído</string>
+    <string name="a11y_state_expanded">Expandido</string>
+    <string name="action_clear_all">Borrar todo</string>
+    <string name="action_copy_to_clipboard">Copiar al portapapeles</string>
+    <string name="common_account_settings">Ajustes de la cuenta</string>
+    <string name="common_app_settings">Ajustes de la aplicación</string>
+    <string name="common_code_block">Bloque de código</string>
+    <string name="common_forward_to">Reenviar a</string>
+    <string name="common_header_rooms">Salas</string>
+    <string name="common_location_sharing">Compartir ubicación</string>
+    <string name="common_media_upload_quality">Calidad de subida de multimedia</string>
+    <string name="common_moderation_and_safety">Moderación y seguridad</string>
+    <string name="common_no_results_for">No hay resultados para “%1$s”. Prueba con otro término de búsqueda.</string>
+    <string name="common_results_for">Resultados para “%1$s”</string>
+    <string name="common_signed_in">Sesión iniciada</string>
+    <string name="common_switch_account">Cambiar de cuenta</string>
+    <string name="error_account_already_logged_in_title">Inicio de sesión duplicado</string>
+    <string name="screen_room_maximum_messages_selected">Máximo de mensajes seleccionados</string>
+    <plurals name="screen_room_messages_forwarded">
+        <item quantity="one">%1$d mensaje reenviado</item>
+        <item quantity="other">%1$d mensajes reenviados</item>
+    </plurals>
+    <plurals name="screen_room_selection_count">
+        <item quantity="one">%1$d mensaje seleccionado</item>
+        <item quantity="other">%1$d mensajes seleccionados</item>
+    </plurals>
+</resources>

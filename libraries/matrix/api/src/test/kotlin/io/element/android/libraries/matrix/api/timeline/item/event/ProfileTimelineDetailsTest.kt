@@ -42,6 +42,7 @@ class ProfileTimelineDetailsTest {
                 displayName = null,
                 displayNameAmbiguous = false,
                 avatarUrl = null,
+                displayedStatus = null,
             ).getDisambiguatedDisplayName(aUserId)
         ).isEqualTo(aDisplayHandle)
     }
@@ -53,6 +54,7 @@ class ProfileTimelineDetailsTest {
                 displayName = "Alice",
                 displayNameAmbiguous = false,
                 avatarUrl = null,
+                displayedStatus = null,
             ).getDisambiguatedDisplayName(aUserId)
         ).isEqualTo("Alice")
     }
@@ -64,6 +66,7 @@ class ProfileTimelineDetailsTest {
                 displayName = "Alice",
                 displayNameAmbiguous = true,
                 avatarUrl = null,
+                displayedStatus = null,
             ).getDisambiguatedDisplayName(aUserId)
         ).isEqualTo("Alice ($aDisplayHandle)")
     }

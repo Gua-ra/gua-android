@@ -22,6 +22,7 @@ import io.element.android.libraries.matrix.api.timeline.item.event.EventTimeline
 import io.element.android.libraries.matrix.api.timeline.item.event.FailedToParseMessageLikeContent
 import io.element.android.libraries.matrix.api.timeline.item.event.FailedToParseStateContent
 import io.element.android.libraries.matrix.api.timeline.item.event.FileMessageType
+import io.element.android.libraries.matrix.api.timeline.item.event.GalleryMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.ImageMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.LocationMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.MembershipChange
@@ -56,7 +57,6 @@ import org.junit.Test
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
-@Suppress("LargeClass")
 class DefaultPinnedMessagesBannerFormatterTest : RobolectricTest() {
     private lateinit var context: Context
     private lateinit var fakeMatrixClient: FakeMatrixClient
@@ -80,7 +80,7 @@ class DefaultPinnedMessagesBannerFormatterTest : RobolectricTest() {
     fun `Redacted content`() {
         val expected = "Message removed"
         val senderName = "Someone"
-        val message = createRoomEvent(false, senderName, RedactedContent)
+        val message = createRoomEvent(false, senderName, RedactedContent(threadInfo = null))
         val result = formatter.format(message)
         assertThat(result).isEqualTo(expected)
     }
@@ -141,6 +141,7 @@ class DefaultPinnedMessagesBannerFormatterTest : RobolectricTest() {
             AudioMessageType(body, null, null, MediaSource("url"), null),
             VoiceMessageType(body, null, null, MediaSource("url"), null, null),
             ImageMessageType(body, null, null, MediaSource("url"), null),
+            GalleryMessageType(body, null, emptyList()),
             StickerMessageType(body, null, null, MediaSource("url"), null),
             FileMessageType(body, null, null, MediaSource("url"), null),
             LocationMessageType(body, "geo:1,2", null, null),
@@ -163,6 +164,7 @@ class DefaultPinnedMessagesBannerFormatterTest : RobolectricTest() {
                 is VideoMessageType,
                 is AudioMessageType,
                 is ImageMessageType,
+                is GalleryMessageType,
                 is StickerMessageType,
                 is FileMessageType,
                 is LocationMessageType -> AnnotatedString::class.java
@@ -181,6 +183,7 @@ class DefaultPinnedMessagesBannerFormatterTest : RobolectricTest() {
                 is AudioMessageType -> "Audio: Shared body"
                 is VoiceMessageType -> "Voice message"
                 is ImageMessageType -> "Image: Shared body"
+                is GalleryMessageType -> "Gallery: Shared body"
                 is StickerMessageType -> "Sticker: Shared body"
                 is FileMessageType -> "File: Shared body"
                 is LocationMessageType -> "Shared location: Shared body"

@@ -23,4 +23,6 @@ class DefaultSessionEnterpriseService(
 
     // GUA FORK: calls are off in the Play build, which declares no call foreground service.
     override suspend fun isElementCallAvailable(): Boolean = !buildMeta.isGooglePlayBuild
+    override suspend fun isEncryptionDisabledByHomeserver(): Boolean = false
+    override suspend fun arePublicRoomsDisabledByHomeserver(): Boolean = false
 }

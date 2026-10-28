@@ -8,4 +8,6 @@
      lives in values/temporary.xml. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="gua_identity_change_member_list">Los datos de seguridad de %1$s han cambiado</string>
+    <string name="screen_room_notification_settings_mode_mentions_and_keywords">Solo menciones y respuestas</string>
+    <string name="screen_room_notification_settings_mode_mute">Silenciar</string>
 </resources>

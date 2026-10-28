@@ -122,6 +122,8 @@ private fun ContentToPreview() {
                 onReactionLongClick = { _, _ -> },
                 onMoreReactionsClick = {},
                 onReadReceiptClick = {},
+                onJoinCallClick = {},
+                onGalleryItemClick = { _, _ -> },
                 modifier = Modifier.height(220.dp),
                 forceJumpToBottomVisibility = false,
             )
@@ -144,6 +146,8 @@ private fun ContentToPreview() {
                 onReactionLongClick = { _, _ -> },
                 onMoreReactionsClick = {},
                 onReadReceiptClick = {},
+                onJoinCallClick = {},
+                onGalleryItemClick = { _, _ -> },
                 modifier = Modifier.height(220.dp),
                 forceJumpToBottomVisibility = false,
             )

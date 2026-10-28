@@ -23,6 +23,7 @@ import io.element.android.libraries.matrix.api.timeline.item.event.EventContent
 import io.element.android.libraries.matrix.api.timeline.item.event.FailedToParseMessageLikeContent
 import io.element.android.libraries.matrix.api.timeline.item.event.FailedToParseStateContent
 import io.element.android.libraries.matrix.api.timeline.item.event.FileMessageType
+import io.element.android.libraries.matrix.api.timeline.item.event.GalleryMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.ImageMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.LocationMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.MembershipChange
@@ -57,7 +58,6 @@ import org.junit.Test
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
-@Suppress("LargeClass")
 class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
     private lateinit var context: Context
     private lateinit var fakeMatrixClient: FakeMatrixClient
@@ -84,13 +84,13 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
         val expected = "Message removed"
         val senderName = "Someone"
         sequenceOf(false, true).forEach { isDm ->
-            val message = createLatestEvent(false, senderName, RedactedContent)
+            val message = createLatestEvent(false, senderName, RedactedContent(threadInfo = null))
             val result = formatter.format(message, isDm)
             if (isDm) {
                 assertThat(result).isEqualTo(expected)
             } else {
                 assertThat(result).isInstanceOf(AnnotatedString::class.java)
-                assertThat(result.toString()).isEqualTo("$senderName: $expected")
+                assertThat(result.toString()).isEqualTo("⁨$senderName⁩: $expected")
             }
         }
     }
@@ -103,13 +103,13 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
         val message = createLatestEvent(false, null, aStickerContent(body, info, aMediaSource(url = "url")))
         val result = formatter.format(message, false)
         // GUA FORK: the sender is rendered by its homeserver-stripped handle, never `@user:server`.
-        val expectedBody = someoneElseId.displayHandle + ": Sticker: a sticker body"
+        val expectedBody = "⁨" + someoneElseId.displayHandle + "⁩: Sticker: a sticker body"
         // Check we have formatting
         assertThat(result is AnnotatedString).isTrue()
         // And there is a bold span for the 'Sticker' part
         val boldSpanStyle = (result as AnnotatedString).spanStyles.lastOrNull { it.item.fontWeight == FontWeight.Bold }
         assertThat(boldSpanStyle).isNotNull()
-        val spanStart = someoneElseId.displayHandle.length + 2
+        val spanStart = someoneElseId.displayHandle.length + 4
         assertThat(boldSpanStyle!!.start..boldSpanStyle.end).isEqualTo(spanStart..spanStart + 7)
         assertThat(result.toString()).isEqualTo(expectedBody)
     }
@@ -130,7 +130,7 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
                 assertThat(result).isEqualTo(expected)
             } else {
                 assertThat(result).isInstanceOf(AnnotatedString::class.java)
-                assertThat(result.toString()).isEqualTo("$senderName: $expected")
+                assertThat(result.toString()).isEqualTo("⁨$senderName⁩: $expected")
             }
         }
     }
@@ -152,10 +152,27 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
                     assertWithMessage("$type was not properly handled").that(result).isEqualTo(expected)
                 } else {
                     assertWithMessage("$type does not create an AnnotatedString").that(result).isInstanceOf(AnnotatedString::class.java)
-                    assertWithMessage("$type was not properly handled").that(result.toString()).isEqualTo("$senderName: $expected")
+                    assertWithMessage("$type was not properly handled").that(result.toString()).isEqualTo("⁨$senderName⁩: $expected")
                 }
             }
         }
+    }
+
+    @Test
+    @Config(qualifiers = "en")
+    fun `a right to left sender name is isolated so it cannot reorder the preview`() {
+        val senderName = "مرحبا"
+        val body = "Hello"
+        val message = createLatestEvent(
+            sentByYou = false,
+            senderDisplayName = senderName,
+            content = MessageContent(body, null, false, null, TextMessageType(body, null)),
+        )
+        val result = formatter.format(message, false)
+        assertThat(result.toString()).isEqualTo("⁨$senderName⁩: $body")
+        val boldSpanStyle = (result as AnnotatedString).spanStyles.first { it.item.fontWeight == FontWeight.Bold }
+        assertThat(boldSpanStyle.start).isEqualTo(0)
+        assertThat(boldSpanStyle.end).isEqualTo(senderName.length + 2)
     }
 
     // region Message contents
@@ -166,7 +183,7 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
         testMessageContents(
             sentByYou = false,
             senderName = "Alice",
-            expectedPrefix = "Alice",
+            expectedPrefix = "⁨Alice⁩",
         )
     }
 
@@ -196,6 +213,7 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
             AudioMessageType(body, null, null, MediaSource("url"), null),
             VoiceMessageType(body, null, null, MediaSource("url"), null, null),
             ImageMessageType(body, null, null, MediaSource("url"), null),
+            GalleryMessageType(body, null, emptyList()),
             StickerMessageType(body, null, null, MediaSource("url"), null),
             FileMessageType(body, null, null, MediaSource("url"), null),
             LocationMessageType(body, "geo:1,2", null, null),
@@ -228,10 +246,11 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
                 is AudioMessageType -> "Audio: Shared body"
                 is VoiceMessageType -> "Voice message"
                 is ImageMessageType -> "Image: Shared body"
+                is GalleryMessageType -> "Gallery: Shared body"
                 is StickerMessageType -> "Sticker: Shared body"
                 is FileMessageType -> "File: Shared body"
                 is LocationMessageType -> "Shared location"
-                is EmoteMessageType -> "* $senderName ${type.body}"
+                is EmoteMessageType -> "* ⁨$senderName⁩ ${type.body}"
                 is TextMessageType,
                 is NoticeMessageType,
                 is OtherMessageType -> body
@@ -248,6 +267,7 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
                 is TextMessageType -> false
                 is NoticeMessageType -> false
                 is OtherMessageType -> false
+                is GalleryMessageType -> true
             }
             if (shouldCreateAnnotatedString) {
                 assertWithMessage("$type doesn't produce an AnnotatedString")
@@ -265,13 +285,14 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
                 is AudioMessageType -> "$expectedPrefix: Audio: Shared body"
                 is VoiceMessageType -> "$expectedPrefix: Voice message"
                 is ImageMessageType -> "$expectedPrefix: Image: Shared body"
+                is GalleryMessageType -> "$expectedPrefix: Gallery: Shared body"
                 is StickerMessageType -> "$expectedPrefix: Sticker: Shared body"
                 is FileMessageType -> "$expectedPrefix: File: Shared body"
                 is LocationMessageType -> "$expectedPrefix: Shared location"
                 is TextMessageType,
                 is NoticeMessageType,
                 is OtherMessageType -> "$expectedPrefix: $body"
-                is EmoteMessageType -> "* $senderName ${type.body}"
+                is EmoteMessageType -> "* ⁨$senderName⁩ ${type.body}"
             }
             val shouldCreateAnnotatedString = when (type) {
                 is VideoMessageType -> true
@@ -285,6 +306,7 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
                 is TextMessageType -> true
                 is NoticeMessageType -> true
                 is OtherMessageType -> true
+                is GalleryMessageType -> true
             }
             if (shouldCreateAnnotatedString) {
                 assertWithMessage("$type doesn't produce an AnnotatedString")
@@ -940,7 +962,7 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
         assertThat(formatter.format(mineContentEvent, false).toString()).isEqualTo("You: Poll: Do you like polls?")
 
         val contentEvent = createLatestEvent(sentByYou = false, senderDisplayName = "Bob", content = pollContent)
-        assertThat(formatter.format(contentEvent, false).toString()).isEqualTo("Bob: Poll: Do you like polls?")
+        assertThat(formatter.format(contentEvent, false).toString()).isEqualTo("⁨Bob⁩: Poll: Do you like polls?")
 
         val result = formatter.format(contentEvent, false)
         // Check we have formatting
@@ -948,7 +970,7 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
         // And there is a bold span for the 'Poll' part
         val boldSpanStyle = (result as AnnotatedString).spanStyles.lastOrNull { it.item.fontWeight == FontWeight.Bold }
         assertThat(boldSpanStyle).isNotNull()
-        val spanStart = "Bob".length + 2
+        val spanStart = "Bob".length + 4
         assertThat(boldSpanStyle!!.start..boldSpanStyle.end).isEqualTo(spanStart..spanStart + 4)
     }
 
