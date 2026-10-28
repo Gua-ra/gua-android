@@ -181,9 +181,9 @@ class DefaultResolverVerifier(
         val decision = PlacementEngine.decide(context, roster, policy?.bundle, policy?.delegateVerifiedZones.orEmpty(), nowMillis)
         val decided = decision?.let { roster.entries.firstOrNull { entry -> entry.homeserver.id == it.homeserverId }?.homeserver }
         return when {
-            decided != null && decided.sameEndpointAs(answer) -> PlacementOutcome.Match
-            // A directory hit is not reproducible, so a differing placement says nothing about it.
+            // A directory hit is not reproducible, so an existing account says nothing about the placement either way.
             exists -> PlacementOutcome.Indeterminate
+            decided != null && decided.sameEndpointAs(answer) -> PlacementOutcome.Match
             else -> PlacementOutcome.Mismatch
         }
     }

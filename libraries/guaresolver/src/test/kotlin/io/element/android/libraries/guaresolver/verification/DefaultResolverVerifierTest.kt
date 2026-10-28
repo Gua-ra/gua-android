@@ -361,7 +361,7 @@ class DefaultResolverVerifierTest {
     }
 
     @Test
-    fun `an existing account answer is indeterminate unless the placement agrees`() = runTest {
+    fun `an existing account answer is indeterminate even when the placement agrees`() = runTest {
         val resolver = ScriptedResolver().apply { roster = { ok(rosterJson(R2)) } }
         val server = resolver.start()
         val verifier = createVerifier(server)
@@ -371,7 +371,8 @@ class DefaultResolverVerifierTest {
         assertThat(differing.overall).isEqualTo(OverallOutcome.Unverifiable("placement"))
 
         val agreeing = verifier.verify(A_PHONE_PLACED_ON_BR, answer(hsBr(), exists = true))
-        assertThat(agreeing.placement).isEqualTo(PlacementOutcome.Match)
+        assertThat(agreeing.placement).isEqualTo(PlacementOutcome.Indeterminate)
+        assertThat(agreeing.overall).isEqualTo(OverallOutcome.Unverifiable("placement"))
         server.shutdown()
     }
 
