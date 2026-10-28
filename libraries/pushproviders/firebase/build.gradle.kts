@@ -8,7 +8,6 @@
 
 @file:Suppress("UnstableApiUsage")
 
-import config.BuildTimeConfig
 import extension.setupDependencyInjection
 import extension.testCommonDependencies
 import org.gradle.kotlin.dsl.withType
@@ -27,7 +26,7 @@ android {
 
     buildTypes {
         getByName("release") {
-            consumerProguardFiles("consumer-proguard-rules.pro")
+            consumerProguardFiles("consumer-rules.keep")
             // GUA FORK: the release build type serves two apps. `-Pgua.deployment=dev`
             // builds the QA app (applicationId global.gua.dev), which Firebase holds a
             // separate record for, so it needs its own id here. Without this branch QA
@@ -47,13 +46,8 @@ android {
             )
         }
         register("nightly") {
-            consumerProguardFiles("consumer-proguard-rules.pro")
+            consumerProguardFiles("consumer-rules.keep")
             matchingFallbacks += listOf("release")
-            resValue(
-                type = "string",
-                name = "google_app_id",
-                value = BuildTimeConfig.GOOGLE_APP_ID_NIGHTLY,
-            )
         }
     }
 }
@@ -74,7 +68,6 @@ dependencies {
     implementation(projects.libraries.matrix.api)
     implementation(projects.libraries.push.api)
     implementation(projects.libraries.sessionStorage.api)
-    implementation(projects.libraries.uiStrings)
     implementation(projects.libraries.troubleshoot.api)
     implementation(projects.services.toolbox.api)
 
@@ -89,8 +82,6 @@ dependencies {
     }
 
     testCommonDependencies(libs)
-    testImplementation(libs.kotlinx.collections.immutable)
-    testImplementation(projects.features.enterprise.test)
     testImplementation(projects.libraries.matrix.test)
     testImplementation(projects.libraries.push.test)
     testImplementation(projects.libraries.pushstore.test)

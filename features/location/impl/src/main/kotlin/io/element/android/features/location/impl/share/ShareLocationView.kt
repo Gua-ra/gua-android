@@ -13,14 +13,13 @@ package io.element.android.features.location.impl.share
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetScaffoldState
-import androidx.compose.material3.rememberStandardBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,6 +29,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -37,6 +37,7 @@ import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.location.api.Location
 import io.element.android.features.location.api.internal.centerBottomEdge
+import io.element.android.features.location.api.internal.rememberTileStyleUrl
 import io.element.android.features.location.impl.R
 import io.element.android.features.location.impl.common.MapDefaults
 import io.element.android.features.location.impl.common.ui.LocationConstraintsDialog
@@ -67,11 +68,11 @@ import io.element.android.libraries.matrix.ui.model.getAvatarData
 import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.collections.immutable.ImmutableList
 import org.maplibre.compose.camera.CameraMoveReason
-import org.maplibre.compose.camera.CameraState
-import org.maplibre.compose.camera.rememberCameraState
+import org.maplibre.compose.map.MapState
+import org.maplibre.compose.map.rememberMapState
+import org.maplibre.compose.style.BaseStyle
 import kotlin.time.Duration
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShareLocationView(
     state: ShareLocationState,
@@ -104,20 +105,84 @@ fun ShareLocationView(
         )
     }
 
-    val scaffoldState = rememberBottomSheetScaffoldState(
-        bottomSheetState = rememberStandardBottomSheetState(initialValue = SheetValue.Expanded)
-    )
-    val cameraState = rememberCameraState(firstPosition = MapDefaults.defaultCameraPosition)
+    if (LocalInspectionMode.current) {
+        // Inspection/preview mode: the native map runtime is unavailable (previews, screenshot
+        // tests, Robolectric), so no MapState is created and the scaffold renders a placeholder map.
+        ShareLocationScaffold(
+            state = state,
+            mapState = null,
+            navigateUp = navigateUp,
+            onSharePinLocation = {},
+            modifier = modifier,
+        )
+    } else {
+        ShareLocationViewContent(
+            state = state,
+            navigateUp = navigateUp,
+            modifier = modifier,
+        )
+    }
+}
 
-    LaunchedEffect(cameraState.isCameraMoving) {
-        if (cameraState.moveReason == CameraMoveReason.GESTURE) {
+@Composable
+private fun ShareLocationViewContent(
+    state: ShareLocationState,
+    navigateUp: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val tileStyleUrl = rememberTileStyleUrl(state.mapTilerConfig)
+    val mapState = rememberMapState(
+        baseStyle = BaseStyle.Uri(tileStyleUrl),
+        initialCameraPosition = MapDefaults.defaultCameraPosition,
+    ) {
+        UserLocationPuck(location = state.userLocationState.location)
+    }
+    UserLocationTrackingEffect(
+        mapState = mapState,
+        locationState = state.userLocationState,
+        enabled = state.trackUserLocation,
+    )
+    LaunchedEffect(mapState.isCameraMoving) {
+        if (mapState.cameraMoveReason == CameraMoveReason.Gesture) {
             state.eventSink(ShareLocationEvent.StopTrackingUserLocation)
         }
     }
+    ShareLocationScaffold(
+        state = state,
+        mapState = mapState,
+        navigateUp = navigateUp,
+        onSharePinLocation = {
+            val positionTarget = mapState.cameraPosition.center
+            state.eventSink(
+                ShareLocationEvent.ShareStaticLocation(
+                    location = Location(lat = positionTarget.latitude, lon = positionTarget.longitude),
+                    isPinned = true
+                )
+            )
+            navigateUp()
+        },
+        modifier = modifier,
+    )
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ShareLocationScaffold(
+    mapState: MapState?,
+    state: ShareLocationState,
+    navigateUp: () -> Unit,
+    onSharePinLocation: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val scaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = rememberBottomSheetState(
+            initialValue = SheetValue.Expanded,
+            enabledValues = setOf(SheetValue.PartiallyExpanded, SheetValue.Expanded),
+        )
+    )
     MapBottomSheetScaffold(
-        customMapStyleUrl = state.customMapStyleUrl,
-        cameraState = cameraState,
+        isReady = state.mapTilerConfig != null,
+        mapState = mapState,
         modifier = modifier,
         scaffoldState = scaffoldState,
         sheetDragHandle = null,
@@ -132,38 +197,21 @@ fun ShareLocationView(
         },
         sheetContent = {
             BottomSheetContent(
-                cameraState = cameraState,
                 state = state,
-                navigateUp = navigateUp
+                navigateUp = navigateUp,
+                onSharePinLocation = onSharePinLocation,
             )
         },
-        mapContent = {
-            UserLocationTrackingEffect(
-                cameraState = cameraState,
-                locationState = state.userLocationState,
-                enabled = state.trackUserLocation,
-            )
-            UserLocationPuck(
-                cameraState = cameraState,
-                location = state.userLocationState.location,
-            )
-        },
-        overlayContent = { sheetPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(sheetPadding)
-            ) {
-                val variant = if (state.trackUserLocation) {
-                    PinVariant.UserLocation(isLive = false, avatarData = state.currentUser.getAvatarData(AvatarSize.LocationPin))
-                } else {
-                    PinVariant.PinnedLocation
-                }
-                LocationPin(
-                    variant = variant,
-                    modifier = Modifier.centerBottomEdge(this),
-                )
+        overlay = {
+            val variant = if (state.trackUserLocation) {
+                PinVariant.UserLocation(isLive = false, avatarData = state.currentUser.getAvatarData(AvatarSize.LocationPin))
+            } else {
+                PinVariant.PinnedLocation
             }
+            LocationPin(
+                variant = variant,
+                modifier = Modifier.centerBottomEdge(this),
+            )
             LocationFloatingActionButton(
                 isMapCenteredOnUser = state.trackUserLocation,
                 onClick = { state.eventSink(ShareLocationEvent.StartTrackingUserLocation) },
@@ -214,9 +262,9 @@ private fun StartLiveLocationActionView(
 
 @Composable
 private fun BottomSheetContent(
-    cameraState: CameraState,
     state: ShareLocationState,
     navigateUp: () -> Unit,
+    onSharePinLocation: () -> Unit,
 ) {
     Spacer(Modifier.height(20.dp))
     val userLocation = state.userLocationState.location
@@ -225,8 +273,8 @@ private fun BottomSheetContent(
             state.eventSink(
                 ShareLocationEvent.ShareStaticLocation(
                     location = Location(
-                        lat = userLocation.position.value.latitude,
-                        lon = userLocation.position.value.longitude
+                        lat = userLocation.position.latitude,
+                        lon = userLocation.position.longitude
                     ),
                     isPinned = false
                 )
@@ -234,18 +282,7 @@ private fun BottomSheetContent(
             navigateUp()
         }
     } else {
-        SharePinLocationItem(
-            onClick = {
-                val positionTarget = cameraState.position.target
-                state.eventSink(
-                    ShareLocationEvent.ShareStaticLocation(
-                        location = Location(lat = positionTarget.latitude, lon = positionTarget.longitude),
-                        isPinned = true
-                    )
-                )
-                navigateUp()
-            }
-        )
+        SharePinLocationItem(onClick = onSharePinLocation)
     }
     if (state.canShareLiveLocation) {
         ShareLiveLocationItem {
@@ -259,7 +296,7 @@ private fun ShareCurrentLocationItem(
     onClick: () -> Unit,
 ) {
     ListItem(
-        headlineContent = {
+        content = {
             Text(stringResource(CommonStrings.screen_share_my_location_action))
         },
         onClick = onClick,
@@ -274,7 +311,7 @@ private fun SharePinLocationItem(
     onClick: () -> Unit,
 ) {
     ListItem(
-        headlineContent = {
+        content = {
             Text(stringResource(CommonStrings.screen_share_this_location_action))
         },
         onClick = onClick,
@@ -289,7 +326,7 @@ private fun ShareLiveLocationItem(
     onClick: () -> Unit,
 ) {
     ListItem(
-        headlineContent = {
+        content = {
             Text(stringResource(CommonStrings.action_share_live_location))
         },
         onClick = onClick,
@@ -330,7 +367,7 @@ private fun LiveLocationDurationDialog(
 @PreviewsDayNight
 @Composable
 internal fun ShareLocationViewPreview(
-    @PreviewParameter(ShareLocationStateProvider::class) state: ShareLocationState
+    @PreviewParameter(ShareLocationStatePreviewParam::class) state: ShareLocationState
 ) = ElementPreview {
     ShareLocationView(
         state = state,

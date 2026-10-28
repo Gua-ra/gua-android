@@ -19,6 +19,10 @@
     <item quantity="one">"Tienes %d mensaje nuevo."</item>
     <item quantity="other">"Tienes %d mensajes nuevos."</item>
   </plurals>
+  <plurals name="notification_gallery_body">
+    <item quantity="one">"Se ha compartido %1$d archivo adjunto"</item>
+    <item quantity="other">"Se han compartido %1$d archivos adjuntos"</item>
+  </plurals>
   <string name="notification_incoming_audio_call">"📞 Llamada entrante"</string>
   <string name="notification_incoming_call">"📹 Llamada entrante"</string>
   <string name="notification_inline_reply_failed">"** No se ha podido enviar - por favor, abre la sala"</string>
@@ -30,6 +34,7 @@
   </plurals>
   <string name="notification_invite_body">"Te invitó a chatear"</string>
   <string name="notification_invite_body_with_sender">"%1$s te invitó a chatear"</string>
+  <string name="notification_live_location_started_body">"Comenzó a compartir su ubicación en tiempo real"</string>
   <string name="notification_mentioned_you_body">"Te mencionó: %1$s"</string>
   <string name="notification_new_messages">"Mensajes nuevos"</string>
   <plurals name="notification_new_messages_for_room">
@@ -43,6 +48,7 @@
   <string name="notification_room_invite_body_with_sender">"%1$s te invitó a unirte a la sala"</string>
   <string name="notification_sender_me">"Yo"</string>
   <string name="notification_sender_mention_reply">"%1$s mencionó o respondió"</string>
+  <string name="notification_space_invite_body">"Te invitó a unirte al espacio"</string>
   <string name="notification_space_invite_body_with_sender">"%1$s te invitó a unirte al espacio"</string>
   <string name="notification_test_push_notification_content">"¡Estás viendo la notificación! ¡Haz clic en mí!"</string>
   <string name="notification_thread_in_room">"Hilo en %1$s"</string>

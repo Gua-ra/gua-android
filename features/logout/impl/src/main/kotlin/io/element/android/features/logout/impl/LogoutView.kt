@@ -11,7 +11,9 @@ package io.element.android.features.logout.impl
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,13 +33,20 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Button
 import io.element.android.libraries.designsystem.theme.components.LinearProgressIndicator
 import io.element.android.libraries.designsystem.theme.components.Text
+import io.element.android.libraries.designsystem.theme.components.TextButton
 import io.element.android.libraries.designsystem.theme.progressIndicatorTrackColor
 import io.element.android.libraries.matrix.api.encryption.BackupUploadState
 import io.element.android.libraries.matrix.api.encryption.SteadyStateException
+import io.element.android.libraries.matrix.ui.components.accountinfo.AccountInfoCard
+import io.element.android.libraries.matrix.ui.components.accountinfo.AccountInfoCardMode
+import io.element.android.libraries.matrix.ui.components.accountinfo.AccountInfoCardState
 import io.element.android.libraries.testtags.TestTags
 import io.element.android.libraries.testtags.testTag
 import io.element.android.libraries.ui.strings.CommonStrings
 
+/**
+ * Ref: https://www.figma.com/design/kEAcfun9iSpszeUDvdKZ6b/ER-351--Multi-account-in-EX?node-id=442-34581
+ */
 @Composable
 fun LogoutView(
     state: LogoutState,
@@ -50,14 +59,16 @@ fun LogoutView(
         onBackClick = onBackClick,
         title = title(state),
         subTitle = subtitle(state),
-        iconStyle = BigIcon.Style.Default(CompoundIcons.KeySolid()),
+        iconStyle = BigIcon.Style.Default(CompoundIcons.Mobile()),
         modifier = modifier,
+        isScrollable = true,
         buttons = {
             Buttons(
                 state = state,
                 onLogoutClick = {
-                    eventSink(LogoutEvents.Logout(ignoreSdkError = false))
-                }
+                    eventSink(LogoutEvent.Logout(ignoreSdkError = false))
+                },
+                onCancelClick = onBackClick,
             )
         },
     ) {
@@ -66,14 +77,16 @@ fun LogoutView(
 
     LogoutActionDialog(
         state.logoutAction,
+        // Do not show the progress dialog, the progress is rendered in the button.
+        showProgressDialog = false,
         onConfirmClick = {
-            eventSink(LogoutEvents.Logout(ignoreSdkError = false))
+            eventSink(LogoutEvent.Logout(ignoreSdkError = false))
         },
         onForceLogoutClick = {
-            eventSink(LogoutEvents.Logout(ignoreSdkError = true))
+            eventSink(LogoutEvent.Logout(ignoreSdkError = true))
         },
         onDismissDialog = {
-            eventSink(LogoutEvents.CloseDialogs)
+            eventSink(LogoutEvent.CloseDialogs)
         },
     )
 }
@@ -86,7 +99,7 @@ private fun title(state: LogoutState): String {
         // and the healthy branch reads "Make sure you have access to your recovery key before
         // removing this device" - a key Gua has never shown this user and never will.
         state.isLastDevice -> stringResource(id = R.string.gua_signout_last_device_title)
-        else -> stringResource(CommonStrings.action_signout)
+        else -> stringResource(CommonStrings.gua_action_sign_out)
     }
 }
 
@@ -107,6 +120,7 @@ private fun subtitle(state: LogoutState): String? {
 private fun ColumnScope.Buttons(
     state: LogoutState,
     onLogoutClick: () -> Unit,
+    onCancelClick: () -> Unit,
 ) {
     // GUA FORK: no "Settings" button. It opened the secure-backup console, which is the screen
     // that generates a recovery key and asks the user to save it, and it did so regardless of the
@@ -115,8 +129,8 @@ private fun ColumnScope.Buttons(
     val logoutAction = state.logoutAction
     val signOutSubmitRes = when {
         logoutAction is AsyncAction.Loading -> R.string.screen_signout_in_progress_dialog_content
-        state.backupUploadState.isBackingUp() -> CommonStrings.action_signout_anyway
-        else -> CommonStrings.action_signout
+        state.backupUploadState.isBackingUp() -> CommonStrings.gua_action_sign_out_anyway
+        else -> CommonStrings.gua_action_sign_out
     }
     Button(
         text = stringResource(id = signOutSubmitRes),
@@ -126,6 +140,12 @@ private fun ColumnScope.Buttons(
             .fillMaxWidth()
             .testTag(TestTags.signOut),
         onClick = onLogoutClick,
+    )
+    TextButton(
+        text = stringResource(id = CommonStrings.action_cancel),
+        enabled = logoutAction !is AsyncAction.Loading,
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onCancelClick,
     )
 }
 
@@ -137,9 +157,16 @@ private fun Content(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 60.dp, start = 20.dp, end = 20.dp),
+            .padding(top = 8.dp, start = 16.dp, end = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        AccountInfoCard(
+            AccountInfoCardState(
+                matrixUser = state.currentUser,
+                mode = AccountInfoCardMode.Simple,
+            )
+        )
+        Spacer(modifier = Modifier.height(16.dp))
         when (state.backupUploadState) {
             is BackupUploadState.Uploading -> {
                 LinearProgressIndicator(
@@ -174,7 +201,7 @@ private fun Content(
 @PreviewsDayNight
 @Composable
 internal fun LogoutViewPreview(
-    @PreviewParameter(LogoutStateProvider::class) state: LogoutState,
+    @PreviewParameter(LogoutStatePreviewParam::class) state: LogoutState,
 ) = ElementPreview {
     LogoutView(
         state,

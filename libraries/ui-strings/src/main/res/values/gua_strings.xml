@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: shared Gua strings. Locales live in values-<loc>/gua_translations.xml. -->
+<resources>
+    <!-- Replaces upstream's "Remove this device", matching Gua iOS. -->
+    <string name="gua_action_sign_out">Sign out</string>
+    <string name="gua_action_sign_out_anyway">Sign out anyway</string>
+</resources>

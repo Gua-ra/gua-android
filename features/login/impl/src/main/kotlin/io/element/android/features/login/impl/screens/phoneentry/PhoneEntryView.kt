@@ -129,9 +129,8 @@ fun PhoneEntryView(
             loginMode = state.loginMode,
             onClearError = { eventSink(PhoneEntryEvents.ClearError) },
             onLearnMoreClick = onLearnMoreClick,
-            // Phone-first entry never produces password/account-creation modes (MAS OIDC only).
+            // Phone-first entry never produces the password mode (MAS OIDC only).
             onNeedLoginPassword = {},
-            onCreateAccountContinue = {},
             onOAuthDetails = onOAuthDetails,
         )
     }

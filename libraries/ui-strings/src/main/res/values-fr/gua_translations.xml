@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<!-- GUA FORK: fr translations of Gua's shared strings. The English source lives in values/gua_strings.xml. -->
+<resources>
+    <string name="gua_action_sign_out">Se déconnecter</string>
+    <string name="gua_action_sign_out_anyway">Se déconnecter quand même</string>
+</resources>

@@ -27,4 +27,6 @@
     <string name="common_shared_history">Novos membros veem o histórico</string>
     <string name="common_shared_live_location">Localização em tempo real compartilhada</string>
     <string name="common_world_readable_history">Qualquer pessoa pode ver o histórico</string>
+    <string name="gua_action_sign_out">Sair</string>
+    <string name="gua_action_sign_out_anyway">Sair mesmo assim</string>
 </resources>
