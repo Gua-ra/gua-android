@@ -101,5 +101,5 @@
     <string name="gua_notification_settings_enable_failed">No se pudieron activar las notificaciones en este dispositivo. Inténtalo de nuevo.</string>
     <string name="gua_notification_settings_no_push_service">Este dispositivo no tiene un servicio de notificaciones push, así que Gua no puede enviarle notificaciones.</string>
     <string name="gua_preferences_spaces_title">Espacios</string>
-    <string name="gua_preferences_spaces_description">Agrupa chats bajo un nombre común. Se sincroniza con tus otros teléfonos.</string>
+    <string name="gua_preferences_spaces_description">Organiza chats y comunidades relacionados en un solo lugar</string>
 </resources>

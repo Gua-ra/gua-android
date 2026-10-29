@@ -185,11 +185,6 @@ private fun ColumnScope.ManageAppSection(
     onChangePhoneNumber: () -> Unit,
     onSecureBackupClick: () -> Unit,
 ) {
-    ListItem(
-        headlineContent = { Text(stringResource(id = R.string.screen_notification_settings_title)) },
-        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Notifications())),
-        onClick = onOpenNotificationSettings,
-    )
     // GUA FORK: account-wide Spaces switch, stored in account data so it follows the account to every phone.
     ListItem(
         headlineContent = { Text(stringResource(id = R.string.gua_preferences_spaces_title)) },
@@ -197,6 +192,11 @@ private fun ColumnScope.ManageAppSection(
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Space())),
         trailingContent = ListItemContent.Switch(checked = state.isSpacesEnabled),
         onClick = { state.eventSink(PreferencesRootEvent.SetSpacesEnabled(!state.isSpacesEnabled)) },
+    )
+    ListItem(
+        headlineContent = { Text(stringResource(id = R.string.screen_notification_settings_title)) },
+        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Notifications())),
+        onClick = onOpenNotificationSettings,
     )
     ListItem(
         headlineContent = {

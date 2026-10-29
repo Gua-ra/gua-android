@@ -97,6 +97,6 @@
     <string name="gua_notification_sound_soft">Gua Soft</string>
     <string name="gua_notification_settings_enable_failed">Couldn\'t turn on notifications on this device. Please try again.</string>
     <string name="gua_preferences_spaces_title">Spaces</string>
-    <string name="gua_preferences_spaces_description">Keep related chats together under one name. Syncs to your other phones.</string>
+    <string name="gua_preferences_spaces_description">Organize related chats and communities in one place</string>
     <string name="gua_notification_settings_no_push_service">This device has no push service, so Gua can\'t deliver notifications on it.</string>
 </resources>
