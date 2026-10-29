@@ -16,6 +16,10 @@ sealed interface CheckOutcome {
     val reason: String? get() = null
 }
 
+/** The outcome as the report line writes it: the code, then the reason in parentheses when there is one. */
+internal val CheckOutcome.text: String
+    get() = reason?.let { "$code($it)" } ?: code
+
 /** Which `gua-roster.v1` bytes the served roster is signed over; a mix of entry shapes has no bytes. */
 enum class RosterForm { V1, LEGACY, MIXED }
 
@@ -58,15 +62,16 @@ sealed class PolicyOutcome(override val code: String, override val verdict: Verd
 sealed class PlacementOutcome(override val code: String, override val verdict: Verdict) : CheckOutcome {
     data object Match : PlacementOutcome("match", Verdict.PASS)
     data object Mismatch : PlacementOutcome("mismatch", Verdict.FAIL)
-    data object Indeterminate : PlacementOutcome("indeterminate", Verdict.UNVERIFIABLE)
-    data object NotApplicable : PlacementOutcome("notApplicable", Verdict.PASS)
+    data class Indeterminate(override val reason: String) : PlacementOutcome("indeterminate", Verdict.UNVERIFIABLE)
     data class Unverifiable(override val reason: String) : PlacementOutcome("unverifiable", Verdict.UNVERIFIABLE)
 }
 
 sealed class OverallOutcome(val code: String) {
+    open val check: String? get() = null
+
     data object Verified : OverallOutcome("verified")
-    data class Failed(val check: String) : OverallOutcome("failed")
-    data class Unverifiable(val check: String) : OverallOutcome("unverifiable")
+    data class Failed(override val check: String) : OverallOutcome("failed")
+    data class Unverifiable(override val check: String) : OverallOutcome("unverifiable")
 }
 
 data class ResolverVerificationReport(
@@ -98,19 +103,14 @@ data class ResolverVerificationReport(
             return OverallOutcome.Verified
         }
 
-    /** Outcome codes only: never the phone, the answer, the request or anything the server sent. */
-    fun toLogLine(): String {
-        val overallText = when (val summary = overall) {
-            OverallOutcome.Verified -> summary.code
-            is OverallOutcome.Failed -> "${summary.code}(${summary.check})"
-            is OverallOutcome.Unverifiable -> "${summary.code}(${summary.check})"
-        }
-        val version = rosterVersion?.toString() ?: "none"
-        val form = rosterForm?.name?.lowercase() ?: "none"
-        return "Resolver verification: environment=$environment rosterVersion=$version rosterForm=$form " +
-            checks.joinToString(" ") { (name, outcome) -> "$name=${outcome.describe()}" } +
-            " overall=$overallText durationMs=$durationMs"
+    /** Outcome codes only: never the phone, the answer, a URL or anything the server sent. */
+    fun toLogLine(): String = buildString {
+        append("Resolver verification environment=").append(environment)
+        append(" rosterVersion=").append(rosterVersion?.toString() ?: "none")
+        append(" rosterForm=").append(rosterForm?.name?.lowercase() ?: "none")
+        checks.forEach { (name, outcome) -> append(' ').append(name).append('=').append(outcome.text) }
+        val summary = overall
+        append(" overall=").append(summary.check?.let { "${summary.code}($it)" } ?: summary.code)
+        append(" durationMs=").append(durationMs)
     }
-
-    private fun CheckOutcome.describe(): String = reason?.let { "$code($it)" } ?: code
 }

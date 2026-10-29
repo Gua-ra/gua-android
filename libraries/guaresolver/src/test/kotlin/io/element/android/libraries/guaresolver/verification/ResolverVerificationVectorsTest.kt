@@ -38,7 +38,18 @@ class ResolverVerificationVectorsTest {
     fun `the files are present and name what they pin`() {
         assertThat(vectors.string("vectors")).isEqualTo("gua-client-verification.v1")
         assertThat(vectors.string("protocol")).isEqualTo("docs/verification/gua-resolver-verification-protocol.md")
-        for (section in listOf("instants", "rosters", "rosterRejections", "policies", "policyRejections", "placements", "resolveAnswers")) {
+        val sections = listOf(
+            "instants",
+            "rosters",
+            "rosterRejections",
+            "policies",
+            "policyRejections",
+            "policyValidity",
+            "policyLog",
+            "placements",
+            "resolveAnswers",
+        )
+        for (section in sections) {
             assertWithMessage(section).that(vectors[section]!!.jsonArray).isNotEmpty()
         }
         assertThat(vectors["keys"]!!.jsonObject).isNotEmpty()
@@ -81,7 +92,7 @@ class ResolverVerificationVectorsTest {
             val name = vector.string("name")
             val roster = json.decodeFromJsonElement<SignedRoster>(vector["roster"]!!)
             val form = rosterForm(vector.string("form"))
-            assertWithName(name, CanonicalRoster.formOf(roster), form)
+            assertWithName(name, CanonicalRoster.formOf(vector["roster"]!!.jsonObject), form)
 
             val canonical = CanonicalRoster.bytes(roster, form)
             assertWithName(name, canonical.toString(Charsets.UTF_8), vector.string("canonicalUtf8"))
@@ -92,9 +103,9 @@ class ResolverVerificationVectorsTest {
             val check = verifier.check(roster, form)
             assertWithName(name, check.valid, vector.int("validSignatures"))
             assertWithName(name, check.met, vector.bool("verified"))
-            assertWithName(name, verifier.verify(roster), RosterSignatureOutcome.Valid)
+            assertWithName(name, verifier.verify(roster, form), RosterSignatureOutcome.Valid)
 
-            for ((keyId, keyRef) in vector["signatureKeyRefs"]!!.jsonObject) {
+            for ((keyId, keyRef) in vector["signatureKeyRefs"]?.jsonObject.orEmpty()) {
                 val served = roster.authoritySignatures.first { it.authorityKeyId == keyId }.signatureB64
                 assertWithName("$name, signature by $keyId", VectorFixtures.sign(seedOf(vectors, keyRef.jsonPrimitive.content), canonical), served)
             }
@@ -102,33 +113,25 @@ class ResolverVerificationVectorsTest {
     }
 
     @Test
-    fun `every roster rejection is refused`() {
+    fun `every roster rejection is refused with its expected outcome`() {
         for (vector in vectors["rosterRejections"]!!.jsonArray.map { it.jsonObject }) {
             val name = vector.string("name")
             val roster = json.decodeFromJsonElement<SignedRoster>(vector["roster"]!!)
-            if (vector["clientOnly"]?.jsonPrimitive?.boolean == true) {
-                assertWithName(name, vector.string("form"), "mixed")
-                assertWithName(name, CanonicalRoster.formOf(roster), RosterForm.MIXED)
+            // Each case names the form to check it with, which is not always the one its JSON implies.
+            val form = rosterForm(vector.string("form"))
+            if (form == RosterForm.MIXED) {
+                assertWithName(name, CanonicalRoster.formOf(vector["roster"]!!.jsonObject), RosterForm.MIXED)
                 // Refused before any signature check, so no key is needed to reach the verdict.
-                assertWithName(name, RosterVerifier(emptyList(), 1).verify(roster), RosterSignatureOutcome.Unverifiable(VerificationReason.MIXED_ROSTER_FORM))
+                assertWithName(name, RosterVerifier(emptyList(), 1).verify(roster, form).text, vector.string("expectedOutcome"))
                 continue
             }
-            val offeredForm = rosterForm(vector.string("form"))
-            val canonical = CanonicalRoster.bytes(roster, offeredForm)
+            val verifier = RosterVerifier(trustedKeys(vector), vector.int("threshold"))
+            assertWithName(name, verifier.verify(roster, form).text, vector.string("expectedOutcome"))
+            val canonical = CanonicalRoster.bytes(roster, form)
             assertWithName(name, canonical.toHex(), vector.string("canonicalHex"))
             assertWithName(name, MerkleTree.sha256Hex(canonical), vector.string("sha256Hex"))
-
-            val verifier = RosterVerifier(trustedKeys(vector), vector.int("threshold"))
-            val check = verifier.check(roster, offeredForm)
-            assertWithName(name, check.valid, vector.int("validSignatures"))
-            assertWithMessage(name).that(check.met).isFalse()
+            assertWithName(name, verifier.check(roster, form).valid, vector.int("validSignatures"))
             assertWithMessage(name).that(vector.bool("verified")).isFalse()
-            if (CanonicalRoster.formOf(roster) == offeredForm) {
-                assertWithMessage(name).that(verifier.verify(roster)).isInstanceOf(RosterSignatureOutcome.Invalid::class.java)
-            } else {
-                // The offered form is the wrong one; the form the served JSON dictates still verifies.
-                assertWithName(name, verifier.verify(roster), RosterSignatureOutcome.Valid)
-            }
         }
     }
 
@@ -180,6 +183,7 @@ class ResolverVerificationVectorsTest {
             val verifier = RoutingPolicyVerifier(trustedKeys(vector), vector.int("threshold"))
             assertWithName(name, verifier.check(bundle).met, vector.bool("verified"))
             assertWithName(name, verifier.delegateVerifiedZones(bundle).sorted(), vector["delegateVerifiedZones"]!!.jsonArray.map { it.jsonPrimitive.content })
+            assertWithName(name, verifier.verify(bundle).text, vector.stringOrNull("expectedOutcome") ?: PolicyOutcome.Valid.code)
         }
         for (vector in rejections) {
             assertWithMessage(vector.string("name")).that(vector.bool("verified")).isFalse()
@@ -187,19 +191,25 @@ class ResolverVerificationVectorsTest {
     }
 
     @Test
+    fun `every policy log vector reaches its outcome against the whole log`() {
+        val events = vectors["log"]!!.jsonObject["events"]!!.jsonArray.map { json.decodeFromJsonElement<LogEvent>(it) }
+        for (vector in vectors["policyLog"]!!.jsonArray.map { it.jsonObject }) {
+            val served = (vector["servedPolicy"] as? JsonObject)?.let { LoggedPolicy(it.stringOrNull("policyId"), it.long("version"), it.string("sha256Hex")) }
+            val checkpoint = vector["checkpoint"]!!.jsonObject.let { LogCheckpoint(merkleRoot = it.string("rootHex"), size = it.long("size")) }
+            assertWithName(vector.string("name"), PolicyLog.check(served, checkpoint, events).text, vector.string("expected"))
+        }
+    }
+
+    @Test
     fun `every placement vector reproduces the reference decision`() {
-        val rosters = mapOf("r1" to rosterVector(0), "r2" to rosterVector(1))
-        val policies = mapOf(
-            "br-policy v3" to policyVector(0),
-            "br-policy v3 without the sp-zone delegate signature" to policyVector(1),
-        )
         for (vector in vectors["placements"]!!.jsonArray.map { it.jsonObject }) {
             val name = vector.string("name")
-            val rosterVector = rosters.getValue(vector.string("rosterRef"))
+            val rosterVector = vectors.byRef("rosters", vector.string("rosterRef"))
             val roster = json.decodeFromJsonElement<SignedRoster>(rosterVector["roster"]!!)
-            assertWithName(name, RosterVerifier(trustedKeys(rosterVector), rosterVector.int("threshold")).verify(roster), RosterSignatureOutcome.Valid)
+            val rosterVerifier = RosterVerifier(trustedKeys(rosterVector), rosterVector.int("threshold"))
+            assertWithName(name, rosterVerifier.verify(roster, rosterForm(rosterVector.string("form"))), RosterSignatureOutcome.Valid)
 
-            val policyVector = vector["policyRef"]?.takeUnless { it is JsonNull }?.let { policies.getValue(it.jsonPrimitive.content) }
+            val policyVector = vector.stringOrNull("policyRef")?.let { vectors.byRef("policies", it) }
             val policy = policyVector?.let { json.decodeFromJsonElement<RoutingPolicyBundle>(it["bundle"]!!) }
             val zones = policyVector?.let { RoutingPolicyVerifier(trustedKeys(it), it.int("threshold")).delegateVerifiedZones(policy!!) }.orEmpty()
 
@@ -214,34 +224,62 @@ class ResolverVerificationVectorsTest {
                     attributes = c["attributes"]?.jsonObject?.mapValues { it.value.jsonPrimitive.content }.orEmpty(),
                 )
             }
-            val decision = PlacementEngine.decide(context, roster, policy, zones, vector.string("evaluatedAt").toEpochMillis())
+            val evaluatedAt = vector.string("evaluatedAt").toEpochMillis()
+            val decision = PlacementEngine.decide(context, roster, policy, zones, evaluatedAt)
             assertWithName(
                 name,
                 decision,
                 PlacementDecision(vector.string("expectedHomeserverId"), vector.string("expectedRule"), vector.string("expectedRuleId")),
             )
+            val unsignedRuleAbove = policy?.let { PlacementEngine.unsignedRuleOutranks(context, it, zones, decision, evaluatedAt) } ?: false
+            assertWithName(name, unsignedRuleAbove, vector.bool("unsignedRuleAbove"))
 
             vector["fallback"]?.jsonObject?.let { fallback ->
-                assertWithName(name, context.routingKey(), fallback.string("routingKeyUtf8"))
+                // Claims nobody verified never reach the routing key.
+                val placed = context.withoutUnverifiedClaims()
+                assertWithName(name, placed.routingKey(), fallback.string("routingKeyUtf8"))
                 assertWithName(name, roster.version, fallback.long("rosterVersion"))
                 val accepting = roster.entries.filter { it.isActive && it.homeserver.acceptsNew }
                 val candidates = accepting.map { it.homeserver }.sortedBy { it.id }
                 val expectedCandidates = fallback["candidates"]!!.jsonArray.map { it.jsonObject }.map { it.string("id") to it.int("weight") }
                 assertWithName(name, candidates.map { it.id to it.weight }, expectedCandidates)
-                assertWithName(name, PlacementEngine.stableHash(context, roster.version, candidates), fallback.int("stableHash"))
+                assertWithName(name, PlacementEngine.stableHash(placed, roster.version, candidates), fallback.int("stableHash"))
             }
         }
     }
 
     @Test
-    fun `every resolve answer vector locates as expected`() {
-        val rosters = mapOf("r2" to rosterVector(1), "prod-2026-10-27" to rosterVector(3))
+    fun `every policy validity vector is in effect exactly inside the bundle window`() {
+        for (vector in vectors["policyValidity"]!!.jsonArray.map { it.jsonObject }) {
+            val bundle = json.decodeFromJsonElement<RoutingPolicyBundle>(vectors.byRef("policies", vector.string("policyRef"))["bundle"]!!)
+            assertWithName(vector.string("name"), bundle.isInEffectAt(vector.string("evaluatedAt").toEpochMillis()), vector.bool("inEffect"))
+        }
+    }
+
+    @Test
+    fun `a null endpoint field is the text null in the roster bytes, as the resolver writes it`() {
+        val homeserver = RosterHomeserver(id = null, serverName = null, baseUrl = null, masIssuer = null)
+        val roster = SignedRoster(
+            version = 1,
+            issuedAt = "2026-10-01T00:00:00Z",
+            entries = listOf(SignedRosterEntry(homeserver = homeserver, status = "ACTIVE")),
+            logCheckpoint = LogCheckpoint(merkleRoot = "00", size = 0),
+        )
+
+        val entryLine = CanonicalRoster.bytes(roster, RosterForm.LEGACY).toString(Charsets.UTF_8).lines()[4]
+
+        assertThat(entryLine).startsWith(listOf("null", "null", "null", "null", "").joinToString("\u001f"))
+    }
+
+    @Test
+    fun `every resolve answer vector locates the expected entry`() {
         for (vector in vectors["resolveAnswers"]!!.jsonArray.map { it.jsonObject }) {
             val name = vector.string("name")
-            val roster = json.decodeFromJsonElement<SignedRoster>(rosters.getValue(vector.string("rosterRef"))["roster"]!!)
+            val roster = json.decodeFromJsonElement<SignedRoster>(vectors.byRef("rosters", vector.string("rosterRef"))["roster"]!!)
             val answer = vector["answer"]!!.jsonObject
-            val outcome = RosterVerifier.locate(answer.string("serverName"), answer.string("baseUrl"), answer.stringOrNull("masIssuer"), roster)
-            assertWithName(name, outcome.code, vector.string("expected"))
+            val located = RosterVerifier.locate(answer.string("serverName"), answer.string("baseUrl"), answer.stringOrNull("masIssuer"), roster)
+            assertWithName(name, located.match.code, vector.string("expected"))
+            assertWithName(name, located.entry?.homeserver?.id, vector.stringOrNull("expectedEntryId"))
         }
     }
 
@@ -276,18 +314,17 @@ class ResolverVerificationVectorsTest {
             val canonical = CanonicalMemberEntry.bytes(homeserver, member)
             assertWithName(name, canonical.toHex(), vector.string("canonicalHex"))
             assertWithName(name, MerkleTree.sha256Hex(canonical), vector.string("sha256Hex"))
-            assertWithName(name, member.notBefore.toEpochMillis(), vector.long("notBeforeEpochMs"))
-            assertWithName(name, member.notAfter.toEpochMillis(), vector.long("notAfterEpochMs"))
-            val own = member.signatures.first { it.keyId == member.keyId }.signatureB64
+            assertWithName(name, member.notBefore!!.toEpochMillis(), vector.long("notBeforeEpochMs"))
+            assertWithName(name, member.notAfter!!.toEpochMillis(), vector.long("notAfterEpochMs"))
+            val own = member.signatures!!.first { it.keyId == member.keyId }.signatureB64
             assertWithName(name, VectorFixtures.sign(seedOf(lpVectors, vector.string("signingKeyRef")), canonical), own)
 
-            val prior = memberPrior(vector)
             val notBefore = vector.long("notBeforeEpochMs")
             val notAfter = vector.long("notAfterEpochMs")
-            assertWithName(name, verifier.verify(homeserver, memberJson, notBefore, prior), MemberEntryOutcome.Valid)
-            assertWithName(name, verifier.verify(homeserver, memberJson, notAfter, prior), MemberEntryOutcome.Valid)
-            assertWithName(name, verifier.verify(homeserver, memberJson, notBefore - 1, prior), MemberEntryOutcome.Invalid(VerificationReason.OUTSIDE_WINDOW))
-            assertWithName(name, verifier.verify(homeserver, memberJson, notAfter + 1, prior), MemberEntryOutcome.Invalid(VerificationReason.OUTSIDE_WINDOW))
+            assertWithName(name, verifier.verify(homeserver, memberJson, notBefore), MemberEntryOutcome.Valid)
+            assertWithName(name, verifier.verify(homeserver, memberJson, notAfter), MemberEntryOutcome.Valid)
+            assertWithName(name, verifier.verify(homeserver, memberJson, notBefore - 1), MemberEntryOutcome.Invalid(VerificationReason.OUTSIDE_WINDOW))
+            assertWithName(name, verifier.verify(homeserver, memberJson, notAfter + 1), MemberEntryOutcome.Invalid(VerificationReason.OUTSIDE_WINDOW))
         }
     }
 
@@ -297,24 +334,23 @@ class ResolverVerificationVectorsTest {
         val expectedReasons = mapOf(
             "duplicate search group" to VerificationReason.NO_CANONICAL_ENCODING,
             "baseUrl substituted under the member's original signature" to VerificationReason.BAD_SIGNATURE,
-            "key rotation carrying only the new key's signature" to VerificationReason.KEY_CONTINUITY,
             "unknown field inside the signed sub-object" to VerificationReason.PARSE_ERROR,
             "sub-millisecond timestamp" to VerificationReason.BAD_WINDOW,
             "validity window longer than the 400 day maximum" to VerificationReason.BAD_WINDOW,
         )
-        for (vector in lpVectors["rejections"]!!.jsonArray.map { it.jsonObject }) {
+        // A rotation vector needs the previous entry, and v1 keeps none.
+        for (vector in lpVectors["rejections"]!!.jsonArray.map { it.jsonObject }.filter { "previous" !in it }) {
             val name = vector.string("name")
             val homeserver = json.decodeFromJsonElement<RosterHomeserver>(vector["homeserver"]!!)
             val memberJson = vector["member"]!!.jsonObject
             val at = memberJson.string("notBefore").toEpochMillis()
-            val outcome = verifier.verify(homeserver, memberJson, at, memberPrior(vector))
-            assertWithName(name, outcome, MemberEntryOutcome.Invalid(expectedReasons.getValue(name)))
+            assertWithName(name, verifier.verify(homeserver, memberJson, at), MemberEntryOutcome.Invalid(expectedReasons.getValue(name)))
         }
     }
 
     @Test
     fun `an attested roster entry hashes to its MEMBER_ATTEST leaf`() {
-        val roster = json.decodeFromJsonElement<SignedRoster>(rosterVector(1)["roster"]!!)
+        val roster = json.decodeFromJsonElement<SignedRoster>(vectors.byRef("rosters", "r2")["roster"]!!)
         val attestations = vectors["log"]!!.jsonObject["events"]!!.jsonArray.map { it.jsonObject }.filter { it.string("type") == "MEMBER_ATTEST" }
         assertThat(attestations).isNotEmpty()
         for (leaf in attestations) {
@@ -325,10 +361,6 @@ class ResolverVerificationVectorsTest {
         }
     }
 
-    private fun rosterVector(index: Int): JsonObject = vectors["rosters"]!!.jsonArray[index].jsonObject
-
-    private fun policyVector(index: Int): JsonObject = vectors["policies"]!!.jsonArray[index].jsonObject
-
     private fun rosterForm(name: String): RosterForm = when (name) {
         "v1" -> RosterForm.V1
         "legacy" -> RosterForm.LEGACY
@@ -338,10 +370,6 @@ class ResolverVerificationVectorsTest {
 
     private fun trustedKeys(vector: JsonObject): List<TrustedKey> = vector["trustedKeys"]!!.jsonArray.map { it.jsonObject }.map { key ->
         checkNotNull(TrustedKey.parse(key.string("id"), key.string("publicKeySpkiB64"))) { "${key.string("id")} is not an Ed25519 key" }
-    }
-
-    private fun memberPrior(vector: JsonObject): MemberPrior? = vector["previous"]?.jsonObject?.let {
-        MemberPrior(keyId = it.string("keyId"), signingKey = it.string("signingKey"), sequence = it.long("sequence"), entryHash = it.string("entryHash"))
     }
 
     private fun verifyConsistency(proof: JsonObject): Boolean = MerkleTree.verifyConsistency(

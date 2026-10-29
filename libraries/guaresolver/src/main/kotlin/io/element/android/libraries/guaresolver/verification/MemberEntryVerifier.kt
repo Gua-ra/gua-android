@@ -9,6 +9,8 @@ package io.element.android.libraries.guaresolver.verification
 
 import io.element.android.libraries.core.data.tryOrNull
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import java.time.Instant
@@ -20,50 +22,41 @@ internal object CanonicalMemberEntry {
 
     fun bytes(homeserver: RosterHomeserver, member: MemberAttestation): ByteArray =
         CanonicalEncoder.begin(SCHEMA)
-            .string(homeserver.id)
-            .string(homeserver.serverName)
-            .string(homeserver.baseUrl)
-            .string(homeserver.masIssuer ?: throw CanonicalEncodingException("masIssuer is required"))
-            .string(member.alg)
-            .string(homeserver.signingKey ?: throw CanonicalEncodingException("signingKey is required"))
-            .string(member.keyId)
-            .int64(member.sequence)
-            .int64(member.notBefore.toEpochMillis())
-            .int64(member.notAfter.toEpochMillis())
+            .string(required(homeserver.id, "id"))
+            .string(required(homeserver.serverName, "serverName"))
+            .string(required(homeserver.baseUrl, "baseUrl"))
+            .string(required(homeserver.masIssuer, "masIssuer"))
+            .string(required(member.alg, "alg"))
+            .string(required(homeserver.signingKey, "signingKey"))
+            .string(required(member.keyId, "keyId"))
+            .int64(required(member.sequence, "sequence"))
+            .int64(required(member.notBefore, "notBefore").toEpochMillis())
+            .int64(required(member.notAfter, "notAfter").toEpochMillis())
             .optionalString(homeserver.region)
             .string(homeserver.searchVisibility ?: "GLOBAL")
             .stringSet(homeserver.searchGroups.orEmpty())
             .toByteArray()
-}
 
-/** The last entry a verifier accepted for a homeserver id; v1 keeps none, so the orchestrator passes null. */
-internal data class MemberPrior(
-    val keyId: String?,
-    val signingKey: String?,
-    val sequence: Long,
-    val entryHash: String?,
-)
+    private fun <T : Any> required(value: T?, field: String): T = value ?: throw CanonicalEncodingException("$field is required")
+}
 
 /**
  * Verifies a homeserver's self-signature over its roster entry, port of the resolver's
- * `MemberEntryVerifier`. The member block is parsed strictly here: a field the signature does not cover
- * refuses the entry instead of being ignored.
+ * `MemberEntryVerifier`. v1 keeps no earlier entry per homeserver, so key continuity is not checked.
  */
 internal class MemberEntryVerifier(
     private val maxLifetimeMillis: Long = DEFAULT_MAX_LIFETIME_MILLIS,
 ) {
-    private val strictJson = Json
-
-    fun verify(homeserver: RosterHomeserver, member: JsonObject?, atMillis: Long, prior: MemberPrior? = null): MemberEntryOutcome {
-        if (member == null) return MemberEntryOutcome.Unattested
-        val attestation = tryOrNull { strictJson.decodeFromJsonElement<MemberAttestation>(member) }
-            ?: return MemberEntryOutcome.Invalid(VerificationReason.PARSE_ERROR)
+    fun verify(homeserver: RosterHomeserver, member: JsonElement?, atMillis: Long): MemberEntryOutcome {
+        if (member == null || member is JsonNull) return MemberEntryOutcome.Unattested
+        val attestation = decode(member) ?: return MemberEntryOutcome.Invalid(VerificationReason.PARSE_ERROR)
+        val sequence = attestation.sequence
         if (attestation.schema != CanonicalMemberEntry.SCHEMA) return MemberEntryOutcome.Invalid(VerificationReason.UNSUPPORTED_SCHEMA)
         if (attestation.alg != CanonicalMemberEntry.ALG) return MemberEntryOutcome.Invalid(VerificationReason.UNSUPPORTED_ALG)
-        if (attestation.keyId.isBlank()) return MemberEntryOutcome.Invalid(VerificationReason.BAD_KEY_ID)
-        if (attestation.sequence < 1) return MemberEntryOutcome.Invalid(VerificationReason.BAD_SEQUENCE)
+        if (attestation.keyId.isNullOrBlank()) return MemberEntryOutcome.Invalid(VerificationReason.BAD_KEY_ID)
+        if (sequence == null || sequence < 1) return MemberEntryOutcome.Invalid(VerificationReason.BAD_SEQUENCE)
         checkWindow(attestation, atMillis)?.let { return MemberEntryOutcome.Invalid(it) }
-        checkSignatureShape(attestation)?.let { return MemberEntryOutcome.Invalid(it) }
+        if (!hasWellFormedSignatures(attestation)) return MemberEntryOutcome.Invalid(VerificationReason.MALFORMED_SIGNATURE)
 
         val canonical = try {
             CanonicalMemberEntry.bytes(homeserver, attestation)
@@ -72,18 +65,20 @@ internal class MemberEntryVerifier(
         }
         val publicKey = homeserver.signingKey?.let { Ed25519Signatures.rawPublicKey(it) }
             ?: return MemberEntryOutcome.Invalid(VerificationReason.BAD_SIGNING_KEY)
-        val own = attestation.signatures.firstOrNull { it.keyId == attestation.keyId }
+        val own = attestation.signatures.orEmpty().firstOrNull { it.keyId == attestation.keyId }
             ?: return MemberEntryOutcome.Invalid(VerificationReason.MISSING_SIGNATURE)
         if (!Ed25519Signatures.verify(publicKey, canonical, own.signatureB64)) {
             return MemberEntryOutcome.Invalid(VerificationReason.BAD_SIGNATURE)
         }
-        if (prior != null && !isContinuous(homeserver, attestation, prior, canonical)) {
-            return MemberEntryOutcome.Invalid(VerificationReason.KEY_CONTINUITY)
-        }
         return MemberEntryOutcome.Valid
     }
 
+    // The default Json refuses unknown fields, so a block cannot carry a field its signature does not cover.
+    private fun decode(member: JsonElement): MemberAttestation? =
+        (member as? JsonObject)?.let { tryOrNull { Json.decodeFromJsonElement<MemberAttestation>(it) } }
+
     private fun checkWindow(member: MemberAttestation, atMillis: Long): String? {
+        if (member.notBefore == null || member.notAfter == null) return VerificationReason.BAD_WINDOW
         val notBefore = tryOrNull { Instant.parse(member.notBefore) } ?: return VerificationReason.PARSE_ERROR
         val notAfter = tryOrNull { Instant.parse(member.notAfter) } ?: return VerificationReason.PARSE_ERROR
         if (notBefore.nano % NANOS_PER_MILLI != 0 || notAfter.nano % NANOS_PER_MILLI != 0) return VerificationReason.BAD_WINDOW
@@ -95,29 +90,13 @@ internal class MemberEntryVerifier(
         return null
     }
 
-    private fun checkSignatureShape(member: MemberAttestation): String? {
-        if (member.signatures.isEmpty()) return VerificationReason.BAD_SIGNATURE_SHAPE
-        val seen = mutableSetOf<String>()
-        for (signature in member.signatures) {
-            if (signature.keyId.isBlank() || !seen.add(signature.keyId)) return VerificationReason.BAD_SIGNATURE_SHAPE
-        }
-        return null
-    }
-
-    /** The sequence never goes backwards, one sequence names one entry, and a new key is also signed by the previous one. */
-    private fun isContinuous(homeserver: RosterHomeserver, member: MemberAttestation, prior: MemberPrior, canonical: ByteArray): Boolean {
-        val keyChanged = homeserver.signingKey != prior.signingKey
-        if (member.sequence < prior.sequence) return false
-        if (member.sequence == prior.sequence) {
-            if (keyChanged) return false
-            return prior.entryHash == null || prior.entryHash == MerkleTree.sha256Hex(canonical)
-        }
-        if (!keyChanged) return true
-        if (prior.keyId != null && prior.keyId == member.keyId) return false
-        val previousKey = prior.signingKey?.let { Ed25519Signatures.rawPublicKey(it) } ?: return false
-        return member.signatures
-            .filter { if (prior.keyId != null) it.keyId == prior.keyId else it.keyId != member.keyId }
-            .any { Ed25519Signatures.verify(previousKey, canonical, it.signatureB64) }
+    /** At least one signature, each with a key id and a value, and no key id twice. */
+    private fun hasWellFormedSignatures(member: MemberAttestation): Boolean {
+        val signatures = member.signatures.orEmpty()
+        val keyIds = signatures.map { it.keyId }
+        return signatures.isNotEmpty() &&
+            signatures.all { !it.keyId.isNullOrBlank() && it.signatureB64 != null } &&
+            keyIds.distinct().size == keyIds.size
     }
 
     companion object {

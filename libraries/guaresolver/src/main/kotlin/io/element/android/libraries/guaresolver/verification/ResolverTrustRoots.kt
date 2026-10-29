@@ -8,7 +8,9 @@
 package io.element.android.libraries.guaresolver.verification
 
 /** A published verification key: its id as the signatures name it, and the raw Ed25519 public key. */
-internal data class TrustedKey(val id: String, val rawPublicKey: ByteArray) {
+internal class TrustedKey(val id: String, val rawPublicKey: ByteArray) {
+    fun verifies(message: ByteArray, signatureB64: String?): Boolean = Ed25519Signatures.verify(rawPublicKey, message, signatureB64)
+
     companion object {
         fun parse(id: String, publicKeySpkiB64: String): TrustedKey? =
             Ed25519Signatures.rawPublicKey(publicKeySpkiB64)?.let { TrustedKey(id, it) }
@@ -42,7 +44,7 @@ internal data class ThresholdCheck(val valid: Int, val threshold: Int, val known
             for (signature in signatures) {
                 val key = byId[signature.keyId] ?: continue
                 known++
-                if (signature.keyId !in counted && Ed25519Signatures.verify(key.rawPublicKey, canonical, signature.signatureB64)) {
+                if (signature.keyId !in counted && key.verifies(canonical, signature.signatureB64)) {
                     counted += signature.keyId
                     valid++
                 }

@@ -20,7 +20,7 @@ internal class RosterVerifier(
         return ThresholdCheck.count(authorityKeys, threshold, canonical, signatures)
     }
 
-    fun verify(roster: SignedRoster, form: RosterForm = CanonicalRoster.formOf(roster)): RosterSignatureOutcome {
+    fun verify(roster: SignedRoster, form: RosterForm): RosterSignatureOutcome {
         if (form == RosterForm.MIXED) return RosterSignatureOutcome.Unverifiable(VerificationReason.MIXED_ROSTER_FORM)
         val check = tryOrNull { check(roster, form) } ?: return RosterSignatureOutcome.Unverifiable(VerificationReason.PARSE_ERROR)
         return if (check.met) RosterSignatureOutcome.Valid else RosterSignatureOutcome.Invalid(check.failureReason)
@@ -28,19 +28,22 @@ internal class RosterVerifier(
 
     companion object {
         /**
-         * How a `/resolve` answer relates to a verified roster. Only an active entry with exactly these fields
-         * may be connected to: a known server name with another base URL or issuer is the shape of a redirect.
+         * Where a `/resolve` answer sits in a verified roster, as the resolver's `ResolverVerifier.locate` puts it:
+         * the strongest classification wins whatever the entry order, and a tie goes to the entry served first.
          */
-        fun locate(serverName: String, baseUrl: String, masIssuer: String?, roster: SignedRoster): HomeserverMatchOutcome {
-            var best: HomeserverMatchOutcome = HomeserverMatchOutcome.NotInRoster
-            for (entry in roster.entries) {
-                val homeserver = entry.homeserver
-                if (homeserver.serverName != serverName) continue
-                val sameEndpoint = homeserver.baseUrl == baseUrl && homeserver.masIssuer == masIssuer
-                if (sameEndpoint && entry.isActive) return HomeserverMatchOutcome.ActiveMatch
-                best = if (sameEndpoint) HomeserverMatchOutcome.Inactive else HomeserverMatchOutcome.FieldMismatch
+        fun locate(serverName: String, baseUrl: String, masIssuer: String?, roster: SignedRoster): Located {
+            val named = roster.entries.filter { it.homeserver.serverName == serverName }
+            val sameEndpoint = named.filter { it.homeserver.baseUrl == baseUrl && it.homeserver.masIssuer == masIssuer }
+            val active = sameEndpoint.firstOrNull { it.isActive }
+            return when {
+                active != null -> Located(HomeserverMatchOutcome.ActiveMatch, active)
+                sameEndpoint.isNotEmpty() -> Located(HomeserverMatchOutcome.Inactive, sameEndpoint.first())
+                named.isNotEmpty() -> Located(HomeserverMatchOutcome.FieldMismatch, named.first())
+                else -> Located(HomeserverMatchOutcome.NotInRoster, entry = null)
             }
-            return best
         }
     }
 }
+
+/** A homeserverMatch classification and the entry that decided it, null for NOT_IN_ROSTER. */
+internal data class Located(val match: HomeserverMatchOutcome, val entry: SignedRosterEntry?)

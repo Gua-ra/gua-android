@@ -53,6 +53,7 @@ internal data class ResolveResponse(
     val exists: Boolean,
     val homeserver: HomeserverRef? = null,
     val registerAt: HomeserverRef? = null,
+    val rosterVersion: Long? = null,
     val trace: DecisionTrace? = null,
 )
 

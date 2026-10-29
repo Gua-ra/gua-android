@@ -23,21 +23,21 @@ import io.element.android.libraries.guaresolver.verification.RosterSignatureOutc
  * the sign-in handed the verifier exactly the resolution it used, or nothing at all.
  */
 class FakeResolverVerifier(
-    private val verifyResult: suspend (String, HomeserverResolution) -> ResolverVerificationReport = { _, _ -> aResolverVerificationReport() },
+    private val verifyResult: suspend (String, HomeserverResolution) -> ResolverVerificationReport? = { _, _ -> aResolverVerificationReport() },
 ) : ResolverVerifier {
     val verifyCalls: MutableList<Pair<String, HomeserverResolution>> = mutableListOf()
 
     var completedCount: Int = 0
         private set
 
-    override suspend fun verify(e164Phone: String, resolution: HomeserverResolution): ResolverVerificationReport {
+    override suspend fun verify(e164Phone: String, resolution: HomeserverResolution): ResolverVerificationReport? {
         verifyCalls += e164Phone to resolution
         return verifyResult(e164Phone, resolution).also { completedCount++ }
     }
 }
 
 fun aResolverVerificationReport() = ResolverVerificationReport(
-    environment = "other",
+    environment = "dev",
     rosterVersion = 7,
     rosterForm = RosterForm.V1,
     rosterSignature = RosterSignatureOutcome.Valid,

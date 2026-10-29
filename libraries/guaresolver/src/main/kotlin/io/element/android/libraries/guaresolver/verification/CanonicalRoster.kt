@@ -7,6 +7,9 @@
 
 package io.element.android.libraries.guaresolver.verification
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+
 /**
  * The `gua-roster.v1` bytes the authority signs: a port of the resolver's `CanonicalRoster`, byte for
  * byte. Entries are sorted by id in UTF-16 code unit order (Kotlin's `String.compareTo`, like Java's) and
@@ -15,12 +18,16 @@ package io.element.android.libraries.guaresolver.verification
 internal object CanonicalRoster {
     private const val FIELD_SEPARATOR = "\u001f"
 
-    /** The form follows the served JSON: the search fields are encoded only when every entry carries one. */
-    fun formOf(roster: SignedRoster): RosterForm {
-        val carrying = roster.entries.count { it.homeserver.searchVisibility != null }
+    /**
+     * The form follows the served JSON, by key presence, because the decoded roster cannot tell an absent
+     * `searchVisibility` from a null one: the search fields are encoded only when every entry has the key.
+     */
+    fun formOf(roster: JsonObject): RosterForm {
+        val homeservers = (roster["entries"] as? JsonArray).orEmpty().map { (it as? JsonObject)?.get("homeserver") as? JsonObject }
+        val carrying = homeservers.count { it?.containsKey("searchVisibility") == true }
         return when (carrying) {
             0 -> RosterForm.LEGACY
-            roster.entries.size -> RosterForm.V1
+            homeservers.size -> RosterForm.V1
             else -> RosterForm.MIXED
         }
     }
@@ -40,11 +47,11 @@ internal object CanonicalRoster {
 
     private fun entry(entry: SignedRosterEntry, searchFields: Boolean): String {
         val homeserver = entry.homeserver
+        // StringJoiner.add(null) on the resolver side writes the literal "null", not an empty string.
         val fields = mutableListOf(
-            homeserver.id,
-            homeserver.serverName,
-            homeserver.baseUrl,
-            // StringJoiner.add(null) on the resolver side writes the literal "null".
+            homeserver.id ?: "null",
+            homeserver.serverName ?: "null",
+            homeserver.baseUrl ?: "null",
             homeserver.masIssuer ?: "null",
             homeserver.region.orEmpty(),
             homeserver.weight.toString(),

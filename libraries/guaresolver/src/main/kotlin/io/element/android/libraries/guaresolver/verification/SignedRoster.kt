@@ -8,12 +8,11 @@
 package io.element.android.libraries.guaresolver.verification
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonElement
 
 /**
  * The signed roster as `GET /roster` serves it, with every field the `gua-roster.v1` bytes cover. The
- * document is read leniently; the member block stays a [JsonObject] so that [MemberEntryVerifier] can
- * parse it strictly, since the member signature covers exactly the fields that block declares.
+ * member block stays raw JSON for [MemberEntryVerifier], so a broken block fails memberEntry, not the roster.
  */
 @Serializable
 internal data class SignedRoster(
@@ -30,18 +29,18 @@ internal data class SignedRosterEntry(
     val claims: List<RosterClaim>? = null,
     val admittedAt: String? = null,
     val status: String,
-    // A JsonObject keeps the last of duplicate keys; the member signature is then checked over the values read.
-    val member: JsonObject? = null,
+    val member: JsonElement? = null,
 ) {
     val isActive: Boolean
         get() = status == "ACTIVE"
 }
 
+/** The four endpoint fields may be null, as the resolver's own model allows; the canonical bytes then say `null`. */
 @Serializable
 internal data class RosterHomeserver(
-    val id: String,
-    val serverName: String,
-    val baseUrl: String,
+    val id: String? = null,
+    val serverName: String? = null,
+    val baseUrl: String? = null,
     val masIssuer: String? = null,
     val region: String? = null,
     val weight: Int = 0,
@@ -78,21 +77,22 @@ internal data class AuthoritySignature(
     val signatureB64: String,
 )
 
+/** Every field is optional here, so that a missing one fails the member check that reads it. */
 @Serializable
 internal data class MemberAttestation(
-    val schema: String,
-    val alg: String,
-    val keyId: String,
-    val sequence: Long,
-    val notBefore: String,
-    val notAfter: String,
-    val signatures: List<MemberSignature>,
+    val schema: String? = null,
+    val alg: String? = null,
+    val keyId: String? = null,
+    val sequence: Long? = null,
+    val notBefore: String? = null,
+    val notAfter: String? = null,
+    val signatures: List<MemberSignature>? = null,
 )
 
 @Serializable
 internal data class MemberSignature(
-    val keyId: String,
-    val signatureB64: String,
+    val keyId: String? = null,
+    val signatureB64: String? = null,
 )
 
 @Serializable

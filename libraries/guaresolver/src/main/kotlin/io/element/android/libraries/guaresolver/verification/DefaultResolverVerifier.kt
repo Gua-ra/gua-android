@@ -19,24 +19,28 @@ import io.element.android.libraries.guaresolver.HomeserverResolution
 import io.element.android.libraries.guaresolver.ResolvedHomeserver
 import io.element.android.libraries.network.RetrofitFactory
 import io.element.android.libraries.preferences.api.store.PreferenceDataStoreFactory
+import io.element.android.services.toolbox.api.systemclock.SystemClock
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.SerializationException
-import retrofit2.HttpException
 import timber.log.Timber
+import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
- * Default [ResolverVerifier]: the checks of the resolver verification protocol, report-only. It runs
- * detached from the sign-in path under a fixed time budget, logs outcome codes only, and keeps the last
- * report in memory. Without trust roots for the deployment nothing is fetched.
+ * Default [ResolverVerifier]: the checks of the resolver verification protocol, report-only, under a fixed
+ * time budget. It logs outcome codes only and keeps the last report in memory. An exception inside a run is
+ * reported as internal_error; an Error is left to the caller.
  */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class DefaultResolverVerifier(
     private val retrofitFactory: RetrofitFactory,
     private val dispatchers: CoroutineDispatchers,
+    private val systemClock: SystemClock,
     preferenceDataStoreFactory: PreferenceDataStoreFactory,
     private val deployment: GuaDeployment = GuaResolverConfig.current,
 ) : ResolverVerifier {
@@ -47,215 +51,236 @@ class DefaultResolverVerifier(
     var lastReport: ResolverVerificationReport? = null
         private set
 
-    override suspend fun verify(e164Phone: String, resolution: HomeserverResolution): ResolverVerificationReport {
+    override suspend fun verify(e164Phone: String, resolution: HomeserverResolution): ResolverVerificationReport? {
+        val baseUrl = deployment.resolverBaseUrl ?: return null
         val startedAt = System.nanoTime()
-        val checks = Checks(environment = environmentLabel())
+        val checks = Checks()
         try {
             withContext(dispatchers.computation) {
-                withTimeout(BUDGET_MILLIS) { run(e164Phone, resolution.homeserver, resolution.exists, checks) }
+                withTimeout(BUDGET_MILLIS) {
+                    // Runs against one resolver never overlap, so none can pin from a roster older than another's.
+                    runLocks.getOrPut(baseUrl) { Mutex() }.withLock { run(baseUrl, e164Phone, resolution, checks) }
+                }
             }
         } catch (e: TimeoutCancellationException) {
-            checks.abort(VerificationReason.TIMEOUT)
+            checks.stop(VerificationReason.TIMEOUT)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            checks.abort(VerificationReason.INTERNAL_ERROR)
+            checks.stop(VerificationReason.INTERNAL_ERROR)
         }
-        val report = checks.toReport(durationMs = (System.nanoTime() - startedAt) / NANOS_PER_MILLI)
+        val environment = if (deployment == GuaDeployment.Production) "prod" else "dev"
+        val report = checks.toReport(environment, durationMs = (System.nanoTime() - startedAt) / NANOS_PER_MILLI)
         Timber.i(report.toLogLine())
         lastReport = report
         return report
     }
 
-    private suspend fun run(e164Phone: String, answer: ResolvedHomeserver, exists: Boolean, checks: Checks) {
-        val baseUrl = deployment.resolverBaseUrl ?: return checks.abort(VerificationReason.RESOLVER_NOT_CONFIGURED)
-        val rootsValue = deployment.resolverTrustRoots?.takeIf { it.isNotBlank() } ?: return checks.abort(VerificationReason.NO_TRUST_ROOTS)
-        val roots = tryOrNull { ResolverTrustRoots.parse(rootsValue) } ?: return checks.abort(VerificationReason.TRUST_ROOTS_MALFORMED)
-        if (roots.authorityKeys.isEmpty()) return checks.abort(VerificationReason.NO_TRUST_ROOTS)
-        val api = retrofitFactory.createUnlogged(baseUrl.ensureProtocol()).create(ResolverVerificationApi::class.java)
-        val now = System.currentTimeMillis()
+    private suspend fun run(baseUrl: String, e164Phone: String, resolution: HomeserverResolution, checks: Checks) {
+        val roots = trustRoots()
+        if (roots == null) {
+            checks.skipAll(VerificationReason.NO_TRUST_ROOTS)
+            return
+        }
+        val documents = ResolverDocuments(retrofitFactory.createUnlogged(baseUrl.ensureProtocol()))
+        val nowMillis = systemClock.epochMillis()
 
-        val roster = when (val fetched = fetch { api.roster() }) {
-            is Fetched.Ok -> fetched.value
-            Fetched.Malformed -> return checks.abort(VerificationReason.PARSE_ERROR)
-            Fetched.NotFound, Fetched.Failed -> return checks.abort(VerificationReason.ROSTER_UNAVAILABLE)
+        val rosterStage = verifyRoster(documents, roots)
+        checks.rosterForm = rosterStage.form
+        checks.rosterSignature = rosterStage.signature
+        val roster = rosterStage.roster
+        if (roster == null) {
+            checks.stop(VerificationReason.ROSTER_UNVERIFIED)
+            return
         }
         checks.rosterVersion = roster.version
-        val form = CanonicalRoster.formOf(roster)
-        checks.rosterForm = form
-        val signature = RosterVerifier(roots.authorityKeys, roots.authorityThreshold).verify(roster, form)
-        checks.rosterSignature = signature
-        if (signature != RosterSignatureOutcome.Valid) {
-            return checks.abort(if (form == RosterForm.MIXED) VerificationReason.MIXED_ROSTER_FORM else VerificationReason.ROSTER_UNVERIFIED)
-        }
 
-        checks.homeserverMatch = RosterVerifier.locate(answer.serverName, answer.baseUrl, answer.masIssuer, roster)
-        val entry = roster.entries.firstOrNull { it.homeserver.sameEndpointAs(answer) }
-            ?: roster.entries.firstOrNull { it.homeserver.serverName == answer.serverName }
-        checks.memberEntry = entry?.let { memberEntryVerifier.verify(it.homeserver, it.member, now) }
-            ?: MemberEntryOutcome.Unverifiable(VerificationReason.NOT_IN_ROSTER)
-        checks.logConsistency = verifyLogConsistency(api, baseUrl, roster.logCheckpoint)
-        val policy = verifyPolicy(api, roots, roster.logCheckpoint, checks)
-        checks.placement = reproducePlacement(e164Phone, answer, exists, roster, policy, checks.policy, now)
+        val answer = resolution.homeserver
+        val located = RosterVerifier.locate(answer.serverName, answer.baseUrl, answer.masIssuer, roster)
+        checks.homeserverMatch = located.match
+        checks.memberEntry = verifyMemberEntry(located, nowMillis)
+        // A directory lookup cannot be reproduced, so an existing account's placement is settled before anything is fetched.
+        if (resolution.exists) checks.placement = PlacementOutcome.Indeterminate(VerificationReason.EXISTING_ACCOUNT)
+
+        checks.logConsistency = verifyLogConsistency(documents, baseUrl, roster.logCheckpoint)
+        val policy = verifyPolicy(documents, roots, roster.logCheckpoint, nowMillis)
+        checks.policy = policy.outcome
+        if (!resolution.exists) checks.placement = reproducePlacement(e164Phone, resolution, roster, policy, nowMillis)
     }
 
-    private suspend fun verifyLogConsistency(api: ResolverVerificationApi, baseUrl: String, served: LogCheckpoint): LogConsistencyOutcome {
+    /** No usable authority key: none configured, or a configuration that does not parse. */
+    private fun trustRoots(): ResolverTrustRoots? {
+        val value = deployment.resolverTrustRoots?.takeIf { it.isNotBlank() } ?: return null
+        return tryOrNull { ResolverTrustRoots.parse(value) }?.takeIf { it.authorityKeys.isNotEmpty() }
+    }
+
+    private suspend fun verifyRoster(documents: ResolverDocuments, roots: ResolverTrustRoots): RosterStage =
+        when (val fetched = documents.roster()) {
+            is Fetched.Ok -> {
+                val served = fetched.value
+                val signature = RosterVerifier(roots.authorityKeys, roots.authorityThreshold).verify(served.roster, served.form)
+                RosterStage(form = served.form, signature = signature, roster = served.roster.takeIf { signature == RosterSignatureOutcome.Valid })
+            }
+            Fetched.Malformed -> RosterStage(form = null, signature = RosterSignatureOutcome.Unverifiable(VerificationReason.PARSE_ERROR), roster = null)
+            Fetched.NotFound, Fetched.Failed -> RosterStage(
+                form = null,
+                signature = RosterSignatureOutcome.Unverifiable(VerificationReason.ROSTER_UNAVAILABLE),
+                roster = null,
+            )
+        }
+
+    private fun verifyMemberEntry(located: Located, nowMillis: Long): MemberEntryOutcome {
+        val entry = located.entry
+        val attestable = located.match == HomeserverMatchOutcome.ActiveMatch || located.match == HomeserverMatchOutcome.Inactive
+        if (entry == null || !attestable) return MemberEntryOutcome.Unverifiable(VerificationReason.NO_MATCHING_ENTRY)
+        return memberEntryVerifier.verify(entry.homeserver, entry.member, nowMillis)
+    }
+
+    private suspend fun verifyLogConsistency(documents: ResolverDocuments, baseUrl: String, served: LogCheckpoint): LogConsistencyOutcome = try {
+        compareWithPin(documents, baseUrl, served)
+    } catch (e: IOException) {
+        LogConsistencyOutcome.Unverifiable(VerificationReason.STORAGE_UNAVAILABLE)
+    }
+
+    private suspend fun compareWithPin(documents: ResolverDocuments, baseUrl: String, served: LogCheckpoint): LogConsistencyOutcome {
         // A pin of size zero is no pin: everything extends the empty tree, so nothing would be checked.
         val pinned = checkpointPin.read(baseUrl)?.takeIf { it.size > 0L }
-        return when {
-            pinned == null -> {
-                checkpointPin.write(baseUrl, served)
-                LogConsistencyOutcome.FirstSeen
-            }
-            served.size == pinned.size -> {
-                if (served.merkleRoot == pinned.merkleRoot) LogConsistencyOutcome.Consistent else LogConsistencyOutcome.Inconsistent
-            }
-            served.size < pinned.size -> LogConsistencyOutcome.Rollback
-            else -> when (val fetched = fetch { api.consistency(first = pinned.size, second = served.size) }) {
-                is Fetched.Ok -> {
-                    val extends = MerkleTree.verifyConsistency(pinned.size, served.size, pinned.merkleRoot, served.merkleRoot, fetched.value.proof)
-                    if (extends) {
-                        checkpointPin.write(baseUrl, served)
-                        LogConsistencyOutcome.Consistent
-                    } else {
-                        LogConsistencyOutcome.Inconsistent
-                    }
-                }
-                Fetched.Malformed -> LogConsistencyOutcome.Unverifiable(VerificationReason.PARSE_ERROR)
-                Fetched.NotFound, Fetched.Failed -> LogConsistencyOutcome.Unverifiable(VerificationReason.LOG_UNAVAILABLE)
-            }
+        if (pinned == null) {
+            checkpointPin.advance(baseUrl, served)
+            return LogConsistencyOutcome.FirstSeen
         }
+        if (served.size < pinned.size) return LogConsistencyOutcome.Rollback
+        if (served.size == pinned.size) {
+            return if (served.merkleRoot == pinned.merkleRoot) LogConsistencyOutcome.Consistent else LogConsistencyOutcome.Inconsistent
+        }
+        val proof = when (val fetched = documents.consistency(first = pinned.size, second = served.size)) {
+            is Fetched.Ok -> fetched.value.proof
+            Fetched.Malformed -> return LogConsistencyOutcome.Unverifiable(VerificationReason.PARSE_ERROR)
+            Fetched.NotFound, Fetched.Failed -> return LogConsistencyOutcome.Unverifiable(VerificationReason.LOG_UNAVAILABLE)
+        }
+        if (!MerkleTree.verifyConsistency(pinned.size, served.size, pinned.merkleRoot, served.merkleRoot, proof)) {
+            return LogConsistencyOutcome.Inconsistent
+        }
+        checkpointPin.advance(baseUrl, served)
+        return LogConsistencyOutcome.Consistent
     }
 
-    /** Sets the policy check and returns the bundle with its delegate-verified zones only when that check is valid. */
-    private suspend fun verifyPolicy(
-        api: ResolverVerificationApi,
-        roots: ResolverTrustRoots,
-        checkpoint: LogCheckpoint,
-        checks: Checks,
-    ): VerifiedPolicy? {
-        val bundle = when (val fetched = fetch { api.routingPolicy() }) {
+    private suspend fun verifyPolicy(documents: ResolverDocuments, roots: ResolverTrustRoots, checkpoint: LogCheckpoint, nowMillis: Long): PolicyResult {
+        val bundle = when (val fetched = documents.routingPolicy()) {
             is Fetched.Ok -> fetched.value
-            Fetched.NotFound -> return null.also { checks.policy = PolicyOutcome.NotPresent }
-            Fetched.Malformed -> return null.also { checks.policy = PolicyOutcome.Unverifiable(VerificationReason.PARSE_ERROR) }
-            Fetched.Failed -> return null.also { checks.policy = PolicyOutcome.Unverifiable(VerificationReason.POLICY_UNAVAILABLE) }
+            Fetched.NotFound -> return PolicyResult(verifyPolicyLog(documents, checkpoint, served = null))
+            Fetched.Malformed -> return PolicyResult(PolicyOutcome.Unverifiable(VerificationReason.PARSE_ERROR))
+            Fetched.Failed -> return PolicyResult(PolicyOutcome.Unverifiable(VerificationReason.POLICY_UNAVAILABLE))
         }
-        if (roots.policyKeys.isEmpty()) return null.also { checks.policy = PolicyOutcome.Unverifiable(VerificationReason.NO_POLICY_KEYS) }
         val canonical = tryOrNull { CanonicalRoutingPolicy.bytes(bundle) }
-            ?: return null.also { checks.policy = PolicyOutcome.Unverifiable(VerificationReason.PARSE_ERROR) }
+            ?: return PolicyResult(PolicyOutcome.Unverifiable(VerificationReason.PARSE_ERROR))
         val verifier = RoutingPolicyVerifier(roots.policyKeys, roots.policyThreshold)
-        val check = verifier.check(bundle, canonical)
-        if (!check.met) return null.also { checks.policy = PolicyOutcome.Invalid(check.failureReason) }
-        val outcome = verifyPolicyLogged(api, checkpoint, MerkleTree.sha256Hex(canonical))
-        checks.policy = outcome
-        return if (outcome == PolicyOutcome.Valid) VerifiedPolicy(bundle, verifier.delegateVerifiedZones(bundle)) else null
+        val signatures = verifier.verify(bundle, canonical)
+        if (signatures != PolicyOutcome.Valid) return PolicyResult(signatures)
+        if (!bundle.isInEffectAt(nowMillis)) return PolicyResult(PolicyOutcome.Invalid(VerificationReason.OUTSIDE_WINDOW))
+        val logged = verifyPolicyLog(documents, checkpoint, LoggedPolicy(bundle.policyId, bundle.version, MerkleTree.sha256Hex(canonical)))
+        if (logged != PolicyOutcome.Valid) return PolicyResult(logged)
+        return PolicyResult(PolicyOutcome.Valid, VerifiedPolicy(bundle, verifier.delegateVerifiedZones(bundle)))
     }
 
-    /** The served policy must be the publicly logged one: a POLICY_PUBLISH leaf in the log the roster's checkpoint commits to. */
-    private suspend fun verifyPolicyLogged(api: ResolverVerificationApi, checkpoint: LogCheckpoint, policyHash: String): PolicyOutcome {
-        val log = when (val fetched = fetch { api.log() }) {
-            is Fetched.Ok -> fetched.value
-            Fetched.Malformed -> return PolicyOutcome.Unverifiable(VerificationReason.PARSE_ERROR)
-            Fetched.NotFound, Fetched.Failed -> return PolicyOutcome.Unverifiable(VerificationReason.LOG_UNAVAILABLE)
+    private suspend fun verifyPolicyLog(documents: ResolverDocuments, checkpoint: LogCheckpoint, served: LoggedPolicy?): PolicyOutcome {
+        if (checkpoint.size > MAX_LOG_SIZE) return PolicyOutcome.Unverifiable(VerificationReason.LOG_TOO_LARGE)
+        return when (val fetched = documents.log()) {
+            is Fetched.Ok -> PolicyLog.check(served, checkpoint, fetched.value.events)
+            Fetched.Malformed -> PolicyOutcome.Unverifiable(VerificationReason.PARSE_ERROR)
+            Fetched.NotFound, Fetched.Failed -> PolicyOutcome.Unverifiable(VerificationReason.LOG_UNAVAILABLE)
         }
-        val leaves = tryOrNull { log.events.map { MerkleTree.leafHash(it.leafData().toByteArray(Charsets.UTF_8)) } }
-            ?: return PolicyOutcome.Unverifiable(VerificationReason.PARSE_ERROR)
-        // The log may have grown since the roster was issued; the checkpoint commits to its prefix.
-        if (leaves.size < checkpoint.size) return PolicyOutcome.Invalid(VerificationReason.LOG_MISMATCH)
-        if (MerkleTree.root(leaves.take(checkpoint.size.toInt())) != checkpoint.merkleRoot) return PolicyOutcome.Invalid(VerificationReason.LOG_MISMATCH)
-        val logged = log.events.take(checkpoint.size.toInt()).any { it.type == POLICY_PUBLISH && it.payloadHash == policyHash }
-        return if (logged) PolicyOutcome.Valid else PolicyOutcome.Invalid(VerificationReason.NOT_LOGGED)
     }
 
+    /** A placement that differs counts against the resolver only when the answer names the roster version verified here. */
     private fun reproducePlacement(
         e164Phone: String,
-        answer: ResolvedHomeserver,
-        exists: Boolean,
+        resolution: HomeserverResolution,
         roster: SignedRoster,
-        policy: VerifiedPolicy?,
-        policyOutcome: PolicyOutcome?,
+        policy: PolicyResult,
         nowMillis: Long,
     ): PlacementOutcome {
-        if (policyOutcome != PolicyOutcome.NotPresent && policy == null) return PlacementOutcome.Unverifiable(VerificationReason.POLICY_UNVERIFIED)
+        if (policy.outcome.verdict != Verdict.PASS) return PlacementOutcome.Unverifiable(VerificationReason.POLICY_UNVERIFIED)
         val context = PlacementContext(e164Phone = e164Phone)
-        val decision = PlacementEngine.decide(context, roster, policy?.bundle, policy?.delegateVerifiedZones.orEmpty(), nowMillis)
-        val decided = decision?.let { roster.entries.firstOrNull { entry -> entry.homeserver.id == it.homeserverId }?.homeserver }
+        val verified = policy.verified
+        val decision = PlacementEngine.decide(context, roster, verified?.bundle, verified?.delegateVerifiedZones.orEmpty(), nowMillis)
+        if (verified != null && PlacementEngine.unsignedRuleOutranks(context, verified.bundle, verified.delegateVerifiedZones, decision, nowMillis)) {
+            return PlacementOutcome.Indeterminate(VerificationReason.UNSIGNED_RULE)
+        }
+        val decided = decision?.let { roster.entries.firstOrNull { entry -> entry.homeserver.id == it.homeserverId } }
         return when {
-            // A directory hit is not reproducible, so an existing account says nothing about the placement either way.
-            exists -> PlacementOutcome.Indeterminate
-            decided != null && decided.sameEndpointAs(answer) -> PlacementOutcome.Match
-            else -> PlacementOutcome.Mismatch
+            decided != null && decided.homeserver.sameEndpointAs(resolution.homeserver) -> PlacementOutcome.Match
+            resolution.rosterVersion == roster.version -> PlacementOutcome.Mismatch
+            else -> PlacementOutcome.Indeterminate(VerificationReason.UNATTRIBUTED)
         }
     }
 
     private fun RosterHomeserver.sameEndpointAs(answer: ResolvedHomeserver): Boolean =
         serverName == answer.serverName && baseUrl == answer.baseUrl && masIssuer == answer.masIssuer
 
-    private fun environmentLabel(): String = when (deployment) {
-        GuaDeployment.Production -> "prod"
-        GuaDeployment.Development -> "dev"
-        else -> "other"
-    }
+    private data class RosterStage(val form: RosterForm?, val signature: RosterSignatureOutcome, val roster: SignedRoster?)
 
-    private suspend inline fun <T> fetch(call: () -> T): Fetched<T> = try {
-        Fetched.Ok(call())
-    } catch (e: HttpException) {
-        if (e.code() == HTTP_NOT_FOUND) Fetched.NotFound else Fetched.Failed
-    } catch (e: SerializationException) {
-        Fetched.Malformed
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Fetched.Failed
-    }
-
-    private sealed interface Fetched<out T> {
-        data class Ok<T>(val value: T) : Fetched<T>
-        data object NotFound : Fetched<Nothing>
-        data object Malformed : Fetched<Nothing>
-        data object Failed : Fetched<Nothing>
-    }
+    private data class PolicyResult(val outcome: PolicyOutcome, val verified: VerifiedPolicy? = null)
 
     private data class VerifiedPolicy(val bundle: RoutingPolicyBundle, val delegateVerifiedZones: Set<String>)
 
-    /** The report under construction; a check never reached is reported as unverifiable with the reason the run stopped. */
-    private class Checks(val environment: String) {
-        var rosterVersion: Long? = null
+    /** The report under construction: a check is null until it settles. */
+    private class Checks {
         var rosterForm: RosterForm? = null
+        var rosterVersion: Long? = null
         var rosterSignature: RosterSignatureOutcome? = null
         var homeserverMatch: HomeserverMatchOutcome? = null
         var memberEntry: MemberEntryOutcome? = null
         var logConsistency: LogConsistencyOutcome? = null
         var policy: PolicyOutcome? = null
         var placement: PlacementOutcome? = null
-        private var stopReason: String? = null
 
-        fun abort(reason: String) {
-            if (stopReason == null) stopReason = reason
+        fun skipAll(reason: String) {
+            rosterSignature = RosterSignatureOutcome.Unverifiable(reason)
+            homeserverMatch = HomeserverMatchOutcome.Unverifiable(reason)
+            memberEntry = MemberEntryOutcome.Unverifiable(reason)
+            logConsistency = LogConsistencyOutcome.Unverifiable(reason)
+            policy = PolicyOutcome.Unverifiable(reason)
+            placement = PlacementOutcome.Unverifiable(reason)
         }
 
-        fun toReport(durationMs: Long): ResolverVerificationReport {
-            val pending = stopReason ?: VerificationReason.INTERNAL_ERROR
-            return ResolverVerificationReport(
-                environment = environment,
-                rosterVersion = rosterVersion,
-                rosterForm = rosterForm,
-                rosterSignature = rosterSignature ?: RosterSignatureOutcome.Unverifiable(pending),
-                homeserverMatch = homeserverMatch ?: HomeserverMatchOutcome.Unverifiable(pending),
-                memberEntry = memberEntry ?: MemberEntryOutcome.Unverifiable(pending),
-                logConsistency = logConsistency ?: LogConsistencyOutcome.Unverifiable(pending),
-                policy = policy ?: PolicyOutcome.Unverifiable(pending),
-                placement = placement ?: PlacementOutcome.Unverifiable(pending),
-                durationMs = durationMs,
-            )
+        /**
+         * Settles the checks the run did not reach with [reason], or with roster_unverified when the roster did
+         * not verify. A placement still waiting on a policy that did not pass is policy_unverified.
+         */
+        fun stop(reason: String) {
+            val rosterVerified = rosterSignature == RosterSignatureOutcome.Valid
+            if (rosterSignature == null) rosterSignature = RosterSignatureOutcome.Unverifiable(reason)
+            val unreached = if (rosterVerified) reason else VerificationReason.ROSTER_UNVERIFIED
+            homeserverMatch = homeserverMatch ?: HomeserverMatchOutcome.Unverifiable(unreached)
+            memberEntry = memberEntry ?: MemberEntryOutcome.Unverifiable(unreached)
+            logConsistency = logConsistency ?: LogConsistencyOutcome.Unverifiable(unreached)
+            val policyPassed = policy?.verdict == Verdict.PASS
+            policy = policy ?: PolicyOutcome.Unverifiable(unreached)
+            placement = placement ?: PlacementOutcome.Unverifiable(if (rosterVerified && !policyPassed) VerificationReason.POLICY_UNVERIFIED else unreached)
         }
+
+        fun toReport(environment: String, durationMs: Long) = ResolverVerificationReport(
+            environment = environment,
+            rosterVersion = rosterVersion,
+            rosterForm = rosterForm,
+            rosterSignature = checkNotNull(rosterSignature),
+            homeserverMatch = checkNotNull(homeserverMatch),
+            memberEntry = checkNotNull(memberEntry),
+            logConsistency = checkNotNull(logConsistency),
+            policy = checkNotNull(policy),
+            placement = checkNotNull(placement),
+            durationMs = durationMs,
+        )
     }
 
     private companion object {
         private const val STORE_NAME = "gua_resolver_verification"
         private const val BUDGET_MILLIS = 10_000L
         private const val NANOS_PER_MILLI = 1_000_000L
-        private const val HTTP_NOT_FOUND = 404
-        private const val POLICY_PUBLISH = "POLICY_PUBLISH"
+        private const val MAX_LOG_SIZE = 4096L
+
+        /** One lock per resolver base URL, shared by every verifier in the process. */
+        private val runLocks = ConcurrentHashMap<String, Mutex>()
     }
 }

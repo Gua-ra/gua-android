@@ -25,6 +25,9 @@ internal data class PlacementContext(
     val attributes: Map<String, String> = emptyMap(),
     val claimsVerified: Boolean = false,
 ) {
+    /** This context as placement sees it: affiliations and attributes count only when the claims were verified. */
+    fun withoutUnverifiedClaims(): PlacementContext = if (claimsVerified) this else copy(affiliations = emptyList(), attributes = emptyMap())
+
     /** The bucketing key of the weighted fallback. Not injective and not signed; it only seeds a hash. */
     fun routingKey(): String = buildString {
         append("phone=").append(e164Phone.orEmpty()).append('\n')
@@ -39,7 +42,7 @@ internal data class PlacementContext(
 }
 
 internal data class PlacementDecision(
-    val homeserverId: String,
+    val homeserverId: String?,
     val rule: String,
     val ruleId: String,
 )
@@ -57,10 +60,32 @@ internal object PlacementEngine {
         delegateVerifiedZones: Set<String>,
         nowMillis: Long,
     ): PlacementDecision? {
+        val placed = context.withoutUnverifiedClaims()
         val accepting = roster.entries.filter { it.isActive && it.homeserver.acceptsNew }
-        return policy?.let { policyRule(context, it, delegateVerifiedZones, accepting, nowMillis) }
-            ?: claimRule(context, accepting)
-            ?: weightedFallback(context, roster.version, accepting.map { it.homeserver })
+        return policy?.let { policyRule(placed, it, delegateVerifiedZones, accepting, nowMillis) }
+            ?: claimRule(placed, accepting)
+            ?: weightedFallback(placed, roster.version, accepting.map { it.homeserver })
+    }
+
+    /**
+     * Whether a rule that matches but sits in a zone without a valid delegate signature ranks above the rule that
+     * decided. Neither the bundle signatures nor its log leaf cover delegate signatures, so a resolver can strip
+     * one to hide a rule. Every policy rule ranks above roster claims and the fallback.
+     */
+    fun unsignedRuleOutranks(
+        context: PlacementContext,
+        policy: RoutingPolicyBundle,
+        delegateVerifiedZones: Set<String>,
+        decision: PlacementDecision?,
+        nowMillis: Long,
+    ): Boolean {
+        val placed = context.withoutUnverifiedClaims()
+        val zones = zonesById(policy)
+        val rules = CanonicalRoutingPolicy.sortedRules(policy.rules)
+        val decided = decision?.takeIf { it.rule == POLICY_RULE }?.let { d -> rules.firstOrNull { it.id.orEmpty() == d.ruleId } }
+        return rules
+            .filter { it.isEnabled && it.delegatedZoneId !in delegateVerifiedZones && it.zoneInEffect(zones, nowMillis) && it.matches(placed) }
+            .any { decided == null || CanonicalRoutingPolicy.ruleOrder.compare(it, decided) < 0 }
     }
 
     /** The first four bytes of SHA-256 over the roster version, the routing key and the candidates, as a signed int. */
@@ -69,7 +94,7 @@ internal object PlacementEngine {
         digest.update("weighted-fallback.v1\nroster=$rosterVersion\n".toByteArray(Charsets.UTF_8))
         digest.update(context.routingKey().toByteArray(Charsets.UTF_8))
         for (candidate in candidates) {
-            digest.update("\n${candidate.id}:${maxOf(0, candidate.weight)}".toByteArray(Charsets.UTF_8))
+            digest.update("\n${candidate.id ?: "null"}:${maxOf(0, candidate.weight)}".toByteArray(Charsets.UTF_8))
         }
         return ByteBuffer.wrap(digest.digest()).int
     }
@@ -82,24 +107,21 @@ internal object PlacementEngine {
         nowMillis: Long,
     ): PlacementDecision? {
         val targets = accepting.associateBy { it.homeserver.id }
-        // The first zone with an id wins a duplicate, as the resolver's merge function keeps it.
-        val zones = mutableMapOf<String, DelegationZone>()
-        for (zone in policy.delegationZones.orEmpty()) {
-            val zoneId = zone.id ?: continue
-            zones.getOrPut(zoneId) { zone }
-        }
+        val zones = zonesById(policy)
+        // A rule applies only inside a zone that is delegate-signed and within its validity window.
         return CanonicalRoutingPolicy.sortedRules(policy.rules)
-            .filter { rule -> rule.isEnabled && rule.zoneApplies(zones, delegateVerifiedZones, nowMillis) && rule.matches(context) }
+            .filter { it.isEnabled && it.delegatedZoneId in delegateVerifiedZones && it.zoneInEffect(zones, nowMillis) && it.matches(context) }
             .firstNotNullOfOrNull { rule ->
-                rule.targetHomeserverId?.let { targets[it] }?.let { PlacementDecision(it.homeserver.id, "PolicyRoutingRule", rule.id.orEmpty()) }
+                rule.targetHomeserverId?.let { targets[it] }?.let { PlacementDecision(it.homeserver.id, POLICY_RULE, rule.id.orEmpty()) }
             }
     }
 
-    /** A rule applies only inside a zone that is delegate-signed and within its validity window. */
-    private fun RoutingPolicyRule.zoneApplies(zones: Map<String, DelegationZone>, delegateVerifiedZones: Set<String>, nowMillis: Long): Boolean {
-        val zoneId = delegatedZoneId ?: return false
-        return zoneId in delegateVerifiedZones && zones[zoneId]?.isActiveAt(nowMillis) == true
-    }
+    // The first zone with an id wins a duplicate, as the resolver's merge function keeps it.
+    private fun zonesById(policy: RoutingPolicyBundle): Map<String, DelegationZone> =
+        policy.delegationZones.orEmpty().mapNotNull { zone -> zone.id?.let { it to zone } }.distinctBy { it.first }.toMap()
+
+    private fun RoutingPolicyRule.zoneInEffect(zones: Map<String, DelegationZone>, nowMillis: Long): Boolean =
+        delegatedZoneId?.let { zones[it] }?.isInEffectAt(nowMillis) == true
 
     private fun RoutingPolicyRule.matches(context: PlacementContext): Boolean = when (matchType) {
         "PHONE_PREFIX" -> matchValue != null && context.e164Phone?.startsWith(matchValue) == true
@@ -111,7 +133,7 @@ internal object PlacementEngine {
         accepting
             .flatMap { entry -> entry.claims.orEmpty().filter { !it.isRemote && it.matchesLocally(context) }.map { entry to it } }
             .minWithOrNull(compareBy<Pair<SignedRosterEntry, RosterClaim>> { it.second.priority }.thenBy { it.first.homeserver.id })
-            ?.let { (entry, claim) -> PlacementDecision(entry.homeserver.id, "ClaimRule", "roster-claim:${entry.homeserver.id}:${claim.priority}") }
+            ?.let { (entry, claim) -> PlacementDecision(entry.homeserver.id, "ClaimRule", "roster-claim:${entry.homeserver.id ?: "null"}:${claim.priority}") }
 
     private fun RosterClaim.matchesLocally(context: PlacementContext): Boolean {
         if (country != null && !country.equals(context.country, ignoreCase = true)) return false
@@ -129,14 +151,15 @@ internal object PlacementEngine {
         return true
     }
 
+    /** Weights are int32 and summed in 64 bits, as the resolver does, so a total past 2^31 does not wrap. */
     private fun weightedFallback(context: PlacementContext, rosterVersion: Long, accepting: List<RosterHomeserver>): PlacementDecision? {
         val candidates = accepting.sortedBy { it.id }
         if (candidates.isEmpty()) return null
-        val totalWeight = candidates.sumOf { maxOf(0, it.weight) }
+        val totalWeight = candidates.sumOf { maxOf(0, it.weight).toLong() }
         val hash = stableHash(context, rosterVersion, candidates)
-        if (totalWeight <= 0) return fallbackDecision(candidates[Math.floorMod(hash, candidates.size)])
-        val target = Math.floorMod(hash, totalWeight)
-        var cumulative = 0
+        if (totalWeight == 0L) return fallbackDecision(candidates[Math.floorMod(hash, candidates.size)])
+        val target = Math.floorMod(hash.toLong(), totalWeight)
+        var cumulative = 0L
         for (candidate in candidates) {
             cumulative += maxOf(0, candidate.weight)
             if (target < cumulative) return fallbackDecision(candidate)
@@ -145,4 +168,6 @@ internal object PlacementEngine {
     }
 
     private fun fallbackDecision(homeserver: RosterHomeserver) = PlacementDecision(homeserver.id, "WeightedFallbackRule", "weighted-fallback")
+
+    private const val POLICY_RULE = "PolicyRoutingRule"
 }

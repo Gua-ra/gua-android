@@ -8,49 +8,46 @@
 package io.element.android.libraries.guaresolver.verification
 
 import com.google.common.truth.Truth.assertThat
-import io.element.android.libraries.androidutils.json.DefaultJsonProvider
-import io.element.android.libraries.core.coroutine.CoroutineDispatchers
-import io.element.android.libraries.guaresolver.FakeGuaDeployment
-import io.element.android.libraries.guaresolver.HomeserverResolution
-import io.element.android.libraries.guaresolver.ResolvedHomeserver
 import io.element.android.libraries.guaresolver.genesis.CachingPreferenceDataStoreFactory
-import io.element.android.libraries.network.RetrofitFactory
-import io.element.android.libraries.preferences.api.store.PreferenceDataStoreFactory
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import okhttp3.OkHttpClient
-import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
 import org.junit.Test
-import java.time.Instant
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * GUA FORK: the orchestrator over a scripted resolver. The artifacts are the published vectors, so what
- * is served here is exactly what the resolver signs; the trust roots are the vectors' test keys.
+ * GUA FORK: the orchestrator over a scripted resolver: configuration, the roster, the answer and the
+ * checkpoint pin. What is served is the published vectors, or a vector signed again with its test key.
  */
 class DefaultResolverVerifierTest {
-    private val vectors: JsonObject by lazy { VectorFixtures.load(VectorFixtures.CLIENT_VECTORS_RESOURCE) }
+    @Test
+    fun `without a resolver base URL nothing runs and nothing is reported`() = runTest {
+        val resolver = ScriptedResolver()
+        val server = resolver.start()
+        val verifier = createVerifier(server, resolverBaseUrl = null)
+
+        assertThat(verifier.verify(A_PHONE, answer(hsCa()))).isNull()
+        assertThat(verifier.lastReport).isNull()
+        assertThat(resolver.requests).isEmpty()
+        server.shutdown()
+    }
 
     @Test
-    fun `without trust roots nothing is fetched and every check is unverifiable`() = runTest {
+    fun `without trust roots nothing is fetched and every check is no_trust_roots`() = runTest {
         val resolver = ScriptedResolver()
         val server = resolver.start()
         val verifier = createVerifier(server, trustRoots = null)
 
-        val report = verifier.verify(A_PHONE, answer(hsCa()))
+        val report = verify(verifier, answer(hsCa()))
 
         assertThat(resolver.requests).isEmpty()
         assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Unverifiable(VerificationReason.NO_TRUST_ROOTS))
@@ -60,75 +57,75 @@ class DefaultResolverVerifierTest {
         assertThat(report.policy).isEqualTo(PolicyOutcome.Unverifiable(VerificationReason.NO_TRUST_ROOTS))
         assertThat(report.placement).isEqualTo(PlacementOutcome.Unverifiable(VerificationReason.NO_TRUST_ROOTS))
         assertThat(report.overall).isEqualTo(OverallOutcome.Unverifiable("rosterSignature"))
-        assertThat(report.environment).isEqualTo("other")
         assertThat(report.rosterVersion).isNull()
+        assertThat(report.rosterForm).isNull()
         assertThat(verifier.lastReport).isEqualTo(report)
         server.shutdown()
     }
 
     @Test
-    fun `malformed trust roots are reported rather than guessed`() = runTest {
+    fun `trust roots that do not parse are no_trust_roots`() = runTest {
         val resolver = ScriptedResolver()
         val server = resolver.start()
-        val verifier = createVerifier(server, trustRoots = "authority:a")
 
-        val report = verifier.verify(A_PHONE, answer(hsCa()))
+        val report = verify(createVerifier(server, trustRoots = "authority:a"), answer(hsCa()))
 
         assertThat(resolver.requests).isEmpty()
-        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Unverifiable(VerificationReason.TRUST_ROOTS_MALFORMED))
+        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Unverifiable(VerificationReason.NO_TRUST_ROOTS))
+        assertThat(report.placement).isEqualTo(PlacementOutcome.Unverifiable(VerificationReason.NO_TRUST_ROOTS))
         server.shutdown()
     }
 
     @Test
-    fun `an unavailable roster is unverifiable`() = runTest {
+    fun `an unavailable roster leaves the other checks roster_unverified`() = runTest {
         val resolver = ScriptedResolver().apply { roster = { MockResponse().setResponseCode(503) } }
         val server = resolver.start()
-        val verifier = createVerifier(server)
 
-        val report = verifier.verify(A_PHONE, answer(hsCa()))
+        val report = verify(createVerifier(server), answer(hsCa()))
 
         assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Unverifiable(VerificationReason.ROSTER_UNAVAILABLE))
-        assertThat(report.placement).isEqualTo(PlacementOutcome.Unverifiable(VerificationReason.ROSTER_UNAVAILABLE))
+        assertThat(report.homeserverMatch).isEqualTo(HomeserverMatchOutcome.Unverifiable(VerificationReason.ROSTER_UNVERIFIED))
+        assertThat(report.placement).isEqualTo(PlacementOutcome.Unverifiable(VerificationReason.ROSTER_UNVERIFIED))
+        assertThat(report.rosterForm).isNull()
         assertThat(report.overall).isEqualTo(OverallOutcome.Unverifiable("rosterSignature"))
+        assertThat(resolver.requests).containsExactly("/roster")
         server.shutdown()
     }
 
     @Test
-    fun `a transport failure is unverifiable and never throws`() = runTest {
+    fun `a transport failure is roster_unavailable`() = runTest {
         val server = ScriptedResolver().start()
         val verifier = createVerifier(server)
         server.shutdown()
 
-        val report = verifier.verify(A_PHONE, answer(hsCa()))
+        val report = verify(verifier, answer(hsCa()))
 
         assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Unverifiable(VerificationReason.ROSTER_UNAVAILABLE))
-        assertThat(report.overall).isEqualTo(OverallOutcome.Unverifiable("rosterSignature"))
     }
 
     @Test
-    fun `a roster that does not parse is unverifiable`() = runTest {
+    fun `a roster that does not parse is a parse error`() = runTest {
         val resolver = ScriptedResolver().apply { roster = { ok("{\"version\": \"seven\"") } }
         val server = resolver.start()
-        val verifier = createVerifier(server)
 
-        val report = verifier.verify(A_PHONE, answer(hsCa()))
+        val report = verify(createVerifier(server), answer(hsCa()))
 
         assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Unverifiable(VerificationReason.PARSE_ERROR))
+        assertThat(report.rosterForm).isNull()
         server.shutdown()
     }
 
     @Test
     fun `a mixed roster is refused before any signature check`() = runTest {
-        val resolver = ScriptedResolver().apply { roster = { ok(rosterRejectionJson(MIXED_ROSTER_REJECTION)) } }
+        val resolver = ScriptedResolver().apply { roster = { ok(rosterRejection(MIXED_ROSTER_REJECTION).toString()) } }
         val server = resolver.start()
-        val verifier = createVerifier(server)
 
-        val report = verifier.verify(A_PHONE, answer(hsCa()))
+        val report = verify(createVerifier(server), answer(hsCa()))
 
         assertThat(report.rosterForm).isEqualTo(RosterForm.MIXED)
-        assertThat(report.rosterVersion).isEqualTo(7)
+        assertThat(report.rosterVersion).isNull()
         assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Unverifiable(VerificationReason.MIXED_ROSTER_FORM))
-        assertThat(report.homeserverMatch).isEqualTo(HomeserverMatchOutcome.Unverifiable(VerificationReason.MIXED_ROSTER_FORM))
+        assertThat(report.homeserverMatch).isEqualTo(HomeserverMatchOutcome.Unverifiable(VerificationReason.ROSTER_UNVERIFIED))
         assertThat(report.overall).isEqualTo(OverallOutcome.Unverifiable("rosterSignature"))
         assertThat(resolver.requests).containsExactly("/roster")
         server.shutdown()
@@ -136,138 +133,134 @@ class DefaultResolverVerifierTest {
 
     @Test
     fun `a roster signed by an untrusted key fails and nothing downstream is trusted`() = runTest {
-        val resolver = ScriptedResolver().apply { roster = { ok(rosterRejectionJson(UNTRUSTED_KEY_REJECTION)) } }
+        val resolver = ScriptedResolver().apply { roster = { ok(rosterRejection(UNTRUSTED_KEY_REJECTION).toString()) } }
         val server = resolver.start()
         // The rejected roster is signed by authority-b, which these roots do not list.
         val verifier = createVerifier(server, trustRoots = "authority:authority-a:${spki("rfc8032-test1")}")
 
-        val report = verifier.verify(A_PHONE, answer(hsBr()))
+        val report = verify(verifier, answer(hsBr()))
 
         assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Invalid(VerificationReason.UNKNOWN_KEY_ID))
         assertThat(report.homeserverMatch).isEqualTo(HomeserverMatchOutcome.Unverifiable(VerificationReason.ROSTER_UNVERIFIED))
         assertThat(report.logConsistency).isEqualTo(LogConsistencyOutcome.Unverifiable(VerificationReason.ROSTER_UNVERIFIED))
+        assertThat(report.placement).isEqualTo(PlacementOutcome.Unverifiable(VerificationReason.ROSTER_UNVERIFIED))
         assertThat(report.overall).isEqualTo(OverallOutcome.Failed("rosterSignature"))
         assertThat(resolver.requests).containsExactly("/roster")
         server.shutdown()
     }
 
     @Test
-    fun `a verified roster with no policy answers every check`() = runTest {
-        val resolver = ScriptedResolver().apply { roster = { ok(rosterJson(R2)) } }
+    fun `a roster whose signature fails reports no roster version`() = runTest {
+        val resolver = ScriptedResolver().apply { roster = { ok(rosterRejection(TAMPERED_BASE_URL_REJECTION).toString()) } }
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsBr()))
+
+        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Invalid(VerificationReason.BAD_SIGNATURE))
+        assertThat(report.rosterVersion).isNull()
+        assertThat(report.rosterForm).isEqualTo(RosterForm.V1)
+        server.shutdown()
+    }
+
+    @Test
+    fun `a weight past int32 is a parse error`() = runTest {
+        val entry = servedRoster("r1").rosterEntries().single()
+        val heavy = JsonObject(entry + ("homeserver" to JsonObject(entry["homeserver"]!!.jsonObject + ("weight" to JsonPrimitive(1L shl 31)))))
+        val resolver = ScriptedResolver().apply { roster = { ok(JsonObject(servedRoster("r1") + ("entries" to JsonArray(listOf(heavy)))).toString()) } }
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsBr()))
+
+        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Unverifiable(VerificationReason.PARSE_ERROR))
+        server.shutdown()
+    }
+
+    @Test
+    fun `a roster whose every entry has a null searchVisibility is the v1 form`() = runTest {
+        val base = servedRoster("r1")
+        val entries = base.rosterEntries().map { entry ->
+            JsonObject(entry - "member" + ("homeserver" to JsonObject(entry["homeserver"]!!.jsonObject + ("searchVisibility" to JsonNull))))
+        }
+        val signed = resigned(JsonObject(base + ("entries" to JsonArray(entries))), RosterForm.V1)
+        val resolver = ScriptedResolver().apply { roster = { ok(signed.toString()) } }
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsBr()))
+
+        assertThat(report.rosterForm).isEqualTo(RosterForm.V1)
+        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Valid)
+        server.shutdown()
+    }
+
+    @Test
+    fun `deep nesting in an ignored roster field is a parse error`() = runTest {
+        val body = JsonObject(servedRoster("r1") + ("padding" to JsonPrimitive(NESTED))).toString().replace("\"$NESTED\"", deepArrays())
+        val resolver = ScriptedResolver().apply { roster = { ok(body) } }
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsBr()))
+
+        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Unverifiable(VerificationReason.PARSE_ERROR))
+        assertThat(report.durationMs).isLessThan(PROMPT_MILLIS)
+        server.shutdown()
+    }
+
+    @Test
+    fun `deep nesting inside a member block is a parse error and crashes nothing`() = runTest {
+        val body = withMember(servedRoster("r1"), JsonPrimitive(NESTED)).toString().replace("\"$NESTED\"", "{\"x\":${deepArrays()}}")
+        val resolver = ScriptedResolver().apply { roster = { ok(body) } }
         val server = resolver.start()
         val verifier = createVerifier(server)
 
-        val report = verifier.verify(A_PHONE, answer(hsCa()))
+        val (report, uncaught) = recordingUncaughtExceptions { verify(verifier, answer(hsBr())) }
 
-        assertThat(report.rosterVersion).isEqualTo(7)
+        assertThat(uncaught).isEmpty()
+        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Unverifiable(VerificationReason.PARSE_ERROR))
+        assertThat(report.durationMs).isLessThan(PROMPT_MILLIS)
+        server.shutdown()
+    }
+
+    @Test
+    fun `a roster body over 2 MiB is a parse error and is not decoded`() = runTest {
+        // Valid JSON that verifies once decoded, so only the size cap can refuse it.
+        val body = servedRoster("r2").toString().dropLast(1) + " ".repeat(3 * 1024 * 1024) + "}"
+        val resolver = ScriptedResolver().apply { roster = { ok(body) } }
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsCa()))
+
+        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Unverifiable(VerificationReason.PARSE_ERROR))
+        assertThat(report.rosterForm).isNull()
+        server.shutdown()
+    }
+
+    @Test
+    fun `brackets and escaped quotes inside strings are not nesting`() = runTest {
+        val note = "\"" + "[{".repeat(100) + "\\\"" + "]}".repeat(100) + "\""
+        val body = JsonObject(servedRoster("r2") + ("note" to JsonPrimitive(NESTED))).toString().replace("\"$NESTED\"", note)
+        val resolver = ScriptedResolver().apply { roster = { ok(body) } }
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsCa()))
+
+        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Valid)
+        server.shutdown()
+    }
+
+    @Test
+    fun `a verified roster with no policy answers every check`() = runTest {
+        val resolver = withoutPolicy()
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsBr()))
+
+        assertThat(report.rosterVersion).isEqualTo(3)
         assertThat(report.rosterForm).isEqualTo(RosterForm.V1)
         assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Valid)
         assertThat(report.homeserverMatch).isEqualTo(HomeserverMatchOutcome.ActiveMatch)
-        assertThat(report.memberEntry).isEqualTo(MemberEntryOutcome.Unattested)
+        assertThat(report.memberEntry).isEqualTo(MemberEntryOutcome.Valid)
         assertThat(report.logConsistency).isEqualTo(LogConsistencyOutcome.FirstSeen)
         assertThat(report.policy).isEqualTo(PolicyOutcome.NotPresent)
-        assertThat(report.placement).isEqualTo(PlacementOutcome.Match)
-        assertThat(report.overall).isEqualTo(OverallOutcome.Verified)
-        assertThat(resolver.requests).containsExactly("/roster", "/policy/routing").inOrder()
-        assertThat(report.toLogLine()).doesNotContain(A_PHONE)
-        assertThat(report.toLogLine()).doesNotContain("gua.test")
-        server.shutdown()
-    }
-
-    @Test
-    fun `a known server name at another address is a field mismatch`() = runTest {
-        val resolver = ScriptedResolver().apply { roster = { ok(rosterJson(R2)) } }
-        val server = resolver.start()
-        val verifier = createVerifier(server)
-
-        val report = verifier.verify(A_PHONE, answer(hsBr().copy(baseUrl = "https://matrix.evil.test")))
-
-        assertThat(report.homeserverMatch).isEqualTo(HomeserverMatchOutcome.FieldMismatch)
-        assertThat(report.overall).isEqualTo(OverallOutcome.Failed("homeserverMatch"))
-        server.shutdown()
-    }
-
-    @Test
-    fun `the checkpoint pin moves forward only on a verified extension`() = runTest {
-        val resolver = ScriptedResolver().apply { roster = { ok(unattestedRosterJson(R1)) } }
-        val server = resolver.start()
-        val verifier = createVerifier(server)
-
-        assertThat(verifier.verify(A_PHONE, answer(hsBr())).logConsistency).isEqualTo(LogConsistencyOutcome.FirstSeen)
-
-        resolver.roster = { ok(rosterJson(R2)) }
-        resolver.consistency = { ok(consistencyJson(first = 3, second = 7)) }
-        assertThat(verifier.verify(A_PHONE, answer(hsCa())).logConsistency).isEqualTo(LogConsistencyOutcome.Consistent)
-        assertThat(resolver.requests.filter { it.startsWith("/roster/log/consistency") }).containsExactly("/roster/log/consistency?first=3&second=7")
-
-        resolver.roster = { ok(unattestedRosterJson(R1)) }
-        val rollback = verifier.verify(A_PHONE, answer(hsBr()))
-        assertThat(rollback.logConsistency).isEqualTo(LogConsistencyOutcome.Rollback)
-        assertThat(rollback.overall).isEqualTo(OverallOutcome.Failed("logConsistency"))
-        server.shutdown()
-    }
-
-    @Test
-    fun `a checkpoint that does not extend the pin is inconsistent and the pin stays`() = runTest {
-        val resolver = ScriptedResolver().apply { roster = { ok(unattestedRosterJson(R1)) } }
-        val server = resolver.start()
-        val verifier = createVerifier(server)
-        verifier.verify(A_PHONE, answer(hsBr()))
-
-        resolver.roster = { ok(rosterJson(R2)) }
-        resolver.consistency = { ok(consistencyJson(first = 3, second = 7, tampered = true)) }
-        val inconsistent = verifier.verify(A_PHONE, answer(hsCa()))
-        assertThat(inconsistent.logConsistency).isEqualTo(LogConsistencyOutcome.Inconsistent)
-        assertThat(inconsistent.overall).isEqualTo(OverallOutcome.Failed("logConsistency"))
-
-        resolver.roster = { ok(unattestedRosterJson(R1)) }
-        assertThat(verifier.verify(A_PHONE, answer(hsBr())).logConsistency).isEqualTo(LogConsistencyOutcome.Consistent)
-        server.shutdown()
-    }
-
-    @Test
-    fun `an absent consistency endpoint is unverifiable and the pin stays`() = runTest {
-        val resolver = ScriptedResolver().apply { roster = { ok(unattestedRosterJson(R1)) } }
-        val server = resolver.start()
-        val verifier = createVerifier(server)
-        verifier.verify(A_PHONE, answer(hsBr()))
-
-        resolver.roster = { ok(rosterJson(R2)) }
-        val mirror = verifier.verify(A_PHONE, answer(hsCa()))
-        assertThat(mirror.logConsistency).isEqualTo(LogConsistencyOutcome.Unverifiable(VerificationReason.LOG_UNAVAILABLE))
-        assertThat(mirror.overall).isEqualTo(OverallOutcome.Unverifiable("logConsistency"))
-
-        resolver.roster = { ok(unattestedRosterJson(R1)) }
-        assertThat(verifier.verify(A_PHONE, answer(hsBr())).logConsistency).isEqualTo(LogConsistencyOutcome.Consistent)
-        server.shutdown()
-    }
-
-    @Test
-    fun `the pin is kept across verifier instances for the same resolver`() = runTest {
-        val resolver = ScriptedResolver().apply { roster = { ok(unattestedRosterJson(R1)) } }
-        val server = resolver.start()
-        val dataStoreFactory = CachingPreferenceDataStoreFactory()
-        createVerifier(server, dataStoreFactory = dataStoreFactory).verify(A_PHONE, answer(hsBr()))
-
-        val report = createVerifier(server, dataStoreFactory = dataStoreFactory).verify(A_PHONE, answer(hsBr()))
-
-        assertThat(report.logConsistency).isEqualTo(LogConsistencyOutcome.Consistent)
-        server.shutdown()
-    }
-
-    @Test
-    fun `a served policy is verified under the policy keys and against the log`() = runTest {
-        val resolver = ScriptedResolver().apply {
-            roster = { ok(rosterJson(R2)) }
-            policy = { ok(policyJson(0)) }
-            log = { ok(logJson()) }
-        }
-        val server = resolver.start()
-        val verifier = createVerifier(server)
-
-        val report = verifier.verify(A_CANADIAN_PHONE, answer(hsCa()))
-
-        assertThat(report.policy).isEqualTo(PolicyOutcome.Valid)
         assertThat(report.placement).isEqualTo(PlacementOutcome.Match)
         assertThat(report.overall).isEqualTo(OverallOutcome.Verified)
         assertThat(resolver.requests).containsExactly("/roster", "/policy/routing", "/roster/log").inOrder()
@@ -275,264 +268,208 @@ class DefaultResolverVerifierTest {
     }
 
     @Test
-    fun `a placement the verified policy routes elsewhere is a mismatch`() = runTest {
-        val resolver = ScriptedResolver().apply {
-            roster = { ok(rosterJson(R2)) }
-            policy = { ok(policyJson(0)) }
-            log = { ok(logJson()) }
-        }
-        val server = resolver.start()
-        val verifier = createVerifier(server)
+    fun `the report line carries outcome codes only, in the contract's format`() = runTest {
+        val server = withoutPolicy().start()
 
-        val report = verifier.verify(A_PHONE, answer(hsCa()))
+        val report = verify(createVerifier(server), answer(hsBr(), exists = true))
 
-        assertThat(report.policy).isEqualTo(PolicyOutcome.Valid)
-        assertThat(report.placement).isEqualTo(PlacementOutcome.Mismatch)
-        assertThat(report.overall).isEqualTo(OverallOutcome.Failed("placement"))
+        assertThat(report.toLogLine()).isEqualTo(
+            "Resolver verification environment=dev rosterVersion=3 rosterForm=v1 rosterSignature=valid homeserverMatch=ACTIVE_MATCH " +
+                "memberEntry=valid logConsistency=firstSeen policy=notPresent placement=indeterminate(existing_account) " +
+                "overall=unverifiable(placement) durationMs=${report.durationMs}"
+        )
         server.shutdown()
     }
 
     @Test
-    fun `a policy signed by the operational key is invalid`() = runTest {
-        val resolver = ScriptedResolver().apply {
-            roster = { ok(rosterJson(R2)) }
-            policy = { ok(policyRejectionJson(OPERATIONAL_KEY_REJECTION)) }
-            log = { ok(logJson()) }
-        }
+    fun `a known server name at another address is a field mismatch with no matching entry`() = runTest {
+        val resolver = ScriptedResolver().apply { roster = { ok(servedRoster("r2").toString()) } }
         val server = resolver.start()
-        val verifier = createVerifier(server)
 
-        val report = verifier.verify(A_PHONE, answer(hsCa()))
+        val report = verify(createVerifier(server), answer(hsBr().copy(baseUrl = "https://matrix.evil.test")))
 
-        assertThat(report.policy).isEqualTo(PolicyOutcome.Invalid(VerificationReason.UNKNOWN_KEY_ID))
-        assertThat(report.placement).isEqualTo(PlacementOutcome.Unverifiable(VerificationReason.POLICY_UNVERIFIED))
-        assertThat(report.overall).isEqualTo(OverallOutcome.Failed("policy"))
+        assertThat(report.homeserverMatch).isEqualTo(HomeserverMatchOutcome.FieldMismatch)
+        assertThat(report.memberEntry).isEqualTo(MemberEntryOutcome.Unverifiable(VerificationReason.NO_MATCHING_ENTRY))
+        assertThat(report.overall).isEqualTo(OverallOutcome.Failed("homeserverMatch"))
         server.shutdown()
     }
 
     @Test
-    fun `a served policy without policy keys is unverifiable, never trusted through the authority keys`() = runTest {
-        val resolver = ScriptedResolver().apply {
-            roster = { ok(rosterJson(R2)) }
-            policy = { ok(policyJson(0)) }
-            log = { ok(logJson()) }
-        }
-        val server = resolver.start()
-        val verifier = createVerifier(server, trustRoots = authorityRoots())
+    fun `the member block of the returned entry is verified`() = runTest {
+        val server = withoutPolicy().start()
 
-        val report = verifier.verify(A_PHONE, answer(hsCa()))
-
-        assertThat(report.policy).isEqualTo(PolicyOutcome.Unverifiable(VerificationReason.NO_POLICY_KEYS))
-        assertThat(report.placement).isEqualTo(PlacementOutcome.Unverifiable(VerificationReason.POLICY_UNVERIFIED))
-        assertThat(report.overall).isEqualTo(OverallOutcome.Unverifiable("policy"))
-        server.shutdown()
-    }
-
-    @Test
-    fun `a policy whose log is not served is unverifiable`() = runTest {
-        val resolver = ScriptedResolver().apply {
-            roster = { ok(rosterJson(R2)) }
-            policy = { ok(policyJson(0)) }
-        }
-        val server = resolver.start()
-        val verifier = createVerifier(server)
-
-        val report = verifier.verify(A_PHONE, answer(hsCa()))
-
-        assertThat(report.policy).isEqualTo(PolicyOutcome.Unverifiable(VerificationReason.LOG_UNAVAILABLE))
-        server.shutdown()
-    }
-
-    @Test
-    fun `a log that does not commit to the roster checkpoint makes the policy invalid`() = runTest {
-        val events = JsonArray(vectors["log"]!!.jsonObject["events"]!!.jsonArray.drop(1))
-        val resolver = ScriptedResolver().apply {
-            roster = { ok(rosterJson(R2)) }
-            policy = { ok(policyJson(0)) }
-            log = { ok(logJson(events)) }
-        }
-        val server = resolver.start()
-        val verifier = createVerifier(server)
-
-        val report = verifier.verify(A_PHONE, answer(hsCa()))
-
-        assertThat(report.policy).isEqualTo(PolicyOutcome.Invalid(VerificationReason.LOG_MISMATCH))
-        server.shutdown()
-    }
-
-    @Test
-    fun `an existing account answer is indeterminate even when the placement agrees`() = runTest {
-        val resolver = ScriptedResolver().apply { roster = { ok(rosterJson(R2)) } }
-        val server = resolver.start()
-        val verifier = createVerifier(server)
-
-        val differing = verifier.verify(A_PHONE_PLACED_ON_BR, answer(hsCa(), exists = true))
-        assertThat(differing.placement).isEqualTo(PlacementOutcome.Indeterminate)
-        assertThat(differing.overall).isEqualTo(OverallOutcome.Unverifiable("placement"))
-
-        val agreeing = verifier.verify(A_PHONE_PLACED_ON_BR, answer(hsBr(), exists = true))
-        assertThat(agreeing.placement).isEqualTo(PlacementOutcome.Indeterminate)
-        assertThat(agreeing.overall).isEqualTo(OverallOutcome.Unverifiable("placement"))
-        server.shutdown()
-    }
-
-    @Test
-    fun `the member self-signature of the returned entry is verified`() = runTest {
-        val now = System.currentTimeMillis()
-        val attested = attestedRoster(notBeforeMillis = now - DAY_MILLIS, notAfterMillis = now + 30 * DAY_MILLIS)
-        val resolver = ScriptedResolver().apply { roster = { ok(attested.toString()) } }
-        val server = resolver.start()
-        val verifier = createVerifier(server)
-
-        val report = verifier.verify(A_PHONE, answer(hsBr()))
+        val report = verify(createVerifier(server), answer(hsBr()))
 
         assertThat(report.memberEntry).isEqualTo(MemberEntryOutcome.Valid)
-        assertThat(report.placement).isEqualTo(PlacementOutcome.Match)
         assertThat(report.overall).isEqualTo(OverallOutcome.Verified)
-
-        resolver.roster = { ok(withMemberSequence(attested, 2).toString()) }
-        val tampered = verifier.verify(A_PHONE, answer(hsBr()))
-        assertThat(tampered.memberEntry).isEqualTo(MemberEntryOutcome.Invalid(VerificationReason.BAD_SIGNATURE))
-        assertThat(tampered.overall).isEqualTo(OverallOutcome.Failed("memberEntry"))
         server.shutdown()
     }
 
-    private fun createVerifier(
-        server: MockWebServer,
-        trustRoots: String? = allRoots(),
-        dataStoreFactory: PreferenceDataStoreFactory = CachingPreferenceDataStoreFactory(),
-    ) = DefaultResolverVerifier(
-        retrofitFactory = RetrofitFactory(
-            okHttpClient = { OkHttpClient.Builder().build() },
-            json = { DefaultJsonProvider() },
-        ),
-        dispatchers = CoroutineDispatchers(io = Dispatchers.IO, computation = Dispatchers.Default, main = Dispatchers.Default),
-        preferenceDataStoreFactory = dataStoreFactory,
-        deployment = FakeGuaDeployment(resolverBaseUrl = server.url("/").toString(), resolverTrustRoots = trustRoots),
-    )
-
-    private fun authorityRoots(): String = "authority:authority-a:${spki("rfc8032-test1")} authority:authority-b:${spki("rfc8032-test2")}"
-
-    private fun allRoots(): String = "${authorityRoots()} policy:governance-a:${spki("rfc8032-test3")}"
-
-    private fun spki(keyRef: String): String = vectors["keys"]!!.jsonObject[keyRef]!!.jsonObject.string("publicKeySpkiB64")
-
-    private fun seed(keyRef: String): String = vectors["keys"]!!.jsonObject[keyRef]!!.jsonObject.string("seedHex")
-
-    private fun rosterJson(index: Int): String = vectors["rosters"]!!.jsonArray[index].jsonObject["roster"]!!.toString()
-
-    /** The roster without its member blocks, which the authority signature does not cover, so a member window never dates a test. */
-    private fun unattestedRosterJson(index: Int): String {
-        val roster = vectors["rosters"]!!.jsonArray[index].jsonObject["roster"]!!.jsonObject
-        val entries = roster["entries"]!!.jsonArray.map { JsonObject(it.jsonObject - "member") }
-        return JsonObject(roster + ("entries" to JsonArray(entries))).toString()
-    }
-
-    private fun rosterRejectionJson(index: Int): String = vectors["rosterRejections"]!!.jsonArray[index].jsonObject["roster"]!!.toString()
-
-    private fun policyJson(index: Int): String = vectors["policies"]!!.jsonArray[index].jsonObject["bundle"]!!.toString()
-
-    private fun policyRejectionJson(index: Int): String = vectors["policyRejections"]!!.jsonArray[index].jsonObject["bundle"]!!.toString()
-
-    private fun logJson(events: JsonArray = vectors["log"]!!.jsonObject["events"]!!.jsonArray): String {
-        val head = buildJsonObject {
-            put("merkleRoot", vectors["log"]!!.jsonObject["roots"]!!.jsonArray.last().jsonObject.string("rootHex"))
-            put("size", events.size)
-        }
-        return buildJsonObject {
-            put("head", head)
-            put("events", events)
-        }.toString()
-    }
-
-    private fun consistencyJson(first: Int, second: Int, tampered: Boolean = false): String {
-        val vector = vectors["log"]!!.jsonObject["consistencyProofs"]!!.jsonArray.map { it.jsonObject }
-            .first { it.int("first") == first && it.int("second") == second }
-        val proof = vector["proof"]!!.jsonArray.map { it.jsonPrimitive.content }.toMutableList()
-        if (tampered) proof[proof.lastIndex] = proof.last().replaceRange(0, 1, if (proof.last().startsWith("0")) "1" else "0")
-        return buildJsonObject {
-            put("first", first)
-            put("second", second)
-            put("proof", JsonArray(proof.map { JsonPrimitive(it) }))
-        }.toString()
-    }
-
-    /** Roster 1 with its member attestation re-signed by the member's own test key over a window around now. */
-    private fun attestedRoster(notBeforeMillis: Long, notAfterMillis: Long): JsonObject {
-        val roster = vectors["rosters"]!!.jsonArray[R1].jsonObject["roster"]!!.jsonObject
-        val entry = roster["entries"]!!.jsonArray.single().jsonObject
-        val homeserver = Json { ignoreUnknownKeys = true }.decodeFromJsonElement<RosterHomeserver>(entry["homeserver"]!!)
-        val member = Json.decodeFromJsonElement<MemberAttestation>(entry["member"]!!.jsonObject).copy(
-            notBefore = Instant.ofEpochMilli(notBeforeMillis).toString(),
-            notAfter = Instant.ofEpochMilli(notAfterMillis).toString(),
+    @Test
+    fun `the member block checked is the one of the entry homeserverMatch located`() = runTest {
+        val base = servedRoster("r1")
+        val active = base.rosterEntries().single()
+        val retiredHomeserver = JsonObject(active["homeserver"]!!.jsonObject + ("id" to JsonPrimitive("hs-br-retired")))
+        // Served first, SUSPENDED, with the same three fields and a valid block of its own.
+        val retired = JsonObject(
+            active + mapOf("homeserver" to retiredHomeserver, "status" to JsonPrimitive("SUSPENDED"), "member" to memberSignedFor(retiredHomeserver, active))
         )
-        val signature = VectorFixtures.sign(seed("rfc8032-test-sha-abc"), CanonicalMemberEntry.bytes(homeserver, member))
-        val signed = member.copy(signatures = listOf(MemberSignature(keyId = member.keyId, signatureB64 = signature)))
-        val attestedEntry = JsonObject(entry + ("member" to Json.encodeToJsonElement(signed)))
-        return JsonObject(roster + ("entries" to JsonArray(listOf(attestedEntry))))
+        val broken = JsonObject(active + ("member" to JsonObject(active["member"]!!.jsonObject + ("sequence" to JsonPrimitive(2)))))
+        val signed = resigned(JsonObject(base + ("entries" to JsonArray(listOf(retired, broken)))))
+        val resolver = ScriptedResolver().apply { roster = { ok(signed.toString()) } }
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsBr()))
+
+        assertThat(report.homeserverMatch).isEqualTo(HomeserverMatchOutcome.ActiveMatch)
+        assertThat(report.memberEntry).isEqualTo(MemberEntryOutcome.Invalid(VerificationReason.BAD_SIGNATURE))
+        server.shutdown()
     }
 
-    private fun withMemberSequence(roster: JsonObject, sequence: Long): JsonObject {
-        val entry = roster["entries"]!!.jsonArray.single().jsonObject
-        val member = JsonObject(entry["member"]!!.jsonObject + ("sequence" to JsonPrimitive(sequence)))
-        return JsonObject(roster + ("entries" to JsonArray(listOf(JsonObject(entry + ("member" to member))))))
+    @Test
+    fun `a member block without a key id is bad_key_id`() = runTest {
+        val member = servedRoster("r1").rosterEntries().single()["member"]!!.jsonObject
+        val resolver = ScriptedResolver().apply { roster = { ok(withMember(servedRoster("r1"), JsonObject(member - "keyId")).toString()) } }
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsBr()))
+
+        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Valid)
+        assertThat(report.memberEntry).isEqualTo(MemberEntryOutcome.Invalid(VerificationReason.BAD_KEY_ID))
+        server.shutdown()
     }
 
-    private fun answer(homeserver: ResolvedHomeserver, exists: Boolean = false) = HomeserverResolution(exists = exists, homeserver = homeserver)
+    @Test
+    fun `a member signature without its value is malformed_signature`() = runTest {
+        val member = servedRoster("r1").rosterEntries().single()["member"]!!.jsonObject
+        val unsigned = JsonObject(member + ("signatures" to JsonArray(listOf(buildJsonObject { put("keyId", "hs-br-1") }))))
+        val resolver = ScriptedResolver().apply { roster = { ok(withMember(servedRoster("r1"), unsigned).toString()) } }
+        val server = resolver.start()
 
-    private fun hsBr() = ResolvedHomeserver(
-        serverName = "br.gua.test",
-        baseUrl = "https://matrix.br.gua.test",
-        masIssuer = "https://account.br.gua.test",
-        region = "BR",
-    )
+        val report = verify(createVerifier(server), answer(hsBr()))
 
-    private fun hsCa() = ResolvedHomeserver(
-        serverName = "ca.gua.test",
-        baseUrl = "https://matrix.ca.gua.test",
-        masIssuer = "https://account.ca.gua.test",
-        region = null,
-    )
+        assertThat(report.memberEntry).isEqualTo(MemberEntryOutcome.Invalid(VerificationReason.MALFORMED_SIGNATURE))
+        server.shutdown()
+    }
 
-    private fun ok(body: String) = MockResponse().setBody(body)
+    @Test
+    fun `a member block that is not an object fails memberEntry only`() = runTest {
+        val resolver = ScriptedResolver().apply { roster = { ok(withMember(servedRoster("r1"), JsonArray(emptyList())).toString()) } }
+        val server = resolver.start()
 
-    /** Answers each artifact path from a lambda, so a test rewrites what is served between runs. */
-    private class ScriptedResolver {
-        var roster: () -> MockResponse = { notFound() }
-        var log: () -> MockResponse = { notFound() }
-        var consistency: () -> MockResponse = { notFound() }
-        var policy: () -> MockResponse = { notFound() }
-        val requests: MutableList<String> = mutableListOf()
+        val report = verify(createVerifier(server), answer(hsBr()))
 
-        fun start(): MockWebServer = MockWebServer().apply {
-            dispatcher = object : Dispatcher() {
-                override fun dispatch(request: RecordedRequest): MockResponse {
-                    val path = request.path.orEmpty()
-                    requests += path
-                    return when (path.substringBefore('?')) {
-                        "/roster" -> roster()
-                        "/roster/log" -> log()
-                        "/roster/log/consistency" -> consistency()
-                        "/policy/routing" -> policy()
-                        else -> notFound()
-                    }
-                }
-            }
-            start()
+        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Valid)
+        assertThat(report.memberEntry).isEqualTo(MemberEntryOutcome.Invalid(VerificationReason.PARSE_ERROR))
+        server.shutdown()
+    }
+
+    @Test
+    fun `the checkpoint pin moves forward only on a verified extension`() = runTest {
+        val resolver = ScriptedResolver().apply {
+            roster = { ok(servedRoster("r1").toString()) }
+            consistency = { first, second -> ok(consistencyJson(first, second)) }
         }
+        val server = resolver.start()
+        val verifier = createVerifier(server)
 
-        private fun notFound() = MockResponse().setResponseCode(404)
+        assertThat(verify(verifier, answer(hsBr())).logConsistency).isEqualTo(LogConsistencyOutcome.FirstSeen)
+
+        resolver.roster = { ok(servedRoster("r2").toString()) }
+        assertThat(verify(verifier, answer(hsCa())).logConsistency).isEqualTo(LogConsistencyOutcome.Consistent)
+        assertThat(resolver.requests.filter { it.startsWith("/roster/log/consistency") }).containsExactly("/roster/log/consistency?first=3&second=7")
+
+        resolver.roster = { ok(servedRoster("r1").toString()) }
+        val rollback = verify(verifier, answer(hsBr()))
+        assertThat(rollback.logConsistency).isEqualTo(LogConsistencyOutcome.Rollback)
+        assertThat(rollback.overall).isEqualTo(OverallOutcome.Failed("logConsistency"))
+        server.shutdown()
     }
 
-    private companion object {
-        private const val A_PHONE = "+5511987654321"
-        private const val A_CANADIAN_PHONE = "+14165550123"
-        private const val A_PHONE_PLACED_ON_BR = "+5521990001237"
-        private const val R1 = 0
-        private const val R2 = 1
-        private const val UNTRUSTED_KEY_REJECTION = 1
-        private const val MIXED_ROSTER_REJECTION = 5
-        private const val OPERATIONAL_KEY_REJECTION = 0
-        private const val DAY_MILLIS = 24L * 60 * 60 * 1000
+    @Test
+    fun `a checkpoint that does not extend the pin is inconsistent and the pin stays`() = runTest {
+        val resolver = ScriptedResolver().apply { roster = { ok(servedRoster("r1").toString()) } }
+        val server = resolver.start()
+        val verifier = createVerifier(server)
+        verify(verifier, answer(hsBr()))
+
+        resolver.roster = { ok(servedRoster("r2").toString()) }
+        resolver.consistency = { first, second -> ok(consistencyJson(first, second, tampered = true)) }
+        val inconsistent = verify(verifier, answer(hsCa()))
+        assertThat(inconsistent.logConsistency).isEqualTo(LogConsistencyOutcome.Inconsistent)
+        assertThat(inconsistent.overall).isEqualTo(OverallOutcome.Failed("logConsistency"))
+
+        resolver.roster = { ok(servedRoster("r1").toString()) }
+        assertThat(verify(verifier, answer(hsBr())).logConsistency).isEqualTo(LogConsistencyOutcome.Consistent)
+        server.shutdown()
+    }
+
+    @Test
+    fun `an absent consistency endpoint is unverifiable and the pin stays`() = runTest {
+        val resolver = ScriptedResolver().apply { roster = { ok(servedRoster("r1").toString()) } }
+        val server = resolver.start()
+        val verifier = createVerifier(server)
+        verify(verifier, answer(hsBr()))
+
+        resolver.roster = { ok(servedRoster("r2").toString()) }
+        val mirror = verify(verifier, answer(hsCa()))
+        assertThat(mirror.logConsistency).isEqualTo(LogConsistencyOutcome.Unverifiable(VerificationReason.LOG_UNAVAILABLE))
+        assertThat(mirror.overall).isEqualTo(OverallOutcome.Unverifiable("logConsistency"))
+
+        resolver.roster = { ok(servedRoster("r1").toString()) }
+        assertThat(verify(verifier, answer(hsBr())).logConsistency).isEqualTo(LogConsistencyOutcome.Consistent)
+        server.shutdown()
+    }
+
+    @Test
+    fun `the pin is kept across verifier instances for the same resolver`() = runTest {
+        val resolver = ScriptedResolver().apply { roster = { ok(servedRoster("r1").toString()) } }
+        val server = resolver.start()
+        val dataStoreFactory = CachingPreferenceDataStoreFactory()
+        verify(createVerifier(server, dataStoreFactory = dataStoreFactory), answer(hsBr()))
+
+        val report = verify(createVerifier(server, dataStoreFactory = dataStoreFactory), answer(hsBr()))
+
+        assertThat(report.logConsistency).isEqualTo(LogConsistencyOutcome.Consistent)
+        server.shutdown()
+    }
+
+    @Test
+    fun `a pin store that cannot be read is storage_unavailable`() = runTest {
+        val server = withoutPolicy().start()
+
+        val report = verify(createVerifier(server, dataStoreFactory = UnavailablePreferenceDataStoreFactory()), answer(hsBr()))
+
+        assertThat(report.logConsistency).isEqualTo(LogConsistencyOutcome.Unverifiable(VerificationReason.STORAGE_UNAVAILABLE))
+        assertThat(report.policy).isEqualTo(PolicyOutcome.NotPresent)
+        server.shutdown()
+    }
+
+    @Test
+    fun `overlapping runs leave the pin at the larger checkpoint`() = runTest {
+        val rosterRequests = AtomicInteger()
+        val resolver = ScriptedResolver().apply {
+            roster = { ok(servedRoster("r1").toString()) }
+            consistency = { first, second ->
+                // The first run to fetch the roster holds the smaller checkpoint and gets its proof late.
+                val response = ok(consistencyJson(first, second))
+                if (second == 5) response.setBodyDelay(SLOW_PROOF_MILLIS, TimeUnit.MILLISECONDS) else response
+            }
+        }
+        val server = resolver.start()
+        val dataStoreFactory = CachingPreferenceDataStoreFactory()
+        verify(createVerifier(server, dataStoreFactory = dataStoreFactory), answer(hsBr()))
+        val smaller = resigned(withCheckpoint(servedRoster("r1"), size = 5)).toString()
+        val larger = servedRoster("r2").toString()
+        resolver.roster = { ok(if (rosterRequests.getAndIncrement() == 0) smaller else larger) }
+
+        List(2) { async { createVerifier(server, dataStoreFactory = dataStoreFactory).verify(A_PHONE, answer(hsBr())) } }.awaitAll()
+
+        val pin = ResolverCheckpointPin(dataStoreFactory.create(STORE_NAME)).read(server.url("/").toString())
+        assertThat(pin).isEqualTo(LogCheckpoint(merkleRoot = rootAt(7), size = 7))
+        resolver.roster = { ok(resigned(withCheckpoint(servedRoster("r1"), size = 6)).toString()) }
+        val later = verify(createVerifier(server, dataStoreFactory = dataStoreFactory), answer(hsBr()))
+        assertThat(later.logConsistency).isEqualTo(LogConsistencyOutcome.Rollback)
+        server.shutdown()
     }
 }

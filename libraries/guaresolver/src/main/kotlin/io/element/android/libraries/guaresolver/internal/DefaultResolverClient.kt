@@ -84,6 +84,7 @@ class DefaultResolverClient(
                     masIssuer = ref.masIssuer,
                     region = ref.region,
                 ),
+                rosterVersion = response.rosterVersion,
             )
         )
     }

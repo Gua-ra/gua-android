@@ -11,6 +11,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.security.KeyFactory
@@ -40,6 +41,10 @@ internal object VectorFixtures {
         }
     }
 }
+
+/** The vector of [section] whose `ref` is [ref]: vectors name the rosters and policies they use this way. */
+internal fun JsonObject.byRef(section: String, ref: String): JsonObject =
+    this[section]!!.jsonArray.map { it.jsonObject }.single { it.stringOrNull("ref") == ref }
 
 internal fun JsonObject.string(key: String): String = this[key]!!.jsonPrimitive.content
 

@@ -23,7 +23,9 @@ internal data class RoutingPolicyBundle(
     val fallback: FallbackStrategy? = null,
     val signatures: List<PolicySignature>? = null,
     val delegateSignatures: List<DelegateSignature>? = null,
-)
+) {
+    fun isInEffectAt(nowMillis: Long): Boolean = isInEffect(notBefore, expiresAt, nowMillis)
+}
 
 @Serializable
 internal data class DelegationZone(
@@ -37,12 +39,12 @@ internal data class DelegationZone(
     val notBefore: String? = null,
     val expiresAt: String? = null,
 ) {
-    /** A zone routes only inside its signed validity window. */
-    fun isActiveAt(nowMillis: Long): Boolean {
-        if (notBefore != null && notBefore.toEpochMillis() > nowMillis) return false
-        return expiresAt == null || expiresAt.toEpochMillis() > nowMillis
-    }
+    fun isInEffectAt(nowMillis: Long): Boolean = isInEffect(notBefore, expiresAt, nowMillis)
 }
+
+/** The validity window of a bundle and of a zone: from notBefore, inclusive, until expiresAt, exclusive; a missing bound is open. */
+private fun isInEffect(notBefore: String?, expiresAt: String?, nowMillis: Long): Boolean =
+    (notBefore == null || notBefore.toEpochMillis() <= nowMillis) && (expiresAt == null || nowMillis < expiresAt.toEpochMillis())
 
 @Serializable
 internal data class RoutingPolicyRule(
@@ -121,9 +123,10 @@ internal object CanonicalRoutingPolicy {
         return out.toString().toByteArray(Charsets.UTF_8)
     }
 
-    /** Priority, then id with nulls last: the one rule order the authority and the delegates share. */
-    fun sortedRules(rules: List<RoutingPolicyRule>?): List<RoutingPolicyRule> =
-        rules.orEmpty().sortedWith(compareBy<RoutingPolicyRule> { it.priority }.thenBy(nullsLast<String>()) { it.id })
+    /** Priority, then id with nulls last: the one rule order the authority, the delegates and placement share. */
+    val ruleOrder: Comparator<RoutingPolicyRule> = compareBy<RoutingPolicyRule> { it.priority }.thenBy(nullsLast<String>()) { it.id }
+
+    fun sortedRules(rules: List<RoutingPolicyRule>?): List<RoutingPolicyRule> = rules.orEmpty().sortedWith(ruleOrder)
 
     private fun zoneLine(zone: DelegationZone): String = listOf(
         "zone",
@@ -167,6 +170,13 @@ internal class RoutingPolicyVerifier(
     fun check(bundle: RoutingPolicyBundle, canonical: ByteArray = CanonicalRoutingPolicy.bytes(bundle)): ThresholdCheck {
         val signatures = bundle.signatures.orEmpty().map { KeyedSignature(it.authorityKeyId, it.signatureB64) }
         return ThresholdCheck.count(policyKeys, threshold, canonical, signatures)
+    }
+
+    /** The signature step of the policy check, with the roster's reasons for a shortfall. */
+    fun verify(bundle: RoutingPolicyBundle, canonical: ByteArray = CanonicalRoutingPolicy.bytes(bundle)): PolicyOutcome {
+        if (policyKeys.isEmpty()) return PolicyOutcome.Unverifiable(VerificationReason.NO_POLICY_KEYS)
+        val check = check(bundle, canonical)
+        return if (check.met) PolicyOutcome.Valid else PolicyOutcome.Invalid(check.failureReason)
     }
 
     /** The zone ids whose rules carry a valid delegate signature; a rule applies only inside one of them. */

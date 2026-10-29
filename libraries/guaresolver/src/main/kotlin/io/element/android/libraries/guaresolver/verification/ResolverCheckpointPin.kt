@@ -14,7 +14,10 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.first
 
-/** The last transparency-log checkpoint this install accepted, per resolver base URL. Not a secret. */
+/**
+ * The last transparency-log checkpoint this install accepted, per resolver base URL. Not a secret. Both
+ * calls throw an IOException when the store cannot be read or written.
+ */
 internal class ResolverCheckpointPin(
     private val dataStore: DataStore<Preferences>,
 ) {
@@ -25,10 +28,14 @@ internal class ResolverCheckpointPin(
         return LogCheckpoint(merkleRoot = merkleRoot, size = size)
     }
 
-    suspend fun write(resolverBaseUrl: String, checkpoint: LogCheckpoint) {
+    /** Pins [checkpoint] unless a checkpoint at least as large is already pinned: the pin only moves forward. */
+    suspend fun advance(resolverBaseUrl: String, checkpoint: LogCheckpoint) {
         dataStore.edit { preferences ->
-            preferences[rootKey(resolverBaseUrl)] = checkpoint.merkleRoot
-            preferences[sizeKey(resolverBaseUrl)] = checkpoint.size
+            val pinnedSize = preferences[sizeKey(resolverBaseUrl)]
+            if (pinnedSize == null || pinnedSize < checkpoint.size) {
+                preferences[rootKey(resolverBaseUrl)] = checkpoint.merkleRoot
+                preferences[sizeKey(resolverBaseUrl)] = checkpoint.size
+            }
         }
     }
 
