@@ -22,7 +22,6 @@ import io.element.android.features.login.impl.screens.onboarding.OnBoardingPrese
 import io.element.android.features.login.impl.web.WebClientUrlForAuthenticationRetriever
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.runCatchingUpdatingState
-import io.element.android.libraries.core.data.tryOrNull
 import io.element.android.libraries.di.annotations.AppCoroutineScope
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
@@ -41,6 +40,8 @@ import io.element.android.libraries.oauth.api.OAuthActionFlow
 import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import timber.log.Timber
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * This class is responsible for managing the login flow, including handling OIDC actions and
@@ -133,7 +134,7 @@ class LoginHelper(
     suspend fun submitPhone(e164Phone: String) {
         suspend {
             val resolution = resolverClient.resolve(e164Phone).getOrThrow()
-            appCoroutineScope.launch { tryOrNull { verifyResolution(e164Phone, resolution) } }
+            appCoroutineScope.launch { verifyResolution(e164Phone, resolution) }
             val homeserverUrl = resolution.homeserver.baseUrl
             val isAccountCreation = !resolution.exists
             // GUA FORK: ADM-008 Phase 3. A brand-new account registers its on-device genesis BEFORE the
@@ -187,11 +188,18 @@ class LoginHelper(
 
     /**
      * GUA FORK: report-only verification of the resolver's answer. It runs detached, after the resolution
-     * is already in use, so it never delays or fails the sign-in; the flag is the kill switch.
+     * is already in use, so it never delays the sign-in; the flag is the kill switch.
      */
     private suspend fun verifyResolution(e164Phone: String, resolution: HomeserverResolution) {
-        if (featureFlagService.isFeatureEnabled(FeatureFlags.ResolverVerification)) {
-            resolverVerifier.verify(e164Phone, resolution)
+        try {
+            if (featureFlagService.isFeatureEnabled(FeatureFlags.ResolverVerification)) {
+                resolverVerifier.verify(e164Phone, resolution)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            // Errors too: this job has no handler, so anything that escapes here ends the app. The message stays fixed.
+            Timber.w("Resolver verification did not complete")
         }
     }
 

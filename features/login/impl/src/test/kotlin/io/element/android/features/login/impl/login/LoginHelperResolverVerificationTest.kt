@@ -90,6 +90,17 @@ class LoginHelperResolverVerificationTest {
         assertThat(verifier.verifyCalls).isEmpty()
     }
 
+    @Test
+    fun `an Error thrown by the verifier does not stop the sign-in`() = runTest {
+        val verifier = FakeResolverVerifier(verifyResult = { _, _ -> throw NoSuchFieldError("TWO") })
+        val presenter = createPhoneEntryPresenter(verifier = verifier)
+
+        val state = submitNumber(presenter)
+
+        assertThat(state.loginMode).isInstanceOf(AsyncData.Success::class.java)
+        assertThat(verifier.verifyCalls).hasSize(1)
+    }
+
     /** Types a valid number and taps continue, draining to the terminal login mode. */
     private suspend fun submitNumber(presenter: PhoneEntryPresenter): PhoneEntryState {
         var terminal: PhoneEntryState? = null
