@@ -119,6 +119,8 @@ class FakeMatrixClient(
     private val getJoinedRoomIdsResult: () -> Result<Set<RoomId>> = { Result.success(emptySet()) },
     private val getRecentEmojisLambda: () -> Result<List<String>> = { Result.success(emptyList()) },
     private val addRecentEmojiLambda: (String) -> Result<Unit> = { Result.success(Unit) },
+    private val getAccountDataLambda: (String) -> Result<String?> = { Result.success(null) },
+    private val setAccountDataLambda: (String, String) -> Result<Unit> = { _, _ -> Result.success(Unit) },
     private val markRoomAsFullyReadResult: (RoomId, EventId) -> Result<Unit> = { _, _ -> lambdaError() },
     private val performDatabaseVacuumLambda: () -> Result<Unit> = { lambdaError() },
     private val getMapStyleUrlResult: () -> Result<String?> = { lambdaError() },
@@ -370,6 +372,14 @@ class FakeMatrixClient(
 
     override suspend fun getRecentEmojis(): Result<List<String>> {
         return getRecentEmojisLambda()
+    }
+
+    override suspend fun getAccountData(eventType: String): Result<String?> {
+        return getAccountDataLambda(eventType)
+    }
+
+    override suspend fun setAccountData(eventType: String, content: String): Result<Unit> = simulateLongTask {
+        setAccountDataLambda(eventType, content)
     }
 
     override suspend fun markRoomAsFullyRead(roomId: RoomId, eventId: EventId): Result<Unit> {

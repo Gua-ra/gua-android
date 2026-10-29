@@ -19,6 +19,7 @@ import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.notificationsettings.NotificationSettingsService
+import io.element.android.libraries.matrix.api.room.CurrentUserMembership
 import io.element.android.libraries.matrix.api.roomlist.LatestEventValue
 import io.element.android.libraries.matrix.api.roomlist.RoomList
 import io.element.android.libraries.matrix.api.roomlist.RoomListFilter
@@ -211,16 +212,16 @@ class RoomListDataSource(
     }
 
     private fun buildAndCacheItem(roomSummaries: List<RoomSummary>, index: Int): RoomListRoomSummary? {
-        // GUA FORK: Gua has no Spaces concept (like iOS, where the room list never surfaces spaces), so
-        // hide m.space container rooms — otherwise they leak into the chat list looking like empty rooms.
-        // Also hide stray empty "orphan" rooms so a half-created or never-joined chat (e.g. a failed
-        // start-chat) doesn't clutter the list. Mirrors iOS RoomSummary.isEmptyOrphanRoom.
+        // GUA FORK: space invites stay in Chats, the only place to accept them while Spaces is off.
         val roomListSummary = roomSummaries.getOrNull(index)
-            ?.takeUnless { it.info.isSpace || it.isEmptyOrphanRoom() }
+            ?.takeUnless { it.isJoinedSpace() || it.isEmptyOrphanRoom() }
             ?.let { roomListRoomSummaryFactory.create(it) }
         diffCache[index] = roomListSummary
         return roomListSummary
     }
+
+    private fun RoomSummary.isJoinedSpace(): Boolean =
+        info.isSpace && info.currentUserMembership != CurrentUserMembership.INVITED
 
     // GUA FORK: a stray empty room (a half-created/never-used chat, or a no-content room the user was
     // joined to) — no visible joined members (heroes), at most the local user + one peer, and no real

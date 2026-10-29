@@ -13,6 +13,8 @@ import io.element.android.libraries.matrix.api.roomlist.DynamicRoomList
 import io.element.android.libraries.matrix.api.roomlist.RoomList
 import io.element.android.libraries.matrix.api.roomlist.RoomListService
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -24,6 +26,7 @@ class FakeRoomListService(
 ) : RoomListService {
     private val roomListStateFlow = MutableStateFlow<RoomListService.State>(RoomListService.State.Idle)
     private val syncIndicatorStateFlow = MutableStateFlow<RoomListService.SyncIndicator>(RoomListService.SyncIndicator.Hide)
+    private val syncUpdatesFlow = MutableSharedFlow<Unit>()
 
     override val isInitialSyncDone: Boolean
         get() = isInitialSyncLambda()
@@ -34,6 +37,10 @@ class FakeRoomListService(
 
     suspend fun postSyncIndicator(value: RoomListService.SyncIndicator) {
         syncIndicatorStateFlow.emit(value)
+    }
+
+    suspend fun emitSyncUpdate() {
+        syncUpdatesFlow.emit(Unit)
     }
 
     override fun createRoomList(
@@ -49,4 +56,6 @@ class FakeRoomListService(
     override val state: StateFlow<RoomListService.State> = roomListStateFlow
 
     override val syncIndicator: StateFlow<RoomListService.SyncIndicator> = syncIndicatorStateFlow
+
+    override val syncUpdates: Flow<Unit> = syncUpdatesFlow
 }

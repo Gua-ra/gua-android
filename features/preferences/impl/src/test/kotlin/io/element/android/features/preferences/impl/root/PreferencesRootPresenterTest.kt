@@ -20,6 +20,7 @@ import io.element.android.features.preferences.impl.fixtures.FakeIdentityService
 import io.element.android.features.preferences.impl.fixtures.aFactorStatus
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
+import io.element.android.features.space.test.FakeSpacesSwitch
 import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
@@ -46,6 +47,7 @@ import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
 import io.element.android.services.analytics.test.FakeAnalyticsService
 import io.element.android.tests.testutils.WarmUpRule
+import io.element.android.tests.testutils.awaitLastSequentialItem
 import io.element.android.tests.testutils.lambda.lambdaRecorder
 import io.element.android.tests.testutils.lambda.value
 import io.element.android.tests.testutils.test
@@ -140,6 +142,47 @@ class PreferencesRootPresenterTest {
             val initialState = awaitItem()
             assertThat(initialState.canReportBug).isFalse()
             skipItems(1)
+        }
+    }
+
+    @Test
+    fun `present - the Spaces row turns the Spaces switch on`() = runTest {
+        val spacesSwitch = FakeSpacesSwitch(initialValue = false)
+        val matrixClient = FakeMatrixClient(
+            canDeactivateAccountResult = { true },
+            accountManagementUrlResult = { Result.success("") },
+        )
+        createPresenter(
+            matrixClient = matrixClient,
+            sessionEnterpriseService = FakeSessionEnterpriseService(
+                tweakMasUrlResult = { it },
+            ),
+            spacesSwitch = spacesSwitch,
+        ).test {
+            val initialState = awaitLastSequentialItem()
+            assertThat(initialState.isSpacesEnabled).isFalse()
+            initialState.eventSink(PreferencesRootEvent.SetSpacesEnabled(true))
+            assertThat(awaitLastSequentialItem().isSpacesEnabled).isTrue()
+            assertThat(spacesSwitch.isEnabled.value).isTrue()
+        }
+    }
+
+    @Test
+    fun `present - opening Settings refreshes the Spaces switch once`() = runTest {
+        val spacesSwitch = FakeSpacesSwitch()
+        val matrixClient = FakeMatrixClient(
+            canDeactivateAccountResult = { true },
+            accountManagementUrlResult = { Result.success("") },
+        )
+        createPresenter(
+            matrixClient = matrixClient,
+            sessionEnterpriseService = FakeSessionEnterpriseService(
+                tweakMasUrlResult = { it },
+            ),
+            spacesSwitch = spacesSwitch,
+        ).test {
+            awaitLastSequentialItem()
+            assertThat(spacesSwitch.refreshCount).isEqualTo(1)
         }
     }
 
@@ -451,6 +494,7 @@ class PreferencesRootPresenterTest {
             factorStatusResult = { Result.success(aFactorStatus(hasPin = false)) },
         ),
         buildMeta: BuildMeta = aBuildMeta(),
+        spacesSwitch: FakeSpacesSwitch = FakeSpacesSwitch(),
     ) = PreferencesRootPresenter(
         matrixClient = matrixClient,
         analyticsService = FakeAnalyticsService(),
@@ -466,5 +510,6 @@ class PreferencesRootPresenterTest {
         lockScreenService = lockScreenService,
         identityServiceClient = identityServiceClient,
         buildMeta = buildMeta,
+        spacesSwitch = spacesSwitch,
     )
 }

@@ -197,6 +197,11 @@ interface MatrixClient {
      */
     suspend fun addRecentEmoji(emoji: String): Result<Unit>
 
+    /** GUA FORK: reads the local store, so another device's change appears only after a sync. */
+    suspend fun getAccountData(eventType: String): Result<String?>
+
+    suspend fun setAccountData(eventType: String, content: String): Result<Unit>
+
     /**
      * Marks the room with the provided [roomId] as read, sending a fully read receipt for [eventId].
      *

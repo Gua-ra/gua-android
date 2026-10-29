@@ -45,6 +45,7 @@ import io.element.android.features.leaveroom.api.LeaveRoomEvent
 import io.element.android.features.leaveroom.api.LeaveRoomState
 import io.element.android.features.securebackup.api.IdentityResetPendingStore
 import io.element.android.features.securebackup.api.KeyStorageProvisioner
+import io.element.android.features.space.api.SpacesSwitch
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
@@ -106,6 +107,7 @@ class RoomListPresenter(
     private val keyStorageProvisioner: KeyStorageProvisioner,
     private val identityResetPendingStore: IdentityResetPendingStore,
     private val accountRecoveryBannerPresenter: Presenter<AccountRecoveryBannerState>,
+    private val spacesSwitch: SpacesSwitch,
 ) : Presenter<RoomListState> {
     private val encryptionService = client.encryptionService
 
@@ -139,6 +141,7 @@ class RoomListPresenter(
 
         // Avatar indicator
         val hideInvitesAvatar by client.rememberHideInvitesAvatar()
+        val isSpacesEnabled by spacesSwitch.isEnabled.collectAsState()
 
         val contextMenu = remember { mutableStateOf<RoomListState.ContextMenu>(RoomListState.ContextMenu.Hidden) }
         val declineInviteMenu = remember { mutableStateOf<RoomListState.DeclineInviteMenu>(RoomListState.DeclineInviteMenu.Hidden) }
@@ -225,9 +228,12 @@ class RoomListPresenter(
                 is RoomListEvent.MarkAsRead -> coroutineScope.markAsRead(event.roomId)
                 is RoomListEvent.MarkAsUnread -> coroutineScope.markAsUnread(event.roomId)
                 is RoomListEvent.AcceptInvite -> {
-                    acceptDeclineInviteState.eventSink(
-                        AcceptInvite(event.roomSummary.toInviteData())
-                    )
+                    // GUA FORK: while Spaces is off, HomeView opens the space's join screen instead.
+                    if (!event.roomSummary.isSpace || isSpacesEnabled) {
+                        acceptDeclineInviteState.eventSink(
+                            AcceptInvite(event.roomSummary.toInviteData())
+                        )
+                    }
                 }
                 is RoomListEvent.DeclineInvite -> {
                     acceptDeclineInviteState.eventSink(
@@ -272,6 +278,7 @@ class RoomListPresenter(
             hideInvitesAvatars = hideInvitesAvatar,
             canReportRoom = canReportRoom,
             accountRecoveryBannerState = accountRecoveryBannerState,
+            isSpacesEnabled = isSpacesEnabled,
             eventSink = ::handleEvent,
         )
     }

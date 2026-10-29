@@ -63,6 +63,7 @@ dependencies {
     implementation(libs.haze.materials)
     implementation(projects.features.reportroom.api)
     implementation(projects.features.rolesandpermissions.api)
+    implementation(projects.features.space.api)
     implementation(projects.libraries.previewutils)
     api(projects.features.home.api)
 
@@ -72,6 +73,7 @@ dependencies {
     testImplementation(projects.features.logout.test)
     testImplementation(projects.features.networkmonitor.test)
     testImplementation(projects.libraries.matrix.test)
+    testImplementation(projects.features.space.test)
     testImplementation(projects.libraries.featureflag.test)
     testImplementation(projects.libraries.dateformatter.test)
     testImplementation(projects.libraries.eventformatter.test)

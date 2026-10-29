@@ -28,6 +28,7 @@ import io.element.android.features.home.impl.accountrecovery.anAccountRecoveryBa
 import io.element.android.features.home.impl.components.RoomListMenuAction
 import io.element.android.features.home.impl.model.RoomListRoomSummary
 import io.element.android.features.home.impl.model.RoomSummaryDisplayType
+import io.element.android.features.home.impl.model.aRoomListRoomSummary
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.ui.strings.CommonStrings
@@ -39,6 +40,7 @@ import io.element.android.tests.testutils.ensureCalledOnce
 import io.element.android.tests.testutils.ensureCalledOnceWithParam
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import io.element.android.tests.testutils.setSafeContent
+import kotlinx.collections.immutable.persistentListOf
 import org.junit.Test
 import org.robolectric.annotation.Config
 
@@ -349,6 +351,34 @@ class RoomListViewTest : RobolectricTest() {
                 RoomListEvent.ShowDeclineInviteMenu(invitedRoom),
             )
         )
+    }
+
+    @Test
+    fun `with Spaces off, accepting a space invite opens its join screen`() = runAndroidComposeUiTest {
+        val eventsRecorder = EventsRecorder<RoomListEvent>()
+        val spaceInvite = aRoomListRoomSummary(
+            id = "!space:domain",
+            displayType = RoomSummaryDisplayType.INVITE,
+            isSpace = true,
+        )
+        val state = aRoomListState(
+            contentState = aRoomsContentState(summaries = persistentListOf(spaceInvite)),
+            isSpacesEnabled = false,
+            eventSink = eventsRecorder,
+        )
+        ensureCalledOnceWithParam(spaceInvite.roomId) { callback ->
+            setRoomListView(
+                state = state,
+                onRoomClick = callback,
+            )
+
+            // Remove automatic initial events
+            eventsRecorder.clear()
+
+            clickOn(CommonStrings.action_accept)
+        }
+
+        eventsRecorder.assertEmpty()
     }
 }
 

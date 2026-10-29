@@ -34,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -115,12 +116,14 @@ fun JoinRoomView(
                     contentState = state.contentState,
                     knockMessage = state.knockMessage,
                     hideAvatarsImages = state.hideAvatarsImages,
+                    joiningTurnsOnSpaces = state.joiningTurnsOnSpaces,
                     onKnockMessageUpdate = { state.eventSink(JoinRoomEvents.UpdateKnockMessage(it)) },
                 )
             },
             footer = {
                 JoinRoomFooter(
                     joinAuthorisationStatus = state.joinAuthorisationStatus,
+                    joiningTurnsOnSpaces = state.joiningTurnsOnSpaces,
                     onAcceptInvite = { inviteData ->
                         state.eventSink(JoinRoomEvents.AcceptInvite(inviteData))
                     },
@@ -205,6 +208,7 @@ fun JoinRoomView(
 @Composable
 private fun JoinRoomFooter(
     joinAuthorisationStatus: JoinAuthorisationStatus,
+    joiningTurnsOnSpaces: Boolean,
     onAcceptInvite: (InviteData) -> Unit,
     onDeclineInvite: (InviteData, Boolean) -> Unit,
     onJoinRoom: () -> Unit,
@@ -222,21 +226,40 @@ private fun JoinRoomFooter(
         when (joinAuthorisationStatus) {
             is JoinAuthorisationStatus.IsInvited -> {
                 Column {
-                    ButtonRowMolecule(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    if (joiningTurnsOnSpaces) {
+                        SuperButton(
+                            onClick = { onAcceptInvite(joinAuthorisationStatus.inviteData) },
+                            modifier = Modifier.fillMaxWidth(),
+                            buttonSize = ButtonSize.Large,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.gua_join_space_action),
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
                         OutlinedButton(
                             text = stringResource(CommonStrings.action_decline),
                             onClick = { onDeclineInvite(joinAuthorisationStatus.inviteData, false) },
-                            modifier = Modifier.weight(1f),
-                            size = ButtonSize.LargeLowPadding,
-                            leadingIcon = IconSource.Vector(CompoundIcons.Close())
+                            modifier = Modifier.fillMaxWidth(),
+                            size = ButtonSize.Large,
                         )
-                        Button(
-                            text = stringResource(CommonStrings.action_accept),
-                            onClick = { onAcceptInvite(joinAuthorisationStatus.inviteData) },
-                            modifier = Modifier.weight(1f),
-                            size = ButtonSize.LargeLowPadding,
-                            leadingIcon = IconSource.Vector(CompoundIcons.Check())
-                        )
+                    } else {
+                        ButtonRowMolecule(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            OutlinedButton(
+                                text = stringResource(CommonStrings.action_decline),
+                                onClick = { onDeclineInvite(joinAuthorisationStatus.inviteData, false) },
+                                modifier = Modifier.weight(1f),
+                                size = ButtonSize.LargeLowPadding,
+                                leadingIcon = IconSource.Vector(CompoundIcons.Close())
+                            )
+                            Button(
+                                text = stringResource(CommonStrings.action_accept),
+                                onClick = { onAcceptInvite(joinAuthorisationStatus.inviteData) },
+                                modifier = Modifier.weight(1f),
+                                size = ButtonSize.LargeLowPadding,
+                                leadingIcon = IconSource.Vector(CompoundIcons.Check())
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(24.dp))
                     TextButton(
@@ -254,7 +277,7 @@ private fun JoinRoomFooter(
                     buttonSize = ButtonSize.Large,
                 ) {
                     Text(
-                        text = stringResource(R.string.screen_join_room_join_action),
+                        text = stringResource(if (joiningTurnsOnSpaces) R.string.gua_join_space_action else R.string.screen_join_room_join_action),
                     )
                 }
             }
@@ -285,8 +308,8 @@ private fun JoinRoomFooter(
                 )
             }
             is JoinAuthorisationStatus.IsBanned -> JoinBannedFooter(joinAuthorisationStatus, onForgetRoom)
-            JoinAuthorisationStatus.Unknown -> JoinRestrictedFooter(onJoinRoom)
-            JoinAuthorisationStatus.Restricted -> JoinRestrictedFooter(onJoinRoom)
+            JoinAuthorisationStatus.Unknown -> JoinRestrictedFooter(onJoinRoom, joiningTurnsOnSpaces)
+            JoinAuthorisationStatus.Restricted -> JoinRestrictedFooter(onJoinRoom, joiningTurnsOnSpaces)
             JoinAuthorisationStatus.Unauthorized -> JoinUnauthorizedFooter(onGoBack)
             JoinAuthorisationStatus.None -> Unit
         }
@@ -346,6 +369,7 @@ private fun JoinBannedFooter(
 @Composable
 private fun JoinRestrictedFooter(
     onJoinRoom: () -> Unit,
+    joiningTurnsOnSpaces: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -361,7 +385,7 @@ private fun JoinRestrictedFooter(
             buttonSize = ButtonSize.Large,
         ) {
             Text(
-                text = stringResource(R.string.screen_join_room_join_action),
+                text = stringResource(if (joiningTurnsOnSpaces) R.string.gua_join_space_action else R.string.screen_join_room_join_action),
             )
         }
     }
@@ -373,6 +397,7 @@ private fun JoinRoomContent(
     contentState: ContentState,
     knockMessage: String,
     hideAvatarsImages: Boolean,
+    joiningTurnsOnSpaces: Boolean,
     onKnockMessageUpdate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -392,6 +417,15 @@ private fun JoinRoomContent(
                                 contentState = contentState,
                                 hideAvatarImage = hideAvatarsImages,
                             )
+                            if (joiningTurnsOnSpaces) {
+                                Spacer(Modifier.height(16.dp))
+                                Text(
+                                    text = stringResource(R.string.gua_join_space_turns_on_spaces),
+                                    style = ElementTheme.typography.fontBodyMdRegular,
+                                    color = ElementTheme.colors.textSecondary,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
                             when (contentState.joinAuthorisationStatus) {
                                 is JoinAuthorisationStatus.IsInvited -> {
                                     val inviteSender = contentState.joinAuthorisationStatus.inviteSender

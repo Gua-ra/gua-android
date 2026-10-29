@@ -35,6 +35,7 @@ data class RoomListState(
     val canReportRoom: Boolean,
     /** GUA FORK: the delayed account recovery warning. Separate from the encryption banner. */
     val accountRecoveryBannerState: AccountRecoveryBannerState,
+    val isSpacesEnabled: Boolean,
     val eventSink: (RoomListEvent) -> Unit,
 ) {
     val displayFilters = contentState is RoomListContentState.Rooms

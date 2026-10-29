@@ -24,6 +24,7 @@ import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import im.vector.app.features.analytics.plan.CreatedRoom
+import io.element.android.features.space.api.SpacesSwitch
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.architecture.runCatchingUpdatingState
@@ -73,6 +74,7 @@ class ConfigureRoomPresenter(
     private val featureFlagService: FeatureFlagService,
     private val roomAliasHelper: RoomAliasHelper,
     private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
+    private val spacesSwitch: SpacesSwitch,
 ) : Presenter<ConfigureRoomState> {
     @AssistedFactory
     interface Factory {
@@ -112,6 +114,7 @@ class ConfigureRoomPresenter(
         }
 
         var spaces by remember { mutableStateOf<ImmutableList<SpaceRoom>>(persistentListOf()) }
+        val isSpacesEnabled by spacesSwitch.isEnabled.collectAsState()
         LaunchedEffect(Unit) {
             spaces = matrixClient.spaceService.editableSpaces().getOrElse { emptyList() }.toImmutableList()
             val parentSpace = spaces.find { it.roomId == initialParentSpaceId }
@@ -144,11 +147,16 @@ class ConfigureRoomPresenter(
         // 2. If it has a parent space.
         // 3. If knocking is enabled.
         val parentSpace = createRoomConfig.parentSpace
+        LaunchedEffect(isSpacesEnabled, parentSpace) {
+            if (!isSpacesEnabled && initialParentSpaceId == null && parentSpace != null) {
+                dataStore.setParentSpace(parentSpace = null, updateVisibility = false)
+            }
+        }
         val availableJoinRules = remember(parentSpace, isSpace, isKnockFeatureEnabled) {
             when {
                 isSpace && parentSpace != null -> TODO("Adding a space to a parent space is not supported yet! How did you get here?")
                 parentSpace == null || parentSpace.joinRule == JoinRule.Public -> listOfNotNull(
-                    JoinRuleItem.PublicVisibility.Public,
+                    JoinRuleItem.PublicVisibility.Public.takeIf { !isSpace },
                     JoinRuleItem.PublicVisibility.AskToJoin.takeIf { !isSpace && isKnockFeatureEnabled },
                     JoinRuleItem.PrivateVisibility.Private,
                 ).toImmutableList()
@@ -222,7 +230,7 @@ class ConfigureRoomPresenter(
             homeserverName = homeserverName,
             roomAddressValidity = roomAddressValidity.value,
             availableJoinRules = availableJoinRules,
-            spaces = spaces,
+            spaces = if (isSpacesEnabled || initialParentSpaceId != null) spaces else persistentListOf(),
             isSpace = isSpace,
             eventSink = ::handleEvent,
         )

@@ -21,6 +21,7 @@ import io.element.android.features.joinroom.impl.di.CancelKnockRoom
 import io.element.android.features.joinroom.impl.di.ForgetRoom
 import io.element.android.features.joinroom.impl.di.KnockRoom
 import io.element.android.features.roomdirectory.api.RoomDescription
+import io.element.android.features.space.test.FakeSpacesSwitch
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
@@ -34,6 +35,7 @@ import io.element.android.libraries.matrix.api.core.toRoomIdOrAlias
 import io.element.android.libraries.matrix.api.exception.ClientException
 import io.element.android.libraries.matrix.api.exception.ErrorKind
 import io.element.android.libraries.matrix.api.room.CurrentUserMembership
+import io.element.android.libraries.matrix.api.room.RoomInfo
 import io.element.android.libraries.matrix.api.room.RoomMembershipDetails
 import io.element.android.libraries.matrix.api.room.join.JoinRoom
 import io.element.android.libraries.matrix.api.room.join.JoinRule
@@ -57,6 +59,7 @@ import io.element.android.libraries.matrix.ui.model.InviteSender
 import io.element.android.libraries.matrix.ui.model.toInviteSender
 import io.element.android.libraries.previewutils.room.aSpaceRoom
 import io.element.android.tests.testutils.WarmUpRule
+import io.element.android.tests.testutils.consumeItemsUntilPredicate
 import io.element.android.tests.testutils.lambda.any
 import io.element.android.tests.testutils.lambda.assert
 import io.element.android.tests.testutils.lambda.lambdaRecorder
@@ -289,6 +292,141 @@ class JoinRoomPresenterTest {
                     )
                 )
             }
+        }
+    }
+
+    @Test
+    fun `present - joining a space with the Spaces switch off asks to turn it on at tap time`() = runTest {
+        val spacesSwitch = FakeSpacesSwitch(initialValue = false)
+        val presenter = createJoinRoomPresenter(
+            matrixClient = aMatrixClientWithRoomInfo(aRoomInfo(isSpace = true)),
+            spacesSwitch = spacesSwitch,
+        )
+        presenter.test {
+            val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
+            assertThat(state.joinAuthorisationStatus).isEqualTo(JoinAuthorisationStatus.CanJoin)
+            assertThat(state.joiningTurnsOnSpaces).isTrue()
+            state.eventSink(JoinRoomEvents.JoinRoom)
+            assertThat(spacesSwitch.enableWhenJoinedCalls).containsExactly(A_ROOM_ID)
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertThat(spacesSwitch.enableWhenJoinedCalls).containsExactly(A_ROOM_ID)
+    }
+
+    @Test
+    fun `present - joining a space with an unknown join rule while Spaces is off asks to turn it on`() = runTest {
+        val spacesSwitch = FakeSpacesSwitch(initialValue = false)
+        val presenter = createJoinRoomPresenter(
+            matrixClient = aMatrixClientWithRoomInfo(aRoomInfo(isSpace = true, joinRule = null)),
+            spacesSwitch = spacesSwitch,
+        )
+        presenter.test {
+            val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
+            assertThat(state.joinAuthorisationStatus).isEqualTo(JoinAuthorisationStatus.Unknown)
+            assertThat(state.joiningTurnsOnSpaces).isTrue()
+            state.eventSink(JoinRoomEvents.JoinRoom)
+            assertThat(spacesSwitch.enableWhenJoinedCalls).containsExactly(A_ROOM_ID)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - joining a space with the Spaces switch on does not ask to turn it on`() = runTest {
+        val spacesSwitch = FakeSpacesSwitch(initialValue = true)
+        val presenter = createJoinRoomPresenter(
+            matrixClient = aMatrixClientWithRoomInfo(aRoomInfo(isSpace = true)),
+            spacesSwitch = spacesSwitch,
+        )
+        presenter.test {
+            val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
+            assertThat(state.joiningTurnsOnSpaces).isFalse()
+            state.eventSink(JoinRoomEvents.JoinRoom)
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertThat(spacesSwitch.enableWhenJoinedCalls).isEmpty()
+    }
+
+    @Test
+    fun `present - joining a room that is not a space never asks to turn Spaces on`() = runTest {
+        val spacesSwitch = FakeSpacesSwitch(initialValue = false)
+        val presenter = createJoinRoomPresenter(
+            matrixClient = aMatrixClientWithRoomInfo(aRoomInfo(isSpace = false)),
+            spacesSwitch = spacesSwitch,
+        )
+        presenter.test {
+            val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
+            assertThat(state.joiningTurnsOnSpaces).isFalse()
+            state.eventSink(JoinRoomEvents.JoinRoom)
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertThat(spacesSwitch.enableWhenJoinedCalls).isEmpty()
+    }
+
+    @Test
+    fun `present - a space that only accepts knocks does not offer to turn Spaces on`() = runTest {
+        val presenter = createJoinRoomPresenter(
+            matrixClient = aMatrixClientWithRoomInfo(aRoomInfo(isSpace = true, joinRule = JoinRule.Knock)),
+            spacesSwitch = FakeSpacesSwitch(initialValue = false),
+        )
+        presenter.test {
+            val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
+            assertThat(state.joinAuthorisationStatus).isEqualTo(JoinAuthorisationStatus.CanKnock)
+            assertThat(state.joiningTurnsOnSpaces).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - accepting a space invite with the Spaces switch off asks to turn it on at tap time`() = runTest {
+        val spacesSwitch = FakeSpacesSwitch(initialValue = false)
+        val acceptInviteRecorder = lambdaRecorder { _: AcceptDeclineInviteEvents -> }
+        val roomInfo = aRoomInfo(isSpace = true, currentUserMembership = CurrentUserMembership.INVITED)
+        val presenter = createJoinRoomPresenter(
+            matrixClient = aMatrixClientWithRoomInfo(roomInfo),
+            acceptDeclineInvitePresenter = Presenter { anAcceptDeclineInviteState(eventSink = acceptInviteRecorder) },
+            spacesSwitch = spacesSwitch,
+        )
+        presenter.test {
+            val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
+            assertThat(state.joinAuthorisationStatus).isInstanceOf(JoinAuthorisationStatus.IsInvited::class.java)
+            assertThat(state.joiningTurnsOnSpaces).isTrue()
+            state.eventSink(JoinRoomEvents.AcceptInvite(roomInfo.toInviteData()))
+            assertThat(spacesSwitch.enableWhenJoinedCalls).containsExactly(A_ROOM_ID)
+            assert(acceptInviteRecorder).isCalledOnce()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - accepting an invite with the Spaces switch on or to a room does not ask to turn Spaces on`() = runTest {
+        listOf(
+            aRoomInfo(isSpace = true, currentUserMembership = CurrentUserMembership.INVITED) to true,
+            aRoomInfo(isSpace = false, currentUserMembership = CurrentUserMembership.INVITED) to false,
+        ).forEach { (roomInfo, isSpacesEnabled) ->
+            val spacesSwitch = FakeSpacesSwitch(initialValue = isSpacesEnabled)
+            val presenter = createJoinRoomPresenter(
+                matrixClient = aMatrixClientWithRoomInfo(roomInfo),
+                acceptDeclineInvitePresenter = Presenter { anAcceptDeclineInviteState() },
+                spacesSwitch = spacesSwitch,
+            )
+            presenter.test {
+                val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
+                assertThat(state.joiningTurnsOnSpaces).isFalse()
+                state.eventSink(JoinRoomEvents.AcceptInvite(roomInfo.toInviteData()))
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertThat(spacesSwitch.enableWhenJoinedCalls).isEmpty()
+        }
+    }
+
+    private fun aMatrixClientWithRoomInfo(roomInfo: RoomInfo) = FakeMatrixClient(
+        getNotJoinedRoomResult = { _, _ -> Result.failure(AN_EXCEPTION) },
+        spaceService = FakeSpaceService(
+            spaceRoomListResult = { FakeSpaceRoomList() },
+        ),
+    ).apply {
+        getRoomInfoFlowLambda = { _ ->
+            flowOf(Optional.of(roomInfo))
         }
     }
 
@@ -1233,6 +1371,7 @@ internal fun createJoinRoomPresenter(
     buildMeta: BuildMeta = aBuildMeta(applicationName = "AppName"),
     acceptDeclineInvitePresenter: Presenter<AcceptDeclineInviteState> = Presenter { anAcceptDeclineInviteState() },
     seenInvitesStore: SeenInvitesStore = InMemorySeenInvitesStore(),
+    spacesSwitch: FakeSpacesSwitch = FakeSpacesSwitch(initialValue = true),
 ): JoinRoomPresenter {
     return JoinRoomPresenter(
         roomId = roomId,
@@ -1248,6 +1387,7 @@ internal fun createJoinRoomPresenter(
         buildMeta = buildMeta,
         acceptDeclineInvitePresenter = acceptDeclineInvitePresenter,
         seenInvitesStore = seenInvitesStore,
+        spacesSwitch = spacesSwitch,
     )
 }
 

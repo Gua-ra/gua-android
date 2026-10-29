@@ -14,6 +14,8 @@ import io.element.android.features.home.impl.spaces.HomeSpacesState
 import io.element.android.features.home.impl.spaces.aHomeSpacesState
 import io.element.android.features.logout.api.direct.aDirectLogoutState
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
+import io.element.android.features.space.api.SpacesSwitch
+import io.element.android.features.space.test.FakeSpacesSwitch
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.indicator.api.IndicatorService
@@ -145,6 +147,18 @@ class HomePresenterTest {
             assertThat(finalState.currentHomeNavigationBarItem).isEqualTo(HomeNavigationBarItem.Spaces)
         }
     }
+
+    @Test
+    fun `present - with the Spaces switch off, home stays on Chats`() = runTest {
+        val presenter = createHomePresenter(spacesSwitch = FakeSpacesSwitch(initialValue = false))
+        presenter.test {
+            val initialState = awaitItem()
+            assertThat(initialState.isSpacesEnabled).isFalse()
+            initialState.eventSink(HomeEvent.SelectHomeNavigationBarItem(HomeNavigationBarItem.Spaces))
+            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 }
 
 internal fun createHomePresenter(
@@ -155,6 +169,7 @@ internal fun createHomePresenter(
     indicatorService: IndicatorService = FakeIndicatorService(),
     homeSpacesPresenter: Presenter<HomeSpacesState> = Presenter { aHomeSpacesState() },
     sessionStore: SessionStore = InMemorySessionStore(),
+    spacesSwitch: SpacesSwitch = FakeSpacesSwitch(initialValue = true),
 ) = HomePresenter(
     client = client,
     syncService = syncService,
@@ -165,4 +180,5 @@ internal fun createHomePresenter(
     logoutPresenter = { aDirectLogoutState() },
     rageshakeFeatureAvailability = rageshakeFeatureAvailability,
     sessionStore = sessionStore,
+    spacesSwitch = spacesSwitch,
 )

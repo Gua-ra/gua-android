@@ -139,6 +139,7 @@ import org.matrix.rustcomponents.sdk.CreateRoomParameters as RustCreateRoomParam
 import org.matrix.rustcomponents.sdk.RoomPreset as RustRoomPreset
 import org.matrix.rustcomponents.sdk.SyncService as ClientSyncService
 
+@Suppress("LargeClass")
 class RustMatrixClient(
     override val sessionPaths: SessionPaths,
     private val innerClient: Client,
@@ -774,6 +775,18 @@ class RustMatrixClient(
     override suspend fun getRecentEmojis(): Result<List<String>> = withContext(sessionDispatcher) {
         runCatchingExceptions {
             innerClient.getRecentEmojis().map { it.emoji }
+        }
+    }
+
+    override suspend fun getAccountData(eventType: String): Result<String?> = withContext(sessionDispatcher) {
+        runCatchingExceptions {
+            innerClient.accountData(eventType)
+        }
+    }
+
+    override suspend fun setAccountData(eventType: String, content: String): Result<Unit> = withContext(sessionDispatcher) {
+        runCatchingExceptions {
+            innerClient.setAccountData(eventType, content)
         }
     }
 

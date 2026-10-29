@@ -28,6 +28,7 @@ class FakeSpaceService(
     private val getSpaceRoomResult: (RoomId) -> SpaceRoom? = { lambdaError() },
     private val editableSpacesResult: () -> Result<List<SpaceRoom>> = { lambdaError() },
     private val addChildToSpaceResult: (RoomId, RoomId) -> Result<Unit> = { _, _ -> lambdaError() },
+    private val topLevelSpacesResult: suspend () -> Result<List<SpaceRoom>> = { Result.success(emptyList()) },
 ) : SpaceService {
     private val _topLevelSpacesFlow = MutableSharedFlow<List<SpaceRoom>>()
     override val topLevelSpacesFlow: SharedFlow<List<SpaceRoom>>
@@ -59,6 +60,10 @@ class FakeSpaceService(
 
     override suspend fun editableSpaces(): Result<List<SpaceRoom>> {
         return editableSpacesResult()
+    }
+
+    override suspend fun topLevelSpaces(): Result<List<SpaceRoom>> {
+        return topLevelSpacesResult()
     }
 
     override fun getLeaveSpaceHandle(spaceId: RoomId): LeaveSpaceHandle {

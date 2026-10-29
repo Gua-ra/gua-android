@@ -24,6 +24,7 @@ import io.element.android.features.lockscreen.api.LockScreenService
 import io.element.android.features.logout.api.direct.DirectLogoutState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
+import io.element.android.features.space.api.SpacesSwitch
 import io.element.android.libraries.androidutils.browser.withMxidLoginHint
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
@@ -42,6 +43,7 @@ import io.element.android.services.analytics.api.AnalyticsService
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -63,6 +65,7 @@ class PreferencesRootPresenter(
     private val lockScreenService: LockScreenService,
     private val identityServiceClient: IdentityServiceClient,
     private val buildMeta: BuildMeta,
+    private val spacesSwitch: SpacesSwitch,
 ) : Presenter<PreferencesRootState> {
     @Composable
     override fun present(): PreferencesRootState {
@@ -71,6 +74,9 @@ class PreferencesRootPresenter(
         LaunchedEffect(Unit) {
             // Force a refresh of the profile
             matrixClient.getUserProfile()
+        }
+        LaunchedEffect(Unit) {
+            spacesSwitch.refresh()
         }
 
         val isMultiAccountEnabled by remember {
@@ -149,6 +155,7 @@ class PreferencesRootPresenter(
         }
 
         val showDeveloperSettings by showDeveloperSettingsProvider.showDeveloperSettings.collectAsState()
+        val isSpacesEnabled by spacesSwitch.isEnabled.collectAsState()
 
         fun handleEvent(event: PreferencesRootEvent) {
             when (event) {
@@ -157,6 +164,10 @@ class PreferencesRootPresenter(
                 }
                 is PreferencesRootEvent.SwitchToSession -> coroutineScope.launch {
                     sessionStore.setLatestSession(event.sessionId.value)
+                }
+                // GUA FORK: undispatched so the write reaches the session scope before this screen can close.
+                is PreferencesRootEvent.SetSpacesEnabled -> coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                    spacesSwitch.setEnabled(event.enabled)
                 }
             }
         }
@@ -187,6 +198,7 @@ class PreferencesRootPresenter(
             showLabsItem = showLabsItem,
             isLockScreenPinSetup = isLockScreenPinSetup,
             hasAccountStrongFactor = hasAccountStrongFactor,
+            isSpacesEnabled = isSpacesEnabled,
             directLogoutState = directLogoutState,
             snackbarMessage = snackbarMessage,
             eventSink = ::handleEvent,

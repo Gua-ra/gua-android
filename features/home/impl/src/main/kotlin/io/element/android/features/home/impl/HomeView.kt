@@ -90,6 +90,13 @@ fun HomeView(
     val state: RoomListState = homeState.roomListState
     val coroutineScope = rememberCoroutineScope()
     val firstThrottler = remember { FirstThrottler(300, coroutineScope) }
+    val roomListEventSink: (RoomListEvent) -> Unit = { event ->
+        if (event is RoomListEvent.AcceptInvite && event.roomSummary.isSpace && !state.isSpacesEnabled) {
+            if (firstThrottler.canHandle()) onRoomClick(event.roomSummary.roomId)
+        } else {
+            state.eventSink(event)
+        }
+    }
     Box(modifier) {
         if (state.contextMenu is RoomListState.ContextMenu.Shown) {
             RoomListContextMenu(
@@ -113,6 +120,7 @@ fun HomeView(
 
         HomeScaffold(
             state = homeState,
+            roomListEventSink = roomListEventSink,
             onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
             onRoomClick = { if (firstThrottler.canHandle()) onRoomClick(it) },
             onOpenSettings = { if (firstThrottler.canHandle()) onSettingsClick() },
@@ -123,7 +131,7 @@ fun HomeView(
         // This overlaid view will only be visible when state.displaySearchResults is true
         RoomListSearchView(
             state = state.searchState,
-            eventSink = state.eventSink,
+            eventSink = roomListEventSink,
             hideInvitesAvatars = state.hideInvitesAvatars,
             onRoomClick = { if (firstThrottler.canHandle()) onRoomClick(it) },
             modifier = Modifier
@@ -138,6 +146,7 @@ fun HomeView(
 @Composable
 private fun HomeScaffold(
     state: HomeState,
+    roomListEventSink: (RoomListEvent) -> Unit,
     onConfirmRecoveryKeyClick: () -> Unit,
     onRoomClick: (RoomId) -> Unit,
     onOpenSettings: () -> Unit,
@@ -196,41 +205,45 @@ private fun HomeScaffold(
             )
         },
         floatingActionButton = {
-            val coroutineScope = rememberCoroutineScope()
-            HomeBottomBar(
-                currentHomeNavigationBarItem = state.currentHomeNavigationBarItem,
-                onItemClick = { item ->
-                    // scroll to top if selecting the same item
-                    if (item == state.currentHomeNavigationBarItem) {
-                        val lazyListStateTarget = when (item) {
-                            HomeNavigationBarItem.Chats -> roomsLazyListState
-                            HomeNavigationBarItem.Spaces -> spacesLazyListState
-                        }
-                        coroutineScope.launch {
-                            if (lazyListStateTarget.firstVisibleItemIndex > 10) {
-                                lazyListStateTarget.scrollToItem(10)
+            if (state.isSpacesEnabled) {
+                val coroutineScope = rememberCoroutineScope()
+                HomeBottomBar(
+                    currentHomeNavigationBarItem = state.currentHomeNavigationBarItem,
+                    onItemClick = { item ->
+                        // scroll to top if selecting the same item
+                        if (item == state.currentHomeNavigationBarItem) {
+                            val lazyListStateTarget = when (item) {
+                                HomeNavigationBarItem.Chats -> roomsLazyListState
+                                HomeNavigationBarItem.Spaces -> spacesLazyListState
                             }
-                            // Also reset the scrollBehavior height offset as it's not triggered by programmatic scrolls
-                            scrollBehavior.state.heightOffset = 0f
-                            lazyListStateTarget.animateScrollToItem(0)
+                            coroutineScope.launch {
+                                if (lazyListStateTarget.firstVisibleItemIndex > 10) {
+                                    lazyListStateTarget.scrollToItem(10)
+                                }
+                                // Also reset the scrollBehavior height offset as it's not triggered by programmatic scrolls
+                                scrollBehavior.state.heightOffset = 0f
+                                lazyListStateTarget.animateScrollToItem(0)
+                            }
+                        } else {
+                            state.eventSink(HomeEvent.SelectHomeNavigationBarItem(item))
                         }
-                    } else {
-                        state.eventSink(HomeEvent.SelectHomeNavigationBarItem(item))
-                    }
-                },
-                floatingActionButton = {
-                    when (state.currentHomeNavigationBarItem) {
-                        HomeNavigationBarItem.Chats -> {
-                            HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
+                    },
+                    floatingActionButton = {
+                        when (state.currentHomeNavigationBarItem) {
+                            HomeNavigationBarItem.Chats -> {
+                                HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
+                            }
+                            HomeNavigationBarItem.Spaces -> {
+                                HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
+                            }
                         }
-                        HomeNavigationBarItem.Spaces -> {
-                            HomeFloatingActionButton(onCreateSpaceClick, CommonStrings.action_create_space)
-                        }
-                    }
-                },
-            )
+                    },
+                )
+            } else {
+                HomeFloatingActionButton(onStartChatClick, CommonStrings.action_create_room)
+            }
         },
-        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButtonPosition = if (state.isSpacesEnabled) FabPosition.Center else FabPosition.End,
         content = { padding ->
             val contentPadding = PaddingValues(
                 bottom = 96.dp,
@@ -244,7 +257,7 @@ private fun HomeScaffold(
                         spaceFiltersState = roomListState.spaceFiltersState,
                         lazyListState = roomsLazyListState,
                         hideInvitesAvatars = roomListState.hideInvitesAvatars,
-                        eventSink = roomListState.eventSink,
+                        eventSink = roomListEventSink,
                         onConfirmRecoveryKeyClick = onConfirmRecoveryKeyClick,
                         onRoomClick = ::onRoomClick,
                         onCreateRoomClick = onStartChatClick,
