@@ -212,9 +212,7 @@ class RoomListDataSource(
     }
 
     private fun buildAndCacheItem(roomSummaries: List<RoomSummary>, index: Int): RoomListRoomSummary? {
-        // GUA FORK: joined spaces live in the Spaces tab, never in Chats; space invites stay here so they can be
-        // accepted while the Spaces switch is off. Also hide stray empty "orphan" rooms so a half-created or
-        // never-joined chat (e.g. a failed start-chat) doesn't clutter the list. Mirrors iOS RoomSummary.isEmptyOrphanRoom.
+        // GUA FORK: space invites stay in Chats, the only place to accept them while Spaces is off.
         val roomListSummary = roomSummaries.getOrNull(index)
             ?.takeUnless { it.isJoinedSpace() || it.isEmptyOrphanRoom() }
             ?.let { roomListRoomSummaryFactory.create(it) }

@@ -197,14 +197,9 @@ interface MatrixClient {
      */
     suspend fun addRecentEmoji(emoji: String): Result<Unit>
 
-    /**
-     * Returns the JSON content of the global account data event of [eventType] from the local store, or null if unset.
-     */
+    /** GUA FORK: reads the local store, so another device's change appears only after a sync. */
     suspend fun getAccountData(eventType: String): Result<String?>
 
-    /**
-     * Sets the global account data event of [eventType] to the JSON [content].
-     */
     suspend fun setAccountData(eventType: String, content: String): Result<Unit>
 
     /**

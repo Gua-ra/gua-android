@@ -90,7 +90,6 @@ fun HomeView(
     val state: RoomListState = homeState.roomListState
     val coroutineScope = rememberCoroutineScope()
     val firstThrottler = remember { FirstThrottler(300, coroutineScope) }
-    // GUA FORK: while Spaces is off, a space invite's inline Accept opens its join screen, which offers to turn Spaces on.
     val roomListEventSink: (RoomListEvent) -> Unit = { event ->
         if (event is RoomListEvent.AcceptInvite && event.roomSummary.isSpace && !state.isSpacesEnabled) {
             if (firstThrottler.canHandle()) onRoomClick(event.roomSummary.roomId)
@@ -206,7 +205,6 @@ private fun HomeScaffold(
             )
         },
         floatingActionButton = {
-            // GUA FORK: the Chats/Spaces switcher appears only while the Spaces switch is on.
             if (state.isSpacesEnabled) {
                 val coroutineScope = rememberCoroutineScope()
                 HomeBottomBar(

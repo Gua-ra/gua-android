@@ -62,7 +62,6 @@ data class JoinRoomState(
         else -> JoinAuthorisationStatus.None
     }
 
-    // GUA FORK: joining or accepting a space while the Spaces switch is off turns it on.
     val joiningTurnsOnSpaces = !isSpacesEnabled &&
         (contentState as? ContentState.Loaded)?.isSpace == true &&
         when (joinAuthorisationStatus) {

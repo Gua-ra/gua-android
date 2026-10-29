@@ -226,7 +226,6 @@ private fun JoinRoomFooter(
         when (joinAuthorisationStatus) {
             is JoinAuthorisationStatus.IsInvited -> {
                 Column {
-                    // GUA FORK: full width, so the longer accept label fits in every language.
                     if (joiningTurnsOnSpaces) {
                         SuperButton(
                             onClick = { onAcceptInvite(joinAuthorisationStatus.inviteData) },

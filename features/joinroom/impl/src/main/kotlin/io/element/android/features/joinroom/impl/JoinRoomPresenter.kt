@@ -154,13 +154,12 @@ class JoinRoomPresenter(
             contentState.markRoomInviteAsSeen()
         }
 
-        // GUA FORK: set from the returned state, so taps use the same predicate the view shows.
         var joiningTurnsOnSpaces = false
 
         fun handleEvent(event: JoinRoomEvents) {
             when (event) {
                 JoinRoomEvents.JoinRoom -> {
-                    // GUA FORK: session scoped, so it survives this screen closing as soon as the room is joined.
+                    // GUA FORK: called before joining because this screen closes as soon as the room is joined.
                     if (joiningTurnsOnSpaces) spacesSwitch.enableWhenJoined(roomId)
                     coroutineScope.joinRoom(joinAction)
                 }

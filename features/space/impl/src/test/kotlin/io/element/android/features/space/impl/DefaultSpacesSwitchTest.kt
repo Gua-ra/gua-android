@@ -38,7 +38,6 @@ class DefaultSpacesSwitchTest {
     fun `an account already in a space with no stored value starts with Spaces on`() = runTest {
         val roomListService = FakeRoomListService()
         val writes = mutableListOf<String>()
-        // The flow never emits: the decision reads the joined spaces directly.
         val switch = createSwitch(spaceService = aSpaceServiceInASpace(), roomListService = roomListService, writes = writes)
         runCurrent()
 
@@ -161,7 +160,6 @@ class DefaultSpacesSwitchTest {
         assertThat(switch.isEnabled.value).isFalse()
         assertThat(writes).containsExactly("""{"enabled":false}""")
 
-        // The echo has not arrived yet, so the store still reads nothing.
         roomListService.postState(RoomListService.State.Idle)
         runCurrent()
         roomListService.postState(RoomListService.State.Running)

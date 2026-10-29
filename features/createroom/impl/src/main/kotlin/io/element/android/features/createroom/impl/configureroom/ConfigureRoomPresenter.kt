@@ -147,7 +147,6 @@ class ConfigureRoomPresenter(
         // 2. If it has a parent space.
         // 3. If knocking is enabled.
         val parentSpace = createRoomConfig.parentSpace
-        // GUA FORK: a parent picked here cannot stay selected once its picker is hidden.
         LaunchedEffect(isSpacesEnabled, parentSpace) {
             if (!isSpacesEnabled && initialParentSpaceId == null && parentSpace != null) {
                 dataStore.setParentSpace(parentSpace = null, updateVisibility = false)
@@ -157,7 +156,6 @@ class ConfigureRoomPresenter(
             when {
                 isSpace && parentSpace != null -> TODO("Adding a space to a parent space is not supported yet! How did you get here?")
                 parentSpace == null || parentSpace.joinRule == JoinRule.Public -> listOfNotNull(
-                    // GUA FORK: spaces are created invite-only on mobile.
                     JoinRuleItem.PublicVisibility.Public.takeIf { !isSpace },
                     JoinRuleItem.PublicVisibility.AskToJoin.takeIf { !isSpace && isKnockFeatureEnabled },
                     JoinRuleItem.PrivateVisibility.Private,
@@ -232,7 +230,6 @@ class ConfigureRoomPresenter(
             homeserverName = homeserverName,
             roomAddressValidity = roomAddressValidity.value,
             availableJoinRules = availableJoinRules,
-            // GUA FORK: while Spaces is off there is no parent space to pick, unless the room is created from inside a space.
             spaces = if (isSpacesEnabled || initialParentSpaceId != null) spaces else persistentListOf(),
             isSpace = isSpace,
             eventSink = ::handleEvent,

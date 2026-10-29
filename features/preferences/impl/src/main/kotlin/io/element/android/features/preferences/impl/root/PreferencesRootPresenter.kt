@@ -165,7 +165,7 @@ class PreferencesRootPresenter(
                 is PreferencesRootEvent.SwitchToSession -> coroutineScope.launch {
                     sessionStore.setLatestSession(event.sessionId.value)
                 }
-                // GUA FORK: started undispatched so the write is handed to the session scope before this screen can close.
+                // GUA FORK: undispatched so the write reaches the session scope before this screen can close.
                 is PreferencesRootEvent.SetSpacesEnabled -> coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
                     spacesSwitch.setEnabled(event.enabled)
                 }

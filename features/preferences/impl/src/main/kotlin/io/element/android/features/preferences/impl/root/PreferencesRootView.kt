@@ -185,7 +185,6 @@ private fun ColumnScope.ManageAppSection(
     onChangePhoneNumber: () -> Unit,
     onSecureBackupClick: () -> Unit,
 ) {
-    // GUA FORK: account-wide Spaces switch, stored in account data so it follows the account to every phone.
     ListItem(
         headlineContent = { Text(stringResource(id = R.string.gua_preferences_spaces_title)) },
         supportingContent = { Text(stringResource(id = R.string.gua_preferences_spaces_description)) },

@@ -88,7 +88,7 @@ internal class RustRoomListService(
             .distinctUntilChanged()
             .stateIn(sessionCoroutineScope, SharingStarted.Eagerly, RoomListService.State.Idle)
 
-    // GUA FORK: the SDK sets a state after every stored response (Running to Running included), so this is not de-duplicated.
+    // GUA FORK: the SDK emits a state after every stored response, so do not de-duplicate.
     override val syncUpdates: Flow<Unit> =
         innerRoomListService.stateFlow()
             .filter { it != RoomListServiceState.INITIAL && it != RoomListServiceState.ERROR && it != RoomListServiceState.TERMINATED }

@@ -10,21 +10,14 @@ package io.element.android.features.space.api
 import io.element.android.libraries.matrix.api.core.RoomId
 import kotlinx.coroutines.flow.StateFlow
 
-/**
- * Whether the Spaces section is shown. Stored in account data so it follows the account to every phone.
- */
 interface SpacesSwitch {
     val isEnabled: StateFlow<Boolean>
 
     suspend fun setEnabled(enabled: Boolean): Result<Unit>
 
-    /**
-     * Re-reads the stored value. Never decides the default for an account with no stored value.
-     */
+    /** Re-reads the stored value without deciding a default. */
     suspend fun refresh()
 
-    /**
-     * Turns Spaces on once the current user's membership in [roomId] becomes joined. Outlives the calling screen.
-     */
+    /** Turns Spaces on once the user has joined [roomId], even after the calling screen closes. */
     fun enableWhenJoined(roomId: RoomId)
 }

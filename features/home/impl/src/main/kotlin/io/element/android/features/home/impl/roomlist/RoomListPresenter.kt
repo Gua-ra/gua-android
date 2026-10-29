@@ -228,7 +228,7 @@ class RoomListPresenter(
                 is RoomListEvent.MarkAsRead -> coroutineScope.markAsRead(event.roomId)
                 is RoomListEvent.MarkAsUnread -> coroutineScope.markAsUnread(event.roomId)
                 is RoomListEvent.AcceptInvite -> {
-                    // GUA FORK: while Spaces is off, a space invite is accepted from its join screen, which the view opens instead.
+                    // GUA FORK: while Spaces is off, HomeView opens the space's join screen instead.
                     if (!event.roomSummary.isSpace || isSpacesEnabled) {
                         acceptDeclineInviteState.eventSink(
                             AcceptInvite(event.roomSummary.toInviteData())

@@ -35,7 +35,6 @@ data class RoomListState(
     val canReportRoom: Boolean,
     /** GUA FORK: the delayed account recovery warning. Separate from the encryption banner. */
     val accountRecoveryBannerState: AccountRecoveryBannerState,
-    /** GUA FORK: while off, a space invite's inline Accept opens its join screen instead of accepting. */
     val isSpacesEnabled: Boolean,
     val eventSink: (RoomListEvent) -> Unit,
 ) {

@@ -66,7 +66,7 @@ class DefaultSpacesSwitch(
             .onEach { refresh(fromRoomList = false) }
             .launchIn(sessionCoroutineScope)
 
-        // Running follows a stored sync response, so this read sees other phones' changes and is the only place the default is decided.
+        // Decide the default only on Running, when another phone's value would already be stored.
         matrixClient.roomListService.state
             .onEach { if (it != RoomListService.State.Running) synchronized(lock) { restartedSinceWrite = true } }
             .filter { it == RoomListService.State.Running }
@@ -79,7 +79,6 @@ class DefaultSpacesSwitch(
             requestedByUser = true
             request(enabled)
         }
-        // The write runs in the session scope so that leaving the screen does not cancel it.
         return sessionCoroutineScope.async { write(enabled, request) }.await()
     }
 
@@ -120,12 +119,8 @@ class DefaultSpacesSwitch(
         result
     }
 
-    /**
-     * On for an account already in a space, off otherwise. Storing it means a space joined later never turns Spaces on.
-     */
     private suspend fun storeDefaultIfUnset() {
         if (synchronized(lock) { hasStoredValue || requestedByUser || writesInFlight > 0 }) return
-        // Read at decision time: topLevelSpacesFlow can still lag the response that brought the space.
         val isInSpace = matrixClient.spaceService.topLevelSpaces().getOrElse { return }.isNotEmpty()
         val request = synchronized(lock) {
             if (hasStoredValue || requestedByUser || writesInFlight > 0) return
@@ -137,7 +132,6 @@ class DefaultSpacesSwitch(
     override suspend fun refresh() = refresh(fromRoomList = false)
 
     private suspend fun refresh(fromRoomList: Boolean) {
-        // A failed read never counts as an absent value.
         val stored = matrixClient.getAccountData(SPACES_ACCOUNT_DATA_TYPE).getOrElse { return }
         when {
             stored != null -> applyStored(parseEnabled(stored), fromRoomList)
@@ -145,10 +139,7 @@ class DefaultSpacesSwitch(
         }
     }
 
-    /**
-     * A read that disagrees with this phone's own write is ignored while the write is in flight, and afterwards until
-     * the store echoes it or the room list has restarted since the write (its first response then includes the echo).
-     */
+    /** Reads can be stale until this phone's write is echoed back or the room list restarts. */
     private fun applyStored(value: Boolean, fromRoomList: Boolean) = synchronized(lock) {
         hasStoredValue = true
         if (writesInFlight > 0) return@synchronized
