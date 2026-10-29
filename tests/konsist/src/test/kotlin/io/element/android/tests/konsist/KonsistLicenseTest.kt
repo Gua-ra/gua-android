@@ -23,15 +23,13 @@ class KonsistLicenseTest {
          \*/
         """.trimIndent().toRegex()
 
-    // GUA FORK: files written for this fork carry the fork's own copyright rather than
-    // Element's, per the project's header policy. Upstream files keep their Element notice,
-    // and a file modified rather than authored here keeps it too. The SPDX terms are
-    // unchanged either way, so the licence itself is identical.
+    // GUA FORK: a file Gua wrote carries Gua's copyright under AGPL-3.0-only alone. Upstream
+    // files, including ones modified here, keep their Element notice and dual license.
     private val guaLicense = """
         /\*
          \* Copyright 20\d\d((, |-)20\d\d)? Gua
         (?:.*\n)* \*
-         \* SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial\.
+         \* SPDX-License-Identifier: AGPL-3\.0-only
          \* Please see LICENSE files in the repository root for full details\.
          \*/
         """.trimIndent().toRegex()
