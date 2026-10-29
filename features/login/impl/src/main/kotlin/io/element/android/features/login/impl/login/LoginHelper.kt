@@ -186,10 +186,7 @@ class LoginHelper(
         }
     }
 
-    /**
-     * GUA FORK: report-only verification of the resolver's answer. It runs detached, after the resolution
-     * is already in use, so it never delays the sign-in; the flag is the kill switch.
-     */
+    /** GUA FORK: report-only verification of the resolver's answer. It runs detached and never delays sign-in. */
     private suspend fun verifyResolution(e164Phone: String, resolution: HomeserverResolution) {
         try {
             if (featureFlagService.isFeatureEnabled(FeatureFlags.ResolverVerification)) {
@@ -198,7 +195,7 @@ class LoginHelper(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            // Errors too: this job has no handler, so anything that escapes here ends the app. The message stays fixed.
+            // Errors too: nothing above this job handles them, so one that escaped would end the app.
             Timber.w("Resolver verification did not complete")
         }
     }

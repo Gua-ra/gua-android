@@ -21,13 +21,8 @@ import org.junit.Test
 import java.util.Base64
 
 /**
- * GUA FORK: the resolver publishes the client-verification vectors and the `gua-lp.v1` vectors as the
- * contract every platform verifier is held to. Both files are byte-identical copies kept in the module's
- * own test resources, and every entry of every section is reproduced here and fails with its name.
- *
- * The keys are the RFC 8032 section 7.1 test constants, so the published signatures are reproducible;
- * signing here uses the JDK provider, which keeps the expected values independent of the Ed25519 the
- * app verifies with.
+ * The resolver's published vectors, byte-identical copies in this module's test resources. Signing uses the JDK
+ * provider, so expected values do not depend on the Ed25519 the app verifies with.
  */
 class ResolverVerificationVectorsTest {
     private val vectors: JsonObject by lazy { VectorFixtures.load(VectorFixtures.CLIENT_VECTORS_RESOURCE) }

@@ -10,11 +10,7 @@ package io.element.android.libraries.guaresolver.verification
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 
-/**
- * What the placement rules may use. The app knows the phone only; affiliations and attributes count for
- * institution routing solely when they arrived in a signature-verified envelope, which a public caller
- * cannot produce, so [claimsVerified] is false here.
- */
+/** What placement may use. A public caller has no verified claims, so its affiliations and attributes never count. */
 internal data class PlacementContext(
     val e164Phone: String?,
     val country: String? = null,

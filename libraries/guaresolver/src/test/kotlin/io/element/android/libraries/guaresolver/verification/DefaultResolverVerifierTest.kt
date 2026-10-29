@@ -24,10 +24,7 @@ import org.junit.Test
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-/**
- * GUA FORK: the orchestrator over a scripted resolver: configuration, the roster, the answer and the
- * checkpoint pin. What is served is the published vectors, or a vector signed again with its test key.
- */
+/** The verifier against a scripted resolver serving the published vectors, or vectors signed again with their test keys. */
 class DefaultResolverVerifierTest {
     @Test
     fun `without a resolver base URL nothing runs and nothing is reported`() = runTest {

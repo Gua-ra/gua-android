@@ -36,10 +36,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 
-/**
- * GUA FORK: the resolver verifier hangs off the phone submission. It must see the resolution the sign-in
- * used, and the sign-in must not wait for it.
- */
+/** The verifier sees the resolution the sign-in used, and the sign-in does not wait for it. */
 class LoginHelperResolverVerificationTest {
     @get:Rule
     val warmUpRule = WarmUpRule()

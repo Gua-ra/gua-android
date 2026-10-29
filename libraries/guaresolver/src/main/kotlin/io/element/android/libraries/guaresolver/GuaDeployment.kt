@@ -35,11 +35,7 @@ interface GuaDeployment {
      */
     val identityServiceBaseUrl: String?
 
-    /**
-     * The verification keys pinned for this deployment's resolver, in the compact form
-     * `io.element.android.libraries.guaresolver.verification.ResolverTrustRoots` parses, or `null` when
-     * none are configured, which leaves the resolver verifier inert.
-     */
+    /** The resolver verification keys in the form `ResolverTrustRoots.parse` reads; null leaves the verifier inert. */
     val resolverTrustRoots: String?
 
     data object Production : GuaDeployment {

@@ -16,7 +16,7 @@ import org.junit.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-/** GUA FORK: the policy and placement checks over a scripted resolver serving the published vectors. */
+/** The policy and placement checks against a scripted resolver serving the published vectors. */
 class DefaultResolverVerifierPolicyTest {
     @Test
     fun `a served policy is verified under the policy keys and against the log`() = runTest {

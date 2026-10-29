@@ -41,8 +41,6 @@ import java.io.IOException
 import java.time.Instant
 import java.util.concurrent.CopyOnWriteArrayList
 
-// GUA FORK: what the orchestrator tests serve and how they build a verifier. The keys are the vectors' RFC 8032 test keys.
-
 private val vectors: JsonObject by lazy { VectorFixtures.load(VectorFixtures.CLIENT_VECTORS_RESOURCE) }
 private val json = Json { ignoreUnknownKeys = true }
 

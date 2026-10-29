@@ -30,11 +30,7 @@ import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.cancellation.CancellationException
 
-/**
- * Default [ResolverVerifier]: the checks of the resolver verification protocol, report-only, under a fixed
- * time budget. It logs outcome codes only and keeps the last report in memory. An exception inside a run is
- * reported as internal_error; an Error is left to the caller.
- */
+/** The report-only checks of the resolver verification protocol. An exception in a run is internal_error; an Error reaches the caller. */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class DefaultResolverVerifier(
