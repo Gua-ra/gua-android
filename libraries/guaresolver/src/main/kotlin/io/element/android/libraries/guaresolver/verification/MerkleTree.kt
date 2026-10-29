@@ -55,6 +55,8 @@ internal object MerkleTree {
             sn = sn shr 1
         }
         while (index < path.size) {
+            // RFC 9162 section 2.1.4.2: a hash left once the path is complete fails the proof.
+            if (sn == 0L) return false
             val node = path[index++]
             if (fn and 1L == 1L || fn == sn) {
                 toOldRoot = nodeHash(node, toOldRoot)

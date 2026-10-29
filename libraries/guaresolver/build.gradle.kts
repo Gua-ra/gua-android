@@ -44,12 +44,8 @@ android {
         buildConfigFieldStr("GUA_DEV_RESOLVER_BASE_URL", devResolverBaseUrl)
         buildConfigFieldStr("GUA_DEV_DEFAULT_ACCOUNT_PROVIDER", devDefaultAccountProvider)
         buildConfigFieldStr("GUA_DEV_IDENTITY_SERVICE_BASE_URL", devIdentityServiceBaseUrl)
-        // Resolver trust roots: the published authority and policy verification keys, as `ResolverTrustRoots` parses them.
-        buildConfigFieldStr(
-            "GUA_PROD_RESOLVER_TRUST_ROOTS",
-            "authority:gua-authority-prod:MCowBQYDK2VwAyEAmrJntRXbxGkoPe92j1epyM3RBXcx4nmr2wIzL6eb0a0= " +
-                "policy:gua-authority-prod:MCowBQYDK2VwAyEAmrJntRXbxGkoPe92j1epyM3RBXcx4nmr2wIzL6eb0a0="
-        )
+        // Resolver trust roots, as `ResolverTrustRoots` parses them. Production lists no policy key until governance keys exist.
+        buildConfigFieldStr("GUA_PROD_RESOLVER_TRUST_ROOTS", "authority:gua-authority-prod:MCowBQYDK2VwAyEAmrJntRXbxGkoPe92j1epyM3RBXcx4nmr2wIzL6eb0a0=")
         buildConfigFieldStr("GUA_DEV_RESOLVER_TRUST_ROOTS", devResolverTrustRoots)
         buildConfigField("boolean", "GUA_USE_DEV_DEPLOYMENT", useDevDeployment.toString())
     }

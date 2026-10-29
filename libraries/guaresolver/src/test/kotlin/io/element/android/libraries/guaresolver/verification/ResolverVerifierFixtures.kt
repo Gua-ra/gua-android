@@ -99,7 +99,7 @@ internal fun JsonObject.rosterEntries(): List<JsonObject> = this["entries"]!!.js
 internal fun withMember(roster: JsonObject, member: JsonElement): JsonObject =
     JsonObject(roster + ("entries" to JsonArray(listOf(JsonObject(roster.rosterEntries().single() + ("member" to member))))))
 
-internal fun withCheckpoint(roster: JsonObject, size: Int, merkleRoot: String = rootAt(size)): JsonObject {
+internal fun withCheckpoint(roster: JsonObject, size: Long, merkleRoot: String = rootAt(size.toInt())): JsonObject {
     val checkpoint = buildJsonObject {
         put("merkleRoot", merkleRoot)
         put("size", size)
@@ -155,10 +155,10 @@ internal fun logJson(events: List<JsonElement> = logEvents()): String = buildJso
     put("events", JsonArray(events))
 }.toString()
 
-internal fun consistencyJson(first: Int, second: Int, tampered: Boolean = false): String {
+internal fun consistencyJson(first: Int, second: Int, tampered: Boolean = false, uppercase: Boolean = false): String {
     val vector = vectors["log"]!!.jsonObject["consistencyProofs"]!!.jsonArray.map { it.jsonObject }
         .first { it.int("first") == first && it.int("second") == second }
-    val proof = vector["proof"]!!.jsonArray.map { it.jsonPrimitive.content }.toMutableList()
+    val proof = vector["proof"]!!.jsonArray.map { it.jsonPrimitive.content }.map { if (uppercase) it.uppercase() else it }.toMutableList()
     if (tampered) proof[proof.lastIndex] = proof.last().replaceRange(0, 1, if (proof.last().startsWith("0")) "1" else "0")
     return buildJsonObject {
         put("first", first)
@@ -231,12 +231,12 @@ internal class ScriptedResolver {
     private fun notFound() = MockResponse().setResponseCode(404)
 }
 
-/** A store whose disk is gone: every read and write fails. */
-internal class UnavailablePreferenceDataStoreFactory : PreferenceDataStoreFactory {
+/** A store whose every read and write throws [failure], by default the IOException of a disk that is gone. */
+internal class FailingPreferenceDataStoreFactory(private val failure: () -> Exception = { IOException("unavailable") }) : PreferenceDataStoreFactory {
     override fun create(name: String): DataStore<Preferences> = object : DataStore<Preferences> {
-        override val data: Flow<Preferences> = flow { throw IOException("unavailable") }
+        override val data: Flow<Preferences> = flow { throw failure() }
 
-        override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences = throw IOException("unavailable")
+        override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences = throw failure()
     }
 }
 

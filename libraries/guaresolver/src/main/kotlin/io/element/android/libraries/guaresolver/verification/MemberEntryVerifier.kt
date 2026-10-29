@@ -9,10 +9,13 @@ package io.element.android.libraries.guaresolver.verification
 
 import io.element.android.libraries.core.data.tryOrNull
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
+import java.time.Duration
 import java.time.Instant
 
 /** The `gua-member-entry.v1` bytes a homeserver signs about its own entry. */
@@ -44,9 +47,12 @@ internal object CanonicalMemberEntry {
  * Verifies a homeserver's self-signature over its roster entry, port of the resolver's
  * `MemberEntryVerifier`. v1 keeps no earlier entry per homeserver, so key continuity is not checked.
  */
-internal class MemberEntryVerifier(
-    private val maxLifetimeMillis: Long = DEFAULT_MAX_LIFETIME_MILLIS,
-) {
+internal object MemberEntryVerifier {
+    private val MAX_LIFETIME: Duration = Duration.ofDays(400)
+    private val EARLIEST: Instant = Instant.ofEpochMilli(Long.MIN_VALUE)
+    private val LATEST: Instant = Instant.ofEpochMilli(Long.MAX_VALUE)
+    private const val NANOS_PER_MILLI = 1_000_000
+
     fun verify(homeserver: RosterHomeserver, member: JsonElement?, atMillis: Long): MemberEntryOutcome {
         if (member == null || member is JsonNull) return MemberEntryOutcome.Unattested
         val attestation = decode(member) ?: return MemberEntryOutcome.Invalid(VerificationReason.PARSE_ERROR)
@@ -55,7 +61,7 @@ internal class MemberEntryVerifier(
         if (attestation.alg != CanonicalMemberEntry.ALG) return MemberEntryOutcome.Invalid(VerificationReason.UNSUPPORTED_ALG)
         if (attestation.keyId.isNullOrBlank()) return MemberEntryOutcome.Invalid(VerificationReason.BAD_KEY_ID)
         if (sequence == null || sequence < 1) return MemberEntryOutcome.Invalid(VerificationReason.BAD_SEQUENCE)
-        checkWindow(attestation, atMillis)?.let { return MemberEntryOutcome.Invalid(it) }
+        checkWindow(attestation, Instant.ofEpochMilli(atMillis))?.let { return MemberEntryOutcome.Invalid(it) }
         if (!hasWellFormedSignatures(attestation)) return MemberEntryOutcome.Invalid(VerificationReason.MALFORMED_SIGNATURE)
 
         val canonical = try {
@@ -73,22 +79,35 @@ internal class MemberEntryVerifier(
         return MemberEntryOutcome.Valid
     }
 
-    // The default Json refuses unknown fields, so a block cannot carry a field its signature does not cover.
-    private fun decode(member: JsonElement): MemberAttestation? =
-        (member as? JsonObject)?.let { tryOrNull { Json.decodeFromJsonElement<MemberAttestation>(it) } }
+    /**
+     * The default Json refuses unknown fields, so a block cannot carry a field its signature does not cover. A field
+     * sent as null has the wrong type; a field left out fails the check that reads it.
+     */
+    private fun decode(member: JsonElement): MemberAttestation? {
+        if (member !is JsonObject || member.containsNull()) return null
+        return tryOrNull { Json.decodeFromJsonElement<MemberAttestation>(member) }
+    }
 
-    private fun checkWindow(member: MemberAttestation, atMillis: Long): String? {
+    private fun JsonElement.containsNull(): Boolean = when (this) {
+        is JsonObject -> values.any { it.containsNull() }
+        is JsonArray -> any { it.containsNull() }
+        is JsonPrimitive -> this is JsonNull
+    }
+
+    /** As the resolver checks it, on instants and durations, so no bound can overflow a millisecond count. */
+    private fun checkWindow(member: MemberAttestation, at: Instant): String? {
         if (member.notBefore == null || member.notAfter == null) return VerificationReason.BAD_WINDOW
-        val notBefore = tryOrNull { Instant.parse(member.notBefore) } ?: return VerificationReason.PARSE_ERROR
-        val notAfter = tryOrNull { Instant.parse(member.notAfter) } ?: return VerificationReason.PARSE_ERROR
-        if (notBefore.nano % NANOS_PER_MILLI != 0 || notAfter.nano % NANOS_PER_MILLI != 0) return VerificationReason.BAD_WINDOW
-        val notBeforeMillis = notBefore.toEpochMilli()
-        val notAfterMillis = notAfter.toEpochMilli()
-        if (notAfterMillis <= notBeforeMillis) return VerificationReason.BAD_WINDOW
-        if (notAfterMillis - notBeforeMillis > maxLifetimeMillis) return VerificationReason.BAD_WINDOW
-        if (atMillis < notBeforeMillis || atMillis > notAfterMillis) return VerificationReason.OUTSIDE_WINDOW
+        val notBefore = tryOrNull { member.notBefore.toInstant() } ?: return VerificationReason.PARSE_ERROR
+        val notAfter = tryOrNull { member.notAfter.toInstant() } ?: return VerificationReason.PARSE_ERROR
+        if (!notBefore.isSignable() || !notAfter.isSignable()) return VerificationReason.BAD_WINDOW
+        if (!notAfter.isAfter(notBefore)) return VerificationReason.BAD_WINDOW
+        if (Duration.between(notBefore, notAfter) > MAX_LIFETIME) return VerificationReason.BAD_WINDOW
+        if (at.isBefore(notBefore) || at.isAfter(notAfter)) return VerificationReason.OUTSIDE_WINDOW
         return null
     }
+
+    /** The canonical bytes carry the bound as epoch milliseconds, so it needs a whole millisecond within that range. */
+    private fun Instant.isSignable(): Boolean = nano % NANOS_PER_MILLI == 0 && !isBefore(EARLIEST) && !isAfter(LATEST)
 
     /** At least one signature, each with a key id and a value, and no key id twice. */
     private fun hasWellFormedSignatures(member: MemberAttestation): Boolean {
@@ -97,10 +116,5 @@ internal class MemberEntryVerifier(
         return signatures.isNotEmpty() &&
             signatures.all { !it.keyId.isNullOrBlank() && it.signatureB64 != null } &&
             keyIds.distinct().size == keyIds.size
-    }
-
-    companion object {
-        const val DEFAULT_MAX_LIFETIME_MILLIS: Long = 400L * 24 * 60 * 60 * 1000
-        private const val NANOS_PER_MILLI = 1_000_000
     }
 }

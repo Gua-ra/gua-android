@@ -9,8 +9,12 @@ package io.element.android.libraries.guaresolver.verification
 
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.mockwebserver.MockResponse
 import org.junit.Test
 import java.util.concurrent.CountDownLatch
@@ -255,6 +259,22 @@ class DefaultResolverVerifierPolicyTest {
 
         assertThat(report.policy).isEqualTo(PolicyOutcome.Invalid(VerificationReason.UNKNOWN_KEY_ID))
         assertThat(report.placement).isEqualTo(PlacementOutcome.Indeterminate(VerificationReason.EXISTING_ACCOUNT))
+        server.shutdown()
+    }
+
+    @Test
+    fun `an incomplete delegate signature leaves its zone unsigned without refusing the bundle`() = runTest {
+        // The sp-zone signature loses its value, so r-sp no longer routes and the unsigned rule outranks the fallback.
+        val bundle = servedPolicy(BR_POLICY)
+        val signatures = bundle["delegateSignatures"]!!.jsonArray.map { it.jsonObject }
+            .map { if (it["zoneId"]!!.jsonPrimitive.content == "sp-zone") JsonObject(it - "signatureB64") else it }
+        val resolver = policyRoutingToBr().apply { policy = { ok(JsonObject(bundle + ("delegateSignatures" to JsonArray(signatures))).toString()) } }
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsCa()))
+
+        assertThat(report.policy).isEqualTo(PolicyOutcome.Valid)
+        assertThat(report.placement).isEqualTo(PlacementOutcome.Indeterminate(VerificationReason.UNSIGNED_RULE))
         server.shutdown()
     }
 

@@ -14,14 +14,12 @@ import org.junit.Test
 
 class ResolverTrustRootsTest {
     @Test
-    fun `the committed production roots list the authority key as both roots`() {
+    fun `the committed production roots list the authority key and no policy key`() {
         val roots = ResolverTrustRoots.parse(GuaResolverConfig.PROD_RESOLVER_TRUST_ROOTS)
 
         assertThat(roots.authorityKeys.map { it.id }).containsExactly("gua-authority-prod")
-        assertThat(roots.policyKeys.map { it.id }).containsExactly("gua-authority-prod")
-        assertThat(roots.authorityKeys.single().rawPublicKey).isEqualTo(roots.policyKeys.single().rawPublicKey)
         assertThat(roots.authorityThreshold).isEqualTo(1)
-        assertThat(roots.policyThreshold).isEqualTo(1)
+        assertThat(roots.policyKeys).isEmpty()
     }
 
     @Test

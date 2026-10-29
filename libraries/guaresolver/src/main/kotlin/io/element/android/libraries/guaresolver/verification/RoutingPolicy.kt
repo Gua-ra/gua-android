@@ -42,9 +42,15 @@ internal data class DelegationZone(
     fun isInEffectAt(nowMillis: Long): Boolean = isInEffect(notBefore, expiresAt, nowMillis)
 }
 
-/** The validity window of a bundle and of a zone: from notBefore, inclusive, until expiresAt, exclusive; a missing bound is open. */
-private fun isInEffect(notBefore: String?, expiresAt: String?, nowMillis: Long): Boolean =
-    (notBefore == null || notBefore.toEpochMillis() <= nowMillis) && (expiresAt == null || nowMillis < expiresAt.toEpochMillis())
+/**
+ * The validity window of a bundle and of a zone: from notBefore, inclusive, until expiresAt, exclusive. A missing
+ * bound is open, and so is a bound at the epoch, because the signed bytes write both as 0.
+ */
+private fun isInEffect(notBefore: String?, expiresAt: String?, nowMillis: Long): Boolean {
+    val from = notBefore?.toEpochMillis()?.takeIf { it != 0L }
+    val until = expiresAt?.toEpochMillis()?.takeIf { it != 0L }
+    return (from == null || from <= nowMillis) && (until == null || nowMillis < until)
+}
 
 @Serializable
 internal data class RoutingPolicyRule(
@@ -73,17 +79,18 @@ internal data class FallbackStrategy(
     val enabled: Boolean = false,
 )
 
+/** An entry without a key id or a value is kept, and counts as a signature that does not verify. */
 @Serializable
 internal data class PolicySignature(
-    val authorityKeyId: String,
-    val signatureB64: String,
+    val authorityKeyId: String? = null,
+    val signatureB64: String? = null,
 )
 
 @Serializable
 internal data class DelegateSignature(
-    val zoneId: String,
-    val delegateKeyId: String,
-    val signatureB64: String,
+    val zoneId: String? = null,
+    val delegateKeyId: String? = null,
+    val signatureB64: String? = null,
 )
 
 /**

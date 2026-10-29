@@ -18,7 +18,7 @@ internal class TrustedKey(val id: String, val rawPublicKey: ByteArray) {
 }
 
 /** A detached signature as every signed object carries it: the signing key's id and the padded base64 signature. */
-internal data class KeyedSignature(val keyId: String, val signatureB64: String)
+internal data class KeyedSignature(val keyId: String?, val signatureB64: String?)
 
 /**
  * One vote per trusted key id over the same canonical bytes, as the resolver's `RosterVerifier` and
@@ -42,10 +42,10 @@ internal data class ThresholdCheck(val valid: Int, val threshold: Int, val known
             var valid = 0
             var known = 0
             for (signature in signatures) {
-                val key = byId[signature.keyId] ?: continue
+                val key = signature.keyId?.let { byId[it] } ?: continue
                 known++
-                if (signature.keyId !in counted && key.verifies(canonical, signature.signatureB64)) {
-                    counted += signature.keyId
+                if (key.id !in counted && key.verifies(canonical, signature.signatureB64)) {
+                    counted += key.id
                     valid++
                 }
             }

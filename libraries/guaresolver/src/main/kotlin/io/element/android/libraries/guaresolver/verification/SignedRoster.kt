@@ -69,12 +69,17 @@ internal data class RosterClaim(
 internal data class LogCheckpoint(
     val merkleRoot: String,
     val size: Long,
-)
+) {
+    init {
+        require(size in 0L..Int.MAX_VALUE) { "a log size fits in 31 bits" }
+    }
+}
 
+/** An entry without a key id or a value is kept, and counts as a signature that does not verify. */
 @Serializable
 internal data class AuthoritySignature(
-    val authorityKeyId: String,
-    val signatureB64: String,
+    val authorityKeyId: String? = null,
+    val signatureB64: String? = null,
 )
 
 /** Every field is optional here, so that a missing one fails the member check that reads it. */
@@ -109,6 +114,10 @@ internal data class LogEvent(
     val payloadHash: String,
     val recordedAt: String,
 ) {
+    init {
+        require(index in 0L..Int.MAX_VALUE) { "a log index fits in 31 bits" }
+    }
+
     fun leafData(): String = "$index|$type|${homeserverId.orEmpty()}|$payloadHash|${recordedAt.toEpochMillis()}"
 }
 
@@ -117,4 +126,11 @@ internal data class ConsistencyProof(
     val first: Long,
     val second: Long,
     val proof: List<String> = emptyList(),
-)
+) {
+    init {
+        require(first in 0L..Int.MAX_VALUE && second in 0L..Int.MAX_VALUE) { "a log size fits in 31 bits" }
+        require(proof.all { PROOF_HASH.matches(it) }) { "a proof hash is 64 lowercase hex characters" }
+    }
+}
+
+private val PROOF_HASH = Regex("[0-9a-f]{64}")

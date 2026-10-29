@@ -30,7 +30,7 @@ import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.cancellation.CancellationException
 
-/** The report-only checks of the resolver verification protocol. An exception in a run is internal_error; an Error reaches the caller. */
+/** The report-only checks of the resolver verification protocol. An exception settles its own check as internal_error; an Error reaches the caller. */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class DefaultResolverVerifier(
@@ -41,11 +41,6 @@ class DefaultResolverVerifier(
     private val deployment: GuaDeployment = GuaResolverConfig.current,
 ) : ResolverVerifier {
     private val checkpointPin = ResolverCheckpointPin(preferenceDataStoreFactory.create(STORE_NAME))
-    private val memberEntryVerifier = MemberEntryVerifier()
-
-    @Volatile
-    var lastReport: ResolverVerificationReport? = null
-        private set
 
     override suspend fun verify(e164Phone: String, resolution: HomeserverResolution): ResolverVerificationReport? {
         val baseUrl = deployment.resolverBaseUrl ?: return null
@@ -68,7 +63,6 @@ class DefaultResolverVerifier(
         val environment = if (deployment == GuaDeployment.Production) "prod" else "dev"
         val report = checks.toReport(environment, durationMs = (System.nanoTime() - startedAt) / NANOS_PER_MILLI)
         Timber.i(report.toLogLine())
-        lastReport = report
         return report
     }
 
@@ -94,14 +88,25 @@ class DefaultResolverVerifier(
         val answer = resolution.homeserver
         val located = RosterVerifier.locate(answer.serverName, answer.baseUrl, answer.masIssuer, roster)
         checks.homeserverMatch = located.match
-        checks.memberEntry = verifyMemberEntry(located, nowMillis)
+        checks.memberEntry = orInternalError(MemberEntryOutcome::Unverifiable) { verifyMemberEntry(located, nowMillis) }
         // A directory lookup cannot be reproduced, so an existing account's placement is settled before anything is fetched.
         if (resolution.exists) checks.placement = PlacementOutcome.Indeterminate(VerificationReason.EXISTING_ACCOUNT)
 
-        checks.logConsistency = verifyLogConsistency(documents, baseUrl, roster.logCheckpoint)
-        val policy = verifyPolicy(documents, roots, roster.logCheckpoint, nowMillis)
+        checks.logConsistency = orInternalError(LogConsistencyOutcome::Unverifiable) { verifyLogConsistency(documents, baseUrl, roster.logCheckpoint) }
+        val policy = orInternalError({ PolicyResult(PolicyOutcome.Unverifiable(it)) }) { verifyPolicy(documents, roots, roster.logCheckpoint, nowMillis) }
         checks.policy = policy.outcome
-        if (!resolution.exists) checks.placement = reproducePlacement(e164Phone, resolution, roster, policy, nowMillis)
+        if (!resolution.exists) {
+            checks.placement = orInternalError(PlacementOutcome::Unverifiable) { reproducePlacement(e164Phone, resolution, roster, policy, nowMillis) }
+        }
+    }
+
+    /** An unexpected exception settles only the check it came from. */
+    private inline fun <T> orInternalError(unverifiable: (String) -> T, check: () -> T): T = try {
+        check()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        unverifiable(VerificationReason.INTERNAL_ERROR)
     }
 
     /** No usable authority key: none configured, or a configuration that does not parse. */
@@ -129,7 +134,7 @@ class DefaultResolverVerifier(
         val entry = located.entry
         val attestable = located.match == HomeserverMatchOutcome.ActiveMatch || located.match == HomeserverMatchOutcome.Inactive
         if (entry == null || !attestable) return MemberEntryOutcome.Unverifiable(VerificationReason.NO_MATCHING_ENTRY)
-        return memberEntryVerifier.verify(entry.homeserver, entry.member, nowMillis)
+        return MemberEntryVerifier.verify(entry.homeserver, entry.member, nowMillis)
     }
 
     private suspend fun verifyLogConsistency(documents: ResolverDocuments, baseUrl: String, served: LogCheckpoint): LogConsistencyOutcome = try {

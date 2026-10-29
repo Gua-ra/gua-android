@@ -18,6 +18,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Test
+import java.nio.ByteBuffer
 import java.util.Base64
 
 /**
@@ -40,6 +41,7 @@ class ResolverVerificationVectorsTest {
             "policies",
             "policyRejections",
             "policyValidity",
+            "windows",
             "policyLog",
             "placements",
             "resolveAnswers",
@@ -48,7 +50,7 @@ class ResolverVerificationVectorsTest {
             assertWithMessage(section).that(vectors[section]!!.jsonArray).isNotEmpty()
         }
         assertThat(vectors["keys"]!!.jsonObject).isNotEmpty()
-        assertThat(lpVectors.string("encoding")).isEqualTo(CanonicalEncoder.ENCODING)
+        assertThat(lpVectors.string("encoding")).isEqualTo("gua-lp.v1")
         for (section in listOf("primitives", "memberEntries", "rejections")) {
             assertWithMessage(section).that(lpVectors[section]!!.jsonArray).isNotEmpty()
         }
@@ -267,6 +269,18 @@ class ResolverVerificationVectorsTest {
     }
 
     @Test
+    fun `every window vector is in effect exactly inside its bounds, for a bundle and for a zone`() {
+        for (vector in vectors["windows"]!!.jsonArray.map { it.jsonObject }) {
+            val name = vector.string("name")
+            val notBefore = vector.stringOrNull("notBefore")
+            val expiresAt = vector.stringOrNull("expiresAt")
+            val at = vector.string("evaluatedAt").toEpochMillis()
+            assertWithName(name, RoutingPolicyBundle(notBefore = notBefore, expiresAt = expiresAt).isInEffectAt(at), vector.bool("inEffect"))
+            assertWithName(name, DelegationZone(notBefore = notBefore, expiresAt = expiresAt).isInEffectAt(at), vector.bool("inEffect"))
+        }
+    }
+
+    @Test
     fun `every resolve answer vector locates the expected entry`() {
         for (vector in vectors["resolveAnswers"]!!.jsonArray.map { it.jsonObject }) {
             val name = vector.string("name")
@@ -283,23 +297,25 @@ class ResolverVerificationVectorsTest {
         for (vector in lpVectors["primitives"]!!.jsonArray.map { it.jsonObject }) {
             val name = vector.string("name")
             val value = vector["value"]!!
-            val encoder = CanonicalEncoder.raw()
-            when (val type = vector.string("type")) {
-                "string", "enum" -> encoder.string(value.jsonPrimitive.content)
-                "int64" -> encoder.int64(value.jsonPrimitive.content.toLong())
-                "bool" -> encoder.bool(value.jsonPrimitive.boolean)
-                "optionalString" -> encoder.optionalString(if (value is JsonNull) null else value.jsonPrimitive.content)
-                "stringSet" -> encoder.stringSet(value.jsonArray.map { it.jsonPrimitive.content })
-                "stringList" -> encoder.stringList(value.jsonArray.map { it.jsonPrimitive.content })
+            val bytes = when (val type = vector.string("type")) {
+                "string", "enum" -> CanonicalEncoder().string(value.jsonPrimitive.content).toByteArray()
+                "int64" -> CanonicalEncoder().int64(value.jsonPrimitive.content.toLong()).toByteArray()
+                "optionalString" -> CanonicalEncoder().optionalString(if (value is JsonNull) null else value.jsonPrimitive.content).toByteArray()
+                "stringSet" -> CanonicalEncoder().stringSet(value.jsonArray.map { it.jsonPrimitive.content }).toByteArray()
+                // No signed object uses these two yet, so they are written out here: one byte, and a count then strings.
+                "bool" -> byteArrayOf(if (value.jsonPrimitive.boolean) 1 else 0)
+                "stringList" -> value.jsonArray.fold(ByteBuffer.allocate(Int.SIZE_BYTES).putInt(value.jsonArray.size).array()) { out, element ->
+                    out + CanonicalEncoder().string(element.jsonPrimitive.content).toByteArray()
+                }
                 else -> error("$name: unknown primitive type $type")
             }
-            assertWithName(name, encoder.toByteArray().toHex(), vector.string("hex"))
+            assertWithName(name, bytes.toHex(), vector.string("hex"))
         }
     }
 
     @Test
     fun `every member entry vector reproduces its bytes and verifies`() {
-        val verifier = MemberEntryVerifier()
+        val verifier = MemberEntryVerifier
         for (vector in lpVectors["memberEntries"]!!.jsonArray.map { it.jsonObject }) {
             val name = vector.string("name")
             val homeserver = json.decodeFromJsonElement<RosterHomeserver>(vector["homeserver"]!!)
@@ -325,7 +341,7 @@ class ResolverVerificationVectorsTest {
 
     @Test
     fun `every member entry rejection is refused by the named rule`() {
-        val verifier = MemberEntryVerifier()
+        val verifier = MemberEntryVerifier
         val expectedReasons = mapOf(
             "duplicate search group" to VerificationReason.NO_CANONICAL_ENCODING,
             "baseUrl substituted under the member's original signature" to VerificationReason.BAD_SIGNATURE,

@@ -19,6 +19,8 @@ import io.element.android.libraries.guaresolver.ResolverClient
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.guaresolver.ResolverResolveOptions
 import io.element.android.libraries.network.RetrofitFactory
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import okhttp3.Headers
 import retrofit2.HttpException
 import timber.log.Timber
@@ -84,7 +86,7 @@ class DefaultResolverClient(
                     masIssuer = ref.masIssuer,
                     region = ref.region,
                 ),
-                rosterVersion = response.rosterVersion,
+                rosterVersion = (response.rosterVersion as? JsonPrimitive)?.takeUnless { it.isString }?.longOrNull,
             )
         )
     }

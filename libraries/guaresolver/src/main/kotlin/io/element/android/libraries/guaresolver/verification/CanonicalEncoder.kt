@@ -21,7 +21,7 @@ internal class CanonicalEncodingException(message: String) : Exception(message)
  * int64 big-endian integers, a presence byte for optionals, sets sorted by unsigned UTF-8 byte order, no
  * delimiters. Port of the resolver's `CanonicalEncoder`.
  */
-internal class CanonicalEncoder private constructor() {
+internal class CanonicalEncoder {
     private val out = ByteArrayOutputStream()
 
     fun bytes(value: ByteArray): CanonicalEncoder {
@@ -37,11 +37,6 @@ internal class CanonicalEncoder private constructor() {
         return this
     }
 
-    fun bool(value: Boolean): CanonicalEncoder {
-        out.write(if (value) 1 else 0)
-        return this
-    }
-
     /** Absent and empty are different bytes. */
     fun optionalString(value: String?): CanonicalEncoder {
         if (value == null) {
@@ -50,12 +45,6 @@ internal class CanonicalEncoder private constructor() {
         }
         out.write(1)
         return string(value)
-    }
-
-    fun stringList(values: List<String>): CanonicalEncoder {
-        writeU32(values.size)
-        values.forEach { string(it) }
-        return this
     }
 
     fun stringSet(values: Collection<String>): CanonicalEncoder {
@@ -76,16 +65,11 @@ internal class CanonicalEncoder private constructor() {
     }
 
     companion object {
-        const val ENCODING = "gua-lp.v1"
-
         /** Every object starts with its schema tag. */
         fun begin(schemaTag: String): CanonicalEncoder {
             if (schemaTag.isEmpty()) throw CanonicalEncodingException("schema tag is required")
             return CanonicalEncoder().string(schemaTag)
         }
-
-        /** An encoder with no schema tag, for bare primitives. */
-        fun raw(): CanonicalEncoder = CanonicalEncoder()
 
         private fun utf8(value: String): ByteArray {
             try {

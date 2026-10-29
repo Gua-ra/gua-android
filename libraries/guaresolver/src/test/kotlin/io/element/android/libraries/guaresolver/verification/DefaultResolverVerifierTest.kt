@@ -17,7 +17,9 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import okhttp3.mockwebserver.MockResponse
 import org.junit.Test
@@ -33,7 +35,6 @@ class DefaultResolverVerifierTest {
         val verifier = createVerifier(server, resolverBaseUrl = null)
 
         assertThat(verifier.verify(A_PHONE, answer(hsCa()))).isNull()
-        assertThat(verifier.lastReport).isNull()
         assertThat(resolver.requests).isEmpty()
         server.shutdown()
     }
@@ -56,7 +57,6 @@ class DefaultResolverVerifierTest {
         assertThat(report.overall).isEqualTo(OverallOutcome.Unverifiable("rosterSignature"))
         assertThat(report.rosterVersion).isNull()
         assertThat(report.rosterForm).isNull()
-        assertThat(verifier.lastReport).isEqualTo(report)
         server.shutdown()
     }
 
@@ -156,6 +156,57 @@ class DefaultResolverVerifierTest {
         assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Invalid(VerificationReason.BAD_SIGNATURE))
         assertThat(report.rosterVersion).isNull()
         assertThat(report.rosterForm).isEqualTo(RosterForm.V1)
+        server.shutdown()
+    }
+
+    @Test
+    fun `an incomplete authority signature does not refuse the roster`() = runTest {
+        val roster = servedRoster("r1")
+        val incomplete = buildJsonObject { put("authorityKeyId", "authority-a") }
+        val signatures = JsonArray(listOf(incomplete) + roster["authoritySignatures"]!!.jsonArray)
+        val resolver = ScriptedResolver().apply { this.roster = { ok(JsonObject(roster + ("authoritySignatures" to signatures)).toString()) } }
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsBr()))
+
+        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Valid)
+        server.shutdown()
+    }
+
+    @Test
+    fun `an incomplete authority signature counts as one that does not verify`() = runTest {
+        val incomplete = JsonArray(listOf(buildJsonObject { put("authorityKeyId", "authority-a") }))
+        val resolver = ScriptedResolver().apply { roster = { ok(JsonObject(servedRoster("r1") + ("authoritySignatures" to incomplete)).toString()) } }
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsBr()))
+
+        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Invalid(VerificationReason.BAD_SIGNATURE))
+        server.shutdown()
+    }
+
+    @Test
+    fun `a checkpoint size past 31 bits is a parse error`() = runTest {
+        val tooLarge = withCheckpoint(servedRoster("r1"), size = Int.MAX_VALUE + 1L, merkleRoot = rootAt(3))
+        val resolver = ScriptedResolver().apply { roster = { ok(tooLarge.toString()) } }
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsBr()))
+
+        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Unverifiable(VerificationReason.PARSE_ERROR))
+        server.shutdown()
+    }
+
+    @Test
+    fun `a timestamp outside the resolver's form is a parse error`() = runTest {
+        val roster = servedRoster("r1")
+        val lowercase = JsonPrimitive(roster["issuedAt"]!!.jsonPrimitive.content.replace('T', 't'))
+        val resolver = ScriptedResolver().apply { this.roster = { ok(JsonObject(roster + ("issuedAt" to lowercase)).toString()) } }
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsBr()))
+
+        assertThat(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Unverifiable(VerificationReason.PARSE_ERROR))
         server.shutdown()
     }
 
@@ -350,6 +401,24 @@ class DefaultResolverVerifierTest {
     }
 
     @Test
+    fun `a member bound past the epoch-millisecond range is bad_window and the run goes on`() = runTest {
+        val member = servedRoster("r1").rosterEntries().single()["member"]!!.jsonObject
+        val farBound = JsonObject(member + ("notAfter" to JsonPrimitive("+300000000-01-01T00:00:00Z")))
+        val resolver = ScriptedResolver().apply {
+            roster = { ok(withMember(servedRoster("r1"), farBound).toString()) }
+            log = { ok(logJson()) }
+        }
+        val server = resolver.start()
+
+        val report = verify(createVerifier(server), answer(hsBr()))
+
+        assertThat(report.memberEntry).isEqualTo(MemberEntryOutcome.Invalid(VerificationReason.BAD_WINDOW))
+        assertThat(report.logConsistency).isEqualTo(LogConsistencyOutcome.FirstSeen)
+        assertThat(report.policy).isEqualTo(PolicyOutcome.NotPresent)
+        server.shutdown()
+    }
+
+    @Test
     fun `a member block that is not an object fails memberEntry only`() = runTest {
         val resolver = ScriptedResolver().apply { roster = { ok(withMember(servedRoster("r1"), JsonArray(emptyList())).toString()) } }
         val server = resolver.start()
@@ -419,6 +488,21 @@ class DefaultResolverVerifierTest {
     }
 
     @Test
+    fun `a proof hash that is not 64 lowercase hex characters is a parse error`() = runTest {
+        val resolver = ScriptedResolver().apply { roster = { ok(servedRoster("r1").toString()) } }
+        val server = resolver.start()
+        val verifier = createVerifier(server)
+        verify(verifier, answer(hsBr()))
+
+        resolver.roster = { ok(servedRoster("r2").toString()) }
+        resolver.consistency = { first, second -> ok(consistencyJson(first, second, uppercase = true)) }
+        val report = verify(verifier, answer(hsCa()))
+
+        assertThat(report.logConsistency).isEqualTo(LogConsistencyOutcome.Unverifiable(VerificationReason.PARSE_ERROR))
+        server.shutdown()
+    }
+
+    @Test
     fun `the pin is kept across verifier instances for the same resolver`() = runTest {
         val resolver = ScriptedResolver().apply { roster = { ok(servedRoster("r1").toString()) } }
         val server = resolver.start()
@@ -435,10 +519,23 @@ class DefaultResolverVerifierTest {
     fun `a pin store that cannot be read is storage_unavailable`() = runTest {
         val server = withoutPolicy().start()
 
-        val report = verify(createVerifier(server, dataStoreFactory = UnavailablePreferenceDataStoreFactory()), answer(hsBr()))
+        val report = verify(createVerifier(server, dataStoreFactory = FailingPreferenceDataStoreFactory()), answer(hsBr()))
 
         assertThat(report.logConsistency).isEqualTo(LogConsistencyOutcome.Unverifiable(VerificationReason.STORAGE_UNAVAILABLE))
         assertThat(report.policy).isEqualTo(PolicyOutcome.NotPresent)
+        server.shutdown()
+    }
+
+    @Test
+    fun `an unexpected error in one check settles only that check`() = runTest {
+        val server = withoutPolicy().start()
+        val failingStore = FailingPreferenceDataStoreFactory { IllegalStateException("not a disk error") }
+
+        val report = verify(createVerifier(server, dataStoreFactory = failingStore), answer(hsBr()))
+
+        assertThat(report.logConsistency).isEqualTo(LogConsistencyOutcome.Unverifiable(VerificationReason.INTERNAL_ERROR))
+        assertThat(report.policy).isEqualTo(PolicyOutcome.NotPresent)
+        assertThat(report.placement).isEqualTo(PlacementOutcome.Match)
         server.shutdown()
     }
 
@@ -464,6 +561,8 @@ class DefaultResolverVerifierTest {
 
         val pin = ResolverCheckpointPin(dataStoreFactory.create(STORE_NAME)).read(server.url("/").toString())
         assertThat(pin).isEqualTo(LogCheckpoint(merkleRoot = rootAt(7), size = 7))
+        // Only runs that do not overlap ask for this proof: the second one starts from the first one's pin.
+        assertThat(resolver.requests).contains("/roster/log/consistency?first=5&second=7")
         resolver.roster = { ok(resigned(withCheckpoint(servedRoster("r1"), size = 6)).toString()) }
         val later = verify(createVerifier(server, dataStoreFactory = dataStoreFactory), answer(hsBr()))
         assertThat(later.logConsistency).isEqualTo(LogConsistencyOutcome.Rollback)
