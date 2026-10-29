@@ -11,14 +11,14 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.matrix.api.room.CurrentUserMembership
 import io.element.android.libraries.matrix.api.room.RoomInfo
 import io.element.android.libraries.matrix.api.roomlist.RoomListService
-import io.element.android.libraries.matrix.api.sync.SyncState
+import io.element.android.libraries.matrix.api.spaces.SpaceRoom
 import io.element.android.libraries.matrix.test.A_ROOM_ID
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.room.aRoomInfo
 import io.element.android.libraries.matrix.test.roomlist.FakeRoomListService
 import io.element.android.libraries.matrix.test.spaces.FakeSpaceService
-import io.element.android.libraries.matrix.test.sync.FakeSyncService
 import io.element.android.libraries.previewutils.room.aSpaceRoom
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,13 +36,12 @@ import kotlin.time.Duration.Companion.seconds
 class DefaultSpacesSwitchTest {
     @Test
     fun `an account already in a space with no stored value starts with Spaces on`() = runTest {
-        val spaceService = FakeSpaceService()
         val roomListService = FakeRoomListService()
         val writes = mutableListOf<String>()
-        val switch = createSwitch(spaceService = spaceService, roomListService = roomListService, writes = writes)
+        // The flow never emits: the decision reads the joined spaces directly.
+        val switch = createSwitch(spaceService = aSpaceServiceInASpace(), roomListService = roomListService, writes = writes)
         runCurrent()
 
-        spaceService.emitTopLevelSpaces(listOf(aSpaceRoom(state = CurrentUserMembership.JOINED)))
         roomListService.postState(RoomListService.State.Running)
         settle()
 
@@ -51,38 +50,138 @@ class DefaultSpacesSwitchTest {
     }
 
     @Test
-    fun `the migration waits for the room list to be running`() = runTest {
-        val spaceService = FakeSpaceService()
+    fun `the default waits for the room list to be running`() = runTest {
+        var queries = 0
+        val spaceService = FakeSpaceService(
+            topLevelSpacesResult = {
+                queries++
+                Result.success(listOf(aSpaceRoom(state = CurrentUserMembership.JOINED)))
+            },
+        )
         val roomListService = FakeRoomListService()
         val writes = mutableListOf<String>()
         val switch = createSwitch(spaceService = spaceService, roomListService = roomListService, writes = writes)
         runCurrent()
 
-        spaceService.emitTopLevelSpaces(listOf(aSpaceRoom(state = CurrentUserMembership.JOINED)))
+        roomListService.emitSyncUpdate()
+        roomListService.emitSyncUpdate()
         settle()
 
+        assertThat(queries).isEqualTo(0)
         assertThat(switch.isEnabled.value).isFalse()
         assertThat(writes).isEmpty()
 
         roomListService.postState(RoomListService.State.Running)
         settle()
 
+        assertThat(queries).isEqualTo(1)
         assertThat(writes).containsExactly("""{"enabled":true}""")
     }
 
     @Test
-    fun `a failed migration is retried when the room list runs again`() = runTest {
-        val spaceService = FakeSpaceService()
+    fun `a failed read when the room list runs writes nothing and the next run decides`() = runTest {
+        val roomListService = FakeRoomListService()
+        val writes = mutableListOf<String>()
+        var readFails = true
+        val switch = createSwitch(
+            spaceService = aSpaceServiceInASpace(),
+            roomListService = roomListService,
+            readResult = { if (readFails) Result.failure(Exception("store")) else Result.success(null) },
+            writes = writes,
+        )
+        runCurrent()
+        roomListService.postState(RoomListService.State.Running)
+        settle()
+
+        assertThat(switch.isEnabled.value).isFalse()
+        assertThat(writes).isEmpty()
+
+        readFails = false
+        roomListService.postState(RoomListService.State.Idle)
+        runCurrent()
+        roomListService.postState(RoomListService.State.Running)
+        settle()
+
+        assertThat(switch.isEnabled.value).isTrue()
+        assertThat(writes).containsExactly("""{"enabled":true}""")
+    }
+
+    @Test
+    fun `a failed membership read decides nothing`() = runTest {
         val roomListService = FakeRoomListService()
         val writes = mutableListOf<String>()
         val switch = createSwitch(
-            spaceService = spaceService,
+            spaceService = FakeSpaceService(topLevelSpacesResult = { Result.failure(Exception("store")) }),
+            roomListService = roomListService,
+            writes = writes,
+        )
+        runCurrent()
+
+        roomListService.postState(RoomListService.State.Running)
+        settle()
+
+        assertThat(switch.isEnabled.value).isFalse()
+        assertThat(writes).isEmpty()
+    }
+
+    @Test
+    fun `opening Settings re-reads the stored value but never decides the default`() = runTest {
+        var queries = 0
+        val roomListService = FakeRoomListService()
+        val writes = mutableListOf<String>()
+        val switch = createSwitch(
+            spaceService = FakeSpaceService(
+                topLevelSpacesResult = {
+                    queries++
+                    Result.success(listOf(aSpaceRoom(state = CurrentUserMembership.JOINED)))
+                },
+            ),
+            roomListService = roomListService,
+            writes = writes,
+        )
+        runCurrent()
+
+        switch.refresh()
+        settle()
+
+        assertThat(queries).isEqualTo(0)
+        assertThat(writes).isEmpty()
+        assertThat(switch.isEnabled.value).isFalse()
+    }
+
+    @Test
+    fun `an account with no spaces stores off once`() = runTest {
+        val roomListService = FakeRoomListService()
+        val writes = mutableListOf<String>()
+        val switch = createSwitch(roomListService = roomListService, writes = writes)
+        runCurrent()
+        roomListService.postState(RoomListService.State.Running)
+        settle()
+
+        assertThat(switch.isEnabled.value).isFalse()
+        assertThat(writes).containsExactly("""{"enabled":false}""")
+
+        // The echo has not arrived yet, so the store still reads nothing.
+        roomListService.postState(RoomListService.State.Idle)
+        runCurrent()
+        roomListService.postState(RoomListService.State.Running)
+        roomListService.emitSyncUpdate()
+        settle()
+
+        assertThat(writes).containsExactly("""{"enabled":false}""")
+    }
+
+    @Test
+    fun `a failed migration is retried when the room list runs again`() = runTest {
+        val roomListService = FakeRoomListService()
+        val writes = mutableListOf<String>()
+        val switch = createSwitch(
+            spaceService = aSpaceServiceInASpace(),
             roomListService = roomListService,
             writes = writes,
             writeResult = { if (writes.size == 1) Result.failure(Exception("offline")) else Result.success(Unit) },
         )
         runCurrent()
-        spaceService.emitTopLevelSpaces(listOf(aSpaceRoom(state = CurrentUserMembership.JOINED)))
         roomListService.postState(RoomListService.State.Running)
         settle()
 
@@ -100,18 +199,16 @@ class DefaultSpacesSwitchTest {
 
     @Test
     fun `a stored false is kept when the account is in a space`() = runTest {
-        val spaceService = FakeSpaceService()
         val roomListService = FakeRoomListService()
         val writes = mutableListOf<String>()
         val switch = createSwitch(
-            spaceService = spaceService,
+            spaceService = aSpaceServiceInASpace(),
             roomListService = roomListService,
             stored = { """{"enabled":false}""" },
             writes = writes,
         )
         runCurrent()
 
-        spaceService.emitTopLevelSpaces(listOf(aSpaceRoom(state = CurrentUserMembership.JOINED)))
         roomListService.postState(RoomListService.State.Running)
         settle()
 
@@ -120,30 +217,60 @@ class DefaultSpacesSwitchTest {
     }
 
     @Test
-    fun `a space invite alone does not turn Spaces on`() = runTest {
-        val spaceService = FakeSpaceService()
+    fun `a space joined after the default was stored does not turn Spaces on`() = runTest {
+        var spaces = emptyList<SpaceRoom>()
         val roomListService = FakeRoomListService()
         val writes = mutableListOf<String>()
-        val switch = createSwitch(spaceService = spaceService, roomListService = roomListService, writes = writes)
+        val switch = createSwitch(
+            spaceService = FakeSpaceService(topLevelSpacesResult = { Result.success(spaces) }),
+            roomListService = roomListService,
+            writes = writes,
+        )
         runCurrent()
+        roomListService.postState(RoomListService.State.Running)
+        settle()
 
-        spaceService.emitTopLevelSpaces(listOf(aSpaceRoom(state = CurrentUserMembership.INVITED)))
+        spaces = listOf(aSpaceRoom(state = CurrentUserMembership.JOINED))
+        roomListService.postState(RoomListService.State.Idle)
+        runCurrent()
         roomListService.postState(RoomListService.State.Running)
         settle()
 
         assertThat(switch.isEnabled.value).isFalse()
-        assertThat(writes).isEmpty()
+        assertThat(writes).containsExactly("""{"enabled":false}""")
+    }
+
+    @Test
+    fun `a user choice made while the default is being decided wins`() = runTest {
+        val spaces = CompletableDeferred<List<SpaceRoom>>()
+        val roomListService = FakeRoomListService()
+        val writes = mutableListOf<String>()
+        val switch = createSwitch(
+            spaceService = FakeSpaceService(topLevelSpacesResult = { Result.success(spaces.await()) }),
+            roomListService = roomListService,
+            writes = writes,
+        )
+        runCurrent()
+        roomListService.postState(RoomListService.State.Running)
+        runCurrent()
+
+        launch { switch.setEnabled(false) }
+        runCurrent()
+        spaces.complete(listOf(aSpaceRoom(state = CurrentUserMembership.JOINED)))
+        settle()
+
+        assertThat(switch.isEnabled.value).isFalse()
+        assertThat(writes).containsExactly("""{"enabled":false}""")
     }
 
     @Test
     fun `a value changed on another phone is read when the room list is running`() = runTest {
-        val syncService = FakeSyncService()
         val roomListService = FakeRoomListService()
         var stored: String? = """{"enabled":false}"""
-        val switch = createSwitch(syncService = syncService, roomListService = roomListService, stored = { stored })
+        val switch = createSwitch(roomListService = roomListService, stored = { stored })
         runCurrent()
 
-        syncService.emitSyncState(SyncState.Running)
+        roomListService.emitSyncUpdate()
         runCurrent()
         assertThat(switch.isEnabled.value).isFalse()
 
@@ -155,24 +282,69 @@ class DefaultSpacesSwitchTest {
     }
 
     @Test
-    fun `a stale read does not undo a value this phone is writing or has just written`() = runTest {
-        val syncService = FakeSyncService()
+    fun `a value changed on another phone is read on the next sync update while the room list stays running`() = runTest {
         val roomListService = FakeRoomListService()
         var stored: String? = """{"enabled":false}"""
-        val switch = createSwitch(syncService = syncService, roomListService = roomListService, stored = { stored })
+        val switch = createSwitch(roomListService = roomListService, stored = { stored })
+        roomListService.postState(RoomListService.State.Running)
+        runCurrent()
+        roomListService.emitSyncUpdate()
+        runCurrent()
+        assertThat(switch.isEnabled.value).isFalse()
+
+        stored = """{"enabled":true}"""
+        roomListService.emitSyncUpdate()
+        runCurrent()
+
+        assertThat(switch.isEnabled.value).isTrue()
+    }
+
+    @Test
+    fun `a sync update that has not brought this phone's write back does not undo it`() = runTest {
+        val roomListService = FakeRoomListService()
+        var stored: String? = """{"enabled":false}"""
+        val switch = createSwitch(roomListService = roomListService, stored = { stored })
         roomListService.postState(RoomListService.State.Running)
         runCurrent()
 
         launch { switch.setEnabled(true) }
         runCurrent()
-        syncService.emitSyncState(SyncState.Running)
+        roomListService.emitSyncUpdate()
         runCurrent()
         assertThat(switch.isEnabled.value).isTrue()
 
         settle()
-        syncService.emitSyncState(SyncState.Idle)
+        roomListService.emitSyncUpdate()
         runCurrent()
-        syncService.emitSyncState(SyncState.Running)
+        assertThat(switch.isEnabled.value).isTrue()
+
+        stored = """{"enabled":true}"""
+        roomListService.emitSyncUpdate()
+        runCurrent()
+        assertThat(switch.isEnabled.value).isTrue()
+
+        stored = """{"enabled":false}"""
+        roomListService.emitSyncUpdate()
+        runCurrent()
+        assertThat(switch.isEnabled.value).isFalse()
+    }
+
+    @Test
+    fun `a stale read does not undo a value this phone is writing or has just written`() = runTest {
+        val roomListService = FakeRoomListService()
+        var stored: String? = """{"enabled":false}"""
+        val switch = createSwitch(roomListService = roomListService, stored = { stored })
+        roomListService.postState(RoomListService.State.Running)
+        runCurrent()
+
+        launch { switch.setEnabled(true) }
+        runCurrent()
+        roomListService.emitSyncUpdate()
+        runCurrent()
+        assertThat(switch.isEnabled.value).isTrue()
+
+        settle()
+        roomListService.emitSyncUpdate()
         runCurrent()
         assertThat(switch.isEnabled.value).isTrue()
 
@@ -184,9 +356,7 @@ class DefaultSpacesSwitchTest {
         assertThat(switch.isEnabled.value).isTrue()
 
         stored = """{"enabled":false}"""
-        syncService.emitSyncState(SyncState.Idle)
-        runCurrent()
-        syncService.emitSyncState(SyncState.Running)
+        roomListService.emitSyncUpdate()
         runCurrent()
         assertThat(switch.isEnabled.value).isFalse()
     }
@@ -256,15 +426,16 @@ class DefaultSpacesSwitchTest {
 
     @Test
     fun `enableWhenJoined does not write when Spaces is already on`() = runTest {
-        val syncService = FakeSyncService()
+        val roomListService = FakeRoomListService()
         val writes = mutableListOf<String>()
         val switch = createSwitch(
-            syncService = syncService,
+            roomListService = roomListService,
             stored = { """{"enabled":true}""" },
             writes = writes,
             roomInfoFlow = flowOf(Optional.of(aRoomInfo(currentUserMembership = CurrentUserMembership.JOINED))),
         )
-        syncService.emitSyncState(SyncState.Running)
+        runCurrent()
+        roomListService.emitSyncUpdate()
         runCurrent()
         assertThat(switch.isEnabled.value).isTrue()
 
@@ -298,20 +469,21 @@ class DefaultSpacesSwitchTest {
         runCurrent()
     }
 
+    private fun aSpaceServiceInASpace() = FakeSpaceService(topLevelSpacesResult = { Result.success(listOf(aSpaceRoom(state = CurrentUserMembership.JOINED))) })
+
     private fun TestScope.createSwitch(
         spaceService: FakeSpaceService = FakeSpaceService(),
-        syncService: FakeSyncService = FakeSyncService(),
         roomListService: FakeRoomListService = FakeRoomListService(),
         stored: () -> String? = { null },
+        readResult: () -> Result<String?> = { Result.success(stored()) },
         writes: MutableList<String> = mutableListOf(),
         writeResult: () -> Result<Unit> = { Result.success(Unit) },
         roomInfoFlow: Flow<Optional<RoomInfo>> = flowOf(Optional.empty()),
     ) = DefaultSpacesSwitch(
         matrixClient = FakeMatrixClient(
             spaceService = spaceService,
-            syncService = syncService,
             roomListService = roomListService,
-            getAccountDataLambda = { Result.success(stored()) },
+            getAccountDataLambda = { readResult() },
             setAccountDataLambda = { _, content ->
                 writes += content
                 writeResult()

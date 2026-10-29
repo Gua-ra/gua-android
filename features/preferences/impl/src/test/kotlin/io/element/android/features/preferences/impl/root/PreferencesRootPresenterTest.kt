@@ -168,6 +168,25 @@ class PreferencesRootPresenterTest {
     }
 
     @Test
+    fun `present - opening Settings refreshes the Spaces switch once`() = runTest {
+        val spacesSwitch = FakeSpacesSwitch()
+        val matrixClient = FakeMatrixClient(
+            canDeactivateAccountResult = { true },
+            accountManagementUrlResult = { Result.success("") },
+        )
+        createPresenter(
+            matrixClient = matrixClient,
+            sessionEnterpriseService = FakeSessionEnterpriseService(
+                tweakMasUrlResult = { it },
+            ),
+            spacesSwitch = spacesSwitch,
+        ).test {
+            awaitLastSequentialItem()
+            assertThat(spacesSwitch.refreshCount).isEqualTo(1)
+        }
+    }
+
+    @Test
     fun `present - number of blocked users`() = runTest {
         val matrixClient = FakeMatrixClient(
             canDeactivateAccountResult = { true },

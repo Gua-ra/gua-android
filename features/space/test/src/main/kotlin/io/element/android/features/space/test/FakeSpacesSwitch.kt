@@ -24,6 +24,13 @@ class FakeSpacesSwitch(
         return setEnabledResult(enabled).onSuccess { state.value = enabled }
     }
 
+    var refreshCount = 0
+        private set
+
+    override suspend fun refresh() {
+        refreshCount++
+    }
+
     val enableWhenJoinedCalls = mutableListOf<RoomId>()
 
     override fun enableWhenJoined(roomId: RoomId) {

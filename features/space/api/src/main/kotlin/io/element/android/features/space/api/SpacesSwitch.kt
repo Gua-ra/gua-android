@@ -19,6 +19,11 @@ interface SpacesSwitch {
     suspend fun setEnabled(enabled: Boolean): Result<Unit>
 
     /**
+     * Re-reads the stored value. Never decides the default for an account with no stored value.
+     */
+    suspend fun refresh()
+
+    /**
      * Turns Spaces on once the current user's membership in [roomId] becomes joined. Outlives the calling screen.
      */
     fun enableWhenJoined(roomId: RoomId)

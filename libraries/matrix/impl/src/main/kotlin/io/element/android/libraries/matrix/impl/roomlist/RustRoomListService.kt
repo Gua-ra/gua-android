@@ -15,9 +15,11 @@ import io.element.android.libraries.matrix.api.roomlist.RoomListService
 import io.element.android.libraries.matrix.impl.room.RoomSyncSubscriber
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
@@ -85,6 +87,12 @@ internal class RustRoomListService(
             }
             .distinctUntilChanged()
             .stateIn(sessionCoroutineScope, SharingStarted.Eagerly, RoomListService.State.Idle)
+
+    // GUA FORK: the SDK sets a state after every stored response (Running to Running included), so this is not de-duplicated.
+    override val syncUpdates: Flow<Unit> =
+        innerRoomListService.stateFlow()
+            .filter { it != RoomListServiceState.INITIAL && it != RoomListServiceState.ERROR && it != RoomListServiceState.TERMINATED }
+            .map { }
 }
 
 private fun RoomListServiceState.toRoomListState(): RoomListService.State {

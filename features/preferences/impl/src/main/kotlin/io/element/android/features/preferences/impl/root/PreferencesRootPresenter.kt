@@ -75,6 +75,9 @@ class PreferencesRootPresenter(
             // Force a refresh of the profile
             matrixClient.getUserProfile()
         }
+        LaunchedEffect(Unit) {
+            spacesSwitch.refresh()
+        }
 
         val isMultiAccountEnabled by remember {
             featureFlagService.isFeatureEnabledFlow(FeatureFlags.MultiAccount)

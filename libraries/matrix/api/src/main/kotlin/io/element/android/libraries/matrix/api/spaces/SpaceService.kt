@@ -25,6 +25,9 @@ interface SpaceService {
      */
     suspend fun editableSpaces(): Result<List<SpaceRoom>>
 
+    /** GUA FORK: the joined top-level spaces, read at call time rather than from [topLevelSpacesFlow], which can lag a sync. */
+    suspend fun topLevelSpaces(): Result<List<SpaceRoom>>
+
     fun getLeaveSpaceHandle(spaceId: RoomId): LeaveSpaceHandle
 
     /**

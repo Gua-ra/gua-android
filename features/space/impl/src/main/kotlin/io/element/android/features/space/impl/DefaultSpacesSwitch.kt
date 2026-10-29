@@ -17,18 +17,14 @@ import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.room.CurrentUserMembership
 import io.element.android.libraries.matrix.api.roomlist.RoomListService
-import io.element.android.libraries.matrix.api.sync.SyncState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -66,27 +62,15 @@ class DefaultSpacesSwitch(
     private var hasStoredValue = false
 
     init {
-        matrixClient.syncService.syncState
-            .filter { it == SyncState.Running }
+        matrixClient.roomListService.syncUpdates
             .onEach { refresh(fromRoomList = false) }
             .launchIn(sessionCoroutineScope)
 
-        // The room list reaches Running only after a sync response is stored, so this read sees changes made on another phone.
+        // Running follows a stored sync response, so this read sees other phones' changes and is the only place the default is decided.
         matrixClient.roomListService.state
             .onEach { if (it != RoomListService.State.Running) synchronized(lock) { restartedSinceWrite = true } }
             .filter { it == RoomListService.State.Running }
             .onEach { refresh(fromRoomList = true) }
-            .launchIn(sessionCoroutineScope)
-
-        // An account with no stored value that is already in a space starts with Spaces on. Evaluated only once a sync
-        // response is stored, so a stored value always wins over this write.
-        combine(
-            matrixClient.roomListService.state.map { it == RoomListService.State.Running },
-            matrixClient.spaceService.topLevelSpacesFlow.map { spaces -> spaces.any { it.state == CurrentUserMembership.JOINED } },
-        ) { isRunning, isInSpace -> isRunning && isInSpace }
-            .distinctUntilChanged()
-            .filter { it }
-            .onEach { enableIfUnset() }
             .launchIn(sessionCoroutineScope)
     }
 
@@ -115,7 +99,7 @@ class DefaultSpacesSwitch(
         return requestCount
     }
 
-    private suspend fun write(enabled: Boolean, request: Long, isMigration: Boolean = false): Result<Unit> = writeMutex.withLock {
+    private suspend fun write(enabled: Boolean, request: Long, isDefault: Boolean = false): Result<Unit> = writeMutex.withLock {
         val result = matrixClient.setAccountData(SPACES_ACCOUNT_DATA_TYPE, """{"enabled":$enabled}""")
         synchronized(lock) {
             writesInFlight--
@@ -127,8 +111,8 @@ class DefaultSpacesSwitch(
                     hasStoredValue = true
                 }
                 .onFailure {
-                    // A failed migration keeps the decided default on until a value is stored.
-                    if (request == requestCount && (hasStoredValue || !isMigration)) {
+                    // A failed default write keeps the decided default until a value is stored.
+                    if (request == requestCount && (hasStoredValue || !isDefault)) {
                         state.value = lastStored
                     }
                 }
@@ -136,23 +120,29 @@ class DefaultSpacesSwitch(
         result
     }
 
-    private suspend fun enableIfUnset() {
+    /**
+     * On for an account already in a space, off otherwise. Storing it means a space joined later never turns Spaces on.
+     */
+    private suspend fun storeDefaultIfUnset() {
         if (synchronized(lock) { hasStoredValue || requestedByUser || writesInFlight > 0 }) return
-        val stored = matrixClient.getAccountData(SPACES_ACCOUNT_DATA_TYPE).getOrElse { return }
-        if (stored != null) {
-            applyStored(parseEnabled(stored), fromRoomList = true)
-            return
-        }
+        // Read at decision time: topLevelSpacesFlow can still lag the response that brought the space.
+        val isInSpace = matrixClient.spaceService.topLevelSpaces().getOrElse { return }.isNotEmpty()
         val request = synchronized(lock) {
             if (hasStoredValue || requestedByUser || writesInFlight > 0) return
-            request(true)
+            request(isInSpace)
         }
-        write(true, request, isMigration = true)
+        write(isInSpace, request, isDefault = true)
     }
 
+    override suspend fun refresh() = refresh(fromRoomList = false)
+
     private suspend fun refresh(fromRoomList: Boolean) {
-        val stored = matrixClient.getAccountData(SPACES_ACCOUNT_DATA_TYPE).getOrNull() ?: return
-        applyStored(parseEnabled(stored), fromRoomList)
+        // A failed read never counts as an absent value.
+        val stored = matrixClient.getAccountData(SPACES_ACCOUNT_DATA_TYPE).getOrElse { return }
+        when {
+            stored != null -> applyStored(parseEnabled(stored), fromRoomList)
+            fromRoomList -> storeDefaultIfUnset()
+        }
     }
 
     /**
