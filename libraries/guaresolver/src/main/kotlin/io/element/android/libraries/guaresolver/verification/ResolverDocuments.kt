@@ -9,7 +9,10 @@ package io.element.android.libraries.guaresolver.verification
 
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import okhttp3.Call
 import okhttp3.Callback
@@ -41,16 +44,25 @@ internal class ResolverDocuments(retrofit: Retrofit) {
 
     suspend fun roster(): Fetched<ServedRoster> = text("roster").decode { body ->
         val tree = json.decodeFromString<JsonObject>(body)
+        require(!tree.rosterQuotesAScalar()) { "a roster number or boolean is a string" }
         ServedRoster(CanonicalRoster.formOf(tree), json.decodeFromJsonElement<SignedRoster>(tree))
     }
 
-    suspend fun log(): Fetched<TransparencyLog> = text("roster/log").decode { json.decodeFromString<TransparencyLog>(it) }
+    suspend fun log(): Fetched<TransparencyLog> = text("roster/log").decode { body ->
+        val tree = json.decodeFromString<JsonObject>(body)
+        require(tree["events"].objects().none { it.quotes("index") }) { "a log index is a string" }
+        json.decodeFromJsonElement<TransparencyLog>(tree)
+    }
 
     suspend fun consistency(first: Long, second: Long): Fetched<ConsistencyProof> =
         text("roster/log/consistency?first=$first&second=$second").decode { json.decodeFromString<ConsistencyProof>(it) }
 
     /** [Fetched.NotFound] when no policy is served. */
-    suspend fun routingPolicy(): Fetched<RoutingPolicyBundle> = text("policy/routing").decode { json.decodeFromString<RoutingPolicyBundle>(it) }
+    suspend fun routingPolicy(): Fetched<RoutingPolicyBundle> = text("policy/routing").decode { body ->
+        val tree = json.decodeFromString<JsonObject>(body)
+        require(!tree.policyQuotesAScalar()) { "a policy number or boolean is a string" }
+        json.decodeFromJsonElement<RoutingPolicyBundle>(tree)
+    }
 
     private suspend fun text(path: String): Fetched<String> {
         val url = baseUrl.resolve(path) ?: return Fetched.Failed
@@ -101,6 +113,21 @@ private inline fun <T> Fetched<String>.decode(parse: (String) -> T): Fetched<T> 
     Fetched.Malformed -> Fetched.Malformed
     Fetched.Failed -> Fetched.Failed
 }
+
+/** Whether any of these fields is a JSON string, which kotlinx would still read as the number or boolean it names. */
+internal fun JsonObject.quotes(vararg fields: String): Boolean = fields.any { (this[it] as? JsonPrimitive)?.isString == true }
+
+private fun JsonElement?.objects(): List<JsonObject> = (this as? JsonArray).orEmpty().filterIsInstance<JsonObject>()
+
+private fun JsonObject.rosterQuotesAScalar(): Boolean =
+    quotes("version") ||
+        (this["logCheckpoint"] as? JsonObject)?.quotes("size") == true ||
+        this["entries"].objects().any { entry ->
+            (entry["homeserver"] as? JsonObject)?.quotes("weight", "acceptsNew") == true || entry["claims"].objects().any { it.quotes("priority") }
+        }
+
+private fun JsonObject.policyQuotesAScalar(): Boolean =
+    quotes("version") || this["rules"].objects().any { it.quotes("priority", "enabled") } || (this["fallback"] as? JsonObject)?.quotes("enabled") == true
 
 /** No array or object nests deeper than [limit]; brackets inside strings are text. Iterative, so any input is safe. */
 private fun isNestedAtMost(text: String, limit: Int): Boolean {

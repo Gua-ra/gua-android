@@ -7,14 +7,16 @@
 
 package io.element.android.libraries.guaresolver.verification
 
+import io.element.android.libraries.core.data.tryOrNull
 import java.time.Instant
 import java.time.format.DateTimeParseException
 
-// Instant.parse alone also takes a lowercase t or z, the hour 24 and a leap second, which other platforms refuse.
-private val RESOLVER_TIMESTAMP = Regex("""[+-]?\d{4,}-\d{2}-\d{2}T([01]\d|2[0-3]):\d{2}:[0-5]\d(\.\d{1,9})?Z""")
+// Instant.parse alone also takes a signed or longer year, a lowercase t or z, the hour 24 and a leap second.
+private val RESOLVER_TIMESTAMP = Regex("""\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d{1,9})?Z""")
 
 /**
- * An instant in the resolver's form: ISO-8601 UTC with an uppercase T and Z and 0 to 9 fractional digits.
+ * An instant in the resolver's form: ISO-8601 UTC, four year digits with no sign, an uppercase T and Z, and 0 to 9
+ * fractional digits. Every such instant fits in epoch milliseconds.
  *
  * @throws DateTimeParseException when the string is not in that form.
  */
@@ -27,6 +29,7 @@ internal fun String.toInstant(): Instant {
  * Epoch milliseconds, truncated, which is what every canonical form carries.
  *
  * @throws DateTimeParseException when the string is not in the resolver's form.
- * @throws ArithmeticException when the instant is outside the epoch-millisecond range.
  */
 internal fun String.toEpochMillis(): Long = toInstant().toEpochMilli()
+
+internal fun String.isResolverTimestamp(): Boolean = tryOrNull { toInstant() } != null

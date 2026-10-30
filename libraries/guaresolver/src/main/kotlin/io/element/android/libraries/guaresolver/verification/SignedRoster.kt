@@ -102,7 +102,6 @@ internal data class MemberSignature(
 
 @Serializable
 internal data class TransparencyLog(
-    val head: LogCheckpoint? = null,
     val events: List<LogEvent> = emptyList(),
 )
 
@@ -114,8 +113,10 @@ internal data class LogEvent(
     val payloadHash: String,
     val recordedAt: String,
 ) {
+    // Every event must be well formed, past the checkpoint too.
     init {
         require(index in 0L..Int.MAX_VALUE) { "a log index fits in 31 bits" }
+        require(recordedAt.isResolverTimestamp()) { "a log time is in the resolver's form" }
     }
 
     fun leafData(): String = "$index|$type|${homeserverId.orEmpty()}|$payloadHash|${recordedAt.toEpochMillis()}"
@@ -123,12 +124,9 @@ internal data class LogEvent(
 
 @Serializable
 internal data class ConsistencyProof(
-    val first: Long,
-    val second: Long,
-    val proof: List<String> = emptyList(),
+    val proof: List<String>,
 ) {
     init {
-        require(first in 0L..Int.MAX_VALUE && second in 0L..Int.MAX_VALUE) { "a log size fits in 31 bits" }
         require(proof.all { PROOF_HASH.matches(it) }) { "a proof hash is 64 lowercase hex characters" }
     }
 }

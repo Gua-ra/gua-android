@@ -17,6 +17,9 @@ class InstantsTest {
     @Test
     fun `only the resolver's timestamp form is read, though Instant parse takes more`() {
         val refused = listOf(
+            "+2026-10-01T12:00:00Z",
+            "+10000-01-01T00:00:00Z",
+            "-0001-01-01T00:00:00Z",
             "2026-10-01t12:00:00Z",
             "2026-10-01T12:00:00z",
             "2026-10-01T24:00:00Z",
@@ -27,6 +30,6 @@ class InstantsTest {
         for (value in refused) {
             assertWithMessage(value).that(runCatchingExceptions { value.toInstant() }.exceptionOrNull()).isInstanceOf(DateTimeParseException::class.java)
         }
-        assertThat("+10000-01-01T00:00:00.5Z".toInstant().toString()).isEqualTo("+10000-01-01T00:00:00.500Z")
+        assertThat("2026-10-01T12:00:00.5Z".toInstant().toString()).isEqualTo("2026-10-01T12:00:00.500Z")
     }
 }

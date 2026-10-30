@@ -32,22 +32,29 @@ class MemberEntryVerifierTest {
     }
 
     @Test
-    fun `a window longer than 400 days is bad_window even where its milliseconds would wrap`() {
+    fun `bounds with signed years are parse_error, though their milliseconds would wrap`() {
         val window = memberWith("notBefore" to JsonPrimitive("-158000000-01-01T00:00:00Z"), "notAfter" to JsonPrimitive("+158000000-01-01T00:00:00Z"))
 
-        assertThat(MemberEntryVerifier.verify(homeserver, window, at)).isEqualTo(MemberEntryOutcome.Invalid(VerificationReason.BAD_WINDOW))
+        assertThat(MemberEntryVerifier.verify(homeserver, window, at)).isEqualTo(MemberEntryOutcome.Invalid(VerificationReason.PARSE_ERROR))
     }
 
     @Test
-    fun `a bound past the epoch-millisecond range is bad_window`() {
+    fun `a bound past the epoch-millisecond range is parse_error`() {
         val window = memberWith("notAfter" to JsonPrimitive("+300000000-01-01T00:00:00Z"))
 
-        assertThat(MemberEntryVerifier.verify(homeserver, window, at)).isEqualTo(MemberEntryOutcome.Invalid(VerificationReason.BAD_WINDOW))
+        assertThat(MemberEntryVerifier.verify(homeserver, window, at)).isEqualTo(MemberEntryOutcome.Invalid(VerificationReason.PARSE_ERROR))
     }
 
     @Test
     fun `a field sent as null is parse_error`() {
         val block = memberWith("sequence" to JsonNull)
+
+        assertThat(MemberEntryVerifier.verify(homeserver, block, at)).isEqualTo(MemberEntryOutcome.Invalid(VerificationReason.PARSE_ERROR))
+    }
+
+    @Test
+    fun `a sequence sent as a string is parse_error`() {
+        val block = memberWith("sequence" to JsonPrimitive("1"))
 
         assertThat(MemberEntryVerifier.verify(homeserver, block, at)).isEqualTo(MemberEntryOutcome.Invalid(VerificationReason.PARSE_ERROR))
     }

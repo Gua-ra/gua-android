@@ -49,8 +49,6 @@ internal object CanonicalMemberEntry {
  */
 internal object MemberEntryVerifier {
     private val MAX_LIFETIME: Duration = Duration.ofDays(400)
-    private val EARLIEST: Instant = Instant.ofEpochMilli(Long.MIN_VALUE)
-    private val LATEST: Instant = Instant.ofEpochMilli(Long.MAX_VALUE)
     private const val NANOS_PER_MILLI = 1_000_000
 
     fun verify(homeserver: RosterHomeserver, member: JsonElement?, atMillis: Long): MemberEntryOutcome {
@@ -81,10 +79,10 @@ internal object MemberEntryVerifier {
 
     /**
      * The default Json refuses unknown fields, so a block cannot carry a field its signature does not cover. A field
-     * sent as null has the wrong type; a field left out fails the check that reads it.
+     * sent as null or as a quoted number has the wrong type; a field left out fails the check that reads it.
      */
     private fun decode(member: JsonElement): MemberAttestation? {
-        if (member !is JsonObject || member.containsNull()) return null
+        if (member !is JsonObject || member.containsNull() || member.quotes("sequence")) return null
         return tryOrNull { Json.decodeFromJsonElement<MemberAttestation>(member) }
     }
 
@@ -94,20 +92,17 @@ internal object MemberEntryVerifier {
         is JsonPrimitive -> this is JsonNull
     }
 
-    /** As the resolver checks it, on instants and durations, so no bound can overflow a millisecond count. */
+    /** As the resolver checks it, on instants and durations. */
     private fun checkWindow(member: MemberAttestation, at: Instant): String? {
         if (member.notBefore == null || member.notAfter == null) return VerificationReason.BAD_WINDOW
         val notBefore = tryOrNull { member.notBefore.toInstant() } ?: return VerificationReason.PARSE_ERROR
         val notAfter = tryOrNull { member.notAfter.toInstant() } ?: return VerificationReason.PARSE_ERROR
-        if (!notBefore.isSignable() || !notAfter.isSignable()) return VerificationReason.BAD_WINDOW
+        if (notBefore.nano % NANOS_PER_MILLI != 0 || notAfter.nano % NANOS_PER_MILLI != 0) return VerificationReason.BAD_WINDOW
         if (!notAfter.isAfter(notBefore)) return VerificationReason.BAD_WINDOW
         if (Duration.between(notBefore, notAfter) > MAX_LIFETIME) return VerificationReason.BAD_WINDOW
         if (at.isBefore(notBefore) || at.isAfter(notAfter)) return VerificationReason.OUTSIDE_WINDOW
         return null
     }
-
-    /** The canonical bytes carry the bound as epoch milliseconds, so it needs a whole millisecond within that range. */
-    private fun Instant.isSignable(): Boolean = nano % NANOS_PER_MILLI == 0 && !isBefore(EARLIEST) && !isAfter(LATEST)
 
     /** At least one signature, each with a key id and a value, and no key id twice. */
     private fun hasWellFormedSignatures(member: MemberAttestation): Boolean {
