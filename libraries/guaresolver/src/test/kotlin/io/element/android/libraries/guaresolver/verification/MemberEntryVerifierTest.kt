@@ -22,7 +22,7 @@ import org.junit.Test
 class MemberEntryVerifierTest {
     private val vector: JsonObject by lazy { VectorFixtures.load(VectorFixtures.LP_VECTORS_RESOURCE)["memberEntries"]!!.jsonArray.first().jsonObject }
     private val json = Json { ignoreUnknownKeys = true }
-    private val homeserver: RosterHomeserver by lazy { json.decodeFromJsonElement(vector["homeserver"]!!) }
+    private val homeserver: RosterHomeserver by lazy { json.decodeFromJsonElement(vector["homeserver"]!!.jsonObject.withRosterAttributes()) }
     private val member: JsonObject by lazy { vector["member"]!!.jsonObject }
     private val at: Long by lazy { vector.long("notBeforeEpochMs") }
 

@@ -10,6 +10,7 @@ package io.element.android.libraries.guaresolver.verification
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -45,6 +46,9 @@ internal object VectorFixtures {
 /** The vector of [section] whose `ref` is [ref]: vectors name the rosters and policies they use this way. */
 internal fun JsonObject.byRef(section: String, ref: String): JsonObject =
     this[section]!!.jsonArray.map { it.jsonObject }.single { it.stringOrNull("ref") == ref }
+
+/** An lp vector homeserver carries the member-signed fields only, so the roster's weight and acceptsNew are added. */
+internal fun JsonObject.withRosterAttributes(): JsonObject = JsonObject(mapOf("weight" to JsonPrimitive(0), "acceptsNew" to JsonPrimitive(false)) + this)
 
 internal fun JsonObject.string(key: String): String = this[key]!!.jsonPrimitive.content
 

@@ -13,14 +13,15 @@ import kotlinx.serialization.json.JsonElement
 /**
  * The signed roster as `GET /roster` serves it, with every field the `gua-roster.v1` bytes cover. The
  * member block stays raw JSON for [MemberEntryVerifier], so a broken block fails memberEntry, not the roster.
+ * A field without a default must be present and not null, as the contract requires.
  */
 @Serializable
 internal data class SignedRoster(
     val version: Long,
     val issuedAt: String,
-    val entries: List<SignedRosterEntry> = emptyList(),
+    val entries: List<SignedRosterEntry>,
     val logCheckpoint: LogCheckpoint,
-    val authoritySignatures: List<AuthoritySignature> = emptyList(),
+    val authoritySignatures: List<AuthoritySignature>,
 )
 
 @Serializable
@@ -43,8 +44,8 @@ internal data class RosterHomeserver(
     val baseUrl: String? = null,
     val masIssuer: String? = null,
     val region: String? = null,
-    val weight: Int = 0,
-    val acceptsNew: Boolean = false,
+    val weight: Int,
+    val acceptsNew: Boolean,
     val signingKey: String? = null,
     val searchVisibility: String? = null,
     val searchGroups: List<String>? = null,
@@ -102,7 +103,7 @@ internal data class MemberSignature(
 
 @Serializable
 internal data class TransparencyLog(
-    val events: List<LogEvent> = emptyList(),
+    val events: List<LogEvent>,
 )
 
 @Serializable

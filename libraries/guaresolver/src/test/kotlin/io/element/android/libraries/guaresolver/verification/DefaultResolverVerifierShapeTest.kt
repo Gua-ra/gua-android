@@ -215,19 +215,33 @@ class DefaultResolverVerifierShapeTest {
     }
 
     @Test
-    fun `a roster field the contract never allows to be null is a parse error`() = runTest {
+    fun `a roster field the contract never allows to be null or absent is a parse error`() = runTest {
         val roster = servedRoster("r1")
         val entry = roster.rosterEntries().single()
         val homeserver = entry["homeserver"]!!.jsonObject
-        val nulled = listOf("version", "issuedAt", "logCheckpoint", "entries", "authoritySignatures").map { JsonObject(roster + (it to JsonNull)) } +
-            listOf("homeserver", "status").map { withEntry(roster, JsonObject(entry + (it to JsonNull))) } +
-            listOf("weight", "acceptsNew").map { withEntry(roster, JsonObject(entry + ("homeserver" to JsonObject(homeserver + (it to JsonNull))))) }
-        for (body in nulled) {
+        val broken = listOf("version", "issuedAt", "logCheckpoint", "entries", "authoritySignatures").flatMap { nullAndAbsent(roster, it) } +
+            listOf("homeserver", "status").flatMap { field -> nullAndAbsent(entry, field).map { withEntry(roster, it) } } +
+            listOf("weight", "acceptsNew").flatMap { field ->
+                nullAndAbsent(homeserver, field).map { withEntry(roster, JsonObject(entry + ("homeserver" to it))) }
+            }
+        for (body in broken) {
             val server = ScriptedResolver().apply { this.roster = { ok(body.toString()) } }.start()
 
             val report = verify(createVerifier(server), answer(hsBr()))
 
             assertWithMessage(body.toString()).that(report.rosterSignature).isEqualTo(RosterSignatureOutcome.Unverifiable(VerificationReason.PARSE_ERROR))
+            server.shutdown()
+        }
+    }
+
+    @Test
+    fun `a log whose events are null or absent is a parse error`() = runTest {
+        for (log in nullAndAbsent(Json.parseToJsonElement(logJson()).jsonObject, "events")) {
+            val server = withoutPolicy().apply { this.log = { ok(log.toString()) } }.start()
+
+            val report = verify(createVerifier(server), answer(hsBr()))
+
+            assertWithMessage(log.toString()).that(report.policy).isEqualTo(PolicyOutcome.Unverifiable(VerificationReason.PARSE_ERROR))
             server.shutdown()
         }
     }
@@ -301,7 +315,11 @@ class DefaultResolverVerifierShapeTest {
         val rules = bundle["rules"]!!.jsonArray.map { it.jsonObject }
         fun withFirstRule(field: String, value: String) =
             JsonObject(bundle + ("rules" to JsonArray(listOf(JsonObject(rules.first() + (field to JsonPrimitive(value)))) + rules.drop(1))))
-        val quoted = listOf(JsonObject(bundle + ("version" to JsonPrimitive("3"))), withFirstRule("priority", "1"), withFirstRule("enabled", "false"))
+        val quoted = listOf(
+            JsonObject(bundle + ("version" to JsonPrimitive("3"))),
+            withFirstRule("priority", "1"),
+            withFirstRule("enabled", "false"),
+        )
         for (body in quoted) {
             val server = policyRoutingToBr().apply { policy = { ok(body.toString()) } }.start()
 
@@ -311,6 +329,9 @@ class DefaultResolverVerifierShapeTest {
             server.shutdown()
         }
     }
+
+    /** [document] with [field] sent as null, then without it. */
+    private fun nullAndAbsent(document: JsonObject, field: String) = listOf(JsonObject(document + (field to JsonNull)), JsonObject(document - field))
 
     /** The one-entry [roster] with its entry replaced. */
     private fun withEntry(roster: JsonObject, entry: JsonObject) = JsonObject(roster + ("entries" to JsonArray(listOf(entry))))

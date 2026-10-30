@@ -255,12 +255,13 @@ class ResolverVerificationVectorsTest {
 
     @Test
     fun `a null endpoint field is the text null in the roster bytes, as the resolver writes it`() {
-        val homeserver = RosterHomeserver(id = null, serverName = null, baseUrl = null, masIssuer = null)
+        val homeserver = RosterHomeserver(id = null, serverName = null, baseUrl = null, masIssuer = null, weight = 0, acceptsNew = false)
         val roster = SignedRoster(
             version = 1,
             issuedAt = "2026-10-01T00:00:00Z",
             entries = listOf(SignedRosterEntry(homeserver = homeserver, status = "ACTIVE")),
             logCheckpoint = LogCheckpoint(merkleRoot = "00", size = 0),
+            authoritySignatures = emptyList(),
         )
 
         val entryLine = CanonicalRoster.bytes(roster, RosterForm.LEGACY).toString(Charsets.UTF_8).lines()[4]
@@ -318,7 +319,7 @@ class ResolverVerificationVectorsTest {
         val verifier = MemberEntryVerifier
         for (vector in lpVectors["memberEntries"]!!.jsonArray.map { it.jsonObject }) {
             val name = vector.string("name")
-            val homeserver = json.decodeFromJsonElement<RosterHomeserver>(vector["homeserver"]!!)
+            val homeserver = json.decodeFromJsonElement<RosterHomeserver>(vector["homeserver"]!!.jsonObject.withRosterAttributes())
             val memberJson = vector["member"]!!.jsonObject
             val member = Json.decodeFromJsonElement<MemberAttestation>(memberJson)
 
@@ -352,7 +353,7 @@ class ResolverVerificationVectorsTest {
         // A rotation vector needs the previous entry, and v1 keeps none.
         for (vector in lpVectors["rejections"]!!.jsonArray.map { it.jsonObject }.filter { "previous" !in it }) {
             val name = vector.string("name")
-            val homeserver = json.decodeFromJsonElement<RosterHomeserver>(vector["homeserver"]!!)
+            val homeserver = json.decodeFromJsonElement<RosterHomeserver>(vector["homeserver"]!!.jsonObject.withRosterAttributes())
             val memberJson = vector["member"]!!.jsonObject
             val at = memberJson.string("notBefore").toEpochMillis()
             assertWithName(name, verifier.verify(homeserver, memberJson, at), MemberEntryOutcome.Invalid(expectedReasons.getValue(name)))
