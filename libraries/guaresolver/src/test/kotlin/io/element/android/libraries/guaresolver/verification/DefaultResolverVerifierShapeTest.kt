@@ -315,10 +315,12 @@ class DefaultResolverVerifierShapeTest {
         val rules = bundle["rules"]!!.jsonArray.map { it.jsonObject }
         fun withFirstRule(field: String, value: String) =
             JsonObject(bundle + ("rules" to JsonArray(listOf(JsonObject(rules.first() + (field to JsonPrimitive(value)))) + rules.drop(1))))
+        val fallback = JsonObject(bundle["fallback"]!!.jsonObject + ("enabled" to JsonPrimitive("true")))
         val quoted = listOf(
             JsonObject(bundle + ("version" to JsonPrimitive("3"))),
             withFirstRule("priority", "1"),
             withFirstRule("enabled", "false"),
+            JsonObject(bundle + ("fallback" to fallback)),
         )
         for (body in quoted) {
             val server = policyRoutingToBr().apply { policy = { ok(body.toString()) } }.start()
