@@ -100,7 +100,7 @@ class DefaultResolverVerifierTest {
 
     @Test
     fun `a mixed roster is refused before any signature check`() = runTest {
-        val resolver = ScriptedResolver().apply { roster = { ok(rosterRejection(MIXED_ROSTER_REJECTION).toString()) } }
+        val resolver = ScriptedResolver().apply { roster = { ok(mixedRosterRejection().toString()) } }
         val server = resolver.start()
 
         val report = verify(createVerifier(server), answer(hsCa()))

@@ -91,6 +91,9 @@ internal fun servedPolicy(ref: String): JsonObject = vectors.byRef("policies", r
 
 internal fun rosterRejection(index: Int): JsonObject = vectors["rosterRejections"]!!.jsonArray[index].jsonObject["roster"]!!.jsonObject
 
+internal fun mixedRosterRejection(): JsonObject =
+    vectors["rosterRejections"]!!.jsonArray.map { it.jsonObject }.single { it.stringOrNull("form") == "mixed" }["roster"]!!.jsonObject
+
 internal fun policyRejection(index: Int): JsonObject = vectors["policyRejections"]!!.jsonArray[index].jsonObject["bundle"]!!.jsonObject
 
 internal fun JsonObject.rosterEntries(): List<JsonObject> = this["entries"]!!.jsonArray.map { it.jsonObject }
@@ -248,7 +251,6 @@ internal const val PLACEMENT_TIME = "2026-10-27T00:00:00Z"
 internal const val STORE_NAME = "gua_resolver_verification"
 internal const val TAMPERED_BASE_URL_REJECTION = 0
 internal const val UNTRUSTED_KEY_REJECTION = 1
-internal const val MIXED_ROSTER_REJECTION = 5
 internal const val OPERATIONAL_KEY_REJECTION = 0
 internal const val NESTED = "NESTED"
 internal const val DEEP_NESTING = 100_000
