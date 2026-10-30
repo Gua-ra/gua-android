@@ -7,7 +7,7 @@
 
 package io.element.android.libraries.guaresolver.verification
 
-/** The reason codes an invalid, unverifiable or indeterminate check carries. Never text from the server. */
+/** Fixed codes, never text from the server. */
 object VerificationReason {
     const val NO_TRUST_ROOTS = "no_trust_roots"
     const val ROSTER_UNAVAILABLE = "roster_unavailable"

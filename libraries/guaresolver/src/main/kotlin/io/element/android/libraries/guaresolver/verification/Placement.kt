@@ -10,7 +10,7 @@ package io.element.android.libraries.guaresolver.verification
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 
-/** What placement may use. A public caller has no verified claims, so its affiliations and attributes never count. */
+/** A public caller has no verified claims, so its affiliations and attributes never count. */
 internal data class PlacementContext(
     val e164Phone: String?,
     val country: String? = null,
@@ -21,10 +21,9 @@ internal data class PlacementContext(
     val attributes: Map<String, String> = emptyMap(),
     val claimsVerified: Boolean = false,
 ) {
-    /** This context as placement sees it: affiliations and attributes count only when the claims were verified. */
     fun withoutUnverifiedClaims(): PlacementContext = if (claimsVerified) this else copy(affiliations = emptyList(), attributes = emptyMap())
 
-    /** The bucketing key of the weighted fallback. Not injective and not signed; it only seeds a hash. */
+    /** Not injective and not signed: it only seeds the weighted fallback's hash. */
     fun routingKey(): String = buildString {
         append("phone=").append(e164Phone.orEmpty()).append('\n')
         append("country=").append(country.orEmpty()).append('\n')
@@ -43,11 +42,7 @@ internal data class PlacementDecision(
     val ruleId: String,
 )
 
-/**
- * The resolver's new-account placement, reproduced over a verified roster and policy: signed policy rules,
- * then roster claims, then the stable weighted fallback. Port of `PolicyRoutingRule`, `ClaimRule` and
- * `WeightedFallbackRule`, in that order.
- */
+/** Port of the resolver's new-account placement: `PolicyRoutingRule`, then `ClaimRule`, then `WeightedFallbackRule`. */
 internal object PlacementEngine {
     fun decide(
         context: PlacementContext,
@@ -64,9 +59,8 @@ internal object PlacementEngine {
     }
 
     /**
-     * Whether a rule that matches but sits in a zone without a valid delegate signature ranks above the rule that
-     * decided. Neither the bundle signatures nor its log leaf cover delegate signatures, so a resolver can strip
-     * one to hide a rule. Every policy rule ranks above roster claims and the fallback.
+     * Neither the bundle signatures nor its log leaf cover delegate signatures, so a resolver can strip one to hide a
+     * rule. Every policy rule ranks above roster claims and the fallback.
      */
     fun unsignedRuleOutranks(
         context: PlacementContext,
@@ -84,7 +78,6 @@ internal object PlacementEngine {
             .any { decided == null || CanonicalRoutingPolicy.ruleOrder.compare(it, decided) < 0 }
     }
 
-    /** The first four bytes of SHA-256 over the roster version, the routing key and the candidates, as a signed int. */
     fun stableHash(context: PlacementContext, rosterVersion: Long, candidates: List<RosterHomeserver>): Int {
         val digest = MessageDigest.getInstance("SHA-256")
         digest.update("weighted-fallback.v1\nroster=$rosterVersion\n".toByteArray(Charsets.UTF_8))
@@ -104,7 +97,6 @@ internal object PlacementEngine {
     ): PlacementDecision? {
         val targets = accepting.associateBy { it.homeserver.id }
         val zones = zonesById(policy)
-        // A rule applies only inside a zone that is delegate-signed and within its validity window.
         return CanonicalRoutingPolicy.sortedRules(policy.rules)
             .filter { it.isEnabled && it.delegatedZoneId in delegateVerifiedZones && it.zoneInEffect(zones, nowMillis) && it.matches(context) }
             .firstNotNullOfOrNull { rule ->
@@ -147,7 +139,7 @@ internal object PlacementEngine {
         return true
     }
 
-    /** Weights are int32 and summed in 64 bits, as the resolver does, so a total past 2^31 does not wrap. */
+    /** Weights are summed in 64 bits, as the resolver does, so a total past 2^31 does not wrap. */
     private fun weightedFallback(context: PlacementContext, rosterVersion: Long, accepting: List<RosterHomeserver>): PlacementDecision? {
         val candidates = accepting.sortedBy { it.id }
         if (candidates.isEmpty()) return null

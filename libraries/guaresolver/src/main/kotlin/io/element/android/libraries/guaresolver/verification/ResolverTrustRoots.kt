@@ -7,7 +7,6 @@
 
 package io.element.android.libraries.guaresolver.verification
 
-/** A published verification key: its id as the signatures name it, and the raw Ed25519 public key. */
 internal class TrustedKey(val id: String, val rawPublicKey: ByteArray) {
     fun verifies(message: ByteArray, signatureB64: String?): Boolean = Ed25519Signatures.verify(rawPublicKey, message, signatureB64)
 
@@ -17,13 +16,9 @@ internal class TrustedKey(val id: String, val rawPublicKey: ByteArray) {
     }
 }
 
-/** A detached signature as every signed object carries it: the signing key's id and the padded base64 signature. */
 internal data class KeyedSignature(val keyId: String?, val signatureB64: String?)
 
-/**
- * One vote per trusted key id over the same canonical bytes, as the resolver's `RosterVerifier` and
- * `RoutingPolicyVerifier` count them. [knownKeyIds] only serves the reason given for a shortfall.
- */
+/** One vote per trusted key id, as the resolver's `RosterVerifier` and `RoutingPolicyVerifier` count them. */
 internal data class ThresholdCheck(val valid: Int, val threshold: Int, val knownKeyIds: Int) {
     val met: Boolean
         get() = valid >= threshold
@@ -54,10 +49,7 @@ internal data class ThresholdCheck(val valid: Int, val threshold: Int, val known
     }
 }
 
-/**
- * The keys a deployment's verifier trusts. The policy keys are listed explicitly: there is no fallback to
- * the authority keys, so an empty list verifies no policy.
- */
+/** The policy keys never fall back to the authority keys, so an empty list verifies no policy. */
 internal data class ResolverTrustRoots(
     val authorityKeys: List<TrustedKey>,
     val authorityThreshold: Int,
@@ -65,12 +57,6 @@ internal data class ResolverTrustRoots(
     val policyThreshold: Int,
 ) {
     companion object {
-        /**
-         * Whitespace-separated tokens: `authority:<key id>:<base64 SPKI>`, `policy:<key id>:<base64 SPKI>`,
-         * `authority-threshold:<n>` and `policy-threshold:<n>`; thresholds default to 1.
-         *
-         * @throws IllegalArgumentException on a token that is not one of those, or a key that is not an Ed25519 SPKI.
-         */
         fun parse(value: String): ResolverTrustRoots {
             val authorityKeys = mutableListOf<TrustedKey>()
             val policyKeys = mutableListOf<TrustedKey>()

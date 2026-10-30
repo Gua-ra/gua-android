@@ -43,9 +43,11 @@ internal object VectorFixtures {
     }
 }
 
-/** The vector of [section] whose `ref` is [ref]: vectors name the rosters and policies they use this way. */
 internal fun JsonObject.byRef(section: String, ref: String): JsonObject =
     this[section]!!.jsonArray.map { it.jsonObject }.single { it.stringOrNull("ref") == ref }
+
+internal fun JsonObject.byName(section: String, name: String): JsonObject =
+    this[section]!!.jsonArray.map { it.jsonObject }.single { it.stringOrNull("name") == name }
 
 /** An lp vector homeserver carries the member-signed fields only, so the roster's weight and acceptsNew are added. */
 internal fun JsonObject.withRosterAttributes(): JsonObject = JsonObject(mapOf("weight" to JsonPrimitive(0), "acceptsNew" to JsonPrimitive(false)) + this)

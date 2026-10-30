@@ -12,10 +12,6 @@ import io.element.android.libraries.core.data.tryOrNull
 /** The policy as its POLICY_PUBLISH leaf names it: the leaf subject is `<policyId>:v<version>`, the payload its SHA-256. */
 internal data class LoggedPolicy(val policyId: String?, val version: Long, val sha256Hex: String)
 
-/**
- * The log step of the policy check: the served bundle, or a 404 when [served] is null, against the served log
- * events and the roster's signed checkpoint. Only the leaves before the checkpoint are signed.
- */
 internal object PolicyLog {
     private const val POLICY_PUBLISH = "POLICY_PUBLISH"
 

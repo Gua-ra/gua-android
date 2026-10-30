@@ -20,7 +20,6 @@ import org.junit.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-/** The policy and placement checks against a scripted resolver serving the published vectors. */
 class DefaultResolverVerifierPolicyTest {
     @Test
     fun `a served policy is verified under the policy keys and against the log`() = runTest {
@@ -85,7 +84,7 @@ class DefaultResolverVerifierPolicyTest {
     fun `a policy signed by the operational key is invalid`() = runTest {
         val resolver = ScriptedResolver().apply {
             roster = { ok(servedRoster("r2").toString()) }
-            policy = { ok(policyRejection(OPERATIONAL_KEY_REJECTION).toString()) }
+            policy = { ok(policyRejection("signed by the roster authority key, which is not a policy key").toString()) }
             log = { ok(logJson()) }
         }
         val server = resolver.start()
@@ -251,7 +250,7 @@ class DefaultResolverVerifierPolicyTest {
     fun `an existing account answer is existing_account whatever the policy outcome`() = runTest {
         val resolver = ScriptedResolver().apply {
             roster = { ok(servedRoster("r2").toString()) }
-            policy = { ok(policyRejection(OPERATIONAL_KEY_REJECTION).toString()) }
+            policy = { ok(policyRejection("signed by the roster authority key, which is not a policy key").toString()) }
         }
         val server = resolver.start()
 
@@ -264,7 +263,7 @@ class DefaultResolverVerifierPolicyTest {
 
     @Test
     fun `an incomplete delegate signature leaves its zone unsigned without refusing the bundle`() = runTest {
-        // The sp-zone signature loses its value, so r-sp no longer routes and the unsigned rule outranks the fallback.
+        // With sp-zone unsigned, r-sp cannot route and outranks the fallback that decides instead.
         val bundle = servedPolicy(BR_POLICY)
         val signatures = bundle["delegateSignatures"]!!.jsonArray.map { it.jsonObject }
             .map { if (it["zoneId"]!!.jsonPrimitive.content == "sp-zone") JsonObject(it - "signatureB64") else it }

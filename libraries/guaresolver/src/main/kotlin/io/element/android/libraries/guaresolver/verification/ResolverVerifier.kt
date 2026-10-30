@@ -9,11 +9,7 @@ package io.element.android.libraries.guaresolver.verification
 
 import io.element.android.libraries.guaresolver.HomeserverResolution
 
-/**
- * Report-only verification of a resolver answer against the signed roster, the transparency log and the
- * routing policy, under the trust roots pinned for the deployment. The outcome never changes what the app
- * connects to: it is logged and kept for inspection.
- */
+/** Report-only: the outcome is logged and never changes what the app connects to. */
 interface ResolverVerifier {
     /** Null when the deployment has no resolver: then nothing runs and nothing is logged. */
     suspend fun verify(e164Phone: String, resolution: HomeserverResolution): ResolverVerificationReport?

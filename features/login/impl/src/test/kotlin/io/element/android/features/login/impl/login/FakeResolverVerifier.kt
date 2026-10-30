@@ -18,7 +18,6 @@ import io.element.android.libraries.guaresolver.verification.ResolverVerifier
 import io.element.android.libraries.guaresolver.verification.RosterForm
 import io.element.android.libraries.guaresolver.verification.RosterSignatureOutcome
 
-/** Records every call, so a test can assert which resolution the sign-in handed over, if any. */
 class FakeResolverVerifier(
     private val verifyResult: suspend (String, HomeserverResolution) -> ResolverVerificationReport? = { _, _ -> aResolverVerificationReport() },
 ) : ResolverVerifier {

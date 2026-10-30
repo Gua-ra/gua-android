@@ -13,14 +13,9 @@ import java.nio.CharBuffer
 import java.nio.charset.CharacterCodingException
 import java.nio.charset.CodingErrorAction
 
-/** A value with no canonical encoding; the object carrying it is refused, never repaired. */
 internal class CanonicalEncodingException(message: String) : Exception(message)
 
-/**
- * The `gua-lp.v1` length-prefixed encoding of the signed federation objects: u32 big-endian lengths,
- * int64 big-endian integers, a presence byte for optionals, sets sorted by unsigned UTF-8 byte order, no
- * delimiters. Port of the resolver's `CanonicalEncoder`.
- */
+/** The `gua-lp.v1` length-prefixed encoding of the signed federation objects, a port of the resolver's `CanonicalEncoder`. */
 internal class CanonicalEncoder {
     private val out = ByteArrayOutputStream()
 
@@ -37,7 +32,6 @@ internal class CanonicalEncoder {
         return this
     }
 
-    /** Absent and empty are different bytes. */
     fun optionalString(value: String?): CanonicalEncoder {
         if (value == null) {
             out.write(0)
@@ -65,7 +59,6 @@ internal class CanonicalEncoder {
     }
 
     companion object {
-        /** Every object starts with its schema tag. */
         fun begin(schemaTag: String): CanonicalEncoder {
             if (schemaTag.isEmpty()) throw CanonicalEncodingException("schema tag is required")
             return CanonicalEncoder().string(schemaTag)

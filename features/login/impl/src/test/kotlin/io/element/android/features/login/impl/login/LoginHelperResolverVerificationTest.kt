@@ -36,7 +36,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 
-/** The verifier sees the resolution the sign-in used, and the sign-in does not wait for it. */
 class LoginHelperResolverVerificationTest {
     @get:Rule
     val warmUpRule = WarmUpRule()
@@ -98,7 +97,6 @@ class LoginHelperResolverVerificationTest {
         assertThat(verifier.verifyCalls).hasSize(1)
     }
 
-    /** Types a valid number and taps continue, draining to the terminal login mode. */
     private suspend fun submitNumber(presenter: PhoneEntryPresenter): PhoneEntryState {
         var terminal: PhoneEntryState? = null
         presenter.test {

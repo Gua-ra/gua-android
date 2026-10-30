@@ -21,10 +21,6 @@ import org.junit.Test
 import java.nio.ByteBuffer
 import java.util.Base64
 
-/**
- * The resolver's published vectors, byte-identical copies in this module's test resources. Signing uses the JDK
- * provider, so expected values do not depend on the Ed25519 the app verifies with.
- */
 class ResolverVerificationVectorsTest {
     private val vectors: JsonObject by lazy { VectorFixtures.load(VectorFixtures.CLIENT_VECTORS_RESOURCE) }
     private val lpVectors: JsonObject by lazy { VectorFixtures.load(VectorFixtures.LP_VECTORS_RESOURCE) }
@@ -232,7 +228,6 @@ class ResolverVerificationVectorsTest {
             assertWithName(name, unsignedRuleAbove, vector.bool("unsignedRuleAbove"))
 
             vector["fallback"]?.jsonObject?.let { fallback ->
-                // Claims nobody verified never reach the routing key.
                 val placed = context.withoutUnverifiedClaims()
                 assertWithName(name, placed.routingKey(), fallback.string("routingKeyUtf8"))
                 assertWithName(name, roster.version, fallback.long("rosterVersion"))
@@ -303,7 +298,7 @@ class ResolverVerificationVectorsTest {
                 "int64" -> CanonicalEncoder().int64(value.jsonPrimitive.content.toLong()).toByteArray()
                 "optionalString" -> CanonicalEncoder().optionalString(if (value is JsonNull) null else value.jsonPrimitive.content).toByteArray()
                 "stringSet" -> CanonicalEncoder().stringSet(value.jsonArray.map { it.jsonPrimitive.content }).toByteArray()
-                // No signed object uses these two yet, so they are written out here: one byte, and a count then strings.
+                // No signed object uses these two, so they are written out here.
                 "bool" -> byteArrayOf(if (value.jsonPrimitive.boolean) 1 else 0)
                 "stringList" -> value.jsonArray.fold(ByteBuffer.allocate(Int.SIZE_BYTES).putInt(value.jsonArray.size).array()) { out, element ->
                     out + CanonicalEncoder().string(element.jsonPrimitive.content).toByteArray()
@@ -394,7 +389,6 @@ class ResolverVerificationVectorsTest {
 
     private fun seedOf(file: JsonObject, keyRef: String): String = file["keys"]!!.jsonObject[keyRef]!!.jsonObject.string("seedHex")
 
-    /** Asserts equality and names the failing vector, so a mismatch says which one broke. */
     private fun <T> assertWithName(name: String, actual: T, expected: T) {
         assertWithMessage(name).that(actual).isEqualTo(expected)
     }

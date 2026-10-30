@@ -22,7 +22,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import org.junit.Test
 
-/** The shape rules every document is held to before a check reads it: size, nesting, types, nulls and forms. */
 class DefaultResolverVerifierShapeTest {
     @Test
     fun `a roster that does not parse is a parse error`() = runTest {
@@ -236,12 +235,12 @@ class DefaultResolverVerifierShapeTest {
 
     @Test
     fun `a log whose events are null or absent is a parse error`() = runTest {
-        for (log in nullAndAbsent(Json.parseToJsonElement(logJson()).jsonObject, "events")) {
-            val server = withoutPolicy().apply { this.log = { ok(log.toString()) } }.start()
+        for (body in nullAndAbsent(Json.parseToJsonElement(logJson()).jsonObject, "events")) {
+            val server = withoutPolicy().apply { this.log = { ok(body.toString()) } }.start()
 
             val report = verify(createVerifier(server), answer(hsBr()))
 
-            assertWithMessage(log.toString()).that(report.policy).isEqualTo(PolicyOutcome.Unverifiable(VerificationReason.PARSE_ERROR))
+            assertWithMessage(body.toString()).that(report.policy).isEqualTo(PolicyOutcome.Unverifiable(VerificationReason.PARSE_ERROR))
             server.shutdown()
         }
     }
@@ -332,9 +331,7 @@ class DefaultResolverVerifierShapeTest {
         }
     }
 
-    /** [document] with [field] sent as null, then without it. */
     private fun nullAndAbsent(document: JsonObject, field: String) = listOf(JsonObject(document + (field to JsonNull)), JsonObject(document - field))
 
-    /** The one-entry [roster] with its entry replaced. */
     private fun withEntry(roster: JsonObject, entry: JsonObject) = JsonObject(roster + ("entries" to JsonArray(listOf(entry))))
 }

@@ -9,7 +9,6 @@ package io.element.android.libraries.guaresolver.verification
 
 import kotlinx.serialization.Serializable
 
-/** The routing policy bundle as `GET /policy/routing` serves it. */
 @Serializable
 internal data class RoutingPolicyBundle(
     val schemaVersion: String? = null,
@@ -42,10 +41,7 @@ internal data class DelegationZone(
     fun isInEffectAt(nowMillis: Long): Boolean = isInEffect(notBefore, expiresAt, nowMillis)
 }
 
-/**
- * The validity window of a bundle and of a zone: from notBefore, inclusive, until expiresAt, exclusive. A missing
- * bound is open, and so is a bound at the epoch, because the signed bytes write both as 0.
- */
+/** A bound at the epoch is open like a missing one, because the signed bytes write both as 0. */
 private fun isInEffect(notBefore: String?, expiresAt: String?, nowMillis: Long): Boolean {
     val from = notBefore?.toEpochMillis()?.takeIf { it != 0L }
     val until = expiresAt?.toEpochMillis()?.takeIf { it != 0L }
@@ -93,10 +89,7 @@ internal data class DelegateSignature(
     val signatureB64: String? = null,
 )
 
-/**
- * The `gua-routing-policy.v1` bytes the policy keys sign and the `gua-delegated-rules.v1` bytes a zone's
- * delegate signs, ports of the resolver's `CanonicalRoutingPolicy` and `CanonicalDelegatedRules`.
- */
+/** Ports of the resolver's `CanonicalRoutingPolicy` and `CanonicalDelegatedRules`. */
 internal object CanonicalRoutingPolicy {
     private const val FIELD_SEPARATOR = "\u001f"
 
@@ -130,7 +123,7 @@ internal object CanonicalRoutingPolicy {
         return out.toString().toByteArray(Charsets.UTF_8)
     }
 
-    /** Priority, then id with nulls last: the one rule order the authority, the delegates and placement share. */
+    /** The one rule order the authority, the delegates and placement share. */
     val ruleOrder: Comparator<RoutingPolicyRule> = compareBy<RoutingPolicyRule> { it.priority }.thenBy(nullsLast<String>()) { it.id }
 
     fun sortedRules(rules: List<RoutingPolicyRule>?): List<RoutingPolicyRule> = rules.orEmpty().sortedWith(ruleOrder)
@@ -166,10 +159,7 @@ internal object CanonicalRoutingPolicy {
     private fun epoch(instant: String?): Long = instant?.toEpochMillis() ?: 0L
 }
 
-/**
- * Authority attestation of the whole bundle under the pinned policy keys, then per zone the delegate's
- * signature over the rules inside it under the delegate key the authority attested.
- */
+/** The policy keys sign the whole bundle; each zone's delegate signs its rules under the key the bundle attests. */
 internal class RoutingPolicyVerifier(
     private val policyKeys: List<TrustedKey>,
     private val threshold: Int,
@@ -179,14 +169,12 @@ internal class RoutingPolicyVerifier(
         return ThresholdCheck.count(policyKeys, threshold, canonical, signatures)
     }
 
-    /** The signature step of the policy check, with the roster's reasons for a shortfall. */
     fun verify(bundle: RoutingPolicyBundle, canonical: ByteArray = CanonicalRoutingPolicy.bytes(bundle)): PolicyOutcome {
         if (policyKeys.isEmpty()) return PolicyOutcome.Unverifiable(VerificationReason.NO_POLICY_KEYS)
         val check = check(bundle, canonical)
         return if (check.met) PolicyOutcome.Valid else PolicyOutcome.Invalid(check.failureReason)
     }
 
-    /** The zone ids whose rules carry a valid delegate signature; a rule applies only inside one of them. */
     fun delegateVerifiedZones(bundle: RoutingPolicyBundle): Set<String> {
         val signatures = bundle.delegateSignatures.orEmpty()
         return bundle.delegationZones.orEmpty()

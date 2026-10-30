@@ -18,7 +18,6 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.junit.Test
 
-/** The member block checks the vectors do not reach, over the first published member entry. */
 class MemberEntryVerifierTest {
     private val vector: JsonObject by lazy { VectorFixtures.load(VectorFixtures.LP_VECTORS_RESOURCE)["memberEntries"]!!.jsonArray.first().jsonObject }
     private val json = Json { ignoreUnknownKeys = true }

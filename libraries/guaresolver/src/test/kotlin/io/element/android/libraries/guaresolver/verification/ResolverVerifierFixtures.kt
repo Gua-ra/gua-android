@@ -44,13 +44,13 @@ import java.util.concurrent.CopyOnWriteArrayList
 private val vectors: JsonObject by lazy { VectorFixtures.load(VectorFixtures.CLIENT_VECTORS_RESOURCE) }
 private val json = Json { ignoreUnknownKeys = true }
 
-/** Roster r1, whose checkpoint precedes every POLICY_PUBLISH leaf, and its log: no policy is due. */
+/** r1's checkpoint precedes every POLICY_PUBLISH leaf, so no policy is due. */
 internal fun withoutPolicy() = ScriptedResolver().apply {
     roster = { ok(servedRoster("r1").toString()) }
     log = { ok(logJson()) }
 }
 
-/** Roster r2 with the signed policy, under which [A_PHONE] is placed on hs-br. */
+/** Under r2 and its signed policy, [A_PHONE] is placed on hs-br. */
 internal fun policyRoutingToBr() = ScriptedResolver().apply {
     roster = { ok(servedRoster("r2").toString()) }
     policy = { ok(servedPolicy(BR_POLICY).toString()) }
@@ -89,16 +89,13 @@ internal fun servedRoster(ref: String): JsonObject = vectors.byRef("rosters", re
 
 internal fun servedPolicy(ref: String): JsonObject = vectors.byRef("policies", ref)["bundle"]!!.jsonObject
 
-internal fun rosterRejection(index: Int): JsonObject = vectors["rosterRejections"]!!.jsonArray[index].jsonObject["roster"]!!.jsonObject
+internal fun rosterRejection(name: String): JsonObject = vectors.byName("rosterRejections", name)["roster"]!!.jsonObject
 
-internal fun mixedRosterRejection(): JsonObject =
-    vectors["rosterRejections"]!!.jsonArray.map { it.jsonObject }.single { it.stringOrNull("form") == "mixed" }["roster"]!!.jsonObject
-
-internal fun policyRejection(index: Int): JsonObject = vectors["policyRejections"]!!.jsonArray[index].jsonObject["bundle"]!!.jsonObject
+internal fun policyRejection(name: String): JsonObject = vectors.byName("policyRejections", name)["bundle"]!!.jsonObject
 
 internal fun JsonObject.rosterEntries(): List<JsonObject> = this["entries"]!!.jsonArray.map { it.jsonObject }
 
-/** A one-entry roster with that entry's member block replaced; the authority signature does not cover it. */
+/** The authority signature does not cover the member block. */
 internal fun withMember(roster: JsonObject, member: JsonElement): JsonObject =
     JsonObject(roster + ("entries" to JsonArray(listOf(JsonObject(roster.rosterEntries().single() + ("member" to member))))))
 
@@ -110,7 +107,6 @@ internal fun withCheckpoint(roster: JsonObject, size: Long, merkleRoot: String =
     return JsonObject(roster + ("logCheckpoint" to checkpoint))
 }
 
-/** [roster] signed again by authority-a alone, over the bytes of [form]. */
 internal fun resigned(roster: JsonObject, form: RosterForm = RosterForm.V1): JsonObject {
     val canonical = CanonicalRoster.bytes(json.decodeFromJsonElement<SignedRoster>(roster), form)
     val signature = buildJsonObject {
@@ -120,7 +116,7 @@ internal fun resigned(roster: JsonObject, form: RosterForm = RosterForm.V1): Jso
     return JsonObject(roster + ("authoritySignatures" to JsonArray(listOf(signature))))
 }
 
-/** [bundle] signed again by governance-a alone; its delegate signatures no longer match, which these tests do not need. */
+/** The delegate signatures of [bundle] are not redone, so they do not match a changed bundle. */
 internal fun resignedPolicy(bundle: JsonObject): JsonObject {
     val canonical = CanonicalRoutingPolicy.bytes(json.decodeFromJsonElement<RoutingPolicyBundle>(bundle))
     val signature = buildJsonObject {
@@ -130,7 +126,6 @@ internal fun resignedPolicy(bundle: JsonObject): JsonObject {
     return JsonObject(bundle + ("signatures" to JsonArray(listOf(signature))))
 }
 
-/** The member block of [entry], signed again by the member's own test key for [homeserver]. */
 internal fun memberSignedFor(homeserver: JsonObject, entry: JsonObject): JsonObject {
     val member = entry["member"]!!.jsonObject
     val attestation = Json.decodeFromJsonElement<MemberAttestation>(member)
@@ -172,7 +167,6 @@ internal fun consistencyJson(first: Int, second: Int, tampered: Boolean = false,
 
 internal fun deepArrays(): String = "[".repeat(DEEP_NESTING) + "]".repeat(DEEP_NESTING)
 
-/** Runs [block] with a default handler that records what reaches it from any thread, OkHttp's included. */
 internal suspend fun <T> recordingUncaughtExceptions(block: suspend () -> T): Pair<T, List<Throwable>> {
     val recorded = CopyOnWriteArrayList<Throwable>()
     val previous = Thread.getDefaultUncaughtExceptionHandler()
@@ -203,7 +197,6 @@ internal fun hsCa() = ResolvedHomeserver(
 
 internal fun ok(body: String) = MockResponse().setBody(body)
 
-/** Answers each artifact path from a lambda, so a test rewrites what is served between runs. */
 internal class ScriptedResolver {
     var roster: () -> MockResponse = { notFound() }
     var log: () -> MockResponse = { notFound() }
@@ -234,7 +227,6 @@ internal class ScriptedResolver {
     private fun notFound() = MockResponse().setResponseCode(404)
 }
 
-/** A store whose every read and write throws [failure], by default the IOException of a disk that is gone. */
 internal class FailingPreferenceDataStoreFactory(private val failure: () -> Exception = { IOException("unavailable") }) : PreferenceDataStoreFactory {
     override fun create(name: String): DataStore<Preferences> = object : DataStore<Preferences> {
         override val data: Flow<Preferences> = flow { throw failure() }
@@ -249,9 +241,6 @@ internal const val A_PHONE_PLACED_ON_BR = "+5521990001237"
 internal const val BR_POLICY = "br-policy v3"
 internal const val PLACEMENT_TIME = "2026-10-27T00:00:00Z"
 internal const val STORE_NAME = "gua_resolver_verification"
-internal const val TAMPERED_BASE_URL_REJECTION = 0
-internal const val UNTRUSTED_KEY_REJECTION = 1
-internal const val OPERATIONAL_KEY_REJECTION = 0
 internal const val NESTED = "NESTED"
 internal const val DEEP_NESTING = 100_000
 internal const val PROMPT_MILLIS = 5_000L

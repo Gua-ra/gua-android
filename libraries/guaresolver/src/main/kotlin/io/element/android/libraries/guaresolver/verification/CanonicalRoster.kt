@@ -11,9 +11,8 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 
 /**
- * The `gua-roster.v1` bytes the authority signs: a port of the resolver's `CanonicalRoster`, byte for
- * byte. Entries are sorted by id in UTF-16 code unit order (Kotlin's `String.compareTo`, like Java's) and
- * fields are joined by U+001F, which the resolver asserts is absent from every value.
+ * A byte-for-byte port of the resolver's `CanonicalRoster`: ids sort in UTF-16 code unit order, as in Java, and the
+ * resolver asserts the U+001F separator is absent from every value.
  */
 internal object CanonicalRoster {
     private const val FIELD_SEPARATOR = "\u001f"

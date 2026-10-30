@@ -9,11 +9,7 @@ package io.element.android.libraries.guaresolver.verification
 
 import java.security.MessageDigest
 
-/**
- * RFC 6962 hashing for the resolver's transparency log: `leaf = SHA-256(0x00 || data)`,
- * `node = SHA-256(0x01 || left || right)`, the empty tree is SHA-256 of nothing. Hashes travel as
- * lowercase hex. Port of the resolver's `MerkleTree`.
- */
+/** RFC 6962 hashing for the resolver's transparency log, a port of its `MerkleTree`. Hashes travel as lowercase hex. */
 internal object MerkleTree {
     private const val LEAF_PREFIX: Byte = 0x00
     private const val NODE_PREFIX: Byte = 0x01
@@ -27,17 +23,13 @@ internal object MerkleTree {
         return Hex.encode(digest.digest())
     }
 
-    /** The Merkle Tree Hash over leaf hashes, or null when one of them is not hex. */
     fun root(leafHashes: List<String>): String? {
         if (leafHashes.isEmpty()) return Hex.encode(sha256().digest())
         val nodes = leafHashes.map { Hex.decode(it) ?: return null }
         return Hex.encode(mth(nodes))
     }
 
-    /**
-     * Whether the tree of [second] leaves with [newRoot] is an append-only extension of the tree of
-     * [first] leaves with [oldRoot], per RFC 6962 section 2.1.2. A proof that does not decode fails.
-     */
+    /** Whether the [second]-leaf tree is an append-only extension of the [first]-leaf tree, per RFC 6962 section 2.1.2. */
     fun verifyConsistency(first: Long, second: Long, oldRoot: String, newRoot: String, proof: List<String>): Boolean {
         if (first == 0L) return second >= 0L
         if (first == second) return proof.isEmpty() && oldRoot == newRoot

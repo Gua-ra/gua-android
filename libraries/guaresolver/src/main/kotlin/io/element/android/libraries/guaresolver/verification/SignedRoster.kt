@@ -11,9 +11,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
 /**
- * The signed roster as `GET /roster` serves it, with every field the `gua-roster.v1` bytes cover. The
- * member block stays raw JSON for [MemberEntryVerifier], so a broken block fails memberEntry, not the roster.
- * A field without a default must be present and not null, as the contract requires.
+ * The member block stays raw JSON, so a broken block fails memberEntry, not the roster. A field without a default
+ * must be present and not null, as the contract requires.
  */
 @Serializable
 internal data class SignedRoster(
@@ -36,7 +35,7 @@ internal data class SignedRosterEntry(
         get() = status == "ACTIVE"
 }
 
-/** The four endpoint fields may be null, as the resolver's own model allows; the canonical bytes then say `null`. */
+/** The four endpoint fields may be null, as the resolver's own model allows. */
 @Serializable
 internal data class RosterHomeserver(
     val id: String? = null,

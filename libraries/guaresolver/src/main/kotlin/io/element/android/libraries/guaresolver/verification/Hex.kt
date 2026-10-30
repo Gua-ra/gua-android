@@ -19,7 +19,6 @@ internal object Hex {
         return out.toString()
     }
 
-    /** The bytes of a hex string of either case, or null when it is not one. */
     fun decode(hex: String): ByteArray? {
         if (hex.length % 2 != 0) return null
         val out = ByteArray(hex.length / 2)

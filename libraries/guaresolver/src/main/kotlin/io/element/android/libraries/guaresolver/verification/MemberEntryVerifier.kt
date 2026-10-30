@@ -18,7 +18,6 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import java.time.Duration
 import java.time.Instant
 
-/** The `gua-member-entry.v1` bytes a homeserver signs about its own entry. */
 internal object CanonicalMemberEntry {
     const val SCHEMA = "gua-member-entry.v1"
     const val ALG = "Ed25519"
@@ -43,10 +42,7 @@ internal object CanonicalMemberEntry {
     private fun <T : Any> required(value: T?, field: String): T = value ?: throw CanonicalEncodingException("$field is required")
 }
 
-/**
- * Verifies a homeserver's self-signature over its roster entry, port of the resolver's
- * `MemberEntryVerifier`. v1 keeps no earlier entry per homeserver, so key continuity is not checked.
- */
+/** Port of the resolver's `MemberEntryVerifier`. v1 keeps no earlier entry per homeserver, so key continuity is not checked. */
 internal object MemberEntryVerifier {
     private val MAX_LIFETIME: Duration = Duration.ofDays(400)
     private const val NANOS_PER_MILLI = 1_000_000
@@ -79,7 +75,7 @@ internal object MemberEntryVerifier {
 
     /**
      * The default Json refuses unknown fields, so a block cannot carry a field its signature does not cover. A field
-     * sent as null or as a quoted number has the wrong type; a field left out fails the check that reads it.
+     * sent as null or as a quoted number has the wrong type.
      */
     private fun decode(member: JsonElement): MemberAttestation? {
         if (member !is JsonObject || member.containsNull() || member.quotes("sequence")) return null
@@ -92,7 +88,6 @@ internal object MemberEntryVerifier {
         is JsonPrimitive -> this is JsonNull
     }
 
-    /** As the resolver checks it, on instants and durations. */
     private fun checkWindow(member: MemberAttestation, at: Instant): String? {
         if (member.notBefore == null || member.notAfter == null) return VerificationReason.BAD_WINDOW
         val notBefore = tryOrNull { member.notBefore.toInstant() } ?: return VerificationReason.PARSE_ERROR
@@ -104,7 +99,6 @@ internal object MemberEntryVerifier {
         return null
     }
 
-    /** At least one signature, each with a key id and a value, and no key id twice. */
     private fun hasWellFormedSignatures(member: MemberAttestation): Boolean {
         val signatures = member.signatures.orEmpty()
         val keyIds = signatures.map { it.keyId }

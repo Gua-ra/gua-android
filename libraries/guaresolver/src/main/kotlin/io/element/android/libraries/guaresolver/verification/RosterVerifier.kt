@@ -9,7 +9,6 @@ package io.element.android.libraries.guaresolver.verification
 
 import io.element.android.libraries.core.data.tryOrNull
 
-/** Authority signatures over a served roster, k of n, one vote per key, under the pinned authority keys. */
 internal class RosterVerifier(
     private val authorityKeys: List<TrustedKey>,
     private val threshold: Int,
@@ -27,10 +26,7 @@ internal class RosterVerifier(
     }
 
     companion object {
-        /**
-         * Where a `/resolve` answer sits in a verified roster, as the resolver's `ResolverVerifier.locate` puts it:
-         * the strongest classification wins whatever the entry order, and a tie goes to the entry served first.
-         */
+        /** Port of the resolver's `ResolverVerifier.locate`: the strongest classification wins whatever the entry order. */
         fun locate(serverName: String, baseUrl: String, masIssuer: String?, roster: SignedRoster): Located {
             val named = roster.entries.filter { it.homeserver.serverName == serverName }
             val sameEndpoint = named.filter { it.homeserver.baseUrl == baseUrl && it.homeserver.masIssuer == masIssuer }
@@ -45,5 +41,4 @@ internal class RosterVerifier(
     }
 }
 
-/** A homeserverMatch classification and the entry that decided it, null for NOT_IN_ROSTER. */
 internal data class Located(val match: HomeserverMatchOutcome, val entry: SignedRosterEntry?)

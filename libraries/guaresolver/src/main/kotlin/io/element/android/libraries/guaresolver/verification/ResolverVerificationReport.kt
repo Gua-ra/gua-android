@@ -7,7 +7,6 @@
 
 package io.element.android.libraries.guaresolver.verification
 
-/** An unverifiable check is its own verdict: it is never counted as a pass. */
 enum class Verdict { PASS, FAIL, UNVERIFIABLE }
 
 sealed interface CheckOutcome {
@@ -16,7 +15,6 @@ sealed interface CheckOutcome {
     val reason: String? get() = null
 }
 
-/** The outcome as the report line writes it: the code, then the reason in parentheses when there is one. */
 internal val CheckOutcome.text: String
     get() = reason?.let { "$code($it)" } ?: code
 

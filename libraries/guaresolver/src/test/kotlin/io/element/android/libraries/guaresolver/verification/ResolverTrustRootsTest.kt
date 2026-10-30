@@ -50,7 +50,7 @@ class ResolverTrustRootsTest {
             "authority::$A_KEY",
             "trusted:a:$A_KEY",
             "authority-threshold:0",
-            "authority:a:$NOT_A_POINT",
+            "authority:a:$ALL_ZERO_KEY",
         )
         for (value in malformed) {
             assertThat(runCatchingExceptions { ResolverTrustRoots.parse(value) }.exceptionOrNull()).isInstanceOf(IllegalArgumentException::class.java)
@@ -60,8 +60,6 @@ class ResolverTrustRootsTest {
     private companion object {
         private const val A_KEY = "MCowBQYDK2VwAyEA11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo="
         private const val ANOTHER_KEY = "MCowBQYDK2VwAyEAPUAXw+hDiVqStwqnTRt+vJyYLM8uxJaMwM1V8Sr0Zgw="
-
-        /** The SPKI prefix around 32 zero bytes, which decodes but is not a key anyone may trust. */
-        private const val NOT_A_POINT = "MCowBQYDK2VwAyEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        private const val ALL_ZERO_KEY = "MCowBQYDK2VwAyEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
     }
 }

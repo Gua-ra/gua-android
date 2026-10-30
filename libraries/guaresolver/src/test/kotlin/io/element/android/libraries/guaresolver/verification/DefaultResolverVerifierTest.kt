@@ -24,7 +24,6 @@ import org.junit.Test
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-/** The verifier against a scripted resolver serving the published vectors, or vectors signed again with their test keys. */
 class DefaultResolverVerifierTest {
     @Test
     fun `without a resolver base URL nothing runs and nothing is reported`() = runTest {
@@ -100,7 +99,7 @@ class DefaultResolverVerifierTest {
 
     @Test
     fun `a mixed roster is refused before any signature check`() = runTest {
-        val resolver = ScriptedResolver().apply { roster = { ok(mixedRosterRejection().toString()) } }
+        val resolver = ScriptedResolver().apply { roster = { ok(rosterRejection("some entries have searchVisibility and others do not").toString()) } }
         val server = resolver.start()
 
         val report = verify(createVerifier(server), answer(hsCa()))
@@ -116,7 +115,7 @@ class DefaultResolverVerifierTest {
 
     @Test
     fun `a roster signed by an untrusted key fails and nothing downstream is trusted`() = runTest {
-        val resolver = ScriptedResolver().apply { roster = { ok(rosterRejection(UNTRUSTED_KEY_REJECTION).toString()) } }
+        val resolver = ScriptedResolver().apply { roster = { ok(rosterRejection("signed by a key the client does not trust").toString()) } }
         val server = resolver.start()
         // The rejected roster is signed by authority-b, which these roots do not list.
         val verifier = createVerifier(server, trustRoots = "authority:authority-a:${spki("rfc8032-test1")}")
@@ -134,7 +133,7 @@ class DefaultResolverVerifierTest {
 
     @Test
     fun `a roster whose signature fails reports no roster version`() = runTest {
-        val resolver = ScriptedResolver().apply { roster = { ok(rosterRejection(TAMPERED_BASE_URL_REJECTION).toString()) } }
+        val resolver = ScriptedResolver().apply { roster = { ok(rosterRejection("baseUrl changed after signing").toString()) } }
         val server = resolver.start()
 
         val report = verify(createVerifier(server), answer(hsBr()))
@@ -225,7 +224,6 @@ class DefaultResolverVerifierTest {
         val base = servedRoster("r1")
         val active = base.rosterEntries().single()
         val retiredHomeserver = JsonObject(active["homeserver"]!!.jsonObject + ("id" to JsonPrimitive("hs-br-retired")))
-        // Served first, SUSPENDED, with the same three fields and a valid block of its own.
         val retired = JsonObject(
             active + mapOf("homeserver" to retiredHomeserver, "status" to JsonPrimitive("SUSPENDED"), "member" to memberSignedFor(retiredHomeserver, active))
         )

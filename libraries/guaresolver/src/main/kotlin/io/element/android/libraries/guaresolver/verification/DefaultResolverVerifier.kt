@@ -30,7 +30,7 @@ import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.cancellation.CancellationException
 
-/** The report-only checks of the resolver verification protocol. An exception settles its own check as internal_error; an Error reaches the caller. */
+/** An exception settles its own check as internal_error; an Error reaches the caller. */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class DefaultResolverVerifier(
@@ -100,7 +100,6 @@ class DefaultResolverVerifier(
         }
     }
 
-    /** An unexpected exception settles only the check it came from. */
     private inline fun <T> orInternalError(unverifiable: (String) -> T, check: () -> T): T = try {
         check()
     } catch (e: CancellationException) {
@@ -109,7 +108,6 @@ class DefaultResolverVerifier(
         unverifiable(VerificationReason.INTERNAL_ERROR)
     }
 
-    /** No usable authority key: none configured, or a configuration that does not parse. */
     private fun trustRoots(): ResolverTrustRoots? {
         val value = deployment.resolverTrustRoots?.takeIf { it.isNotBlank() } ?: return null
         return tryOrNull { ResolverTrustRoots.parse(value) }?.takeIf { it.authorityKeys.isNotEmpty() }
@@ -193,7 +191,6 @@ class DefaultResolverVerifier(
         }
     }
 
-    /** A placement that differs counts against the resolver only when the answer names the roster version verified here. */
     private fun reproducePlacement(
         e164Phone: String,
         resolution: HomeserverResolution,
@@ -225,7 +222,6 @@ class DefaultResolverVerifier(
 
     private data class VerifiedPolicy(val bundle: RoutingPolicyBundle, val delegateVerifiedZones: Set<String>)
 
-    /** The report under construction: a check is null until it settles. */
     private class Checks {
         var rosterForm: RosterForm? = null
         var rosterVersion: Long? = null
@@ -245,10 +241,6 @@ class DefaultResolverVerifier(
             placement = PlacementOutcome.Unverifiable(reason)
         }
 
-        /**
-         * Settles the checks the run did not reach with [reason], or with roster_unverified when the roster did
-         * not verify. A placement still waiting on a policy that did not pass is policy_unverified.
-         */
         fun stop(reason: String) {
             val rosterVerified = rosterSignature == RosterSignatureOutcome.Valid
             if (rosterSignature == null) rosterSignature = RosterSignatureOutcome.Unverifiable(reason)
@@ -281,7 +273,6 @@ class DefaultResolverVerifier(
         private const val NANOS_PER_MILLI = 1_000_000L
         private const val MAX_LOG_SIZE = 4096L
 
-        /** One lock per resolver base URL, shared by every verifier in the process. */
         private val runLocks = ConcurrentHashMap<String, Mutex>()
     }
 }

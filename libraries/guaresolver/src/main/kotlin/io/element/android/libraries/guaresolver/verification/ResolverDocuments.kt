@@ -22,7 +22,6 @@ import retrofit2.Retrofit
 import java.io.IOException
 import kotlin.coroutines.resume
 
-/** One fetched document: its decoded body, a 404, a body that is not the expected JSON, or any other failure. */
 internal sealed interface Fetched<out T> {
     data class Ok<T>(val value: T) : Fetched<T>
     data object NotFound : Fetched<Nothing>
@@ -30,12 +29,10 @@ internal sealed interface Fetched<out T> {
     data object Failed : Fetched<Nothing>
 }
 
-/** The roster and the form its served JSON dictates, which the decoded roster can no longer tell. */
 internal data class ServedRoster(val form: RosterForm, val roster: SignedRoster)
 
 /**
- * The public resolver documents a verifier reads, over the unlogged client. Each body is read raw on
- * OkHttp's thread, at most [MAX_BODY_BYTES] of it, and decoded in the caller's coroutine once its nesting is
+ * Bodies are read raw and capped on OkHttp's thread, then decoded in the caller's coroutine once their nesting is
  * known to be shallow, so no body can end the app on a thread whose errors nothing catches.
  */
 internal class ResolverDocuments(retrofit: Retrofit) {
@@ -57,7 +54,6 @@ internal class ResolverDocuments(retrofit: Retrofit) {
     suspend fun consistency(first: Long, second: Long): Fetched<ConsistencyProof> =
         text("roster/log/consistency?first=$first&second=$second").decode { json.decodeFromString<ConsistencyProof>(it) }
 
-    /** [Fetched.NotFound] when no policy is served. */
     suspend fun routingPolicy(): Fetched<RoutingPolicyBundle> = text("policy/routing").decode { body ->
         val tree = json.decodeFromString<JsonObject>(body)
         require(!tree.policyQuotesAScalar()) { "a policy number or boolean is a string" }
@@ -87,10 +83,10 @@ private const val MAX_BODY_BYTES = 2L * 1024 * 1024
 private const val MAX_NESTING = 64
 private const val HTTP_NOT_FOUND = 404
 
-// Strict syntax, unlike the app's instance. Unknown fields are ignored here and refused in a member block.
+// Strict syntax, unlike the app's instance.
 private val json = Json { ignoreUnknownKeys = true }
 
-/** The body of a 2xx answer, refused unread past the cap. This runs on OkHttp's thread, so it never throws. */
+/** Runs on OkHttp's thread, so it never throws. A body past the cap is refused unread. */
 private fun Response.cappedText(): Fetched<String> = try {
     val source = body.source()
     when {
@@ -129,7 +125,6 @@ private fun JsonObject.rosterQuotesAScalar(): Boolean =
 private fun JsonObject.policyQuotesAScalar(): Boolean =
     quotes("version") || this["rules"].objects().any { it.quotes("priority", "enabled") } || (this["fallback"] as? JsonObject)?.quotes("enabled") == true
 
-/** No array or object nests deeper than [limit]; brackets inside strings are text. Iterative, so any input is safe. */
 private fun isNestedAtMost(text: String, limit: Int): Boolean {
     var depth = 0
     var inString = false
