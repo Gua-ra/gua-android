@@ -70,6 +70,51 @@ class DefaultResolverClientTest {
         val resolution = result.getOrThrow()
         assertThat(resolution.exists).isFalse()
         assertThat(resolution.homeserver.baseUrl).isEqualTo("https://register.gua.global")
+        assertThat(resolution.rosterVersion).isNull()
+        server.shutdown()
+    }
+
+    @Test
+    fun `a malformed roster version is dropped and the answer still resolves`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "exists": false,
+                  "rosterVersion": "seven",
+                  "registerAt": { "serverName": "register.gua.global", "baseUrl": "https://register.gua.global" }
+                }
+                """.trimIndent()
+            )
+        )
+        val client = createClient(server)
+
+        val resolution = client.resolve("+15551234567").getOrThrow()
+
+        assertThat(resolution.rosterVersion).isNull()
+        server.shutdown()
+    }
+
+    @Test
+    fun `the roster version the answer was made against is kept`() = runTest {
+        val server = MockWebServer()
+        server.enqueue(
+            MockResponse().setBody(
+                """
+                {
+                  "exists": false,
+                  "rosterVersion": 7,
+                  "registerAt": { "serverName": "register.gua.global", "baseUrl": "https://register.gua.global" }
+                }
+                """.trimIndent()
+            )
+        )
+        val client = createClient(server)
+
+        val resolution = client.resolve("+15551234567").getOrThrow()
+
+        assertThat(resolution.rosterVersion).isEqualTo(7)
         server.shutdown()
     }
 

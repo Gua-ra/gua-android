@@ -18,6 +18,7 @@ import io.element.android.features.login.impl.accountprovider.AccountProviderDat
 import io.element.android.features.login.impl.login.FakeAccountGenesisManager
 import io.element.android.features.login.impl.login.FakeGuaDeployment
 import io.element.android.features.login.impl.login.FakeResolverClient
+import io.element.android.features.login.impl.login.FakeResolverVerifier
 import io.element.android.features.login.impl.login.LoginHelper
 import io.element.android.features.login.impl.web.FakeWebClientUrlForAuthenticationRetriever
 import io.element.android.features.login.impl.web.WebClientUrlForAuthenticationRetriever
@@ -29,6 +30,7 @@ import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
 import io.element.android.libraries.guaresolver.GuaDeployment
 import io.element.android.libraries.guaresolver.ResolverClient
 import io.element.android.libraries.guaresolver.genesis.AccountGenesisManager
+import io.element.android.libraries.guaresolver.verification.ResolverVerifier
 import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
 import io.element.android.libraries.matrix.test.AN_ACCOUNT_PROVIDER
 import io.element.android.libraries.matrix.test.AN_ACCOUNT_PROVIDER_2
@@ -47,6 +49,8 @@ import io.element.android.libraries.sessionstorage.test.aSessionData
 import io.element.android.libraries.wellknown.api.WellknownRetriever
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.test
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -328,6 +332,8 @@ fun createLoginHelper(
     // default, and AccountGenesis defaults to off, so existing tests keep exercising today's paths.
     featureFlagService: FeatureFlagService = FakeFeatureFlagService(),
     accountGenesisManager: AccountGenesisManager = FakeAccountGenesisManager(),
+    resolverVerifier: ResolverVerifier = FakeResolverVerifier(),
+    appCoroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Unconfined),
     deployment: GuaDeployment = FakeGuaDeployment(),
 ): LoginHelper = LoginHelper(
     oAuthActionFlow = oAuthActionFlow,
@@ -336,5 +342,7 @@ fun createLoginHelper(
     resolverClient = resolverClient,
     featureFlagService = featureFlagService,
     accountGenesisManager = accountGenesisManager,
+    resolverVerifier = resolverVerifier,
+    appCoroutineScope = appCoroutineScope,
     deployment = deployment,
 )
