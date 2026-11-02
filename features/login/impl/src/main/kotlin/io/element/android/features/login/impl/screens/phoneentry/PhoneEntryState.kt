@@ -49,6 +49,14 @@ data class PhoneEntryState(
     val canContinue: Boolean
         get() = !isSubmitting && isValid(localDigits = localDigits, dialCode = selectedCountry.dialCode)
 
+    /** True once the digits are as long as a number of the selected country and still not valid there. */
+    val showInvalidNumberHint: Boolean
+        get() {
+            if (isSubmitting || localDigits.isEmpty()) return false
+            val expectedLength = selectedCountry.nationalDigitLength ?: exampleNationalLength(selectedCountry.isoCode) ?: return false
+            return localDigits.length >= expectedLength && !isValid(localDigits = localDigits, dialCode = selectedCountry.dialCode)
+        }
+
     companion object {
         fun isValid(localDigits: String, dialCode: String): Boolean {
             if (localDigits.isEmpty()) return false
@@ -59,6 +67,12 @@ data class PhoneEntryState(
             } catch (exception: NumberParseException) {
                 false
             }
+        }
+
+        private fun exampleNationalLength(isoCode: String): Int? {
+            val phoneNumberUtil = PhoneNumberUtil.getInstance()
+            val example = phoneNumberUtil.getExampleNumberForType(isoCode, PhoneNumberUtil.PhoneNumberType.MOBILE) ?: return null
+            return phoneNumberUtil.getNationalSignificantNumber(example).length
         }
     }
 }

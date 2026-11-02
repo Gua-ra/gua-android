@@ -14,6 +14,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import dev.zacsweers.metro.Inject
+import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.error.ChangeServerError
 import io.element.android.features.login.impl.screens.chooseaccountprovider.ChooseAccountProviderPresenter
 import io.element.android.features.login.impl.screens.confirmaccountprovider.ConfirmAccountProviderPresenter
@@ -30,6 +31,7 @@ import io.element.android.libraries.guaresolver.ResolverClient
 import io.element.android.libraries.guaresolver.genesis.AccountGenesisManager
 import io.element.android.libraries.guaresolver.genesis.GenesisRegistration
 import io.element.android.libraries.guaresolver.genesis.GuaLoginHint
+import io.element.android.libraries.matrix.api.auth.AuthenticationException
 import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
 import io.element.android.libraries.matrix.api.auth.OAuthPrompt
 import io.element.android.libraries.oauth.api.OAuthAction
@@ -247,7 +249,15 @@ class LoginHelper(
             is OAuthAction.Success -> {
                 authenticationService.loginWithOAuth(oAuthAction.url)
                     .onFailure { failure ->
-                        loginModeState.value = AsyncData.Failure(failure)
+                        // The OAuth state is in memory only, so a retry needs a fresh authorization request.
+                        authenticationService.cancelOAuthLogin()
+                        loginModeState.value = AsyncData.Failure(
+                            if (failure is AuthenticationException.AccountAlreadyLoggedIn) {
+                                failure
+                            } else {
+                                ChangeServerError.Error(messageId = R.string.gua_sign_in_interrupted)
+                            }
+                        )
                     }
             }
             is OAuthAction.IdentityResetApproved -> Unit

@@ -43,6 +43,50 @@ class PhoneNumberNormalizerTest {
     }
 
     @Test
+    fun `brazilian carrier selection code is dropped`() {
+        assertThat(PhoneNumberNormalizer.normalize("0 21 11 91234-5678", defaultDialCode = "55"))
+            .isEqualTo("+5511912345678")
+        assertThat(PhoneNumberNormalizer.normalize("015 (11) 8123-4567", defaultDialCode = "55"))
+            .isEqualTo("+5511981234567")
+    }
+
+    @Test
+    fun `brazilian 8-digit mobile gains the leading 9`() {
+        assertThat(PhoneNumberNormalizer.normalize("(11) 8123-4567", defaultDialCode = "55"))
+            .isEqualTo("+5511981234567")
+        assertThat(PhoneNumberNormalizer.normalize("+55 11 8123-4567", defaultDialCode = "1"))
+            .isEqualTo("+5511981234567")
+        assertThat(PhoneNumberNormalizer.normalize("55 11 8123 4567", defaultDialCode = "55"))
+            .isEqualTo("+5511981234567")
+    }
+
+    @Test
+    fun `brazilian landline is kept`() {
+        assertThat(PhoneNumberNormalizer.normalize("(11) 3456-7890", defaultDialCode = "55"))
+            .isEqualTo("+551134567890")
+    }
+
+    @Test
+    fun `brazilian area code 55 is read as national`() {
+        assertThat(PhoneNumberNormalizer.normalize("(55) 91234-5678", defaultDialCode = "55"))
+            .isEqualTo("+5555912345678")
+        assertThat(PhoneNumberNormalizer.normalize("(55) 8123-4567", defaultDialCode = "55"))
+            .isEqualTo("+5555981234567")
+    }
+
+    @Test
+    fun `brazilian number with the country code and no plus is international`() {
+        assertThat(PhoneNumberNormalizer.normalize("55 11 91234 5678", defaultDialCode = "55"))
+            .isEqualTo("+5511912345678")
+    }
+
+    @Test
+    fun `brazilian number without an area code is skipped`() {
+        assertThat(PhoneNumberNormalizer.normalize("91234-5678", defaultDialCode = "55")).isNull()
+        assertThat(PhoneNumberNormalizer.normalize("+55 11 2345 678", defaultDialCode = "1")).isNull()
+    }
+
+    @Test
     fun `blank or junk input returns null`() {
         assertThat(PhoneNumberNormalizer.normalize("", defaultDialCode = "1")).isNull()
         assertThat(PhoneNumberNormalizer.normalize("12", defaultDialCode = "1")).isNull()

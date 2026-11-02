@@ -36,6 +36,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
@@ -209,12 +212,23 @@ private fun PhoneNumberField(
             )
         }
         // Footer under the field, mirroring iOS ("We'll text a verification code to this number.").
-        Text(
-            text = stringResource(R.string.screen_phone_entry_footer),
-            color = OnAuroraSecondary,
-            style = ElementTheme.typography.fontBodySmRegular,
-            modifier = Modifier.padding(start = 4.dp, top = 8.dp),
-        )
+        if (state.showInvalidNumberHint) {
+            Text(
+                text = stringResource(R.string.screen_phone_entry_invalid_number_hint),
+                color = OnAuroraPrimary,
+                style = ElementTheme.typography.fontBodySmMedium,
+                modifier = Modifier
+                    .padding(start = 4.dp, top = 8.dp)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
+            )
+        } else {
+            Text(
+                text = stringResource(R.string.screen_phone_entry_footer),
+                color = OnAuroraSecondary,
+                style = ElementTheme.typography.fontBodySmRegular,
+                modifier = Modifier.padding(start = 4.dp, top = 8.dp),
+            )
+        }
     }
 }
 

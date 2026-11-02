@@ -155,6 +155,51 @@ class RustEncryptionServiceTest {
     }
 
     @Test
+    fun `concurrent recovery writes reach the SDK one at a time`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        var calls = 0
+        var inFlight = 0
+        var maxInFlight = 0
+        val ffi = object : GatedFfiEncryption() {
+            override suspend fun enableRecovery(
+                waitForBackupsToUpload: Boolean,
+                passphrase: String?,
+                progressListener: EnableRecoveryProgressListener,
+            ): String {
+                calls++
+                inFlight++
+                maxInFlight = maxOf(maxInFlight, inFlight)
+                gate.await()
+                inFlight--
+                return "key"
+            }
+
+            override suspend fun resetRecoveryKey(): String {
+                calls++
+                inFlight++
+                maxInFlight = maxOf(maxInFlight, inFlight)
+                inFlight--
+                return "key"
+            }
+        }
+        ffi.initialization.complete(Unit)
+        val sut = createService(ffi)
+
+        val bootstrap = async { sut.enableRecovery(waitForBackupsToUpload = false) }
+        val bannerTap = async { sut.enableRecovery(waitForBackupsToUpload = false) }
+        val reset = async { sut.resetRecoveryKey() }
+        runCurrent()
+        assertThat(calls).isEqualTo(1)
+
+        gate.complete(Unit)
+        assertThat(bootstrap.await().isSuccess).isTrue()
+        assertThat(bannerTap.await().isSuccess).isTrue()
+        assertThat(reset.await().isSuccess).isTrue()
+        assertThat(calls).isEqualTo(3)
+        assertThat(maxInFlight).isEqualTo(1)
+    }
+
+    @Test
     fun `the recovery state is read from the SDK directly`() = runTest {
         val ffi = GatedFfiEncryption().apply { recoveryState = RustRecoveryState.INCOMPLETE }
         val sut = createService(ffi)

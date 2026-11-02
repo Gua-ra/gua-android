@@ -12,6 +12,7 @@ import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.RecoveryState
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -55,8 +56,10 @@ internal class SilentSessionEncryptionBootstrapper(
     private val sessionId: SessionId,
     private val encryptionService: EncryptionService,
     private val sessionCoroutineScope: CoroutineScope,
+    private val isSettingUp: MutableStateFlow<Boolean>,
 ) {
     fun start() {
+        isSettingUp.value = true
         sessionCoroutineScope.launch {
             try {
                 // GUA FORK: the recovery state settles before the SDK creates its key backup, so the state alone is not a gate.
@@ -113,6 +116,8 @@ internal class SilentSessionEncryptionBootstrapper(
             } catch (error: Throwable) {
                 // Fail-safe: never let key-storage setup block the user.
                 Timber.tag(TAG).e(error, "Unexpected error while bootstrapping key storage for %s.", sessionId.value)
+            } finally {
+                isSettingUp.value = false
             }
         }
     }

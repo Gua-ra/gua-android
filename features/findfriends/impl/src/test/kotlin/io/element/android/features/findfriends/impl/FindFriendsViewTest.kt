@@ -57,6 +57,7 @@ private fun AndroidComposeUiTest<ComponentActivity>.setFindFriendsView(
                     phase = phase,
                     contacts = persistentListOf(),
                     startingChatUserId = null,
+                    snackbarMessage = null,
                     eventSink = {},
                 ),
                 onBackClick = {},

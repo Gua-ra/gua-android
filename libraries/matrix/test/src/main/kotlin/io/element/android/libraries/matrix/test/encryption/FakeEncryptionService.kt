@@ -40,6 +40,7 @@ class FakeEncryptionService(
     override val enableRecoveryProgressStateFlow: MutableStateFlow<EnableRecoveryProgress> = MutableStateFlow(EnableRecoveryProgress.Starting)
     override val isLastDevice: MutableStateFlow<Boolean> = MutableStateFlow(false)
     override val hasDevicesToVerifyAgainst: MutableStateFlow<AsyncData<Boolean>> = MutableStateFlow(AsyncData.Uninitialized)
+    override val isSettingUpKeyStorage: MutableStateFlow<Boolean> = MutableStateFlow(false)
     private var waitForBackupUploadSteadyStateFlow: Flow<BackupUploadState> = flowOf()
 
     private var recoverFailure: Exception? = null

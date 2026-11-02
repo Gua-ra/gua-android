@@ -49,6 +49,8 @@ import io.element.android.libraries.designsystem.theme.components.ListSectionHea
 import io.element.android.libraries.designsystem.theme.components.Scaffold
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.designsystem.theme.components.TopAppBar
+import io.element.android.libraries.designsystem.utils.snackbar.SnackbarHost
+import io.element.android.libraries.designsystem.utils.snackbar.rememberSnackbarHostState
 
 /**
  * GUA FORK: stateless Find friends UI. Android counterpart of iOS `FindFriendsScreen`. Renders the
@@ -62,6 +64,7 @@ fun FindFriendsView(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val snackbarHostState = rememberSnackbarHostState(snackbarMessage = state.snackbarMessage)
     Scaffold(
         modifier = modifier.fillMaxWidth(),
         topBar = {
@@ -70,6 +73,7 @@ fun FindFriendsView(
                 navigationIcon = { BackButton(onClick = onBackClick) },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             when (state.phase) {
