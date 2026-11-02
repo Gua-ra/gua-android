@@ -11,21 +11,17 @@ import dev.zacsweers.metro.ContributesBinding
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.guaresolver.IdentityServiceClient
-import io.element.android.libraries.guaresolver.PhoneHasher
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.withContext
 
 /**
- * GUA FORK: reads the device address book, protects the numbers, looks them up against Gua, and
- * returns the matching contacts. Android counterpart of iOS `ContactDiscoveryService.discover`.
+ * GUA FORK: reads the device address book, looks the numbers up against Gua, and returns the
+ * matching contacts. Android counterpart of iOS `ContactDiscoveryService.discover`.
  *
- * PRIVACY (mirrors iOS):
- * - The address book is read once and never persisted.
- * - Raw phone numbers never leave the device — they are hashed via [PhoneHasher] before the lookup.
- * - The hashes the device produced are mapped back to local names so matches are labelled with how
- *   the user actually knows the person; the server only ever sees the hashes.
+ * PRIVACY (mirrors iOS): the address book is read once and never persisted, and only the normalized
+ * numbers are sent. Contact names stay on the device and label the matches locally.
  */
 sealed interface ContactDiscoveryResult {
     data class Success(val contacts: List<DiscoveredContact>) : ContactDiscoveryResult
@@ -55,22 +51,17 @@ class DefaultContactDiscoveryService(
         val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken
             ?: return ContactDiscoveryResult.Failure
 
-        // Map hashed digest -> best local name so matches can be labelled locally without the server
-        // ever seeing the raw number.
-        val nameByHash = nameByNumber.entries.mapNotNull { (e164, name) ->
-            PhoneHasher.hash(e164)?.let { it to name }
-        }.toMap()
-        if (nameByHash.isEmpty()) return ContactDiscoveryResult.NoContactsWithNumbers
-
-        val matches = nameByHash.keys.chunked(maxNumbersPerRequest).flatMap { batch ->
-            val result = identityServiceClient.lookupContacts(accessToken = accessToken, hashedPhones = batch)
+        val matches = nameByNumber.keys.sorted().chunked(maxNumbersPerRequest).flatMap { batch ->
+            val result = identityServiceClient.lookupContacts(accessToken = accessToken, phones = batch)
             result.getOrElse { return ContactDiscoveryResult.Failure }
         }
 
+        val ownUserId = matrixClient.sessionId.value
         val contacts = matches
+            .filterNot { it.userId.equals(ownUserId, ignoreCase = true) }
             .map { match ->
                 DiscoveredContact(
-                    localName = nameByHash[match.hashedPhone]
+                    localName = nameByNumber[match.phoneNumber]
                         ?: match.displayName
                         ?: match.displayHandle,
                     userId = UserId(match.userId),

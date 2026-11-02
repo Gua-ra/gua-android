@@ -37,12 +37,10 @@ import io.element.android.libraries.matrix.api.sync.SyncService
 import io.element.android.libraries.matrix.api.verification.SessionVerificationService
 import io.element.android.libraries.matrix.api.verification.SessionVerifiedStatus
 import io.element.android.libraries.push.api.PushService
-import io.element.android.libraries.push.api.PusherRegistrationFailure
 import io.element.android.services.analytics.api.AnalyticsService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -68,29 +66,17 @@ class LoggedInPresenter(
         val pusherRegistrationState = remember<MutableState<AsyncData<Unit>>> { mutableStateOf(AsyncData.Uninitialized) }
         LaunchedEffect(Unit) { preloadAccountManagementUrl() }
         LaunchedEffect(Unit) {
-            sessionVerificationService.sessionVerifiedStatus
-                .onEach { sessionVerifiedStatus ->
-                    when (sessionVerifiedStatus) {
-                        SessionVerifiedStatus.Unknown -> Unit
-                        SessionVerifiedStatus.Verified -> {
-                            Timber.tag(pusherTag.value).d("Ensure pusher is registered")
-                            pushService.ensurePusherIsRegistered(matrixClient).fold(
-                                onSuccess = {
-                                    Timber.tag(pusherTag.value).d("Pusher registered")
-                                    pusherRegistrationState.value = AsyncData.Success(Unit)
-                                },
-                                onFailure = {
-                                    Timber.tag(pusherTag.value).e(it, "Failed to register pusher")
-                                    pusherRegistrationState.value = AsyncData.Failure(it)
-                                },
-                            )
-                        }
-                        SessionVerifiedStatus.NotVerified -> {
-                            pusherRegistrationState.value = AsyncData.Failure(PusherRegistrationFailure.AccountNotVerified())
-                        }
-                    }
-                }
-                .launchIn(this)
+            Timber.tag(pusherTag.value).d("Ensure pusher is registered")
+            pushService.ensurePusherIsRegistered(matrixClient).fold(
+                onSuccess = {
+                    Timber.tag(pusherTag.value).d("Pusher registered")
+                    pusherRegistrationState.value = AsyncData.Success(Unit)
+                },
+                onFailure = {
+                    Timber.tag(pusherTag.value).e(it, "Failed to register pusher")
+                    pusherRegistrationState.value = AsyncData.Failure(it)
+                },
+            )
         }
         val syncIndicator by matrixClient.roomListService.syncIndicator.collectAsState()
         val isOnline by syncService.isOnline.collectAsState()

@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.dialogs.SlidingSyncNotSupportedDialog
 import io.element.android.features.login.impl.error.ChangeServerError
+import io.element.android.features.login.impl.error.retryLaterMessage
 import io.element.android.libraries.androidutils.system.openGooglePlay
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.designsystem.components.ProgressDialog
@@ -60,6 +61,15 @@ fun ChangeServerView(
                     ErrorDialog(
                         modifier = modifier,
                         content = stringResource(error.messageId),
+                        onSubmit = {
+                            eventSink.invoke(ChangeServerEvents.ClearError)
+                        }
+                    )
+                }
+                is ChangeServerError.RetryLater -> {
+                    ErrorDialog(
+                        modifier = modifier,
+                        content = retryLaterMessage(error),
                         onSubmit = {
                             eventSink.invoke(ChangeServerEvents.ClearError)
                         }

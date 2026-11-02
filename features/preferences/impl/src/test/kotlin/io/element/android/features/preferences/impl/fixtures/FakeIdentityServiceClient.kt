@@ -60,7 +60,7 @@ class FakeIdentityServiceClient(
         val passkeyCredentialJson: String?,
     )
 
-    override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> =
+    override suspend fun lookupContacts(accessToken: String, phones: List<String>): Result<List<ContactMatch>> =
         Result.success(emptyList())
 
     override suspend fun accountFactorStatus(accessToken: String, userId: String): Result<AccountFactorStatus> {
