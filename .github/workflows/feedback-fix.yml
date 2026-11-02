@@ -56,9 +56,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-          # The compound screenshot goldens are LFS-tracked. Without this they
-          # arrive as pointer stubs and Roborazzi crashes trying to decode one,
-          # which would look to the fixer like a failure it caused.
+          # Screenshot goldens are LFS-tracked. Without this they arrive as
+          # pointer stubs no screenshot test can read, which would look to the
+          # fixer like a failure it caused.
           lfs: true
 
       # Fail on the missing prerequisite rather than 20 minutes later inside the

@@ -107,12 +107,6 @@ jobs:
           path: app/build/outputs/apk/gplay/debug/*-universal-debug.apk
 
   # --- 3. Unit tests + screenshot verification. -----------------------------
-  #
-  # Two different screenshot tools run here. :tests:uitests uses Paparazzi against ~3100 plain
-  # committed PNGs. :libraries:compound uses Roborazzi against 22 goldens that ARE in Git LFS,
-  # which is why this job checks out with lfs: true. An earlier note here claimed pointer files
-  # "simply compare against their pointer files" and are therefore harmless. They are not:
-  # Roborazzi cannot decode a pointer and crashes on it.
   tests:
     name: Unit tests + screenshots
     runs-on: ubuntu-latest
@@ -122,11 +116,7 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
-          # :libraries:compound's screenshot goldens are LFS-tracked (.gitattributes). Without this
-          # they arrive as 130-byte pointer stubs, Roborazzi hands the pointer text to ImageIO,
-          # gets null back, and throws NullPointerException while LOADING the golden, before any
-          # pixel is compared. That is what the ten "screenshots FAILED" results in this job were:
-          # not a rendering regression, just an unreadable file.
+          # Screenshot goldens are Git LFS files; without this they arrive as pointer stubs no test can read.
           lfs: true
       - name: Use JDK 21
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
@@ -137,9 +127,13 @@ jobs:
         uses: gradle/actions/setup-gradle@5e2ebd065dc2488b7a6ad670704656cbbe1e8f60 # v6.1.1
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
-      - name: Run unit tests + screenshot verification
+      - name: Run unit tests
         # Test tasks are build-cacheable; --rerun makes them execute instead of restoring a cached result.
-        run: ./gradlew testDebugUnitTest --rerun :tests:uitests:verifyPaparazziDebug --rerun $CI_GRADLE_ARG_PROPERTIES
+        run: ./gradlew testDebugUnitTest --rerun $CI_GRADLE_ARG_PROPERTIES
+      - name: Verify screenshots
+        # A separate call: any task name containing "paparazzi" limits every test task to screenshot tests.
+        # --no-build-cache because --rerun on verifyPaparazziDebug does not reach the test tasks it runs.
+        run: ./gradlew verifyPaparazziDebug --no-build-cache $CI_GRADLE_ARG_PROPERTIES --continue
       - name: Upload test/screenshot failures
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
