@@ -155,6 +155,9 @@ jobs:
             **/build/reports/tests/*UnitTest/
 
   # --- 4. Static analysis: lint, ktlint, detekt. ----------------------------
+  #
+  # Every Gradle call here runs with --no-daemon: the Gradle and Kotlin daemons a step leaves running
+  # would take the memory the next step needs.
   quality:
     name: Lint / ktlint / detekt
     runs-on: ubuntu-latest
@@ -174,18 +177,15 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
       - name: ktlint
-        # --continue so every offending module is reported in one run. Without it Gradle stops at
-        # the first failing ktlint task, which made the job look like a single-file problem when
-        # several modules were affected, and turned fixing lint into one round trip per module.
-        run: ./gradlew ktlintCheck $CI_GRADLE_ARG_PROPERTIES --continue
+        # --continue reports every failing module in one run.
+        run: ./gradlew ktlintCheck $CI_GRADLE_ARG_PROPERTIES --no-daemon --continue
+      - name: Compile (gplay debug)
+        # Its own call, so the Kotlin daemon is gone before lint analysis, which needs most of the memory.
+        run: ./gradlew :app:compileGplayDebugKotlin $CI_GRADLE_ARG_PROPERTIES --no-daemon
       - name: Android lint (gplay debug)
-        run: ./gradlew :app:lintGplayDebug $CI_GRADLE_ARG_PROPERTIES --continue
+        run: ./gradlew :app:lintGplayDebug $CI_GRADLE_ARG_PROPERTIES --no-daemon --continue
       - name: detekt
-        # --continue for the same reason ktlint has it: without it Gradle stops at the
-        # first failing module, so a fix just moves the failure to the next one. The
-        # ktlint findings were fixed once already and detekt's were still hidden behind
-        # two modules that happened to fail first.
-        run: ./gradlew detekt $CI_GRADLE_ARG_PROPERTIES --continue
+        run: ./gradlew detekt $CI_GRADLE_ARG_PROPERTIES --no-daemon --continue
       - name: Upload quality reports
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
