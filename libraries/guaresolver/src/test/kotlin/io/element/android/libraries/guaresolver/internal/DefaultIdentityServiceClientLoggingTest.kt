@@ -60,14 +60,16 @@ class DefaultIdentityServiceClientLoggingTest {
     }
 
     @Test
-    fun `a malformed PIN call response is logged without its content`() = runTest {
+    fun `a malformed PIN call response stays out of the log and the returned error`() = runTest {
         server.enqueue(MockResponse().setBody("""{ "reauthToken": { "value": "secret-reauth-token" } }"""))
         val client = createClient()
 
-        val result = client.verifyPhoneChangeReauth("secret-token", "+15550001234", "123456")
+        val error = client.verifyPhoneChangeReauth("secret-token", "+15550001234", "123456").exceptionOrNull()
+        Timber.w(error, "A caller logs the failure")
 
-        assertThat(result.exceptionOrNull()).isInstanceOf(ResolverError.Transport::class.java)
-        assertThat(logged).isNotEmpty()
+        assertThat(error).isInstanceOf(ResolverError.Transport::class.java)
+        assertThat(logged.first()).startsWith("Identity-service PIN call failed with kotlinx.serialization.")
+        assertThat(logged).hasSize(2)
         logged.forEach { line -> assertThat(line).doesNotContain("secret-reauth-token") }
     }
 

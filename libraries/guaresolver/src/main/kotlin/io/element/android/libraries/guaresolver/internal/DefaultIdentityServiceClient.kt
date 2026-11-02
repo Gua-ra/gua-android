@@ -24,6 +24,7 @@ import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.PhoneChangeChallenge
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.network.RetrofitFactory
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
 import timber.log.Timber
@@ -308,8 +309,12 @@ class DefaultIdentityServiceClient(
             Result.success(block(api))
         } catch (e: HttpException) {
             Result.failure(e.toPinError())
+        } catch (e: SerializationException) {
+            // The message quotes the JSON that failed to decode, which can hold tokens or a passkey assertion,
+            // and callers log the returned error, so both keep only the exception type.
+            Timber.e("Identity-service PIN call failed with ${e.javaClass.name}")
+            Result.failure(ResolverError.Transport(SerializationException(e.javaClass.name)))
         } catch (e: Exception) {
-            // A decoding error message quotes the JSON it failed on, which can hold tokens or a passkey assertion.
             Timber.e("Identity-service PIN call failed with ${e.javaClass.name}")
             Result.failure(ResolverError.Transport(e))
         }
