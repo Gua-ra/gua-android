@@ -131,7 +131,7 @@ jobs:
         # Test tasks are build-cacheable; --rerun makes them execute instead of restoring a cached result.
         run: ./gradlew testDebugUnitTest --rerun $CI_GRADLE_ARG_PROPERTIES
       - name: Verify screenshots
-        # A separate call: any task name containing "paparazzi" limits every test task to screenshot tests.
+        # A separate call: naming a paparazzi task applies screenshot settings to every test task in the call.
         # --no-build-cache because --rerun on verifyPaparazziDebug does not reach the test tasks it runs.
         run: ./gradlew verifyPaparazziDebug --no-build-cache $CI_GRADLE_ARG_PROPERTIES --continue
       - name: Upload test/screenshot failures
