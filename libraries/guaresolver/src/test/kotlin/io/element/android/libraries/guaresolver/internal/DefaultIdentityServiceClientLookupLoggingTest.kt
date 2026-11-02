@@ -66,14 +66,16 @@ class DefaultIdentityServiceClientLookupLoggingTest {
     }
 
     @Test
-    fun `a malformed lookup response is logged without its content`() = runTest {
+    fun `a malformed lookup response stays out of the log and the returned error`() = runTest {
         server.enqueue(MockResponse().setBody("""{ "matches": [ { "phone": "$A_PHONE", "userId": "@alice:gua.global" }, 7 ] }"""))
         val client = createClient()
 
         val result = client.lookupContacts("secret-token", listOf(A_PHONE))
+        Timber.w(result.exceptionOrNull(), "A caller logs the failure")
 
         assertThat(result.exceptionOrNull()).isInstanceOf(ResolverError.Transport::class.java)
-        assertThat(logged).isNotEmpty()
+        assertThat(logged.first()).startsWith("Contact lookup failed with kotlinx.serialization.")
+        assertThat(logged).hasSize(2)
         logged.forEach { line ->
             assertThat(line).doesNotContain(A_PHONE.drop(1))
             assertThat(line).doesNotContain("alice")
