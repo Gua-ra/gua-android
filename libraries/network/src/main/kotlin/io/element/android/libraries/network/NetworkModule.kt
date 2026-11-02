@@ -14,10 +14,8 @@ import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import io.element.android.libraries.network.interceptors.DynamicHttpLoggingInterceptor
-import io.element.android.libraries.network.interceptors.FormattedJsonHttpLogger
 import io.element.android.libraries.network.interceptors.UserAgentInterceptor
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
 
 @BindingContainer
@@ -35,11 +33,4 @@ object NetworkModule {
         addInterceptor(userAgentInterceptor)
         addInterceptor(dynamicHttpLoggingInterceptor)
     }.build()
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun providesHttpLoggingInterceptor(): HttpLoggingInterceptor {
-        val logger = FormattedJsonHttpLogger(HttpLoggingInterceptor.Level.BODY)
-        return HttpLoggingInterceptor(logger)
-    }
 }

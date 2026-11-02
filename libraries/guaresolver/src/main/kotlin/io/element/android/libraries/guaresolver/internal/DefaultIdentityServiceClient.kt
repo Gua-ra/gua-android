@@ -24,6 +24,7 @@ import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.PhoneChangeChallenge
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.network.RetrofitFactory
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
 import timber.log.Timber
@@ -63,8 +64,12 @@ class DefaultIdentityServiceClient(
             )
         } catch (e: HttpException) {
             return Result.failure(ResolverError.Server(e.code()))
+        } catch (e: SerializationException) {
+            // The message quotes the response, which holds contact numbers. A caller may log the returned error,
+            // so the log line and the returned error keep only the exception type.
+            Timber.e("Contact lookup failed with ${e.javaClass.name}")
+            return Result.failure(ResolverError.Transport(SerializationException(e.javaClass.name)))
         } catch (e: Exception) {
-            // A decoding error message quotes the response, which holds contact numbers.
             Timber.e("Contact lookup failed with ${e.javaClass.name}")
             return Result.failure(ResolverError.Transport(e))
         }
@@ -308,8 +313,13 @@ class DefaultIdentityServiceClient(
             Result.success(block(api))
         } catch (e: HttpException) {
             Result.failure(e.toPinError())
+        } catch (e: SerializationException) {
+            // The message quotes the JSON that failed to decode, which can hold tokens or a passkey assertion.
+            // Callers log the returned error, so the log line and the returned error keep only the exception type.
+            Timber.e("Identity-service PIN call failed with ${e.javaClass.name}")
+            Result.failure(ResolverError.Transport(SerializationException(e.javaClass.name)))
         } catch (e: Exception) {
-            Timber.e(e, "Identity-service PIN call failed")
+            Timber.e("Identity-service PIN call failed with ${e.javaClass.name}")
             Result.failure(ResolverError.Transport(e))
         }
     }
@@ -324,6 +334,12 @@ class DefaultIdentityServiceClient(
             tryOrNull { errorBodyJson.decodeFromString<IdentityServiceErrorBody>(it) }
         }
         val code = errorBody?.code
+        val loggableCode = when {
+            code == null -> "none"
+            code.matches(ERROR_CODE_SHAPE) -> code
+            else -> "<unrecognized>"
+        }
+        Timber.w("Identity-service call refused with HTTP ${code()}, code $loggableCode")
         val retryAfter = response()?.headers()?.get("Retry-After")?.toIntOrNull()
         // The cooldown retry window is carried in the JSON body, falling back to the Retry-After header.
         val cooldownRetryAfter = errorBody?.retryAfterSeconds ?: retryAfter?.toLong()
@@ -371,6 +387,9 @@ class DefaultIdentityServiceClient(
 
     private companion object {
         private val errorBodyJson = Json { ignoreUnknownKeys = true }
+
+        /** Error codes are a fixed snake_case vocabulary. A code of any other shape is not logged, as it may carry user data. */
+        private val ERROR_CODE_SHAPE = Regex("[a-z0-9_]{1,64}")
 
         /** Re-serialises the authenticator's assertion response without reinterpreting it. */
         private val credentialJson = Json { ignoreUnknownKeys = true }
