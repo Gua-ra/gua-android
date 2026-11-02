@@ -64,8 +64,12 @@ class DefaultIdentityServiceClient(
             )
         } catch (e: HttpException) {
             return Result.failure(ResolverError.Server(e.code()))
+        } catch (e: SerializationException) {
+            // The message quotes the response, which holds contact numbers. Callers log the returned error,
+            // so the log line and the returned error keep only the exception type.
+            Timber.e("Contact lookup failed with ${e.javaClass.name}")
+            return Result.failure(ResolverError.Transport(SerializationException(e.javaClass.name)))
         } catch (e: Exception) {
-            // A decoding error message quotes the response, which holds contact numbers.
             Timber.e("Contact lookup failed with ${e.javaClass.name}")
             return Result.failure(ResolverError.Transport(e))
         }
@@ -310,8 +314,8 @@ class DefaultIdentityServiceClient(
         } catch (e: HttpException) {
             Result.failure(e.toPinError())
         } catch (e: SerializationException) {
-            // The message quotes the JSON that failed to decode, which can hold tokens or a passkey assertion,
-            // and callers log the returned error, so both keep only the exception type.
+            // The message quotes the JSON that failed to decode, which can hold tokens or a passkey assertion.
+            // Callers log the returned error, so the log line and the returned error keep only the exception type.
             Timber.e("Identity-service PIN call failed with ${e.javaClass.name}")
             Result.failure(ResolverError.Transport(SerializationException(e.javaClass.name)))
         } catch (e: Exception) {
