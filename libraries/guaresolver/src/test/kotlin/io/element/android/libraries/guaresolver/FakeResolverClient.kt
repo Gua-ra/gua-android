@@ -80,8 +80,8 @@ class FakeIdentityServiceClient(
         Result.success(AccountGenesisRegistration(accountId = A_FAKE_ACCOUNT_ID, attachHandle = A_FAKE_ATTACH_HANDLE))
     },
 ) : IdentityServiceClient {
-    override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> =
-        lookupResult(accessToken, hashedPhones)
+    override suspend fun lookupContacts(accessToken: String, phones: List<String>): Result<List<ContactMatch>> =
+        lookupResult(accessToken, phones)
 
     /** Every [startPhoneChange] the fake saw, so tests can assert on ordering and on what was sent. */
     val startPhoneChangeCalls: MutableList<PhoneChangeStartCall> = mutableListOf()
@@ -195,13 +195,13 @@ fun anAccountFactorStatus(
 )
 
 fun aContactMatch(
-    hashedPhone: String = "deadbeef",
+    phoneNumber: String = "+5511999998888",
     userId: String = "@alice:gua.global",
     displayHandle: String = "@alice",
     displayName: String? = "Alice",
     avatarUrl: String? = null,
 ) = ContactMatch(
-    hashedPhone = hashedPhone,
+    phoneNumber = phoneNumber,
     userId = userId,
     displayHandle = displayHandle,
     displayName = displayName,

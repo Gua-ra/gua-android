@@ -37,7 +37,6 @@ import io.element.android.libraries.matrix.test.roomlist.FakeRoomListService
 import io.element.android.libraries.matrix.test.sync.FakeSyncService
 import io.element.android.libraries.matrix.test.verification.FakeSessionVerificationService
 import io.element.android.libraries.push.api.PushService
-import io.element.android.libraries.push.api.PusherRegistrationFailure
 import io.element.android.libraries.push.test.FakePushService
 import io.element.android.libraries.pushproviders.api.Distributor
 import io.element.android.libraries.pushproviders.api.PushProvider
@@ -67,6 +66,7 @@ class LoggedInPresenterTest {
             assertThat(initialState.showSyncSpinner).isFalse()
             assertThat(initialState.pusherRegistrationState.isUninitialized()).isTrue()
             assertThat(initialState.ignoreRegistrationError).isFalse()
+            assertThat(awaitItem().pusherRegistrationState.isSuccess()).isTrue()
         }
     }
 
@@ -79,7 +79,7 @@ class LoggedInPresenterTest {
         createLoggedInPresenter(
             matrixClient = matrixClient,
         ).test {
-            awaitItem()
+            awaitFirstItem()
             advanceUntilIdle()
             accountManagementUrlResult.assertions().isCalledOnce()
                 .with(value(null))
@@ -142,10 +142,8 @@ class LoggedInPresenterTest {
     }
 
     @Test
-    fun `present - ensure default pusher is not registered if session is not verified`() = runTest {
-        val lambda = lambdaRecorder<Result<Unit>> {
-            Result.success(Unit)
-        }
+    fun `present - ensure default pusher is registered when the session is not verified`() = runTest {
+        val lambda = lambdaRecorder<Result<Unit>> { Result.success(Unit) }
         val pushService = createFakePushService(ensurePusherIsRegisteredResult = lambda)
         val verificationService = FakeSessionVerificationService(
             initialSessionVerifiedStatus = SessionVerifiedStatus.NotVerified
@@ -155,9 +153,26 @@ class LoggedInPresenterTest {
             sessionVerificationService = verificationService,
         ).test {
             val finalState = awaitFirstItem()
-            assertThat(finalState.pusherRegistrationState.errorOrNull())
-                .isInstanceOf(PusherRegistrationFailure.AccountNotVerified::class.java)
-            lambda.assertions().isNeverCalled()
+            assertThat(finalState.pusherRegistrationState.isSuccess()).isTrue()
+            lambda.assertions().isCalledOnce()
+        }
+    }
+
+    @Test
+    fun `present - verifying the session later does not register the pusher again`() = runTest {
+        val lambda = lambdaRecorder<Result<Unit>> { Result.success(Unit) }
+        val verificationService = FakeSessionVerificationService(
+            initialSessionVerifiedStatus = SessionVerifiedStatus.NotVerified
+        )
+        createLoggedInPresenter(
+            pushService = createFakePushService(ensurePusherIsRegisteredResult = lambda),
+            sessionVerificationService = verificationService,
+        ).test {
+            assertThat(awaitFirstItem().pusherRegistrationState.isSuccess()).isTrue()
+            verificationService.emitVerifiedStatus(SessionVerifiedStatus.Verified)
+            advanceUntilIdle()
+            lambda.assertions().isCalledOnce()
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
@@ -289,7 +304,7 @@ class LoggedInPresenterTest {
         createLoggedInPresenter(
             matrixClient = matrixClient,
         ).test {
-            val initialState = awaitItem()
+            val initialState = awaitFirstItem()
             assertThat(initialState.forceNativeSlidingSyncMigration).isFalse()
             initialState.eventSink(LoggedInEvents.CheckSlidingSyncProxyAvailability)
             assertThat(awaitItem().forceNativeSlidingSyncMigration).isTrue()
@@ -311,7 +326,7 @@ class LoggedInPresenterTest {
         createLoggedInPresenter(
             matrixClient = matrixClient,
         ).test {
-            val initialState = awaitItem()
+            val initialState = awaitFirstItem()
 
             initialState.eventSink(LoggedInEvents.LogoutAndMigrateToNativeSlidingSync)
 
@@ -333,7 +348,7 @@ class LoggedInPresenterTest {
             matrixClient = matrixClient,
             networkMonitor = networkMonitor,
         ).test {
-            awaitItem()
+            awaitFirstItem()
             networkMonitor.connectivity.value = NetworkStatus.Connected
 
             advanceUntilIdle()
@@ -352,7 +367,7 @@ class LoggedInPresenterTest {
         analyticsService: AnalyticsService = FakeAnalyticsService(),
         sessionVerificationService: SessionVerificationService = FakeSessionVerificationService(),
         encryptionService: EncryptionService = FakeEncryptionService(),
-        pushService: PushService = FakePushService(),
+        pushService: PushService = createFakePushService(),
         matrixClient: MatrixClient = FakeMatrixClient(
             accountManagementUrlResult = { Result.success(null) },
         ),
