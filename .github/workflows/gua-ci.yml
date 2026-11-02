@@ -139,8 +139,8 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
       - name: Run unit tests
         # Test tasks are build-cacheable; --rerun makes them execute instead of restoring a cached result.
-        # The flavored :app module has no testDebugUnitTest task, so its tests are named separately.
-        run: ./gradlew :app:testGplayDebugUnitTest --rerun testDebugUnitTest --rerun $CI_GRADLE_ARG_PROPERTIES
+        # The flavored :app module and the JVM modules have no testDebugUnitTest task, so their tests are named separately.
+        run: ./gradlew :app:testGplayDebugUnitTest --rerun :libraries:core:test --rerun :tests:detekt-rules:test --rerun testDebugUnitTest --rerun $CI_GRADLE_ARG_PROPERTIES
       - name: Verify screenshots
         # A separate call: naming a paparazzi task applies screenshot settings to every test task in the call.
         # --no-build-cache because --rerun on verifyPaparazziDebug does not reach the test tasks it runs.
