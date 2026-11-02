@@ -175,6 +175,9 @@ jobs:
         run: ./gradlew ktlintCheck $CI_GRADLE_ARG_PROPERTIES --continue
       - name: Android lint (gplay debug)
         run: ./gradlew :app:lintGplayDebug $CI_GRADLE_ARG_PROPERTIES --continue
+      - name: Android lint (guaresolver)
+        # The app lint does not check library modules, so an API above minSdk here (NewApi) would otherwise ship.
+        run: ./gradlew :libraries:guaresolver:lintDebug $CI_GRADLE_ARG_PROPERTIES --continue
       - name: detekt
         # --continue for the same reason ktlint has it: without it Gradle stops at the
         # first failing module, so a fix just moves the failure to the next one. The
