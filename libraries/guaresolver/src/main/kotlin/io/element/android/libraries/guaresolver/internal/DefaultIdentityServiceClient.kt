@@ -309,7 +309,8 @@ class DefaultIdentityServiceClient(
         } catch (e: HttpException) {
             Result.failure(e.toPinError())
         } catch (e: Exception) {
-            Timber.e(e, "Identity-service PIN call failed")
+            // A decoding error message quotes the JSON it failed on, which can hold tokens or a passkey assertion.
+            Timber.e("Identity-service PIN call failed with ${e.javaClass.name}")
             Result.failure(ResolverError.Transport(e))
         }
     }

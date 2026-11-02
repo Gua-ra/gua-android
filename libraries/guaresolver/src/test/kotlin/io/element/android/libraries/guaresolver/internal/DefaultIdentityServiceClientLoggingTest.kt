@@ -11,6 +11,7 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.androidutils.json.DefaultJsonProvider
 import io.element.android.libraries.guaresolver.FakeEnrollmentRedirectProvider
 import io.element.android.libraries.guaresolver.FakeGuaDeployment
+import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.network.RetrofitFactory
 import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
@@ -56,6 +57,18 @@ class DefaultIdentityServiceClientLoggingTest {
             "Identity-service call refused with HTTP 400, code <unrecognized>",
             "Identity-service call refused with HTTP 503, code none",
         ).inOrder()
+    }
+
+    @Test
+    fun `a malformed PIN call response is logged without its content`() = runTest {
+        server.enqueue(MockResponse().setBody("""{ "reauthToken": { "value": "secret-reauth-token" } }"""))
+        val client = createClient()
+
+        val result = client.verifyPhoneChangeReauth("secret-token", "+15550001234", "123456")
+
+        assertThat(result.exceptionOrNull()).isInstanceOf(ResolverError.Transport::class.java)
+        assertThat(logged).isNotEmpty()
+        logged.forEach { line -> assertThat(line).doesNotContain("secret-reauth-token") }
     }
 
     private fun createClient() = DefaultIdentityServiceClient(
