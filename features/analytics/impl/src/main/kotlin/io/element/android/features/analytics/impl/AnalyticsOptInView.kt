@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,24 +61,28 @@ fun AnalyticsOptInView(
     }
 
     BackHandler(onBack = ::onDeclineTerms)
-    // GUA FORK: match iOS `AnalyticsPromptScreen`, which renders the header, checklist AND buttons
-    // together in the main (white) content area. iOS' gradient is only a thin TOP breaker behind the
-    // header; Android's `OnboardingBackground` is a 220dp BOTTOM band, so the dark filled buttons —
-    // which naturally fall near the bottom of the content flow — landed ON that teal/blue gradient,
-    // giving an ugly dark-on-blue contrast. We therefore (1) move the buttons up into the content
-    // (no separate footer over the gradient) and (2) drop the bottom gradient entirely so everything
-    // sits on the white `bgCanvasDefault`, matching the iOS result.
+    // GUA FORK: no gradient, and the buttons follow the checklist as on iOS.
+    // Only the text above them scrolls, so both choices always stay on screen.
     HeaderFooterPage(
         modifier = modifier
             .fillMaxSize()
             .systemBarsPadding()
             .imePadding(),
-        header = { AnalyticsOptInHeader(state, onClickTerms) },
         content = {
-            AnalyticsOptInContent(
-                onAcceptTerms = ::onAcceptTerms,
-                onDeclineTerms = ::onDeclineTerms,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(40.dp)) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    AnalyticsOptInHeader(state, onClickTerms)
+                    AnalyticsOptInContent()
+                }
+                AnalyticsOptInButtons(
+                    onAcceptTerms = ::onAcceptTerms,
+                    onDeclineTerms = ::onDeclineTerms,
+                )
+            }
         },
     )
 }
@@ -122,20 +128,12 @@ private fun AnalyticsOptInHeader(
 }
 
 @Composable
-private fun AnalyticsOptInContent(
-    onAcceptTerms: () -> Unit,
-    onDeclineTerms: () -> Unit,
-) {
-    // GUA FORK: lay the checklist and buttons out as a top-anchored column directly under the
-    // header, matching iOS' `VStack(spacing: 40)`. The buttons therefore sit immediately below the
-    // checklist in the white content area, NOT at the very bottom over the `OnboardingBackground`
-    // gradient (the previous bottom-biased Box pushed them down onto the gradient).
+private fun AnalyticsOptInContent() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(40.dp),
     ) {
         InfoListOrganism(
             items = persistentListOf(
@@ -155,13 +153,6 @@ private fun AnalyticsOptInContent(
             textStyle = ElementTheme.typography.fontBodyLgMedium,
             iconTint = ElementTheme.colors.iconSuccessPrimary,
         )
-        // GUA FORK: the OK / Not now buttons live here in the white content area (matching iOS,
-        // where they sit in `mainContent` rather than over the bottom gradient) so the dark
-        // filled buttons stay high-contrast against `bgCanvasDefault`.
-        AnalyticsOptInButtons(
-            onAcceptTerms = onAcceptTerms,
-            onDeclineTerms = onDeclineTerms,
-        )
     }
 }
 
@@ -176,8 +167,7 @@ private fun AnalyticsOptInButtons(
             onClick = onAcceptTerms,
             modifier = Modifier.fillMaxWidth(),
         )
-        // GUA FORK: both choices are equal filled primary buttons (matching iOS, which uses
-        // `.compound(.primary)` on both) so neither option is visually nudged.
+        // GUA FORK: filled like OK, so declining is never the weaker-looking choice.
         Button(
             text = stringResource(id = CommonStrings.action_not_now),
             onClick = onDeclineTerms,
