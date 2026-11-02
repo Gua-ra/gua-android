@@ -79,6 +79,7 @@ class GuaFindFriendsVerifyTest {
         phase = phase,
         contacts = contacts.toImmutableList(),
         startingChatUserId = null,
+        snackbarMessage = null,
         eventSink = {},
     )
 
