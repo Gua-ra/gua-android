@@ -255,7 +255,7 @@ private fun InviteSubtitle(
     modifier: Modifier = Modifier
 ) {
     val subtitle = if (isDm) {
-        inviteSender?.userId?.value
+        inviteSender?.userId?.displayHandle
     } else {
         null
     }
