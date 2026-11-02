@@ -497,7 +497,8 @@ private fun RoomSummaryView(
                 overflow = TextOverflow.Ellipsis
             )
             val otherUserId = roomInfo.heroes.singleOrNull()?.userId?.takeIf { roomInfo.isDm }
-            val subtitle = roomInfo.canonicalAlias?.value ?: otherUserId?.value
+            // GUA FORK: show the homeserver-stripped handle, never `@user:server`.
+            val subtitle = roomInfo.canonicalAlias?.value ?: otherUserId?.displayHandle
             if (subtitle != null) {
                 Text(
                     text = subtitle,

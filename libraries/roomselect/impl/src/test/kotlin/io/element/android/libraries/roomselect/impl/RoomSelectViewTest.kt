@@ -52,19 +52,20 @@ class RoomSelectViewTest : RobolectricTest() {
 
     @Config(qualifiers = "h1024dp")
     @Test
-    fun `a direct message without alias renders the matrix id of the other user`() = runAndroidComposeUiTest {
+    fun `a direct message without alias renders the handle of the other user`() = runAndroidComposeUiTest {
         setRoomSelectView(
             aRoomSelectState(
                 resultState = SearchBarResultState.Results(aRoomSelectRoomList()),
             ),
         )
         onNodeWithText("Alice").assertIsDisplayed()
-        onNodeWithText("@alice:example.org").assertIsDisplayed()
+        onNodeWithText("@alice").assertIsDisplayed()
+        onNodeWithText("@alice:example.org").assertDoesNotExist()
     }
 
     @Config(qualifiers = "h1024dp")
     @Test
-    fun `a room which is not a direct message does not render the matrix id of its hero`() = runAndroidComposeUiTest {
+    fun `a room which is not a direct message does not render the handle of its hero`() = runAndroidComposeUiTest {
         setRoomSelectView(
             aRoomSelectState(
                 resultState = SearchBarResultState.Results(
@@ -81,7 +82,7 @@ class RoomSelectViewTest : RobolectricTest() {
             ),
         )
         onNodeWithText("Room with a single hero").assertIsDisplayed()
-        onNodeWithText("@alice:example.org").assertDoesNotExist()
+        onNodeWithText("@alice").assertDoesNotExist()
     }
 
     @Config(qualifiers = "h1024dp")
