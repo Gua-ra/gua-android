@@ -28,7 +28,7 @@ data class InviteSender(
 ) {
     @Composable
     fun annotatedString(): AnnotatedString {
-        return stringResource(R.string.screen_invites_invited_you, displayName, userId.value).let { text ->
+        return stringResource(R.string.screen_invites_invited_you, displayName, userId.displayHandle).let { text ->
             val senderNameStart = stringResource(R.string.screen_invites_invited_you).indexOf($$"%1$s")
             AnnotatedString(
                 text = text,
