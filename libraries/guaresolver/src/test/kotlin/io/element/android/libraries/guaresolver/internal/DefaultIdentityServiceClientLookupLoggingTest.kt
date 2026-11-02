@@ -74,6 +74,7 @@ class DefaultIdentityServiceClientLookupLoggingTest {
         Timber.w(result.exceptionOrNull(), "A caller logs the failure")
 
         assertThat(result.exceptionOrNull()).isInstanceOf(ResolverError.Transport::class.java)
+        assertThat(logged.first()).startsWith("Contact lookup failed with kotlinx.serialization.")
         assertThat(logged).hasSize(2)
         logged.forEach { line ->
             assertThat(line).doesNotContain(A_PHONE.drop(1))

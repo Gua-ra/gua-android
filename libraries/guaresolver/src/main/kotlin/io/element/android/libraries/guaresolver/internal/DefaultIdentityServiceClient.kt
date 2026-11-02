@@ -65,7 +65,7 @@ class DefaultIdentityServiceClient(
         } catch (e: HttpException) {
             return Result.failure(ResolverError.Server(e.code()))
         } catch (e: SerializationException) {
-            // The message quotes the response, which holds contact numbers. Callers log the returned error,
+            // The message quotes the response, which holds contact numbers. A caller may log the returned error,
             // so the log line and the returned error keep only the exception type.
             Timber.e("Contact lookup failed with ${e.javaClass.name}")
             return Result.failure(ResolverError.Transport(SerializationException(e.javaClass.name)))
