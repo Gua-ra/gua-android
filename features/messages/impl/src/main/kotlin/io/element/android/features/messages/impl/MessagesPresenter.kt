@@ -36,6 +36,7 @@ import io.element.android.features.messages.impl.crypto.identity.IdentityChangeS
 import io.element.android.features.messages.impl.link.LinkState
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerEvent
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerState
+import io.element.android.features.messages.impl.messagemenu.MessageMenuPresenter
 import io.element.android.features.messages.impl.pinned.banner.PinnedMessagesBannerState
 import io.element.android.features.messages.impl.timeline.MarkAsFullyRead
 import io.element.android.features.messages.impl.timeline.SelectionAction
@@ -119,6 +120,7 @@ class MessagesPresenter(
     @Assisted private val actionListPresenter: Presenter<ActionListState>,
     private val customReactionPresenter: Presenter<CustomReactionState>,
     private val reactionSummaryPresenter: Presenter<ReactionSummaryState>,
+    messageMenuPresenterFactory: MessageMenuPresenter.Factory,
     private val readReceiptBottomSheetPresenter: Presenter<ReadReceiptBottomSheetState>,
     private val pinnedMessagesBannerPresenter: Presenter<PinnedMessagesBannerState>,
     private val roomCallStatePresenter: Presenter<RoomCallState>,
@@ -153,6 +155,10 @@ class MessagesPresenter(
         timelineMode = timelineController.mainTimelineMode()
     )
 
+    private val messageMenuPresenter = messageMenuPresenterFactory.create(
+        timelineMode = timelineController.mainTimelineMode()
+    )
+
     private val markingAsReadAndExiting = AtomicBoolean(false)
 
     @Composable
@@ -171,6 +177,7 @@ class MessagesPresenter(
         val linkState = linkPresenter.present()
         val customReactionState = customReactionPresenter.present()
         val reactionSummaryState = reactionSummaryPresenter.present()
+        val messageMenuState = messageMenuPresenter.present()
         val readReceiptBottomSheetState = readReceiptBottomSheetPresenter.present()
         val pinnedMessagesBannerState = pinnedMessagesBannerPresenter.present()
         val roomCallState = roomCallStatePresenter.present()
@@ -342,6 +349,7 @@ class MessagesPresenter(
             actionListState = actionListState,
             customReactionState = customReactionState,
             reactionSummaryState = reactionSummaryState,
+            messageMenuState = messageMenuState,
             readReceiptBottomSheetState = readReceiptBottomSheetState,
             snackbarMessage = snackbarMessage,
             inviteProgress = inviteProgress.value,

@@ -21,6 +21,8 @@ import io.element.android.features.messages.impl.link.LinkState
 import io.element.android.features.messages.impl.link.aLinkState
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerState
 import io.element.android.features.messages.impl.messagecomposer.aMessageComposerState
+import io.element.android.features.messages.impl.messagemenu.MessageMenuState
+import io.element.android.features.messages.impl.messagemenu.aMessageMenuState
 import io.element.android.features.messages.impl.pinned.banner.PinnedMessagesBannerState
 import io.element.android.features.messages.impl.pinned.banner.aLoadedPinnedMessagesBannerState
 import io.element.android.features.messages.impl.timeline.TimelineState
@@ -120,6 +122,7 @@ fun aMessagesState(
     actionListState: ActionListState = anActionListState(),
     customReactionState: CustomReactionState = aCustomReactionState(),
     reactionSummaryState: ReactionSummaryState = aReactionSummaryState(),
+    messageMenuState: MessageMenuState = aMessageMenuState(),
     showReinvitePrompt: Boolean = false,
     roomCallState: RoomCallState = aStandByCallState(),
     pinnedMessagesBannerState: PinnedMessagesBannerState = aLoadedPinnedMessagesBannerState(),
@@ -151,6 +154,7 @@ fun aMessagesState(
     actionListState = actionListState,
     customReactionState = customReactionState,
     reactionSummaryState = reactionSummaryState,
+    messageMenuState = messageMenuState,
     snackbarMessage = null,
     inviteProgress = AsyncData.Uninitialized,
     showReinvitePrompt = showReinvitePrompt,
