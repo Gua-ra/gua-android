@@ -57,6 +57,8 @@ import io.element.android.features.messages.impl.messagemenu.aMessageMenuState
 import io.element.android.features.messages.impl.pinned.banner.PinnedMessagesBannerItem
 import io.element.android.features.messages.impl.pinned.banner.aLoadedPinnedMessagesBannerState
 import io.element.android.features.messages.impl.timeline.FOCUS_ON_PINNED_EVENT_DEBOUNCE_DURATION_IN_MILLIS
+import io.element.android.features.messages.impl.timeline.SelectionAction
+import io.element.android.features.messages.impl.timeline.SelectionState
 import io.element.android.features.messages.impl.timeline.TimelineEvent
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
 import io.element.android.features.messages.impl.timeline.aTimelineItemList
@@ -105,6 +107,7 @@ import io.element.android.tests.testutils.robolectric.RobolectricTest
 import io.element.android.tests.testutils.setSafeContent
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
 import org.junit.Test
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
@@ -377,6 +380,27 @@ class MessagesViewTest : RobolectricTest() {
                 userEventPermissions = state.userEventPermissions,
             )
         )
+    }
+
+    @Test
+    fun `double tapping on an Event in selection mode toggles its selection`() = runAndroidComposeUiTest {
+        val timelineEventsRecorder = EventsRecorder<TimelineEvent>()
+        val messageMenuRecorder = EventsRecorder<MessageMenuEvent>(expectEvents = false)
+        val textEvent = aTimelineItemEvent(content = aTimelineItemTextContent())
+        val state = aMessagesState(
+            messageMenuState = aMessageMenuState(eventSink = messageMenuRecorder),
+            timelineState = aTimelineState(
+                timelineItems = persistentListOf(textEvent),
+                selectionState = SelectionState.Active(SelectionAction.Forward, persistentSetOf()),
+                eventSink = timelineEventsRecorder,
+            ),
+        )
+        setMessagesView(state = state)
+        timelineEventsRecorder.clear()
+        onAllNodesWithTag(TestTags.messageBubble.value).onFirst().performTouchInput { doubleClick() }
+        mainClock.advanceTimeBy(1_000)
+        val toggle = TimelineEvent.ToggleSelection(requireNotNull(textEvent.eventId))
+        timelineEventsRecorder.assertList(listOf(toggle, toggle))
     }
 
     @Test

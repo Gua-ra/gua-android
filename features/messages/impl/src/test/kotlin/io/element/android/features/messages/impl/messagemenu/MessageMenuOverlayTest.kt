@@ -9,6 +9,7 @@
 
 package io.element.android.features.messages.impl.messagemenu
 
+import android.content.res.Configuration
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.foundation.combinedClickable
@@ -16,15 +17,21 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
@@ -45,6 +52,7 @@ import io.element.android.tests.testutils.assertNoNodeWithText
 import io.element.android.tests.testutils.clickOn
 import io.element.android.tests.testutils.ensureCalledOnceWithParam
 import io.element.android.tests.testutils.ensureCalledOnceWithTwoParams
+import io.element.android.tests.testutils.pressBackKey
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import io.element.android.tests.testutils.setSafeContent
 import kotlinx.collections.immutable.persistentListOf
@@ -144,6 +152,39 @@ class MessageMenuOverlayTest : RobolectricTest() {
     }
 
     @Test
+    fun `tapping the backdrop closes the menu`() = runAndroidComposeUiTest {
+        val eventsRecorder = EventsRecorder<MessageMenuEvent>()
+        setOverlay(aLongPressTarget(), eventSink = eventsRecorder)
+
+        onRoot().performTouchInput { click(Offset(10f, 10f)) }
+        mainClock.advanceTimeBy(1_000)
+        eventsRecorder.assertSingle(MessageMenuEvent.Dismiss)
+    }
+
+    @Test
+    fun `back closes the menu`() = runAndroidComposeUiTest {
+        val eventsRecorder = EventsRecorder<MessageMenuEvent>()
+        setOverlay(aLongPressTarget(), eventSink = eventsRecorder)
+
+        pressBackKey()
+        mainClock.advanceTimeBy(1_000)
+        eventsRecorder.assertSingle(MessageMenuEvent.Dismiss)
+    }
+
+    @Test
+    fun `a configuration change closes the menu`() = runAndroidComposeUiTest {
+        val eventsRecorder = EventsRecorder<MessageMenuEvent>()
+        val configuration = mutableStateOf<Configuration?>(null)
+        setOverlay(aLongPressTarget(), eventSink = eventsRecorder, configuration = configuration)
+
+        runOnIdle {
+            configuration.value = Configuration(requireNotNull(activity).resources.configuration).apply { screenWidthDp += 200 }
+        }
+        waitForIdle()
+        eventsRecorder.assertSingle(MessageMenuEvent.Dismiss)
+    }
+
+    @Test
     fun `holding content that handles its own presses lifts the bubble until it is let go`() = runAndroidComposeUiTest {
         val controller = setBubbleWithOwnPressHandling()
 
@@ -216,6 +257,7 @@ class MessageMenuOverlayTest : RobolectricTest() {
         onAddReactionClick: (TimelineItem.Event) -> Unit = EnsureNeverCalledWithParam(),
         onActionClick: (TimelineItemAction, TimelineItem.Event) -> Unit = EnsureNeverCalledWithTwoParams(),
         onSelectClick: (TimelineItem.Event) -> Unit = EnsureNeverCalledWithParam(),
+        configuration: MutableState<Configuration?> = mutableStateOf(null),
     ) {
         setSafeContent {
             val controller = rememberMessageMenuController()
@@ -223,14 +265,16 @@ class MessageMenuOverlayTest : RobolectricTest() {
                 controller = controller,
                 modifier = Modifier.fillMaxSize(),
                 overlay = {
-                    MessageMenuOverlay(
-                        state = aMessageMenuState(target = target, eventSink = eventSink),
-                        controller = controller,
-                        onReactionClick = onReactionClick,
-                        onAddReactionClick = onAddReactionClick,
-                        onActionClick = onActionClick,
-                        onSelectClick = onSelectClick,
-                    )
+                    CompositionLocalProvider(LocalConfiguration provides (configuration.value ?: LocalConfiguration.current)) {
+                        MessageMenuOverlay(
+                            state = aMessageMenuState(target = target, eventSink = eventSink),
+                            controller = controller,
+                            onReactionClick = onReactionClick,
+                            onAddReactionClick = onAddReactionClick,
+                            onActionClick = onActionClick,
+                            onSelectClick = onSelectClick,
+                        )
+                    }
                 },
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
