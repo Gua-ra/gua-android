@@ -703,6 +703,65 @@
       "expected": {
         "kind": "none"
       }
+    },
+    {
+      "name": "version written as 1.0",
+      "content": {
+        "v": 1.0,
+        "kind": "preset",
+        "preset": "mint"
+      },
+      "expected": {
+        "kind": "preset",
+        "preset": "mint"
+      }
+    },
+    {
+      "name": "whole number photo fields written with a decimal point",
+      "content": {
+        "v": 1,
+        "kind": "photo",
+        "photo": {
+          "url": "mxc://gua.global/AbCdEf",
+          "mimetype": "image/png",
+          "w": 800.0,
+          "h": 600.0,
+          "size": 1000.0
+        }
+      },
+      "expected": {
+        "kind": "photo",
+        "photo": {
+          "url": "mxc://gua.global/AbCdEf",
+          "mimetype": "image/png",
+          "w": 800,
+          "h": 600,
+          "size": 1000,
+          "blurhash": null,
+          "dim": 0.35,
+          "align": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        }
+      }
+    },
+    {
+      "name": "fractional width",
+      "content": {
+        "v": 1,
+        "kind": "photo",
+        "photo": {
+          "url": "mxc://gua.global/AbCdEf",
+          "mimetype": "image/png",
+          "w": 800.5,
+          "h": 600,
+          "size": 1000
+        }
+      },
+      "expected": {
+        "kind": "none"
+      }
     }
   ]
 }

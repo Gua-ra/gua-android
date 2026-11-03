@@ -18,6 +18,7 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import kotlin.math.floor
 import kotlin.math.roundToLong
 
 /**
@@ -113,6 +114,10 @@ private fun JsonElement?.stringOrNull(): String? = (this as? JsonPrimitive)?.tak
 
 private fun JsonElement?.numberOrNull(): Double? = (this as? JsonPrimitive)?.takeUnless { it.isString }?.doubleOrNull
 
-private fun JsonElement?.integerOrNull(): Long? = (this as? JsonPrimitive)?.takeUnless { it.isString }?.longOrNull
+/** 800.0 is the same JSON number as 800, and iOS's decoder reads it as an integer too. */
+private fun JsonElement?.integerOrNull(): Long? {
+    val number = (this as? JsonPrimitive)?.takeUnless { it.isString } ?: return null
+    return number.longOrNull ?: number.doubleOrNull?.takeIf { it.isFinite() && it == floor(it) }?.toLong()
+}
 
 private fun Double.roundTo(scale: Int): Double = (this * scale).roundToLong().toDouble() / scale
