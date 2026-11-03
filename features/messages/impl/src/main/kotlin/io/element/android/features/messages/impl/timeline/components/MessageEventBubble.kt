@@ -69,6 +69,7 @@ fun MessageEventBubble(
     customBackgroundColor: Color? = null,
     borderColor: Color? = null,
     onDoubleClick: (() -> Unit)? = null,
+    isLifted: () -> Boolean = { false },
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val clickableModifier = if (isTalkbackActive()) {
@@ -85,10 +86,8 @@ fun MessageEventBubble(
             .onKeyboardContextMenuAction(onLongClick)
     }
 
-    val cutTopStart = state.cutTopStart
     // Ignore state.isHighlighted for now, we need a design decision on it.
     val backgroundBubbleColor by rememberUpdatedState(customBackgroundColor ?: MessageEventBubbleDefaults.backgroundBubbleColor(state.isMine))
-    val bubbleShape = remember(state) { MessageEventBubbleDefaults.shape(state.cutTopStart, state.groupPosition, state.isMine) }
     val radiusPx = (avatarRadius + SENDER_AVATAR_BORDER_WIDTH).toPx()
     val yOffsetPx = -(NEGATIVE_MARGIN_FOR_BUBBLE + avatarRadius).toPx()
 
@@ -96,8 +95,10 @@ fun MessageEventBubble(
     BoxWithConstraints(
         modifier = modifier
             .drawWithCache {
+                // GUA FORK: the bubble lifted into the message menu leaves its sender avatar behind, so it is drawn whole.
+                val cutTopStart = state.cutTopStart && !isLifted()
                 // Calculate the outline of the background and cache it
-                val outline = bubbleShape.createOutline(size, layoutDirection, this)
+                val outline = MessageEventBubbleDefaults.shape(cutTopStart, state.groupPosition, state.isMine).createOutline(size, layoutDirection, this)
 
                 onDrawWithContent {
                     // Draw the contents in a layer to be able to clip them with the same outline

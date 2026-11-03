@@ -661,6 +661,7 @@ private fun TimelineItemEventRowContent(
             customBackgroundColor = dangerousContentBubbleColor,
             borderColor = borderColor,
             onDoubleClick = onBubbleDoubleClick,
+            isLifted = { messageMenuController?.liftedId == event.id },
         ) {
             MessageEventBubbleContent(
                 event = event,
