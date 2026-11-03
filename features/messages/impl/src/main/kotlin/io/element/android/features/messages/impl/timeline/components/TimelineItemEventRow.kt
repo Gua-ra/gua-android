@@ -100,6 +100,7 @@ import io.element.android.features.messages.impl.timeline.model.event.ensureActi
 import io.element.android.features.messages.impl.timeline.protection.TimelineProtectionState
 import io.element.android.features.messages.impl.timeline.protection.mustBeProtected
 import io.element.android.libraries.architecture.AsyncData
+import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
 import io.element.android.libraries.designsystem.colors.AvatarColorsProvider
 import io.element.android.libraries.designsystem.components.EqualWidthColumn
 import io.element.android.libraries.designsystem.components.avatar.Avatar
@@ -755,7 +756,8 @@ private fun MessageSenderInformation(
                 .testTag(TestTags.timelineItemSenderName)
                 .clip(RoundedCornerShape(6.dp))
                 .clickable(onClick = onClick)
-                .padding(horizontal = 4.dp),
+                .padding(horizontal = 4.dp)
+                .legibilityCapsule(),
             senderId = senderId,
             senderProfile = senderProfile,
             senderNameMode = SenderNameMode.Timeline(avatarColors.foreground),

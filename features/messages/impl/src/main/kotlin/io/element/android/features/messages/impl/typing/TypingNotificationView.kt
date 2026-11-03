@@ -39,6 +39,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.messages.impl.R
+import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
+import io.element.android.libraries.designsystem.chatbackground.legibleTextColor
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Text
@@ -56,12 +58,12 @@ fun TypingNotificationView(
     @Composable
     fun TypingText(text: AnnotatedString, textModifier: Modifier = Modifier) {
         Text(
-            modifier = textModifier,
+            modifier = textModifier.legibilityCapsule(),
             text = text,
             overflow = TextOverflow.Ellipsis,
             maxLines = 1,
             style = ElementTheme.typography.fontBodySmRegular,
-            color = ElementTheme.colors.textSecondary,
+            color = legibleTextColor(ElementTheme.colors.textSecondary),
         )
     }
 

@@ -14,6 +14,8 @@ import io.element.android.features.messages.api.timeline.voicemessages.composer.
 import io.element.android.features.messages.api.timeline.voicemessages.composer.aVoiceMessagePreviewState
 import io.element.android.features.messages.impl.actionlist.ActionListState
 import io.element.android.features.messages.impl.actionlist.anActionListState
+import io.element.android.features.messages.impl.chatbackground.aChatBackgroundTimelineItems
+import io.element.android.features.messages.impl.chatbackground.aChatBackgroundTimelineRoomInfo
 import io.element.android.features.messages.impl.crypto.identity.IdentityChangeState
 import io.element.android.features.messages.impl.crypto.identity.aRoomMemberIdentityStateChange
 import io.element.android.features.messages.impl.crypto.identity.anIdentityChangeState
@@ -45,6 +47,8 @@ import io.element.android.features.roommembermoderation.api.RoomMemberModeration
 import io.element.android.features.roommembermoderation.api.RoomMemberModerationState
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.AsyncData
+import io.element.android.libraries.chatbackground.api.ChatBackground
+import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
 import io.element.android.libraries.designsystem.components.avatar.AvatarData
 import io.element.android.libraries.designsystem.components.avatar.AvatarSize
 import io.element.android.libraries.designsystem.preview.ROOM_NAME
@@ -55,6 +59,7 @@ import io.element.android.libraries.matrix.api.encryption.identity.IdentityState
 import io.element.android.libraries.matrix.api.room.tombstone.SuccessorRoom
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.user.DisplayedStatus
+import io.element.android.libraries.matrix.ui.chatbackground.aChatBackgroundPhoto
 import io.element.android.libraries.textcomposer.model.MessageComposerMode
 import io.element.android.libraries.textcomposer.model.aTextEditorStateMarkdown
 import io.element.android.libraries.textcomposer.model.aTextEditorStateRich
@@ -97,6 +102,14 @@ open class MessagesStatePreviewParam : PreviewParameterProvider<MessagesState> {
                 identityChangeState = anIdentityChangeState(listOf(aRoomMemberIdentityStateChange()))
             ),
             aMessagesState(redactEventAction = MessagesState.ConfirmingRedaction(EventId("\$anEventId"))),
+            aMessagesState(
+                chatBackground = ChatBackground.Preset(ChatBackgroundPreset.Aurora),
+                timelineState = aTimelineState(timelineItems = aChatBackgroundTimelineItems(), timelineRoomInfo = aChatBackgroundTimelineRoomInfo()),
+            ),
+            aMessagesState(
+                chatBackground = aChatBackgroundPhoto(dim = 0.5),
+                timelineState = aTimelineState(timelineItems = aChatBackgroundTimelineItems(), timelineRoomInfo = aChatBackgroundTimelineRoomInfo()),
+            ),
         )
 }
 
@@ -138,6 +151,7 @@ fun aMessagesState(
     dmUserStatus: DisplayedStatus? = null,
     eventSink: (MessagesEvent) -> Unit = {},
     redactEventAction: AsyncAction<Unit> = AsyncAction.Uninitialized,
+    chatBackground: ChatBackground = ChatBackground.None,
 ) = MessagesState(
     roomId = RoomId("!id:domain"),
     roomName = roomName,
@@ -170,6 +184,7 @@ fun aMessagesState(
     showLiveLocationShareBanner = isCurrentlySharingLiveLocationInRoom,
     dmUserStatus = dmUserStatus,
     redactEventAction = redactEventAction,
+    chatBackground = chatBackground,
     eventSink = eventSink,
 )
 

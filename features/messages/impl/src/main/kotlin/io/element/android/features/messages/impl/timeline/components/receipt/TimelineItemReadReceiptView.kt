@@ -37,6 +37,9 @@ import io.element.android.appconfig.TimelineConfig
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.messages.impl.timeline.model.ReadReceiptData
+import io.element.android.libraries.designsystem.chatbackground.LocalChatBackgroundActive
+import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
+import io.element.android.libraries.designsystem.chatbackground.legibleTextColor
 import io.element.android.libraries.designsystem.components.avatar.Avatar
 import io.element.android.libraries.designsystem.components.avatar.AvatarSize
 import io.element.android.libraries.designsystem.components.avatar.AvatarType
@@ -145,6 +148,8 @@ private fun ReadReceiptsAvatars(
     val avatarStrokeSize = 1.dp
     val avatarStrokeColor = ElementTheme.colors.bgCanvasDefault
     val receiptDescription = computeReceiptDescription(receipts)
+    // The capsule's padding takes the place of the usual 2 dp, so the row keeps its height.
+    val paddingOrCapsule = if (LocalChatBackgroundActive.current) Modifier.legibilityCapsule() else Modifier.padding(2.dp)
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(4.dp))
@@ -152,7 +157,7 @@ private fun ReadReceiptsAvatars(
                 onClick = onClick,
                 onClickLabel = stringResource(id = CommonStrings.a11y_read_receipts_tap_to_show_all_android),
             )
-            .padding(2.dp)
+            .then(paddingOrCapsule)
             .clearAndSetSemantics {
                 testTag = TestTags.messageReadReceipts.value
                 contentDescription = receiptDescription
@@ -188,7 +193,7 @@ private fun ReadReceiptsAvatars(
             Text(
                 text = "+" + (receipts.size - TimelineConfig.MAX_READ_RECEIPT_TO_DISPLAY),
                 style = ElementTheme.typography.fontBodyXsRegular,
-                color = ElementTheme.colors.textSecondary,
+                color = legibleTextColor(ElementTheme.colors.textSecondary),
             )
         }
     }

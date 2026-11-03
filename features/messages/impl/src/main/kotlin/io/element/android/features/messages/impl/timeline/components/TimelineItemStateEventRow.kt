@@ -34,6 +34,7 @@ import io.element.android.features.messages.impl.timeline.model.event.aTimelineI
 import io.element.android.features.messages.impl.timeline.protection.TimelineProtectionState
 import io.element.android.features.messages.impl.timeline.protection.aTimelineProtectionState
 import io.element.android.features.messages.impl.timeline.util.defaultTimelineContentPadding
+import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import kotlinx.collections.immutable.persistentListOf
@@ -79,7 +80,9 @@ fun TimelineItemStateEventRow(
                     onContentClick = null,
                     onGalleryItemClick = {},
                     onLongClick = null,
-                    modifier = Modifier.defaultTimelineContentPadding()
+                    modifier = Modifier
+                        .defaultTimelineContentPadding()
+                        .legibilityCapsule()
                 )
             }
         }
