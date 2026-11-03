@@ -94,7 +94,7 @@ class FindFriendsPresenter(
             startingChatUserId = contact.userId
             coroutineScope.launch {
                 try {
-                    when (val result = matrixClient.startDM(contact.userId, createIfDmDoesNotExist = true)) {
+                    when (val result = matrixClient.startDM(contact.userId, createIfDmDoesNotExist = true, isEncryped = true)) {
                         is StartDMResult.Success -> callback.onStartChat(result.roomId)
                         else -> phase = FindFriendsPhase.Error
                     }

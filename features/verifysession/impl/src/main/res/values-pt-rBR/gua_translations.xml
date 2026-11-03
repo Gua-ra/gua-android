@@ -9,4 +9,5 @@
     <string name="gua_verification_other_device_subtitle">Mantenha o Gua aberto. Você vai comparar alguns emojis nos dois dispositivos para confirmar que é você.</string>
     <string name="gua_verification_waiting_other_device_title">Aguardando seu outro dispositivo</string>
     <string name="gua_verification_compare_emojis_subtitle">Confirme se os emojis abaixo correspondem aos mostrados no seu outro dispositivo.</string>
+    <string name="screen_session_verification_user_requesting_verification">Usuário solicitando verificação:</string>
 </resources>

@@ -36,6 +36,9 @@ object BuildTimeConfig {
     // (login_redirect_scheme = "global.gua", i.e. global.gua:/oidc) — mirrors iOS.
     val METADATA_HOST_REVERSED: String? = "global.gua"
 
+    // Appended to URL_WEBSITE for the OIDC client_uri. Null keeps client_uri at the site root.
+    val OAUTH_CLIENT_URL_PATH: String? = null
+
     // OIDC dynamic client registration requires client_uri, logo_uri, tos_uri and policy_uri
     // to share a single host, which must be the redirect scheme's reverse-DNS — so every URL
     // below lives on gua.global. MAS only validates the hosts; it never fetches these URLs.
@@ -55,7 +58,13 @@ object BuildTimeConfig {
     val SERVICES_SENTRY_DSN_RUST: String? = null
     val BUG_REPORT_URL: String? = null
     val BUG_REPORT_APP_NAME: String? = null
+    const val PUSH_CONFIG_INCLUDE_FIREBASE: Boolean = true
+    const val PUSH_CONFIG_INCLUDE_UNIFIED_PUSH: Boolean = true
 
-    const val PUSH_CONFIG_INCLUDE_FIREBASE = true
-    const val PUSH_CONFIG_INCLUDE_UNIFIED_PUSH = true
+    // GUA FORK: the key Sygnal looks the notification up under, so it has to match the app_id in the
+    // gateway's config exactly; a mismatch is answered with a 404 the user never sees. One value covers
+    // the production, QA and debug packages: the device's token decides which app a push reaches.
+    val PUSHER_APP_ID_RELEASE: String? = "global.gua.android"
+    val PUSHER_APP_ID_DEBUG: String? = "global.gua.android"
+    val PUSHER_APP_ID_NIGHTLY: String? = "global.gua.android"
 }

@@ -10,56 +10,68 @@ package io.element.android.features.preferences.impl.root
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import dev.zacsweers.metro.Inject
-import io.element.android.features.enterprise.api.SessionEnterpriseService
+import io.element.android.compound.theme.Theme
+import io.element.android.compound.theme.mapToTheme
+import io.element.android.features.location.api.LocationService
 import io.element.android.features.lockscreen.api.LockScreenService
-import io.element.android.features.logout.api.direct.DirectLogoutState
+import io.element.android.features.preferences.impl.account.PreferencesAccountState
+import io.element.android.features.preferences.impl.userstatus.UserStatusState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
-import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
-import io.element.android.libraries.androidutils.browser.withMxidLoginHint
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.designsystem.utils.snackbar.collectSnackbarMessageAsState
+import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.guaresolver.IdentityServiceClient
-import io.element.android.libraries.indicator.api.IndicatorService
 import io.element.android.libraries.matrix.api.MatrixClient
-import io.element.android.libraries.matrix.api.core.UserId
-import io.element.android.libraries.matrix.api.user.MatrixUser
+import io.element.android.libraries.matrix.api.MatrixClientProvider
+import io.element.android.libraries.matrix.api.core.SessionId
+import io.element.android.libraries.matrix.api.totalUnreadCountFlow
+import io.element.android.libraries.matrix.api.user.toMatrixUser
+import io.element.android.libraries.preferences.api.store.AppPreferencesStore
+import io.element.android.libraries.sessionstorage.api.SessionData
 import io.element.android.libraries.sessionstorage.api.SessionStore
 import io.element.android.services.analytics.api.AnalyticsService
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @Inject
 class PreferencesRootPresenter(
     private val matrixClient: MatrixClient,
     private val analyticsService: AnalyticsService,
     private val versionFormatter: VersionFormatter,
     private val snackbarDispatcher: SnackbarDispatcher,
-    private val indicatorService: IndicatorService,
-    private val directLogoutPresenter: Presenter<DirectLogoutState>,
     private val showDeveloperSettingsProvider: ShowDeveloperSettingsProvider,
-    private val rageshakeFeatureAvailability: RageshakeFeatureAvailability,
     private val featureFlagService: FeatureFlagService,
+    private val locationService: LocationService,
     private val sessionStore: SessionStore,
-    private val sessionEnterpriseService: SessionEnterpriseService,
+    private val matrixClientProvider: MatrixClientProvider,
+    private val appPreferencesStore: AppPreferencesStore,
+    private val userStatusPresenter: Presenter<UserStatusState>,
+    private val preferencesAccountPresenter: Presenter<PreferencesAccountState>,
+    @SessionCoroutineScope
+    private val sessionCoroutineScope: CoroutineScope,
     private val lockScreenService: LockScreenService,
     private val identityServiceClient: IdentityServiceClient,
     private val buildMeta: BuildMeta,
@@ -72,52 +84,59 @@ class PreferencesRootPresenter(
             // Force a refresh of the profile
             matrixClient.getUserProfile()
         }
-
+        val preferencesAccountState = preferencesAccountPresenter.present()
         val isMultiAccountEnabled by remember {
             featureFlagService.isFeatureEnabledFlow(FeatureFlags.MultiAccount)
         }.collectAsState(initial = false)
-        val showLinkNewDevice by remember {
-            featureFlagService.isFeatureEnabledFlow(FeatureFlags.QrCodeLogin)
+        val isOtherAccountsSectionExpanded by remember {
+            appPreferencesStore.isOtherAccountsExpandedFlow()
+        }.collectAsState(initial = true)
+        val isUserStatusSupported by produceState(false) {
+            value = matrixClient.isUserStatusSupported().getOrDefault(false)
+        }
+        val userStatusState = if (isUserStatusSupported) userStatusPresenter.present() else null
+        val isBlackThemeAllowed by remember {
+            featureFlagService.isFeatureEnabledFlow(FeatureFlags.AllowBlackTheme)
         }.collectAsState(initial = false)
+        val theme = remember(isBlackThemeAllowed) {
+            appPreferencesStore.getThemeFlow().mapToTheme(isBlackThemeAllowed)
+        }.collectAsState(initial = Theme.System)
 
         val otherSessions by remember {
-            sessionStore.sessionsFlow().map { list ->
-                list
-                    .filter { it.userId != matrixClient.sessionId.value }
-                    .map {
-                        MatrixUser(
-                            userId = UserId(it.userId),
-                            displayName = it.userDisplayName,
-                            avatarUrl = it.userAvatarUrl,
-                        )
+            sessionStore.sessionsFlow()
+                .map { list -> list.filter { it.userId != matrixClient.sessionId.value } }
+                .flatMapLatest { sessions ->
+                    if (sessions.isEmpty()) {
+                        flowOf(persistentListOf())
+                    } else {
+                        combine(
+                            sessions.map { sessionData -> otherAccountFlow(sessionData) }
+                        ) { it.toImmutableList() }
                     }
-                    .toImmutableList()
-            }
+                }
         }.collectAsState(initial = persistentListOf())
+
+        val themeOption by remember {
+            derivedStateOf {
+                when (theme.value) {
+                    Theme.System -> ThemeOption.System
+                    Theme.Dark -> ThemeOption.Dark
+                    Theme.Black -> ThemeOption.Black
+                    Theme.Light -> ThemeOption.Light
+                }
+            }
+        }
+
+        val availableThemeOptions = remember(isBlackThemeAllowed) {
+            if (isBlackThemeAllowed) {
+                ThemeOption.entries
+            } else {
+                ThemeOption.entries.filterNot { it == ThemeOption.Black }
+            }.toImmutableList()
+        }
 
         val snackbarMessage by snackbarDispatcher.collectSnackbarMessageAsState()
         val hasAnalyticsProviders = remember { analyticsService.getAvailableAnalyticsProviders().isNotEmpty() }
-
-        // We should display the 'complete verification' option if the current session can be verified
-
-        val showSecureBackupIndicator by indicatorService.showSettingChatBackupIndicator()
-
-        val accountManagementUrl: MutableState<String?> = remember {
-            mutableStateOf(null)
-        }
-        var canDeactivateAccount by remember {
-            mutableStateOf(false)
-        }
-        val canReportBug by remember { rageshakeFeatureAvailability.isAvailable() }.collectAsState(false)
-        LaunchedEffect(Unit) {
-            canDeactivateAccount = matrixClient.canDeactivateAccount()
-        }
-
-        val nbOfBlockedUsers by produceState(initialValue = 0) {
-            matrixClient.ignoredUsersFlow
-                .onEach { value = it.size }
-                .launchIn(this)
-        }
 
         // GUA FORK: Labs features carry developer copy that is not translated, so release builds hide Labs.
         val showLabsItem = remember {
@@ -130,11 +149,8 @@ class PreferencesRootPresenter(
         // GUA FORK: the nudge banner advertises two-step verification, so gate it on the account's
         // FACTORS from the identity service (mirrors TwoStepVerificationPresenter), not the local
         // app-lock and not a lone hasPin: a passkey holder already has two-step verification and
-        // must not be nudged to add a PIN.
-        //
-        // Null is "not known yet, or could not be read", and the banner shows only on an explicit
-        // false. The old initial value of false with no failure handler meant a slow or failing
-        // status read rendered as "no two-step verification" and nagged people who already had it.
+        // must not be nudged to add a PIN. Null is "not known yet, or could not be read", and the
+        // banner shows only on an explicit false.
         val hasAccountStrongFactor by produceState<Boolean?>(initialValue = null) {
             val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken ?: return@produceState
             identityServiceClient.accountFactorStatus(accessToken, matrixClient.sessionId.value)
@@ -142,68 +158,68 @@ class PreferencesRootPresenter(
                 .onFailure { value = null }
         }
 
-        val directLogoutState = directLogoutPresenter.present()
-
-        LaunchedEffect(Unit) {
-            initAccountManagementUrl(accountManagementUrl)
-        }
-
         val showDeveloperSettings by showDeveloperSettingsProvider.showDeveloperSettings.collectAsState()
+
+        val isLocationServiceAvailable by remember { locationService.isServiceAvailable() }.collectAsState()
 
         fun handleEvent(event: PreferencesRootEvent) {
             when (event) {
                 is PreferencesRootEvent.OnVersionInfoClick -> {
                     showDeveloperSettingsProvider.unlockDeveloperSettings(coroutineScope)
                 }
-                is PreferencesRootEvent.SwitchToSession -> coroutineScope.launch {
-                    sessionStore.setLatestSession(event.sessionId.value)
+                PreferencesRootEvent.ToggleOtherAccountsExpanded -> coroutineScope.launch {
+                    appPreferencesStore.setOtherAccountsExpanded(!isOtherAccountsSectionExpanded)
+                }
+                is PreferencesRootEvent.SetTheme -> sessionCoroutineScope.launch {
+                    when (event.theme) {
+                        ThemeOption.System -> appPreferencesStore.setTheme(Theme.System.name)
+                        ThemeOption.Dark -> appPreferencesStore.setTheme(Theme.Dark.name)
+                        ThemeOption.Black -> appPreferencesStore.setTheme(Theme.Black.name)
+                        ThemeOption.Light -> appPreferencesStore.setTheme(Theme.Light.name)
+                    }
                 }
             }
         }
 
         return PreferencesRootState(
             myUser = matrixUser.value,
+            userStatusState = userStatusState,
+            preferencesAccountState = preferencesAccountState,
+            theme = themeOption,
+            availableThemeOptions = availableThemeOptions,
             version = remember { versionFormatter.get() },
-            deviceId = matrixClient.deviceId,
             isMultiAccountEnabled = isMultiAccountEnabled,
+            isOtherAccountsSectionExpanded = isOtherAccountsSectionExpanded,
             otherSessions = otherSessions,
-            // GUA FORK: hidden from users, developer-only.
-            //
-            // This screen is upstream's recovery-key console: a key-storage toggle, "set up
-            // recovery", "change recovery key", "confirm recovery key". Every one of those is a
-            // thing Gua promises never to put in front of anyone. An earlier version of this fork
-            // forced it visible on the grounds that it was the only way back from broken key
-            // storage; that is no longer true, because the setup banner now repairs the account
-            // silently and escalates to a reset on its own when it has to.
-            showSecureBackup = buildMeta.buildType != BuildType.RELEASE,
-            showSecureBackupBadge = showSecureBackupIndicator,
-            accountManagementUrl = accountManagementUrl.value,
             showAnalyticsSettings = hasAnalyticsProviders,
-            canReportBug = canReportBug,
-            showLinkNewDevice = showLinkNewDevice,
             showDeveloperSettings = showDeveloperSettings,
-            canDeactivateAccount = canDeactivateAccount,
-            nbOfBlockedUsers = nbOfBlockedUsers,
             showLabsItem = showLabsItem,
             isLockScreenPinSetup = isLockScreenPinSetup,
             hasAccountStrongFactor = hasAccountStrongFactor,
-            directLogoutState = directLogoutState,
+            showLocationSettings = isLocationServiceAvailable,
             snackbarMessage = snackbarMessage,
             eventSink = ::handleEvent,
         )
     }
 
-    private fun CoroutineScope.initAccountManagementUrl(
-        accountManagementUrl: MutableState<String?>,
-    ) = launch {
-        accountManagementUrl.value = matrixClient.getAccountManagementUrl(null)
-            .getOrNull()
-            ?.let {
-                sessionEnterpriseService.tweakMasUrl(it)
-            }
-            // GUA FORK: account management opens in the browser's shared tab, so it can meet a
-            // browser session for another account. Naming this one lets the page refuse that
-            // session instead of showing someone else's account.
-            ?.withMxidLoginHint(matrixClient.sessionId.value)
+    /**
+     * Build the [OtherAccount] data for a session which is not the current one.
+     */
+    private fun otherAccountFlow(sessionData: SessionData): Flow<OtherAccount> = flow {
+        val user = sessionData.toMatrixUser()
+        val client = matrixClientProvider.getOrNull(SessionId(sessionData.userId))
+        if (client == null) {
+            emit(OtherAccount(user = user, unreadCount = 0))
+        } else {
+            emitAll(
+                combine(client.userProfile, client.totalUnreadCountFlow()) { profile, unreadCount ->
+                    // Don't use userProfile directly so we don't lose avatarThumbnail
+                    OtherAccount(
+                        user = user.copy(displayedStatus = profile.displayedStatus, rawStatus = profile.rawStatus),
+                        unreadCount = unreadCount,
+                    )
+                }
+            )
+        }
     }
 }

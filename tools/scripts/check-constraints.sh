@@ -91,8 +91,10 @@ fi
 if [ -z "$LOG_RANGE" ]; then
     echo "${YELLOW}-${RESET} commit-message scan skipped (no range to scan)"
 else
+    # --first-parent keeps the scan on this repository's own line of commits. A merge of an upstream
+    # release brings upstream's history in through its second parent, and those commits are not ours.
     # -i case-insensitive, -E extended regex over the full commit message bodies.
-    ai_attr="$(git log "$LOG_RANGE" --format='%H%n%B' 2>/dev/null \
+    ai_attr="$(git log --first-parent "$LOG_RANGE" --format='%H%n%B' 2>/dev/null \
         | grep -i -E 'Co-Authored-By:[[:space:]]*Claude|Generated with .*(Claude|AI|Anthropic)|🤖 Generated with' || true)"
     if [ -n "$ai_attr" ]; then
         fail "AI authorship attribution found in commit messages (range: ${LOG_RANGE}):"

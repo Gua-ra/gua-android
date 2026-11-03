@@ -15,11 +15,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import dev.zacsweers.metro.Inject
 import io.element.android.features.login.impl.error.ChangeServerError
-import io.element.android.features.login.impl.screens.chooseaccountprovider.ChooseAccountProviderPresenter
-import io.element.android.features.login.impl.screens.confirmaccountprovider.ConfirmAccountProviderPresenter
-import io.element.android.features.login.impl.screens.createaccount.AccountCreationNotSupported
-import io.element.android.features.login.impl.screens.onboarding.OnBoardingPresenter
-import io.element.android.features.login.impl.web.WebClientUrlForAuthenticationRetriever
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.runCatchingUpdatingState
 import io.element.android.libraries.featureflag.api.FeatureFlagService
@@ -37,16 +32,13 @@ import io.element.android.libraries.oauth.api.OAuthActionFlow
 import io.element.android.libraries.ui.strings.CommonStrings
 
 /**
- * This class is responsible for managing the login flow, including handling OIDC actions and
- * submitting login requests.
- * It's a helper to avoid code duplication. It is used by [OnBoardingPresenter], [ConfirmAccountProviderPresenter]
- * and [ChooseAccountProviderPresenter].
+ * GUA FORK: the phone and passkey sign-in pipeline used by the phone entry screen. The account provider
+ * screens use [LoginModePresenter] instead.
  */
 @Inject
 class LoginHelper(
     private val oAuthActionFlow: OAuthActionFlow,
     private val authenticationService: MatrixAuthenticationService,
-    private val webClientUrlForAuthenticationRetriever: WebClientUrlForAuthenticationRetriever,
     private val resolverClient: ResolverClient,
     private val featureFlagService: FeatureFlagService,
     private val accountGenesisManager: AccountGenesisManager,
@@ -68,48 +60,6 @@ class LoginHelper(
 
     fun clearError() {
         loginModeState.value = AsyncData.Uninitialized
-    }
-
-    suspend fun submit(
-        isAccountCreation: Boolean,
-        homeserverUrl: String,
-        resolvedHomeserverUrl: String?,
-        loginHint: String?,
-    ) {
-        suspend {
-            authenticationService.setHomeserver(homeserverUrl).recoverCatching {
-                // No .well-known file?
-                // If the homeserver is not reachable, try using resolvedHomeserverUrl.
-                if (resolvedHomeserverUrl != null && resolvedHomeserverUrl != homeserverUrl) {
-                    authenticationService.setHomeserver(resolvedHomeserverUrl).getOrThrow()
-                } else {
-                    throw it
-                }
-            }.map { matrixHomeServerDetails ->
-                if (matrixHomeServerDetails.supportsOAuthLogin) {
-                    // Retrieve the details right now
-                    val oAuthPrompt = if (isAccountCreation) OAuthPrompt.Create else OAuthPrompt.Login
-                    LoginMode.OAuth(
-                        authenticationService.getOAuthUrl(prompt = oAuthPrompt, loginHint = loginHint).getOrThrow()
-                    )
-                } else if (isAccountCreation) {
-                    val url = webClientUrlForAuthenticationRetriever.retrieve(homeserverUrl)
-                    LoginMode.AccountCreation(url)
-                } else if (matrixHomeServerDetails.supportsPasswordLogin) {
-                    LoginMode.PasswordLogin
-                } else {
-                    error("Unsupported login flow")
-                }
-            }.getOrThrow()
-        }.runCatchingUpdatingState(
-            state = loginModeState,
-            errorTransform = {
-                when (it) {
-                    is AccountCreationNotSupported -> it
-                    else -> ChangeServerError.from(it)
-                }
-            }
-        )
     }
 
     /**

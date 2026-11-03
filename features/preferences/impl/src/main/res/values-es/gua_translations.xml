@@ -100,4 +100,14 @@
     <string name="gua_notification_sound_soft">Gua suave</string>
     <string name="gua_notification_settings_enable_failed">No se pudieron activar las notificaciones en este dispositivo. Inténtalo de nuevo.</string>
     <string name="gua_notification_settings_no_push_service">Este dispositivo no tiene un servicio de notificaciones push, así que Gua no puede enviarle notificaciones.</string>
+    <string name="screen_labs_enable_gallery">Mensajes de galería</string>
+    <string name="screen_labs_enable_gallery_description">Envía varias imágenes o videos de una sola vez. Estable en dispositivos móviles, pero aún no es compatible con la versión web.</string>
+    <string name="screen_labs_enable_knocking">Solicitar unirse</string>
+    <string name="screen_labs_enable_knocking_description">Los usuarios pueden solicitar acceso a una sala que no está abierta a cualquiera. Estable en dispositivos móviles; existe una implementación web, pero es experimental.</string>
+    <string name="screen_moderation_and_safety_invites_heading">Invitaciones</string>
+    <string name="screen_moderation_and_safety_other_users_heading">Otros usuarios</string>
+    <string name="screen_moderation_and_safety_share_presence_heading">Cómo te ven los demás</string>
+    <string name="screen_notification_settings_activity_section_title">Actividad</string>
+    <string name="screen_notification_settings_show_all_activity_subtitle">Puntos o número de mensajes no leídos</string>
+    <string name="screen_notification_settings_show_all_activity_title">Mostrar toda la actividad en la lista de chats</string>
 </resources>

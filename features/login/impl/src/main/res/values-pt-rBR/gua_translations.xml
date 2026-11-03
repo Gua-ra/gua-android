@@ -43,4 +43,11 @@
         <item quantity="one">%1$d minuto</item>
         <item quantity="other">%1$d minutos</item>
     </plurals>
+    <string name="screen_change_server_textfield_footer_login">Se sua conta é fornecida pela sua empresa ou por uma comunidade, altere o provedor da conta (exemplo: nomedaempresa.com).</string>
+    <string name="screen_change_server_textfield_footer_register">Crie uma conta gratuita. Se quiser criar uma conta com outro provedor, altere-o conforme necessário (exemplo: nomedacomunidade.org).</string>
+    <string name="screen_change_server_textfield_header">Provedor da conta</string>
+    <string name="screen_change_server_title_login">Digite o provedor da sua conta</string>
+    <string name="screen_change_server_title_register">Escolha um provedor de conta</string>
+    <string name="screen_onboarding_add_account_subtitle">Você pode adicionar várias contas ao app e alternar entre elas com facilidade.</string>
+    <string name="screen_onboarding_add_account_title">Entrar em outra conta</string>
 </resources>

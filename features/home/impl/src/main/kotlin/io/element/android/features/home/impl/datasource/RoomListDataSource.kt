@@ -242,7 +242,7 @@ class RoomListDataSource(
     }
 
     private fun EventContent.isRealMessage(): Boolean = when (this) {
-        is RoomMembershipContent, is ProfileChangeContent, is StateContent, RedactedContent, UnknownContent -> false
+        is RoomMembershipContent, is ProfileChangeContent, is StateContent, is RedactedContent, UnknownContent -> false
         else -> true
     }
 

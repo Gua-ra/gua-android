@@ -24,7 +24,7 @@
   <string name="screen_room_change_permissions_send_messages">"Enviar mensajes"</string>
   <string name="screen_room_change_role_administrators_title">"Editar administradores"</string>
   <string name="screen_room_change_role_confirm_add_admin_description">"No podrás deshacer esta acción. Estás promocionando al usuario para que tenga el mismo nivel de poder que tú."</string>
-  <string name="screen_room_change_role_confirm_add_admin_title">"¿Agregar Admin?"</string>
+  <string name="screen_room_change_role_confirm_add_admin_title">"¿Agregar administrador?"</string>
   <string name="screen_room_change_role_confirm_change_owners_description">"Esta acción es irreversible. Estás transfiriendo la propiedad a los usuarios seleccionados. Una vez que salgas, será permanente."</string>
   <string name="screen_room_change_role_confirm_change_owners_title">"¿Transferir la propiedad?"</string>
   <string name="screen_room_change_role_confirm_demote_self_action">"Degradar"</string>
@@ -59,7 +59,7 @@
   <string name="screen_room_details_invite_title">"Invitar"</string>
   <string name="screen_room_details_leave_conversation_title">"Salir de la conversación"</string>
   <string name="screen_room_details_leave_room_title">"Salir de la sala"</string>
-  <string name="screen_room_details_media_gallery_title">"Medios y archivos"</string>
+  <string name="screen_room_details_media_gallery_title">"Multimedia y archivos"</string>
   <string name="screen_room_details_notification_mode_custom">"Personalizado"</string>
   <string name="screen_room_details_notification_mode_default">"Por defecto"</string>
   <string name="screen_room_details_notification_title">"Notificaciones"</string>
@@ -67,13 +67,14 @@
   <string name="screen_room_details_profile_row_title">"Perfil"</string>
   <string name="screen_room_details_requests_to_join_title">"Solicitudes de unión"</string>
   <string name="screen_room_details_roles_and_permissions">"Roles y permisos"</string>
+  <string name="screen_room_details_room_name_label">"Nombre"</string>
   <string name="screen_room_details_security_and_privacy_title">"Seguridad y privacidad"</string>
   <string name="screen_room_details_security_title">"Seguridad"</string>
   <string name="screen_room_details_share_room_title">"Compartir sala"</string>
   <string name="screen_room_details_title">"Información de la sala"</string>
   <string name="screen_room_details_topic_title">"Tema"</string>
   <string name="screen_room_details_updating_room">"Actualizando la sala…"</string>
-  <string name="screen_room_member_list_banned_empty">"No hay usuarios baneados."</string>
+  <string name="screen_room_member_list_banned_empty">"No hay usuarios vetados."</string>
   <plurals name="screen_room_member_list_banned_header_title">
     <item quantity="one">"%1$d vetado"</item>
     <item quantity="other">"%1$d vetados"</item>
@@ -81,8 +82,8 @@
   <string name="screen_room_member_list_empty_search_subtitle">"Revisa la ortografía o intenta una nueva búsqueda."</string>
   <string name="screen_room_member_list_empty_search_title">"Ningún resultado para «%1$s»"</string>
   <plurals name="screen_room_member_list_header_title">
-    <item quantity="one">"%1$d Persona"</item>
-    <item quantity="other">"%1$d Personas"</item>
+    <item quantity="one">"%1$d persona"</item>
+    <item quantity="other">"%1$d personas"</item>
   </plurals>
   <string name="screen_room_member_list_manage_member_remove_confirmation_ban">"Sacar y vetar a un miembro"</string>
   <string name="screen_room_member_list_manage_member_remove_confirmation_kick">"Solo eliminar miembro"</string>
@@ -113,7 +114,6 @@
   <string name="screen_room_notification_settings_error_setting_mode">"No se pudo cambiar el modo, por favor inténtalo de nuevo."</string>
   <string name="screen_room_notification_settings_mentions_only_disclaimer">"Tu servidor base no admite esta opción en salas cifradas, no recibirás notificaciones de esta sala."</string>
   <string name="screen_room_notification_settings_mode_all_messages">"Todos los mensajes"</string>
-  <string name="screen_room_notification_settings_mode_mentions_and_keywords">"Únicamente Menciones y Palabras clave"</string>
   <string name="screen_room_notification_settings_room_custom_settings_title">"En esta sala, notificarme por"</string>
   <string name="screen_room_roles_and_permissions_admins">"Administradores"</string>
   <string name="screen_room_roles_and_permissions_admins_and_owners">"Administradores y propietarios"</string>
@@ -165,8 +165,8 @@ No recomendamos habilitar el cifrado para las salas que cualquiera pueda encontr
   <string name="screen_security_and_privacy_room_history_anyone_option_title">"Cualquiera (el historial es público)"</string>
   <string name="screen_security_and_privacy_room_history_section_footer">"Los cambios no afectarán a los mensajes anteriores, solo a los nuevos. %1$s"</string>
   <string name="screen_security_and_privacy_room_history_section_header">"Quién puede leer el historial"</string>
-  <string name="screen_security_and_privacy_room_history_since_invite_option_title">"Solo participantes desde que fueron invitados"</string>
-  <string name="screen_security_and_privacy_room_history_since_selecting_option_title">"Miembros (historia completa)"</string>
+  <string name="screen_security_and_privacy_room_history_since_invite_option_title">"Miembros desde su invitación"</string>
+  <string name="screen_security_and_privacy_room_history_since_selecting_option_title">"Miembros (historial completo)"</string>
   <string name="screen_security_and_privacy_room_publishing_section_footer">"Las direcciones de sala son formas de buscar salas y acceder a ellas. Esto también garantiza que puedas compartir fácilmente tu sala con otras personas.
 Puedes optar por publicar tu sala en el directorio de salas públicas de tu servidor base."</string>
   <string name="screen_security_and_privacy_room_publishing_section_header">"Publicación de la sala"</string>

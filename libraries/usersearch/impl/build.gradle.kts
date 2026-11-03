@@ -20,7 +20,6 @@ android {
 setupDependencyInjection()
 
 dependencies {
-    implementation(projects.libraries.core)
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.di)
     // GUA FORK: federation roster + bare-handle logic for federated user search.

@@ -8,7 +8,12 @@
 
 package io.element.android.features.home.impl.components
 
-import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +23,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -29,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -46,10 +53,11 @@ import io.element.android.features.home.impl.filters.aRoomListFiltersState
 import io.element.android.features.home.impl.filters.selection.FilterSelectionState
 import io.element.android.features.home.impl.model.RoomListRoomSummary
 import io.element.android.features.home.impl.model.RoomSummaryDisplayType
+import io.element.android.features.home.impl.roomlist.RoomListBanner
 import io.element.android.features.home.impl.roomlist.RoomListContentState
-import io.element.android.features.home.impl.roomlist.RoomListContentStateProvider
+import io.element.android.features.home.impl.roomlist.RoomListContentStatePreviewParam
 import io.element.android.features.home.impl.roomlist.RoomListEvent
-import io.element.android.features.home.impl.roomlist.SecurityBannerState
+import io.element.android.features.home.impl.roomlist.toRoomListBanner
 import io.element.android.features.home.impl.spacefilters.SpaceFiltersState
 import io.element.android.features.home.impl.spacefilters.anUnselectedSpaceFiltersState
 import io.element.android.libraries.designsystem.preview.ElementPreview
@@ -59,6 +67,8 @@ import io.element.android.libraries.designsystem.theme.components.HorizontalDivi
 import io.element.android.libraries.designsystem.theme.components.IconSource
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.designsystem.utils.OnVisibleRangeChangeEffect
+import io.element.android.libraries.fullscreenintent.api.FullScreenIntentPermissionsEvent
+import io.element.android.libraries.push.api.battery.BatteryOptimizationEvent
 import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.collections.immutable.ImmutableList
 
@@ -160,6 +170,9 @@ private fun SkeletonView(
     }
 }
 
+/**
+ * Ref: https://www.figma.com/design/pDlJZGBsri47FNTXMnEdXB/Compound-Android-Templates?node-id=8-4656
+ */
 @Composable
 private fun EmptyView(
     state: RoomListContentState.Empty,
@@ -169,13 +182,19 @@ private fun EmptyView(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.fillMaxSize()) {
+        val text = buildString {
+            append(stringResource(R.string.screen_roomlist_empty_title))
+            append("\n")
+            append(stringResource(R.string.screen_roomlist_empty_message))
+        }
         EmptyScaffold(
-            title = R.string.screen_roomlist_empty_title,
-            subtitle = R.string.screen_roomlist_empty_message,
-            action = {
+            title = null,
+            subtitle = text,
+            bottomPart = {
+                Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     text = stringResource(CommonStrings.action_start_chat),
-                    leadingIcon = IconSource.Vector(CompoundIcons.Compose()),
+                    leadingIcon = IconSource.Vector(CompoundIcons.Chat()),
                     onClick = onCreateRoomClick,
                 )
             },
@@ -183,19 +202,21 @@ private fun EmptyView(
         )
         Column {
             AccountRecoveryBanner(state = accountRecoveryBannerState)
-            when (state.securityBannerState) {
-                SecurityBannerState.SetUpRecovery,
-                // GUA FORK: the presenter no longer produces SetUpRecovery, but render the same
-                // silent-repair banner here rather than upstream's, so no future path can reach
-                // the flow that hands a user a recovery key to write down.
-                SecurityBannerState.RecoveryKeyConfirmation -> {
-                    ConfirmRecoveryKeyBanner(
-                        onContinueClick = { eventSink(RoomListEvent.FinishEncryptionSetup) },
-                        onDismissClick = { eventSink(RoomListEvent.DismissBanner) },
-                        isWorking = state.isFinishingEncryptionSetup,
-                    )
-                }
-                SecurityBannerState.None -> Unit
+            RoomListBannerContainer(
+                banner = state.securityBannerState.toRoomListBanner(),
+            ) { banner ->
+                RoomListBannerView(
+                    banner = banner,
+                    isFinishingEncryptionSetup = state.isFinishingEncryptionSetup,
+                    onActionClick = {
+                        when (banner) {
+                            RoomListBanner.SetUpRecovery,
+                            RoomListBanner.RecoveryKeyConfirmation -> eventSink(RoomListEvent.FinishEncryptionSetup)
+                            else -> Unit
+                        }
+                    },
+                    onDismissClick = { eventSink(RoomListEvent.DismissBanner) },
+                )
             }
         }
     }
@@ -261,58 +282,62 @@ private fun RoomsViewList(
     lazyListState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
+    val banner = state.toRoomListBanner()
+    // The banner slot must never be 0px high, else the LazyColumn considers that it is not visible and it is
+    // removed from the composition. A new banner would then be added above the visible area of the list.
+    val bannerSlotMinHeight = with(LocalDensity.current) { 1.toDp() }
     OnVisibleRangeChangeEffect(lazyListState) { visibleRange ->
-        eventSink(RoomListEvent.UpdateVisibleRange(visibleRange))
+        // The first item of the list is the banner slot, remove it to get the range of the rooms
+        val roomsRange = (visibleRange.first - 1).coerceAtLeast(0)..<visibleRange.last
+        eventSink(RoomListEvent.UpdateVisibleRange(roomsRange))
     }
     LazyColumn(
         state = lazyListState,
         modifier = modifier,
         contentPadding = contentPadding,
     ) {
-        // GUA FORK: above the other banners and independent of them, so neither the encryption
-        // banner nor any dismissal can push it out.
-        if (accountRecoveryBannerState.pendingRecovery != null) {
-            item {
+        // The banner slot is always the first item of the list, even when there is no banner to display,
+        // so that the rooms keep the same index when a banner is added or removed. Since the rooms do not
+        // have a key, this is required to keep the scroll position.
+        item {
+            Column {
+                // GUA FORK: above the other banners and independent of them, so neither the encryption
+                // banner nor any dismissal can push it out.
                 AccountRecoveryBanner(state = accountRecoveryBannerState)
-            }
-        }
-        when (state.securityBannerState) {
-            SecurityBannerState.SetUpRecovery,
-            // GUA FORK: the presenter no longer produces SetUpRecovery, but render the same
-            // silent-repair banner here rather than upstream's, so no future path can reach
-            // the flow that hands a user a recovery key to write down.
-            SecurityBannerState.RecoveryKeyConfirmation -> {
-                item {
-                    ConfirmRecoveryKeyBanner(
-                        onContinueClick = { eventSink(RoomListEvent.FinishEncryptionSetup) },
-                        onDismissClick = { eventSink(RoomListEvent.DismissBanner) },
-                        isWorking = state.isFinishingEncryptionSetup,
+                RoomListBannerContainer(
+                    banner = banner,
+                    modifier = Modifier.heightIn(min = bannerSlotMinHeight),
+                ) { displayedBanner ->
+                    RoomListBannerView(
+                        banner = displayedBanner,
+                        isFinishingEncryptionSetup = state.isFinishingEncryptionSetup,
+                        onActionClick = {
+                            when (displayedBanner) {
+                                RoomListBanner.SetUpRecovery,
+                                RoomListBanner.RecoveryKeyConfirmation -> eventSink(RoomListEvent.FinishEncryptionSetup)
+                                RoomListBanner.FullScreenIntentPermission ->
+                                    state.fullScreenIntentPermissionsState.eventSink(FullScreenIntentPermissionsEvent.OpenSettings)
+                                RoomListBanner.BatteryOptimization ->
+                                    state.batteryOptimizationState.eventSink(BatteryOptimizationEvent.RequestDisableOptimizations)
+                                RoomListBanner.NewNotificationSound,
+                                RoomListBanner.SwipeAvatar -> Unit
+                            }
+                        },
+                        onDismissClick = {
+                            when (displayedBanner) {
+                                RoomListBanner.SetUpRecovery,
+                                RoomListBanner.RecoveryKeyConfirmation -> eventSink(RoomListEvent.DismissBanner)
+                                RoomListBanner.FullScreenIntentPermission ->
+                                    state.fullScreenIntentPermissionsState.eventSink(FullScreenIntentPermissionsEvent.Dismiss)
+                                RoomListBanner.BatteryOptimization -> state.batteryOptimizationState.eventSink(BatteryOptimizationEvent.Dismiss)
+                                RoomListBanner.NewNotificationSound -> eventSink(RoomListEvent.DismissNewNotificationSoundBanner)
+                                RoomListBanner.SwipeAvatar -> eventSink(RoomListEvent.DismissSwipeAvatarBanner)
+                            }
+                        },
                     )
                 }
             }
-            // Banner precedence (top-to-bottom): full-screen-intent > battery-optimization >
-            // new-notification-sound > sound-unavailable. At most one renders at a time.
-            SecurityBannerState.None -> when {
-                state.fullScreenIntentPermissionsState.shouldDisplayBanner -> {
-                    item {
-                        FullScreenIntentPermissionBanner(state = state.fullScreenIntentPermissionsState)
-                    }
-                }
-                state.batteryOptimizationState.shouldDisplayBanner -> {
-                    item {
-                        BatteryOptimizationBanner(state = state.batteryOptimizationState)
-                    }
-                }
-                state.showNewNotificationSoundBanner -> {
-                    item {
-                        NewNotificationSoundBanner(
-                            onDismissClick = { eventSink(RoomListEvent.DismissNewNotificationSoundBanner) },
-                        )
-                    }
-                }
-            }
         }
-
         // Note: do not use a key for the LazyColumn, or the scroll will not behave as expected if a room
         // is moved to the top of the list.
         itemsIndexed(
@@ -325,6 +350,7 @@ private fun RoomsViewList(
                 isInviteSeen = room.displayType == RoomSummaryDisplayType.INVITE &&
                     state.seenRoomInvites.contains(room.roomId),
                 showUnreadCount = state.showUnreadCount,
+                showAllActivity = state.showAllActivity,
                 onClick = onRoomClick,
                 eventSink = eventSink,
             )
@@ -332,6 +358,74 @@ private fun RoomsViewList(
                 HorizontalDivider()
             }
         }
+    }
+}
+
+/**
+ * Displays the [banner] at the top of the room list, and animates every change: when the banner is
+ * dismissed, when it is replaced by another banner, and when a banner appears.
+ * The size of the slot is animated, so that the items below it are not moved abruptly.
+ *
+ * @param banner the banner to display, or null if there is no banner to display.
+ * @param modifier the modifier to apply to the slot.
+ * @param content renders the given banner.
+ */
+@Composable
+private fun RoomListBannerContainer(
+    banner: RoomListBanner?,
+    modifier: Modifier = Modifier,
+    content: @Composable (RoomListBanner) -> Unit,
+) {
+    AnimatedContent(
+        targetState = banner,
+        // Fill the width so that only the height is animated
+        modifier = modifier.fillMaxWidth(),
+        transitionSpec = {
+            fadeIn(tween(durationMillis = HALF_DURATION_MILLIS, delayMillis = HALF_DURATION_MILLIS)) togetherWith
+                fadeOut(tween(durationMillis = HALF_DURATION_MILLIS)) using
+                SizeTransform { _, _ -> tween(durationMillis = 2 * HALF_DURATION_MILLIS) }
+        },
+        contentAlignment = Alignment.Center,
+        label = "RoomListBannerContainer",
+    ) { targetBanner ->
+        if (targetBanner != null) {
+            content(targetBanner)
+        }
+    }
+}
+
+private const val HALF_DURATION_MILLIS = 150
+
+@Composable
+private fun RoomListBannerView(
+    banner: RoomListBanner,
+    isFinishingEncryptionSetup: Boolean,
+    onActionClick: () -> Unit,
+    onDismissClick: () -> Unit,
+) {
+    when (banner) {
+        // GUA FORK: both states render the silent-repair banner, so no path reaches the flow that
+        // hands a user a recovery key to write down.
+        RoomListBanner.SetUpRecovery,
+        RoomListBanner.RecoveryKeyConfirmation -> ConfirmRecoveryKeyBanner(
+            onContinueClick = onActionClick,
+            onDismissClick = onDismissClick,
+            isWorking = isFinishingEncryptionSetup,
+        )
+        RoomListBanner.FullScreenIntentPermission -> FullScreenIntentPermissionBanner(
+            onActionClick = onActionClick,
+            onDismissClick = onDismissClick,
+        )
+        RoomListBanner.BatteryOptimization -> BatteryOptimizationBanner(
+            onActionClick = onActionClick,
+            onDismissClick = onDismissClick,
+        )
+        RoomListBanner.NewNotificationSound -> NewNotificationSoundBanner(
+            onDismissClick = onDismissClick,
+        )
+        RoomListBanner.SwipeAvatar -> SwipeAvatarBanner(
+            onDismissClick = onDismissClick,
+        )
     }
 }
 
@@ -343,45 +437,50 @@ private fun EmptyViewForFilterStates(
 ) {
     val emptyStateResources = RoomListFiltersEmptyStateResources.fromSelectedFilters(selectedFilters, isSpaceFilterSelected) ?: return
     EmptyScaffold(
-        title = emptyStateResources.title,
-        subtitle = emptyStateResources.subtitle,
+        title = stringResource(emptyStateResources.title),
+        subtitle = stringResource(emptyStateResources.subtitle),
         modifier = modifier,
+        bottomPart = {
+            // Keep a spacer so that the content is not too low on the screen
+            Spacer(modifier = Modifier.height(32.dp))
+        }
     )
 }
 
 @Composable
 private fun EmptyScaffold(
-    @StringRes title: Int,
-    @StringRes subtitle: Int,
+    title: String?,
+    subtitle: String,
     modifier: Modifier = Modifier,
-    action: @Composable (ColumnScope.() -> Unit)? = null,
+    bottomPart: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
         modifier = modifier.padding(horizontal = 60.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        title?.let {
+            Text(
+                text = title,
+                style = ElementTheme.typography.fontHeadingMdBold,
+                color = ElementTheme.colors.textPrimary,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+        }
         Text(
-            text = stringResource(title),
-            style = ElementTheme.typography.fontHeadingMdBold,
-            color = ElementTheme.colors.textPrimary,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = stringResource(subtitle),
+            text = subtitle,
             style = ElementTheme.typography.fontBodyLgRegular,
             color = ElementTheme.colors.textSecondary,
             textAlign = TextAlign.Center,
         )
-        Spacer(modifier = Modifier.height(32.dp))
-        action?.invoke(this)
+        bottomPart()
     }
 }
 
 @PreviewsDayNight
 @Composable
-internal fun RoomListContentViewPreview(@PreviewParameter(RoomListContentStateProvider::class) state: RoomListContentState) = ElementPreview {
+internal fun RoomListContentViewPreview(@PreviewParameter(RoomListContentStatePreviewParam::class) state: RoomListContentState) = ElementPreview {
     RoomListContentView(
         contentState = state,
         accountRecoveryBannerState = aHiddenAccountRecoveryBannerState(),

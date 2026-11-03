@@ -23,7 +23,6 @@ import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
 import io.element.android.features.createroom.api.CreateRoomEntryPoint
 import io.element.android.features.findfriends.api.FindFriendsEntryPoint
-import io.element.android.features.startchat.DefaultStartChatNavigator
 import io.element.android.features.startchat.api.StartChatEntryPoint
 import io.element.android.features.startchat.impl.joinbyaddress.JoinRoomByAddressNode
 import io.element.android.features.startchat.impl.root.StartChatNode
