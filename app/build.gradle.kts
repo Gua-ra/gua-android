@@ -363,7 +363,6 @@ dependencies {
     implementation(libs.androidx.preference)
 
     implementation(platform(libs.network.okhttp.bom))
-    implementation(libs.network.okhttp.logging)
 
     testCommonDependencies(libs)
     testImplementation(projects.libraries.matrix.test)
