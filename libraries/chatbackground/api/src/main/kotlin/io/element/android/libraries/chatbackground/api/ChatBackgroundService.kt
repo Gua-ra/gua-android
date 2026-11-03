@@ -13,6 +13,12 @@ import io.element.android.libraries.matrix.api.room.JoinedRoom
 import kotlinx.coroutines.flow.Flow
 
 interface ChatBackgroundService {
+    /** Starts loading the cached backgrounds, so the first chat opened can show its background in its first frame. */
+    fun preload()
+
+    /** The background last known for [roomId], without waiting: the default until the cache has loaded. */
+    fun currentBackground(roomId: RoomId): ChatBackground
+
     /**
      * The background of [room]: the cached one first, then the server's, then every newer change seen locally.
      * Collecting it reads the server's state, again each time the app returns to the foreground.

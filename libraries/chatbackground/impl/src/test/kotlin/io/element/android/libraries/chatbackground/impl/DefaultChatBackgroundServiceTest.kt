@@ -253,6 +253,23 @@ class DefaultChatBackgroundServiceTest {
         }
     }
 
+    @Test
+    fun `the current background is known without waiting once the cache has loaded`() = runTest {
+        val cache = InMemoryChatBackgroundCache(mapOf(A_ROOM_ID to stored("mint", "\$cached", 2_000)))
+        val service = createService(roomStateClient = FakeRoomStateClient(RoomStateResult.Found(stored("sky", "\$server", 3_000))), cache = cache)
+
+        assertThat(service.currentBackground(A_ROOM_ID)).isEqualTo(ChatBackground.None)
+        service.preload()
+        testScheduler.runCurrent()
+        assertThat(service.currentBackground(A_ROOM_ID)).isEqualTo(preset(ChatBackgroundPreset.Mint))
+
+        service.backgroundFlow(FakeJoinedRoom()).test {
+            assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Mint))
+            assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Sky))
+        }
+        assertThat(service.currentBackground(A_ROOM_ID)).isEqualTo(preset(ChatBackgroundPreset.Sky))
+    }
+
     private fun TestScope.createService(
         roomStateClient: RoomStateClient = aRoomStateClient(server),
         cache: ChatBackgroundCache = InMemoryChatBackgroundCache(),

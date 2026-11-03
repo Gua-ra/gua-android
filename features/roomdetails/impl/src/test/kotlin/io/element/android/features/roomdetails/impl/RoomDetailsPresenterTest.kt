@@ -156,7 +156,7 @@ class RoomDetailsPresenterTest {
             featureFlagService = FakeFeatureFlagService(mapOf(FeatureFlags.ChatBackgrounds.key to true)),
         )
         presenter.testWithLifecycleOwner(lifecycleOwner = fakeLifecycleOwner) {
-            val state = consumeItemsUntilPredicate { it.chatBackgroundRow?.background is ChatBackground.Preset }.last()
+            val state = consumeItemsUntilPredicate { it.chatBackgroundRow?.canChange == true }.last()
             assertThat(state.chatBackgroundRow).isEqualTo(ChatBackgroundRowState(ChatBackground.Preset(ChatBackgroundPreset.Sand), canChange = true))
             cancelAndIgnoreRemainingEvents()
         }
@@ -169,7 +169,7 @@ class RoomDetailsPresenterTest {
             featureFlagService = FakeFeatureFlagService(mapOf(FeatureFlags.ChatBackgrounds.key to true)),
         )
         presenter.testWithLifecycleOwner(lifecycleOwner = fakeLifecycleOwner) {
-            val state = consumeItemsUntilPredicate { it.chatBackgroundRow != null }.last()
+            val state = consumeItemsUntilPredicate { it.chatBackgroundRow?.canChange == false }.last()
             assertThat(state.chatBackgroundRow).isEqualTo(ChatBackgroundRowState(ChatBackground.None, canChange = false))
             cancelAndIgnoreRemainingEvents()
         }

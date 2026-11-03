@@ -744,14 +744,14 @@ private fun ChatBackgroundItem(
     }
     ListItem(
         content = { Text(stringResource(R.string.gua_chat_background_row_title)) },
-        supportingContent = if (row.canChange) {
-            null
-        } else {
+        supportingContent = if (row.canChange == false) {
             { Text(stringResource(R.string.gua_chat_background_row_no_permission)) }
+        } else {
+            null
         },
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Theme())),
         trailingContent = ListItemContent.Text(value),
-        enabled = row.canChange,
+        enabled = row.canChange != false,
         onClick = onClick,
     )
 }

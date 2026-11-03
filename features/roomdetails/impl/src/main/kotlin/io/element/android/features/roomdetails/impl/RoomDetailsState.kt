@@ -80,7 +80,8 @@ data class RoomDetailsState(
 
 data class ChatBackgroundRowState(
     val background: ChatBackground,
-    val canChange: Boolean,
+    /** Null until the permissions have loaded. */
+    val canChange: Boolean?,
 )
 
 @Immutable

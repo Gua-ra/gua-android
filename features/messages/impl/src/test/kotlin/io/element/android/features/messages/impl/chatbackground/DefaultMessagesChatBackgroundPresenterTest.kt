@@ -33,13 +33,14 @@ import org.junit.Test
 
 class DefaultMessagesChatBackgroundPresenterTest {
     @Test
-    fun `the main timeline shows the chat background`() = runTest {
+    fun `the main timeline shows the chat background from its first frame`() = runTest {
         val service = FakeChatBackgroundService(ChatBackground.Preset(ChatBackgroundPreset.Ocean))
         val presenter = createDefaultMessagesChatBackgroundPresenter(service = service)
 
         presenter.test {
-            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
             assertThat(awaitItem()).isEqualTo(ChatBackground.Preset(ChatBackgroundPreset.Ocean))
+            service.background.value = ChatBackground.Preset(ChatBackgroundPreset.Sand)
+            assertThat(awaitItem()).isEqualTo(ChatBackground.Preset(ChatBackgroundPreset.Sand))
         }
     }
 

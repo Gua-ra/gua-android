@@ -34,7 +34,6 @@ import io.element.android.features.securityandprivacy.api.securityAndPrivacyPerm
 import io.element.android.libraries.androidutils.clipboard.ClipboardHelper
 import io.element.android.libraries.androidutils.toast.ToastHelper
 import io.element.android.libraries.architecture.Presenter
-import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundService
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.designsystem.utils.snackbar.LocalSnackbarDispatcher
@@ -243,8 +242,9 @@ class RoomDetailsPresenter(
     private fun chatBackgroundRowState(isSpace: Boolean): ChatBackgroundRowState? {
         val isEnabled by remember { featureFlagService.isFeatureEnabledFlow(FeatureFlags.ChatBackgrounds) }.collectAsState(initial = false)
         if (!isEnabled || isSpace) return null
-        val background by remember { chatBackgroundService.backgroundFlow(room) }.collectAsState(initial = ChatBackground.None)
-        val canChange by room.permissionsAsState(false) { it.canOwnUserSendState(StateEventType.Custom(CHAT_BACKGROUND_EVENT_TYPE)) }
+        val initial = remember { chatBackgroundService.currentBackground(room.roomId) }
+        val background by remember { chatBackgroundService.backgroundFlow(room) }.collectAsState(initial)
+        val canChange by room.permissionsAsState<Boolean?>(null) { it.canOwnUserSendState(StateEventType.Custom(CHAT_BACKGROUND_EVENT_TYPE)) }
         return ChatBackgroundRowState(background = background, canChange = canChange)
     }
 

@@ -44,7 +44,8 @@ class ChatBackgroundPresenter(
     @Composable
     override fun present(): ChatBackgroundState {
         val coroutineScope = rememberCoroutineScope()
-        val current by remember { chatBackgroundService.backgroundFlow(room) }.collectAsState(initial = ChatBackground.None)
+        val initial = remember { chatBackgroundService.currentBackground(room.roomId) }
+        val current by remember { chatBackgroundService.backgroundFlow(room) }.collectAsState(initial)
         val canChange by room.permissionsAsState(false) { it.canOwnUserSendState(StateEventType.Custom(CHAT_BACKGROUND_EVENT_TYPE)) }
         var selection by remember { mutableStateOf<ChatBackground?>(null) }
         var photoDraft by remember { mutableStateOf<ChatBackgroundPhotoDraft?>(null) }

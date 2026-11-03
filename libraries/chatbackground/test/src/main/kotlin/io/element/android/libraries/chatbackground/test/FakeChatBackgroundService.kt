@@ -25,6 +25,10 @@ class FakeChatBackgroundService(
 
     data class TimelineEvent(val roomId: RoomId, val eventId: EventId, val timestamp: Long, val contentJson: String?)
 
+    override fun preload() = Unit
+
+    override fun currentBackground(roomId: RoomId): ChatBackground = background.value
+
     override fun backgroundFlow(room: JoinedRoom): Flow<ChatBackground> = background
 
     override fun onTimelineEvent(roomId: RoomId, eventId: EventId, timestamp: Long, contentJson: String?) {

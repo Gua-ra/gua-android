@@ -59,7 +59,8 @@ class DefaultMessagesChatBackgroundPresenter(
         LaunchedEffect(Unit) {
             reportTimelineChanges()
         }
-        val background by remember { chatBackgroundService.backgroundFlow(room) }.collectAsState(ChatBackground.None)
+        val initial = remember { chatBackgroundService.currentBackground(room.roomId) }
+        val background by remember { chatBackgroundService.backgroundFlow(room) }.collectAsState(initial)
         return background
     }
 

@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import timber.log.Timber
+import java.util.concurrent.ConcurrentHashMap
 
 @SingleIn(SessionScope::class)
 @ContributesBinding(SessionScope::class)
@@ -51,8 +52,20 @@ class DefaultChatBackgroundService(
     )
 
     private val mutex = Mutex()
-    private val slots = HashMap<RoomId, MutableStateFlow<Slot>>()
-    private val cached = sessionCoroutineScope.async(start = CoroutineStart.LAZY) { cache.load() }
+    private val slots = ConcurrentHashMap<RoomId, MutableStateFlow<Slot>>()
+
+    @Volatile
+    private var loadedCache: Map<RoomId, StoredChatBackground>? = null
+    private val cached = sessionCoroutineScope.async(start = CoroutineStart.LAZY) { cache.load().also { loadedCache = it } }
+
+    override fun preload() {
+        cached.start()
+    }
+
+    override fun currentBackground(roomId: RoomId): ChatBackground {
+        val stored = slots[roomId]?.value?.stored ?: loadedCache?.get(roomId)
+        return ChatBackgroundCodec.decode(stored?.contentJson)
+    }
 
     override fun backgroundFlow(room: JoinedRoom): Flow<ChatBackground> = channelFlow {
         val slot = slot(room.roomId)
