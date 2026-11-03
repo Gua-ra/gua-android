@@ -745,7 +745,8 @@ private fun ChatBackgroundItem(
     ListItem(
         content = { Text(stringResource(R.string.gua_chat_background_row_title)) },
         supportingContent = if (row.canChange == false) {
-            { Text(stringResource(R.string.gua_chat_background_row_no_permission)) }
+            // The disabled colour would make the reason the hardest text on the row to read.
+            { Text(stringResource(R.string.gua_chat_background_row_no_permission), color = ElementTheme.colors.textSecondary) }
         } else {
             null
         },
