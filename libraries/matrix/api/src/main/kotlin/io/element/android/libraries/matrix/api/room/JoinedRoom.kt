@@ -323,4 +323,17 @@ interface JoinedRoom : BaseRoom {
      * the user's display name across all of their rooms.
      */
     suspend fun setOwnMemberDisplayName(displayName: String): Result<Unit>
+
+    /**
+     * Sends a state event whose content is raw JSON, for event types the SDK has no model for.
+     *
+     * @return the ID of the sent event.
+     */
+    suspend fun sendStateEventRaw(eventType: String, stateKey: String, content: String): Result<EventId>
+
+    /**
+     * The state events of [type] the SDK stores locally, updated as they change. An empty list means the SDK holds none,
+     * not that the state was removed: custom types are often not part of what the SDK syncs.
+     */
+    fun stateEventsFlow(type: StateEventType): Flow<List<RoomStateEvent>>
 }
