@@ -305,7 +305,7 @@ class JoinRoomPresenterTest {
             val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
             assertThat(state.joinAuthorisationStatus).isEqualTo(JoinAuthorisationStatus.CanJoin)
             assertThat(state.joiningTurnsOnSpaces).isTrue()
-            state.eventSink(JoinRoomEvents.JoinRoom)
+            state.eventSink(JoinRoomEvent.JoinRoom)
             assertThat(spacesSwitch.enableWhenJoinedCalls).containsExactly(A_ROOM_ID)
             cancelAndIgnoreRemainingEvents()
         }
@@ -323,7 +323,7 @@ class JoinRoomPresenterTest {
             val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
             assertThat(state.joinAuthorisationStatus).isEqualTo(JoinAuthorisationStatus.Unknown)
             assertThat(state.joiningTurnsOnSpaces).isTrue()
-            state.eventSink(JoinRoomEvents.JoinRoom)
+            state.eventSink(JoinRoomEvent.JoinRoom)
             assertThat(spacesSwitch.enableWhenJoinedCalls).containsExactly(A_ROOM_ID)
             cancelAndIgnoreRemainingEvents()
         }
@@ -339,7 +339,7 @@ class JoinRoomPresenterTest {
         presenter.test {
             val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
             assertThat(state.joiningTurnsOnSpaces).isFalse()
-            state.eventSink(JoinRoomEvents.JoinRoom)
+            state.eventSink(JoinRoomEvent.JoinRoom)
             cancelAndIgnoreRemainingEvents()
         }
         assertThat(spacesSwitch.enableWhenJoinedCalls).isEmpty()
@@ -355,7 +355,7 @@ class JoinRoomPresenterTest {
         presenter.test {
             val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
             assertThat(state.joiningTurnsOnSpaces).isFalse()
-            state.eventSink(JoinRoomEvents.JoinRoom)
+            state.eventSink(JoinRoomEvent.JoinRoom)
             cancelAndIgnoreRemainingEvents()
         }
         assertThat(spacesSwitch.enableWhenJoinedCalls).isEmpty()
@@ -378,7 +378,7 @@ class JoinRoomPresenterTest {
     @Test
     fun `present - accepting a space invite with the Spaces switch off asks to turn it on at tap time`() = runTest {
         val spacesSwitch = FakeSpacesSwitch(initialValue = false)
-        val acceptInviteRecorder = lambdaRecorder { _: AcceptDeclineInviteEvents -> }
+        val acceptInviteRecorder = lambdaRecorder { _: AcceptDeclineInviteEvent -> }
         val roomInfo = aRoomInfo(isSpace = true, currentUserMembership = CurrentUserMembership.INVITED)
         val presenter = createJoinRoomPresenter(
             matrixClient = aMatrixClientWithRoomInfo(roomInfo),
@@ -389,7 +389,7 @@ class JoinRoomPresenterTest {
             val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
             assertThat(state.joinAuthorisationStatus).isInstanceOf(JoinAuthorisationStatus.IsInvited::class.java)
             assertThat(state.joiningTurnsOnSpaces).isTrue()
-            state.eventSink(JoinRoomEvents.AcceptInvite(roomInfo.toInviteData()))
+            state.eventSink(JoinRoomEvent.AcceptInvite(roomInfo.toInviteData()))
             assertThat(spacesSwitch.enableWhenJoinedCalls).containsExactly(A_ROOM_ID)
             assert(acceptInviteRecorder).isCalledOnce()
             cancelAndIgnoreRemainingEvents()
@@ -411,7 +411,7 @@ class JoinRoomPresenterTest {
             presenter.test {
                 val state = consumeItemsUntilPredicate { it.contentState is ContentState.Loaded }.last()
                 assertThat(state.joiningTurnsOnSpaces).isFalse()
-                state.eventSink(JoinRoomEvents.AcceptInvite(roomInfo.toInviteData()))
+                state.eventSink(JoinRoomEvent.AcceptInvite(roomInfo.toInviteData()))
                 cancelAndIgnoreRemainingEvents()
             }
             assertThat(spacesSwitch.enableWhenJoinedCalls).isEmpty()

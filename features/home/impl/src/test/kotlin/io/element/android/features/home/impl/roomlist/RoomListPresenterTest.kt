@@ -575,7 +575,7 @@ class RoomListPresenterTest {
 
     @Test
     fun `present - with Spaces off, an inline accept of a space invite is left to the join screen`() = runTest {
-        val eventSinkRecorder = lambdaRecorder { _: AcceptDeclineInviteEvents -> }
+        val eventSinkRecorder = lambdaRecorder { _: AcceptDeclineInviteEvent -> }
         awaitSpaceInviteState(
             spacesSwitch = FakeSpacesSwitch(initialValue = false),
             acceptDeclineEventSink = eventSinkRecorder,
@@ -588,7 +588,7 @@ class RoomListPresenterTest {
 
     @Test
     fun `present - with Spaces on, an inline accept of a space invite accepts it`() = runTest {
-        val eventSinkRecorder = lambdaRecorder { _: AcceptDeclineInviteEvents -> }
+        val eventSinkRecorder = lambdaRecorder { _: AcceptDeclineInviteEvent -> }
         var inviteData: InviteData? = null
         awaitSpaceInviteState(
             spacesSwitch = FakeSpacesSwitch(initialValue = true),
@@ -600,12 +600,12 @@ class RoomListPresenterTest {
         }
         assert(eventSinkRecorder)
             .isCalledOnce()
-            .with(value(AcceptDeclineInviteEvents.AcceptInvite(inviteData!!)))
+            .with(value(AcceptDeclineInviteEvent.AcceptInvite(inviteData!!)))
     }
 
     private suspend fun TestScope.awaitSpaceInviteState(
         spacesSwitch: FakeSpacesSwitch,
-        acceptDeclineEventSink: (AcceptDeclineInviteEvents) -> Unit,
+        acceptDeclineEventSink: (AcceptDeclineInviteEvent) -> Unit,
         block: (RoomListState, RoomListRoomSummary) -> Unit,
     ) {
         val roomSummary = aRoomSummary(

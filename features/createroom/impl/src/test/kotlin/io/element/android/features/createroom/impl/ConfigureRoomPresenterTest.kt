@@ -548,7 +548,7 @@ class ConfigureRoomPresenterTest : RobolectricTest() {
             spacesSwitch = spacesSwitch,
         )
         presenter.test {
-            awaitLastSequentialItem().eventSink(ConfigureRoomEvents.SetParentSpace(aSpaceRoom()))
+            awaitLastSequentialItem().eventSink(ConfigureRoomEvent.SetParentSpace(aSpaceRoom()))
             assertThat(awaitLastSequentialItem().config.parentSpace).isEqualTo(aSpaceRoom())
 
             spacesSwitch.setEnabled(false)
