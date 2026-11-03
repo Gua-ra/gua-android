@@ -28,7 +28,7 @@ Build and point the app at your own stack as described in the README's [Building
 - A changed screen needs its screenshot goldens re-recorded: `./gradlew :tests:uitests:recordPaparazziDebug --tests '*<PreviewName>*'`. Goldens are stored in git LFS. Local renders can differ from CI; when CI fails on a screen you changed, take the goldens from the `gua-test-failures` artifact of that run.
 - Adding or removing a preview re-shards the screenshot tests and churns goldens for unrelated screens. Cover a new state with a presenter or view test unless the preview is needed.
 - Composables keep upstream's convention: a preview function annotated with `@PreviewsDayNight`, named `<Composable>Preview`, with `ElementPreview` as its root.
-- License headers: a new Gua file starts with `Copyright <year> Gua` followed by the repository's SPDX line. A modified upstream file keeps its Element notice. The konsist test accepts only these two shapes.
+- License headers: a new Gua file starts with `Copyright <year> Gua` followed by `SPDX-License-Identifier: AGPL-3.0-only`. A modified upstream file keeps its Element copyright and SPDX lines unchanged. The konsist test accepts only these two shapes: Gua's copyright with `AGPL-3.0-only`, or Element's copyright with Element's `AGPL-3.0-only OR LicenseRef-Element-Commercial` line.
 
 ## Pull requests
 

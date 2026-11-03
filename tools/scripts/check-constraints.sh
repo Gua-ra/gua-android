@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Copyright 2026 Gua
-# SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+# SPDX-License-Identifier: AGPL-3.0-only
 #
 # GUA FORK constraint guard.
 #
