@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,16 +29,22 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.libraries.chatbackground.api.ChatBackground
@@ -59,7 +66,11 @@ import io.element.android.libraries.designsystem.theme.components.TopAppBar
 import io.element.android.libraries.matrix.ui.chatbackground.drawChatBackgroundFill
 import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundView as ChatBackgroundRenderer
 
-private const val PRESETS_PER_ROW = 5
+private const val MAX_PRESETS_PER_ROW = 5
+private const val MIN_PRESETS_PER_ROW = 3
+private val PRESET_GAP = 12.dp
+private val PRESET_PADDING = 2.dp
+private val PRESET_MIN_WIDTH = 56.dp
 
 @Composable
 fun ChatBackgroundView(
@@ -200,17 +211,31 @@ private fun PresetGrid(
     onSelect: (ChatBackgroundPreset) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ChatBackgroundPreset.entries.chunked(PRESETS_PER_ROW).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                row.forEach { preset ->
-                    PresetSwatch(
-                        preset = preset,
-                        isSelected = preset == selected,
-                        enabled = enabled,
-                        onClick = { onSelect(preset) },
-                        modifier = Modifier.weight(1f),
-                    )
+    val labelStyle = ElementTheme.typography.fontBodySmRegular
+    val textMeasurer = rememberTextMeasurer()
+    val names = ChatBackgroundPreset.entries.map { stringResource(it.nameRes) }
+    BoxWithConstraints(modifier = modifier) {
+        // As many columns as keep the longest name on one line in this language and font scale.
+        val density = LocalDensity.current
+        val longestName = remember(names, labelStyle, density) {
+            with(density) { names.maxOf { textMeasurer.measure(it, labelStyle, maxLines = 1).size.width }.toDp() }
+        }
+        val cellWidth = max(longestName + PRESET_PADDING * 2, PRESET_MIN_WIDTH)
+        val columns = ((maxWidth + PRESET_GAP) / (cellWidth + PRESET_GAP)).toInt().coerceIn(MIN_PRESETS_PER_ROW, MAX_PRESETS_PER_ROW)
+        Column(verticalArrangement = Arrangement.spacedBy(PRESET_GAP)) {
+            ChatBackgroundPreset.entries.chunked(columns).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(PRESET_GAP)) {
+                    row.forEach { preset ->
+                        PresetSwatch(
+                            preset = preset,
+                            isSelected = preset == selected,
+                            enabled = enabled,
+                            onClick = { onSelect(preset) },
+                            labelStyle = labelStyle,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
@@ -223,6 +248,7 @@ private fun PresetSwatch(
     isSelected: Boolean,
     enabled: Boolean,
     onClick: () -> Unit,
+    labelStyle: TextStyle,
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(10.dp)
@@ -230,7 +256,7 @@ private fun PresetSwatch(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .selectable(selected = isSelected, enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(2.dp),
+            .padding(PRESET_PADDING),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -260,10 +286,11 @@ private fun PresetSwatch(
         }
         Text(
             text = stringResource(preset.nameRes),
-            style = ElementTheme.typography.fontBodySmRegular,
+            style = labelStyle,
             color = if (enabled) ElementTheme.colors.textPrimary else ElementTheme.colors.textDisabled,
             textAlign = TextAlign.Center,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
