@@ -237,6 +237,40 @@ class DefaultNotificationCreatorTest : RobolectricTest() {
     }
 
     @Test
+    fun `test createRoomInvitationNotification for a space has no accept action`() {
+        val sut = createNotificationCreator()
+        val result = sut.createRoomInvitationNotification(
+            notificationAccountParams = aNotificationAccountParams(),
+            InviteNotifiableEvent(
+                sessionId = A_SESSION_ID,
+                roomId = A_ROOM_ID,
+                eventId = AN_EVENT_ID,
+                editedEventId = null,
+                noisy = false,
+                title = "title",
+                description = "description",
+                type = null,
+                timestamp = A_FAKE_TIMESTAMP,
+                soundName = null,
+                canBeReplaced = false,
+                isRedacted = false,
+                isUpdated = false,
+                roomName = "spaceName",
+                isSpace = true,
+            ),
+        )
+        result.commonAssertions(
+            expectedCategory = null,
+        )
+        val actionTitles = result.actions?.map { it.title }
+        assertThat(actionTitles).isEqualTo(
+            listOfNotNull(
+                REJECT_INVITATION_ACTION_TITLE.takeIf { NotificationConfig.SHOW_ACCEPT_AND_DECLINE_INVITE_ACTIONS },
+            )
+        )
+    }
+
+    @Test
     fun `test createRoomInvitationNotification noisy`() {
         val sut = createNotificationCreator(
             enterpriseService = FakeEnterpriseService(

@@ -221,6 +221,7 @@ class DefaultNotifiableEventResolver(
                     soundName = null,
                     isRedacted = false,
                     isUpdated = false,
+                    isSpace = isSpace,
                     description = descriptionFromRoomMembershipInvite(
                         senderDisambiguatedDisplayName = senderDisambiguatedDisplayName,
                         isDirectRoom = isDirect,

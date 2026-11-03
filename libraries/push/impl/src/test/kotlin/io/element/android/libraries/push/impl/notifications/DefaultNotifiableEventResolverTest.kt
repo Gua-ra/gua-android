@@ -531,6 +531,7 @@ class DefaultNotifiableEventResolverTest : RobolectricTest() {
                 soundName = null,
                 isRedacted = false,
                 isUpdated = false,
+                isSpace = true,
             )
         )
         assertThat(result.getEvent(request)).isEqualTo(Result.success(expectedResult))
