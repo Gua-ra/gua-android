@@ -17,4 +17,7 @@
     <string name="screen_room_confirm_removal_reason_placeholder">Escribe el motivo…</string>
     <string name="screen_room_confirm_removal_reason_supporting_text">(Opcional)</string>
     <string name="screen_room_confirm_removal_title">¿Eliminar mensaje?</string>
+    <string name="gua_action_more">Más</string>
+    <string name="gua_action_select">Seleccionar</string>
+    <string name="gua_message_text_selection_title">Seleccionar texto</string>
 </resources>

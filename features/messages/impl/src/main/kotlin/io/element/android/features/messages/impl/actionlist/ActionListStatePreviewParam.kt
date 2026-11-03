@@ -13,6 +13,7 @@ import io.element.android.features.messages.impl.actionlist.model.TimelineItemAc
 import io.element.android.features.messages.impl.actionlist.model.TimelineItemActionComparator
 import io.element.android.features.messages.impl.crypto.sendfailure.VerifiedUserSendFailure
 import io.element.android.features.messages.impl.crypto.sendfailure.resolve.anUnsignedDeviceSendFailure
+import io.element.android.features.messages.impl.messagemenu.MessageQuickReactions
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
 import io.element.android.features.messages.impl.timeline.aTimelineItemReactions
 import io.element.android.features.messages.impl.timeline.model.event.aStaticLocationMode
@@ -25,11 +26,11 @@ import io.element.android.features.messages.impl.timeline.model.event.aTimelineI
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemVoiceContent
 import io.element.android.libraries.matrix.api.timeline.item.event.MessageShield
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 
 open class ActionListStatePreviewParam : PreviewParameterProvider<ActionListState> {
-    private val suggestedEmojis = persistentListOf("👍️", "👎️", "🔥", "❤️", "👏")
+    // GUA FORK: Gua's quick reactions, as the action list presenter offers them.
+    private val suggestedEmojis = MessageQuickReactions.defaults
 
     override val values: Sequence<ActionListState>
         get() {

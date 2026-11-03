@@ -70,6 +70,9 @@ import androidx.constraintlayout.compose.ConstrainScope
 import androidx.constraintlayout.compose.ConstraintLayout
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
+import io.element.android.features.messages.impl.messagemenu.LocalMessageMenuController
+import io.element.android.features.messages.impl.messagemenu.canDoubleTapToReact
+import io.element.android.features.messages.impl.messagemenu.messageMenuBubble
 import io.element.android.features.messages.impl.timeline.TimelineEvent
 import io.element.android.features.messages.impl.timeline.TimelineRoomInfo
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
@@ -609,6 +612,21 @@ private fun TimelineItemEventRowContent(
         }
 
         // Message bubble
+        val messageMenuController = LocalMessageMenuController.current
+        val onBubbleDoubleClick = if (
+            messageMenuController != null &&
+            !selectionData.isSelectionModeActive &&
+            event.canDoubleTapToReact(timelineRoomInfo.userHasPermissionToSendReaction)
+        ) {
+            { messageMenuController.onDoubleTap(event) }
+        } else {
+            null
+        }
+        val onBubbleKeyboardMenu = if (messageMenuController != null && !selectionData.isSelectionModeActive) {
+            { messageMenuController.onKeyboardMenu(event) }
+        } else {
+            null
+        }
         val bubbleState = BubbleState(
             groupPosition = event.groupPosition,
             isMine = event.isMine,
@@ -629,13 +647,20 @@ private fun TimelineItemEventRowContent(
                         val startMargin = if (timelineRoomInfo.isDm) 16.dp else 16.dp + BUBBLE_INCOMING_OFFSET
                         start.linkTo(parent.start, margin = startMargin)
                     }
-                },
+                }
+                .messageMenuBubble(
+                    id = event.id,
+                    controller = messageMenuController,
+                    liftsWhileHeld = !selectionData.isSelectionModeActive && !isTalkbackActive(),
+                    onKeyboardMenu = onBubbleKeyboardMenu,
+                ),
             state = bubbleState,
             interactionSource = interactionSource,
             onClick = onContentClick,
             onLongClick = onLongClick,
             customBackgroundColor = dangerousContentBubbleColor,
             borderColor = borderColor,
+            onDoubleClick = onBubbleDoubleClick,
         ) {
             MessageEventBubbleContent(
                 event = event,

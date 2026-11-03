@@ -25,6 +25,7 @@ import io.element.android.features.messages.impl.actionlist.model.TimelineItemAc
 import io.element.android.features.messages.impl.actionlist.model.TimelineItemActionPostProcessor
 import io.element.android.features.messages.impl.crypto.sendfailure.VerifiedUserSendFailure
 import io.element.android.features.messages.impl.crypto.sendfailure.VerifiedUserSendFailureFactory
+import io.element.android.features.messages.impl.messagemenu.MessageQuickReactions
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.TimelineItemThreadInfo
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemAttachmentsContent
@@ -91,7 +92,8 @@ class DefaultActionListPresenter(
 
     private val comparator = TimelineItemActionComparator()
 
-    private val suggestedEmojis = persistentListOf("👍️", "👎️", "🔥", "❤️", "👏")
+    // GUA FORK: Gua's quick reactions, the same on every surface and platform.
+    private val suggestedEmojis = MessageQuickReactions.defaults
 
     @Composable
     override fun present(): ActionListState {

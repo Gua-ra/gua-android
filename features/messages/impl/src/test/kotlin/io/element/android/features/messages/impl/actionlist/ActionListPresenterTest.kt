@@ -15,6 +15,7 @@ import io.element.android.features.messages.impl.actionlist.model.TimelineItemAc
 import io.element.android.features.messages.impl.crypto.sendfailure.VerifiedUserSendFailure
 import io.element.android.features.messages.impl.crypto.sendfailure.VerifiedUserSendFailureFactory
 import io.element.android.features.messages.impl.fixtures.aMessageEvent
+import io.element.android.features.messages.impl.messagemenu.MessageQuickReactions
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
 import io.element.android.features.messages.impl.timeline.model.TimelineItemThreadInfo
 import io.element.android.features.messages.impl.timeline.model.event.RtcNotificationState
@@ -58,7 +59,7 @@ class ActionListPresenterTest {
     @get:Rule
     val warmUpRule = WarmUpRule()
 
-    private val suggestedEmojis = persistentListOf("👍️", "👎️", "🔥", "❤️", "👏")
+    private val suggestedEmojis = MessageQuickReactions.defaults
 
     @Test
     fun `present - initial state`() = runTest {
@@ -1549,7 +1550,6 @@ class ActionListPresenterTest {
 
     @Test
     fun `present - recentEmojis merges suggested and recent emojis`() = runTest {
-        val suggestedEmojis = persistentListOf("👍️", "👎️", "🔥", "❤️", "👏")
         val otherEmojis = (0..100).map { it.toString() }
 
         val presenter = createActionListPresenter(

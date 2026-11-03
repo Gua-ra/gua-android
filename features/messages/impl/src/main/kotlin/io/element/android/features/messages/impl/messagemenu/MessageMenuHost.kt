@@ -1,0 +1,47 @@
+/*
+ * Copyright 2026 Gua
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+ * Please see LICENSE files in the repository root for full details.
+ */
+
+package io.element.android.features.messages.impl.messagemenu
+
+import android.os.Build
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.dp
+
+private val BACKDROP_BLUR_RADIUS = 16.dp
+
+@Composable
+fun MessageMenuHost(
+    controller: MessageMenuController,
+    overlay: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(LocalMessageMenuController provides controller) {
+        Box(modifier = modifier) {
+            content()
+            overlay()
+        }
+    }
+}
+
+fun Modifier.messageMenuBackdrop(
+    controller: MessageMenuController,
+    isMenuShown: Boolean,
+): Modifier = if (isMenuShown && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    graphicsLayer {
+        val radius = BACKDROP_BLUR_RADIUS.toPx() * controller.progress.value
+        renderEffect = if (radius > 0f) BlurEffect(radius, radius, TileMode.Clamp) else null
+    }
+} else {
+    this
+}

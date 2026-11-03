@@ -13,6 +13,7 @@ import io.element.android.features.messages.impl.actionlist.ActionListState
 import io.element.android.features.messages.impl.crypto.identity.IdentityChangeState
 import io.element.android.features.messages.impl.link.LinkState
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerState
+import io.element.android.features.messages.impl.messagemenu.MessageMenuState
 import io.element.android.features.messages.impl.pinned.banner.PinnedMessagesBannerState
 import io.element.android.features.messages.impl.timeline.TimelineState
 import io.element.android.features.messages.impl.timeline.components.customreaction.CustomReactionState
@@ -47,6 +48,7 @@ data class MessagesState(
     val actionListState: ActionListState,
     val customReactionState: CustomReactionState,
     val reactionSummaryState: ReactionSummaryState,
+    val messageMenuState: MessageMenuState,
     val readReceiptBottomSheetState: ReadReceiptBottomSheetState,
     val snackbarMessage: SnackbarMessage?,
     val inviteProgress: AsyncData<Unit>,
