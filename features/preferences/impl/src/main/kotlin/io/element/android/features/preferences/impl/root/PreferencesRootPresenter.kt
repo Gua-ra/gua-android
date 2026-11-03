@@ -24,6 +24,7 @@ import io.element.android.features.lockscreen.api.LockScreenService
 import io.element.android.features.preferences.impl.account.PreferencesAccountState
 import io.element.android.features.preferences.impl.userstatus.UserStatusState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
+import io.element.android.features.space.api.SpacesSwitch
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.core.meta.BuildType
@@ -45,6 +46,7 @@ import io.element.android.services.analytics.api.AnalyticsService
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -75,6 +77,7 @@ class PreferencesRootPresenter(
     private val lockScreenService: LockScreenService,
     private val identityServiceClient: IdentityServiceClient,
     private val buildMeta: BuildMeta,
+    private val spacesSwitch: SpacesSwitch,
 ) : Presenter<PreferencesRootState> {
     @Composable
     override fun present(): PreferencesRootState {
@@ -83,6 +86,9 @@ class PreferencesRootPresenter(
         LaunchedEffect(Unit) {
             // Force a refresh of the profile
             matrixClient.getUserProfile()
+        }
+        LaunchedEffect(Unit) {
+            spacesSwitch.refresh()
         }
         val preferencesAccountState = preferencesAccountPresenter.present()
         val isMultiAccountEnabled by remember {
@@ -159,6 +165,7 @@ class PreferencesRootPresenter(
         }
 
         val showDeveloperSettings by showDeveloperSettingsProvider.showDeveloperSettings.collectAsState()
+        val isSpacesEnabled by spacesSwitch.isEnabled.collectAsState()
 
         val isLocationServiceAvailable by remember { locationService.isServiceAvailable() }.collectAsState()
 
@@ -177,6 +184,10 @@ class PreferencesRootPresenter(
                         ThemeOption.Black -> appPreferencesStore.setTheme(Theme.Black.name)
                         ThemeOption.Light -> appPreferencesStore.setTheme(Theme.Light.name)
                     }
+                }
+                // GUA FORK: undispatched so the write reaches the session scope before this screen can close.
+                is PreferencesRootEvent.SetSpacesEnabled -> coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                    spacesSwitch.setEnabled(event.enabled)
                 }
             }
         }
@@ -197,6 +208,7 @@ class PreferencesRootPresenter(
             isLockScreenPinSetup = isLockScreenPinSetup,
             hasAccountStrongFactor = hasAccountStrongFactor,
             showLocationSettings = isLocationServiceAvailable,
+            isSpacesEnabled = isSpacesEnabled,
             snackbarMessage = snackbarMessage,
             eventSink = ::handleEvent,
         )

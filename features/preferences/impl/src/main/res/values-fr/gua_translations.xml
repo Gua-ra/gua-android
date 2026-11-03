@@ -103,4 +103,6 @@
     <string name="screen_advanced_settings_show_media_timeline_private_rooms">Afficher dans les salons privés</string>
     <string name="screen_advanced_settings_show_media_timeline_subtitle">Vous pouvez toujours afficher un média masqué en appuyant dessus.</string>
     <string name="screen_labs_enable_knocking">Demander à rejoindre</string>
+    <string name="gua_preferences_spaces_title">Espaces</string>
+    <string name="gua_preferences_spaces_description">Regroupez les conversations et communautés liées en un seul endroit</string>
 </resources>

@@ -21,6 +21,7 @@ import io.element.android.features.createroom.impl.configureroom.JoinRuleItem
 import io.element.android.features.createroom.impl.configureroom.RoomAddress
 import io.element.android.features.createroom.impl.configureroom.RoomVisibilityState
 import io.element.android.features.enterprise.test.FakeSessionEnterpriseService
+import io.element.android.features.space.test.FakeSpacesSwitch
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
@@ -57,6 +58,7 @@ import io.element.android.libraries.previewutils.room.aSpaceRoom
 import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.analytics.test.FakeAnalyticsService
 import io.element.android.tests.testutils.WarmUpRule
+import io.element.android.tests.testutils.awaitLastSequentialItem
 import io.element.android.tests.testutils.consumeItemsUntilPredicate
 import io.element.android.tests.testutils.lambda.lambdaRecorder
 import io.element.android.tests.testutils.lambda.matching
@@ -510,6 +512,53 @@ class ConfigureRoomPresenterTest : RobolectricTest() {
     }
 
     @Test
+    fun `present - a space can only be created invite-only`() = runTest {
+        val presenter = createConfigureRoomPresenter(isSpace = true, isKnockFeatureEnabled = true)
+        presenter.test {
+            val state = awaitLastSequentialItem()
+            assertThat(state.availableJoinRules).containsExactly(JoinRuleItem.PrivateVisibility.Private)
+            assertThat(state.config.visibilityState).isEqualTo(RoomVisibilityState.Private(JoinRuleItem.PrivateVisibility.Private))
+        }
+    }
+
+    @Test
+    fun `present - the parent space picker follows the Spaces switch`() = runTest {
+        val spacesSwitch = FakeSpacesSwitch(initialValue = false)
+        val presenter = createConfigureRoomPresenter(
+            matrixClient = createMatrixClient(
+                spaceService = FakeSpaceService(editableSpacesResult = { Result.success(listOf(aSpaceRoom())) }),
+            ),
+            spacesSwitch = spacesSwitch,
+        )
+        presenter.test {
+            assertThat(awaitLastSequentialItem().spaces).isEmpty()
+
+            spacesSwitch.setEnabled(true)
+            assertThat(awaitLastSequentialItem().spaces).containsExactly(aSpaceRoom())
+        }
+    }
+
+    @Test
+    fun `present - turning Spaces off clears a parent space picked here`() = runTest {
+        val spacesSwitch = FakeSpacesSwitch(initialValue = true)
+        val presenter = createConfigureRoomPresenter(
+            matrixClient = createMatrixClient(
+                spaceService = FakeSpaceService(editableSpacesResult = { Result.success(listOf(aSpaceRoom())) }),
+            ),
+            spacesSwitch = spacesSwitch,
+        )
+        presenter.test {
+            awaitLastSequentialItem().eventSink(ConfigureRoomEvents.SetParentSpace(aSpaceRoom()))
+            assertThat(awaitLastSequentialItem().config.parentSpace).isEqualTo(aSpaceRoom())
+
+            spacesSwitch.setEnabled(false)
+            val state = awaitLastSequentialItem()
+            assertThat(state.spaces).isEmpty()
+            assertThat(state.config.parentSpace).isNull()
+        }
+    }
+
+    @Test
     fun `present - setting a parent space for a space currently throws an error`() = runTest {
         val presenter = createConfigureRoomPresenter(isSpace = true)
         presenter.test {
@@ -619,6 +668,7 @@ class ConfigureRoomPresenterTest : RobolectricTest() {
             isEncryptionDisabledResult = { false },
             arePublicRoomsDisabledResult = { false },
         ),
+        spacesSwitch: FakeSpacesSwitch = FakeSpacesSwitch(initialValue = true),
     ) = ConfigureRoomPresenter(
         isSpace = isSpace,
         initialParentSpaceId = initialParenSpaceId,
@@ -634,5 +684,6 @@ class ConfigureRoomPresenterTest : RobolectricTest() {
         ),
         mediaOptimizationConfigProvider = mediaOptimizationConfigProvider,
         sessionEnterpriseService = sessionEnterpriseService,
+        spacesSwitch = spacesSwitch,
     )
 }

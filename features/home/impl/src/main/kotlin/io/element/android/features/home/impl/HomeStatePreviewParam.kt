@@ -62,6 +62,7 @@ internal fun aHomeState(
     currentHomeNavigationBarItem: HomeNavigationBarItem = HomeNavigationBarItem.Chats,
     roomListState: RoomListState = aRoomListState(),
     homeSpacesState: HomeSpacesState = aHomeSpacesState(),
+    isSpacesEnabled: Boolean = true,
     canReportBug: Boolean = true,
     showMultiAccountAnnouncement: Boolean = false,
     totalUnreadCount: Int = 0,
@@ -77,5 +78,6 @@ internal fun aHomeState(
     roomListState = roomListState,
     homeSpacesState = homeSpacesState,
     totalUnreadCount = totalUnreadCount,
+    isSpacesEnabled = isSpacesEnabled,
     eventSink = eventSink,
 )

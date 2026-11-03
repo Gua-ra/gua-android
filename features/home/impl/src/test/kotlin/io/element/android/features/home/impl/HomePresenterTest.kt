@@ -18,6 +18,8 @@ import io.element.android.features.home.impl.roomlist.aRoomListState
 import io.element.android.features.home.impl.spaces.HomeSpacesState
 import io.element.android.features.home.impl.spaces.aHomeSpacesState
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
+import io.element.android.features.space.api.SpacesSwitch
+import io.element.android.features.space.test.FakeSpacesSwitch
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.featureflag.api.FeatureFlagService
@@ -322,6 +324,18 @@ class HomePresenterTest {
             assertThat(awaitItem().totalUnreadCount).isEqualTo(5)
         }
     }
+
+    @Test
+    fun `present - with the Spaces switch off, home stays on Chats`() = runTest {
+        val presenter = createHomePresenter(spacesSwitch = FakeSpacesSwitch(initialValue = false))
+        presenter.test {
+            val initialState = awaitItem()
+            assertThat(initialState.isSpacesEnabled).isFalse()
+            initialState.eventSink(HomeEvent.SelectHomeNavigationBarItem(HomeNavigationBarItem.Spaces))
+            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 }
 
 internal fun TestScope.createHomePresenter(
@@ -335,6 +349,7 @@ internal fun TestScope.createHomePresenter(
     announcementService: AnnouncementService = FakeAnnouncementService(),
     featureFlagService: FeatureFlagService = FakeFeatureFlagService(),
     appCoroutineScope: CoroutineScope = backgroundScope,
+    spacesSwitch: SpacesSwitch = FakeSpacesSwitch(initialValue = true),
 ) = HomePresenter(
     client = client,
     syncService = syncService,
@@ -347,4 +362,5 @@ internal fun TestScope.createHomePresenter(
     announcementService = announcementService,
     featureFlagService = featureFlagService,
     appCoroutineScope = appCoroutineScope,
+    spacesSwitch = spacesSwitch,
 )

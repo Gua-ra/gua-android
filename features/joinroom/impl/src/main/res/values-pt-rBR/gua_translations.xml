@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_join_space_action">Ativar Espaços e entrar</string>
+    <string name="gua_join_space_turns_on_spaces">Este é um espaço. Ao entrar, os Espaços são ativados para você ver as conversas dele.</string>
+</resources>

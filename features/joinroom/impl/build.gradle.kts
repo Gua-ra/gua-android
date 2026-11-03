@@ -36,10 +36,12 @@ dependencies {
     implementation(projects.libraries.uiStrings)
     implementation(projects.features.invite.api)
     implementation(projects.features.roomdirectory.api)
+    implementation(projects.features.space.api)
     implementation(projects.services.analytics.api)
 
     testCommonDependencies(libs, true)
     testImplementation(projects.features.invite.test)
+    testImplementation(projects.features.space.test)
     testImplementation(projects.libraries.matrix.test)
     testImplementation(projects.libraries.previewutils)
 }

@@ -21,6 +21,7 @@ import io.element.android.features.preferences.impl.fixtures.FakeIdentityService
 import io.element.android.features.preferences.impl.fixtures.aFactorStatus
 import io.element.android.features.preferences.impl.userstatus.aUserStatusState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
+import io.element.android.features.space.test.FakeSpacesSwitch
 import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
@@ -51,6 +52,7 @@ import io.element.android.libraries.sessionstorage.test.InMemorySessionStore
 import io.element.android.libraries.sessionstorage.test.aSessionData
 import io.element.android.services.analytics.test.FakeAnalyticsService
 import io.element.android.tests.testutils.WarmUpRule
+import io.element.android.tests.testutils.awaitLastSequentialItem
 import io.element.android.tests.testutils.consumeItemsUntilPredicate
 import io.element.android.tests.testutils.test
 import kotlinx.collections.immutable.toImmutableList
@@ -156,6 +158,27 @@ class PreferencesRootPresenterTest {
             val state = consumeItemsUntilPredicate { it.availableThemeOptions.contains(ThemeOption.Black) }.last()
             assertThat(state.availableThemeOptions).isEqualTo(ThemeOption.entries.toImmutableList())
             cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - the Spaces row turns the Spaces switch on`() = runTest {
+        val spacesSwitch = FakeSpacesSwitch(initialValue = false)
+        createPreferencesRootPresenter(spacesSwitch = spacesSwitch).test {
+            val initialState = awaitLastSequentialItem()
+            assertThat(initialState.isSpacesEnabled).isFalse()
+            initialState.eventSink(PreferencesRootEvent.SetSpacesEnabled(true))
+            assertThat(awaitLastSequentialItem().isSpacesEnabled).isTrue()
+            assertThat(spacesSwitch.isEnabled.value).isTrue()
+        }
+    }
+
+    @Test
+    fun `present - opening Settings refreshes the Spaces switch once`() = runTest {
+        val spacesSwitch = FakeSpacesSwitch()
+        createPreferencesRootPresenter(spacesSwitch = spacesSwitch).test {
+            awaitLastSequentialItem()
+            assertThat(spacesSwitch.refreshCount).isEqualTo(1)
         }
     }
 
@@ -477,6 +500,7 @@ class PreferencesRootPresenterTest {
             factorStatusResult = { Result.success(aFactorStatus(hasPin = false)) },
         ),
         buildMeta: BuildMeta = aBuildMeta(),
+        spacesSwitch: FakeSpacesSwitch = FakeSpacesSwitch(),
     ) = PreferencesRootPresenter(
         matrixClient = matrixClient,
         analyticsService = FakeAnalyticsService(),
@@ -494,5 +518,6 @@ class PreferencesRootPresenterTest {
         lockScreenService = lockScreenService,
         identityServiceClient = identityServiceClient,
         buildMeta = buildMeta,
+        spacesSwitch = spacesSwitch,
     )
 }

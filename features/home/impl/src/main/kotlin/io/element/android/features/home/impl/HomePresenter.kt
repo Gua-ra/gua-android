@@ -24,6 +24,7 @@ import io.element.android.features.announcement.api.AnnouncementService
 import io.element.android.features.home.impl.roomlist.RoomListState
 import io.element.android.features.home.impl.spaces.HomeSpacesState
 import io.element.android.features.rageshake.api.RageshakeFeatureAvailability
+import io.element.android.features.space.api.SpacesSwitch
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.designsystem.utils.snackbar.collectSnackbarMessageAsState
@@ -55,6 +56,7 @@ class HomePresenter(
     private val featureFlagService: FeatureFlagService,
     @AppCoroutineScope
     private val appCoroutineScope: CoroutineScope,
+    private val spacesSwitch: SpacesSwitch,
 ) : Presenter<HomeState> {
     private val currentUserWithNeighborsBuilder = CurrentUserWithNeighborsBuilder()
 
@@ -100,10 +102,11 @@ class HomePresenter(
         }
         val roomListState = roomListPresenter.present()
         val homeSpacesState = homeSpacesPresenter.present()
+        val isSpacesEnabled by spacesSwitch.isEnabled.collectAsState()
         var currentHomeNavigationBarItemOrdinal by rememberSaveable { mutableIntStateOf(HomeNavigationBarItem.Chats.ordinal) }
         val currentHomeNavigationBarItem by remember {
             derivedStateOf {
-                HomeNavigationBarItem.from(currentHomeNavigationBarItemOrdinal)
+                if (isSpacesEnabled) HomeNavigationBarItem.from(currentHomeNavigationBarItemOrdinal) else HomeNavigationBarItem.Chats
             }
         }
         LaunchedEffect(Unit) {
@@ -136,6 +139,7 @@ class HomePresenter(
             currentHomeNavigationBarItem = currentHomeNavigationBarItem,
             roomListState = roomListState,
             homeSpacesState = homeSpacesState,
+            isSpacesEnabled = isSpacesEnabled,
             snackbarMessage = snackbarMessage,
             canReportBug = canReportBug,
             showMultiAccountAnnouncement = showMultiAccountAnnouncement,

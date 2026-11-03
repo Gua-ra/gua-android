@@ -455,6 +455,7 @@ interface MatrixClient : ClientUrlContentFetcher {
 
     /**
      * Returns the raw JSON content of the global account data event of type [eventType], or null if it is not set.
+     * GUA FORK: reads the local store, so another device's change appears only after a sync.
      *
      * @param eventType the Matrix event type of the account data to read, for instance `m.direct`.
      */

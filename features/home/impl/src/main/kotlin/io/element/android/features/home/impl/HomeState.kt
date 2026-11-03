@@ -26,6 +26,7 @@ data class HomeState(
     val currentHomeNavigationBarItem: HomeNavigationBarItem,
     val roomListState: RoomListState,
     val homeSpacesState: HomeSpacesState,
+    val isSpacesEnabled: Boolean,
     val snackbarMessage: SnackbarMessage?,
     val canReportBug: Boolean,
     val showMultiAccountAnnouncement: Boolean,

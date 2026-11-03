@@ -47,6 +47,9 @@ interface SpaceService {
      */
     suspend fun editableSpaces(): Result<List<SpaceRoom>>
 
+    /** GUA FORK: read at call time because [topLevelSpacesFlow] can lag behind a sync. */
+    suspend fun topLevelSpaces(): Result<List<SpaceRoom>>
+
     /**
      * Creates a handle to leave a space, which lets the user also pick which of its rooms to leave; the caller must close it.
      *

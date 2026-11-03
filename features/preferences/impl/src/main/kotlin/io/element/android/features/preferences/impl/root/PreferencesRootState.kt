@@ -39,6 +39,7 @@ data class PreferencesRootState(
     // nudge banner only appears on an explicit false.
     val hasAccountStrongFactor: Boolean?,
     val showLocationSettings: Boolean,
+    val isSpacesEnabled: Boolean,
     val snackbarMessage: SnackbarMessage?,
     val eventSink: (PreferencesRootEvent) -> Unit,
 )

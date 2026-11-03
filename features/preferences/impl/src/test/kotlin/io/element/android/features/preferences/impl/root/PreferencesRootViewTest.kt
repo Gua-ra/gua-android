@@ -38,7 +38,10 @@ import io.element.android.tests.testutils.pressBack
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import kotlinx.collections.immutable.toImmutableList
 import org.junit.Test
+import org.robolectric.annotation.Config
 
+// The Spaces row pushes the last rows below a default-height screen.
+@Config(qualifiers = "h1024dp")
 class PreferencesRootViewTest : RobolectricTest() {
     @Test
     fun `clicking on back invokes back callback`() = runAndroidComposeUiTest {

@@ -352,6 +352,13 @@ private fun AppSettingsSection(
         title = stringResource(CommonStrings.common_app_settings),
     ) {
         ListItem(
+            content = { Text(stringResource(id = R.string.gua_preferences_spaces_title)) },
+            supportingContent = { Text(stringResource(id = R.string.gua_preferences_spaces_description)) },
+            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Space())),
+            trailingContent = ListItemContent.Switch(checked = state.isSpacesEnabled),
+            onClick = { state.eventSink(PreferencesRootEvent.SetSpacesEnabled(!state.isSpacesEnabled)) },
+        )
+        ListItem(
             content = { Text(stringResource(id = R.string.screen_notification_settings_title)) },
             leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Notifications())),
             onClick = onOpenNotificationSettings,

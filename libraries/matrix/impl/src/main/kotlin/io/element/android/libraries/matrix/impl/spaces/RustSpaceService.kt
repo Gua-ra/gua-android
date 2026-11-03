@@ -96,6 +96,12 @@ class RustSpaceService(
         }
     }
 
+    override suspend fun topLevelSpaces(): Result<List<SpaceRoom>> = withContext(sessionDispatcher) {
+        runCatchingExceptions {
+            innerSpaceService.topLevelJoinedSpaces().map(spaceRoomMapper::map)
+        }
+    }
+
     override fun getLeaveSpaceHandle(spaceId: RoomId): LeaveSpaceHandle {
         return RustLeaveSpaceHandle(
             id = spaceId,
