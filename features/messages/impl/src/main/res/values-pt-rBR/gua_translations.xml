@@ -28,4 +28,7 @@
         <item quantity="one">%1$d mensagem removida</item>
         <item quantity="other">%1$d mensagens removidas</item>
     </plurals>
+  <string name="gua_action_more">Mais</string>
+  <string name="gua_action_select">Selecionar</string>
+  <string name="gua_message_text_selection_title">Selecionar texto</string>
 </resources>

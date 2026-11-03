@@ -68,6 +68,7 @@ fun MessageEventBubble(
     modifier: Modifier = Modifier,
     customBackgroundColor: Color? = null,
     borderColor: Color? = null,
+    onDoubleClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val clickableModifier = if (isTalkbackActive()) {
@@ -77,6 +78,7 @@ fun MessageEventBubble(
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,
+                onDoubleClick = onDoubleClick,
                 indication = ripple(),
                 interactionSource = interactionSource
             )

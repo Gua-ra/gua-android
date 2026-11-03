@@ -10,11 +10,17 @@
 
 package io.element.android.features.messages.impl
 
+import android.content.Context
+import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -25,6 +31,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performCustomAccessibilityActionWithLabel
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
@@ -38,6 +45,9 @@ import io.element.android.features.messages.impl.actionlist.model.TimelineItemAc
 import io.element.android.features.messages.impl.crypto.sendfailure.VerifiedUserSendFailure
 import io.element.android.features.messages.impl.crypto.sendfailure.resolve.aChangedIdentitySendFailure
 import io.element.android.features.messages.impl.messagecomposer.aMessageComposerState
+import io.element.android.features.messages.impl.messagemenu.MessageMenuEvent
+import io.element.android.features.messages.impl.messagemenu.MessageMenuGesture
+import io.element.android.features.messages.impl.messagemenu.aMessageMenuState
 import io.element.android.features.messages.impl.pinned.banner.PinnedMessagesBannerItem
 import io.element.android.features.messages.impl.pinned.banner.aLoadedPinnedMessagesBannerState
 import io.element.android.features.messages.impl.timeline.FOCUS_ON_PINNED_EVENT_DEBOUNCE_DURATION_IN_MILLIS
@@ -54,6 +64,8 @@ import io.element.android.features.messages.impl.timeline.components.reactionsum
 import io.element.android.features.messages.impl.timeline.components.receipt.aReadReceiptData
 import io.element.android.features.messages.impl.timeline.components.receipt.bottomsheet.ReadReceiptBottomSheetEvent
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemStateContent
+import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemStateEventContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemTextContent
 import io.element.android.features.messages.impl.timeline.sendfailure.SendFailureDialogState
 import io.element.android.features.roomcall.api.aStandByCallState
@@ -87,6 +99,8 @@ import io.element.android.tests.testutils.setSafeContent
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import org.junit.Test
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -175,6 +189,8 @@ class MessagesViewTest : RobolectricTest() {
         )
         // Cannot perform click on "Text", it's not detected. Use tag instead
         onAllNodesWithTag(TestTags.messageBubble.value).onFirst().performClick()
+        // GUA FORK: a text bubble also listens for a double tap, so its single tap lands after the double tap timeout.
+        mainClock.advanceTimeBy(1_000)
         callback.assertSuccess()
     }
 
@@ -202,6 +218,8 @@ class MessagesViewTest : RobolectricTest() {
         )
         // Cannot perform click on "Text", it's not detected. Use tag instead
         onAllNodesWithTag(TestTags.messageBubble.value).onFirst().performClick()
+        // GUA FORK: a text bubble also listens for a double tap, so its single tap lands after the double tap timeout.
+        mainClock.advanceTimeBy(1_000)
         callback.assertSuccess()
     }
 
@@ -232,9 +250,9 @@ class MessagesViewTest : RobolectricTest() {
         userHasPermissionToSendReaction: Boolean = false,
         userCanPinEvent: Boolean = false,
     ) = runAndroidComposeUiTest {
-        val eventsRecorder = EventsRecorder<ActionListEvent>()
+        val eventsRecorder = EventsRecorder<MessageMenuEvent>()
         val state = aMessagesState(
-            actionListState = anActionListState(
+            messageMenuState = aMessageMenuState(
                 eventSink = eventsRecorder
             ),
             userEventPermissions = UserEventPermissions(
@@ -255,6 +273,75 @@ class MessagesViewTest : RobolectricTest() {
         // Cannot perform click on "Text", it's not detected. Use tag instead
         onAllNodesWithTag(TestTags.messageBubble.value).onFirst().performTouchInput { longClick() }
         eventsRecorder.assertSingle(
+            MessageMenuEvent.Show(
+                event = timelineItem,
+                gesture = MessageMenuGesture.LongPress,
+                userEventPermissions = state.userEventPermissions,
+            )
+        )
+    }
+
+    @Test
+    fun `double tapping on a text Event emits the expected Event`() = runAndroidComposeUiTest {
+        val eventsRecorder = EventsRecorder<MessageMenuEvent>()
+        val state = aMessagesState(
+            messageMenuState = aMessageMenuState(eventSink = eventsRecorder),
+            timelineState = aTimelineState(
+                timelineItems = aTimelineItemList(aTimelineItemTextContent()),
+            ),
+        )
+        val timelineItem = state.timelineState.timelineItems.first() as TimelineItem.Event
+        setMessagesView(state = state)
+        onAllNodesWithTag(TestTags.messageBubble.value).onFirst().performTouchInput { doubleClick() }
+        eventsRecorder.assertSingle(
+            MessageMenuEvent.Show(
+                event = timelineItem,
+                gesture = MessageMenuGesture.DoubleTap,
+                userEventPermissions = state.userEventPermissions,
+            )
+        )
+    }
+
+    @Test
+    fun `long clicking on a row without a bubble opens the action sheet`() = runAndroidComposeUiTest {
+        val actionListRecorder = EventsRecorder<ActionListEvent>()
+        val messageMenuRecorder = EventsRecorder<MessageMenuEvent>(expectEvents = false)
+        val state = aMessagesState(
+            actionListState = anActionListState(eventSink = actionListRecorder),
+            messageMenuState = aMessageMenuState(eventSink = messageMenuRecorder),
+            timelineState = aTimelineState(
+                timelineItems = aTimelineItemList(aTimelineItemStateEventContent()),
+            ),
+        )
+        val stateEvent = state.timelineState.timelineItems.filterIsInstance<TimelineItem.Event>().first { it.content is TimelineItemStateContent }
+        setMessagesView(state = state)
+        onAllNodesWithText(aTimelineItemStateEventContent().body).onFirst().performTouchInput { longClick() }
+        actionListRecorder.assertSingle(
+            ActionListEvent.ComputeForMessage(
+                event = stateEvent,
+                userEventPermissions = state.userEventPermissions,
+            )
+        )
+    }
+
+    @Test
+    fun `the message actions accessibility action opens the action sheet with a screen reader`() = runAndroidComposeUiTest {
+        val actionListRecorder = EventsRecorder<ActionListEvent>()
+        val messageMenuRecorder = EventsRecorder<MessageMenuEvent>(expectEvents = false)
+        val state = aMessagesState(
+            actionListState = anActionListState(eventSink = actionListRecorder),
+            messageMenuState = aMessageMenuState(eventSink = messageMenuRecorder),
+            timelineState = aTimelineState(
+                timelineItems = aTimelineItemList(aTimelineItemTextContent()),
+            ),
+        )
+        val timelineItem = state.timelineState.timelineItems.first() as TimelineItem.Event
+        val application = RuntimeEnvironment.getApplication()
+        shadowOf(application.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager).setTouchExplorationEnabled(true)
+        setMessagesView(state = state)
+        val messageActions = application.getString(CommonStrings.common_message_actions)
+        onAllNodes(hasCustomAccessibilityAction(messageActions)).onFirst().performCustomAccessibilityActionWithLabel(messageActions)
+        actionListRecorder.assertSingle(
             ActionListEvent.ComputeForMessage(
                 event = timelineItem,
                 userEventPermissions = state.userEventPermissions,
@@ -829,4 +916,8 @@ private fun AndroidComposeUiTest<ComponentActivity>.setMessagesView(
             )
         }
     }
+}
+
+private fun hasCustomAccessibilityAction(label: String) = SemanticsMatcher("has custom action $label") { node ->
+    node.config.getOrNull(SemanticsActions.CustomActions).orEmpty().any { it.label == label }
 }
