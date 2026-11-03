@@ -243,6 +243,7 @@ Compose:
       - LocalSdkIntVersionProvider
       - LocalTimelineEventRendererConfig
       - LocalMessageMenuController
+      - LocalChatBackgroundActive
   CompositionLocalNaming:
     active: true
   ContentEmitterReturningValues:
