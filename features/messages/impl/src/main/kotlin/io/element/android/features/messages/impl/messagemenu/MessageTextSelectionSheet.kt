@@ -13,7 +13,6 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -60,7 +59,7 @@ import kotlinx.coroutines.launch
 
 private const val SHOW_TOOLBAR_DELAY_MILLIS = 400L
 internal val EDIT_MENU_SPACE = 56.dp
-private val SELECTION_HANDLE_SPACE = 32.dp
+internal val SELECTION_HANDLE_SPACE = 32.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,7 +69,7 @@ fun MessageTextSelectionSheet(
     modifier: Modifier = Modifier,
 ) {
     if (text == null) return
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -145,7 +144,6 @@ internal fun SelectableText(text: String) {
         onTextLayout = { getResult -> textLayout = getResult },
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
             // The platform edit menu floats 56 dp above the selection, and the selection handles hang 25 dp below it.
             .padding(start = 16.dp, top = EDIT_MENU_SPACE, end = 16.dp, bottom = SELECTION_HANDLE_SPACE)
             .onGloballyPositioned { coordinates = it }

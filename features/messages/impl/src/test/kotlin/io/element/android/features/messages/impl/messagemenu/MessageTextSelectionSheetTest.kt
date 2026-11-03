@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.platform.LocalTextToolbar
 import androidx.compose.ui.platform.TextToolbar
 import androidx.compose.ui.platform.TextToolbarStatus
@@ -41,6 +42,7 @@ import io.element.android.tests.testutils.robolectric.RobolectricTest
 import io.element.android.tests.testutils.setSafeContent
 import org.junit.Test
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 
 class MessageTextSelectionSheetTest : RobolectricTest() {
     private val text = "Me mudei pra Floripa ano passado, tô morando de frente pro mar agora"
@@ -65,6 +67,21 @@ class MessageTextSelectionSheetTest : RobolectricTest() {
             }
             clickOn(CommonStrings.action_done)
             mainClock.advanceTimeBy(1_000)
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "w800dp-h360dp-land")
+    fun `in a short window the sheet opens fully, with room below the text for the selection handles`() = runAndroidComposeUiTest {
+        setSafeContent {
+            MessageTextSelectionSheet(text = text, onDismiss = EnsureNeverCalled())
+        }
+        mainClock.advanceTimeBy(1_000)
+
+        val field = onNode(isEditableText).fetchSemanticsNode()
+        val windowHeight = field.layoutInfo.coordinates.findRootCoordinates().size.height
+        with(density) {
+            assertThat(field.boundsInRoot.bottom + SELECTION_HANDLE_SPACE.toPx()).isAtMost(windowHeight + 1f)
         }
     }
 
