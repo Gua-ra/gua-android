@@ -537,8 +537,9 @@ private fun ActionRow(
         )
         is MessageMenuAction.Timeline -> {
             val tint = if (action.action.destructive) ElementTheme.colors.iconCriticalPrimary else ElementTheme.colors.iconPrimary
+            val titleRes = if (action.action == TimelineItemAction.Redact) CommonStrings.action_remove_message else action.action.titleRes
             MenuRow(
-                title = stringResource(action.action.titleRes),
+                title = stringResource(titleRes),
                 icon = { Icon(resourceId = action.action.icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp)) },
                 isDestructive = action.action.destructive,
                 onClick = onClick,

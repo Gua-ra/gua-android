@@ -14,6 +14,7 @@ import io.element.android.features.messages.impl.timeline.model.event.TimelineIt
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRedactedContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemImageContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemPollContent
+import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSendState
 import org.junit.Test
 
 class CanDoubleTapToReactTest {
@@ -35,6 +36,11 @@ class CanDoubleTapToReactTest {
         assertThat(aMessageEvent(content = aTimelineItemImageContent()).canDoubleTapToReact(canSendReaction = true)).isFalse()
         assertThat(aMessageEvent(content = aTimelineItemPollContent()).canDoubleTapToReact(canSendReaction = true)).isFalse()
         assertThat(aMessageEvent(content = TimelineItemRedactedContent).canDoubleTapToReact(canSendReaction = true)).isFalse()
+    }
+
+    @Test
+    fun `a message that failed to send keeps its taps`() {
+        assertThat(aMessageEvent(sendState = LocalEventSendState.Failed.Unknown("error")).canDoubleTapToReact(canSendReaction = true)).isFalse()
     }
 
     @Test

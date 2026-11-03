@@ -57,7 +57,7 @@ class MessageMenuOverlayTest : RobolectricTest() {
         onNodeWithText(string(CommonStrings.action_copy_text)).assertIsDisplayed()
         onNodeWithText(string(R.string.gua_action_select)).assertIsDisplayed()
         onNodeWithText(string(R.string.gua_action_more)).assertIsDisplayed()
-        onNodeWithText(string(CommonStrings.action_remove)).assertIsDisplayed()
+        onNodeWithText(string(CommonStrings.action_remove_message)).assertIsDisplayed()
         onNodeWithText(MessageQuickReactions.defaults.first()).assertIsDisplayed()
         assertNoNodeWithText(CommonStrings.action_pin)
     }

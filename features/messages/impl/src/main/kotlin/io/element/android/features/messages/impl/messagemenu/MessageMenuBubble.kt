@@ -36,7 +36,7 @@ private const val LIFT_DELAY_MILLIS = 250L
 private const val LIFTED_SCALE = 1.05f
 
 fun TimelineItem.Event.canDoubleTapToReact(canSendReaction: Boolean): Boolean {
-    return canSendReaction && content is TimelineItemTextBasedContent && content.canReact()
+    return canSendReaction && !failedToSend && content is TimelineItemTextBasedContent && content.canReact()
 }
 
 fun Modifier.messageMenuBubble(

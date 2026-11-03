@@ -40,9 +40,20 @@ data class MessageMenuSections(
                 }
             }
 
+            // Without threads, a reply inside a thread only offers Reply in thread, and it takes the place of Reply.
+            val repliesOnlyInThread = TimelineItemAction.Reply !in actions
+
+            fun placementOf(action: MessageMenuAction): Placement? {
+                return if (repliesOnlyInThread && action == MessageMenuAction.Timeline(TimelineItemAction.ReplyInThread)) {
+                    Placement(Section.Primary, 1)
+                } else {
+                    action.placement
+                }
+            }
+
             fun section(section: Section): ImmutableList<MessageMenuAction> {
                 return menuActions
-                    .mapNotNull { action -> action.placement?.takeIf { it.section == section }?.let { action to it.order } }
+                    .mapNotNull { action -> placementOf(action)?.takeIf { it.section == section }?.let { action to it.order } }
                     .sortedBy { it.second }
                     .map { it.first }
                     .toImmutableList()

@@ -21,6 +21,7 @@ import io.element.android.features.messages.impl.actionlist.ActionListEvent
 import io.element.android.features.messages.impl.actionlist.ActionListPresenter
 import io.element.android.features.messages.impl.actionlist.ActionListState
 import io.element.android.features.messages.impl.actionlist.model.TimelineItemActionPostProcessor
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEncryptedContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemTextBasedContent
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.di.RoomScope
@@ -100,7 +101,8 @@ class DefaultMessageMenuPresenter(
         val computed = actionListTarget as? ActionListState.Target.Success
         if (computed == null || computed.event.id != request.eventId) return MessageMenuState.Target.None
         val event = computed.event
-        val reactions = if (computed.displayEmojiReactions) MessageQuickReactions.build(computed.recentEmojis) else persistentListOf()
+        val isReactable = computed.displayEmojiReactions && !event.failedToSend && event.content !is TimelineItemEncryptedContent
+        val reactions = if (isReactable) MessageQuickReactions.build(computed.recentEmojis) else persistentListOf()
         val sections = when (request.gesture) {
             MessageMenuGesture.DoubleTap -> MessageMenuSections.Empty
             MessageMenuGesture.LongPress -> MessageMenuSections.from(computed.actions)

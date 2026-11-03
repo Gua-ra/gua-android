@@ -115,6 +115,19 @@ class MessageMenuSectionsTest {
     }
 
     @Test
+    fun `a reply inside a thread without threads takes the place of Reply`() {
+        val sections = MessageMenuSections.from(listOf(TimelineItemAction.ReplyInThread, TimelineItemAction.CopyText, TimelineItemAction.Redact))
+
+        assertThat(sections.primary).containsExactly(
+            MessageMenuAction.Timeline(TimelineItemAction.ReplyInThread),
+            MessageMenuAction.Timeline(TimelineItemAction.CopyText),
+            MessageMenuAction.Select,
+        ).inOrder()
+        assertThat(sections.more).isEmpty()
+        assertThat(sections.destructive).containsExactly(MessageMenuAction.Timeline(TimelineItemAction.Redact))
+    }
+
+    @Test
     fun `a poll can be ended from More`() {
         val sections = MessageMenuSections.from(listOf(TimelineItemAction.EndPoll, TimelineItemAction.EditPoll, TimelineItemAction.Redact))
 

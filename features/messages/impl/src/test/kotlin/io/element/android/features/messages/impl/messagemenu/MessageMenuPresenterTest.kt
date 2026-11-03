@@ -20,8 +20,10 @@ import io.element.android.features.messages.impl.timeline.model.AggregatedReacti
 import io.element.android.features.messages.impl.timeline.model.AggregatedReactionSender
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.TimelineItemReactions
+import io.element.android.features.messages.impl.timeline.model.TimelineItemThreadInfo
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRedactedContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemTextContent
+import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemEncryptedContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemImageContent
 import io.element.android.libraries.dateformatter.test.FakeDateFormatter
 import io.element.android.libraries.emoji.api.recentemojis.GetRecentEmojis
@@ -30,6 +32,9 @@ import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.room.BaseRoom
 import io.element.android.libraries.matrix.api.room.RoomMembersState
 import io.element.android.libraries.matrix.api.timeline.Timeline
+import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSendState
+import io.element.android.libraries.matrix.test.A_THREAD_ID
+import io.element.android.libraries.matrix.test.A_TRANSACTION_ID
 import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.matrix.test.room.FakeBaseRoom
 import io.element.android.libraries.matrix.test.room.aRoomMember
@@ -129,6 +134,42 @@ class MessageMenuPresenterTest {
 
             val states = consumeItemsUntilTimeout()
             assertThat(states.map { it.target }.filterIsInstance<MessageMenuState.Target.Shown>()).isEmpty()
+        }
+    }
+
+    @Test
+    fun `present - a long press on a message that failed to send shows its actions without reactions`() = runTest {
+        createMessageMenuPresenter().test {
+            val event = aMessageEvent(eventId = null, transactionId = A_TRANSACTION_ID, sendState = LocalEventSendState.Failed.Unknown("error"))
+            awaitItem().eventSink(MessageMenuEvent.Show(event, MessageMenuGesture.LongPress, permissions))
+
+            val target = awaitShown()
+            assertThat(target.reactions).isEmpty()
+            assertThat(target.sections.primary).contains(MessageMenuAction.Timeline(TimelineItemAction.CopyText))
+        }
+    }
+
+    @Test
+    fun `present - a long press on a message that could not be decrypted shows its actions without reactions`() = runTest {
+        createMessageMenuPresenter().test {
+            val event = aMessageEvent(isMine = false, isEditable = false, content = aTimelineItemEncryptedContent())
+            awaitItem().eventSink(MessageMenuEvent.Show(event, MessageMenuGesture.LongPress, permissions))
+
+            val target = awaitShown()
+            assertThat(target.reactions).isEmpty()
+            assertThat(target.sections.isEmpty).isFalse()
+        }
+    }
+
+    @Test
+    fun `present - a long press on a reply inside a thread offers Reply in thread in the main list`() = runTest {
+        createMessageMenuPresenter().test {
+            val event = aMessageEvent(isMine = false, isEditable = false, threadInfo = TimelineItemThreadInfo.ThreadResponse(threadRootId = A_THREAD_ID))
+            awaitItem().eventSink(MessageMenuEvent.Show(event, MessageMenuGesture.LongPress, permissions))
+
+            val target = awaitShown()
+            assertThat(target.sections.primary.first()).isEqualTo(MessageMenuAction.Timeline(TimelineItemAction.ReplyInThread))
+            assertThat(target.sections.more).doesNotContain(MessageMenuAction.Timeline(TimelineItemAction.ReplyInThread))
         }
     }
 
