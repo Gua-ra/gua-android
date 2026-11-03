@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 
 private val BACKDROP_BLUR_RADIUS = 16.dp
@@ -37,11 +38,15 @@ fun MessageMenuHost(
 fun Modifier.messageMenuBackdrop(
     controller: MessageMenuController,
     isMenuShown: Boolean,
-): Modifier = if (isMenuShown && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-    graphicsLayer {
-        val radius = BACKDROP_BLUR_RADIUS.toPx() * controller.progress.value
-        renderEffect = if (radius > 0f) BlurEffect(radius, radius, TileMode.Clamp) else null
+): Modifier {
+    if (!isMenuShown) return this
+    val hidden = clearAndSetSemantics {}
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        hidden.graphicsLayer {
+            val radius = BACKDROP_BLUR_RADIUS.toPx() * controller.progress.value
+            renderEffect = if (radius > 0f) BlurEffect(radius, radius, TileMode.Clamp) else null
+        }
+    } else {
+        hidden
     }
-} else {
-    this
 }

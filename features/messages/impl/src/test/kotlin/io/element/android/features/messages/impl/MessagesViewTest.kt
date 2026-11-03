@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -56,6 +57,9 @@ import io.element.android.features.messages.impl.crypto.sendfailure.resolve.aCha
 import io.element.android.features.messages.impl.messagecomposer.aMessageComposerState
 import io.element.android.features.messages.impl.messagemenu.MessageMenuEvent
 import io.element.android.features.messages.impl.messagemenu.MessageMenuGesture
+import io.element.android.features.messages.impl.messagemenu.MessageMenuSections
+import io.element.android.features.messages.impl.messagemenu.MessageMenuState
+import io.element.android.features.messages.impl.messagemenu.MessageQuickReactions
 import io.element.android.features.messages.impl.messagemenu.aMessageMenuState
 import io.element.android.features.messages.impl.pinned.banner.PinnedMessagesBannerItem
 import io.element.android.features.messages.impl.pinned.banner.aLoadedPinnedMessagesBannerState
@@ -313,6 +317,31 @@ class MessagesViewTest : RobolectricTest() {
                 userEventPermissions = state.userEventPermissions,
             )
         )
+    }
+
+    @Test
+    fun `while the message menu is open, only the menu is visible to accessibility services`() = runAndroidComposeUiTest {
+        val timelineItems = aTimelineItemList(aTimelineItemTextContent())
+        val state = aMessagesState(
+            messageMenuState = aMessageMenuState(
+                target = MessageMenuState.Target.Shown(
+                    event = timelineItems.first() as TimelineItem.Event,
+                    gesture = MessageMenuGesture.DoubleTap,
+                    reactions = MessageQuickReactions.defaults,
+                    highlightedReactions = persistentListOf(),
+                    sections = MessageMenuSections.Empty,
+                    reactionRows = persistentListOf(),
+                ),
+            ),
+            timelineState = aTimelineState(timelineItems = timelineItems),
+        )
+        setMessagesView(state = state)
+        val activity = requireNotNull(activity)
+
+        onNodeWithContentDescription(activity.getString(CommonStrings.a11y_react_with_other_emojis)).assertExists()
+        onNodeWithContentDescription(activity.getString(CommonStrings.action_back)).assertDoesNotExist()
+        onNodeWithText(state.roomName.orEmpty()).assertDoesNotExist()
+        onAllNodesWithTag(TestTags.messageBubble.value).assertCountEquals(0)
     }
 
     @Test
