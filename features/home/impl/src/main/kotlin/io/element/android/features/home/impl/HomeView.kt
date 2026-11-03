@@ -96,7 +96,7 @@ fun HomeView(
     val firstThrottler = remember { FirstThrottler(300, coroutineScope) }
     val roomListEventSink: (RoomListEvent) -> Unit = { event ->
         if (event is RoomListEvent.AcceptInvite && event.roomSummary.isSpace && !state.isSpacesEnabled) {
-            if (firstThrottler.canHandle()) onRoomClick(event.roomSummary.roomId)
+            if (firstThrottler.canHandle()) onRoomClick(event.roomSummary.roomId, null)
         } else {
             state.eventSink(event)
         }
