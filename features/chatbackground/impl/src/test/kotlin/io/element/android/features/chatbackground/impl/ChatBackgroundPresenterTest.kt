@@ -195,18 +195,33 @@ class ChatBackgroundPresenterTest : RobolectricTest() {
 
     @Test
     fun `without permission nothing can be set or removed`() = runTest {
+        val service = FakeChatBackgroundService(ChatBackground.Preset(ChatBackgroundPreset.Sky))
+        var processedPhotos = 0
         val presenter = createPresenter(
-            service = FakeChatBackgroundService(ChatBackground.Preset(ChatBackgroundPreset.Sky)),
+            service = service,
+            pickerProvider = FakePickerProvider().apply { givenResult(aPhotoUri) },
+            photoProcessor = FakeChatBackgroundPhotoProcessor {
+                processedPhotos++
+                Result.success(aChatBackgroundPhotoUpload())
+            },
             canSendBackground = false,
         )
 
         presenter.test {
-            val state = consumeItemsUntilPredicate { it.current != ChatBackground.None }.last()
+            val state = awaitItem()
+            assertThat(state.current).isEqualTo(ChatBackground.Preset(ChatBackgroundPreset.Sky))
             assertThat(state.canChange).isFalse()
             assertThat(state.canRemove).isFalse()
             state.eventSink(ChatBackgroundEvent.SelectPreset(ChatBackgroundPreset.Night))
-            assertThat(awaitItem().canSet).isFalse()
+            val selected = awaitItem()
+            assertThat(selected.canSet).isFalse()
+            selected.eventSink(ChatBackgroundEvent.Apply)
+            selected.eventSink(ChatBackgroundEvent.Remove)
+            selected.eventSink(ChatBackgroundEvent.ChoosePhoto)
+            expectNoEvents()
         }
+        assertThat(service.sentBackgrounds).isEmpty()
+        assertThat(processedPhotos).isEqualTo(0)
     }
 
     private fun createPresenter(

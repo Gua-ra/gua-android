@@ -70,6 +70,7 @@ private const val NUDGE = 0.1
 @Composable
 internal fun ChatBackgroundPhotoPreviewView(
     draft: ChatBackgroundPhotoDraft,
+    canSet: Boolean,
     eventSink: (ChatBackgroundEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -123,6 +124,7 @@ internal fun ChatBackgroundPhotoPreviewView(
                 Button(
                     text = stringResource(R.string.gua_chat_background_action_set),
                     onClick = { eventSink(ChatBackgroundEvent.Apply) },
+                    enabled = canSet,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -220,6 +222,7 @@ internal fun ChatBackgroundPhotoPreviewViewPreview(@PreviewParameter(ChatBackgro
     ElementPreview {
         ChatBackgroundPhotoPreviewView(
             draft = draft,
+            canSet = true,
             eventSink = {},
         )
     }

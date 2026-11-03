@@ -109,6 +109,14 @@ class ChatBackgroundViewTest : RobolectricTest() {
             listOf(ChatBackgroundEvent.SetDarkPreview(true), ChatBackgroundEvent.Apply, ChatBackgroundEvent.DiscardPhoto)
         )
     }
+
+    @Test
+    fun `without permission the photo preview cannot set the photo`() = runAndroidComposeUiTest {
+        setChatBackgroundView(
+            aChatBackgroundState(photoDraft = aChatBackgroundPhotoDraft(), canChange = false, eventSink = EventsRecorder(expectEvents = false))
+        )
+        clickOn(R.string.gua_chat_background_action_set)
+    }
 }
 
 private fun AndroidComposeUiTest<ComponentActivity>.scrollToAndClick(@StringRes res: Int) {

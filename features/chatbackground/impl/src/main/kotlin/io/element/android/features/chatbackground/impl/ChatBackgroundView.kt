@@ -73,6 +73,7 @@ fun ChatBackgroundView(
         BackHandler { state.eventSink(ChatBackgroundEvent.DiscardPhoto) }
         ChatBackgroundPhotoPreviewView(
             draft = draft,
+            canSet = state.canChange,
             eventSink = state.eventSink,
             modifier = modifier,
         )
