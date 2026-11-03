@@ -364,7 +364,7 @@ class IncomingVerificationPresenterTest {
             dismissedSignInStore = dismissedSignInStore,
         ).test {
             val initialState = awaitItem()
-            initialState.eventSink(IncomingVerificationViewEvents.IgnoreVerification)
+            initialState.eventSink(IncomingVerificationViewEvent.IgnoreVerification)
             skipItems(1)
             runCurrent()
             navigatorLambda.assertions().isCalledOnce()
@@ -383,7 +383,7 @@ class IncomingVerificationPresenterTest {
             dismissedSignInStore = dismissedSignInStore,
         ).test {
             val initialState = awaitItem()
-            initialState.eventSink(IncomingVerificationViewEvents.IgnoreVerification)
+            initialState.eventSink(IncomingVerificationViewEvent.IgnoreVerification)
             skipItems(1)
             runCurrent()
             navigatorLambda.assertions().isCalledOnce()
@@ -404,7 +404,7 @@ class IncomingVerificationPresenterTest {
         createPresenter(service = service).test {
             val initialState = awaitItem()
             advanceTimeBy(1.seconds)
-            initialState.eventSink(IncomingVerificationViewEvents.StartVerification)
+            initialState.eventSink(IncomingVerificationViewEvent.StartVerification)
             skipItems(1)
             awaitItem()
             advanceTimeBy(1.seconds)
@@ -437,7 +437,7 @@ class IncomingVerificationPresenterTest {
         createPresenter(verificationRequest = anIncomingUserVerificationRequest(), service = service).test {
             val initialState = awaitItem()
             advanceTimeBy(1.seconds)
-            initialState.eventSink(IncomingVerificationViewEvents.StartVerification)
+            initialState.eventSink(IncomingVerificationViewEvent.StartVerification)
             skipItems(1)
             awaitItem()
             advanceTimeBy(1.seconds)
