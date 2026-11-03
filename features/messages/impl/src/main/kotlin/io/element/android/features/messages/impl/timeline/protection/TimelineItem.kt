@@ -11,6 +11,7 @@ package io.element.android.features.messages.impl.timeline.protection
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemAttachmentsContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemAudioContent
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemChatBackgroundContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEmoteContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEncryptedContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemFileContent
@@ -56,6 +57,7 @@ fun TimelineItem.mustBeProtected(): Boolean {
                     TimelineItemRedactedContent,
                     is TimelineItemProfileChangeContent,
                     is TimelineItemRoomMembershipContent,
+                    is TimelineItemChatBackgroundContent,
                     is TimelineItemStateEventContent,
                     is TimelineItemEmoteContent,
                     is TimelineItemNoticeContent,

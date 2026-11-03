@@ -83,6 +83,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.collections.immutable)
     implementation(libs.androidx.lifecycle.process)
+    implementation(libs.serialization.json)
 
     testCommonDependencies(libs)
     testImplementation(projects.features.enterprise.test)

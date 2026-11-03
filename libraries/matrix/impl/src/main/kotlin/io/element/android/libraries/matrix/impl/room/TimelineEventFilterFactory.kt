@@ -47,12 +47,8 @@ class RustTimelineEventFilterFactory : TimelineEventFilterFactory {
             emptyList()
         }
 
-        // Exclude any custom state events not supported by the SDK
-        val customStateEventsFilter = listOf(TimelineEventCondition.AnyCustomStateEvent)
-        return if (excludedEventTypes.isNotEmpty() || excludedMembershipChanges.isNotEmpty()) {
-            TimelineEventFilter.Exclude(customStateEventsFilter + excludedEventTypes + excludedMembershipChanges)
-        } else {
-            TimelineEventFilter.Exclude(customStateEventsFilter)
-        }
+        // GUA FORK: custom state events are not excluded here, because an exclude filter cannot keep Gua's chat background
+        // notice. TimelineItemEventFactory drops every other custom state event instead.
+        return TimelineEventFilter.Exclude(excludedEventTypes + excludedMembershipChanges)
     }
 }
