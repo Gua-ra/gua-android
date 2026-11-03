@@ -12,6 +12,7 @@ import androidx.compose.runtime.Immutable
 import io.element.android.features.leaveroom.api.LeaveRoomState
 import io.element.android.features.roomcall.api.RoomCallState
 import io.element.android.features.userprofile.api.UserProfileState
+import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.matrix.api.core.RoomAlias
 import io.element.android.libraries.matrix.api.core.RoomId
@@ -53,6 +54,8 @@ data class RoomDetailsState(
     val roomVersion: String?,
     val roomHistoryVisibility: RoomHistoryVisibility,
     val hasNewContent: Boolean,
+    /** Null hides the Background row. */
+    val chatBackgroundRow: ChatBackgroundRowState?,
     val eventSink: (RoomDetailsEvent) -> Unit
 ) {
     val roomBadges = buildList {
@@ -74,6 +77,11 @@ data class RoomDetailsState(
         }
     }.toImmutableList()
 }
+
+data class ChatBackgroundRowState(
+    val background: ChatBackground,
+    val canChange: Boolean,
+)
 
 @Immutable
 sealed interface RoomDetailsType {

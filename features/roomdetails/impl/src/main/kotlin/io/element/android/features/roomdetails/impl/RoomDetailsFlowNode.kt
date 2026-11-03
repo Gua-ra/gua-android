@@ -27,6 +27,7 @@ import io.element.android.annotations.ContributesNode
 import io.element.android.appconfig.LearnMoreConfig
 import io.element.android.features.call.api.CallData
 import io.element.android.features.call.api.ElementCallEntryPoint
+import io.element.android.features.chatbackground.api.ChatBackgroundEntryPoint
 import io.element.android.features.knockrequests.api.list.KnockRequestsListEntryPoint
 import io.element.android.features.messages.api.MessagesEntryPoint
 import io.element.android.features.poll.api.history.PollHistoryEntryPoint
@@ -87,6 +88,7 @@ class RoomDetailsFlowNode(
     private val rolesAndPermissionsEntryPoint: RolesAndPermissionsEntryPoint,
     private val securityAndPrivacyEntryPoint: SecurityAndPrivacyEntryPoint,
     private val roomDetailsEditEntryPoint: RoomDetailsEditEntryPoint,
+    private val chatBackgroundEntryPoint: ChatBackgroundEntryPoint,
 ) : BaseFlowNode<RoomDetailsFlowNode.NavTarget>(
     backstack = BackStack(
         initialElement = plugins.filterIsInstance<RoomDetailsEntryPoint.Params>().first().initialElement.toNavTarget(),
@@ -149,6 +151,9 @@ class RoomDetailsFlowNode(
 
         @Parcelize
         data object SelectNewOwnersWhenLeaving : NavTarget
+
+        @Parcelize
+        data object ChatBackground : NavTarget
     }
 
     private val callback: RoomDetailsEntryPoint.Callback = callback()
@@ -244,6 +249,10 @@ class RoomDetailsFlowNode(
 
                     override fun navigateToSelectNewOwnersWhenLeaving() {
                         backstack.push(NavTarget.SelectNewOwnersWhenLeaving)
+                    }
+
+                    override fun navigateToChatBackground() {
+                        backstack.push(NavTarget.ChatBackground)
                     }
                 }
                 createNode<RoomDetailsNode>(buildContext, listOf(roomDetailsCallback))
@@ -465,6 +474,18 @@ class RoomDetailsFlowNode(
                     parentNode = this,
                     buildContext = buildContext,
                     roomId = room.roomId,
+                )
+            }
+
+            NavTarget.ChatBackground -> {
+                chatBackgroundEntryPoint.createNode(
+                    parentNode = this,
+                    buildContext = buildContext,
+                    callback = object : ChatBackgroundEntryPoint.Callback {
+                        override fun onDone() {
+                            backstack.pop()
+                        }
+                    },
                 )
             }
 
