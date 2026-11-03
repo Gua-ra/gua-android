@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+  <string name="gua_chat_background_preset_aurora">Aurora</string>
+  <string name="gua_chat_background_preset_mint">Menta</string>
+  <string name="gua_chat_background_preset_sky">Cielo</string>
+  <string name="gua_chat_background_preset_sand">Arena</string>
+  <string name="gua_chat_background_preset_blush">Rosa</string>
+  <string name="gua_chat_background_preset_lavender">Lavanda</string>
+  <string name="gua_chat_background_preset_graphite">Grafito</string>
+  <string name="gua_chat_background_preset_sunset">Atardecer</string>
+  <string name="gua_chat_background_preset_ocean">Océano</string>
+  <string name="gua_chat_background_preset_night">Noche</string>
+</resources>
