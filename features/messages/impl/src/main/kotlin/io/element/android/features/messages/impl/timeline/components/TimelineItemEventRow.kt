@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.absoluteOffset
@@ -573,6 +574,7 @@ private fun TimelineItemEventRowContent(
                     }
                     .offset(selectionIndicatorOffset)
                     .padding(start = 16.dp)
+                    .legibilityCapsule(RoundedCornerShape(6.dp), PaddingValues(0.dp))
                     .size(24.dp),
             )
         }
@@ -683,6 +685,7 @@ private fun TimelineItemEventRowContent(
                 contentDescription = stringResource(CommonStrings.common_pinned),
                 tint = ElementTheme.colors.iconTertiary,
                 modifier = Modifier
+                    .legibilityCapsule(CircleShape, PaddingValues(0.dp))
                     .padding(1.dp)
                     .size(16.dp)
                     .constrainAs(pinIcon) {

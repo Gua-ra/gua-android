@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
+import io.element.android.libraries.designsystem.chatbackground.legibleTextColor
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Text
@@ -66,7 +67,7 @@ fun SenderName(
                             .alignByBaseline(),
                         text = userStatus.toEmojiText(),
                         style = ElementTheme.typography.fontBodyMdMedium,
-                        color = ElementTheme.colors.textSecondary,
+                        color = legibleTextColor(ElementTheme.colors.textSecondary),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -124,11 +125,16 @@ private fun RowScope.SecondaryText(
         SenderNameMode.ActionList,
         SenderNameMode.Reply -> Modifier
     }
+    val color = when (mode) {
+        is SenderNameMode.Timeline -> legibleTextColor(ElementTheme.colors.textSecondary)
+        SenderNameMode.ActionList,
+        SenderNameMode.Reply -> ElementTheme.colors.textSecondary
+    }
     Text(
         modifier = modifier.clipToBounds(),
         text = text,
         style = style,
-        color = ElementTheme.colors.textSecondary,
+        color = color,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
