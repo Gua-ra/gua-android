@@ -155,8 +155,10 @@ private fun PhotoBackground(
         if (!hasFailed) {
             val context = LocalContext.current
             val request = remember(photo.url, widthPx, heightPx) {
+                // Downloaded to a file, not into memory, so Coil decodes it downsampled; the declared size is not trusted.
+                val kind = MediaRequestData.Kind.File(fileName = "chat-background", mimeType = photo.mimetype, maxBytes = ChatBackground.Photo.MAX_SIZE)
                 ImageRequest.Builder(context)
-                    .data(MediaRequestData(MediaSource(photo.url), MediaRequestData.Kind.Content))
+                    .data(MediaRequestData(MediaSource(photo.url), kind))
                     .size(widthPx, heightPx)
                     .build()
             }

@@ -30,6 +30,9 @@ sealed interface ChatBackground {
             const val DEFAULT_DIM = 0.35
             const val MAX_DIM = 0.8
             const val DEFAULT_ALIGN = 0.5
+
+            /** The largest file a photo background may declare, and the most that is downloaded to show one. */
+            const val MAX_SIZE = 20_000_000L
         }
     }
 }

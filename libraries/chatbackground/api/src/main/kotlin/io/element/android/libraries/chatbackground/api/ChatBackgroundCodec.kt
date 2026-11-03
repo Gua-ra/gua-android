@@ -31,7 +31,6 @@ object ChatBackgroundCodec {
     private const val KIND_PRESET = "preset"
     private const val KIND_PHOTO = "photo"
     private const val MAX_DIMENSION = 8192L
-    private const val MAX_SIZE = 20_000_000L
     private const val MAX_BLURHASH_LENGTH = 100
 
     fun decode(contentJson: String?): ChatBackground {
@@ -80,7 +79,7 @@ object ChatBackgroundCodec {
         val mimetype = photo["mimetype"].stringOrNull()?.takeIf { it.startsWith("image/") } ?: return ChatBackground.None
         val width = photo["w"].integerOrNull()?.takeIf { it in 1..MAX_DIMENSION } ?: return ChatBackground.None
         val height = photo["h"].integerOrNull()?.takeIf { it in 1..MAX_DIMENSION } ?: return ChatBackground.None
-        val size = photo["size"].integerOrNull()?.takeIf { it in 1..MAX_SIZE } ?: return ChatBackground.None
+        val size = photo["size"].integerOrNull()?.takeIf { it in 1..ChatBackground.Photo.MAX_SIZE } ?: return ChatBackground.None
         val blurhash = photo["blurhash"].optional { it.stringOrNull()?.takeIf { hash -> hash.length <= MAX_BLURHASH_LENGTH } }
         val dim = photo["dim"].optional { it.numberOrNull()?.coerceIn(0.0, ChatBackground.Photo.MAX_DIM) }
         val align = photo["align"].optional { it as? JsonObject }
