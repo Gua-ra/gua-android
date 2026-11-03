@@ -58,7 +58,7 @@ internal fun aChatBackgroundState(
 )
 
 internal fun aChatBackgroundPhotoDraft(
-    isDarkPreview: Boolean = false,
+    isDarkPreview: Boolean? = false,
     dim: Double = ChatBackground.Photo.DEFAULT_DIM,
     alignX: Double = ChatBackground.Photo.DEFAULT_ALIGN,
 ) = ChatBackgroundPhotoDraft(

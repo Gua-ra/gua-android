@@ -31,8 +31,8 @@ data class ChatBackgroundPhotoDraft(
     val dim: Double = ChatBackground.Photo.DEFAULT_DIM,
     val alignX: Double = ChatBackground.Photo.DEFAULT_ALIGN,
     val alignY: Double = ChatBackground.Photo.DEFAULT_ALIGN,
-    /** Previews the photo as dark mode draws it, the only appearance the dim applies to. */
-    val isDarkPreview: Boolean = false,
+    /** Previews the photo as dark mode draws it, the only appearance the dim applies to. Null follows the app's appearance. */
+    val isDarkPreview: Boolean? = null,
 )
 
 enum class ChatBackgroundOperation {

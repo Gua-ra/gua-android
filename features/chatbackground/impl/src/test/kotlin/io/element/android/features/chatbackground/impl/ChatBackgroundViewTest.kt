@@ -9,6 +9,7 @@
 
 package io.element.android.features.chatbackground.impl
 
+import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.AndroidComposeUiTest
@@ -16,8 +17,10 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performCustomAccessibilityActionWithLabel
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.libraries.architecture.AsyncAction
@@ -107,6 +110,31 @@ class ChatBackgroundViewTest : RobolectricTest() {
         pressBack()
         eventsRecorder.assertList(
             listOf(ChatBackgroundEvent.SetDarkPreview(true), ChatBackgroundEvent.Apply, ChatBackgroundEvent.DiscardPhoto)
+        )
+    }
+
+    @Test
+    fun `screen readers can nudge the photo with the four move actions`() = runAndroidComposeUiTest {
+        val eventsRecorder = EventsRecorder<ChatBackgroundEvent>()
+        setChatBackgroundView(aChatBackgroundState(photoDraft = aChatBackgroundPhotoDraft(), eventSink = eventsRecorder))
+        val context: Context = activity!!
+        val frame = onNodeWithContentDescription(context.getString(R.string.gua_chat_background_position_hint))
+        listOf(
+            R.string.gua_chat_background_a11y_move_left,
+            R.string.gua_chat_background_a11y_move_right,
+            R.string.gua_chat_background_a11y_move_up,
+            R.string.gua_chat_background_a11y_move_down,
+        ).forEach { label ->
+            frame.performCustomAccessibilityActionWithLabel(context.getString(label))
+        }
+        val center = ChatBackground.Photo.DEFAULT_ALIGN
+        eventsRecorder.assertList(
+            listOf(
+                ChatBackgroundEvent.SetPhotoAlign(center - 0.1, center),
+                ChatBackgroundEvent.SetPhotoAlign(center + 0.1, center),
+                ChatBackgroundEvent.SetPhotoAlign(center, center - 0.1),
+                ChatBackgroundEvent.SetPhotoAlign(center, center + 0.1),
+            )
         )
     }
 

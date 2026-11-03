@@ -18,15 +18,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,12 +36,18 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.theme.Theme
@@ -60,13 +68,13 @@ import io.element.android.libraries.designsystem.theme.components.TopAppBar
 import io.element.android.libraries.matrix.ui.chatbackground.chatBackgroundPhotoAlignment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.NumberFormat
 import kotlin.math.max
 import kotlin.math.roundToInt
 
 private const val DIM_STEP = 0.05
 private const val NUDGE = 0.1
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ChatBackgroundPhotoPreviewView(
     draft: ChatBackgroundPhotoDraft,
@@ -74,6 +82,9 @@ internal fun ChatBackgroundPhotoPreviewView(
     eventSink: (ChatBackgroundEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isDarkPreview = draft.isDarkPreview ?: !ElementTheme.isLightTheme
+    val density = LocalDensity.current
+    var controlsHeight by remember { mutableStateOf(0.dp) }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -82,70 +93,106 @@ internal fun ChatBackgroundPhotoPreviewView(
                 navigationIcon = { BackButton(onClick = { eventSink(ChatBackgroundEvent.DiscardPhoto) }) },
             )
         },
-        bottomBar = {
-            Column(
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    SegmentedButton(
-                        index = 0,
-                        count = 2,
-                        selected = !draft.isDarkPreview,
-                        onClick = { eventSink(ChatBackgroundEvent.SetDarkPreview(false)) },
-                        text = stringResource(R.string.gua_chat_background_preview_light),
-                    )
-                    SegmentedButton(
-                        index = 1,
-                        count = 2,
-                        selected = draft.isDarkPreview,
-                        onClick = { eventSink(ChatBackgroundEvent.SetDarkPreview(true)) },
-                        text = stringResource(R.string.gua_chat_background_preview_dark),
-                    )
-                }
-                Text(
-                    text = stringResource(R.string.gua_chat_background_dim),
-                    style = ElementTheme.typography.fontBodyMdMedium,
-                    color = ElementTheme.colors.textPrimary,
-                )
-                Slider(
-                    value = draft.dim.toFloat(),
-                    onValueChange = { eventSink(ChatBackgroundEvent.SetPhotoDim((it / DIM_STEP).roundToInt() * DIM_STEP)) },
-                    valueRange = 0f..ChatBackground.Photo.MAX_DIM.toFloat(),
-                    steps = (ChatBackground.Photo.MAX_DIM / DIM_STEP).roundToInt() - 1,
-                )
-                Text(
-                    text = stringResource(R.string.gua_chat_background_photo_note),
-                    style = ElementTheme.typography.fontBodySmRegular,
-                    color = ElementTheme.colors.textSecondary,
-                )
-                Button(
-                    text = stringResource(R.string.gua_chat_background_action_set),
-                    onClick = { eventSink(ChatBackgroundEvent.Apply) },
-                    enabled = canSet,
-                    modifier = Modifier.fillMaxWidth(),
+    ) { padding ->
+        // The chat's own frame, with the controls drawn over it like the composer, so the photo is cropped exactly as in the chat.
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .consumeWindowInsets(padding)
+                .fillMaxSize(),
+        ) {
+            ElementTheme(theme = if (isDarkPreview) Theme.Dark else Theme.Light, applySystemBarsUpdate = false) {
+                PhotoFrame(
+                    draft = draft,
+                    isDark = isDarkPreview,
+                    bottomInset = controlsHeight,
+                    eventSink = eventSink,
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
-        },
-    ) { padding ->
-        ElementTheme(theme = if (draft.isDarkPreview) Theme.Dark else Theme.Light, applySystemBarsUpdate = false) {
-            PhotoFrame(
+            PreviewControls(
                 draft = draft,
+                isDarkPreview = isDarkPreview,
+                canSet = canSet,
                 eventSink = eventSink,
                 modifier = Modifier
-                    .padding(padding)
-                    .consumeWindowInsets(padding)
-                    .fillMaxSize(),
+                    .align(Alignment.BottomCenter)
+                    .onSizeChanged { controlsHeight = with(density) { it.height.toDp() } },
             )
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PreviewControls(
+    draft: ChatBackgroundPhotoDraft,
+    isDarkPreview: Boolean,
+    canSet: Boolean,
+    eventSink: (ChatBackgroundEvent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val dimLabel = stringResource(R.string.gua_chat_background_dim)
+    val locale = LocalConfiguration.current.locales[0]
+    val dimValue = remember(locale, draft.dim) { NumberFormat.getPercentInstance(locale).format(draft.dim) }
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(ElementTheme.colors.bgCanvasDefault)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            SegmentedButton(
+                index = 0,
+                count = 2,
+                selected = !isDarkPreview,
+                onClick = { eventSink(ChatBackgroundEvent.SetDarkPreview(false)) },
+                text = stringResource(R.string.gua_chat_background_preview_light),
+            )
+            SegmentedButton(
+                index = 1,
+                count = 2,
+                selected = isDarkPreview,
+                onClick = { eventSink(ChatBackgroundEvent.SetDarkPreview(true)) },
+                text = stringResource(R.string.gua_chat_background_preview_dark),
+            )
+        }
+        Text(
+            text = dimLabel,
+            style = ElementTheme.typography.fontBodyMdMedium,
+            color = ElementTheme.colors.textPrimary,
+        )
+        Slider(
+            value = draft.dim.toFloat(),
+            onValueChange = { eventSink(ChatBackgroundEvent.SetPhotoDim((it / DIM_STEP).roundToInt() * DIM_STEP)) },
+            valueRange = 0f..ChatBackground.Photo.MAX_DIM.toFloat(),
+            steps = (ChatBackground.Photo.MAX_DIM / DIM_STEP).roundToInt() - 1,
+            // Without this, TalkBack reads the position within 0 to 80 % as a percentage: 35 % would be "44 percent".
+            modifier = Modifier.semantics {
+                contentDescription = dimLabel
+                stateDescription = dimValue
+            },
+        )
+        Text(
+            text = stringResource(R.string.gua_chat_background_photo_note),
+            style = ElementTheme.typography.fontBodySmRegular,
+            color = ElementTheme.colors.textSecondary,
+        )
+        Button(
+            text = stringResource(R.string.gua_chat_background_action_set),
+            onClick = { eventSink(ChatBackgroundEvent.Apply) },
+            enabled = canSet,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
 @Composable
 private fun PhotoFrame(
     draft: ChatBackgroundPhotoDraft,
+    isDark: Boolean,
+    bottomInset: Dp,
     eventSink: (ChatBackgroundEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -155,6 +202,7 @@ private fun PhotoFrame(
         }
     }
     val currentDraft by rememberUpdatedState(draft)
+    val positionHint = stringResource(R.string.gua_chat_background_position_hint)
     val moveLeft = stringResource(R.string.gua_chat_background_a11y_move_left)
     val moveRight = stringResource(R.string.gua_chat_background_a11y_move_right)
     val moveUp = stringResource(R.string.gua_chat_background_a11y_move_up)
@@ -166,7 +214,9 @@ private fun PhotoFrame(
     BoxWithConstraints(
         modifier = modifier
             .background(ElementTheme.colors.bgCanvasDefault)
-            .semantics {
+            // One focusable item for screen readers, so the nudge actions are reachable and the sample bubbles are not read.
+            .clearAndSetSemantics {
+                contentDescription = positionHint
                 customActions = listOf(
                     CustomAccessibilityAction(moveLeft) { nudge(-NUDGE, 0.0) },
                     CustomAccessibilityAction(moveRight) { nudge(NUDGE, 0.0) },
@@ -197,15 +247,16 @@ private fun PhotoFrame(
             image?.let {
                 Image(bitmap = it, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = alignment)
             } ?: BlurHashImage(blurHash = draft.upload.blurhash, contentScale = ContentScale.Crop)
-            if (draft.isDarkPreview && draft.dim > 0) {
+            if (isDark && draft.dim > 0) {
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = draft.dim.toFloat())))
             }
             ChatBackgroundSampleMessages(isOnBackground = true)
             CompositionLocalProvider(LocalChatBackgroundActive provides true) {
                 Text(
-                    text = stringResource(R.string.gua_chat_background_position_hint),
+                    text = positionHint,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
+                        .padding(bottom = bottomInset)
                         .padding(16.dp)
                         .legibilityCapsule(),
                     style = ElementTheme.typography.fontBodySmMedium,
