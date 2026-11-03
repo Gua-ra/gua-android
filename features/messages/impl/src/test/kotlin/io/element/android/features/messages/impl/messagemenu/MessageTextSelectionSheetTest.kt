@@ -11,17 +11,22 @@ package io.element.android.features.messages.impl.messagemenu
 
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalTextToolbar
 import androidx.compose.ui.platform.TextToolbar
 import androidx.compose.ui.platform.TextToolbarStatus
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.getBoundsInRoot
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
@@ -92,6 +97,28 @@ class MessageTextSelectionSheetTest : RobolectricTest() {
     }
 
     @Test
+    fun `the system edit menu sits on the selected text, with room above it for the menu`() = runAndroidComposeUiTest {
+        val textToolbar = FakeTextToolbar()
+        setSafeContent {
+            CompositionLocalProvider(LocalTextToolbar provides textToolbar) {
+                Box(modifier = Modifier.testTag(AREA_TAG)) {
+                    SelectableText(text = text)
+                }
+            }
+        }
+        mainClock.advanceTimeBy(1_000)
+
+        val area = onNodeWithTag(AREA_TAG).getBoundsInRoot()
+        val field = onNode(isEditableText).getBoundsInRoot()
+        val rect = requireNotNull(textToolbar.rect)
+        with(density) {
+            assertThat((field.top - area.top).value).isAtLeast(EDIT_MENU_SPACE.value - 0.5f)
+            assertThat(rect.top.toDp().value).isWithin(0.5f).of(field.top.value)
+            assertThat(rect.bottom.toDp().value).isAtMost(field.bottom.value + 0.5f)
+        }
+    }
+
+    @Test
     fun `tapping the selection shows the system edit menu again and keeps the selection`() = runAndroidComposeUiTest {
         val textToolbar = FakeTextToolbar()
         setSafeContent {
@@ -111,12 +138,16 @@ class MessageTextSelectionSheetTest : RobolectricTest() {
 }
 
 private val isEditableText = SemanticsMatcher.keyIsDefined(SemanticsProperties.EditableText)
+private const val AREA_TAG = "area"
 
 private class FakeTextToolbar : TextToolbar {
     override var status: TextToolbarStatus = TextToolbarStatus.Hidden
         private set
 
     var onCopyRequested: (() -> Unit)? = null
+        private set
+
+    var rect: Rect? = null
         private set
 
     override fun hide() {
@@ -131,6 +162,7 @@ private class FakeTextToolbar : TextToolbar {
         onSelectAllRequested: (() -> Unit)?,
     ) {
         this.onCopyRequested = onCopyRequested
+        this.rect = rect
         status = TextToolbarStatus.Shown
     }
 }

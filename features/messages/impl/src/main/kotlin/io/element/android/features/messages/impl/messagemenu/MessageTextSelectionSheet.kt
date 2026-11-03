@@ -13,6 +13,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -37,12 +38,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalTextToolbar
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
@@ -56,6 +59,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val SHOW_TOOLBAR_DELAY_MILLIS = 400L
+internal val EDIT_MENU_SPACE = 56.dp
+private val SELECTION_HANDLE_SPACE = 32.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,12 +109,21 @@ internal fun SelectableText(text: String) {
     val clipboard = LocalClipboard.current
     val coroutineScope = rememberCoroutineScope()
     var coordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    var textLayout by remember { mutableStateOf<(() -> TextLayoutResult?)?>(null) }
 
     fun showToolbar() {
-        val bounds = coordinates?.takeIf { it.isAttached }?.boundsInRoot() ?: return
-        if (textFieldState.selection.collapsed) return
+        val fieldCoordinates = coordinates?.takeIf { it.isAttached } ?: return
+        val range = textFieldState.selection
+        if (range.collapsed) return
+        val visibleBounds = fieldCoordinates.boundsInRoot()
+        val selectionBounds = textLayout?.invoke()
+            ?.getPathForRange(range.min, range.max)
+            ?.getBounds()
+            ?.translate(fieldCoordinates.positionInRoot())
+            ?.intersect(visibleBounds)
+            ?.takeUnless { it.isEmpty }
         textToolbar.showMenu(
-            rect = bounds,
+            rect = selectionBounds ?: visibleBounds,
             onCopyRequested = {
                 val selection = textFieldState.selection
                 val selectedText = textFieldState.text.substring(selection.min, selection.max)
@@ -128,9 +142,12 @@ internal fun SelectableText(text: String) {
         readOnly = true,
         textStyle = ElementTheme.typography.fontBodyLgRegular.copy(color = ElementTheme.colors.textPrimary),
         cursorBrush = SolidColor(ElementTheme.colors.textActionAccent),
+        onTextLayout = { getResult -> textLayout = getResult },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .navigationBarsPadding()
+            // The platform edit menu floats 56 dp above the selection, and the selection handles hang 25 dp below it.
+            .padding(start = 16.dp, top = EDIT_MENU_SPACE, end = 16.dp, bottom = SELECTION_HANDLE_SPACE)
             .onGloballyPositioned { coordinates = it }
             .pointerInput(Unit) { detectSelectionTaps(onTap = ::showToolbar, hasSelection = { !textFieldState.selection.collapsed }) }
             .focusRequester(focusRequester),
