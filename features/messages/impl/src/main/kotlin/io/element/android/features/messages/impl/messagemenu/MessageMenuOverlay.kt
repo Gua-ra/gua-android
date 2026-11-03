@@ -53,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -65,9 +66,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.layoutId
-import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -80,6 +79,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.util.lerp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
@@ -261,13 +261,10 @@ private fun MessageMenuLayoutContainer(
     val reactionCount = target.reactions.size
     val limitsDetailsToReactionRows = target.gesture == MessageMenuGesture.DoubleTap
     val insets = WindowInsets.safeDrawing
-    var overlayCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     val lastSource = remember { SourceHolder() }
 
     Layout(
-        modifier = Modifier
-            .fillMaxSize()
-            .onPlaced { overlayCoordinates = it },
+        modifier = Modifier.fillMaxSize(),
         content = {
             Box(Modifier.layoutId(BUBBLE_ID)) { bubble() }
             reactionBar?.let { Box(Modifier.layoutId(REACTION_BAR_ID)) { it() } }
@@ -278,14 +275,9 @@ private fun MessageMenuLayoutContainer(
         controller.positionVersion
         val width = constraints.maxWidth
         val height = constraints.maxHeight
-        val overlay = overlayCoordinates
         val bubbleCoordinates = controller.coordinatesOf(eventId)
-        val source = if (overlay != null && overlay.isAttached && bubbleCoordinates != null) {
-            overlay.localBoundingBoxOf(bubbleCoordinates, clipBounds = false).also { lastSource.rect = it }
-        } else {
-            lastSource.rect
-        }
-        if (source == null) {
+        val sourceSize = bubbleCoordinates?.size?.toSize() ?: lastSource.rect?.size
+        if (sourceSize == null) {
             return@Layout layout(width, height) {}
         }
         val spacing = SPACING.toPx()
@@ -308,7 +300,7 @@ private fun MessageMenuLayoutContainer(
         }
         val barSpace = barSize?.let { it.height + spacing } ?: 0f
         val detailsWidth = min(DETAILS_WIDTH.toPx(), container.width - 2 * margin).coerceAtLeast(0f).roundToInt()
-        val maxDetailsHeight = max(0f, container.height - barSpace - min(source.height, MINIMUM_BUBBLE_HEIGHT.toPx()) - spacing).let {
+        val maxDetailsHeight = max(0f, container.height - barSpace - min(sourceSize.height, MINIMUM_BUBBLE_HEIGHT.toPx()) - spacing).let {
             if (limitsDetailsToReactionRows) min(it, VISIBLE_REACTION_ROWS * REACTION_ROW_HEIGHT.toPx()) else it
         }
         val detailsPlaceable = details?.let {
@@ -316,7 +308,8 @@ private fun MessageMenuLayoutContainer(
                 Constraints(minWidth = detailsWidth, maxWidth = detailsWidth, minHeight = 0, maxHeight = maxDetailsHeight.roundToInt())
             )
         }
-        val menuLayout = MessageMenuLayout.compute(
+
+        fun menuLayoutFor(source: Rect) = MessageMenuLayout.compute(
             source = source,
             alignsRight = alignsRight,
             container = container,
@@ -326,10 +319,20 @@ private fun MessageMenuLayoutContainer(
             margin = margin,
             minimumBubbleHeight = MINIMUM_BUBBLE_HEIGHT.toPx(),
         )
+
+        val bubbleSize = menuLayoutFor(Rect(Offset.Zero, sourceSize)).bubble.size
         val bubblePlaceable = measurables.first { it.layoutId == BUBBLE_ID }.measure(
-            Constraints.fixed(menuLayout.bubble.width.roundToInt().coerceAtLeast(0), menuLayout.bubble.height.roundToInt().coerceAtLeast(0))
+            Constraints.fixed(bubbleSize.width.roundToInt().coerceAtLeast(0), bubbleSize.height.roundToInt().coerceAtLeast(0))
         )
         layout(width, height) {
+            // Resolved while placing, so the lifted bubble is already in place on the overlay's first frame.
+            val overlay = coordinates
+            val source = if (overlay != null && bubbleCoordinates != null && bubbleCoordinates.isAttached) {
+                overlay.localBoundingBoxOf(bubbleCoordinates, clipBounds = false).also { lastSource.rect = it }
+            } else {
+                lastSource.rect
+            } ?: return@layout
+            val menuLayout = menuLayoutFor(source)
             val progress = controller.progress.value
             bubblePlaceable.place(
                 x = lerp(source.left, menuLayout.bubble.left, progress).roundToInt(),

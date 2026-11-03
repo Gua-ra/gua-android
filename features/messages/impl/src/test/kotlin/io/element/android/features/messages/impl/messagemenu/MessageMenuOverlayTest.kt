@@ -11,21 +11,25 @@ package io.element.android.features.messages.impl.messagemenu
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import androidx.compose.ui.unit.dp
+import com.google.common.truth.Truth.assertThat
 import io.element.android.features.messages.impl.R
 import io.element.android.features.messages.impl.actionlist.model.TimelineItemAction
 import io.element.android.features.messages.impl.fixtures.aMessageEvent
@@ -139,6 +143,44 @@ class MessageMenuOverlayTest : RobolectricTest() {
         assertNoNodeWithText(CommonStrings.action_reply)
     }
 
+    @Test
+    fun `holding content that handles its own presses lifts the bubble until it is let go`() = runAndroidComposeUiTest {
+        val controller = setBubbleWithOwnPressHandling()
+
+        onNodeWithTag(MEDIA_TAG).performTouchInput { down(center) }
+        mainClock.advanceTimeBy(150)
+        assertThat(controller.pressScaleOf(event.id)).isEqualTo(1f)
+        mainClock.advanceTimeBy(450)
+        assertThat(controller.pressScaleOf(event.id)).isGreaterThan(1f)
+
+        onNodeWithTag(MEDIA_TAG).performTouchInput { up() }
+        mainClock.advanceTimeBy(1_000)
+        assertThat(controller.pressScaleOf(event.id)).isEqualTo(1f)
+    }
+
+    @Test
+    fun `a quick tap does not lift the bubble`() = runAndroidComposeUiTest {
+        val controller = setBubbleWithOwnPressHandling()
+
+        onNodeWithTag(MEDIA_TAG).performTouchInput { down(center) }
+        mainClock.advanceTimeBy(100)
+        onNodeWithTag(MEDIA_TAG).performTouchInput { up() }
+        mainClock.advanceTimeBy(600)
+        assertThat(controller.pressScaleOf(event.id)).isEqualTo(1f)
+    }
+
+    @Test
+    fun `dragging away from the bubble does not lift it`() = runAndroidComposeUiTest {
+        val controller = setBubbleWithOwnPressHandling()
+
+        onNodeWithTag(MEDIA_TAG).performTouchInput { down(center) }
+        mainClock.advanceTimeBy(100)
+        onNodeWithTag(MEDIA_TAG).performTouchInput { moveBy(Offset(0f, 2_000f)) }
+        mainClock.advanceTimeBy(600)
+        assertThat(controller.pressScaleOf(event.id)).isEqualTo(1f)
+        onNodeWithTag(MEDIA_TAG).performTouchInput { up() }
+    }
+
     private fun AndroidComposeUiTest<ComponentActivity>.string(@StringRes id: Int): String = requireNotNull(activity).getString(id)
 
     private fun aLongPressTarget() = MessageMenuState.Target.Shown(
@@ -199,12 +241,43 @@ class MessageMenuOverlayTest : RobolectricTest() {
                             .messageMenuBubble(
                                 id = event.id,
                                 controller = controller,
-                                interactionSource = remember { MutableInteractionSource() },
                                 liftsWhileHeld = true,
                             )
                     )
                 }
             }
         }
+    }
+
+    private fun AndroidComposeUiTest<ComponentActivity>.setBubbleWithOwnPressHandling(): MessageMenuController {
+        lateinit var controller: MessageMenuController
+        setSafeContent {
+            controller = rememberMessageMenuController()
+            MessageMenuHost(
+                controller = controller,
+                modifier = Modifier.fillMaxSize(),
+                overlay = {},
+            ) {
+                Box(
+                    modifier = Modifier
+                        .padding(start = 16.dp, top = 240.dp)
+                        .size(width = 240.dp, height = 160.dp)
+                        .messageMenuBubble(id = event.id, controller = controller, liftsWhileHeld = true)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .testTag(MEDIA_TAG)
+                            .combinedClickable(onClick = {}, onLongClick = {})
+                    )
+                }
+            }
+        }
+        mainClock.autoAdvance = false
+        return controller
+    }
+
+    private companion object {
+        const val MEDIA_TAG = "media"
     }
 }

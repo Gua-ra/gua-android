@@ -646,8 +646,7 @@ private fun TimelineItemEventRowContent(
                 .messageMenuBubble(
                     id = event.id,
                     controller = messageMenuController,
-                    interactionSource = interactionSource,
-                    liftsWhileHeld = !selectionData.isSelectionModeActive,
+                    liftsWhileHeld = !selectionData.isSelectionModeActive && !isTalkbackActive(),
                 ),
             state = bubbleState,
             interactionSource = interactionSource,

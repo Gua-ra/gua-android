@@ -52,6 +52,8 @@ class MessageMenuController {
 
     fun hasBubble(id: UniqueId): Boolean = coordinatesOf(id) != null
 
+    internal fun pressScaleOf(id: UniqueId): Float? = bubbles[id]?.scale
+
     internal fun register(id: UniqueId, node: MessageMenuBubbleNode) {
         bubbles[id] = node
     }
