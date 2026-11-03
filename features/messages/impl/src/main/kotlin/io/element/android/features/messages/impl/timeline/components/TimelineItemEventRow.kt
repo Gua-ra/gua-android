@@ -622,6 +622,11 @@ private fun TimelineItemEventRowContent(
         } else {
             null
         }
+        val onBubbleKeyboardMenu = if (messageMenuController != null && !selectionData.isSelectionModeActive) {
+            { messageMenuController.onKeyboardMenu(event) }
+        } else {
+            null
+        }
         val bubbleState = BubbleState(
             groupPosition = event.groupPosition,
             isMine = event.isMine,
@@ -647,6 +652,7 @@ private fun TimelineItemEventRowContent(
                     id = event.id,
                     controller = messageMenuController,
                     liftsWhileHeld = !selectionData.isSelectionModeActive && !isTalkbackActive(),
+                    onKeyboardMenu = onBubbleKeyboardMenu,
                 ),
             state = bubbleState,
             interactionSource = interactionSource,

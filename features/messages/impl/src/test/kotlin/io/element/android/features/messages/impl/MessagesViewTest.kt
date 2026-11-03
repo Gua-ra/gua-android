@@ -14,6 +14,8 @@ import android.content.Context
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
@@ -32,9 +34,13 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performCustomAccessibilityActionWithLabel
+import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.test.requestFocus
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
+import androidx.compose.ui.test.withKeyDown
 import androidx.compose.ui.text.AnnotatedString
 import io.element.android.emojibasebindings.Emoji
 import io.element.android.emojibasebindings.EmojibaseCategory
@@ -79,6 +85,7 @@ import io.element.android.libraries.matrix.api.timeline.item.event.getAvatarUrl
 import io.element.android.libraries.matrix.api.timeline.item.event.getDisplayName
 import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.matrix.test.AN_EVENT_ID
+import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.testtags.TestTags
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureCalledOnceWithTwoParamsAndResult
@@ -319,6 +326,54 @@ class MessagesViewTest : RobolectricTest() {
         actionListRecorder.assertSingle(
             ActionListEvent.ComputeForMessage(
                 event = stateEvent,
+                userEventPermissions = state.userEventPermissions,
+            )
+        )
+    }
+
+    @Test
+    fun `the keyboard context menu key opens the action sheet`() = runAndroidComposeUiTest {
+        val actionListRecorder = EventsRecorder<ActionListEvent>()
+        val messageMenuRecorder = EventsRecorder<MessageMenuEvent>(expectEvents = false)
+        val state = aMessagesState(
+            actionListState = anActionListState(eventSink = actionListRecorder),
+            messageMenuState = aMessageMenuState(eventSink = messageMenuRecorder),
+            timelineState = aTimelineState(
+                timelineItems = aTimelineItemList(aTimelineItemTextContent()),
+            ),
+        )
+        val timelineItem = state.timelineState.timelineItems.first() as TimelineItem.Event
+        setMessagesView(state = state)
+        val bubble = onAllNodesWithTag(TestTags.messageBubble.value).onFirst()
+        bubble.requestFocus()
+        bubble.performKeyInput { withKeyDown(Key.ShiftLeft) { pressKey(Key.F10) } }
+        actionListRecorder.assertSingle(
+            ActionListEvent.ComputeForMessage(
+                event = timelineItem,
+                userEventPermissions = state.userEventPermissions,
+            )
+        )
+    }
+
+    @Test
+    fun `long clicking on a message a verified user change stopped opens the action sheet`() = runAndroidComposeUiTest {
+        val actionListRecorder = EventsRecorder<ActionListEvent>()
+        val messageMenuRecorder = EventsRecorder<MessageMenuEvent>(expectEvents = false)
+        val failedEvent = aTimelineItemEvent(
+            isMine = true,
+            sendState = LocalEventSendState.Failed.VerifiedUserChangedIdentity(users = listOf(A_USER_ID)),
+        )
+        val state = aMessagesState(
+            actionListState = anActionListState(eventSink = actionListRecorder),
+            messageMenuState = aMessageMenuState(eventSink = messageMenuRecorder),
+            timelineState = aTimelineState(timelineItems = persistentListOf(failedEvent)),
+        )
+        setMessagesView(state = state)
+        // The red timestamp of a short failed message sits in the middle of its bubble.
+        onAllNodesWithTag(TestTags.messageBubble.value).onFirst().performTouchInput { longClick(Offset(8f, 8f)) }
+        actionListRecorder.assertSingle(
+            ActionListEvent.ComputeForMessage(
+                event = failedEvent,
                 userEventPermissions = state.userEventPermissions,
             )
         )

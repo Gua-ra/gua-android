@@ -36,6 +36,8 @@ class MessageMenuController {
 
     var onDoubleTap: (TimelineItem.Event) -> Unit = {}
 
+    var onKeyboardMenu: (TimelineItem.Event) -> Unit = {}
+
     private val bubbles = HashMap<UniqueId, MessageMenuBubbleNode>()
 
     fun lift(id: UniqueId, layer: GraphicsLayer) {

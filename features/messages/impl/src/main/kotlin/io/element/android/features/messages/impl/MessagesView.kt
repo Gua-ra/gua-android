@@ -223,21 +223,32 @@ fun MessagesView(
         }
     }
 
+    fun showActionSheet(event: TimelineItem.Event) {
+        state.actionListState.eventSink(
+            ActionListEvent.ComputeForMessage(
+                event = event,
+                userEventPermissions = state.userEventPermissions,
+            )
+        )
+    }
+
     fun onMessageLongClick(event: TimelineItem.Event) {
         Timber.v("OnMessageLongClicked= ${event.id}")
         hidingKeyboard {
-            // GUA FORK: screen readers and rows without a bubble keep the full action sheet, a long press lifts a bubble instead.
-            if (isTalkbackActive || !messageMenuController.hasBubble(event.id)) {
-                state.actionListState.eventSink(
-                    ActionListEvent.ComputeForMessage(
-                        event = event,
-                        userEventPermissions = state.userEventPermissions,
-                    )
-                )
+            // GUA FORK: screen readers, verified-user send failures and rows without a bubble keep the full action sheet.
+            val opensActionSheet = isTalkbackActive ||
+                event.localSendState is LocalEventSendState.Failed.VerifiedUser ||
+                !messageMenuController.hasBubble(event.id)
+            if (opensActionSheet) {
+                showActionSheet(event)
             } else {
                 state.messageMenuState.eventSink(MessageMenuEvent.Show(event, MessageMenuGesture.LongPress, state.userEventPermissions))
             }
         }
+    }
+
+    fun onMessageKeyboardMenu(event: TimelineItem.Event) {
+        hidingKeyboard { showActionSheet(event) }
     }
 
     fun onMessageDoubleTap(event: TimelineItem.Event) {
@@ -248,6 +259,7 @@ fun MessagesView(
 
     SideEffect {
         messageMenuController.onDoubleTap = ::onMessageDoubleTap
+        messageMenuController.onKeyboardMenu = ::onMessageKeyboardMenu
     }
 
     fun onActionSelected(action: TimelineItemAction, event: TimelineItem.Event) {

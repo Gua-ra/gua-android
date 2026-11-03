@@ -15,6 +15,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.KeyInputModifierNode
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
@@ -43,25 +50,28 @@ fun TimelineItem.Event.canDoubleTapToReact(canSendReaction: Boolean): Boolean {
     return canSendReaction && !failedToSend && content is TimelineItemTextBasedContent && content.canReact()
 }
 
+// onKeyboardMenu takes Shift+F10 from the bubble and its content, because the overlay cannot take keyboard focus.
 fun Modifier.messageMenuBubble(
     id: UniqueId,
     controller: MessageMenuController?,
     liftsWhileHeld: Boolean,
+    onKeyboardMenu: (() -> Unit)? = null,
 ): Modifier = if (controller == null) {
     this
 } else {
-    this then MessageMenuBubbleElement(id, controller, liftsWhileHeld)
+    this then MessageMenuBubbleElement(id, controller, liftsWhileHeld, onKeyboardMenu)
 }
 
 private data class MessageMenuBubbleElement(
     val id: UniqueId,
     val controller: MessageMenuController,
     val liftsWhileHeld: Boolean,
+    val onKeyboardMenu: (() -> Unit)?,
 ) : ModifierNodeElement<MessageMenuBubbleNode>() {
-    override fun create() = MessageMenuBubbleNode(id, controller, liftsWhileHeld)
+    override fun create() = MessageMenuBubbleNode(id, controller, liftsWhileHeld, onKeyboardMenu)
 
     override fun update(node: MessageMenuBubbleNode) {
-        node.update(id, controller, liftsWhileHeld)
+        node.update(id, controller, liftsWhileHeld, onKeyboardMenu)
     }
 
     override fun InspectorInfo.inspectableProperties() {
@@ -73,7 +83,8 @@ internal class MessageMenuBubbleNode(
     private var id: UniqueId,
     private var controller: MessageMenuController,
     private var liftsWhileHeld: Boolean,
-) : Modifier.Node(), DrawModifierNode, GlobalPositionAwareModifierNode, PointerInputModifierNode {
+    private var onKeyboardMenu: (() -> Unit)?,
+) : Modifier.Node(), DrawModifierNode, GlobalPositionAwareModifierNode, PointerInputModifierNode, KeyInputModifierNode {
     var coordinates: LayoutCoordinates? = null
         private set
 
@@ -97,7 +108,9 @@ internal class MessageMenuBubbleNode(
         id: UniqueId,
         controller: MessageMenuController,
         liftsWhileHeld: Boolean,
+        onKeyboardMenu: (() -> Unit)?,
     ) {
+        this.onKeyboardMenu = onKeyboardMenu
         if (id != this.id || controller !== this.controller) {
             this.controller.unregister(this.id, this)
             this.id = id
@@ -157,6 +170,15 @@ internal class MessageMenuBubbleNode(
     override fun onCancelPointerInput() {
         release()
     }
+
+    override fun onPreKeyEvent(event: KeyEvent): Boolean {
+        val onKeyboardMenu = onKeyboardMenu ?: return false
+        if (event.key != Key.F10 || !event.isShiftPressed) return false
+        if (event.type == KeyEventType.KeyUp) onKeyboardMenu()
+        return true
+    }
+
+    override fun onKeyEvent(event: KeyEvent): Boolean = false
 
     private fun press() {
         pressJob?.cancel()
