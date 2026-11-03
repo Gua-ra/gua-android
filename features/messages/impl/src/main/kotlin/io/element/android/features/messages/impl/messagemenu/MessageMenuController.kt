@@ -54,6 +54,9 @@ class MessageMenuController {
 
     fun hasBubble(id: UniqueId): Boolean = coordinatesOf(id) != null
 
+    // combinedClickable also long clicks and double clicks from Enter, and the overlay cannot take keyboard focus.
+    fun isKeyboardGesture(id: UniqueId): Boolean = bubbles[id]?.lastInputWasKey == true
+
     internal fun pressScaleOf(id: UniqueId): Float? = bubbles[id]?.scale
 
     internal fun register(id: UniqueId, node: MessageMenuBubbleNode) {

@@ -88,6 +88,9 @@ internal class MessageMenuBubbleNode(
     var coordinates: LayoutCoordinates? = null
         private set
 
+    var lastInputWasKey = false
+        private set
+
     private var pressScale = Animatable(1f)
     val scale: Float get() = pressScale.value
     private var pressJob: Job? = null
@@ -99,6 +102,7 @@ internal class MessageMenuBubbleNode(
     override fun onDetach() {
         controller.unregister(id, this)
         coordinates = null
+        lastInputWasKey = false
         pressJob = null
         // A reused row would otherwise keep the scale of a press it was detached in the middle of.
         pressScale = Animatable(1f)
@@ -115,6 +119,7 @@ internal class MessageMenuBubbleNode(
             this.controller.unregister(this.id, this)
             this.id = id
             this.controller = controller
+            lastInputWasKey = false
             controller.register(id, this)
             invalidateDraw()
         }
@@ -145,8 +150,9 @@ internal class MessageMenuBubbleNode(
 
     // Watched here rather than through an interaction source, because media with a caption and galleries handle their own presses.
     override fun onPointerEvent(pointerEvent: PointerEvent, pass: PointerEventPass, bounds: IntSize) {
-        if (!liftsWhileHeld) return
         val changes = pointerEvent.changes
+        if (pass == PointerEventPass.Initial && changes.any { it.changedToDownIgnoreConsumed() }) lastInputWasKey = false
+        if (!liftsWhileHeld) return
         when (pass) {
             PointerEventPass.Initial -> {
                 if (changes.count { it.pressed } != 1) {
@@ -172,6 +178,7 @@ internal class MessageMenuBubbleNode(
     }
 
     override fun onPreKeyEvent(event: KeyEvent): Boolean {
+        if (event.type == KeyEventType.KeyDown) lastInputWasKey = true
         val onKeyboardMenu = onKeyboardMenu ?: return false
         if (event.key != Key.F10 || !event.isShiftPressed) return false
         if (event.type == KeyEventType.KeyUp) onKeyboardMenu()

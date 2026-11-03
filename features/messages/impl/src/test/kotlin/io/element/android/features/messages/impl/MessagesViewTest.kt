@@ -15,7 +15,10 @@ import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.input.InputModeManager
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
@@ -356,6 +359,54 @@ class MessagesViewTest : RobolectricTest() {
                 userEventPermissions = state.userEventPermissions,
             )
         )
+    }
+
+    @Test
+    fun `holding Enter on a focused bubble opens the action sheet`() = runAndroidComposeUiTest {
+        val actionListRecorder = EventsRecorder<ActionListEvent>()
+        val messageMenuRecorder = EventsRecorder<MessageMenuEvent>(expectEvents = false)
+        val state = aMessagesState(
+            actionListState = anActionListState(eventSink = actionListRecorder),
+            messageMenuState = aMessageMenuState(eventSink = messageMenuRecorder),
+            timelineState = aTimelineState(
+                timelineItems = aTimelineItemList(aTimelineItemTextContent()),
+            ),
+        )
+        val timelineItem = state.timelineState.timelineItems.first() as TimelineItem.Event
+        val inputModeManager = setMessagesView(state = state)
+        runOnIdle { inputModeManager.requestInputMode(InputMode.Keyboard) }
+        val bubble = onAllNodesWithTag(TestTags.messageBubble.value).onFirst()
+        bubble.requestFocus()
+        bubble.performKeyInput { keyDown(Key.Enter) }
+        mainClock.advanceTimeBy(1_000)
+        bubble.performKeyInput { keyUp(Key.Enter) }
+        actionListRecorder.assertSingle(
+            ActionListEvent.ComputeForMessage(
+                event = timelineItem,
+                userEventPermissions = state.userEventPermissions,
+            )
+        )
+    }
+
+    @Test
+    fun `pressing Enter twice on a focused bubble does not open the message menu`() = runAndroidComposeUiTest {
+        val actionListRecorder = EventsRecorder<ActionListEvent>(expectEvents = false)
+        val messageMenuRecorder = EventsRecorder<MessageMenuEvent>(expectEvents = false)
+        val state = aMessagesState(
+            actionListState = anActionListState(eventSink = actionListRecorder),
+            messageMenuState = aMessageMenuState(eventSink = messageMenuRecorder),
+            timelineState = aTimelineState(
+                timelineItems = aTimelineItemList(aTimelineItemTextContent()),
+            ),
+        )
+        val inputModeManager = setMessagesView(state = state)
+        runOnIdle { inputModeManager.requestInputMode(InputMode.Keyboard) }
+        val bubble = onAllNodesWithTag(TestTags.messageBubble.value).onFirst()
+        bubble.requestFocus()
+        bubble.performKeyInput { pressKey(Key.Enter) }
+        mainClock.advanceTimeBy(100)
+        bubble.performKeyInput { pressKey(Key.Enter) }
+        mainClock.advanceTimeBy(1_000)
     }
 
     @Test
@@ -964,9 +1015,11 @@ private fun AndroidComposeUiTest<ComponentActivity>.setMessagesView(
     onJoinCallClick: (Boolean) -> Unit = EnsureNeverCalledWithParam(),
     onViewAllPinnedMessagesClick: () -> Unit = EnsureNeverCalled(),
     onThreadsListClicked: () -> Unit = EnsureNeverCalled(),
-) {
+): InputModeManager {
     val emojiPickerRenderer = DefaultEmojiPickerRenderer()
+    lateinit var inputModeManager: InputModeManager
     setSafeContent {
+        inputModeManager = LocalInputModeManager.current
         // Cannot use the RichTextEditor, so simulate a LocalInspectionMode
         CompositionLocalProvider(LocalInspectionMode provides true) {
             MessagesView(
@@ -995,6 +1048,7 @@ private fun AndroidComposeUiTest<ComponentActivity>.setMessagesView(
             )
         }
     }
+    return inputModeManager
 }
 
 private fun hasCustomAccessibilityAction(label: String) = SemanticsMatcher("has custom action $label") { node ->

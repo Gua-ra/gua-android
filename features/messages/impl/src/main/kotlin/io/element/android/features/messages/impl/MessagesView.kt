@@ -235,8 +235,9 @@ fun MessagesView(
     fun onMessageLongClick(event: TimelineItem.Event) {
         Timber.v("OnMessageLongClicked= ${event.id}")
         hidingKeyboard {
-            // GUA FORK: screen readers, verified-user send failures and rows without a bubble keep the full action sheet.
+            // GUA FORK: screen readers, keyboards, verified-user send failures and rows without a bubble keep the full action sheet.
             val opensActionSheet = isTalkbackActive ||
+                messageMenuController.isKeyboardGesture(event.id) ||
                 event.localSendState is LocalEventSendState.Failed.VerifiedUser ||
                 !messageMenuController.hasBubble(event.id)
             if (opensActionSheet) {
@@ -252,6 +253,7 @@ fun MessagesView(
     }
 
     fun onMessageDoubleTap(event: TimelineItem.Event) {
+        if (messageMenuController.isKeyboardGesture(event.id)) return
         hidingKeyboard {
             state.messageMenuState.eventSink(MessageMenuEvent.Show(event, MessageMenuGesture.DoubleTap, state.userEventPermissions))
         }
