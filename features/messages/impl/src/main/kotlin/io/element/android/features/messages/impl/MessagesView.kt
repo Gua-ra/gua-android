@@ -49,6 +49,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -199,6 +200,7 @@ fun MessagesView(
 
     val isTalkbackActive = isTalkbackActive()
     val messageMenuController = rememberMessageMenuController()
+    val focusManager = LocalFocusManager.current
 
     // Entering selection mode collapses the composer, so dismiss the keyboard too. hideKeyboard
     // triggers the IME hide animation, keeping it in sync with the composer collapse.
@@ -232,6 +234,11 @@ fun MessagesView(
         )
     }
 
+    fun showMessageMenu(event: TimelineItem.Event, gesture: MessageMenuGesture) {
+        focusManager.clearFocus(force = true)
+        state.messageMenuState.eventSink(MessageMenuEvent.Show(event, gesture, state.userEventPermissions))
+    }
+
     fun onMessageLongClick(event: TimelineItem.Event) {
         Timber.v("OnMessageLongClicked= ${event.id}")
         hidingKeyboard {
@@ -243,7 +250,7 @@ fun MessagesView(
             if (opensActionSheet) {
                 showActionSheet(event)
             } else {
-                state.messageMenuState.eventSink(MessageMenuEvent.Show(event, MessageMenuGesture.LongPress, state.userEventPermissions))
+                showMessageMenu(event, MessageMenuGesture.LongPress)
             }
         }
     }
@@ -254,9 +261,7 @@ fun MessagesView(
 
     fun onMessageDoubleTap(event: TimelineItem.Event) {
         if (messageMenuController.isKeyboardGesture(event.id)) return
-        hidingKeyboard {
-            state.messageMenuState.eventSink(MessageMenuEvent.Show(event, MessageMenuGesture.DoubleTap, state.userEventPermissions))
-        }
+        hidingKeyboard { showMessageMenu(event, MessageMenuGesture.DoubleTap) }
     }
 
     SideEffect {

@@ -11,6 +11,7 @@
 package io.element.android.features.messages.impl
 
 import android.content.Context
+import android.view.View
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
@@ -27,6 +28,7 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.doubleClick
+import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -46,6 +48,7 @@ import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import androidx.compose.ui.test.withKeyDown
 import androidx.compose.ui.text.AnnotatedString
+import com.google.common.truth.Truth.assertThat
 import io.element.android.emojibasebindings.Emoji
 import io.element.android.emojibasebindings.EmojibaseCategory
 import io.element.android.features.messages.impl.actionlist.ActionListEvent
@@ -96,6 +99,7 @@ import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.matrix.test.AN_EVENT_ID
 import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.testtags.TestTags
+import io.element.android.libraries.textcomposer.model.aTextEditorStateMarkdown
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureCalledOnceWithTwoParamsAndResult
 import io.element.android.tests.testutils.EnsureNeverCalled
@@ -342,6 +346,55 @@ class MessagesViewTest : RobolectricTest() {
         onNodeWithContentDescription(activity.getString(CommonStrings.action_back)).assertDoesNotExist()
         onNodeWithText(state.roomName.orEmpty()).assertDoesNotExist()
         onAllNodesWithTag(TestTags.messageBubble.value).assertCountEquals(0)
+    }
+
+    @Test
+    fun `opening the message menu takes focus away from the composer`() = runAndroidComposeUiTest {
+        val eventsRecorder = EventsRecorder<MessageMenuEvent>()
+        val state = aMessagesState(
+            composerState = aMessageComposerState(textEditorState = aTextEditorStateMarkdown()),
+            messageMenuState = aMessageMenuState(eventSink = eventsRecorder),
+            timelineState = aTimelineState(timelineItems = aTimelineItemList(aTimelineItemTextContent())),
+        )
+        setMessagesView(state = state)
+        val composer = requireNotNull(activity).window.decorView.findViewWithTag<View>(TestTags.plainTextEditor.value)
+        runOnUiThread { composer.requestFocus() }
+        assertThat(composer.hasFocus()).isTrue()
+
+        onAllNodesWithTag(TestTags.messageBubble.value).onFirst().performTouchInput { doubleClick() }
+
+        eventsRecorder.assertSize(1)
+        assertThat(composer.hasFocus()).isFalse()
+    }
+
+    @Test
+    fun `while the message menu is open, keyboard focus cannot move behind it`() = runAndroidComposeUiTest {
+        val timelineItems = aTimelineItemList(aTimelineItemTextContent())
+        val state = aMessagesState(
+            composerState = aMessageComposerState(textEditorState = aTextEditorStateMarkdown()),
+            messageMenuState = aMessageMenuState(
+                target = MessageMenuState.Target.Shown(
+                    event = timelineItems.first() as TimelineItem.Event,
+                    gesture = MessageMenuGesture.DoubleTap,
+                    reactions = MessageQuickReactions.defaults,
+                    highlightedReactions = persistentListOf(),
+                    sections = MessageMenuSections.Empty,
+                    reactionRows = persistentListOf(),
+                ),
+            ),
+            timelineState = aTimelineState(timelineItems = timelineItems),
+        )
+        val inputModeManager = setMessagesView(state = state)
+        runOnIdle { inputModeManager.requestInputMode(InputMode.Keyboard) }
+        val composer = requireNotNull(activity).window.decorView.findViewWithTag<View>(TestTags.plainTextEditor.value)
+        onNodeWithContentDescription(requireNotNull(activity).getString(CommonStrings.a11y_react_with_other_emojis)).requestFocus()
+
+        repeat(MessageQuickReactions.defaults.size + 2) {
+            onNode(isFocused()).performKeyInput { withKeyDown(Key.ShiftLeft) { pressKey(Key.Tab) } }
+        }
+
+        onNode(isFocused()).assertExists()
+        assertThat(composer.hasFocus()).isFalse()
     }
 
     @Test

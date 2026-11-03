@@ -8,10 +8,12 @@
 package io.element.android.features.messages.impl.messagemenu
 
 import android.os.Build
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
@@ -41,6 +43,8 @@ fun Modifier.messageMenuBackdrop(
 ): Modifier {
     if (!isMenuShown) return this
     val hidden = clearAndSetSemantics {}
+        .focusProperties { onEnter = { cancelFocusChange() } }
+        .focusGroup()
     return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         hidden.graphicsLayer {
             val radius = BACKDROP_BLUR_RADIUS.toPx() * controller.progress.value
