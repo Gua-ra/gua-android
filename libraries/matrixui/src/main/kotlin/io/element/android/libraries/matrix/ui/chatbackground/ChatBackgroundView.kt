@@ -200,7 +200,7 @@ internal fun ChatBackgroundViewPreview() = ElementPreview {
         backgrounds.chunked(5).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 row.forEach { background ->
-                    ChatBackgroundView(background = background, modifier = Modifier.size(width = 72.dp, height = 144.dp))
+                    ChatBackgroundView(background = background, modifier = Modifier.size(width = 64.dp, height = 128.dp))
                 }
             }
         }
