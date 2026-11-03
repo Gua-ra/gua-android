@@ -195,14 +195,58 @@ class DefaultChatBackgroundServiceTest {
     }
 
     @Test
-    fun `a change seen while the server was being read is not overwritten by the reply`() = runTest {
+    fun `an older change seen while the server was being read gives way to the reply`() = runTest {
         val reply = CompletableDeferred<RoomStateResult>()
         val service = createService(roomStateClient = FakeRoomStateClient { reply.await() })
 
         service.backgroundFlow(FakeJoinedRoom()).test {
             assertThat(awaitItem()).isEqualTo(ChatBackground.None)
-            service.onTimelineEvent(A_ROOM_ID, EventId("\$live"), 10, contentOf("sky"))
+            service.onTimelineEvent(A_ROOM_ID, EventId("\$stale"), 10, contentOf("sky"))
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Sky))
+            reply.complete(RoomStateResult.Found(stored("mint", "\$server", 1_000)))
+            assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Mint))
+        }
+    }
+
+    @Test
+    fun `a newer change seen while the server was being read is kept over the reply`() = runTest {
+        val reply = CompletableDeferred<RoomStateResult>()
+        val service = createService(roomStateClient = FakeRoomStateClient { reply.await() })
+
+        service.backgroundFlow(FakeJoinedRoom()).test {
+            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+            service.onTimelineEvent(A_ROOM_ID, EventId("\$live"), 2_000, contentOf("sky"))
+            assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Sky))
+            reply.complete(RoomStateResult.Found(stored("mint", "\$server", 1_000)))
+            testScheduler.runCurrent()
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun `a stale SDK snapshot on the first open gives way to the server`() = runTest {
+        val reply = CompletableDeferred<RoomStateResult>()
+        val room = FakeJoinedRoom().apply { stateEvents.value = listOf(aStateEvent("sand", eventId = "\$old", timestamp = 10)) }
+        val service = createService(roomStateClient = FakeRoomStateClient { reply.await() })
+
+        service.backgroundFlow(room).test {
+            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+            assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Sand))
+            reply.complete(RoomStateResult.Found(stored("ocean", "\$server", 1_000)))
+            assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Ocean))
+        }
+    }
+
+    @Test
+    fun `a background sent while the server was being read is not undone by the reply`() = runTest {
+        val reply = CompletableDeferred<RoomStateResult>()
+        val room = FakeJoinedRoom(sendStateEventRawResult = { _, _, _ -> Result.success(EventId("\$sent")) })
+        val service = createService(roomStateClient = FakeRoomStateClient { reply.await() })
+
+        service.backgroundFlow(room).test {
+            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+            assertThat(service.set(room, preset(ChatBackgroundPreset.Night)).isSuccess).isTrue()
+            assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Night))
             reply.complete(RoomStateResult.Found(stored("mint", "\$server", 1_000)))
             testScheduler.runCurrent()
             expectNoEvents()

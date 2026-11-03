@@ -44,8 +44,10 @@ class DefaultChatBackgroundService(
 ) : ChatBackgroundService {
     private data class Slot(
         val stored: StoredChatBackground?,
-        /** Counts changes from this device, the timeline and the SDK, so a server reply in flight meanwhile does not overwrite them. */
+        /** Counts changes from this device, the timeline and the SDK, so a server reply in flight meanwhile can tell it is stale. */
         val localRevision: Long,
+        /** The event ID of a change sent from this device that neither the server nor the timeline has confirmed yet. */
+        val pendingEventId: String? = null,
     )
 
     private val mutex = Mutex()
@@ -85,7 +87,7 @@ class DefaultChatBackgroundService(
                 update(room.roomId) { current ->
                     // Never the device clock: a clock running ahead would make the next real change look older.
                     val timestamp = (current.stored?.timestamp ?: 0) + 1
-                    Slot(StoredChatBackground(content, eventId.value, timestamp), current.localRevision + 1)
+                    Slot(StoredChatBackground(content, eventId.value, timestamp), current.localRevision + 1, pendingEventId = eventId.value)
                 }
             }
     }
@@ -102,8 +104,15 @@ class DefaultChatBackgroundService(
         }
         // The server's state wins whatever its timestamp, and using a chat keeps it in the cache.
         update(roomId, saveUnchanged = true) { current ->
-            if (current.localRevision == revisionAtStart) current.copy(stored = stored) else current
+            if (current.localRevision != revisionAtStart && current.outlives(stored)) current else current.copy(stored = stored, pendingEventId = null)
         }
+    }
+
+    /** Whether a change seen while [reply] was in flight outlives it: an unconfirmed send from this device, or a newer change. */
+    private fun Slot.outlives(reply: StoredChatBackground): Boolean {
+        val local = stored ?: return false
+        if (local.eventId == reply.eventId) return false
+        return pendingEventId != null && local.eventId == pendingEventId || local.timestamp > reply.timestamp
     }
 
     private suspend fun offer(roomId: RoomId, candidate: StoredChatBackground) {
