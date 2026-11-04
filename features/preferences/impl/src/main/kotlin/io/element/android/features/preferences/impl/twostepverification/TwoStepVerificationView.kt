@@ -121,7 +121,7 @@ private fun OverviewSection(
     // No modifier: these list rows are deliberately full width.
     Column {
         ListItem(
-            headlineContent = {
+            content = {
                 Text(
                     stringResource(
                         id = when (state.twoStepVerificationOn) {
@@ -155,7 +155,7 @@ private fun OverviewSection(
         if (hasPin != null) {
             HorizontalDivider()
             ListItem(
-                headlineContent = {
+                content = {
                     Text(
                         stringResource(
                             id = if (hasPin) {
@@ -191,7 +191,7 @@ private fun OverviewSection(
         if (passkeyRegistered == false) {
             HorizontalDivider()
             ListItem(
-                headlineContent = {
+                content = {
                     Text(stringResource(id = R.string.screen_two_step_verification_passkey_button))
                 },
                 supportingContent = {
@@ -347,7 +347,7 @@ private fun TwoStepVerificationPhase.footerRes(): Int? = when (this) {
 @PreviewsDayNight
 @Composable
 internal fun TwoStepVerificationViewPreview(
-    @PreviewParameter(TwoStepVerificationStateProvider::class) state: TwoStepVerificationState,
+    @PreviewParameter(TwoStepVerificationStatePreviewParam::class) state: TwoStepVerificationState,
 ) = ElementPreview {
     TwoStepVerificationView(
         state = state,

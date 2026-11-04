@@ -20,9 +20,9 @@ fun LogoutConfirmationDialog(
     onDismiss: () -> Unit,
 ) {
     ConfirmationDialog(
-        title = stringResource(id = CommonStrings.action_signout),
+        title = stringResource(id = CommonStrings.gua_action_sign_out),
         content = stringResource(id = R.string.screen_signout_confirmation_dialog_content),
-        submitText = stringResource(id = CommonStrings.action_signout),
+        submitText = stringResource(id = CommonStrings.gua_action_sign_out),
         onSubmitClick = onSubmitClick,
         onDismiss = onDismiss,
     )

@@ -459,7 +459,7 @@ private fun ChangePhoneNumberPhase.footerRes(): Int? = when (this) {
 @PreviewsDayNight
 @Composable
 internal fun ChangePhoneNumberViewPreview(
-    @PreviewParameter(ChangePhoneNumberStateProvider::class) state: ChangePhoneNumberState,
+    @PreviewParameter(ChangePhoneNumberStatePreviewParam::class) state: ChangePhoneNumberState,
 ) = ElementPreview {
     ChangePhoneNumberView(
         state = state,

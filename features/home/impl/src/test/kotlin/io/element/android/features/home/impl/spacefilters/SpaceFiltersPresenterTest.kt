@@ -8,6 +8,7 @@
 package io.element.android.features.home.impl.spacefilters
 
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.space.test.FakeSpacesSwitch
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.spaces.FakeSpaceService
@@ -43,6 +44,26 @@ class SpaceFiltersPresenterTest {
 
             val state = awaitLastSequentialItem()
             assertThat(state).isInstanceOf(SpaceFiltersState.Unselected::class.java)
+        }
+    }
+
+    @Test
+    fun `present - when the Spaces switch is off returns Disabled state even with filters`() = runTest {
+        val spaceService = FakeSpaceService()
+        val spacesSwitch = FakeSpacesSwitch(initialValue = false)
+        val presenter = createSpaceFiltersPresenter(
+            matrixClient = FakeMatrixClient(spaceService = spaceService),
+            spacesSwitch = spacesSwitch,
+        )
+        presenter.test {
+            spaceService.emitSpaceFilters(listOf(aSpaceServiceFilter(displayName = "Test Space")))
+            assertThat(awaitLastSequentialItem()).isEqualTo(SpaceFiltersState.Disabled)
+
+            spacesSwitch.setEnabled(true)
+            assertThat(awaitLastSequentialItem()).isInstanceOf(SpaceFiltersState.Unselected::class.java)
+
+            spacesSwitch.setEnabled(false)
+            assertThat(awaitLastSequentialItem()).isEqualTo(SpaceFiltersState.Disabled)
         }
     }
 
@@ -260,9 +281,11 @@ class SpaceFiltersPresenterTest {
 
     private fun createSpaceFiltersPresenter(
         matrixClient: FakeMatrixClient = FakeMatrixClient(),
+        spacesSwitch: FakeSpacesSwitch = FakeSpacesSwitch(initialValue = true),
     ): SpaceFiltersPresenter {
         return SpaceFiltersPresenter(
             matrixClient = matrixClient,
+            spacesSwitch = spacesSwitch,
         )
     }
 }

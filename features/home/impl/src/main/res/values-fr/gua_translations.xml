@@ -19,4 +19,11 @@
     <string name="gua_account_recovery_cancel_message">Annulez-la si vous ne l\'avez pas lancée. Sinon, vous devrez tout recommencer.</string>
     <string name="gua_account_recovery_cancelled">Récupération annulée</string>
     <string name="gua_account_recovery_cancel_failed">Impossible d\'annuler la récupération. Réessayez.</string>
+    <string name="screen_search_recent_searches_section_title">Recherches récentes</string>
+    <string name="search_from_your_messages_header">Dans vos messages</string>
+    <string name="search_no_results_subtitle">Aucun résultat pour « %1$s ». Essayez un autre terme de recherche.</string>
+    <string name="search_no_results_title">Aucun résultat</string>
+    <string name="search_section_chats">Conversations</string>
+    <string name="start_searching_subtitle">Rechercher des conversations et des messages</string>
+    <string name="start_searching_title">Commencez la recherche…</string>
 </resources>

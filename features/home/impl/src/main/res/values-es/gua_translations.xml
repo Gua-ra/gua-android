@@ -19,4 +19,16 @@
     <string name="gua_account_recovery_cancel_message">Cancélala si no la iniciaste tú. Si fuiste tú, tendrás que empezar de nuevo.</string>
     <string name="gua_account_recovery_cancelled">Recuperación cancelada</string>
     <string name="gua_account_recovery_cancel_failed">No se pudo cancelar la recuperación. Inténtalo de nuevo.</string>
+    <string name="banner_swipe_avatar_content">Desliza hacia arriba o hacia abajo sobre tu avatar para cambiar entre tus cuentas sin ir a los ajustes de la aplicación.</string>
+    <string name="banner_swipe_avatar_title">Desliza sobre tu avatar para cambiar de cuenta</string>
+    <string name="screen_multi_account_announcement_action">Añadir cuenta</string>
+    <string name="screen_multi_account_announcement_description">Ve a %1$s para iniciar sesión en otra cuenta. Después podrás cambiar fácilmente entre ellas.</string>
+    <string name="screen_multi_account_announcement_title">Ahora puedes añadir varias cuentas</string>
+    <string name="screen_search_recent_searches_section_title">Búsquedas recientes</string>
+    <string name="search_from_your_messages_header">De tus mensajes</string>
+    <string name="search_no_results_subtitle">No hay resultados para “%1$s”. Prueba con otro término de búsqueda.</string>
+    <string name="search_no_results_title">No hay resultados</string>
+    <string name="search_section_messages">Mensajes</string>
+    <string name="start_searching_subtitle">Busca chats y mensajes</string>
+    <string name="start_searching_title">Empieza a buscar…</string>
 </resources>

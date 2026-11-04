@@ -10,6 +10,7 @@ import extension.testCommonDependencies
  */
 plugins {
     id("io.element.android-compose-library")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -23,7 +24,9 @@ dependencies {
     api(projects.features.enterprise.api)
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.core)
+    implementation(projects.libraries.androidutils)
     implementation(projects.libraries.matrix.api)
+    implementation(libs.serialization.json)
 
     testCommonDependencies(libs)
     testImplementation(projects.libraries.matrix.test)

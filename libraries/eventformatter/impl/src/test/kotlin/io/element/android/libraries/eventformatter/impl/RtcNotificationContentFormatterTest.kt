@@ -21,7 +21,6 @@ import org.junit.Test
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
-@Suppress("LargeClass")
 class RtcNotificationContentFormatterTest : RobolectricTest() {
     private lateinit var context: Context
     private lateinit var fakeMatrixClient: FakeMatrixClient
@@ -43,8 +42,11 @@ class RtcNotificationContentFormatterTest : RobolectricTest() {
     fun `Should not display declined info in rooms`() {
         val result = formatter.format(
             CallNotifyContent(
-                CallIntent.VIDEO,
-                declinedBy = listOf(A_USER_ID_2, A_USER_ID_3)
+                callIntent = CallIntent.VIDEO,
+                declinedBy = listOf(A_USER_ID_2, A_USER_ID_3),
+                activeMembers = emptyList(),
+                isJoined = false,
+                callStartTsMillis = 0
             ),
             false
         )
@@ -58,7 +60,10 @@ class RtcNotificationContentFormatterTest : RobolectricTest() {
         val result = formatter.format(
             CallNotifyContent(
                 CallIntent.VIDEO,
-                declinedBy = listOf(fakeMatrixClient.sessionId)
+                declinedBy = listOf(fakeMatrixClient.sessionId),
+                activeMembers = listOf(A_USER_ID_2),
+                isJoined = false,
+                callStartTsMillis = 0
             ),
             true
         )
@@ -72,7 +77,10 @@ class RtcNotificationContentFormatterTest : RobolectricTest() {
         val result = formatter.format(
             CallNotifyContent(
                 CallIntent.VIDEO,
-                declinedBy = listOf(A_USER_ID_2)
+                declinedBy = listOf(A_USER_ID_2),
+                activeMembers = listOf(fakeMatrixClient.sessionId),
+                isJoined = true,
+                callStartTsMillis = 0
             ),
             true
         )
@@ -86,7 +94,10 @@ class RtcNotificationContentFormatterTest : RobolectricTest() {
         val result = formatter.format(
             CallNotifyContent(
                 CallIntent.AUDIO,
-                declinedBy = listOf()
+                declinedBy = listOf(),
+                activeMembers = emptyList(),
+                isJoined = false,
+                callStartTsMillis = 0
             ),
             true
         )

@@ -252,7 +252,7 @@ private fun MessageState(
 
 @PreviewsDayNight
 @Composable
-internal fun FindFriendsViewPreview(@PreviewParameter(FindFriendsStateProvider::class) state: FindFriendsState) =
+internal fun FindFriendsViewPreview(@PreviewParameter(FindFriendsStatePreviewParam::class) state: FindFriendsState) =
     ElementPreview {
         FindFriendsView(
             state = state,

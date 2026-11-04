@@ -49,7 +49,6 @@ class GuaWelcomeTrustPillVerifyTest {
                     onOAuthDetails = {},
                     onNeedLoginPassword = {},
                     onLearnMoreClick = {},
-                    onCreateAccountContinue = {},
                 )
             }
         }

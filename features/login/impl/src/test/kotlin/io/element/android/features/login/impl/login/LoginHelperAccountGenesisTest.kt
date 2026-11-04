@@ -180,10 +180,8 @@ class LoginHelperAccountGenesisTest {
             getOAuthUrlResult = getOAuthUrlResult,
         )
         val loginHelper = LoginHelper(
-            oAuthActionFlow = io.element.android.libraries.oauth.test.customtab.FakeOAuthActionFlow(),
+            oAuthActionFlow = io.element.android.libraries.oauth.test.FakeOAuthActionFlow(),
             authenticationService = authenticationService,
-            webClientUrlForAuthenticationRetriever =
-                io.element.android.features.login.impl.web.FakeWebClientUrlForAuthenticationRetriever(),
             resolverClient = FakeResolverClient(
                 resolveResult = {
                     Result.success(

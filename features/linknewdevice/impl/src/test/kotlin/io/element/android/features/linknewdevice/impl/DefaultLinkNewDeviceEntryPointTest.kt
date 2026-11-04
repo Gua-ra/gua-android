@@ -13,6 +13,7 @@ import com.bumble.appyx.testing.junit4.util.MainDispatcherRule
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.enterprise.test.FakeSessionEnterpriseService
 import io.element.android.features.linknewdevice.api.LinkNewDeviceEntryPoint
+import io.element.android.features.lockscreen.test.FakeDeviceUnlockEntryPoint
 import io.element.android.libraries.matrix.test.A_SESSION_ID
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.tests.testutils.lambda.lambdaError
@@ -41,6 +42,7 @@ class DefaultLinkNewDeviceEntryPointTest {
                 linkNewDesktopHandler = LinkNewDesktopHandler(client),
                 sessionEnterpriseService = FakeSessionEnterpriseService(),
                 sessionId = A_SESSION_ID,
+                deviceUnlockEntryPoint = FakeDeviceUnlockEntryPoint(),
             )
         }
         val callback: LinkNewDeviceEntryPoint.Callback = object : LinkNewDeviceEntryPoint.Callback {

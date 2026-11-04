@@ -27,14 +27,14 @@ import androidx.compose.ui.unit.dp
 import io.element.android.appconfig.AnalyticsConfig
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
-import io.element.android.features.analytics.api.AnalyticsOptInEvents
+import io.element.android.features.analytics.api.AnalyticsOptInEvent
 import io.element.android.libraries.designsystem.atomic.molecules.ButtonColumnMolecule
 import io.element.android.libraries.designsystem.atomic.molecules.IconTitleSubtitleMolecule
-import io.element.android.libraries.designsystem.atomic.organisms.InfoListItem
-import io.element.android.libraries.designsystem.atomic.organisms.InfoListOrganism
 import io.element.android.libraries.designsystem.atomic.pages.HeaderFooterPage
 import io.element.android.libraries.designsystem.components.BigIcon
 import io.element.android.libraries.designsystem.components.ClickableLinkText
+import io.element.android.libraries.designsystem.components.visuallist.VisualList
+import io.element.android.libraries.designsystem.components.visuallist.VisualListItemData
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.text.buildAnnotatedStringWithStyledPart
@@ -51,11 +51,11 @@ fun AnalyticsOptInView(
     val eventSink = state.eventSink
 
     fun onAcceptTerms() {
-        eventSink(AnalyticsOptInEvents.EnableAnalytics(true))
+        eventSink(AnalyticsOptInEvent.EnableAnalytics(true))
     }
 
     fun onDeclineTerms() {
-        eventSink(AnalyticsOptInEvents.EnableAnalytics(false))
+        eventSink(AnalyticsOptInEvent.EnableAnalytics(false))
     }
 
     BackHandler(onBack = ::onDeclineTerms)
@@ -137,22 +137,21 @@ private fun AnalyticsOptInContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(40.dp),
     ) {
-        InfoListOrganism(
+        VisualList(
             items = persistentListOf(
-                InfoListItem(
+                VisualListItemData(
                     message = stringResource(id = R.string.screen_analytics_prompt_data_usage),
                     iconVector = CompoundIcons.CheckCircle(),
                 ),
-                InfoListItem(
+                VisualListItemData(
                     message = stringResource(id = R.string.screen_analytics_prompt_third_party_sharing),
                     iconVector = CompoundIcons.CheckCircle(),
                 ),
-                InfoListItem(
+                VisualListItemData(
                     message = stringResource(id = R.string.screen_analytics_prompt_settings),
                     iconVector = CompoundIcons.CheckCircle(),
                 ),
             ),
-            textStyle = ElementTheme.typography.fontBodyLgMedium,
             iconTint = ElementTheme.colors.iconSuccessPrimary,
         )
         // GUA FORK: the OK / Not now buttons live here in the white content area (matching iOS,
@@ -188,7 +187,7 @@ private fun AnalyticsOptInButtons(
 
 @PreviewsDayNight
 @Composable
-internal fun AnalyticsOptInViewPreview(@PreviewParameter(AnalyticsOptInStateProvider::class) state: AnalyticsOptInState) = ElementPreview {
+internal fun AnalyticsOptInViewPreview(@PreviewParameter(AnalyticsOptInStatePreviewParam::class) state: AnalyticsOptInState) = ElementPreview {
     AnalyticsOptInView(
         state = state,
         onClickTerms = {},

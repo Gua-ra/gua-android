@@ -13,6 +13,10 @@ package io.element.android.libraries.mediaviewer.impl.viewer
 import android.net.Uri
 import app.cash.turbine.ReceiveTurbine
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.messages.api.timeline.HtmlConverterProvider
+import io.element.android.features.messages.api.timeline.TextPillificator
+import io.element.android.features.messages.test.timeline.FakeHtmlConverterProvider
+import io.element.android.features.messages.test.timeline.FakeTextPillificator
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.media.MediaSource
@@ -26,10 +30,13 @@ import io.element.android.libraries.matrix.test.A_SESSION_ID_2
 import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.matrix.test.media.FakeMatrixMediaLoader
 import io.element.android.libraries.matrix.test.media.aMediaSource
+import io.element.android.libraries.matrix.test.permalink.FakePermalinkParser
 import io.element.android.libraries.matrix.test.room.FakeBaseRoom
 import io.element.android.libraries.matrix.test.room.FakeJoinedRoom
 import io.element.android.libraries.matrix.test.room.powerlevels.FakeRoomPermissions
 import io.element.android.libraries.matrix.test.timeline.FakeTimeline
+import io.element.android.libraries.matrix.ui.media.contentvalidation.NoopEventContentValidationCache
+import io.element.android.libraries.mediaviewer.api.AvatarInfo
 import io.element.android.libraries.mediaviewer.api.MediaViewerEntryPoint
 import io.element.android.libraries.mediaviewer.api.anApkMediaInfo
 import io.element.android.libraries.mediaviewer.api.local.LocalMediaFactory
@@ -62,7 +69,6 @@ private val TESTED_MEDIA_INFO = anApkMediaInfo(
     senderId = A_USER_ID,
 )
 
-@Suppress("LargeClass")
 class MediaViewerPresenterTest {
     @get:Rule
     val warmUpRule = WarmUpRule()
@@ -109,7 +115,12 @@ class MediaViewerPresenterTest {
     fun `present - initial state cannot show info`() = runTest {
         val presenter = createMediaViewerPresenter(
             localMediaFactory = localMediaFactory,
-            canShowInfo = false,
+            inputs = MediaViewerEntryPoint.Params.Avatar(
+                avatarInfo = AvatarInfo(filename = "avatar.png"),
+                mediaSource = aMediaSource(),
+                thumbnailSource = null,
+                blurHash = null,
+            ),
             room = FakeJoinedRoom(
                 baseRoom = FakeBaseRoom(
                     roomPermissions = FakeRoomPermissions(
@@ -210,6 +221,37 @@ class MediaViewerPresenterTest {
             assertThat(item.mediaSource).isEqualTo(anImage.mediaSource)
             assertThat(item.thumbnailSource).isEqualTo(anImage.thumbnailSource)
             assertThat(item.downloadedMedia.value).isEqualTo(AsyncData.Uninitialized)
+        }
+    }
+
+    @Test
+    fun `present - html caption is converted to a pillified formatted caption`() = runTest {
+        val mediaGalleryDataSource = FakeMediaGalleryDataSource(
+            startLambda = { },
+        )
+        val presenter = createMediaViewerPresenter(
+            localMediaFactory = localMediaFactory,
+            mediaGalleryDataSource = mediaGalleryDataSource,
+            htmlConverterProvider = FakeHtmlConverterProvider(transformDom = { "formatted: ${it.text()}" }),
+            textPillificator = FakeTextPillificator(pillifyLambda = { text, _ -> "pillified $text" }),
+        )
+        val anImage = aMediaItemImage().let {
+            it.copy(mediaInfo = it.mediaInfo.copy(caption = "caption", htmlCaption = "<b>caption</b>"))
+        }
+        presenter.test {
+            awaitFirstItem()
+            mediaGalleryDataSource.emitGroupedMediaItems(
+                AsyncData.Success(
+                    GroupedMediaItems(
+                        imageAndVideoItems = persistentListOf(anImage),
+                        fileItems = persistentListOf(),
+                    )
+                )
+            )
+            val updatedState = awaitFirstItem()
+            val item = updatedState.listData.first() as MediaViewerPageData.MediaViewerData
+            assertThat(item.mediaInfo.htmlCaption).isEqualTo("<b>caption</b>")
+            assertThat(item.formattedCaption.toString()).isEqualTo("pillified formatted: caption")
         }
     }
 
@@ -639,7 +681,7 @@ class MediaViewerPresenterTest {
                     }
                 )
             )
-            skipItems(2)
+            skipItems(1)
             val stateWithSnackbar = awaitItem()
             assertThat(stateWithSnackbar.snackbarMessage!!.messageResId).isEqualTo(expectedSnackbarResId)
         }
@@ -932,50 +974,58 @@ class MediaViewerPresenterTest {
 
 internal fun TestScope.createMediaViewerPresenter(
     localMediaFactory: LocalMediaFactory,
+    inputs: MediaViewerEntryPoint.Params? = null,
     eventId: EventId? = null,
-    mode: MediaViewerEntryPoint.MediaViewerMode = MediaViewerEntryPoint.MediaViewerMode.SingleMedia,
+    mode: MediaViewerEntryPoint.MediaViewerMode = MediaViewerEntryPoint.MediaViewerMode.TimelineImagesAndVideos(Timeline.Mode.Media),
     matrixMediaLoader: FakeMatrixMediaLoader = FakeMatrixMediaLoader(),
     localMediaActions: FakeLocalMediaActions = FakeLocalMediaActions(),
     mediaGalleryDataSource: MediaGalleryDataSource = FakeMediaGalleryDataSource(
         startLambda = { },
     ),
-    canShowInfo: Boolean = true,
     mediaViewerNavigator: MediaViewerNavigator = FakeMediaViewerNavigator(),
     room: JoinedRoom = FakeJoinedRoom(
         liveTimeline = FakeTimeline(),
     ),
+    htmlConverterProvider: HtmlConverterProvider = FakeHtmlConverterProvider(),
+    textPillificator: TextPillificator = FakeTextPillificator(),
 ): MediaViewerPresenter {
+    val actualInputs = inputs ?: createMediaViewerEntryPointParams(eventId = eventId, mode = mode)
+    val actualMode = when (actualInputs) {
+        is MediaViewerEntryPoint.Params.Avatar -> MediaViewerEntryPoint.MediaViewerMode.TimelineImagesAndVideos(Timeline.Mode.Media)
+        is MediaViewerEntryPoint.Params.EventGallery -> MediaViewerEntryPoint.MediaViewerMode.TimelineImagesAndVideos(Timeline.Mode.Media)
+        is MediaViewerEntryPoint.Params.RoomMedia -> actualInputs.mode
+    }
     return MediaViewerPresenter(
-        inputs = createMediaViewerEntryPointParams(
-            eventId = eventId,
-            mode = mode,
-            canShowInfo = canShowInfo,
-        ),
+        inputs = actualInputs,
         navigator = mediaViewerNavigator,
         dataSource = MediaViewerDataSource(
             coroutineScope = backgroundScope,
-            mode = mode,
+            mode = actualMode,
             dispatcher = testCoroutineDispatchers().computation,
             galleryDataSource = mediaGalleryDataSource,
             mediaLoader = matrixMediaLoader,
             localMediaFactory = localMediaFactory,
             systemClock = FakeSystemClock(),
             pagerKeysHandler = PagerKeysHandler(),
+            contentScannerService = { _, _ -> },
+            contentValidationCache = NoopEventContentValidationCache(),
         ),
         room = room,
         localMediaActions = localMediaActions,
+        htmlConverterProvider = htmlConverterProvider,
+        permalinkParser = FakePermalinkParser(),
+        textPillificator = textPillificator,
     )
 }
 
 internal fun createMediaViewerEntryPointParams(
     eventId: EventId? = null,
-    mode: MediaViewerEntryPoint.MediaViewerMode = MediaViewerEntryPoint.MediaViewerMode.SingleMedia,
-    canShowInfo: Boolean = true,
-) = MediaViewerEntryPoint.Params(
+    mode: MediaViewerEntryPoint.MediaViewerMode = MediaViewerEntryPoint.MediaViewerMode.TimelineFilesAndAudios(timelineMode = Timeline.Mode.Media),
+) = MediaViewerEntryPoint.Params.RoomMedia(
     mode = mode,
     eventId = eventId,
     mediaInfo = TESTED_MEDIA_INFO,
     mediaSource = aMediaSource(),
     thumbnailSource = null,
-    canShowInfo = canShowInfo,
+    blurHash = null,
 )

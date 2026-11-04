@@ -1,13 +1,7 @@
 name: Gua CI
 
-# GUA FORK: single, self-contained pipeline for the fork.
-#
-# It deliberately does NOT depend on any upstream (element-hq) org secrets, LFS goldens,
-# the enterprise submodule, Localazy, codecov, Diawi, Firebase, or Sonar; those upstream
-# workflows are disabled to workflow_dispatch-only so the fork pipeline is green out of the box.
-#
-# Jobs: constraint guard -> build (assembleGplayDebug) + unit tests + lint/ktlint/detekt +
-# Paparazzi screenshot verification. All on JDK 21 (the upstream default).
+# GUA FORK: the fork's pipeline. It needs no upstream secrets or services, and the upstream workflows
+# run only on workflow_dispatch.
 
 on:
   workflow_dispatch:
@@ -107,12 +101,6 @@ jobs:
           path: app/build/outputs/apk/gplay/debug/*-universal-debug.apk
 
   # --- 3. Unit tests + screenshot verification. -----------------------------
-  #
-  # Two different screenshot tools run here. :tests:uitests uses Paparazzi against ~3100 plain
-  # committed PNGs. :libraries:compound uses Roborazzi against 22 goldens that ARE in Git LFS,
-  # which is why this job checks out with lfs: true. An earlier note here claimed pointer files
-  # "simply compare against their pointer files" and are therefore harmless. They are not:
-  # Roborazzi cannot decode a pointer and crashes on it.
   tests:
     name: Unit tests + screenshots
     runs-on: ubuntu-latest
@@ -122,11 +110,7 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
-          # :libraries:compound's screenshot goldens are LFS-tracked (.gitattributes). Without this
-          # they arrive as 130-byte pointer stubs, Roborazzi hands the pointer text to ImageIO,
-          # gets null back, and throws NullPointerException while LOADING the golden, before any
-          # pixel is compared. That is what the ten "screenshots FAILED" results in this job were:
-          # not a rendering regression, just an unreadable file.
+          # Screenshot goldens and some test assets are Git LFS files, and tests cannot read their pointer stubs.
           lfs: true
       - name: Use JDK 21
         uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
