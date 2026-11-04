@@ -572,7 +572,6 @@ private fun DmHeaderSection(
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             modifier = Modifier.niceClickable { onSubtitleClick(otherMember.userId.value) },
-            // GUA FORK: hide the homeserver suffix in the user handle.
             text = otherMember.userId.displayHandle,
             style = ElementTheme.typography.fontBodyLgRegular,
             color = ElementTheme.colors.textSecondary,

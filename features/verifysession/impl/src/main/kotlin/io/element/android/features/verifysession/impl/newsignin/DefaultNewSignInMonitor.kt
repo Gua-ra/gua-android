@@ -99,7 +99,7 @@ class DefaultNewSignInMonitor(
             nudges = nudges.toMap(),
             requestsReceivedAtMillis = requestsReceivedAtMillis.toMap(),
         ) ?: return@withContext
-        // The reads take time; anything that started meanwhile wins over the nudge.
+        // Anything that started during the slow reads above wins over the nudge.
         skipReason(isShowingMainScreens.value)?.let {
             Timber.d("Nudge to ${candidate.value} skipped: $it")
             return@withContext

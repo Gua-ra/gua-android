@@ -6,7 +6,6 @@
   -->
 <resources>
 
-    <!-- GUA FORK: device wording instead of upstream's "sessions". -->
     <string name="gua_verification_other_device_title">Open Gua on your other device</string>
     <string name="gua_verification_other_device_subtitle">Keep it open. You\'ll compare a few emojis on both devices to confirm it\'s you.</string>
     <string name="gua_verification_waiting_other_device_title">Waiting for your other device</string>

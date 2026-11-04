@@ -29,7 +29,6 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
 open class ActionListStatePreviewParam : PreviewParameterProvider<ActionListState> {
-    // GUA FORK: Gua's quick reactions, as the action list presenter offers them.
     private val suggestedEmojis = MessageQuickReactions.defaults
 
     override val values: Sequence<ActionListState>

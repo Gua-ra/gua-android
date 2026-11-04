@@ -21,7 +21,6 @@ fun createLoginHelper(
     oAuthActionFlow: OAuthActionFlow = FakeOAuthActionFlow(),
     authenticationService: MatrixAuthenticationService = FakeMatrixAuthenticationService(),
     resolverClient: ResolverClient = FakeResolverClient(),
-    // AccountGenesis defaults to off, so tests keep exercising the bare phone hint unless they turn it on.
     featureFlagService: FeatureFlagService = FakeFeatureFlagService(),
     accountGenesisManager: AccountGenesisManager = FakeAccountGenesisManager(),
     deployment: GuaDeployment = FakeGuaDeployment(),

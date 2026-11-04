@@ -148,7 +148,7 @@ internal class MessageMenuBubbleNode(
         }
     }
 
-    // Watched here rather than through an interaction source, because media with a caption and galleries handle their own presses.
+    // An interaction source would miss the presses that media with a caption and galleries handle themselves.
     override fun onPointerEvent(pointerEvent: PointerEvent, pass: PointerEventPass, bounds: IntSize) {
         val changes = pointerEvent.changes
         if (pass == PointerEventPass.Initial && changes.any { it.changedToDownIgnoreConsumed() }) lastInputWasKey = false

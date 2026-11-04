@@ -161,7 +161,7 @@ internal fun SelectableText(text: String) {
     }
 }
 
-// A quick tap on the selection shows the edit menu instead of moving the cursor; long presses still reach the field.
+// A quick tap on the selection shows the edit menu instead of moving the cursor, while long presses still reach the field.
 private suspend fun PointerInputScope.detectSelectionTaps(onTap: () -> Unit, hasSelection: () -> Boolean) {
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)

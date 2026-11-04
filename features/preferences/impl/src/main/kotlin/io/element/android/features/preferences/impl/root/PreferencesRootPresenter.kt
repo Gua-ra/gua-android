@@ -152,11 +152,8 @@ class PreferencesRootPresenter(
             lockScreenService.isPinSetup()
         }.collectAsState(initial = true)
 
-        // GUA FORK: the nudge banner advertises two-step verification, so gate it on the account's
-        // FACTORS from the identity service (mirrors TwoStepVerificationPresenter), not the local
-        // app-lock and not a lone hasPin: a passkey holder already has two-step verification and
-        // must not be nudged to add a PIN. Null is "not known yet, or could not be read", and the
-        // banner shows only on an explicit false.
+        // GUA FORK: the nudge advertises two-step verification, which a passkey already provides, so it follows the
+        // account's factors. Null means unknown, and only an explicit false shows the nudge.
         val hasAccountStrongFactor by produceState<Boolean?>(initialValue = null) {
             val accessToken = sessionStore.getSession(matrixClient.sessionId.value)?.accessToken ?: return@produceState
             identityServiceClient.accountFactorStatus(accessToken, matrixClient.sessionId.value)
