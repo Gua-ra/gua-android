@@ -1,7 +1,7 @@
 /*
  * Copyright 2026 Gua
  *
- * SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+ * SPDX-License-Identifier: AGPL-3.0-only
  * Please see LICENSE files in the repository root for full details.
  */
 
@@ -129,9 +129,8 @@ fun PhoneEntryView(
             loginMode = state.loginMode,
             onClearError = { eventSink(PhoneEntryEvents.ClearError) },
             onLearnMoreClick = onLearnMoreClick,
-            // Phone-first entry never produces password/account-creation modes (MAS OIDC only).
+            // Phone entry signs in only through OIDC, so it never asks for a password.
             onNeedLoginPassword = {},
-            onCreateAccountContinue = {},
             onOAuthDetails = onOAuthDetails,
         )
     }
@@ -306,7 +305,7 @@ private fun CountrySelectorButton(
 @PreviewsDayNight
 @Composable
 internal fun PhoneEntryViewPreview(
-    @PreviewParameter(PhoneEntryStateProvider::class) state: PhoneEntryState,
+    @PreviewParameter(PhoneEntryStatePreviewParam::class) state: PhoneEntryState,
 ) = ElementPreview {
     PhoneEntryView(
         state = state,

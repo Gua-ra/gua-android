@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,10 +31,8 @@ import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.verifysession.impl.R
 import io.element.android.features.verifysession.impl.incoming.IncomingVerificationState.Step
-import io.element.android.features.verifysession.impl.incoming.ui.SessionDetailsView
 import io.element.android.features.verifysession.impl.ui.VerificationBottomMenu
 import io.element.android.features.verifysession.impl.ui.VerificationContentVerifying
-import io.element.android.features.verifysession.impl.ui.VerificationUserProfileContent
 import io.element.android.libraries.designsystem.atomic.molecules.IconTitleSubtitleMolecule
 import io.element.android.libraries.designsystem.atomic.pages.HeaderFooterPage
 import io.element.android.libraries.designsystem.components.BigIcon
@@ -43,17 +40,20 @@ import io.element.android.libraries.designsystem.components.button.BackButton
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Button
+import io.element.android.libraries.designsystem.theme.components.OutlinedButton
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.designsystem.theme.components.TextButton
 import io.element.android.libraries.designsystem.theme.components.TopAppBar
 import io.element.android.libraries.matrix.api.verification.SessionVerificationData
 import io.element.android.libraries.matrix.api.verification.VerificationRequest
+import io.element.android.libraries.matrix.ui.components.accountinfo.AccountInfoCard
+import io.element.android.libraries.matrix.ui.components.accountinfo.AccountInfoCardMode
+import io.element.android.libraries.matrix.ui.components.accountinfo.AccountInfoCardState
 import io.element.android.libraries.ui.strings.CommonStrings
 
 /**
  * [Figma](https://www.figma.com/design/pDlJZGBsri47FNTXMnEdXB/Compound-Android-Templates?node-id=819-7324).
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IncomingVerificationView(
     state: IncomingVerificationState,
@@ -62,7 +62,7 @@ fun IncomingVerificationView(
     val step = state.step
 
     BackHandler {
-        state.eventSink(IncomingVerificationViewEvents.GoBack)
+        state.eventSink(IncomingVerificationViewEvent.GoBack)
     }
     HeaderFooterPage(
         modifier = modifier,
@@ -70,7 +70,7 @@ fun IncomingVerificationView(
             TopAppBar(
                 title = {},
                 navigationIcon = {
-                    BackButton(onClick = { state.eventSink(IncomingVerificationViewEvents.GoBack) })
+                    BackButton(onClick = { state.eventSink(IncomingVerificationViewEvent.GoBack) })
                 },
                 colors = topAppBarColors(containerColor = Color.Transparent),
             )
@@ -106,7 +106,10 @@ private fun IncomingVerificationHeader(step: Step, request: VerificationRequest.
     }
     val titleTextId = when (step) {
         Step.Canceled -> CommonStrings.common_verification_failed
-        is Step.Initial -> R.string.screen_session_verification_request_title
+        is Step.Initial -> when (request) {
+            is VerificationRequest.Incoming.OtherSession -> R.string.gua_verification_new_sign_in_title
+            is VerificationRequest.Incoming.User -> R.string.screen_session_verification_request_title
+        }
         is Step.Verifying -> when (step.data) {
             is SessionVerificationData.Decimals -> R.string.screen_session_verification_compare_numbers_title
             is SessionVerificationData.Emojis -> R.string.screen_session_verification_compare_emojis_title
@@ -117,18 +120,18 @@ private fun IncomingVerificationHeader(step: Step, request: VerificationRequest.
     val subtitleTextId = when (step) {
         Step.Canceled -> R.string.screen_session_verification_request_failure_subtitle
         is Step.Initial -> when (request) {
-            is VerificationRequest.Incoming.OtherSession -> R.string.screen_session_verification_request_subtitle
+            is VerificationRequest.Incoming.OtherSession -> R.string.gua_verification_new_sign_in_subtitle
             is VerificationRequest.Incoming.User -> R.string.screen_session_verification_user_responder_subtitle
         }
         is Step.Verifying -> when (step.data) {
             is SessionVerificationData.Decimals -> R.string.screen_session_verification_compare_numbers_subtitle
             is SessionVerificationData.Emojis -> when (request) {
-                is VerificationRequest.Incoming.OtherSession -> R.string.screen_session_verification_compare_emojis_subtitle
+                is VerificationRequest.Incoming.OtherSession -> R.string.gua_verification_compare_emojis_subtitle
                 is VerificationRequest.Incoming.User -> R.string.screen_session_verification_compare_emojis_user_subtitle
             }
         }
         Step.Completed -> when (request) {
-            is VerificationRequest.Incoming.OtherSession -> R.string.screen_session_verification_complete_subtitle
+            is VerificationRequest.Incoming.OtherSession -> R.string.gua_verification_new_sign_in_complete_subtitle
             is VerificationRequest.Incoming.User -> R.string.screen_session_verification_complete_user_subtitle
         }
         Step.Failure -> R.string.screen_session_verification_request_failure_subtitle
@@ -169,16 +172,21 @@ private fun ContentInitial(
     stepInitial: Step.Initial,
     request: VerificationRequest.Incoming,
 ) {
-    when (request) {
-        is VerificationRequest.Incoming.OtherSession -> {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-            ) {
-                SessionDetailsView(
-                    deviceName = stepInitial.deviceDisplayName,
-                    deviceId = stepInitial.deviceId,
-                    signInFormattedTimestamp = stepInitial.formattedSignInTime,
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        when (request) {
+            is VerificationRequest.Incoming.OtherSession -> {
+                AccountInfoCard(
+                    state = AccountInfoCardState(
+                        matrixUser = stepInitial.currentUser,
+                        mode = AccountInfoCardMode.DeviceVerification(
+                            deviceName = stepInitial.deviceDisplayName,
+                            deviceId = stepInitial.deviceId,
+                            signInFormattedTimestamp = stepInitial.formattedSignInTime,
+                        ),
+                    ),
                 )
                 Text(
                     modifier = Modifier
@@ -189,15 +197,15 @@ private fun ContentInitial(
                     textAlign = TextAlign.Center,
                 )
             }
-        }
-        is VerificationRequest.Incoming.User -> {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp),
-            ) {
-                VerificationUserProfileContent(
-                    user = request.details.senderProfile,
+            is VerificationRequest.Incoming.User -> {
+                AccountInfoCard(
+                    state = AccountInfoCardState(
+                        matrixUser = stepInitial.currentUser,
+                        mode = AccountInfoCardMode.UserVerification(
+                            otherUser = request.details.senderProfile,
+                            hint = stringResource(R.string.screen_session_verification_user_requesting_verification),
+                        ),
+                    ),
                 )
             }
         }
@@ -217,13 +225,13 @@ private fun IncomingVerificationBottomMenu(
                     text = stringResource(CommonStrings.action_start_verification),
                     enabled = !step.isWaiting,
                     showProgress = step.isWaiting,
-                    onClick = { eventSink(IncomingVerificationViewEvents.StartVerification) },
+                    onClick = { eventSink(IncomingVerificationViewEvent.StartVerification) },
                 )
-                TextButton(
+                OutlinedButton(
                     modifier = Modifier.fillMaxWidth(),
                     text = stringResource(CommonStrings.action_ignore),
                     enabled = !step.isWaiting,
-                    onClick = { eventSink(IncomingVerificationViewEvents.IgnoreVerification) },
+                    onClick = { eventSink(IncomingVerificationViewEvent.IgnoreVerification) },
                 )
             }
         }
@@ -235,14 +243,14 @@ private fun IncomingVerificationBottomMenu(
                     enabled = !step.isWaiting,
                     showProgress = step.isWaiting,
                     onClick = {
-                        eventSink(IncomingVerificationViewEvents.ConfirmVerification)
+                        eventSink(IncomingVerificationViewEvent.ConfirmVerification)
                     },
                 )
                 TextButton(
                     modifier = Modifier.fillMaxWidth(),
                     text = stringResource(R.string.screen_session_verification_they_dont_match),
                     enabled = !step.isWaiting,
-                    onClick = { eventSink(IncomingVerificationViewEvents.DeclineVerification) },
+                    onClick = { eventSink(IncomingVerificationViewEvent.DeclineVerification) },
                 )
             }
         }
@@ -254,7 +262,7 @@ private fun IncomingVerificationBottomMenu(
                     modifier = Modifier.fillMaxWidth(),
                     text = stringResource(CommonStrings.action_done),
                     onClick = {
-                        eventSink(IncomingVerificationViewEvents.GoBack)
+                        eventSink(IncomingVerificationViewEvent.GoBack)
                     },
                 )
             }
@@ -264,7 +272,9 @@ private fun IncomingVerificationBottomMenu(
 
 @PreviewsDayNight
 @Composable
-internal fun IncomingVerificationViewPreview(@PreviewParameter(IncomingVerificationStateProvider::class) state: IncomingVerificationState) = ElementPreview {
+internal fun IncomingVerificationViewPreview(
+    @PreviewParameter(IncomingVerificationStatePreviewParam::class) state: IncomingVerificationState
+) = ElementPreview {
     IncomingVerificationView(
         state = state,
     )

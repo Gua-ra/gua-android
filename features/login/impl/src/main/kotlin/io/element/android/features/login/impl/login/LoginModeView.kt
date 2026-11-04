@@ -15,6 +15,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.dialogs.SlidingSyncNotSupportedDialog
 import io.element.android.features.login.impl.error.ChangeServerError
+import io.element.android.features.login.impl.error.retryLaterMessage
 import io.element.android.features.login.impl.screens.createaccount.AccountCreationNotSupported
 import io.element.android.libraries.androidutils.system.openGooglePlay
 import io.element.android.libraries.architecture.AsyncData
@@ -34,7 +35,6 @@ fun LoginModeView(
     onLearnMoreClick: () -> Unit,
     onOAuthDetails: (OAuthDetails) -> Unit,
     onNeedLoginPassword: () -> Unit,
-    onCreateAccountContinue: (url: String) -> Unit
 ) {
     val context = LocalContext.current
     when (loginMode) {
@@ -56,6 +56,12 @@ fun LoginModeView(
                         is ChangeServerError.Error -> {
                             ErrorDialog(
                                 content = stringResource(error.messageId),
+                                onSubmit = onClearError,
+                            )
+                        }
+                        is ChangeServerError.RetryLater -> {
+                            ErrorDialog(
+                                content = retryLaterMessage(error),
                                 onSubmit = onClearError,
                             )
                         }
@@ -110,7 +116,9 @@ fun LoginModeView(
                     )
                 }
                 is AuthenticationException.AccountAlreadyLoggedIn -> {
+                    // Ref: https://www.figma.com/design/kEAcfun9iSpszeUDvdKZ6b/ER-351--Multi-account-in-EX?node-id=1242-18532
                     ErrorDialog(
+                        title = stringResource(CommonStrings.error_account_already_logged_in_title),
                         content = stringResource(CommonStrings.error_account_already_logged_in, error.userId),
                         onSubmit = onClearError,
                     )
@@ -128,7 +136,6 @@ fun LoginModeView(
             when (val loginModeData = loginMode.data) {
                 is LoginMode.OAuth -> onOAuthDetails(loginModeData.oAuthDetails)
                 LoginMode.PasswordLogin -> onNeedLoginPassword()
-                is LoginMode.AccountCreation -> onCreateAccountContinue(loginModeData.url)
             }
             // Also clear the data, to let the next screen be able to go back
             onClearError()
@@ -139,15 +146,14 @@ fun LoginModeView(
 
 @PreviewsDayNight
 @Composable
-internal fun LoginModeViewPreview(@PreviewParameter(LoginModeViewErrorProvider::class) error: Throwable) {
-    ElementPreview {
+internal fun LoginModeViewPreview(@PreviewParameter(LoginModeViewErrorPreviewParam::class) error: Throwable) {
+    ElementPreview(fillMaxSize = true) {
         LoginModeView(
             loginMode = AsyncData.Failure(error),
             onClearError = {},
             onLearnMoreClick = {},
             onOAuthDetails = {},
             onNeedLoginPassword = {},
-            onCreateAccountContinue = {}
         )
     }
 }

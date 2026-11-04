@@ -1,7 +1,7 @@
 /*
  * Copyright 2026 Gua
  *
- * SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+ * SPDX-License-Identifier: AGPL-3.0-only
  * Please see LICENSE files in the repository root for full details.
  */
 
@@ -459,7 +459,7 @@ private fun ChangePhoneNumberPhase.footerRes(): Int? = when (this) {
 @PreviewsDayNight
 @Composable
 internal fun ChangePhoneNumberViewPreview(
-    @PreviewParameter(ChangePhoneNumberStateProvider::class) state: ChangePhoneNumberState,
+    @PreviewParameter(ChangePhoneNumberStatePreviewParam::class) state: ChangePhoneNumberState,
 ) = ElementPreview {
     ChangePhoneNumberView(
         state = state,

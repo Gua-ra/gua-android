@@ -1,7 +1,7 @@
 /*
  * Copyright 2026 Gua
  *
- * SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+ * SPDX-License-Identifier: AGPL-3.0-only
  * Please see LICENSE files in the repository root for full details.
  */
 
@@ -94,7 +94,7 @@ class FindFriendsPresenter(
             startingChatUserId = contact.userId
             coroutineScope.launch {
                 try {
-                    when (val result = matrixClient.startDM(contact.userId, createIfDmDoesNotExist = true)) {
+                    when (val result = matrixClient.startDM(contact.userId, createIfDmDoesNotExist = true, isEncryped = true)) {
                         is StartDMResult.Success -> callback.onStartChat(result.roomId)
                         else -> phase = FindFriendsPhase.Error
                     }

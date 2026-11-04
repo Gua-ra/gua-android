@@ -26,13 +26,14 @@ import dev.zacsweers.metro.AssistedInject
 import im.vector.app.features.analytics.plan.JoinedRoom
 import io.element.android.features.invite.api.InviteData
 import io.element.android.features.invite.api.SeenInvitesStore
-import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteEvents
+import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteEvent
 import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteState
 import io.element.android.features.invite.api.toInviteData
 import io.element.android.features.joinroom.impl.di.CancelKnockRoom
 import io.element.android.features.joinroom.impl.di.ForgetRoom
 import io.element.android.features.joinroom.impl.di.KnockRoom
 import io.element.android.features.roomdirectory.api.RoomDescription
+import io.element.android.features.space.api.SpacesSwitch
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.architecture.runUpdatingState
@@ -72,6 +73,7 @@ class JoinRoomPresenter(
     private val acceptDeclineInvitePresenter: Presenter<AcceptDeclineInviteState>,
     private val buildMeta: BuildMeta,
     private val seenInvitesStore: SeenInvitesStore,
+    private val spacesSwitch: SpacesSwitch,
 ) : Presenter<JoinRoomState> {
     fun interface Factory {
         fun create(
@@ -101,6 +103,7 @@ class JoinRoomPresenter(
         var isDismissingContent by remember { mutableStateOf(false) }
         val hideInviteAvatars by matrixClient.rememberHideInvitesAvatar()
         val canReportRoom by produceState(false) { value = matrixClient.canReportRoom() }
+        val isSpacesEnabled by spacesSwitch.isEnabled.collectAsState()
 
         var contentState by remember {
             mutableStateOf<ContentState>(ContentState.Loading)
@@ -151,37 +154,44 @@ class JoinRoomPresenter(
             contentState.markRoomInviteAsSeen()
         }
 
-        fun handleEvent(event: JoinRoomEvents) {
+        var joiningTurnsOnSpaces = false
+
+        fun handleEvent(event: JoinRoomEvent) {
             when (event) {
-                JoinRoomEvents.JoinRoom -> coroutineScope.joinRoom(joinAction)
-                is JoinRoomEvents.KnockRoom -> coroutineScope.knockRoom(knockAction, knockMessage)
-                is JoinRoomEvents.AcceptInvite -> {
+                JoinRoomEvent.JoinRoom -> {
+                    // GUA FORK: called before joining because this screen closes as soon as the room is joined.
+                    if (joiningTurnsOnSpaces) spacesSwitch.enableWhenJoined(roomId)
+                    coroutineScope.joinRoom(joinAction)
+                }
+                is JoinRoomEvent.KnockRoom -> coroutineScope.knockRoom(knockAction, knockMessage)
+                is JoinRoomEvent.AcceptInvite -> {
+                    if (joiningTurnsOnSpaces) spacesSwitch.enableWhenJoined(roomId)
                     acceptDeclineInviteState.eventSink(
-                        AcceptDeclineInviteEvents.AcceptInvite(event.inviteData)
+                        AcceptDeclineInviteEvent.AcceptInvite(event.inviteData)
                     )
                 }
-                is JoinRoomEvents.DeclineInvite -> {
+                is JoinRoomEvent.DeclineInvite -> {
                     acceptDeclineInviteState.eventSink(
-                        AcceptDeclineInviteEvents.DeclineInvite(invite = event.inviteData, blockUser = event.blockUser, shouldConfirm = true)
+                        AcceptDeclineInviteEvent.DeclineInvite(invite = event.inviteData, blockUser = event.blockUser, shouldConfirm = true)
                     )
                 }
-                is JoinRoomEvents.CancelKnock -> coroutineScope.cancelKnockRoom(event.requiresConfirmation, cancelKnockAction)
-                JoinRoomEvents.RetryFetchingContent -> {
+                is JoinRoomEvent.CancelKnock -> coroutineScope.cancelKnockRoom(event.requiresConfirmation, cancelKnockAction)
+                JoinRoomEvent.RetryFetchingContent -> {
                     retryCount++
                 }
-                JoinRoomEvents.ClearActionStates -> {
+                JoinRoomEvent.ClearActionStates -> {
                     knockAction.value = AsyncAction.Uninitialized
                     joinAction.value = AsyncAction.Uninitialized
                     cancelKnockAction.value = AsyncAction.Uninitialized
                     forgetRoomAction.value = AsyncAction.Uninitialized
                 }
-                is JoinRoomEvents.UpdateKnockMessage -> {
+                is JoinRoomEvent.UpdateKnockMessage -> {
                     knockMessage = event.message.take(MAX_KNOCK_MESSAGE_LENGTH)
                 }
-                JoinRoomEvents.DismissErrorAndHideContent -> {
+                JoinRoomEvent.DismissErrorAndHideContent -> {
                     isDismissingContent = true
                 }
-                JoinRoomEvents.ForgetRoom -> coroutineScope.forgetRoom(forgetRoomAction)
+                JoinRoomEvent.ForgetRoom -> coroutineScope.forgetRoom(forgetRoomAction)
             }
         }
 
@@ -197,8 +207,9 @@ class JoinRoomPresenter(
             knockMessage = knockMessage,
             hideInviteAvatars = hideInviteAvatars,
             canReportRoom = canReportRoom,
+            isSpacesEnabled = isSpacesEnabled,
             eventSink = ::handleEvent,
-        )
+        ).also { joiningTurnsOnSpaces = it.joiningTurnsOnSpaces }
     }
 
     private fun CoroutineScope.joinRoom(joinAction: MutableState<AsyncAction<Unit>>) = launch {

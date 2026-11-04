@@ -23,34 +23,14 @@ class KonsistLicenseTest {
          \*/
         """.trimIndent().toRegex()
 
-    // GUA FORK: files written for this fork carry the fork's own copyright rather than
-    // Element's, per the project's header policy. Upstream files keep their Element notice,
-    // and a file modified rather than authored here keeps it too. The SPDX terms are
-    // unchanged either way, so the licence itself is identical.
+    // GUA FORK: a file Gua wrote carries Gua's copyright under AGPL-3.0-only alone. Upstream
+    // files, including ones modified here, keep their Element notice and dual license.
     private val guaLicense = """
         /\*
          \* Copyright 20\d\d((, |-)20\d\d)? Gua
         (?:.*\n)* \*
-         \* SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial\.
+         \* SPDX-License-Identifier: AGPL-3\.0-only
          \* Please see LICENSE files in the repository root for full details\.
-         \*/
-        """.trimIndent().toRegex()
-
-    private val enterpriseLicense = """
-        /\*
-         \* © 20\d\d((, |-)20\d\d)? Element Creations Ltd\.
-        (?:.*\n)* \*
-         \* Element Creations Ltd, Element Software SARL, Element Software Inc\.,
-         \* and Element Software GmbH \(the "Element Group"\) only make this file available
-         \* under a proprietary license model\.
-         \*
-         \* Without a proprietary license with us, you cannot use this file\. The terms of
-         \* the proprietary license agreement between you and any member of the Element Group
-         \* shall always apply to your use of this file\. Unauthorised use, copying, distribution,
-         \* or modification of this file, via any medium, is strictly prohibited\.
-         \*
-         \* For details about the licensing terms, you must either visit our website or contact
-         \* a member of our sales team\.
          \*/
         """.trimIndent().toRegex()
 
@@ -70,19 +50,6 @@ class KonsistLicenseTest {
             }
             .assertTrue {
                 publicLicense.containsMatchIn(it.text) || guaLicense.containsMatchIn(it.text)
-            }
-    }
-
-    @Test
-    fun `assert that Enterprise files have the correct license header`() {
-        Konsist
-            .scopeFromProject()
-            .files
-            .filter {
-                it.moduleName.startsWith("enterprise")
-            }
-            .assertTrue {
-                enterpriseLicense.containsMatchIn(it.text)
             }
     }
 

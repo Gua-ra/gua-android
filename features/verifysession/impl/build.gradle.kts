@@ -11,6 +11,7 @@ import extension.testCommonDependencies
 
 plugins {
     id("io.element.android-compose-library")
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -25,7 +26,6 @@ android {
 setupDependencyInjection()
 
 dependencies {
-    implementation(projects.appconfig)
     implementation(projects.libraries.androidutils)
     implementation(projects.libraries.core)
     implementation(projects.libraries.architecture)
@@ -33,15 +33,26 @@ dependencies {
     implementation(projects.libraries.matrix.api)
     implementation(projects.libraries.matrixui)
     implementation(projects.libraries.designsystem)
-    implementation(projects.libraries.preferences.api)
+    implementation(projects.libraries.network)
+    implementation(projects.libraries.sessionStorage.api)
     implementation(projects.libraries.uiStrings)
-    implementation(projects.features.logout.api)
+    implementation(projects.features.lockscreen.api)
+    implementation(projects.features.securebackup.api)
+    implementation(projects.services.appnavstate.api)
+    implementation(projects.services.toolbox.api)
+    implementation(libs.serialization.json)
+    implementation(platform(libs.network.retrofit.bom))
+    implementation(libs.network.retrofit)
     api(libs.statemachine)
     api(projects.features.verifysession.api)
 
     testCommonDependencies(libs, true)
-    testImplementation(projects.features.logout.test)
+    testImplementation(projects.features.lockscreen.test)
     testImplementation(projects.libraries.dateformatter.test)
     testImplementation(projects.libraries.matrix.test)
-    testImplementation(projects.libraries.preferences.test)
+    testImplementation(projects.libraries.sessionStorage.test)
+    testImplementation(projects.services.appnavstate.test)
+    testImplementation(projects.services.toolbox.test)
+    testImplementation(platform(libs.network.okhttp.bom))
+    testImplementation(libs.network.mockwebserver)
 }

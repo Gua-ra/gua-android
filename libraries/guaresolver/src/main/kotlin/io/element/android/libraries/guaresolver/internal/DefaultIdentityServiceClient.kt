@@ -1,7 +1,7 @@
 /*
  * Copyright 2026 Gua
  *
- * SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+ * SPDX-License-Identifier: AGPL-3.0-only
  * Please see LICENSE files in the repository root for full details.
  */
 
@@ -24,6 +24,7 @@ import io.element.android.libraries.guaresolver.IdentityServiceClient
 import io.element.android.libraries.guaresolver.PhoneChangeChallenge
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.network.RetrofitFactory
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
 import timber.log.Timber
@@ -33,9 +34,8 @@ import timber.log.Timber
  * via Retrofit, reusing the app-wide [RetrofitFactory] (OkHttp + kotlinx-serialization). Mirrors iOS
  * `IdentityServiceClient.lookupContacts`.
  *
- * PRIVACY: only hashed phone digests are sent (the caller is expected to protect raw E.164 numbers
- * via `PhoneHasher` first), the address book is never persisted, and nothing about the contacts is
- * logged. The lookup is authenticated with the caller's Matrix access token over TLS.
+ * The contact lookup carries the user's contact numbers and the accounts they match, so it bypasses HTTP
+ * logging and its failures log only the exception type.
  */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
@@ -44,14 +44,14 @@ class DefaultIdentityServiceClient(
     private val enrollmentRedirectProvider: EnrollmentRedirectProvider,
     private val deployment: GuaDeployment = GuaResolverConfig.current,
 ) : IdentityServiceClient {
-    override suspend fun lookupContacts(accessToken: String, hashedPhones: List<String>): Result<List<ContactMatch>> {
-        if (hashedPhones.isEmpty()) return Result.success(emptyList())
+    override suspend fun lookupContacts(accessToken: String, phones: List<String>): Result<List<ContactMatch>> {
+        if (phones.isEmpty()) return Result.success(emptyList())
 
         val baseUrl = deployment.identityServiceBaseUrl
             ?: return Result.failure(ResolverError.NotConfigured)
 
         val api = try {
-            createApi(baseUrl)
+            createApi(baseUrl, logTraffic = false)
         } catch (e: Exception) {
             Timber.e(e, "Failed to create identity-service Retrofit instance")
             return Result.failure(ResolverError.Transport(e))
@@ -60,19 +60,24 @@ class DefaultIdentityServiceClient(
         val response = try {
             api.lookupContacts(
                 authorization = "Bearer $accessToken",
-                body = LookupRequest(hashedPhones = hashedPhones),
+                body = LookupRequest(phones = phones),
             )
         } catch (e: HttpException) {
             return Result.failure(ResolverError.Server(e.code()))
+        } catch (e: SerializationException) {
+            // The message quotes the response, which holds contact numbers. A caller may log the returned error,
+            // so the log line and the returned error keep only the exception type.
+            Timber.e("Contact lookup failed with ${e.javaClass.name}")
+            return Result.failure(ResolverError.Transport(SerializationException(e.javaClass.name)))
         } catch (e: Exception) {
-            Timber.e(e, "Contact lookup failed")
+            Timber.e("Contact lookup failed with ${e.javaClass.name}")
             return Result.failure(ResolverError.Transport(e))
         }
 
         return Result.success(
             response.matches.map { match ->
                 ContactMatch(
-                    hashedPhone = match.hashedPhone,
+                    phoneNumber = match.phone,
                     userId = match.userId,
                     // Homeserver abstraction: prefer the assigned global username, otherwise strip
                     // the ":homeserver" suffix from the Matrix id (mirrors iOS `DiscoveredContact.handle`
@@ -271,8 +276,9 @@ class DefaultIdentityServiceClient(
      * An [IdentityServiceApi] whose requests carry the app's UI language as `Accept-Language`, unless
      * the call sets its own. The identity-service picks the SMS language from it.
      */
-    private fun createApi(baseUrl: String): IdentityServiceApi {
-        val retrofit = retrofitFactory.create(baseUrl.ensureProtocol())
+    private fun createApi(baseUrl: String, logTraffic: Boolean = true): IdentityServiceApi {
+        val url = baseUrl.ensureProtocol()
+        val retrofit = if (logTraffic) retrofitFactory.create(url) else retrofitFactory.createUnlogged(url)
         val callFactory = retrofit.callFactory()
         return retrofit.newBuilder()
             .callFactory { request ->
@@ -307,8 +313,13 @@ class DefaultIdentityServiceClient(
             Result.success(block(api))
         } catch (e: HttpException) {
             Result.failure(e.toPinError())
+        } catch (e: SerializationException) {
+            // The message quotes the JSON that failed to decode, which can hold tokens or a passkey assertion.
+            // Callers log the returned error, so the log line and the returned error keep only the exception type.
+            Timber.e("Identity-service PIN call failed with ${e.javaClass.name}")
+            Result.failure(ResolverError.Transport(SerializationException(e.javaClass.name)))
         } catch (e: Exception) {
-            Timber.e(e, "Identity-service PIN call failed")
+            Timber.e("Identity-service PIN call failed with ${e.javaClass.name}")
             Result.failure(ResolverError.Transport(e))
         }
     }
@@ -323,6 +334,12 @@ class DefaultIdentityServiceClient(
             tryOrNull { errorBodyJson.decodeFromString<IdentityServiceErrorBody>(it) }
         }
         val code = errorBody?.code
+        val loggableCode = when {
+            code == null -> "none"
+            code.matches(ERROR_CODE_SHAPE) -> code
+            else -> "<unrecognized>"
+        }
+        Timber.w("Identity-service call refused with HTTP ${code()}, code $loggableCode")
         val retryAfter = response()?.headers()?.get("Retry-After")?.toIntOrNull()
         // The cooldown retry window is carried in the JSON body, falling back to the Retry-After header.
         val cooldownRetryAfter = errorBody?.retryAfterSeconds ?: retryAfter?.toLong()
@@ -370,6 +387,9 @@ class DefaultIdentityServiceClient(
 
     private companion object {
         private val errorBodyJson = Json { ignoreUnknownKeys = true }
+
+        /** Error codes are a fixed snake_case vocabulary. A code of any other shape is not logged, as it may carry user data. */
+        private val ERROR_CODE_SHAPE = Regex("[a-z0-9_]{1,64}")
 
         /** Re-serialises the authenticator's assertion response without reinterpreting it. */
         private val credentialJson = Json { ignoreUnknownKeys = true }

@@ -37,7 +37,8 @@ data class JoinRoomState(
     val knockMessage: String,
     val hideInviteAvatars: Boolean,
     val canReportRoom: Boolean,
-    val eventSink: (JoinRoomEvents) -> Unit
+    val isSpacesEnabled: Boolean,
+    val eventSink: (JoinRoomEvent) -> Unit
 ) {
     val isJoinActionUnauthorized = joinAction is AsyncAction.Failure && joinAction.error is JoinRoom.Failures.UnauthorizedJoin
     val joinAuthorisationStatus = when (contentState) {
@@ -60,6 +61,16 @@ data class JoinRoomState(
         }
         else -> JoinAuthorisationStatus.None
     }
+
+    val joiningTurnsOnSpaces = !isSpacesEnabled &&
+        (contentState as? ContentState.Loaded)?.isSpace == true &&
+        when (joinAuthorisationStatus) {
+            is JoinAuthorisationStatus.IsInvited,
+            JoinAuthorisationStatus.CanJoin,
+            JoinAuthorisationStatus.Restricted,
+            JoinAuthorisationStatus.Unknown -> true
+            else -> false
+        }
 
     val hideAvatarsImages = hideInviteAvatars && joinAuthorisationStatus is JoinAuthorisationStatus.IsInvited
 }
@@ -107,6 +118,7 @@ sealed interface LoadedDetails {
     ) : LoadedDetails
 }
 
+@Immutable
 sealed interface JoinAuthorisationStatus {
     data object None : JoinAuthorisationStatus
     data class IsInvited(val inviteData: InviteData, val inviteSender: InviteSender?) : JoinAuthorisationStatus

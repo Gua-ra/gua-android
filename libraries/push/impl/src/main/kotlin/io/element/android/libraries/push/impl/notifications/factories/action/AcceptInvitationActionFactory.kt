@@ -33,6 +33,8 @@ class AcceptInvitationActionFactory(
 ) {
     fun create(inviteNotifiableEvent: InviteNotifiableEvent): NotificationCompat.Action? {
         if (!NotificationConfig.SHOW_ACCEPT_AND_DECLINE_INVITE_ACTIONS) return null
+        // GUA FORK: a space is joined from the join screen, which offers to turn Spaces on.
+        if (inviteNotifiableEvent.isSpace) return null
         val sessionId = inviteNotifiableEvent.sessionId.value
         val roomId = inviteNotifiableEvent.roomId.value
         val intent = Intent(context, NotificationBroadcastReceiver::class.java)
