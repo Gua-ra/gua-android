@@ -26,6 +26,8 @@ import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
+import io.element.android.libraries.chatbackground.api.nameRes
+import io.element.android.libraries.matrix.ui.chatbackground.aChatBackgroundPhoto
 import io.element.android.tests.testutils.EnsureNeverCalled
 import io.element.android.tests.testutils.EventsRecorder
 import io.element.android.tests.testutils.clickOn
@@ -41,6 +43,15 @@ class ChatBackgroundViewTest : RobolectricTest() {
             setChatBackgroundView(aChatBackgroundState(eventSink = EventsRecorder(expectEvents = false)), onBackClick = it)
             pressBack()
         }
+    }
+
+    @Test
+    fun `the preview names the background it shows`() = runAndroidComposeUiTest {
+        setChatBackgroundView(aChatBackgroundState(current = aChatBackgroundPhoto()))
+        val context: Context = activity!!
+        onNodeWithContentDescription(
+            "${context.getString(R.string.gua_chat_background_preview_a11y)}, ${context.getString(aChatBackgroundPhoto().nameRes)}"
+        ).assertExists()
     }
 
     @Test
@@ -114,11 +125,13 @@ class ChatBackgroundViewTest : RobolectricTest() {
     }
 
     @Test
-    fun `screen readers can nudge the photo with the four move actions`() = runAndroidComposeUiTest {
+    fun `the four move actions move the photo the way they say, and the drag hint is read`() = runAndroidComposeUiTest {
         val eventsRecorder = EventsRecorder<ChatBackgroundEvent>()
         setChatBackgroundView(aChatBackgroundState(photoDraft = aChatBackgroundPhotoDraft(), eventSink = eventsRecorder))
         val context: Context = activity!!
-        val frame = onNodeWithContentDescription(context.getString(R.string.gua_chat_background_position_hint))
+        val frame = onNodeWithContentDescription(
+            "${context.getString(R.string.gua_chat_background_preview_a11y)}, ${context.getString(R.string.gua_chat_background_position_hint)}"
+        )
         listOf(
             R.string.gua_chat_background_a11y_move_left,
             R.string.gua_chat_background_a11y_move_right,
@@ -130,10 +143,10 @@ class ChatBackgroundViewTest : RobolectricTest() {
         val center = ChatBackground.Photo.DEFAULT_ALIGN
         eventsRecorder.assertList(
             listOf(
-                ChatBackgroundEvent.SetPhotoAlign(center - 100, center),
                 ChatBackgroundEvent.SetPhotoAlign(center + 100, center),
-                ChatBackgroundEvent.SetPhotoAlign(center, center - 100),
+                ChatBackgroundEvent.SetPhotoAlign(center - 100, center),
                 ChatBackgroundEvent.SetPhotoAlign(center, center + 100),
+                ChatBackgroundEvent.SetPhotoAlign(center, center - 100),
             )
         )
     }

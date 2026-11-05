@@ -49,6 +49,7 @@ import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
+import io.element.android.libraries.chatbackground.api.nameRes
 import io.element.android.libraries.designsystem.components.async.AsyncActionView
 import io.element.android.libraries.designsystem.components.async.AsyncActionViewDefaults
 import io.element.android.libraries.designsystem.components.button.BackButton
@@ -190,7 +191,7 @@ private fun ChatBackgroundPreviewCard(
     background: ChatBackground,
     modifier: Modifier = Modifier,
 ) {
-    val description = stringResource(R.string.gua_chat_background_preview_a11y)
+    val description = "${stringResource(R.string.gua_chat_background_preview_a11y)}, ${stringResource(background.nameRes)}"
     Box(
         modifier = modifier
             .fillMaxWidth()

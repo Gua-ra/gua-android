@@ -204,6 +204,7 @@ private fun PhotoFrame(
     }
     val currentDraft by rememberUpdatedState(draft)
     val positionHint = stringResource(R.string.gua_chat_background_position_hint)
+    val description = "${stringResource(R.string.gua_chat_background_preview_a11y)}, $positionHint"
     val moveLeft = stringResource(R.string.gua_chat_background_a11y_move_left)
     val moveRight = stringResource(R.string.gua_chat_background_a11y_move_right)
     val moveUp = stringResource(R.string.gua_chat_background_a11y_move_up)
@@ -217,12 +218,13 @@ private fun PhotoFrame(
             .background(ElementTheme.colors.bgCanvasDefault)
             // One focusable item for screen readers, so the nudge actions are reachable and the sample bubbles are not read.
             .clearAndSetSemantics {
-                contentDescription = positionHint
+                contentDescription = description
+                // A larger align moves the photo left or up: the offset is -overflow × align / 1000.
                 customActions = listOf(
-                    CustomAccessibilityAction(moveLeft) { nudge(-NUDGE, 0) },
-                    CustomAccessibilityAction(moveRight) { nudge(NUDGE, 0) },
-                    CustomAccessibilityAction(moveUp) { nudge(0, -NUDGE) },
-                    CustomAccessibilityAction(moveDown) { nudge(0, NUDGE) },
+                    CustomAccessibilityAction(moveLeft) { nudge(NUDGE, 0) },
+                    CustomAccessibilityAction(moveRight) { nudge(-NUDGE, 0) },
+                    CustomAccessibilityAction(moveUp) { nudge(0, NUDGE) },
+                    CustomAccessibilityAction(moveDown) { nudge(0, -NUDGE) },
                 )
             },
     ) {
