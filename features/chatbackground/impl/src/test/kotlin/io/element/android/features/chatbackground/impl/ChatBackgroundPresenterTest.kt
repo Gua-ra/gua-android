@@ -103,11 +103,11 @@ class ChatBackgroundPresenterTest : RobolectricTest() {
             consumeItemsUntilPredicate { it.canChange }.last().eventSink(ChatBackgroundEvent.ChoosePhoto)
             val previewing = consumeItemsUntilPredicate { it.photoDraft != null && it.action == AsyncAction.Uninitialized }.last()
             assertThat(previewing.photoDraft?.dim).isEqualTo(ChatBackground.Photo.DEFAULT_DIM)
-            previewing.eventSink(ChatBackgroundEvent.SetPhotoDim(0.6))
-            previewing.eventSink(ChatBackgroundEvent.SetPhotoAlign(-1.0, 0.25))
+            previewing.eventSink(ChatBackgroundEvent.SetPhotoDim(60))
+            previewing.eventSink(ChatBackgroundEvent.SetPhotoAlign(-1000, 250))
             previewing.eventSink(ChatBackgroundEvent.SetDarkPreview(true))
             val adjusted = consumeItemsUntilPredicate { it.photoDraft?.isDarkPreview == true }.last()
-            assertThat(adjusted.photoDraft?.alignX).isEqualTo(0.0)
+            assertThat(adjusted.photoDraft?.alignX).isEqualTo(0)
             adjusted.eventSink(ChatBackgroundEvent.Apply)
             consumeItemsUntilPredicate { it.action is AsyncAction.Success }
         }
@@ -119,9 +119,9 @@ class ChatBackgroundPresenterTest : RobolectricTest() {
                 height = upload.height,
                 size = 1_000,
                 blurhash = upload.blurhash,
-                dim = 0.6,
-                alignX = 0.0,
-                alignY = 0.25,
+                dim = 60,
+                alignX = 0,
+                alignY = 250,
             )
         )
     }

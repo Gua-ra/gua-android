@@ -53,7 +53,6 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.matrix.api.media.MediaSource
 import io.element.android.libraries.matrixmedia.api.MediaRequestData
 import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.roundToInt
 
 private const val CROSSFADE_DURATION_MS = 200
@@ -172,9 +171,9 @@ private fun PhotoBackground(
                 onError = { hasFailed = true },
             )
         }
-        val dim = photo.dim.toFloat().let { if (isIncreasedContrast) max(it, INCREASED_CONTRAST_MIN_DIM) else it }
+        val dim = (photo.dim / 100f).let { if (isIncreasedContrast) max(it, INCREASED_CONTRAST_MIN_DIM) else it }
         if (!isLight && !hasFailed && dim > 0f) {
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = min(dim, 1f))))
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = dim)))
         }
     }
 }
@@ -182,12 +181,12 @@ private fun PhotoBackground(
 fun ChatBackground.Photo.alignment() = chatBackgroundPhotoAlignment(alignX, alignY)
 
 /**
- * With [ContentScale.Crop], a photo overflowing its frame by `o` on an axis is offset by `-o × align`, as on iOS.
+ * With [ContentScale.Crop], a photo overflowing its frame by `o` on an axis is offset by `-o × align / 1000`, as on iOS.
  * Never mirrored for right-to-left layouts.
  */
-fun chatBackgroundPhotoAlignment(alignX: Double, alignY: Double) = BiasAbsoluteAlignment(
-    horizontalBias = (alignX * 2 - 1).toFloat(),
-    verticalBias = (alignY * 2 - 1).toFloat(),
+fun chatBackgroundPhotoAlignment(alignX: Int, alignY: Int) = BiasAbsoluteAlignment(
+    horizontalBias = alignX / 1000f * 2 - 1,
+    verticalBias = alignY / 1000f * 2 - 1,
 )
 
 @PreviewsDayNight
@@ -195,7 +194,7 @@ fun chatBackgroundPhotoAlignment(alignX: Double, alignY: Double) = BiasAbsoluteA
 internal fun ChatBackgroundViewPreview() = ElementPreview {
     val backgrounds = listOf(ChatBackground.None) +
         ChatBackgroundPreset.entries.map(ChatBackground::Preset) +
-        listOf(aChatBackgroundPhoto(dim = 0.0), aChatBackgroundPhoto(dim = ChatBackground.Photo.MAX_DIM))
+        listOf(aChatBackgroundPhoto(dim = 0), aChatBackgroundPhoto(dim = ChatBackground.Photo.MAX_DIM))
     Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(4.dp)) {
         backgrounds.chunked(5).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -208,7 +207,7 @@ internal fun ChatBackgroundViewPreview() = ElementPreview {
 }
 
 fun aChatBackgroundPhoto(
-    dim: Double = ChatBackground.Photo.DEFAULT_DIM,
+    dim: Int = ChatBackground.Photo.DEFAULT_DIM,
     blurhash: String? = "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
 ) = ChatBackground.Photo(
     url = "mxc://gua.global/AbCdEf",

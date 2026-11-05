@@ -107,7 +107,7 @@ open class MessagesStatePreviewParam : PreviewParameterProvider<MessagesState> {
                 timelineState = aTimelineState(timelineItems = aChatBackgroundTimelineItems(), timelineRoomInfo = aChatBackgroundTimelineRoomInfo()),
             ),
             aMessagesState(
-                chatBackground = aChatBackgroundPhoto(dim = 0.5),
+                chatBackground = aChatBackgroundPhoto(dim = 50),
                 timelineState = aTimelineState(timelineItems = aChatBackgroundTimelineItems(), timelineRoomInfo = aChatBackgroundTimelineRoomInfo()),
             ),
         )

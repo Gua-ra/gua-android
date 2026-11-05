@@ -56,7 +56,7 @@ class ChatBackgroundCodecTest {
     }
 
     @Test
-    fun `photos are written with rounded dim and align, and read back the same`() {
+    fun `photos are written with whole numbers only, and read back the same`() {
         val photo = ChatBackground.Photo(
             url = "mxc://gua.global/AbCdEf",
             mimetype = "image/jpeg",
@@ -64,18 +64,18 @@ class ChatBackgroundCodecTest {
             height = 2048,
             size = 412_337,
             blurhash = "LKO2?U%2Tw=w]~RBVZRi};RPxuwH",
-            dim = 0.05 * 7,
-            alignX = 0.25,
-            alignY = 0.5,
+            dim = 35,
+            alignX = 250,
+            alignY = 1000,
         )
 
         val encoded = ChatBackgroundCodec.encode(photo)
 
         assertThat(encoded).isEqualTo(
             """{"v":1,"kind":"photo","photo":{"url":"mxc://gua.global/AbCdEf","mimetype":"image/jpeg","w":1536,"h":2048,""" +
-                """"size":412337,"blurhash":"LKO2?U%2Tw=w]~RBVZRi};RPxuwH","dim":0.35,"align":{"x":0.25,"y":0.5}}}"""
+                """"size":412337,"blurhash":"LKO2?U%2Tw=w]~RBVZRi};RPxuwH","dim":35,"align":{"x":250,"y":1000}}}"""
         )
-        assertThat(ChatBackgroundCodec.decode(encoded)).isEqualTo(photo.copy(dim = 0.35))
+        assertThat(ChatBackgroundCodec.decode(encoded)).isEqualTo(photo)
     }
 
     @Test

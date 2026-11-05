@@ -31,6 +31,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -72,8 +73,8 @@ import java.text.NumberFormat
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-private const val DIM_STEP = 0.05
-private const val NUDGE = 0.1
+private const val DIM_STEP = 5
+private const val NUDGE = 100
 
 @Composable
 internal fun ChatBackgroundPhotoPreviewView(
@@ -134,7 +135,7 @@ private fun PreviewControls(
 ) {
     val dimLabel = stringResource(R.string.gua_chat_background_dim)
     val locale = LocalConfiguration.current.locales[0]
-    val dimValue = remember(locale, draft.dim) { NumberFormat.getPercentInstance(locale).format(draft.dim) }
+    val dimValue = remember(locale, draft.dim) { NumberFormat.getPercentInstance(locale).format(draft.dim / 100.0) }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -167,7 +168,7 @@ private fun PreviewControls(
             value = draft.dim.toFloat(),
             onValueChange = { eventSink(ChatBackgroundEvent.SetPhotoDim((it / DIM_STEP).roundToInt() * DIM_STEP)) },
             valueRange = 0f..ChatBackground.Photo.MAX_DIM.toFloat(),
-            steps = (ChatBackground.Photo.MAX_DIM / DIM_STEP).roundToInt() - 1,
+            steps = ChatBackground.Photo.MAX_DIM / DIM_STEP - 1,
             // Without this, TalkBack reads the position within 0 to 80 % as a percentage: 35 % would be "44 percent".
             modifier = Modifier.semantics {
                 contentDescription = dimLabel
@@ -207,7 +208,7 @@ private fun PhotoFrame(
     val moveRight = stringResource(R.string.gua_chat_background_a11y_move_right)
     val moveUp = stringResource(R.string.gua_chat_background_a11y_move_up)
     val moveDown = stringResource(R.string.gua_chat_background_a11y_move_down)
-    fun nudge(dx: Double, dy: Double): Boolean {
+    fun nudge(dx: Int, dy: Int): Boolean {
         eventSink(ChatBackgroundEvent.SetPhotoAlign(currentDraft.alignX + dx, currentDraft.alignY + dy))
         return true
     }
@@ -218,10 +219,10 @@ private fun PhotoFrame(
             .clearAndSetSemantics {
                 contentDescription = positionHint
                 customActions = listOf(
-                    CustomAccessibilityAction(moveLeft) { nudge(-NUDGE, 0.0) },
-                    CustomAccessibilityAction(moveRight) { nudge(NUDGE, 0.0) },
-                    CustomAccessibilityAction(moveUp) { nudge(0.0, -NUDGE) },
-                    CustomAccessibilityAction(moveDown) { nudge(0.0, NUDGE) },
+                    CustomAccessibilityAction(moveLeft) { nudge(-NUDGE, 0) },
+                    CustomAccessibilityAction(moveRight) { nudge(NUDGE, 0) },
+                    CustomAccessibilityAction(moveUp) { nudge(0, -NUDGE) },
+                    CustomAccessibilityAction(moveDown) { nudge(0, NUDGE) },
                 )
             },
     ) {
@@ -234,12 +235,19 @@ private fun PhotoFrame(
         val overflowX = photoWidth * scale - frameWidth
         val overflowY = photoHeight * scale - frameHeight
         val dragModifier = Modifier.pointerInput(overflowX, overflowY) {
-            detectDragGestures { change, dragAmount ->
+            var startX = currentDraft.alignX
+            var startY = currentDraft.alignY
+            var dragged = Offset.Zero
+            detectDragGestures(
+                onDragStart = {
+                    startX = currentDraft.alignX
+                    startY = currentDraft.alignY
+                    dragged = Offset.Zero
+                },
+            ) { change, dragAmount ->
                 change.consume()
-                // Dragging right moves the photo right, which is a smaller align: the offset is -overflow × align.
-                val x = if (overflowX > 0f) currentDraft.alignX - dragAmount.x / overflowX else currentDraft.alignX
-                val y = if (overflowY > 0f) currentDraft.alignY - dragAmount.y / overflowY else currentDraft.alignY
-                eventSink(ChatBackgroundEvent.SetPhotoAlign(x, y))
+                dragged += dragAmount
+                eventSink(ChatBackgroundEvent.SetPhotoAlign(draggedAlign(startX, dragged.x, overflowX), draggedAlign(startY, dragged.y, overflowY)))
             }
         }
         Box(modifier = Modifier.fillMaxSize().then(dragModifier)) {
@@ -248,7 +256,7 @@ private fun PhotoFrame(
                 Image(bitmap = it, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = alignment)
             } ?: BlurHashImage(blurHash = draft.upload.blurhash, contentScale = ContentScale.Crop)
             if (isDark && draft.dim > 0) {
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = draft.dim.toFloat())))
+                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = draft.dim / 100f)))
             }
             ChatBackgroundSampleMessages(isOnBackground = true)
             CompositionLocalProvider(LocalChatBackgroundActive provides true) {
@@ -265,6 +273,11 @@ private fun PhotoFrame(
             }
         }
     }
+}
+
+// From the drag's start, so rounding never drops a slow drag. Dragging right lowers align: the offset is -overflow × align / 1000.
+private fun draggedAlign(start: Int, distance: Float, overflow: Float): Int {
+    return if (overflow > 0f) start - (distance / overflow * ChatBackground.Photo.MAX_ALIGN).roundToInt() else start
 }
 
 @PreviewsDayNight

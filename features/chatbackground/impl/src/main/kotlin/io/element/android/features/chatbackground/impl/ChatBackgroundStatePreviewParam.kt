@@ -35,7 +35,7 @@ class ChatBackgroundPhotoDraftPreviewParam : PreviewParameterProvider<ChatBackgr
         get() = sequenceOf(
             aChatBackgroundPhotoDraft(),
             aChatBackgroundPhotoDraft(isDarkPreview = true),
-            aChatBackgroundPhotoDraft(isDarkPreview = true, dim = ChatBackground.Photo.MAX_DIM, alignX = 0.0),
+            aChatBackgroundPhotoDraft(isDarkPreview = true, dim = ChatBackground.Photo.MAX_DIM, alignX = 0),
         )
 }
 
@@ -59,8 +59,8 @@ internal fun aChatBackgroundState(
 
 internal fun aChatBackgroundPhotoDraft(
     isDarkPreview: Boolean? = false,
-    dim: Double = ChatBackground.Photo.DEFAULT_DIM,
-    alignX: Double = ChatBackground.Photo.DEFAULT_ALIGN,
+    dim: Int = ChatBackground.Photo.DEFAULT_DIM,
+    alignX: Int = ChatBackground.Photo.DEFAULT_ALIGN,
 ) = ChatBackgroundPhotoDraft(
     upload = ChatBackgroundPhotoUpload(data = ByteArray(0), width = 2048, height = 1536, blurhash = "LEHV6nWB2yk8pyo0adR*.7kCMdnj"),
     dim = dim,

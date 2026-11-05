@@ -19,7 +19,6 @@ import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import kotlin.math.floor
-import kotlin.math.roundToLong
 
 /**
  * Reads and writes the content of the [io.element.android.libraries.matrix.api.room.CHAT_BACKGROUND_EVENT_TYPE] state event.
@@ -61,10 +60,10 @@ object ChatBackgroundCodec {
                 put("h", background.height)
                 put("size", background.size)
                 background.blurhash?.let { put("blurhash", it) }
-                put("dim", background.dim.roundTo(100))
+                put("dim", background.dim)
                 putJsonObject("align") {
-                    put("x", background.alignX.roundTo(1000))
-                    put("y", background.alignY.roundTo(1000))
+                    put("x", background.alignX)
+                    put("y", background.alignY)
                 }
             }
         }.toString()
@@ -82,10 +81,10 @@ object ChatBackgroundCodec {
         val height = photo["h"].integerOrNull()?.takeIf { it in 1..MAX_DIMENSION } ?: return ChatBackground.None
         val size = photo["size"].integerOrNull()?.takeIf { it in 1..ChatBackground.Photo.MAX_SIZE } ?: return ChatBackground.None
         val blurhash = photo["blurhash"].optional { it.stringOrNull()?.takeIf { hash -> hash.length <= MAX_BLURHASH_LENGTH } }
-        val dim = photo["dim"].optional { it.numberOrNull()?.coerceIn(0.0, ChatBackground.Photo.MAX_DIM) }
+        val dim = photo["dim"].optional { it.clampedIntegerOrNull(ChatBackground.Photo.MAX_DIM) }
         val align = photo["align"].optional { it as? JsonObject }
-        val alignX = align.value?.get("x").optional { it.numberOrNull()?.coerceIn(0.0, 1.0) }
-        val alignY = align.value?.get("y").optional { it.numberOrNull()?.coerceIn(0.0, 1.0) }
+        val alignX = align.value?.get("x").optional { it.clampedIntegerOrNull(ChatBackground.Photo.MAX_ALIGN) }
+        val alignY = align.value?.get("y").optional { it.clampedIntegerOrNull(ChatBackground.Photo.MAX_ALIGN) }
         if (listOf(blurhash, dim, align, alignX, alignY).any { !it.isValid }) return ChatBackground.None
         return ChatBackground.Photo(
             url = url,
@@ -112,12 +111,10 @@ private fun <T> JsonElement?.optional(parse: (JsonElement) -> T?): OptionalField
 
 private fun JsonElement?.stringOrNull(): String? = (this as? JsonPrimitive)?.takeIf { it.isString }?.content
 
-private fun JsonElement?.numberOrNull(): Double? = (this as? JsonPrimitive)?.takeUnless { it.isString }?.doubleOrNull
-
 /** 800.0 is the same JSON number as 800, and iOS's decoder reads it as an integer too. */
 private fun JsonElement?.integerOrNull(): Long? {
     val number = (this as? JsonPrimitive)?.takeUnless { it.isString } ?: return null
     return number.longOrNull ?: number.doubleOrNull?.takeIf { it.isFinite() && it == floor(it) }?.toLong()
 }
 
-private fun Double.roundTo(scale: Int): Double = (this * scale).roundToLong().toDouble() / scale
+private fun JsonElement.clampedIntegerOrNull(max: Int): Int? = integerOrNull()?.coerceIn(0L, max.toLong())?.toInt()

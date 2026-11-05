@@ -130,10 +130,10 @@ class ChatBackgroundViewTest : RobolectricTest() {
         val center = ChatBackground.Photo.DEFAULT_ALIGN
         eventsRecorder.assertList(
             listOf(
-                ChatBackgroundEvent.SetPhotoAlign(center - 0.1, center),
-                ChatBackgroundEvent.SetPhotoAlign(center + 0.1, center),
-                ChatBackgroundEvent.SetPhotoAlign(center, center - 0.1),
-                ChatBackgroundEvent.SetPhotoAlign(center, center + 0.1),
+                ChatBackgroundEvent.SetPhotoAlign(center - 100, center),
+                ChatBackgroundEvent.SetPhotoAlign(center + 100, center),
+                ChatBackgroundEvent.SetPhotoAlign(center, center - 100),
+                ChatBackgroundEvent.SetPhotoAlign(center, center + 100),
             )
         )
     }

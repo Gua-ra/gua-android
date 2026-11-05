@@ -12,10 +12,10 @@ import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
 sealed interface ChatBackgroundEvent {
     data class SelectPreset(val preset: ChatBackgroundPreset) : ChatBackgroundEvent
     data object ChoosePhoto : ChatBackgroundEvent
-    data class SetPhotoDim(val dim: Double) : ChatBackgroundEvent
+    data class SetPhotoDim(val dim: Int) : ChatBackgroundEvent
 
-    /** Moves the photo so that [x] and [y], from 0 to 1, say where it sits when it overflows the frame. */
-    data class SetPhotoAlign(val x: Double, val y: Double) : ChatBackgroundEvent
+    /** Moves the photo so that [x] and [y], in thousandths, say where it sits when it overflows the frame. */
+    data class SetPhotoAlign(val x: Int, val y: Int) : ChatBackgroundEvent
     data class SetDarkPreview(val isDark: Boolean) : ChatBackgroundEvent
     data object DiscardPhoto : ChatBackgroundEvent
     data object Apply : ChatBackgroundEvent
