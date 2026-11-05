@@ -1,8 +1,10 @@
-![Gua for Android](./docs/images/readme-hero.png)
+<p align="center">
+  <img src="./docs/images/readme-hero.png" width="600" alt="Gua for Android" />
+</p>
 
 <div align="center">
 
-  <img src="./docs/images/gua-logo.png" width="140" alt="Gua logo" />
+  <img src="./docs/images/gua-logo.png" width="250" alt="Gua logo" />
 
   <h1>Gua for Android</h1>
 
