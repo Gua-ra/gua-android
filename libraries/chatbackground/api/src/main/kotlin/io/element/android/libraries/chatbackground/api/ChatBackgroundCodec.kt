@@ -20,10 +20,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import kotlin.math.floor
 
-/**
- * Reads and writes the content of the [io.element.android.libraries.matrix.api.room.CHAT_BACKGROUND_EVENT_TYPE] state event.
- * iOS implements the same rules, checked by the shared `chat-background-fixtures.json`.
- */
+// Keys are written in sorted order, as canonical JSON, so iOS and Android send identical bytes.
 object ChatBackgroundCodec {
     const val REMOVED_CONTENT = "{}"
 
@@ -46,26 +43,26 @@ object ChatBackgroundCodec {
     fun encode(background: ChatBackground): String = when (background) {
         ChatBackground.None -> REMOVED_CONTENT
         is ChatBackground.Preset -> buildJsonObject {
-            put("v", VERSION)
             put("kind", KIND_PRESET)
             put("preset", background.preset.id)
+            put("v", VERSION)
         }.toString()
         is ChatBackground.Photo -> buildJsonObject {
-            put("v", VERSION)
             put("kind", KIND_PHOTO)
             putJsonObject("photo") {
-                put("url", background.url)
-                put("mimetype", background.mimetype)
-                put("w", background.width)
-                put("h", background.height)
-                put("size", background.size)
-                background.blurhash?.let { put("blurhash", it) }
-                put("dim", background.dim)
                 putJsonObject("align") {
                     put("x", background.alignX)
                     put("y", background.alignY)
                 }
+                background.blurhash?.let { put("blurhash", it) }
+                put("dim", background.dim)
+                put("h", background.height)
+                put("mimetype", background.mimetype)
+                put("size", background.size)
+                put("url", background.url)
+                put("w", background.width)
             }
+            put("v", VERSION)
         }.toString()
     }
 

@@ -166,7 +166,7 @@ class DefaultChatBackgroundServiceTest {
         service.set(room, ChatBackground.None)
 
         assertThat(sent).containsExactly(
-            Triple("global.gua.room.background", "", """{"v":1,"kind":"preset","preset":"aurora"}"""),
+            Triple("global.gua.room.background", "", """{"kind":"preset","preset":"aurora","v":1}"""),
             Triple("global.gua.room.background", "", "{}"),
         ).inOrder()
     }
@@ -296,7 +296,7 @@ private class FakeRoomStateClient(private val result: suspend (RoomId) -> RoomSt
 
 private fun preset(preset: ChatBackgroundPreset) = ChatBackground.Preset(preset)
 
-private fun contentOf(preset: String) = """{"v":1,"kind":"preset","preset":"$preset"}"""
+private fun contentOf(preset: String) = """{"kind":"preset","preset":"$preset","v":1}"""
 
 private fun stored(preset: String, eventId: String?, timestamp: Long) = StoredChatBackground(contentOf(preset), eventId, timestamp)
 

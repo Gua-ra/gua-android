@@ -45,9 +45,9 @@ class ChatBackgroundCodecTest {
     }
 
     @Test
-    fun `presets are written with the version and kind`() {
+    fun `presets are written in the shared format`() {
         assertThat(ChatBackgroundCodec.encode(ChatBackground.Preset(ChatBackgroundPreset.Aurora)))
-            .isEqualTo("""{"v":1,"kind":"preset","preset":"aurora"}""")
+            .isEqualTo("""{"kind":"preset","preset":"aurora","v":1}""")
     }
 
     @Test
@@ -72,10 +72,27 @@ class ChatBackgroundCodecTest {
         val encoded = ChatBackgroundCodec.encode(photo)
 
         assertThat(encoded).isEqualTo(
-            """{"v":1,"kind":"photo","photo":{"url":"mxc://gua.global/AbCdEf","mimetype":"image/jpeg","w":1536,"h":2048,""" +
-                """"size":412337,"blurhash":"LKO2?U%2Tw=w]~RBVZRi};RPxuwH","dim":35,"align":{"x":250,"y":1000}}}"""
+            """{"kind":"photo","photo":{"align":{"x":250,"y":1000},"blurhash":"LKO2?U%2Tw=w]~RBVZRi};RPxuwH","dim":35,"h":2048,""" +
+                """"mimetype":"image/jpeg","size":412337,"url":"mxc://gua.global/AbCdEf","w":1536},"v":1}"""
         )
         assertThat(ChatBackgroundCodec.decode(encoded)).isEqualTo(photo)
+    }
+
+    @Test
+    fun `photos are written in the shared format`() {
+        val photo = ChatBackground.Photo(
+            url = "mxc://gua.global/AbCdEf",
+            mimetype = "image/jpeg",
+            width = 1536,
+            height = 2048,
+            size = 412_337,
+            blurhash = "LKO2?U%2Tw=w]~RBVZRi};RPxuwH",
+        )
+
+        assertThat(ChatBackgroundCodec.encode(photo)).isEqualTo(
+            """{"kind":"photo","photo":{"align":{"x":500,"y":500},"blurhash":"LKO2?U%2Tw=w]~RBVZRi};RPxuwH","dim":35,"h":2048,""" +
+                """"mimetype":"image/jpeg","size":412337,"url":"mxc://gua.global/AbCdEf","w":1536},"v":1}"""
+        )
     }
 
     @Test
