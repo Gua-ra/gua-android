@@ -45,7 +45,6 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Text
 import kotlin.math.min
 
-/** True while the timeline is drawn over a chat background. Elements drawn directly on the timeline then get a capsule. */
 val LocalChatBackgroundActive = staticCompositionLocalOf { false }
 
 private const val CAPSULE_OPACITY = 0.88f
@@ -60,10 +59,7 @@ private val LegibilityCapsuleShape: Shape = object : Shape {
     }
 }
 
-/**
- * Draws a canvas-coloured capsule behind this element while [LocalChatBackgroundActive] is true, and nothing otherwise,
- * so the timeline looks exactly as before when the chat has no background.
- */
+/** Draws nothing unless [LocalChatBackgroundActive] is true, so a chat without a background keeps the stock timeline. */
 @Suppress("ModifierComposable")
 @Composable
 fun Modifier.legibilityCapsule(

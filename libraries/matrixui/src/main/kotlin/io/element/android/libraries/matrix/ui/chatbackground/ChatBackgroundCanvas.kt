@@ -180,10 +180,7 @@ private fun PhotoBackground(photo: ChatBackground.Photo) {
     }
 }
 
-/**
- * With [ContentScale.Crop], a photo overflowing its frame by `o` on an axis is offset by `-o × align / 1000`, as on iOS.
- * Never mirrored for right-to-left layouts.
- */
+/** With [ContentScale.Crop], a photo overflowing by `o` on an axis is offset by `-o × align / 1000` as on iOS, never mirrored for right-to-left. */
 fun chatBackgroundPhotoAlignment(alignX: Int, alignY: Int) = BiasAbsoluteAlignment(
     horizontalBias = alignX.toFloat() / ChatBackground.Photo.MAX_ALIGN * 2 - 1,
     verticalBias = alignY.toFloat() / ChatBackground.Photo.MAX_ALIGN * 2 - 1,

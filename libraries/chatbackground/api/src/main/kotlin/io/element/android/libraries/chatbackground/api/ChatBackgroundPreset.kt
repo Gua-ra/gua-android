@@ -84,10 +84,7 @@ enum class ChatBackgroundPreset(
     }
 }
 
-/**
- * How a preset paints its frame. Colours are sRGB ARGB values; points are in unit coordinates of the frame, x from the left and y from the top,
- * never mirrored for right-to-left layouts.
- */
+/** Colours are sRGB ARGB; points are unit coordinates of the frame from its top left, never mirrored for right-to-left layouts. */
 sealed interface ChatBackgroundFill {
     data class Solid(val color: Long) : ChatBackgroundFill
 

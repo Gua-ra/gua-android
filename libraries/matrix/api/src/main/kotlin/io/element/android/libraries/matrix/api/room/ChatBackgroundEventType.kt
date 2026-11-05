@@ -9,7 +9,7 @@ package io.element.android.libraries.matrix.api.room
 
 import io.element.android.libraries.matrix.api.room.powerlevels.RoomPermissions
 
-/** The room state event, with an empty state key, that holds the background everyone in a chat sees. */
+/** A room state event whose state key is always empty. */
 const val CHAT_BACKGROUND_EVENT_TYPE = "global.gua.room.background"
 
 fun RoomPermissions.canChangeChatBackground(): Boolean = canOwnUserSendState(StateEventType.Custom(CHAT_BACKGROUND_EVENT_TYPE))
