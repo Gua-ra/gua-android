@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="./docs/images/readme-hero.png" width="600" alt="Gua for Android" />
-</p>
+![Gua for Android](./docs/images/readme-hero.png)
 
 <div align="center">
 
