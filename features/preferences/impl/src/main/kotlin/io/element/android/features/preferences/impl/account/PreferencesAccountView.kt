@@ -22,12 +22,6 @@ import io.element.android.libraries.designsystem.theme.components.ListItem
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.ui.strings.CommonStrings
 
-/**
- * The 'Account settings' section.
- *
- * GUA FORK: carries Gua's account rows (two-step verification, change phone number). Notifications, report a
- * problem and sign out live in the root view, in the groups Gua uses.
- */
 @Composable
 fun PreferencesAccountView(
     state: PreferencesAccountState,

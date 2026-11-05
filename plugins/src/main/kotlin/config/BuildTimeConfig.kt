@@ -61,9 +61,8 @@ object BuildTimeConfig {
     const val PUSH_CONFIG_INCLUDE_FIREBASE: Boolean = true
     const val PUSH_CONFIG_INCLUDE_UNIFIED_PUSH: Boolean = true
 
-    // GUA FORK: the key Sygnal looks the notification up under, so it has to match the app_id in the
-    // gateway's config exactly; a mismatch is answered with a 404 the user never sees. One value covers
-    // the production, QA and debug packages: the device's token decides which app a push reaches.
+    // GUA FORK: must match the app_id in Sygnal's config exactly, or pushes fail silently. One value covers
+    // the production, QA and debug packages because the device token decides which app a push reaches.
     val PUSHER_APP_ID_RELEASE: String? = "global.gua.android"
     val PUSHER_APP_ID_DEBUG: String? = "global.gua.android"
     val PUSHER_APP_ID_NIGHTLY: String? = "global.gua.android"

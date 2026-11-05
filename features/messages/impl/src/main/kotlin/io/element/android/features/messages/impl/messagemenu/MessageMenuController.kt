@@ -1,7 +1,7 @@
 /*
  * Copyright 2026 Gua
  *
- * SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+ * SPDX-License-Identifier: AGPL-3.0-only
  * Please see LICENSE files in the repository root for full details.
  */
 
@@ -54,7 +54,7 @@ class MessageMenuController {
 
     fun hasBubble(id: UniqueId): Boolean = coordinatesOf(id) != null
 
-    // combinedClickable also long clicks and double clicks from Enter, and the overlay cannot take keyboard focus.
+    // combinedClickable also fires long and double clicks from Enter, and the overlay cannot take keyboard focus.
     fun isKeyboardGesture(id: UniqueId): Boolean = bubbles[id]?.lastInputWasKey == true
 
     internal fun pressScaleOf(id: UniqueId): Float? = bubbles[id]?.scale

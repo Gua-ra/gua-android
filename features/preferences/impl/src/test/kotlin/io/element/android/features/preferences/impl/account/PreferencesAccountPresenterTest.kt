@@ -119,7 +119,6 @@ class PreferencesAccountPresenterTest {
             ),
             buildMeta = aBuildMeta(BuildType.RELEASE),
         ).test {
-            // GUA FORK: gated on build TYPE, not the seven-tap developer unlock, which works in any build.
             assertThat(consumeItemsUntilPredicate { it.canDeactivateAccount }.last().showSecureBackup).isFalse()
             cancelAndIgnoreRemainingEvents()
         }

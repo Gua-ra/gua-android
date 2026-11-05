@@ -239,7 +239,6 @@ class MessagesViewTest : RobolectricTest() {
         )
         // Cannot perform click on "Text", it's not detected. Use tag instead
         onAllNodesWithTag(TestTags.messageBubble.value).onFirst().performClick()
-        // GUA FORK: a text bubble also listens for a double tap, so its single tap lands after the double tap timeout.
         mainClock.advanceTimeBy(1_000)
         callback.assertSuccess()
     }

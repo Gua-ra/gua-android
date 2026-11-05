@@ -65,17 +65,13 @@ class PreferencesAccountPresenter(
                 ?.let {
                     sessionEnterpriseService.tweakMasUrl(it)
                 }
-                // GUA FORK: account management opens in the browser's shared tab, so it can meet a
-                // browser session for another account. Naming this one lets the page refuse that
-                // session instead of showing someone else's account.
+                // GUA FORK: the shared browser tab can hold another account's session, which this hint lets the page refuse.
                 ?.withMxidLoginHint(matrixClient.sessionId.value)
         }
 
         return PreferencesAccountState(
             myUser = matrixUser.value,
-            // GUA FORK: developer-only. This screen is upstream's recovery-key console (key-storage
-            // toggle, set up, change and confirm recovery key), which Gua never puts in front of anyone.
-            // The room list banner repairs key storage silently instead.
+            // GUA FORK: developer-only, because Gua never shows users the recovery key screens.
             showSecureBackup = buildMeta.buildType != BuildType.RELEASE,
             showSecureBackupBadge = showSecureBackupIndicator,
             accountManagementUrl = accountManagementUrl,

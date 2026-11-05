@@ -122,9 +122,6 @@ fun PreferencesRootView(
                     },
                 matrixUser = state.myUser,
             )
-            // GUA FORK: the nudge sets up two-step verification, not the local app-lock, so it is gated on
-            // the account's factors rather than isLockScreenPinSetup. Only an explicit "no strong factor"
-            // shows it: a null means the status is unknown.
             if (state.hasAccountStrongFactor == false) {
                 SetupPinBanner(onSetupTwoStepVerification)
             }
@@ -363,8 +360,7 @@ private fun AppSettingsSection(
             leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Notifications())),
             onClick = onOpenNotificationSettings,
         )
-        // GUA FORK: without a local app-lock PIN there is nothing to manage here, and setting one up goes
-        // through two-step verification in the account section.
+        // GUA FORK: a PIN is set up through two-step verification, so this row only manages an existing one.
         if (state.isLockScreenPinSetup) {
             ListItem(
                 content = { Text(stringResource(id = CommonStrings.common_screen_lock)) },

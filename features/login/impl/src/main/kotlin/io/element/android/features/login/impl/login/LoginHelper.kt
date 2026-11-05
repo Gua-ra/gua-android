@@ -31,10 +31,7 @@ import io.element.android.libraries.oauth.api.OAuthAction
 import io.element.android.libraries.oauth.api.OAuthActionFlow
 import io.element.android.libraries.ui.strings.CommonStrings
 
-/**
- * GUA FORK: the phone and passkey sign-in pipeline used by the phone entry screen. The account provider
- * screens use [LoginModePresenter] instead.
- */
+/** GUA FORK: phone and passkey sign-in for the phone entry screen. The account provider screens use [LoginModePresenter]. */
 @Inject
 class LoginHelper(
     private val oAuthActionFlow: OAuthActionFlow,

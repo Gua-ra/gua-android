@@ -1,7 +1,7 @@
 /*
  * Copyright 2026 Gua
  *
- * SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+ * SPDX-License-Identifier: AGPL-3.0-only
  * Please see LICENSE files in the repository root for full details.
  */
 
@@ -128,7 +128,7 @@ class DefaultNewSignInMonitorTest {
         harness.client.sendRetryRequestResult = { Result.success(Unit) }
         advance(60.seconds)
         advance(60.seconds)
-        // Attempt at 5 s failed, so 65 s is not inside a cooldown; 125 s is.
+        // The attempt at 5 s failed, so the one at 65 s is outside a cooldown and the one at 125 s is inside it.
         assertThat(harness.client.sendAttempts).hasSize(2)
     }
 

@@ -92,7 +92,6 @@ class DefaultActionListPresenter(
 
     private val comparator = TimelineItemActionComparator()
 
-    // GUA FORK: Gua's quick reactions, the same on every surface and platform.
     private val suggestedEmojis = MessageQuickReactions.defaults
 
     @Composable

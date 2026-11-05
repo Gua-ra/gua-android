@@ -56,9 +56,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-          # Test assets and screenshot goldens are LFS-tracked. Without this
-          # they arrive as pointer stubs no test can read, which would look to
-          # the fixer like a failure it caused.
+          # Without LFS files, tests fail on pointer stubs and the fixer would take that for its own failure.
           lfs: true
 
       # Fail on the missing prerequisite rather than 20 minutes later inside the

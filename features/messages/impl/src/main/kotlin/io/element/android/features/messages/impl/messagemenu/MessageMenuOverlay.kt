@@ -1,7 +1,7 @@
 /*
  * Copyright 2026 Gua
  *
- * SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+ * SPDX-License-Identifier: AGPL-3.0-only
  * Please see LICENSE files in the repository root for full details.
  */
 
@@ -271,7 +271,7 @@ private fun MessageMenuLayoutContainer(
             details?.let { Box(Modifier.layoutId(DETAILS_ID)) { it() } }
         },
     ) { measurables, constraints ->
-        // Read so that the layout runs again whenever the real bubble moves, for example when the keyboard closes.
+        // Read so the layout runs again whenever the real bubble moves.
         controller.positionVersion
         val width = constraints.maxWidth
         val height = constraints.maxHeight

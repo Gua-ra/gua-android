@@ -301,8 +301,7 @@ private fun RoomsViewList(
         // have a key, this is required to keep the scroll position.
         item {
             Column {
-                // GUA FORK: above the other banners and independent of them, so neither the encryption
-                // banner nor any dismissal can push it out.
+                // GUA FORK: outside the banner container, so no other banner or dismissal can push it out.
                 AccountRecoveryBanner(state = accountRecoveryBannerState)
                 RoomListBannerContainer(
                     banner = banner,
@@ -404,8 +403,7 @@ private fun RoomListBannerView(
     onDismissClick: () -> Unit,
 ) {
     when (banner) {
-        // GUA FORK: both states render the silent-repair banner, so no path reaches the flow that
-        // hands a user a recovery key to write down.
+        // GUA FORK: both states show the silent-repair banner, so no path hands the user a recovery key.
         RoomListBanner.SetUpRecovery,
         RoomListBanner.RecoveryKeyConfirmation -> ConfirmRecoveryKeyBanner(
             onContinueClick = onActionClick,

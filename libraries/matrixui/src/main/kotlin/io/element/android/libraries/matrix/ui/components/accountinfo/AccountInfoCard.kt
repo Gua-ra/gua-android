@@ -136,7 +136,6 @@ private fun DeviceInfoRow(
 
 @Composable
 private fun AccountInfoCardUser(matrixUser: MatrixUser) {
-    // GUA FORK: show the homeserver-stripped handle, never `@user:server`.
     val subtext = if (matrixUser.displayName.isNullOrEmpty()) null else matrixUser.userId.displayHandle
     Row(
         modifier = Modifier.fillMaxWidth(),

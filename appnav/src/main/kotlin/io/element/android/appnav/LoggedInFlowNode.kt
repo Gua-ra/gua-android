@@ -296,7 +296,6 @@ class LoggedInFlowNode(
 
         @Parcelize
         data class SecureBackup(
-            // GUA FORK: no default, so every caller names the screen it opens.
             val initialElement: SecureBackupEntryPoint.InitialTarget
         ) : NavTarget
 
@@ -351,7 +350,7 @@ class LoggedInFlowNode(
                     }
 
                     override fun navigateToEnterRecoveryKey() {
-                        // GUA FORK: never a recovery-key prompt; callers only get here once a reset is required.
+                        // GUA FORK: Gua never prompts for a recovery key, and callers only get here once a reset is required.
                         backstack.push(NavTarget.SecureBackup(initialElement = SecureBackupEntryPoint.InitialTarget.ResetIdentity))
                     }
 

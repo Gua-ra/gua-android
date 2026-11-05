@@ -1,7 +1,7 @@
 /*
  * Copyright 2026 Gua
  *
- * SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+ * SPDX-License-Identifier: AGPL-3.0-only
  * Please see LICENSE files in the repository root for full details.
  */
 
@@ -148,7 +148,7 @@ internal class MessageMenuBubbleNode(
         }
     }
 
-    // Watched here rather than through an interaction source, because media with a caption and galleries handle their own presses.
+    // An interaction source would miss the presses that media with a caption and galleries handle themselves.
     override fun onPointerEvent(pointerEvent: PointerEvent, pass: PointerEventPass, bounds: IntSize) {
         val changes = pointerEvent.changes
         if (pass == PointerEventPass.Initial && changes.any { it.changedToDownIgnoreConsumed() }) lastInputWasKey = false

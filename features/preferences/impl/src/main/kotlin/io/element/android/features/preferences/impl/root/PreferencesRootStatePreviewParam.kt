@@ -79,11 +79,9 @@ open class PreferencesRootStatePreviewParam : PreviewParameterProvider<Preferenc
                     anOtherAccount(user = user.copy(displayedStatus = displayedStatus))
                 },
             ),
-            // GUA FORK: no local app-lock PIN, so the Screen lock row is hidden.
             aPreferencesRootState(
                 isLockScreenPinSetup = false,
             ),
-            // GUA FORK: no strong factor on the account, so the two-step verification nudge is shown.
             aPreferencesRootState(
                 hasAccountStrongFactor = false,
             ),
