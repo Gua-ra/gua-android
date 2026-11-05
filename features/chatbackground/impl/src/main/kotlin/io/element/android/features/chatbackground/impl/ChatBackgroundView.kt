@@ -47,7 +47,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
-import androidx.compose.ui.unit.min
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.libraries.chatbackground.api.ChatBackground
@@ -228,8 +227,13 @@ private fun PresetGrid(
             with(density) { names.maxOf { textMeasurer.measure(it, labelStyle, maxLines = 1).size.width }.toDp() }
         }
         val minCellWidth = max(longestName + PRESET_PADDING * 2, PRESET_MIN_WIDTH)
-        val columns = ((maxWidth + PRESET_GAP) / (minCellWidth + PRESET_GAP)).toInt().coerceIn(MIN_PRESETS_PER_ROW, ChatBackgroundPreset.entries.size)
-        val cellWidth = min((maxWidth - PRESET_GAP * (columns - 1)) / columns, max(minCellWidth, PRESET_MAX_WIDTH))
+        val gapPx = with(density) { PRESET_GAP.roundToPx() }
+        val columns = ((constraints.maxWidth + gapPx) / (with(density) { minCellWidth.roundToPx() } + gapPx))
+            .coerceIn(MIN_PRESETS_PER_ROW, ChatBackgroundPreset.entries.size)
+        // Whole pixels, so no column is shortened when the cells round up; the pixels left over centre the grid.
+        val cellWidth = with(density) {
+            minOf((constraints.maxWidth - gapPx * (columns - 1)) / columns, max(minCellWidth, PRESET_MAX_WIDTH).roundToPx()).toDp()
+        }
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
