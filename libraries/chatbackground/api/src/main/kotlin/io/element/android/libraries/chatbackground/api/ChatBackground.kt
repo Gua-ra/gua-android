@@ -7,6 +7,8 @@
 
 package io.element.android.libraries.chatbackground.api
 
+import androidx.annotation.StringRes
+
 sealed interface ChatBackground {
     data object None : ChatBackground
 
@@ -38,3 +40,11 @@ sealed interface ChatBackground {
         }
     }
 }
+
+@get:StringRes
+val ChatBackground.nameRes: Int
+    get() = when (this) {
+        ChatBackground.None -> R.string.gua_chat_background_value_default
+        is ChatBackground.Preset -> preset.nameRes
+        is ChatBackground.Photo -> R.string.gua_chat_background_value_photo
+    }

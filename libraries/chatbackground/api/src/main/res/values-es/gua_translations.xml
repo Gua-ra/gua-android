@@ -10,4 +10,6 @@
   <string name="gua_chat_background_preset_sunset">Atardecer</string>
   <string name="gua_chat_background_preset_ocean">Océano</string>
   <string name="gua_chat_background_preset_night">Noche</string>
+  <string name="gua_chat_background_value_default">Predeterminado</string>
+  <string name="gua_chat_background_value_photo">Foto</string>
 </resources>

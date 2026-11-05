@@ -48,7 +48,7 @@ import io.element.android.features.userprofile.api.UserProfileVerificationState
 import io.element.android.features.userprofile.shared.blockuser.BlockUserDialogs
 import io.element.android.features.userprofile.shared.blockuser.BlockUserSection
 import io.element.android.libraries.architecture.coverage.ExcludeFromCoverage
-import io.element.android.libraries.chatbackground.api.ChatBackground
+import io.element.android.libraries.chatbackground.api.nameRes
 import io.element.android.libraries.designsystem.atomic.atoms.MatrixBadgeAtom
 import io.element.android.libraries.designsystem.atomic.molecules.MatrixBadgeRowMolecule
 import io.element.android.libraries.designsystem.components.ClickableLinkText
@@ -736,11 +736,6 @@ private fun ChatBackgroundItem(
     row: ChatBackgroundRowState,
     onClick: () -> Unit,
 ) {
-    val value = when (val background = row.background) {
-        ChatBackground.None -> stringResource(R.string.gua_chat_background_value_default)
-        is ChatBackground.Preset -> stringResource(background.preset.nameRes)
-        is ChatBackground.Photo -> stringResource(R.string.gua_chat_background_value_photo)
-    }
     ListItem(
         content = { Text(stringResource(R.string.gua_chat_background_row_title)) },
         supportingContent = if (row.canChange == false) {
@@ -750,7 +745,7 @@ private fun ChatBackgroundItem(
             null
         },
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Theme())),
-        trailingContent = ListItemContent.Text(value),
+        trailingContent = ListItemContent.Text(stringResource(row.background.nameRes)),
         enabled = row.canChange != false,
         onClick = onClick,
     )

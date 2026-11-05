@@ -11,7 +11,5 @@
     <string name="screen_room_notification_settings_mode_mentions_and_keywords">Solo menciones y respuestas</string>
     <string name="screen_room_notification_settings_mode_mute">Silenciar</string>
     <string name="gua_chat_background_row_title">Fondo</string>
-    <string name="gua_chat_background_value_default">Predeterminado</string>
-    <string name="gua_chat_background_value_photo">Foto</string>
     <string name="gua_chat_background_row_no_permission">Solo los administradores y moderadores pueden cambiarlo</string>
 </resources>

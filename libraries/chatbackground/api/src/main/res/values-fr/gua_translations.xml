@@ -10,4 +10,6 @@
   <string name="gua_chat_background_preset_sunset">Crépuscule</string>
   <string name="gua_chat_background_preset_ocean">Océan</string>
   <string name="gua_chat_background_preset_night">Nuit</string>
+  <string name="gua_chat_background_value_default">Par défaut</string>
+  <string name="gua_chat_background_value_photo">Photo</string>
 </resources>

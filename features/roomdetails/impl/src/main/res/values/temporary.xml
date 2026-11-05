@@ -4,7 +4,5 @@
        Same plain wording as the conversation banner. %1$s is the display name. -->
   <string name="gua_identity_change_member_list">%1$s’s security details changed</string>
   <string name="gua_chat_background_row_title">Background</string>
-  <string name="gua_chat_background_value_default">Default</string>
-  <string name="gua_chat_background_value_photo">Photo</string>
   <string name="gua_chat_background_row_no_permission">Only admins and moderators can change it</string>
 </resources>
