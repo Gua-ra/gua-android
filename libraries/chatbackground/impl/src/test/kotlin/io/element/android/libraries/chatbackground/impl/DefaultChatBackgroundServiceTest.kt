@@ -10,36 +10,25 @@ package io.element.android.libraries.chatbackground.impl
 import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.chatbackground.api.ChatBackground
+import io.element.android.libraries.chatbackground.api.ChatBackgroundCodec
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.room.RoomStateEvent
 import io.element.android.libraries.matrix.test.A_ROOM_ID
-import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.matrix.test.room.FakeJoinedRoom
 import io.element.android.services.appnavstate.test.FakeAppForegroundStateService
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import org.junit.After
 import org.junit.Test
 
 class DefaultChatBackgroundServiceTest {
-    private val server = MockWebServer()
-
-    @After
-    fun tearDown() {
-        server.shutdown()
-    }
-
     @Test
     fun `the cached background comes first, then the server's replaces it`() = runTest {
-        server.enqueue(MockResponse().setBody(anEvent(preset = "sky", eventId = "\$server", timestamp = 10)))
         val cache = InMemoryChatBackgroundCache(mapOf(A_ROOM_ID to stored("mint", "\$cached", 2_000)))
-        val service = createService(cache = cache)
+        val service = createService(roomStateClient = FakeRoomStateClient(RoomStateResult.Found(stored("sky", "\$server", 10))), cache = cache)
 
         service.backgroundFlow(FakeJoinedRoom()).test {
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Mint))
@@ -50,8 +39,10 @@ class DefaultChatBackgroundServiceTest {
 
     @Test
     fun `404 means no background`() = runTest {
-        server.enqueue(MockResponse().setResponseCode(404))
-        val service = createService(cache = InMemoryChatBackgroundCache(mapOf(A_ROOM_ID to stored("mint", "\$cached", 2_000))))
+        val service = createService(
+            roomStateClient = FakeRoomStateClient(RoomStateResult.NotFound),
+            cache = InMemoryChatBackgroundCache(mapOf(A_ROOM_ID to stored("mint", "\$cached", 2_000))),
+        )
 
         service.backgroundFlow(FakeJoinedRoom()).test {
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Mint))
@@ -86,10 +77,9 @@ class DefaultChatBackgroundServiceTest {
 
     @Test
     fun `returning to the foreground replaces the background with the server's`() = runTest {
-        server.enqueue(MockResponse().setBody(anEvent(preset = "mint", timestamp = 1)))
-        server.enqueue(MockResponse().setBody(anEvent(preset = "sand", timestamp = 2)))
+        val replies = ArrayDeque(listOf(stored("mint", "\$first", 1), stored("sand", "\$second", 2)))
         val foreground = FakeAppForegroundStateService()
-        val service = createService(foreground = foreground)
+        val service = createService(roomStateClient = FakeRoomStateClient { RoomStateResult.Found(replies.removeFirst()) }, foreground = foreground)
 
         service.backgroundFlow(FakeJoinedRoom()).test {
             assertThat(awaitItem()).isEqualTo(ChatBackground.None)
@@ -173,12 +163,28 @@ class DefaultChatBackgroundServiceTest {
         val service = createService(roomStateClient = FakeRoomStateClient(RoomStateResult.NotFound))
 
         service.set(room, preset(ChatBackgroundPreset.Aurora))
-        service.remove(room)
+        service.set(room, ChatBackground.None)
 
         assertThat(sent).containsExactly(
             Triple("global.gua.room.background", "", """{"v":1,"kind":"preset","preset":"aurora"}"""),
             Triple("global.gua.room.background", "", "{}"),
         ).inOrder()
+    }
+
+    @Test
+    fun `an older copy of an event does not undo its redaction`() = runTest {
+        val redacted = StoredChatBackground(ChatBackgroundCodec.REMOVED_CONTENT, "\$event", 1_000)
+        val cache = InMemoryChatBackgroundCache(mapOf(A_ROOM_ID to stored("sky", "\$event", 1_000)))
+        val service = createService(roomStateClient = FakeRoomStateClient(RoomStateResult.Found(redacted)), cache = cache)
+
+        service.backgroundFlow(FakeJoinedRoom()).test {
+            assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Sky))
+            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+            service.onTimelineEvent(A_ROOM_ID, EventId("\$event"), 1_000, contentOf("sky"))
+            testScheduler.runCurrent()
+            expectNoEvents()
+        }
+        assertThat(cache.entries[A_ROOM_ID]).isEqualTo(redacted)
     }
 
     @Test
@@ -271,7 +277,7 @@ class DefaultChatBackgroundServiceTest {
     }
 
     private fun TestScope.createService(
-        roomStateClient: RoomStateClient = aRoomStateClient(server),
+        roomStateClient: RoomStateClient = FakeRoomStateClient(RoomStateResult.NotFound),
         cache: ChatBackgroundCache = InMemoryChatBackgroundCache(),
         foreground: FakeAppForegroundStateService = FakeAppForegroundStateService(),
     ) = DefaultChatBackgroundService(
@@ -294,12 +300,8 @@ private fun contentOf(preset: String) = """{"v":1,"kind":"preset","preset":"$pre
 
 private fun stored(preset: String, eventId: String?, timestamp: Long) = StoredChatBackground(contentOf(preset), eventId, timestamp)
 
-private fun anEvent(preset: String, eventId: String = "\$event", timestamp: Long) =
-    """{"type":"global.gua.room.background","state_key":"","event_id":"$eventId","origin_server_ts":$timestamp,"content":${contentOf(preset)}}"""
-
 private fun aStateEvent(preset: String, eventId: String?, timestamp: Long?) = RoomStateEvent(
     stateKey = "",
-    sender = A_USER_ID,
     contentJson = contentOf(preset),
     eventId = eventId?.let(::EventId),
     timestamp = timestamp,

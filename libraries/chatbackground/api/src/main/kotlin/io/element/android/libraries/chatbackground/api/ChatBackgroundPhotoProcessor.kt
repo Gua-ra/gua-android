@@ -8,6 +8,7 @@
 package io.element.android.libraries.chatbackground.api
 
 import android.net.Uri
+import io.element.android.libraries.core.mimetype.MimeTypes
 
 interface ChatBackgroundPhotoProcessor {
     /** The photo upright, in sRGB, at most 2048 px on its longest side, with no metadata from the original file. */
@@ -22,9 +23,5 @@ class ChatBackgroundPhotoUpload(
     val height: Int,
     val blurhash: String?,
 ) {
-    val mimetype: String get() = MIMETYPE
-
-    companion object {
-        const val MIMETYPE = "image/jpeg"
-    }
+    val mimetype: String get() = MimeTypes.Jpeg
 }

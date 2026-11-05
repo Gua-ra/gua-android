@@ -35,10 +35,10 @@ object ChatBackgroundCodec {
 
     fun decode(contentJson: String?): ChatBackground {
         val content = tryOrNull { Json.parseToJsonElement(contentJson.orEmpty()) } as? JsonObject ?: return ChatBackground.None
-        val kind = content["kind"].stringOrNull()
-        return when {
-            content["v"].integerOrNull() == VERSION && kind == KIND_PRESET -> decodePreset(content["preset"])
-            content["v"].integerOrNull() == VERSION && kind == KIND_PHOTO -> decodePhoto(content["photo"])
+        val kind = content["kind"].stringOrNull().takeIf { content["v"].integerOrNull() == VERSION }
+        return when (kind) {
+            KIND_PRESET -> decodePreset(content["preset"])
+            KIND_PHOTO -> decodePhoto(content["photo"])
             else -> decodePreset(content["fallback_preset"])
         }
     }
@@ -100,7 +100,6 @@ object ChatBackgroundCodec {
     }
 }
 
-/** An optional field: absent or null is valid with no value, anything present must parse. */
 private data class OptionalField<T>(val value: T?, val isValid: Boolean)
 
 private fun <T> JsonElement?.optional(parse: (JsonElement) -> T?): OptionalField<T> {

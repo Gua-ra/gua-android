@@ -83,12 +83,12 @@ class DefaultRoomStateClientTest {
     }
 }
 
-internal const val AN_EVENT = """
+private const val AN_EVENT = """
     {"type":"global.gua.room.background","state_key":"","sender":"@bob:server.org","event_id":"${'$'}event","origin_server_ts":1000,
      "content":{"v":1,"kind":"preset","preset":"mint"}}
 """
 
-internal fun aRoomStateClient(server: MockWebServer) = DefaultRoomStateClient(
+private fun aRoomStateClient(server: MockWebServer) = DefaultRoomStateClient(
     matrixClient = FakeMatrixClient(),
     sessionStore = InMemorySessionStore(
         initialList = listOf(aSessionData(sessionId = A_SESSION_ID.value, accessToken = "token-1").copy(homeserverUrl = server.url("/").toString())),

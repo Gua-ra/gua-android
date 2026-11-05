@@ -116,13 +116,13 @@ class DefaultChatBackgroundPhotoProcessor(
         return sampleSize
     }
 
-    companion object {
+    private companion object {
         const val MAX_EDGE = 2048
         const val REDUCED_MAX_EDGE = 1600
-        private const val QUALITY = 80
-        private const val REDUCED_QUALITY = 75
+        const val QUALITY = 80
+        const val REDUCED_QUALITY = 75
         const val LARGE_SIZE_BYTES = 1_500_000
-        private const val BLURHASH_WIDTH = 64
-        private const val BLURHASH_COMPONENTS = 3
+        const val BLURHASH_WIDTH = 64
+        const val BLURHASH_COMPONENTS = 3
     }
 }

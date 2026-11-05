@@ -8,11 +8,9 @@
 package io.element.android.libraries.matrix.api.room
 
 import io.element.android.libraries.matrix.api.core.EventId
-import io.element.android.libraries.matrix.api.core.UserId
 
 data class RoomStateEvent(
     val stateKey: String,
-    val sender: UserId,
     val contentJson: String,
     /** Null when the SDK does not know the event that set this state. */
     val eventId: EventId?,

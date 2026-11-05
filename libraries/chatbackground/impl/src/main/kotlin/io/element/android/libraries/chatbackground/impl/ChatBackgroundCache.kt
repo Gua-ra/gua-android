@@ -7,61 +7,40 @@
 
 package io.element.android.libraries.chatbackground.impl
 
-import android.content.Context
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStoreFile
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
-import io.element.android.libraries.androidutils.file.safeDelete
-import io.element.android.libraries.androidutils.hash.hash
 import io.element.android.libraries.core.data.tryOrNull
 import io.element.android.libraries.di.SessionScope
-import io.element.android.libraries.di.annotations.ApplicationContext
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.RoomId
-import io.element.android.libraries.sessionstorage.api.observer.SessionListener
-import io.element.android.libraries.sessionstorage.api.observer.SessionObserver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import java.io.File
 
 interface ChatBackgroundCache {
     suspend fun load(): Map<RoomId, StoredChatBackground>
 
-    /** Stores [stored] as the most recently used entry, dropping the least recently used beyond [MAX_ROOMS]. */
+    /** Stores [stored] as the most recently used entry. */
     suspend fun save(roomId: RoomId, stored: StoredChatBackground)
-
-    companion object {
-        const val MAX_ROOMS = 500
-    }
 }
 
+// In the session's own directory, which every sign-out deletes with the rest of the session's data.
 @SingleIn(SessionScope::class)
 @ContributesBinding(SessionScope::class)
 class DataStoreChatBackgroundCache(
-    @ApplicationContext context: Context,
     matrixClient: MatrixClient,
-    sessionObserver: SessionObserver,
     @SessionCoroutineScope sessionCoroutineScope: CoroutineScope,
 ) : ChatBackgroundCache {
-    private val sessionId = matrixClient.sessionId
-    private val dataStoreFile = context.preferencesDataStoreFile("session_${sessionId.value.hash().take(16)}_chat-backgrounds")
-    private val store = PreferenceDataStoreFactory.create(scope = sessionCoroutineScope) { dataStoreFile }
-    private val entriesKey = stringPreferencesKey("entries")
-
-    init {
-        sessionObserver.addListener(object : SessionListener {
-            override suspend fun onSessionDeleted(userId: String, wasLastSession: Boolean) {
-                if (userId == sessionId.value) {
-                    dataStoreFile.safeDelete()
-                }
-            }
-        })
+    private val store = PreferenceDataStoreFactory.create(scope = sessionCoroutineScope) {
+        File(matrixClient.sessionPaths.fileDirectory, "chat-backgrounds.preferences_pb")
     }
+    private val entriesKey = stringPreferencesKey("entries")
 
     override suspend fun load(): Map<RoomId, StoredChatBackground> {
         val json = tryOrNull { store.data.first()[entriesKey] } ?: return emptyMap()
@@ -74,9 +53,13 @@ class DataStoreChatBackgroundCache(
             store.edit { preferences ->
                 val entries = preferences[entriesKey]?.let { tryOrNull { Json.decodeFromString<List<CacheEntry>>(it) } }.orEmpty()
                 val updated = listOf(CacheEntry(roomId.value, stored)) + entries.filter { it.roomId != roomId.value }
-                preferences[entriesKey] = Json.encodeToString(updated.take(ChatBackgroundCache.MAX_ROOMS))
+                preferences[entriesKey] = Json.encodeToString(updated.take(MAX_ROOMS))
             }
         }
+    }
+
+    private companion object {
+        const val MAX_ROOMS = 500
     }
 }
 

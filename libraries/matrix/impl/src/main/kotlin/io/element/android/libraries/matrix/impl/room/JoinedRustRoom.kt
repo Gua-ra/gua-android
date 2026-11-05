@@ -609,7 +609,6 @@ class JoinedRustRoom(
 
 private fun RustRoomStateEvent.map(): RoomStateEvent = RoomStateEvent(
     stateKey = stateKey,
-    sender = UserId(sender),
     contentJson = contentJson,
     eventId = eventId?.let(::EventId),
     timestamp = timestamp?.toLong(),

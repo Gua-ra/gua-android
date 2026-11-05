@@ -30,6 +30,4 @@ interface ChatBackgroundService {
 
     /** Applies [background] locally as soon as the server accepts it. A photo must be uploaded first. */
     suspend fun set(room: JoinedRoom, background: ChatBackground): Result<Unit>
-
-    suspend fun remove(room: JoinedRoom): Result<Unit> = set(room, ChatBackground.None)
 }

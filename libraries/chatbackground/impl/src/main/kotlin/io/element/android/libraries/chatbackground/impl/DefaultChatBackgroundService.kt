@@ -131,8 +131,14 @@ class DefaultChatBackgroundService(
     private suspend fun offer(roomId: RoomId, candidate: StoredChatBackground) {
         update(roomId) { current ->
             val stored = current.stored
-            val isNewer = stored == null || candidate.eventId == stored.eventId || candidate.timestamp > stored.timestamp
-            if (isNewer && candidate != stored) Slot(candidate, current.localRevision + 1) else current
+            val accepted = when {
+                stored == null -> candidate
+                // A copy of the same event can predate its redaction, so only its server timestamp is taken.
+                candidate.eventId == stored.eventId -> stored.copy(timestamp = candidate.timestamp)
+                candidate.timestamp > stored.timestamp -> candidate
+                else -> stored
+            }
+            if (accepted != stored) Slot(accepted, current.localRevision + 1) else current
         }
     }
 
