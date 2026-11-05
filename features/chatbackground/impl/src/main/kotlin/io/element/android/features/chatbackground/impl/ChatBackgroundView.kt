@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
@@ -45,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
+import androidx.compose.ui.unit.min
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.libraries.chatbackground.api.ChatBackground
@@ -67,11 +69,11 @@ import io.element.android.libraries.designsystem.theme.components.TopAppBar
 import io.element.android.libraries.matrix.ui.chatbackground.drawChatBackgroundFill
 import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundView as ChatBackgroundRenderer
 
-private const val MAX_PRESETS_PER_ROW = 5
 private const val MIN_PRESETS_PER_ROW = 3
 private val PRESET_GAP = 12.dp
 private val PRESET_PADDING = 2.dp
 private val PRESET_MIN_WIDTH = 56.dp
+private val PRESET_MAX_WIDTH = 88.dp
 
 @Composable
 fun ChatBackgroundView(
@@ -216,14 +218,19 @@ private fun PresetGrid(
     val textMeasurer = rememberTextMeasurer()
     val names = ChatBackgroundPreset.entries.map { stringResource(it.nameRes) }
     BoxWithConstraints(modifier = modifier) {
-        // As many columns as keep the longest name on one line in this language and font scale.
+        // As many columns as keep the longest name on one line in this language and font scale, phone-sized on wide screens.
         val density = LocalDensity.current
         val longestName = remember(names, labelStyle, density) {
             with(density) { names.maxOf { textMeasurer.measure(it, labelStyle, maxLines = 1).size.width }.toDp() }
         }
-        val cellWidth = max(longestName + PRESET_PADDING * 2, PRESET_MIN_WIDTH)
-        val columns = ((maxWidth + PRESET_GAP) / (cellWidth + PRESET_GAP)).toInt().coerceIn(MIN_PRESETS_PER_ROW, MAX_PRESETS_PER_ROW)
-        Column(verticalArrangement = Arrangement.spacedBy(PRESET_GAP)) {
+        val minCellWidth = max(longestName + PRESET_PADDING * 2, PRESET_MIN_WIDTH)
+        val columns = ((maxWidth + PRESET_GAP) / (minCellWidth + PRESET_GAP)).toInt().coerceIn(MIN_PRESETS_PER_ROW, ChatBackgroundPreset.entries.size)
+        val cellWidth = min((maxWidth - PRESET_GAP * (columns - 1)) / columns, max(minCellWidth, PRESET_MAX_WIDTH))
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(PRESET_GAP),
+        ) {
             ChatBackgroundPreset.entries.chunked(columns).forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(PRESET_GAP)) {
                     row.forEach { preset ->
@@ -233,10 +240,10 @@ private fun PresetGrid(
                             enabled = enabled,
                             onClick = { onSelect(preset) },
                             labelStyle = labelStyle,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.width(cellWidth),
                         )
                     }
-                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                    repeat(columns - row.size) { Spacer(Modifier.width(cellWidth)) }
                 }
             }
         }
