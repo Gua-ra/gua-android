@@ -9,6 +9,7 @@ package io.element.android.features.chatbackground.impl
 
 import android.net.Uri
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
@@ -103,10 +104,13 @@ class ChatBackgroundPresenterTest : RobolectricTest() {
             consumeItemsUntilPredicate { it.canChange }.last().eventSink(ChatBackgroundEvent.ChoosePhoto)
             val previewing = consumeItemsUntilPredicate { it.photoDraft != null && it.action == AsyncAction.Uninitialized }.last()
             assertThat(previewing.photoDraft?.dim).isEqualTo(ChatBackground.Photo.DEFAULT_DIM)
+            previewing.eventSink(ChatBackgroundEvent.SetDarkPreview(false))
+            consumeItemsUntilPredicate { it.photoDraft?.isDarkPreview == false }
             previewing.eventSink(ChatBackgroundEvent.SetPhotoDim(60))
+            val dimmed = consumeItemsUntilPredicate { it.photoDraft?.dim == 60 }.last()
+            assertWithMessage("The dim only shows in the dark preview").that(dimmed.photoDraft?.isDarkPreview).isTrue()
             previewing.eventSink(ChatBackgroundEvent.SetPhotoAlign(-1000, 250))
-            previewing.eventSink(ChatBackgroundEvent.SetDarkPreview(true))
-            val adjusted = consumeItemsUntilPredicate { it.photoDraft?.isDarkPreview == true }.last()
+            val adjusted = consumeItemsUntilPredicate { it.photoDraft?.alignY == 250 }.last()
             assertThat(adjusted.photoDraft?.alignX).isEqualTo(0)
             adjusted.eventSink(ChatBackgroundEvent.Apply)
             consumeItemsUntilPredicate { it.action is AsyncAction.Success }

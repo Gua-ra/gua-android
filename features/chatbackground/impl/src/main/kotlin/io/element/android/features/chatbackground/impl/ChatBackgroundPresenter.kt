@@ -62,7 +62,10 @@ class ChatBackgroundPresenter(
             when (event) {
                 is ChatBackgroundEvent.SelectPreset -> selection = ChatBackground.Preset(event.preset)
                 ChatBackgroundEvent.ChoosePhoto -> if (canChange) photoPicker.launch()
-                is ChatBackgroundEvent.SetPhotoDim -> photoDraft = photoDraft?.copy(dim = event.dim.coerceIn(0, ChatBackground.Photo.MAX_DIM))
+                is ChatBackgroundEvent.SetPhotoDim -> photoDraft = photoDraft?.copy(
+                    dim = event.dim.coerceIn(0, ChatBackground.Photo.MAX_DIM),
+                    isDarkPreview = true,
+                )
                 is ChatBackgroundEvent.SetPhotoAlign -> photoDraft = photoDraft?.copy(
                     alignX = event.x.coerceIn(0, ChatBackground.Photo.MAX_ALIGN),
                     alignY = event.y.coerceIn(0, ChatBackground.Photo.MAX_ALIGN),
