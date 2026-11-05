@@ -23,6 +23,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performCustomAccessibilityActionWithLabel
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
+import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
@@ -35,6 +36,7 @@ import io.element.android.tests.testutils.ensureCalledOnce
 import io.element.android.tests.testutils.pressBack
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.Test
+import org.robolectric.annotation.Config
 
 class ChatBackgroundViewTest : RobolectricTest() {
     @Test
@@ -60,6 +62,14 @@ class ChatBackgroundViewTest : RobolectricTest() {
         setChatBackgroundView(aChatBackgroundState(eventSink = eventsRecorder))
         onNodeWithText(activity!!.getString(ChatBackgroundPreset.Mint.nameRes)).performClick()
         eventsRecorder.assertSingle(ChatBackgroundEvent.SelectPreset(ChatBackgroundPreset.Mint))
+    }
+
+    @Test
+    @Config(qualifiers = "w411dp-h891dp-420dpi")
+    fun `every preset is the same size when the columns do not divide into whole pixels`() = runAndroidComposeUiTest {
+        setChatBackgroundView(aChatBackgroundState())
+        val sizes = ChatBackgroundPreset.entries.map { onNodeWithText(activity!!.getString(it.nameRes)).fetchSemanticsNode().size }
+        assertThat(sizes.toSet()).hasSize(1)
     }
 
     @Test
