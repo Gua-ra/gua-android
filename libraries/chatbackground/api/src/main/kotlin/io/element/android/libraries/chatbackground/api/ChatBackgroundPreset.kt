@@ -80,12 +80,7 @@ enum class ChatBackgroundPreset(
     fun fill(isLight: Boolean): ChatBackgroundFill = if (isLight) light else dark
 
     companion object {
-        private val ID_FORMAT = Regex("^[a-z0-9_]{1,32}$")
-
-        fun fromId(id: String?): ChatBackgroundPreset? {
-            if (id == null || !ID_FORMAT.matches(id)) return null
-            return entries.firstOrNull { it.id == id }
-        }
+        fun fromId(id: String?): ChatBackgroundPreset? = entries.firstOrNull { it.id == id }
     }
 }
 
@@ -105,10 +100,12 @@ sealed interface ChatBackgroundFill {
 
     /** Two radial glows over [base], each fading to transparent; a radius is a fraction of the frame's longest side. */
     data class Aurora(val base: Long, val glowA: Long, val glowB: Long) : ChatBackgroundFill {
-        val glowACenter get() = UnitPoint(0.30f, 0.25f)
-        val glowARadius get() = 0.75f
-        val glowBCenter get() = UnitPoint(0.75f, 0.80f)
-        val glowBRadius get() = 0.65f
+        companion object {
+            val GLOW_A_CENTER = UnitPoint(0.30f, 0.25f)
+            const val GLOW_A_RADIUS = 0.75f
+            val GLOW_B_CENTER = UnitPoint(0.75f, 0.80f)
+            const val GLOW_B_RADIUS = 0.65f
+        }
     }
 }
 

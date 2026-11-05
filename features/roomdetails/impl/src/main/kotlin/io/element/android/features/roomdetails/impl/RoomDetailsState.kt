@@ -54,7 +54,6 @@ data class RoomDetailsState(
     val roomVersion: String?,
     val roomHistoryVisibility: RoomHistoryVisibility,
     val hasNewContent: Boolean,
-    /** Null hides the Background row. */
     val chatBackgroundRow: ChatBackgroundRowState?,
     val eventSink: (RoomDetailsEvent) -> Unit
 ) {

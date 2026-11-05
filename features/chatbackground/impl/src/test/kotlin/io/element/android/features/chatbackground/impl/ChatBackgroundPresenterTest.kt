@@ -16,9 +16,12 @@ import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
 import io.element.android.libraries.chatbackground.test.FakeChatBackgroundPhotoProcessor
 import io.element.android.libraries.chatbackground.test.FakeChatBackgroundService
 import io.element.android.libraries.chatbackground.test.aChatBackgroundPhotoUpload
+import io.element.android.libraries.matrix.api.media.MediaPreviewConfig
+import io.element.android.libraries.matrix.api.media.MediaPreviewValue
 import io.element.android.libraries.matrix.api.room.CHAT_BACKGROUND_EVENT_TYPE
 import io.element.android.libraries.matrix.api.room.StateEventType
 import io.element.android.libraries.matrix.test.FakeMatrixClient
+import io.element.android.libraries.matrix.test.media.FakeMediaPreviewService
 import io.element.android.libraries.matrix.test.room.FakeBaseRoom
 import io.element.android.libraries.matrix.test.room.FakeJoinedRoom
 import io.element.android.libraries.matrix.test.room.powerlevels.FakeRoomPermissions
@@ -27,6 +30,7 @@ import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.consumeItemsUntilPredicate
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import io.element.android.tests.testutils.test
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -46,6 +50,18 @@ class ChatBackgroundPresenterTest : RobolectricTest() {
             assertThat(state.selection).isEqualTo(ChatBackground.Preset(ChatBackgroundPreset.Sky))
             assertThat(state.canSet).isFalse()
             assertThat(state.canRemove).isTrue()
+        }
+    }
+
+    @Test
+    fun `the photo is hidden while the chat hides media`() = runTest {
+        val mediaPreviewConfig = MutableStateFlow(MediaPreviewConfig.DEFAULT)
+        val presenter = createPresenter(matrixClient = FakeMatrixClient(mediaPreviewService = FakeMediaPreviewService(mediaPreviewConfig)))
+
+        presenter.test {
+            assertThat(awaitItem().isPhotoHidden).isFalse()
+            mediaPreviewConfig.value = MediaPreviewConfig(mediaPreviewValue = MediaPreviewValue.Off, hideInviteAvatar = false)
+            assertThat(consumeItemsUntilPredicate { it.isPhotoHidden }.last().isPhotoHidden).isTrue()
         }
     }
 

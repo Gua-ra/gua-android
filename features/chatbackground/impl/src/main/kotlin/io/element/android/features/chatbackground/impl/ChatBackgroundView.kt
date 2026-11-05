@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -66,8 +67,8 @@ import io.element.android.libraries.designsystem.theme.components.Scaffold
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.designsystem.theme.components.TextButton
 import io.element.android.libraries.designsystem.theme.components.TopAppBar
+import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundCanvas
 import io.element.android.libraries.matrix.ui.chatbackground.drawChatBackgroundFill
-import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundView as ChatBackgroundRenderer
 
 private const val MIN_PRESETS_PER_ROW = 3
 private val PRESET_GAP = 12.dp
@@ -87,7 +88,7 @@ fun ChatBackgroundView(
         BackHandler { state.eventSink(ChatBackgroundEvent.DiscardPhoto) }
         ChatBackgroundPhotoPreviewView(
             draft = draft,
-            canSet = state.canChange,
+            canChange = state.canChange,
             eventSink = state.eventSink,
             modifier = modifier,
         )
@@ -163,6 +164,7 @@ private fun ChatBackgroundPicker(
         ) {
             ChatBackgroundPreviewCard(
                 background = state.selection,
+                isPhotoHidden = state.isPhotoHidden,
                 modifier = Modifier.padding(16.dp),
             )
             PresetGrid(
@@ -191,19 +193,21 @@ private fun ChatBackgroundPicker(
 @Composable
 private fun ChatBackgroundPreviewCard(
     background: ChatBackground,
+    isPhotoHidden: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val description = "${stringResource(R.string.gua_chat_background_preview_a11y)}, ${stringResource(background.nameRes)}"
+    val shown = if (isPhotoHidden && background is ChatBackground.Photo) ChatBackground.None else background
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(220.dp)
+            .heightIn(min = 220.dp)
             .clip(RoundedCornerShape(16.dp))
             .border(1.dp, ElementTheme.colors.borderInteractiveSecondary, RoundedCornerShape(16.dp))
             .clearAndSetSemantics { contentDescription = description },
     ) {
-        ChatBackgroundRenderer(background = background)
-        ChatBackgroundSampleMessages(isOnBackground = background != ChatBackground.None)
+        ChatBackgroundCanvas(background = shown, modifier = Modifier.matchParentSize())
+        ChatBackgroundSampleMessages(isOnBackground = shown != ChatBackground.None)
     }
 }
 

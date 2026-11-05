@@ -45,15 +45,15 @@ import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.encryption.identity.IdentityState
 import io.element.android.libraries.matrix.api.notificationsettings.NotificationSettingsService
-import io.element.android.libraries.matrix.api.room.CHAT_BACKGROUND_EVENT_TYPE
 import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.room.RoomMember
-import io.element.android.libraries.matrix.api.room.StateEventType
+import io.element.android.libraries.matrix.api.room.canChangeChatBackground
 import io.element.android.libraries.matrix.api.room.join.JoinRule
 import io.element.android.libraries.matrix.api.room.powerlevels.canEditRolesAndPermissions
 import io.element.android.libraries.matrix.api.room.powerlevels.permissionsAsState
 import io.element.android.libraries.matrix.api.room.roomNotificationSettings
 import io.element.android.libraries.matrix.api.timeline.ReceiptType
+import io.element.android.libraries.matrix.ui.chatbackground.collectBackgroundAsState
 import io.element.android.libraries.matrix.ui.room.getDirectRoomMember
 import io.element.android.libraries.matrix.ui.room.roomMemberIdentityStateChange
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
@@ -242,9 +242,8 @@ class RoomDetailsPresenter(
     private fun chatBackgroundRowState(isSpace: Boolean): ChatBackgroundRowState? {
         val isEnabled by remember { featureFlagService.isFeatureEnabledFlow(FeatureFlags.ChatBackgrounds) }.collectAsState(initial = false)
         if (!isEnabled || isSpace) return null
-        val initial = remember { chatBackgroundService.currentBackground(room.roomId) }
-        val background by remember { chatBackgroundService.backgroundFlow(room) }.collectAsState(initial)
-        val canChange by room.permissionsAsState<Boolean?>(null) { it.canOwnUserSendState(StateEventType.Custom(CHAT_BACKGROUND_EVENT_TYPE)) }
+        val background by chatBackgroundService.collectBackgroundAsState(room)
+        val canChange by room.permissionsAsState<Boolean?>(null) { it.canChangeChatBackground() }
         return ChatBackgroundRowState(background = background, canChange = canChange)
     }
 

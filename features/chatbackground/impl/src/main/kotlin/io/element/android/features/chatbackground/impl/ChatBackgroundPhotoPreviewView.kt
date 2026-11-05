@@ -32,7 +32,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
@@ -53,10 +52,8 @@ import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.theme.Theme
 import io.element.android.libraries.chatbackground.api.ChatBackground
-import io.element.android.libraries.core.data.tryOrNull
 import io.element.android.libraries.designsystem.chatbackground.LocalChatBackgroundActive
 import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
-import io.element.android.libraries.designsystem.components.blurhash.BlurHashImage
 import io.element.android.libraries.designsystem.components.button.BackButton
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
@@ -66,6 +63,8 @@ import io.element.android.libraries.designsystem.theme.components.SegmentedButto
 import io.element.android.libraries.designsystem.theme.components.Slider
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.designsystem.theme.components.TopAppBar
+import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundBlurHash
+import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundScrim
 import io.element.android.libraries.matrix.ui.chatbackground.chatBackgroundPhotoAlignment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -79,7 +78,7 @@ private const val NUDGE = 100
 @Composable
 internal fun ChatBackgroundPhotoPreviewView(
     draft: ChatBackgroundPhotoDraft,
-    canSet: Boolean,
+    canChange: Boolean,
     eventSink: (ChatBackgroundEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -105,7 +104,6 @@ internal fun ChatBackgroundPhotoPreviewView(
             ElementTheme(theme = if (isDarkPreview) Theme.Dark else Theme.Light, applySystemBarsUpdate = false) {
                 PhotoFrame(
                     draft = draft,
-                    isDark = isDarkPreview,
                     bottomInset = controlsHeight,
                     eventSink = eventSink,
                     modifier = Modifier.fillMaxSize(),
@@ -114,7 +112,7 @@ internal fun ChatBackgroundPhotoPreviewView(
             PreviewControls(
                 draft = draft,
                 isDarkPreview = isDarkPreview,
-                canSet = canSet,
+                canChange = canChange,
                 eventSink = eventSink,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -129,7 +127,7 @@ internal fun ChatBackgroundPhotoPreviewView(
 private fun PreviewControls(
     draft: ChatBackgroundPhotoDraft,
     isDarkPreview: Boolean,
-    canSet: Boolean,
+    canChange: Boolean,
     eventSink: (ChatBackgroundEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -183,7 +181,7 @@ private fun PreviewControls(
         Button(
             text = stringResource(R.string.gua_chat_background_action_set),
             onClick = { eventSink(ChatBackgroundEvent.Apply) },
-            enabled = canSet,
+            enabled = canChange,
             modifier = Modifier.fillMaxWidth(),
         )
     }
@@ -192,14 +190,13 @@ private fun PreviewControls(
 @Composable
 private fun PhotoFrame(
     draft: ChatBackgroundPhotoDraft,
-    isDark: Boolean,
     bottomInset: Dp,
     eventSink: (ChatBackgroundEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val image by produceState<ImageBitmap?>(initialValue = null, draft.upload) {
         value = withContext(Dispatchers.Default) {
-            tryOrNull { BitmapFactory.decodeByteArray(draft.upload.data, 0, draft.upload.data.size)?.asImageBitmap() }
+            BitmapFactory.decodeByteArray(draft.upload.data, 0, draft.upload.data.size)?.asImageBitmap()
         }
     }
     val currentDraft by rememberUpdatedState(draft)
@@ -219,7 +216,6 @@ private fun PhotoFrame(
             // One focusable item for screen readers, so the nudge actions are reachable and the sample bubbles are not read.
             .clearAndSetSemantics {
                 contentDescription = description
-                // A larger align moves the photo left or up: the offset is -overflow × align / 1000.
                 customActions = listOf(
                     CustomAccessibilityAction(moveLeft) { nudge(NUDGE, 0) },
                     CustomAccessibilityAction(moveRight) { nudge(-NUDGE, 0) },
@@ -236,30 +232,36 @@ private fun PhotoFrame(
         val scale = max(frameWidth / photoWidth, frameHeight / photoHeight)
         val overflowX = photoWidth * scale - frameWidth
         val overflowY = photoHeight * scale - frameHeight
-        val dragModifier = Modifier.pointerInput(overflowX, overflowY) {
-            var startX = currentDraft.alignX
-            var startY = currentDraft.alignY
-            var dragged = Offset.Zero
-            detectDragGestures(
-                onDragStart = {
-                    startX = currentDraft.alignX
-                    startY = currentDraft.alignY
-                    dragged = Offset.Zero
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(overflowX, overflowY) {
+                    var startX = 0
+                    var startY = 0
+                    var dragged = Offset.Zero
+                    detectDragGestures(
+                        onDragStart = {
+                            startX = currentDraft.alignX
+                            startY = currentDraft.alignY
+                            dragged = Offset.Zero
+                        },
+                    ) { change, dragAmount ->
+                        change.consume()
+                        dragged += dragAmount
+                        eventSink(ChatBackgroundEvent.SetPhotoAlign(draggedAlign(startX, dragged.x, overflowX), draggedAlign(startY, dragged.y, overflowY)))
+                    }
                 },
-            ) { change, dragAmount ->
-                change.consume()
-                dragged += dragAmount
-                eventSink(ChatBackgroundEvent.SetPhotoAlign(draggedAlign(startX, dragged.x, overflowX), draggedAlign(startY, dragged.y, overflowY)))
-            }
-        }
-        Box(modifier = Modifier.fillMaxSize().then(dragModifier)) {
-            val alignment = chatBackgroundPhotoAlignment(draft.alignX, draft.alignY)
+        ) {
             image?.let {
-                Image(bitmap = it, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = alignment)
-            } ?: BlurHashImage(blurHash = draft.upload.blurhash, contentScale = ContentScale.Crop)
-            if (isDark && draft.dim > 0) {
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = draft.dim / 100f)))
-            }
+                Image(
+                    bitmap = it,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    alignment = chatBackgroundPhotoAlignment(draft.alignX, draft.alignY),
+                )
+            } ?: ChatBackgroundBlurHash(draft.upload.blurhash, draft.upload.width, draft.upload.height, draft.alignX, draft.alignY)
+            ChatBackgroundScrim(photoDim = draft.dim)
             ChatBackgroundSampleMessages(isOnBackground = true)
             CompositionLocalProvider(LocalChatBackgroundActive provides true) {
                 Text(
@@ -277,7 +279,7 @@ private fun PhotoFrame(
     }
 }
 
-// From the drag's start, so rounding never drops a slow drag. Dragging right lowers align: the offset is -overflow × align / 1000.
+// From the drag's start, so rounding never drops a slow drag.
 private fun draggedAlign(start: Int, distance: Float, overflow: Float): Int {
     return if (overflow > 0f) start - (distance / overflow * ChatBackground.Photo.MAX_ALIGN).roundToInt() else start
 }
@@ -288,7 +290,7 @@ internal fun ChatBackgroundPhotoPreviewViewPreview(@PreviewParameter(ChatBackgro
     ElementPreview {
         ChatBackgroundPhotoPreviewView(
             draft = draft,
-            canSet = true,
+            canChange = true,
             eventSink = {},
         )
     }

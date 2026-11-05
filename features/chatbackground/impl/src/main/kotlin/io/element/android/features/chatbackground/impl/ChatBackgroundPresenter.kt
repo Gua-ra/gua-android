@@ -11,6 +11,7 @@ import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,16 +20,18 @@ import androidx.compose.runtime.setValue
 import dev.zacsweers.metro.Inject
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.architecture.runUpdatingState
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPhotoProcessor
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPhotoUpload
 import io.element.android.libraries.chatbackground.api.ChatBackgroundService
 import io.element.android.libraries.core.extensions.flatMap
 import io.element.android.libraries.matrix.api.MatrixClient
-import io.element.android.libraries.matrix.api.room.CHAT_BACKGROUND_EVENT_TYPE
+import io.element.android.libraries.matrix.api.media.isPreviewEnabled
 import io.element.android.libraries.matrix.api.room.JoinedRoom
-import io.element.android.libraries.matrix.api.room.StateEventType
+import io.element.android.libraries.matrix.api.room.canChangeChatBackground
 import io.element.android.libraries.matrix.api.room.powerlevels.permissionsAsState
+import io.element.android.libraries.matrix.ui.chatbackground.collectBackgroundAsState
 import io.element.android.libraries.mediapickers.api.PickerProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -44,9 +47,13 @@ class ChatBackgroundPresenter(
     @Composable
     override fun present(): ChatBackgroundState {
         val coroutineScope = rememberCoroutineScope()
-        val initial = remember { chatBackgroundService.currentBackground(room.roomId) }
-        val current by remember { chatBackgroundService.backgroundFlow(room) }.collectAsState(initial)
-        val canChange by room.permissionsAsState(false) { it.canOwnUserSendState(StateEventType.Custom(CHAT_BACKGROUND_EVENT_TYPE)) }
+        val current by chatBackgroundService.collectBackgroundAsState(room)
+        val canChange by room.permissionsAsState(false) { it.canChangeChatBackground() }
+        val mediaPreviewConfig = matrixClient.mediaPreviewService.mediaPreviewConfigFlow.collectAsState()
+        val roomInfo = room.roomInfoFlow.collectAsState()
+        val isPhotoHidden by remember {
+            derivedStateOf { !mediaPreviewConfig.value.mediaPreviewValue.isPreviewEnabled(roomInfo.value.joinRule) }
+        }
         var selection by remember { mutableStateOf<ChatBackground?>(null) }
         var photoDraft by remember { mutableStateOf<ChatBackgroundPhotoDraft?>(null) }
         var operation by remember { mutableStateOf(ChatBackgroundOperation.Set) }
@@ -94,6 +101,7 @@ class ChatBackgroundPresenter(
             selection = selection ?: current,
             photoDraft = photoDraft,
             canChange = canChange,
+            isPhotoHidden = isPhotoHidden,
             operation = operation,
             action = action.value,
             eventSink = ::handleEvent,
@@ -115,27 +123,24 @@ class ChatBackgroundPresenter(
     }
 
     private fun CoroutineScope.setPhoto(draft: ChatBackgroundPhotoDraft, action: MutableState<AsyncAction<Unit>>) = launch {
-        action.value = AsyncAction.Loading
-        val upload = draft.upload
-        val result = matrixClient.uploadMedia(upload.mimetype, upload.data).flatMap { url ->
-            val photo = ChatBackground.Photo(
-                url = url,
-                mimetype = upload.mimetype,
-                width = upload.width,
-                height = upload.height,
-                size = upload.data.size.toLong(),
-                blurhash = upload.blurhash,
-                dim = draft.dim,
-                alignX = draft.alignX,
-                alignY = draft.alignY,
-            )
-            chatBackgroundService.set(room, photo)
+        action.runUpdatingState {
+            matrixClient.uploadMedia(draft.upload.mimetype, draft.upload.data).flatMap { url -> chatBackgroundService.set(room, draft.toPhoto(url)) }
         }
-        action.value = result.fold({ AsyncAction.Success(Unit) }, { AsyncAction.Failure(it) })
     }
 
     private fun CoroutineScope.set(background: ChatBackground, action: MutableState<AsyncAction<Unit>>) = launch {
-        action.value = AsyncAction.Loading
-        action.value = chatBackgroundService.set(room, background).fold({ AsyncAction.Success(Unit) }, { AsyncAction.Failure(it) })
+        action.runUpdatingState { chatBackgroundService.set(room, background) }
     }
 }
+
+private fun ChatBackgroundPhotoDraft.toPhoto(url: String) = ChatBackground.Photo(
+    url = url,
+    mimetype = upload.mimetype,
+    width = upload.width,
+    height = upload.height,
+    size = upload.data.size.toLong(),
+    blurhash = upload.blurhash,
+    dim = dim,
+    alignX = alignX,
+    alignY = alignY,
+)

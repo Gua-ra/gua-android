@@ -25,7 +25,6 @@ setupDependencyInjection()
 
 dependencies {
     api(projects.features.chatbackground.api)
-    implementation(projects.libraries.androidutils)
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.chatbackground.api)
     implementation(projects.libraries.core)
@@ -33,7 +32,6 @@ dependencies {
     implementation(projects.libraries.matrix.api)
     implementation(projects.libraries.matrixui)
     implementation(projects.libraries.mediapickers.api)
-    implementation(projects.libraries.uiStrings)
 
     testCommonDependencies(libs, true)
     testImplementation(projects.libraries.chatbackground.test)

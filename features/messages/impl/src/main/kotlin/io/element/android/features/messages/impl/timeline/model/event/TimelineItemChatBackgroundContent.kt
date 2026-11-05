@@ -7,7 +7,6 @@
 
 package io.element.android.features.messages.impl.timeline.model.event
 
-/** "Alice changed the chat background": shown in 1:1 chats too, and never collapsed with other changes. */
 data class TimelineItemChatBackgroundContent(
     override val body: String,
 ) : TimelineItemStateContent {

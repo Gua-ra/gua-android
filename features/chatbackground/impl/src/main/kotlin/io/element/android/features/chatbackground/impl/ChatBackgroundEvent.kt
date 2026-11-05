@@ -13,8 +13,6 @@ sealed interface ChatBackgroundEvent {
     data class SelectPreset(val preset: ChatBackgroundPreset) : ChatBackgroundEvent
     data object ChoosePhoto : ChatBackgroundEvent
     data class SetPhotoDim(val dim: Int) : ChatBackgroundEvent
-
-    /** Moves the photo so that [x] and [y], in thousandths, say where it sits when it overflows the frame. */
     data class SetPhotoAlign(val x: Int, val y: Int) : ChatBackgroundEvent
     data class SetDarkPreview(val isDark: Boolean) : ChatBackgroundEvent
     data object DiscardPhoto : ChatBackgroundEvent

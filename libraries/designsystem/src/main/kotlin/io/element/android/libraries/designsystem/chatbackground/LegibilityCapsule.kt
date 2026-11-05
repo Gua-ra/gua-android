@@ -53,7 +53,7 @@ private val CAPSULE_MAX_CORNER_RADIUS = 12.dp
 private val CAPSULE_PADDING = PaddingValues(horizontal = 8.dp, vertical = 3.dp)
 
 /** Fully rounded while it holds a single line, so a notice that wraps keeps its corners clear of the text. */
-val LegibilityCapsuleShape: Shape = object : Shape {
+private val LegibilityCapsuleShape: Shape = object : Shape {
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
         val radius = min(size.height / 2, with(density) { CAPSULE_MAX_CORNER_RADIUS.toPx() })
         return Outline.Rounded(RoundRect(size.toRect(), CornerRadius(radius)))

@@ -150,7 +150,7 @@ import io.element.android.libraries.matrix.api.room.tombstone.SuccessorRoom
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSendState
 import io.element.android.libraries.matrix.api.user.MatrixUser
-import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundView
+import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundCanvas
 import io.element.android.libraries.matrix.ui.chatbackground.isShowingBackground
 import io.element.android.libraries.matrix.ui.chatbackground.rememberChatBackgroundTransition
 import io.element.android.libraries.matrix.ui.media.contentvalidation.ContentValidationValue
@@ -320,7 +320,7 @@ fun MessagesView(
     ) {
         if (isShowingChatBackground) {
             // Outside the keyboard padding, so opening the keyboard neither resizes nor moves the background.
-            ChatBackgroundView(
+            ChatBackgroundCanvas(
                 transition = chatBackgroundTransition,
                 modifier = Modifier
                     .fillMaxSize()

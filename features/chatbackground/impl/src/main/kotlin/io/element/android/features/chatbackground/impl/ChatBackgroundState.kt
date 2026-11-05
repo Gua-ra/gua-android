@@ -13,11 +13,10 @@ import io.element.android.libraries.chatbackground.api.ChatBackgroundPhotoUpload
 
 data class ChatBackgroundState(
     val current: ChatBackground,
-    /** [current] until something else is picked. */
     val selection: ChatBackground,
-    /** The picked photo while its full screen preview is open. */
     val photoDraft: ChatBackgroundPhotoDraft?,
     val canChange: Boolean,
+    val isPhotoHidden: Boolean,
     val operation: ChatBackgroundOperation,
     val action: AsyncAction<Unit>,
     val eventSink: (ChatBackgroundEvent) -> Unit,

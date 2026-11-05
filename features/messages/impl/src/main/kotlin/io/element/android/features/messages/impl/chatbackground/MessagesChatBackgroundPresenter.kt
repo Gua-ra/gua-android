@@ -9,9 +9,7 @@ package io.element.android.features.messages.impl.chatbackground
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -27,8 +25,8 @@ import io.element.android.libraries.matrix.api.timeline.MatrixTimelineItem
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.timeline.item.event.OtherState
 import io.element.android.libraries.matrix.api.timeline.item.event.StateContent
+import io.element.android.libraries.matrix.ui.chatbackground.collectBackgroundAsState
 
-/** The background of the chat's main timeline, which also reports the background changes its timeline shows. */
 fun interface MessagesChatBackgroundPresenter : Presenter<ChatBackground> {
     fun interface Factory {
         fun create(timelineController: TimelineController): MessagesChatBackgroundPresenter
@@ -47,7 +45,6 @@ class DefaultMessagesChatBackgroundPresenter(
         override fun create(timelineController: TimelineController): DefaultMessagesChatBackgroundPresenter
     }
 
-    // Threads, pinned messages and media keep the default look.
     private val showsBackground = when (timelineController.mainTimelineMode()) {
         Timeline.Mode.Live, is Timeline.Mode.FocusedOnEvent -> true
         Timeline.Mode.PinnedEvents, Timeline.Mode.Media, is Timeline.Mode.Thread -> false
@@ -59,8 +56,7 @@ class DefaultMessagesChatBackgroundPresenter(
         LaunchedEffect(Unit) {
             reportTimelineChanges()
         }
-        val initial = remember { chatBackgroundService.currentBackground(room.roomId) }
-        val background by remember { chatBackgroundService.backgroundFlow(room) }.collectAsState(initial)
+        val background by chatBackgroundService.collectBackgroundAsState(room)
         return background
     }
 
