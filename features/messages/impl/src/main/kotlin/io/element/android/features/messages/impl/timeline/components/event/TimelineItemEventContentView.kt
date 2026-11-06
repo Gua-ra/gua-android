@@ -35,6 +35,7 @@ import io.element.android.features.messages.impl.timeline.model.event.TimelineIt
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemImageContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemLegacyCallInviteContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemLocationContent
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemPollContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRedactedContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRtcNotificationContent
@@ -77,6 +78,9 @@ fun TimelineItemEventContentView(
     eventSink: (TimelineEvent.TimelineItemEvent) -> Unit,
     modifier: Modifier = Modifier,
     onContentLayoutChange: (ContentAvoidingLayoutData) -> Unit = {},
+    isMine: Boolean = false,
+    isSelectionModeActive: Boolean = false,
+    timestamp: @Composable (Modifier) -> Unit = {},
 ) {
     val hideMediaContent = remember(eventId, timelineProtectionState.protectionState) {
         timelineProtectionState.hideMediaContent(eventId)
@@ -97,7 +101,10 @@ fun TimelineItemEventContentView(
     }
 
     val caption = content.captionOrNull()
-    val showCaption = caption != null && content !is TimelineItemStickerContent && content !is TimelineItemVoiceContent
+    val showCaption = caption != null &&
+        content !is TimelineItemStickerContent &&
+        content !is TimelineItemVoiceContent &&
+        content !is TimelineItemMediaStackContent
     // If a caption is added, it will be used to get the free space for the overlay, so we don't need to add onContentLayoutChange to the actual content
     val calculatedOnContentLayoutChange = remember(onContentLayoutChange, showCaption) {
         if (showCaption) {
@@ -196,6 +203,16 @@ fun TimelineItemEventContentView(
                     content = content,
                     onGalleryItemClick = { index -> onGalleryItemClick(index) },
                 )
+                is TimelineItemMediaStackContent -> TimelineItemMediaStackView(
+                    content = content,
+                    isMine = isMine,
+                    gesturesEnabled = !isSelectionModeActive,
+                    timelineProtectionState = timelineProtectionState,
+                    eventSink = eventSink,
+                    onLinkClick = onLinkClick,
+                    onLinkLongClick = onLinkLongClick,
+                    timestamp = timestamp,
+                )
                 is TimelineItemFileContent -> {
                     TimelineItemFileView(
                         content = content,
@@ -256,7 +273,7 @@ fun TimelineItemEventContentView(
 }
 
 @Composable
-private fun CaptionView(
+internal fun CaptionView(
     caption: String,
     formattedCaption: CharSequence?,
     onLinkClick: (Link) -> Unit,

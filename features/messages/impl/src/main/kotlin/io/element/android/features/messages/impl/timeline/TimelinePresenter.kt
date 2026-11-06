@@ -133,6 +133,7 @@ class TimelinePresenter(
             computeReactions = true,
             // GUA FORK: drop state/membership churn (and the collapsed "room changes" group) in 1:1 chats.
             isDirectOneToOneRoom = room.isDirectOneToOneRoom(),
+            groupMediaStacks = true,
         )
     )
     private var timelineItems by mutableStateOf<ImmutableList<TimelineItem>>(persistentListOf())
@@ -374,6 +375,10 @@ class TimelinePresenter(
                 }
                 is TimelineEvent.ValidateMedia -> {
                     timelineProtectionState.eventSink(TimelineProtectionEvent.ValidateContent(event.mediaSources, event.validationState))
+                }
+                is TimelineEvent.OpenMediaStackGrid -> {
+                    val mode = if (isLive) timelineMode else timelineController.detachedTimelineMode() ?: return
+                    navigator.navigateToMediaStackGrid(mode, event.stack)
                 }
                 is TimelineEvent.CopyToClipboard -> {
                     clipboardHelper.copyPlainText(event.text) {

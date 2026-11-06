@@ -77,6 +77,7 @@ import io.element.android.features.messages.impl.timeline.TimelineEvent
 import io.element.android.features.messages.impl.timeline.TimelineRoomInfo
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
 import io.element.android.features.messages.impl.timeline.components.event.TimelineItemEventContentView
+import io.element.android.features.messages.impl.timeline.components.event.rememberMediaStackAccessibilityActions
 import io.element.android.features.messages.impl.timeline.components.receipt.ReadReceiptViewState
 import io.element.android.features.messages.impl.timeline.components.receipt.TimelineItemReadReceiptView
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
@@ -89,6 +90,7 @@ import io.element.android.features.messages.impl.timeline.model.event.TimelineIt
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemGalleryContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemImageContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemLocationContent
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemPollContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemStickerContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemTextContent
@@ -206,6 +208,9 @@ fun TimelineItemEventRow(
             eventSink = eventSink,
             modifier = contentModifier,
             onContentLayoutChange = onContentLayoutChange,
+            isMine = event.isMine,
+            isSelectionModeActive = selectionData.isSelectionModeActive,
+            timestamp = { timestampModifier -> TimelineEventTimestampView(event = event, eventSink = eventSink, modifier = timestampModifier) },
         )
     },
 ) {
@@ -230,7 +235,9 @@ fun TimelineItemEventRow(
         IntOffset(x = selectionSlide() - SELECTION_COLUMN_WIDTH.roundToPx() - selectionContentOffset().x, y = 0)
     }
 
-    val onContentClick = if (event.mustBeProtected()) {
+    val mediaStack = event.content as? TimelineItemMediaStackContent
+    // A stack takes its taps on the bubble, to wait for a double tap, and reveals hidden media there.
+    val onContentClick = if (event.mustBeProtected() && mediaStack == null) {
         // In this case, let the content handle the click
         {}
     } else {
@@ -254,18 +261,22 @@ fun TimelineItemEventRow(
         onLongClick = onLongClick,
         onSwipeToReply = onSwipeToReply,
     )
+    val mediaStackAccessibilityActions = mediaStack?.let { rememberMediaStackAccessibilityActions(it, eventSink) }.orEmpty()
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .semantics { customActions = accessibilityActions }
+            .semantics {
+                customActions = if (selectionData.isSelectionModeActive) accessibilityActions else mediaStackAccessibilityActions + accessibilityActions
+            }
     ) {
         if (event.groupPosition.isNew()) {
             Spacer(modifier = Modifier.height(16.dp))
         } else {
             Spacer(modifier = Modifier.height(2.dp))
         }
-        if (canReply) {
+        // GUA FORK: a horizontal drag on a media stack pages its cards, so a stack is replied to from its menu.
+        if (canReply && mediaStack == null) {
             val state: SwipeableActionsState = rememberSwipeableActionsState()
             val offset = state.offset.floatValue
             val swipeThresholdPx = 40.dp.toPx()
@@ -662,6 +673,7 @@ private fun TimelineItemEventRowContent(
             borderColor = borderColor,
             onDoubleClick = onBubbleDoubleClick,
             isLifted = { messageMenuController?.liftedId == event.id },
+            drawsBubble = event.content !is TimelineItemMediaStackContent,
         ) {
             MessageEventBubbleContent(
                 event = event,
@@ -1017,6 +1029,8 @@ private fun MessageEventBubbleContent(
                 if (shouldHide) TimestampPosition.Hidden else TimestampPosition.Overlay
             }
             is TimelineItemPollContent -> TimestampPosition.Below
+            // The stack draws its own timestamp, on its front card or in its caption bubble.
+            is TimelineItemMediaStackContent -> TimestampPosition.Hidden
             else -> TimestampPosition.Default
         }
     }
@@ -1030,7 +1044,8 @@ private fun MessageEventBubbleContent(
             is TimelineItemGalleryContent -> ContentPadding.CaptionedMedia
             is TimelineItemAttachmentsContent -> ContentPadding.CaptionedMedia
             is TimelineItemStickerContent,
-            is TimelineItemLocationContent -> ContentPadding.Media
+            is TimelineItemLocationContent,
+            is TimelineItemMediaStackContent -> ContentPadding.Media
             else -> ContentPadding.Textual
         }
     }

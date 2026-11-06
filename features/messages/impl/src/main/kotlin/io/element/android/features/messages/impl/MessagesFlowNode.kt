@@ -43,6 +43,9 @@ import io.element.android.features.location.api.ShowLocationMode
 import io.element.android.features.messages.api.MessagesEntryPoint
 import io.element.android.features.messages.impl.attachments.Attachment
 import io.element.android.features.messages.impl.attachments.preview.AttachmentsPreviewNode
+import io.element.android.features.messages.impl.mediastack.MediaBatch
+import io.element.android.features.messages.impl.mediastack.grid.MediaStackGridNode
+import io.element.android.features.messages.impl.mediastack.grid.MediaStackGridTile
 import io.element.android.features.messages.impl.pinned.DefaultPinnedEventsTimelineProvider
 import io.element.android.features.messages.impl.pinned.list.PinnedMessagesListNode
 import io.element.android.features.messages.impl.report.ReportMessageNode
@@ -60,6 +63,7 @@ import io.element.android.features.messages.impl.timeline.model.event.TimelineIt
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemGalleryContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemImageContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemLocationContent
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemVideoContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemVoiceContent
 import io.element.android.features.messages.impl.timeline.model.event.blurHash
@@ -108,6 +112,7 @@ import io.element.android.libraries.textcomposer.mentions.LocalMentionSpanUpdate
 import io.element.android.libraries.textcomposer.mentions.MentionSpanTheme
 import io.element.android.libraries.textcomposer.mentions.MentionSpanUpdater
 import io.element.android.libraries.ui.strings.CommonPlurals
+import io.element.android.libraries.ui.utils.time.formatShort
 import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.analyticsproviders.api.trackers.captureInteraction
 import kotlinx.collections.immutable.ImmutableList
@@ -194,10 +199,18 @@ class MessagesFlowNode(
             val eventIds: List<EventId>,
             @IgnoredOnParcel
             val timelineProvider: TimelineProvider? = null,
+            val asMediaStack: Boolean = false,
         ) : NavTarget
 
         @Parcelize
-        data class ReportMessage(val eventId: EventId, val senderId: UserId) : NavTarget
+        data class ReportMessage(val eventIds: List<EventId>, val senderId: UserId) : NavTarget
+
+        @Parcelize
+        data class MediaStackGrid(
+            val kind: TimelineItemMediaStackContent.Kind,
+            val tiles: List<MediaStackGridTile>,
+            val viewers: List<MediaViewer>,
+        ) : NavTarget
 
         @Parcelize
         data class SendLocation(val timelineMode: Timeline.Mode) : NavTarget
@@ -317,12 +330,16 @@ class MessagesFlowNode(
                         backstack.push(NavTarget.EventDebugInfo(eventId, debugInfo))
                     }
 
-                    override fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider) {
-                        backstack.push(NavTarget.ForwardEvent(eventIds, timelineProvider))
+                    override fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider, asMediaStack: Boolean) {
+                        backstack.push(NavTarget.ForwardEvent(eventIds, timelineProvider, asMediaStack))
                     }
 
-                    override fun navigateToReportMessage(eventId: EventId, senderId: UserId) {
-                        backstack.push(NavTarget.ReportMessage(eventId, senderId))
+                    override fun navigateToReportMessage(eventIds: List<EventId>, senderId: UserId) {
+                        backstack.push(NavTarget.ReportMessage(eventIds, senderId))
+                    }
+
+                    override fun navigateToMediaStackGrid(timelineMode: Timeline.Mode, stack: TimelineItemMediaStackContent) {
+                        backstack.push(buildMediaStackGridNavTarget(timelineMode, stack))
                     }
 
                     override fun navigateToSendLocation() {
@@ -479,6 +496,8 @@ class MessagesFlowNode(
                     eventIds = navTarget.eventIds,
                     timelineProvider = timelineProvider,
                     fromRoomId = room.roomId,
+                    // Each chat forwarded to gets a batch of its own, so the photos stack there too.
+                    extraContentJsons = { MediaBatch.newBatch(navTarget.eventIds.size).map(MediaBatch::extraContentJson) }.takeIf { navTarget.asMediaStack },
                 )
                 val callback = object : ForwardEntryPoint.Callback {
                     override fun onDone(roomIds: List<RoomId>) {
@@ -509,8 +528,17 @@ class MessagesFlowNode(
                 )
             }
             is NavTarget.ReportMessage -> {
-                val inputs = ReportMessageNode.Inputs(navTarget.eventId, navTarget.senderId)
+                val inputs = ReportMessageNode.Inputs(navTarget.eventIds, navTarget.senderId)
                 createNode<ReportMessageNode>(buildContext, listOf(inputs))
+            }
+            is NavTarget.MediaStackGrid -> {
+                val inputs = MediaStackGridNode.Inputs(kind = navTarget.kind, tiles = navTarget.tiles)
+                val callback = object : MediaStackGridNode.Callback {
+                    override fun onTileClick(index: Int) {
+                        backstack.push(navTarget.viewers[index])
+                    }
+                }
+                createNode<MediaStackGridNode>(buildContext, listOf(inputs, callback))
             }
             is NavTarget.SendLocation -> {
                 shareLocationEntryPoint.createNode(
@@ -645,12 +673,16 @@ class MessagesFlowNode(
                         backstack.push(NavTarget.EventDebugInfo(eventId, debugInfo))
                     }
 
-                    override fun handleForwardEventClick(eventIds: List<EventId>, timelineProvider: TimelineProvider) {
-                        backstack.push(NavTarget.ForwardEvent(eventIds, timelineProvider))
+                    override fun handleForwardEventClick(eventIds: List<EventId>, timelineProvider: TimelineProvider, asMediaStack: Boolean) {
+                        backstack.push(NavTarget.ForwardEvent(eventIds, timelineProvider, asMediaStack))
                     }
 
-                    override fun navigateToReportMessage(eventId: EventId, senderId: UserId) {
-                        backstack.push(NavTarget.ReportMessage(eventId, senderId))
+                    override fun navigateToReportMessage(eventIds: List<EventId>, senderId: UserId) {
+                        backstack.push(NavTarget.ReportMessage(eventIds, senderId))
+                    }
+
+                    override fun navigateToMediaStackGrid(timelineMode: Timeline.Mode, stack: TimelineItemMediaStackContent) {
+                        backstack.push(buildMediaStackGridNavTarget(timelineMode, stack))
                     }
 
                     override fun navigateToSendLocation() {
@@ -835,6 +867,10 @@ class MessagesFlowNode(
         galleryItemIndex: Int,
         canUseOverlay: Boolean,
     ): Boolean {
+        if (event.content is TimelineItemMediaStackContent) {
+            val member = event.content.members.getOrNull(galleryItemIndex) ?: return false
+            return processEventClick(timelineMode = timelineMode, event = member, canUseOverlay = canUseOverlay)
+        }
         val navTarget = when (event.content) {
             is TimelineItemGalleryContent -> {
                 val galleryInfo = GalleryInfo(
@@ -926,7 +962,7 @@ class MessagesFlowNode(
         mediaSource: MediaSource,
         thumbnailSource: MediaSource?,
         canUseOverlay: Boolean,
-    ): NavTarget {
+    ): NavTarget.MediaViewer {
         return NavTarget.MediaViewer(
             mode = mode,
             eventId = event.eventId,
@@ -956,6 +992,31 @@ class MessagesFlowNode(
             thumbnailSource = thumbnailSource,
             canUseOverlay = canUseOverlay,
             blurHash = content.blurHash(),
+        )
+    }
+
+    private fun buildMediaStackGridNavTarget(timelineMode: Timeline.Mode, stack: TimelineItemMediaStackContent): NavTarget.MediaStackGrid {
+        val mode = MediaViewerEntryPoint.MediaViewerMode.TimelineImagesAndVideos(timelineMode)
+        val media = stack.members.mapNotNull { member -> (member.content as? TimelineItemEventContentWithAttachment)?.let { member to it } }
+        return NavTarget.MediaStackGrid(
+            kind = stack.kind,
+            tiles = media.map { (_, content) ->
+                when (content) {
+                    is TimelineItemVideoContent -> MediaStackGridTile(content.thumbnailSource, content.blurHash, content.duration.formatShort())
+                    is TimelineItemImageContent -> MediaStackGridTile(content.thumbnailSource ?: content.mediaSource, content.blurhash, null)
+                    else -> MediaStackGridTile(null, null, null)
+                }
+            },
+            viewers = media.map { (member, content) ->
+                buildMediaViewerNavTarget(
+                    mode = mode,
+                    event = member,
+                    content = content,
+                    mediaSource = content.mediaSource,
+                    thumbnailSource = (content as? TimelineItemImageContent)?.thumbnailSource ?: (content as? TimelineItemVideoContent)?.thumbnailSource,
+                    canUseOverlay = false,
+                )
+            },
         )
     }
 

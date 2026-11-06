@@ -9,18 +9,21 @@
 package io.element.android.features.messages.impl
 
 import io.element.android.features.messages.impl.attachments.Attachment
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.ThreadId
 import io.element.android.libraries.matrix.api.core.UserId
+import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.timeline.TimelineProvider
 import io.element.android.libraries.matrix.api.timeline.item.TimelineItemDebugInfo
 import kotlinx.collections.immutable.ImmutableList
 
 interface MessagesNavigator {
     fun navigateToEventDebugInfo(eventId: EventId?, debugInfo: TimelineItemDebugInfo)
-    fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider)
-    fun navigateToReportMessage(eventId: EventId, senderId: UserId)
+    fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider, asMediaStack: Boolean = false)
+    fun navigateToReportMessage(eventIds: List<EventId>, senderId: UserId)
+    fun navigateToMediaStackGrid(timelineMode: Timeline.Mode, stack: TimelineItemMediaStackContent)
     fun navigateToEditPoll(eventId: EventId)
     fun navigateToPreviewAttachments(attachments: ImmutableList<Attachment>, inReplyToEventId: EventId?)
     fun navigateToRoom(roomId: RoomId, eventId: EventId?, serverNames: List<String>)
