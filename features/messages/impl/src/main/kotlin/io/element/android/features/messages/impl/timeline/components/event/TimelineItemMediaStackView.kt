@@ -254,6 +254,8 @@ private fun MediaStackCards(
     val members = content.members
     val visibleCount = minOf(members.size, 1 + BEHIND_CARD_ROTATIONS.size)
     val hiddenMembers = timelineProtectionState.hiddenMembers(content)
+    // Dark mode draws a hairline around each card instead.
+    val hasShadow = ElementTheme.isLightTheme
 
     Box(
         modifier = modifier
@@ -295,6 +297,7 @@ private fun MediaStackCards(
                         cardWidthPx = cardWidthPx,
                         towardCentre = towardCentre,
                         followsDrag = animationsEnabled,
+                        hasShadow = hasShadow,
                     ),
                 )
             }
@@ -317,6 +320,7 @@ private fun Modifier.stackCardTransform(
     cardWidthPx: Float,
     towardCentre: Float,
     followsDrag: Boolean,
+    hasShadow: Boolean,
 ) = graphicsLayer {
     val offset = dragOffset()
     if (depth == 0) {
@@ -334,7 +338,7 @@ private fun Modifier.stackCardTransform(
         scaleX = scale
         scaleY = scale
     }
-    shadowElevation = 3.dp.toPx()
+    shadowElevation = if (hasShadow) 3.dp.toPx() else 0f
     ambientShadowColor = CARD_SHADOW_COLOR
     spotShadowColor = CARD_SHADOW_COLOR
     shape = CARD_SHAPE
