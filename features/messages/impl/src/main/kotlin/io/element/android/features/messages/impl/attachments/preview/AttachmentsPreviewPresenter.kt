@@ -65,6 +65,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 
 @AssistedInject
 class AttachmentsPreviewPresenter(
@@ -105,6 +106,7 @@ class AttachmentsPreviewPresenter(
     // GUA FORK: a send that fails part way keeps the media not sent yet, so a retry neither repeats the others nor splits their batch.
     @Volatile
     private var unsentMedia = emptyList<MediaSend>()
+    private val isSendingMedia = AtomicBoolean(false)
 
     // The caption went out with the first media, so anything typed afterwards would be dropped.
     private var hasSentFirstMedia by mutableStateOf(false)
@@ -285,20 +287,26 @@ class AttachmentsPreviewPresenter(
 
                         // Send the media using the session coroutine scope so it doesn't matter if this screen or the chat one are closed
                         sessionCoroutineScope.launch(dispatchers.io) {
-                            val isSent = sendMedia(
-                                mediaUploadInfos = allMediaUploadInfos,
-                                caption = caption,
-                                sendActionState = sendActionState,
-                                inReplyToEventId = inReplyToEventId,
-                            )
+                            // GUA FORK: a send started while another is still going out would send its media twice.
+                            if (!isSendingMedia.compareAndSet(false, true)) return@launch
+                            try {
+                                val isSent = sendMedia(
+                                    mediaUploadInfos = allMediaUploadInfos,
+                                    caption = caption,
+                                    sendActionState = sendActionState,
+                                    inReplyToEventId = inReplyToEventId,
+                                )
 
-                            if (isSent) {
-                                // Clean up the pre-processed media after it's been sent
-                                mediaSender.cleanUp()
-                                editedTempFilesToDelete.values.forEach { it.safeDelete() }
-                            } else {
-                                // GUA FORK: the media not sent yet stay prepared for a retry, and dismissing the screen deletes them.
-                                editedTempFiles = editedTempFilesToDelete + editedTempFiles
+                                if (isSent) {
+                                    // Clean up the pre-processed media after it's been sent
+                                    mediaSender.cleanUp()
+                                    editedTempFilesToDelete.values.forEach { it.safeDelete() }
+                                } else {
+                                    // GUA FORK: the media not sent yet stay prepared for a retry, and dismissing the screen deletes them.
+                                    editedTempFiles = editedTempFilesToDelete + editedTempFiles
+                                }
+                            } finally {
+                                isSendingMedia.set(false)
                             }
                         }
                     }
@@ -594,8 +602,8 @@ class AttachmentsPreviewPresenter(
         inReplyToEventId: EventId?,
     ): Boolean = runCatchingExceptions {
         unsentMedia = if (unsentMedia.isEmpty()) planSends(mediaUploadInfos) else unsentMedia.preparedAgain(mediaUploadInfos)
+        sendActionState.value = SendActionState.Sending.Uploading(mediaUploadInfos)
         if (unsentMedia.singleOrNull()?.isFirst == true) {
-            sendActionState.value = SendActionState.Sending.Uploading(mediaUploadInfos)
             mediaSender.sendPreProcessedMedia(
                 mediaUploadInfo = mediaUploadInfos.first(),
                 caption = caption,

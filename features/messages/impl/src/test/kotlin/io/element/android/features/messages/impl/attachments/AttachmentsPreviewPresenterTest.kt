@@ -40,6 +40,7 @@ import io.element.android.libraries.matrix.api.core.TransactionId
 import io.element.android.libraries.matrix.api.media.AudioInfo
 import io.element.android.libraries.matrix.api.media.FileInfo
 import io.element.android.libraries.matrix.api.media.ImageInfo
+import io.element.android.libraries.matrix.api.media.MediaUploadHandler
 import io.element.android.libraries.matrix.api.media.VideoInfo
 import io.element.android.libraries.matrix.api.permalink.PermalinkBuilder
 import io.element.android.libraries.matrix.api.room.JoinedRoom
@@ -1160,6 +1161,35 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
     }
 
     @Test
+    fun `present - sending again while photos are still going out sends nothing twice`() = runTest {
+        val firstUpload = CompletableDeferred<Unit>()
+        val sent = mutableListOf<String>()
+        val timeline = FakeTimeline().apply {
+            sendImageLambda = { file, _, _, _, _, _, _ ->
+                sent += file.name
+                Result.success(if (sent.size == 1) AwaitingMediaUploadHandler(firstUpload) else FakeMediaUploadHandler())
+            }
+        }
+        val presenter = createAttachmentsPreviewPresenter(
+            room = FakeJoinedRoom(liveTimeline = timeline),
+            attachments = photoLibraryAttachments(2),
+            mediaPreProcessor = PickedFileMediaPreProcessor(),
+            onDoneListener = {},
+        )
+        presenter.test {
+            awaitItem().eventSink(AttachmentsPreviewEvent.SendAttachment)
+            consumeItemsUntilPredicate { it.sendActionState is SendActionState.Sending.Uploading }.last()
+                .eventSink(AttachmentsPreviewEvent.CancelAndClearSendState)
+            consumeItemsUntilPredicate { it.sendActionState is SendActionState.Sending.ReadyToUpload }.last()
+                .eventSink(AttachmentsPreviewEvent.SendAttachment)
+            firstUpload.complete(Unit)
+            consumeItemsUntilPredicate { it.sendActionState == SendActionState.Done }
+
+            assertThat(sent).containsExactly("0.jpeg", "1.jpeg").inOrder()
+        }
+    }
+
+    @Test
     fun `present - photos are sent without a batch when the flag is off`() = runTest {
         val sentMedia = SentMediaRecorder()
         val presenter = createAttachmentsPreviewPresenter(
@@ -1240,6 +1270,15 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
             }
             return FakeJoinedRoom(liveTimeline = timeline)
         }
+    }
+
+    private class AwaitingMediaUploadHandler(private val done: CompletableDeferred<Unit>) : MediaUploadHandler {
+        override suspend fun await(): Result<Unit> {
+            done.await()
+            return Result.success(Unit)
+        }
+
+        override fun cancel() = Unit
     }
 
     // Prepares each picked file as an image of the same name, so a test can tell which picked file each send carries.
