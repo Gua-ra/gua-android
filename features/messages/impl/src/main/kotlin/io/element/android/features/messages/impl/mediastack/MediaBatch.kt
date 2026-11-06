@@ -16,9 +16,6 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import java.util.UUID
 
-/**
- * The place of a photo or video in the batch it was sent with, read from the `global.gua.batch` field of its event content.
- */
 data class MediaBatch(
     val id: String,
     val index: Int,
@@ -34,8 +31,8 @@ data class MediaBatch(
     }.toString()
 
     companion object {
-        const val CONTENT_KEY = "global.gua.batch"
         const val MAX_SEND_COUNT = 20
+        private const val CONTENT_KEY = "global.gua.batch"
         private const val VERSION = 1
         private const val MAX_RECEIVED_COUNT = 100
         private val MEDIA_MSG_TYPES = setOf("m.image", "m.video")
@@ -47,10 +44,7 @@ data class MediaBatch(
             return List(count) { index -> MediaBatch(id = id, index = index, count = count) }
         }
 
-        /**
-         * Reads the batch of an event from its JSON. [originalJson] is only read when [latestJson] is an edit, since the marker
-         * belongs to the original content.
-         */
+        // The marker belongs to the original content, so an edit is read from the original JSON.
         fun fromEventJson(latestJson: String?, originalJson: () -> String?): MediaBatch? {
             val content = latestJson?.eventContent() ?: return null
             return if (content.isReplacement()) {

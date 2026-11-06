@@ -14,6 +14,7 @@ import io.element.android.features.messages.impl.timeline.model.event.TimelineIt
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemImageContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemVideoContent
+import io.element.android.features.messages.impl.timeline.model.event.toMediaStackMember
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.UniqueId
 import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSendState
@@ -52,18 +53,18 @@ internal fun aMediaStackEvent(
     members: List<TimelineItemEventContent>,
     sendStates: List<LocalEventSendState?> = members.map { null },
 ): TimelineItem.Event {
-    val events = members.mapIndexed { index, content ->
+    val stackMembers = members.mapIndexedNotNull { index, content ->
         aTimelineItemEvent(
             eventId = EventId("\$member$index"),
             isMine = isMine,
             content = content,
             sendState = sendStates[index],
-        ).copy(id = UniqueId("member$index"))
+        ).copy(id = UniqueId("member$index")).toMediaStackMember()
     }
     val stackId = UniqueId("member0_stack")
-    return events.first().copy(
+    return stackMembers.first().event.copy(
         id = stackId,
-        content = TimelineItemMediaStackContent(stackId = stackId, members = events.toImmutableList()),
+        content = TimelineItemMediaStackContent(stackId = stackId, members = stackMembers.toImmutableList(), newest = stackMembers.last().event),
         localSendState = sendStates.firstOrNull { it is LocalEventSendState.Failed } ?: sendStates.firstOrNull { it is LocalEventSendState.Sending },
     )
 }

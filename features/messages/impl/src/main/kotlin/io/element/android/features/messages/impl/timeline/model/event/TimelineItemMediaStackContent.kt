@@ -12,32 +12,32 @@ import androidx.compose.runtime.Immutable
 import io.element.android.features.messages.impl.R
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.libraries.matrix.api.core.UniqueId
+import io.element.android.libraries.matrix.api.media.MediaSource
 import kotlinx.collections.immutable.ImmutableList
 
-/**
- * Photos and videos sent together, shown as one stack. [members] are the image and video events in the order they were picked; the
- * stack event itself is the first of them, so reactions, replies and threads act on it.
- */
+// The stack event is a copy of its first member, so reactions, replies and threads act on that member.
 @Immutable
 data class TimelineItemMediaStackContent(
     val stackId: UniqueId,
-    val members: ImmutableList<TimelineItem.Event>,
+    val members: ImmutableList<MediaStackMember>,
+    // The member that arrived last in the timeline; members are in the order they were picked.
+    val newest: TimelineItem.Event,
 ) : TimelineItemEventContent {
     override val type: String = "TimelineItemMediaStackContent"
 
-    val first: TimelineItem.Event get() = members.first()
+    val first: TimelineItem.Event get() = members.first().event
 
-    val caption: String? get() = (first.content as? TimelineItemEventContentWithAttachment)?.caption
+    val caption: String? get() = members.first().media.caption
 
-    val formattedCaption: CharSequence? get() = (first.content as? TimelineItemEventContentWithAttachment)?.formattedCaption
+    val formattedCaption: CharSequence? get() = members.first().media.formattedCaption
 
     val kind: Kind = when {
-        members.all { it.content is TimelineItemImageContent } -> Kind.Photos
-        members.all { it.content is TimelineItemVideoContent } -> Kind.Videos
+        members.all { it is MediaStackMember.Photo } -> Kind.Photos
+        members.all { it is MediaStackMember.Video } -> Kind.Videos
         else -> Kind.Items
     }
 
-    val failedMembers: List<TimelineItem.Event> get() = members.filter { it.failedToSend }
+    val failedMembers: List<TimelineItem.Event> get() = members.map { it.event }.filter { it.failedToSend }
 
     enum class Kind(
         @PluralsRes val headerPlural: Int,
@@ -48,3 +48,38 @@ data class TimelineItemMediaStackContent(
         Items(R.plurals.gua_media_stack_items, R.plurals.gua_media_stack_remove_items_title),
     }
 }
+
+@Immutable
+sealed interface MediaStackMember {
+    val event: TimelineItem.Event
+    val media: TimelineItemEventContentWithAttachment
+    val thumbnailSource: MediaSource?
+
+    // A card or a grid tile shows a still: the thumbnail of a GIF is not animated, and a video never plays in a stack.
+    val stillSource: MediaSource?
+
+    data class Photo(
+        override val event: TimelineItem.Event,
+        override val media: TimelineItemImageContent,
+    ) : MediaStackMember {
+        override val thumbnailSource get() = media.thumbnailSource
+        override val stillSource get() = media.thumbnailSource ?: media.mediaSource
+    }
+
+    data class Video(
+        override val event: TimelineItem.Event,
+        override val media: TimelineItemVideoContent,
+    ) : MediaStackMember {
+        override val thumbnailSource get() = media.thumbnailSource
+        override val stillSource get() = media.thumbnailSource
+    }
+}
+
+fun TimelineItem.Event.toMediaStackMember(): MediaStackMember? = when (content) {
+    is TimelineItemImageContent -> MediaStackMember.Photo(this, content)
+    is TimelineItemVideoContent -> MediaStackMember.Video(this, content)
+    else -> null
+}
+
+// A stack shows the send failure of one of its members, which is the one to resolve or retry.
+fun TimelineItem.Event.sendFailureSource(): TimelineItem.Event = (content as? TimelineItemMediaStackContent)?.failedMembers?.firstOrNull() ?: this

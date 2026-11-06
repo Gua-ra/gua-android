@@ -10,6 +10,8 @@ package io.element.android.features.messages.impl.mediastack
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import org.junit.Test
 
@@ -25,9 +27,7 @@ class MediaBatchTest {
     @Test
     fun `the extra content of a batch item parses back to the same batch`() {
         val batch = MediaBatch(id = "5b0f3c8e-1d2a-4c6b-9f3e-2a7d8c1b4e60", index = 2, count = 4)
-        val content = Json.parseToJsonElement(
-            """{"msgtype":"m.image","body":"a.jpg",${batch.extraContentJson().removePrefix("{").removeSuffix("}")}}"""
-        ).jsonObject
+        val content = JsonObject(Json.parseToJsonElement(batch.extraContentJson()).jsonObject + ("msgtype" to JsonPrimitive("m.image")))
         assertThat(MediaBatch.fromContent(content)).isEqualTo(batch)
     }
 

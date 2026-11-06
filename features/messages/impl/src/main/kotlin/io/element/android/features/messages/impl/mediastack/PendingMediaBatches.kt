@@ -17,10 +17,7 @@ import io.element.android.libraries.mediaupload.api.MediaUploadInfo
 import io.element.android.services.toolbox.api.systemclock.SystemClock
 import kotlin.time.Duration.Companion.hours
 
-/**
- * The batches of the media this session is sending. A local echo has no event JSON to read its batch from, so it is matched here by
- * the file it carries, then by its transaction id once bound.
- */
+// A local echo has no event JSON to read its batch from, so it is matched by the file it carries, then by its transaction id once bound.
 @SingleIn(SessionScope::class)
 @Inject
 class PendingMediaBatches(
@@ -48,12 +45,9 @@ class PendingMediaBatches(
         items.forEach { (media, batch) -> entries += Entry(roomId, media, batch, now) }
     }
 
-    /**
-     * The batch of a local echo. The first call binds [transactionId] to the oldest unbound entry for the same file, so the same photo
-     * sent twice keeps each echo in its own batch.
-     */
+    // The first call binds the transaction id to the oldest unbound entry for the same file, so the same photo sent twice keeps each echo in its batch.
     @Synchronized
-    fun batchFor(roomId: RoomId, transactionId: TransactionId, media: Media): MediaBatch? {
+    fun bindBatch(roomId: RoomId, transactionId: TransactionId, media: Media): MediaBatch? {
         removeExpired()
         entries.firstOrNull { it.transactionId == transactionId }?.let { return it.batch }
         val index = entries.indexOfFirst { it.transactionId == null && it.roomId == roomId && it.media == media }
@@ -77,7 +71,6 @@ class PendingMediaBatches(
     }
 }
 
-/** The file a local echo of this media will carry, as the timeline shows it. */
 fun MediaUploadInfo.pendingMedia(): PendingMediaBatches.Media = when (this) {
     is MediaUploadInfo.Image -> PendingMediaBatches.Media(file.name, imageInfo.size ?: 0, imageInfo.mimetype ?: MimeTypes.OctetStream)
     is MediaUploadInfo.Video -> PendingMediaBatches.Media(file.name, videoInfo.size ?: 0, videoInfo.mimetype ?: MimeTypes.OctetStream)

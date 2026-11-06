@@ -26,9 +26,9 @@ class PendingMediaBatchesTest {
         val batch = MediaBatch.newBatch(2)
         pendingMediaBatches.register(A_ROOM_ID, listOf(photo to batch[0], video to batch[1]))
 
-        assertThat(pendingMediaBatches.batchFor(A_ROOM_ID, TransactionId("t2"), video)).isEqualTo(batch[1])
-        assertThat(pendingMediaBatches.batchFor(A_ROOM_ID, TransactionId("t1"), photo)).isEqualTo(batch[0])
-        assertThat(pendingMediaBatches.batchFor(A_ROOM_ID, TransactionId("t1"), video)).isEqualTo(batch[0])
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t2"), video)).isEqualTo(batch[1])
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t1"), photo)).isEqualTo(batch[0])
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t1"), video)).isEqualTo(batch[0])
     }
 
     @Test
@@ -38,9 +38,9 @@ class PendingMediaBatchesTest {
         pendingMediaBatches.register(A_ROOM_ID, listOf(photo to first[0], video to first[1]))
         pendingMediaBatches.register(A_ROOM_ID, listOf(photo to second[0], video to second[1]))
 
-        assertThat(pendingMediaBatches.batchFor(A_ROOM_ID, TransactionId("t1"), photo)).isEqualTo(first[0])
-        assertThat(pendingMediaBatches.batchFor(A_ROOM_ID, TransactionId("t3"), photo)).isEqualTo(second[0])
-        assertThat(pendingMediaBatches.batchFor(A_ROOM_ID, TransactionId("t1"), photo)).isEqualTo(first[0])
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t1"), photo)).isEqualTo(first[0])
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t3"), photo)).isEqualTo(second[0])
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t1"), photo)).isEqualTo(first[0])
     }
 
     @Test
@@ -48,8 +48,8 @@ class PendingMediaBatchesTest {
         val batch = MediaBatch.newBatch(2)
         pendingMediaBatches.register(A_ROOM_ID, listOf(photo to batch[0], video to batch[1]))
 
-        assertThat(pendingMediaBatches.batchFor(A_ROOM_ID_2, TransactionId("t1"), photo)).isNull()
-        assertThat(pendingMediaBatches.batchFor(A_ROOM_ID, TransactionId("t1"), photo.copy(fileSize = 1))).isNull()
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID_2, TransactionId("t1"), photo)).isNull()
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t1"), photo.copy(fileSize = 1))).isNull()
     }
 
     @Test
@@ -58,8 +58,8 @@ class PendingMediaBatchesTest {
         pendingMediaBatches.register(A_ROOM_ID, listOf(photo to batch[0], video to batch[1]))
         pendingMediaBatches.onSent(A_ROOM_ID, batch[0])
 
-        assertThat(pendingMediaBatches.batchFor(A_ROOM_ID, TransactionId("t1"), photo)).isNull()
-        assertThat(pendingMediaBatches.batchFor(A_ROOM_ID, TransactionId("t2"), video)).isEqualTo(batch[1])
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t1"), photo)).isNull()
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t2"), video)).isEqualTo(batch[1])
     }
 
     @Test
@@ -68,6 +68,6 @@ class PendingMediaBatchesTest {
         pendingMediaBatches.register(A_ROOM_ID, listOf(photo to batch[0], video to batch[1]))
         clock.epochMillisResult += 24.hours.inWholeMilliseconds + 1
 
-        assertThat(pendingMediaBatches.batchFor(A_ROOM_ID, TransactionId("t1"), photo)).isNull()
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t1"), photo)).isNull()
     }
 }

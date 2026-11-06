@@ -100,7 +100,7 @@ internal fun TestScope.aTimelineItemsFactory(
                     permalinkParser = FakePermalinkParser(),
                     config = config,
                     summaryFormatter = FakeMessageSummaryFormatter(),
-                    mediaBatchCache = MediaBatchCache(),
+                    mediaBatchCache = MediaBatchCache(FakeBaseRoom(), PendingMediaBatches(FakeSystemClock())),
                 )
             }
         },

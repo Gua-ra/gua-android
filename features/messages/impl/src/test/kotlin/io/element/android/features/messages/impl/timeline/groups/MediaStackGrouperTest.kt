@@ -43,10 +43,35 @@ class MediaStackGrouperTest {
     fun `every shared grouping case renders as expected`() {
         assertThat(MediaBatchFixtures.grouping).isNotEmpty()
         MediaBatchFixtures.grouping.forEach { case ->
-            val oldestFirst = case.items.map { it.toTimelineItem() }
-            val rendered = TimelineItemGrouper().group(oldestFirst.reversed(), MediaStackGrouper(A_ROOM_ID, pendingMediaBatches)).reversed()
-            assertWithMessage(case.name).that(rendered.map { it.describe() }).isEqualTo(case.expected.map { it.normalised() })
+            assertWithMessage(case.name).that(groupFixtureItems(case.items)).isEqualTo(case.expected.map { it.normalised() })
         }
+    }
+
+    @Test
+    fun `a later member heading a thread renders on its own past a read marker, and when removed`() {
+        fun item(id: String, kind: String, index: Int, isThreadRoot: Boolean = false) = MediaBatchFixtures.GroupingItem(
+            id = id,
+            sender = ALICE.value,
+            kind = kind,
+            batch = MediaBatch("t", index, 4).takeIf { kind != "redacted" },
+            known = MediaBatch("t", index, 4).takeIf { kind == "redacted" },
+            isThreadRoot = isThreadRoot,
+        )
+        val readMarker = MediaBatchFixtures.GroupingItem("marker", null, "readMarker", null, null, false)
+        val pastReadMarker = listOf(item("\$t1", "image", 0), item("\$t2", "image", 1), readMarker, item("\$t3", "image", 2, true), item("\$t4", "image", 3))
+        val removed = listOf(item("\$r1", "image", 0), item("\$r2", "image", 1), item("\$r3", "redacted", 2, true), item("\$r4", "image", 3))
+
+        assertThat(groupFixtureItems(pastReadMarker)).containsExactly(
+            listOf("stack", "photos", "\$t1", "\$t2"),
+            listOf("readMarker"),
+            listOf("item", "\$t3"),
+            listOf("item", "\$t4"),
+        ).inOrder()
+        assertThat(groupFixtureItems(removed)).containsExactly(
+            listOf("stack", "photos", "\$r1", "\$r2"),
+            listOf("item", "\$r3"),
+            listOf("item", "\$r4"),
+        ).inOrder()
     }
 
     @Test
@@ -90,7 +115,7 @@ class MediaStackGrouperTest {
         val stack = group(*echoes.toTypedArray()).single() as TimelineItem.Event
 
         val content = stack.content as TimelineItemMediaStackContent
-        assertThat(content.members.map { it.transactionId }).containsExactly(TransactionId("t1"), TransactionId("t2")).inOrder()
+        assertThat(content.members.map { it.event.transactionId }).containsExactly(TransactionId("t1"), TransactionId("t2")).inOrder()
         assertThat(stack.localSendState).isEqualTo(LocalEventSendState.Sending.Event)
     }
 
@@ -117,7 +142,12 @@ class MediaStackGrouperTest {
     private fun group(vararg oldestFirst: TimelineItem): List<TimelineItem> =
         grouper.group(oldestFirst.reversed(), mediaStackGrouper).reversed()
 
-    private fun TimelineItem.stackMembers() = ((this as TimelineItem.Event).content as TimelineItemMediaStackContent).members.map { it.eventId }
+    private fun groupFixtureItems(oldestFirst: List<MediaBatchFixtures.GroupingItem>): List<List<String>> {
+        val items = oldestFirst.map { it.toTimelineItem() }
+        return TimelineItemGrouper().group(items.reversed(), MediaStackGrouper(A_ROOM_ID, pendingMediaBatches)).reversed().map { it.describe() }
+    }
+
+    private fun TimelineItem.stackMembers() = ((this as TimelineItem.Event).content as TimelineItemMediaStackContent).members.map { it.event.eventId }
 
     private fun photo(eventId: String, batch: MediaBatch) = aTimelineItemEvent(eventId = EventId(eventId), content = aTimelineItemImageContent())
         .copy(id = UniqueId(eventId), senderId = ALICE, mediaBatch = batch)
@@ -151,7 +181,7 @@ class MediaStackGrouperTest {
                     TimelineItemMediaStackContent.Kind.Videos -> "videos"
                     TimelineItemMediaStackContent.Kind.Items -> "items"
                 },
-            ) + content.members.map { it.eventId!!.value }
+            ) + content.members.map { it.event.eventId!!.value }
             else -> listOf("item", eventId!!.value)
         }
     }

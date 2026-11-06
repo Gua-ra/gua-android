@@ -13,11 +13,13 @@ import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.TimelineItemGroupPosition
 import io.element.android.features.messages.impl.timeline.model.TimelineItemReadReceipts
 import io.element.android.features.messages.impl.timeline.model.TimelineItemThreadInfo
+import io.element.android.features.messages.impl.timeline.model.event.MediaStackMember
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEventContentWithAttachment
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemImageContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRedactedContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemVideoContent
+import io.element.android.features.messages.impl.timeline.model.event.toMediaStackMember
 import io.element.android.features.messages.impl.timeline.model.virtual.TimelineItemReadMarkerModel
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.UniqueId
@@ -25,17 +27,11 @@ import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSendState
 import kotlinx.collections.immutable.toImmutableList
 
-/**
- * Turns the consecutive photos and videos one sender sent as a batch into a single stack item.
- */
 class MediaStackGrouper(
     private val roomId: RoomId,
     private val pendingMediaBatches: PendingMediaBatches,
 ) {
-    /**
-     * @param newestFirst the timeline items, the most recent first.
-     * @param stackIds keys are the unique ids of stack members, values the id of their stack, kept from one call to the next.
-     */
+    // Stack ids are kept by member unique id from one call to the next, so a stack keeps its id while older members load in.
     fun group(newestFirst: List<TimelineItem>, stackIds: MutableMap<String, String>): List<TimelineItem> {
         val items = newestFirst.asReversed()
         val batches = items.map { it.candidateBatch() }
@@ -61,17 +57,17 @@ class MediaStackGrouper(
     private fun TimelineItem.candidateBatch(): MediaBatch? {
         val event = this as? TimelineItem.Event ?: return null
         return when {
-            event.isImageOrVideo() -> event.mediaBatch?.also { if (event.isMine) pendingMediaBatches.onSent(roomId, it) } ?: event.pendingBatch()
+            event.isImageOrVideo() -> event.mediaBatch ?: event.bindPendingBatch()
             event.content is TimelineItemRedactedContent -> event.mediaBatch
             else -> null
         }
     }
 
-    private fun TimelineItem.Event.pendingBatch(): MediaBatch? {
+    private fun TimelineItem.Event.bindPendingBatch(): MediaBatch? {
         if (!isMine || eventId != null) return null
         val transactionId = transactionId ?: return null
         val media = content as TimelineItemEventContentWithAttachment
-        return pendingMediaBatches.batchFor(
+        return pendingMediaBatches.bindBatch(
             roomId = roomId,
             transactionId = transactionId,
             media = PendingMediaBatches.Media(filename = media.filename, fileSize = media.fileSize ?: 0, mimeType = media.mimeType),
@@ -119,47 +115,48 @@ private fun MutableList<TimelineItem>.addRun(
     usedStackIds: MutableSet<String>,
 ) {
     val media = run.zip(batches).mapNotNull { (item, batch) ->
-        val event = item as? TimelineItem.Event
-        if (event != null && batch != null && event.isImageOrVideo()) event to batch else null
+        val member = (item as? TimelineItem.Event)?.toMediaStackMember()
+        if (member != null && batch != null) member to batch else null
     }
     addAll(run.filter { it.isReadMarker() })
     when (media.size) {
         // Every member was removed: the first removed message stands for the whole batch.
         0 -> add(run.first())
-        1 -> add(media.single().first)
+        1 -> add(media.single().first.event)
         else -> {
             val members = media.sortedBy { it.second.index }.map { it.first }
             add(
                 mediaStack(
                     id = stackIds.stackIdFor(members, usedStackIds),
                     members = members,
-                    oldest = media.first().first,
-                    newest = media.last().first,
+                    oldest = media.first().first.event,
+                    newest = media.last().first.event,
                 )
             )
         }
     }
 }
 
-private fun MutableMap<String, String>.stackIdFor(members: List<TimelineItem.Event>, usedStackIds: MutableSet<String>): UniqueId {
-    val knownId = members.firstNotNullOfOrNull { this[it.id.value] }?.takeUnless { it in usedStackIds }
+private fun MutableMap<String, String>.stackIdFor(members: List<MediaStackMember>, usedStackIds: MutableSet<String>): UniqueId {
+    val memberIds = members.map { it.event.id.value }
+    val knownId = memberIds.firstNotNullOfOrNull { this[it] }?.takeUnless { it in usedStackIds }
     val id = knownId ?: generateSequence(1) { it + 1 }
-        .map { attempt -> computeStackIdWith(members.first(), attempt) }
+        .map { attempt -> computeStackIdWith(memberIds.first(), attempt) }
         .first { it !in usedStackIds }
-    members.forEach { this[it.id.value] = id }
+    memberIds.forEach { this[it] = id }
     usedStackIds += id
     return UniqueId(id)
 }
 
-internal fun computeStackIdWith(firstMember: TimelineItem.Event, attempt: Int = 1): String = if (attempt == 1) {
-    "${firstMember.id}_stack"
+private fun computeStackIdWith(firstMemberId: String, attempt: Int): String = if (attempt == 1) {
+    "${firstMemberId}_stack"
 } else {
-    "${firstMember.id}_stack_$attempt"
+    "${firstMemberId}_stack_$attempt"
 }
 
 private fun mediaStack(
     id: UniqueId,
-    members: List<TimelineItem.Event>,
+    members: List<MediaStackMember>,
     oldest: TimelineItem.Event,
     newest: TimelineItem.Event,
 ): TimelineItem.Event {
@@ -170,17 +167,18 @@ private fun mediaStack(
         continuesBelow -> TimelineItemGroupPosition.Middle
         else -> TimelineItemGroupPosition.Last
     }
-    return members.first().copy(
+    val events = members.map { it.event }
+    return events.first().copy(
         id = id,
-        content = TimelineItemMediaStackContent(stackId = id, members = members.toImmutableList()),
+        content = TimelineItemMediaStackContent(stackId = id, members = members.toImmutableList(), newest = newest),
         sentTimeMillis = newest.sentTimeMillis,
         sentTime = newest.sentTime,
         sentDate = newest.sentDate,
         isEditable = false,
         groupPosition = groupPosition,
-        readReceiptState = TimelineItemReadReceipts(members.flatMap { it.readReceiptState.receipts }.toImmutableList()),
-        localSendState = members.firstOrNull { it.localSendState is LocalEventSendState.Failed }?.localSendState
-            ?: members.firstOrNull { it.localSendState is LocalEventSendState.Sending }?.localSendState
-            ?: members.first().localSendState,
+        readReceiptState = TimelineItemReadReceipts(events.flatMap { it.readReceiptState.receipts }.toImmutableList()),
+        localSendState = events.firstOrNull { it.localSendState is LocalEventSendState.Failed }?.localSendState
+            ?: events.firstOrNull { it.localSendState is LocalEventSendState.Sending }?.localSendState
+            ?: events.first().localSendState,
     )
 }

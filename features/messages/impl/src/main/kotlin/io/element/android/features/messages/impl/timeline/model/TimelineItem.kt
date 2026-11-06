@@ -54,7 +54,7 @@ sealed interface TimelineItem {
     fun isEvent(eventId: EventId?): Boolean {
         if (eventId == null) return false
         return when (this) {
-            is Event -> this.eventId == eventId || (content as? TimelineItemMediaStackContent)?.members?.any { it.eventId == eventId } == true
+            is Event -> this.eventId == eventId || (content as? TimelineItemMediaStackContent)?.members?.any { it.event.eventId == eventId } == true
             else -> false
         }
     }
@@ -134,6 +134,8 @@ sealed interface TimelineItem {
             is TimelineItemVideoContent -> content.formattedCaption == null && content.caption == null
             is TimelineItemGalleryContent -> false
             is TimelineItemAttachmentsContent -> false
+            // GUA FORK: a media stack takes the click as well, since a screen reader cannot click its bubble.
+            is TimelineItemMediaStackContent -> false
             else -> true
         }
 

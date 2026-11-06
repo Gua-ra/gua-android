@@ -63,7 +63,7 @@ class TimelineItemIndexer {
     }
 
     private fun processEvent(event: TimelineItem.Event, index: Int) {
-        (event.content as? TimelineItemMediaStackContent)?.members?.forEach { member -> processEvent(member, index) }
+        (event.content as? TimelineItemMediaStackContent)?.members?.forEach { member -> processEvent(member.event, index) }
         if (event.eventId == null) return
         timelineEventsIndexes[event.eventId] = index
     }

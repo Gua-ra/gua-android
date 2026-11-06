@@ -200,7 +200,7 @@ class DefaultActionListPresenter(
                     }
                 }
             }
-            val canBeForwarded = mediaStack?.members?.all { it.isRemote } ?: (timelineItem.isRemote && timelineItem.content.canBeForwarded())
+            val canBeForwarded = mediaStack?.members?.all { it.event.isRemote } ?: (timelineItem.isRemote && timelineItem.content.canBeForwarded())
             if (canBeForwarded) {
                 add(TimelineItemAction.Forward)
             }

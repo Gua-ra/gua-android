@@ -151,7 +151,7 @@ class TimelineItemEventFactory(
             sendHandleProvider = currentTimelineItem.event.sendHandleProvider,
             forwarder = currentTimelineItem.event.forwarder,
             forwarderProfile = currentTimelineItem.event.forwarderProfile,
-            mediaBatch = mediaBatchCache.batchOf(currentTimelineItem.eventId, currentTimelineItem.event),
+            mediaBatch = mediaBatchCache.batchOf(currentTimelineItem.event),
         )
     }
 

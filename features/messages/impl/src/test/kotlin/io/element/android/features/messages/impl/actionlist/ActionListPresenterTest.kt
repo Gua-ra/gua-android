@@ -32,6 +32,7 @@ import io.element.android.features.messages.impl.timeline.model.event.aTimelineI
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemStateEventContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemVideoContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemVoiceContent
+import io.element.android.features.messages.impl.timeline.model.event.toMediaStackMember
 import io.element.android.features.poll.api.pollcontent.aPollAnswerItemList
 import io.element.android.libraries.dateformatter.test.FakeDateFormatter
 import io.element.android.libraries.emoji.api.recentemojis.GetRecentEmojis
@@ -237,9 +238,8 @@ class ActionListPresenterTest {
             val initialState = awaitItem()
             val sent = aMediaStackEvent(isMine = true, members = List(2) { aTimelineItemImageContent() })
             val content = sent.content as TimelineItemMediaStackContent
-            val stack = sent.copy(
-                content = content.copy(members = (content.members.take(1) + content.members[1].copy(eventId = null)).toImmutableList()),
-            )
+            val unsent = content.members[1].event.copy(eventId = null).toMediaStackMember()!!
+            val stack = sent.copy(content = content.copy(members = (content.members.take(1) + unsent).toImmutableList()))
             initialState.eventSink.invoke(
                 ActionListEvent.ComputeForMessage(event = stack, userEventPermissions = aUserEventPermissions(canRedactOwn = true, canSendMessage = false))
             )
