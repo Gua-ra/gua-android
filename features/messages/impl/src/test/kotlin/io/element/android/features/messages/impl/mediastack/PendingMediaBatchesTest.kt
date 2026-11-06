@@ -23,7 +23,7 @@ class PendingMediaBatchesTest {
 
     @Test
     fun `a local echo is matched by its file, then by its transaction id`() {
-        val batch = MediaBatch.newBatch(2)
+        val batch = MediaBatch.makeBatches(2).requireNoNulls()
         pendingMediaBatches.register(A_ROOM_ID, listOf(photo to batch[0], video to batch[1]))
 
         assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t2"), video)).isEqualTo(batch[1])
@@ -33,8 +33,8 @@ class PendingMediaBatchesTest {
 
     @Test
     fun `the same photo sent in two batches keeps each echo in its own batch`() {
-        val first = MediaBatch.newBatch(2)
-        val second = MediaBatch.newBatch(2)
+        val first = MediaBatch.makeBatches(2).requireNoNulls()
+        val second = MediaBatch.makeBatches(2).requireNoNulls()
         pendingMediaBatches.register(A_ROOM_ID, listOf(photo to first[0], video to first[1]))
         pendingMediaBatches.register(A_ROOM_ID, listOf(photo to second[0], video to second[1]))
 
@@ -45,7 +45,7 @@ class PendingMediaBatchesTest {
 
     @Test
     fun `an echo in another chat or with another file is not matched`() {
-        val batch = MediaBatch.newBatch(2)
+        val batch = MediaBatch.makeBatches(2).requireNoNulls()
         pendingMediaBatches.register(A_ROOM_ID, listOf(photo to batch[0], video to batch[1]))
 
         assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID_2, TransactionId("t1"), photo)).isNull()
@@ -54,7 +54,7 @@ class PendingMediaBatchesTest {
 
     @Test
     fun `an entry is dropped once its event is sent`() {
-        val batch = MediaBatch.newBatch(2)
+        val batch = MediaBatch.makeBatches(2).requireNoNulls()
         pendingMediaBatches.register(A_ROOM_ID, listOf(photo to batch[0], video to batch[1]))
         pendingMediaBatches.onSent(A_ROOM_ID, batch[0])
 
@@ -64,7 +64,7 @@ class PendingMediaBatchesTest {
 
     @Test
     fun `an entry expires after a day`() {
-        val batch = MediaBatch.newBatch(2)
+        val batch = MediaBatch.makeBatches(2).requireNoNulls()
         pendingMediaBatches.register(A_ROOM_ID, listOf(photo to batch[0], video to batch[1]))
         clock.epochMillisResult += 24.hours.inWholeMilliseconds + 1
 

@@ -33,11 +33,25 @@ class MediaBatchTest {
 
     @Test
     fun `a new batch numbers its items in order under one id`() {
-        val batch = MediaBatch.newBatch(3)
+        val batch = MediaBatch.makeBatches(3).requireNoNulls()
         assertThat(batch.map { it.index }).containsExactly(0, 1, 2).inOrder()
         assertThat(batch.map { it.count }.toSet()).containsExactly(3)
         assertThat(batch.map { it.id }.toSet()).hasSize(1)
         assertThat(batch.first().id).matches("[0-9a-f-]{36}")
+    }
+
+    @Test
+    fun `more items than the limit are split into batches of up to the limit, a lone last item without one`() {
+        assertThat(MediaBatch.makeBatches(1)).containsExactly(null)
+
+        val split = MediaBatch.makeBatches(45)
+        assertThat(split.map { it?.count }).isEqualTo(List(40) { MediaBatch.MAX_SEND_COUNT } + List(5) { 5 })
+        assertThat(split.map { it?.index }).isEqualTo(List(2) { (0 until MediaBatch.MAX_SEND_COUNT).toList() }.flatten() + (0 until 5))
+        assertThat(split.map { it?.id }.distinct()).hasSize(3)
+
+        val loneLast = MediaBatch.makeBatches(41)
+        assertThat(loneLast.take(40).map { it?.count }.toSet()).containsExactly(MediaBatch.MAX_SEND_COUNT)
+        assertThat(loneLast.last()).isNull()
     }
 
     @Test

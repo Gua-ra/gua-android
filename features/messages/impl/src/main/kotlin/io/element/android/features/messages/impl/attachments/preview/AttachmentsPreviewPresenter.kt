@@ -526,15 +526,10 @@ class AttachmentsPreviewPresenter(
         val sendsAsMediaStack = attachments.all { it is Attachment.Media && it.isFromPhotoLibrary } &&
             featureFlagService.isFeatureEnabled(FeatureFlags.GuaMediaStacks)
         // The fallback picker of devices without the system photo picker ignores the limit.
-        val groups = if (sendsAsMediaStack) mediaUploadInfos.chunked(MediaBatch.MAX_SEND_COUNT) else mediaUploadInfos.map(::listOf)
-        return groups.flatMapIndexed { groupIndex, group ->
-            val batches = if (group.size >= 2) MediaBatch.newBatch(group.size) else null
-            if (batches != null) {
-                pendingMediaBatches.register(room.roomId, group.map { it.pendingMedia() }.zip(batches))
-            }
-            group.mapIndexed { index, mediaUploadInfo ->
-                MediaSend(mediaUploadInfo = mediaUploadInfo, isFirst = groupIndex == 0 && index == 0, batch = batches?.get(index))
-            }
+        val batches = if (sendsAsMediaStack) MediaBatch.makeBatches(mediaUploadInfos.size) else List(mediaUploadInfos.size) { null }
+        pendingMediaBatches.register(room.roomId, mediaUploadInfos.zip(batches).mapNotNull { (info, batch) -> batch?.let { info.pendingMedia() to it } })
+        return mediaUploadInfos.mapIndexed { index, mediaUploadInfo ->
+            MediaSend(mediaUploadInfo = mediaUploadInfo, isFirst = index == 0, batch = batches[index])
         }
     }
 

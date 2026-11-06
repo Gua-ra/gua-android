@@ -104,7 +104,7 @@ class MediaStackGrouperTest {
 
     @Test
     fun `my unsent photos are stacked from the pending batches`() {
-        val batch = MediaBatch.newBatch(2)
+        val batch = MediaBatch.makeBatches(2).requireNoNulls()
         val media = PendingMediaBatches.Media(filename = "A picture.jpg", fileSize = 4 * 1024 * 1024L, mimeType = "image/jpeg")
         pendingMediaBatches.register(A_ROOM_ID, listOf(media to batch[0], media to batch[1]))
         val echoes = listOf("t1", "t2").map { transactionId ->

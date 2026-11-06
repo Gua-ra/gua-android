@@ -498,7 +498,7 @@ class MessagesFlowNode(
                     timelineProvider = timelineProvider,
                     fromRoomId = room.roomId,
                     // Each chat forwarded to gets a batch of its own, so the photos stack there too.
-                    extraContents = ForwardExtraContents { MediaBatch.newBatch(navTarget.eventIds.size).map(MediaBatch::extraContentJson) }
+                    extraContents = ForwardExtraContents { MediaBatch.makeBatches(navTarget.eventIds.size).map { it?.extraContentJson() } }
                         .takeIf { navTarget.asMediaStack },
                 )
                 val callback = object : ForwardEntryPoint.Callback {

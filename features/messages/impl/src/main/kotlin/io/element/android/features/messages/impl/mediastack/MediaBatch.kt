@@ -39,7 +39,12 @@ data class MediaBatch(
         private val ID_PATTERN = Regex("^[A-Za-z0-9._-]{1,64}$")
         private val INTEGER_LITERAL = Regex("^-?(0|[1-9][0-9]*)$")
 
-        fun newBatch(count: Int): List<MediaBatch> {
+        // Every send and every forward is split this way: batches of up to MAX_SEND_COUNT in order, each under its own id, a lone last item with none.
+        fun makeBatches(count: Int): List<MediaBatch?> = (0 until count).chunked(MAX_SEND_COUNT).flatMap { chunk ->
+            if (chunk.size < 2) List(chunk.size) { null } else newBatch(chunk.size)
+        }
+
+        private fun newBatch(count: Int): List<MediaBatch> {
             val id = UUID.randomUUID().toString()
             return List(count) { index -> MediaBatch(id = id, index = index, count = count) }
         }
