@@ -53,6 +53,7 @@ import io.element.android.features.messages.impl.threads.ThreadedMessagesNode
 import io.element.android.features.messages.impl.threads.list.ThreadsListNode
 import io.element.android.features.messages.impl.timeline.TimelineController
 import io.element.android.features.messages.impl.timeline.TimelineSelectionOwner
+import io.element.android.features.messages.impl.timeline.components.event.videoDuration
 import io.element.android.features.messages.impl.timeline.debug.EventDebugInfoNode
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.event.GalleryItem
@@ -99,6 +100,7 @@ import io.element.android.libraries.matrix.api.room.BaseRoom
 import io.element.android.libraries.matrix.api.room.alias.matches
 import io.element.android.libraries.matrix.api.room.joinedRoomMembers
 import io.element.android.libraries.matrix.api.roomlist.RoomListService
+import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.timeline.TimelineProvider
 import io.element.android.libraries.matrix.api.timeline.item.TimelineItemDebugInfo
@@ -112,7 +114,6 @@ import io.element.android.libraries.textcomposer.mentions.LocalMentionSpanUpdate
 import io.element.android.libraries.textcomposer.mentions.MentionSpanTheme
 import io.element.android.libraries.textcomposer.mentions.MentionSpanUpdater
 import io.element.android.libraries.ui.strings.CommonPlurals
-import io.element.android.libraries.ui.utils.time.formatShort
 import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.analyticsproviders.api.trackers.captureInteraction
 import kotlinx.collections.immutable.ImmutableList
@@ -497,7 +498,8 @@ class MessagesFlowNode(
                     timelineProvider = timelineProvider,
                     fromRoomId = room.roomId,
                     // Each chat forwarded to gets a batch of its own, so the photos stack there too.
-                    extraContentJsons = { MediaBatch.newBatch(navTarget.eventIds.size).map(MediaBatch::extraContentJson) }.takeIf { navTarget.asMediaStack },
+                    extraContents = ForwardExtraContents { MediaBatch.newBatch(navTarget.eventIds.size).map(MediaBatch::extraContentJson) }
+                        .takeIf { navTarget.asMediaStack },
                 )
                 val callback = object : ForwardEntryPoint.Callback {
                     override fun onDone(roomIds: List<RoomId>) {
@@ -869,7 +871,7 @@ class MessagesFlowNode(
     ): Boolean {
         if (event.content is TimelineItemMediaStackContent) {
             val member = event.content.members.getOrNull(galleryItemIndex) ?: return false
-            return processEventClick(timelineMode = timelineMode, event = member, canUseOverlay = canUseOverlay)
+            return processEventClick(timelineMode = timelineMode, event = member.event, canUseOverlay = canUseOverlay)
         }
         val navTarget = when (event.content) {
             is TimelineItemGalleryContent -> {
@@ -997,23 +999,24 @@ class MessagesFlowNode(
 
     private fun buildMediaStackGridNavTarget(timelineMode: Timeline.Mode, stack: TimelineItemMediaStackContent): NavTarget.MediaStackGrid {
         val mode = MediaViewerEntryPoint.MediaViewerMode.TimelineImagesAndVideos(timelineMode)
-        val media = stack.members.mapNotNull { member -> (member.content as? TimelineItemEventContentWithAttachment)?.let { member to it } }
         return NavTarget.MediaStackGrid(
             kind = stack.kind,
-            tiles = media.map { (_, content) ->
-                when (content) {
-                    is TimelineItemVideoContent -> MediaStackGridTile(content.thumbnailSource, content.blurHash, content.duration.formatShort())
-                    is TimelineItemImageContent -> MediaStackGridTile(content.thumbnailSource ?: content.mediaSource, content.blurhash, null)
-                    else -> MediaStackGridTile(null, null, null)
-                }
+            tiles = stack.members.map { member ->
+                MediaStackGridTile(
+                    eventId = member.event.eventId,
+                    stillSource = member.stillSource,
+                    mediaSources = listOfNotNull(member.thumbnailSource, member.media.mediaSource),
+                    blurhash = member.media.blurHash(),
+                    videoDuration = member.videoDuration(),
+                )
             },
-            viewers = media.map { (member, content) ->
+            viewers = stack.members.map { member ->
                 buildMediaViewerNavTarget(
                     mode = mode,
-                    event = member,
-                    content = content,
-                    mediaSource = content.mediaSource,
-                    thumbnailSource = (content as? TimelineItemImageContent)?.thumbnailSource ?: (content as? TimelineItemVideoContent)?.thumbnailSource,
+                    event = member.event,
+                    content = member.media,
+                    mediaSource = member.media.mediaSource,
+                    thumbnailSource = member.thumbnailSource,
                     canUseOverlay = false,
                 )
             },

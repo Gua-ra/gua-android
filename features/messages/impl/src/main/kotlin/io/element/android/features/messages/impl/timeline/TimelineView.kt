@@ -81,7 +81,9 @@ import androidx.compose.ui.window.PopupProperties
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.messages.impl.crypto.sendfailure.resolve.ResolveVerifiedUserSendFailureView
+import io.element.android.features.messages.impl.mediastack.BringFocusedMemberToFrontEffect
 import io.element.android.features.messages.impl.mediastack.LocalMediaStackPositions
+import io.element.android.features.messages.impl.mediastack.onStackClick
 import io.element.android.features.messages.impl.mediastack.rememberMediaStackPositions
 import io.element.android.features.messages.impl.timeline.components.FloatingDateBadgeOverlay
 import io.element.android.features.messages.impl.timeline.components.TimelineItemRow
@@ -96,7 +98,6 @@ import io.element.android.features.messages.impl.timeline.model.event.TimelineIt
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEventContentPreviewParam
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemTextContent
-import io.element.android.features.messages.impl.timeline.protection.TimelineProtectionEvent
 import io.element.android.features.messages.impl.timeline.protection.TimelineProtectionState
 import io.element.android.features.messages.impl.timeline.protection.aTimelineProtectionState
 import io.element.android.libraries.designsystem.atomic.atoms.UnreadIndicatorAtom
@@ -205,22 +206,7 @@ fun TimelineView(
     }
 
     val mediaStackPositions = rememberMediaStackPositions()
-
-    // The first tap on a stack whose media are hidden shows them all, the next ones open the front card.
-    fun onMediaStackClick(stack: TimelineItem.Event, content: TimelineItemMediaStackContent) {
-        val hiddenMembers = content.members.filter { timelineProtectionState.hideMediaContent(it.eventId, it.isMine) }
-        if (hiddenMembers.isEmpty()) {
-            onGalleryItemClick(stack, mediaStackPositions.frontIndex(content))
-        } else {
-            hiddenMembers.forEach { timelineProtectionState.eventSink(TimelineProtectionEvent.ShowContent(it.eventId)) }
-        }
-    }
-    LaunchedEffect(state.focusedEventId, state.timelineItems) {
-        val focusedEventId = state.focusedEventId ?: return@LaunchedEffect
-        state.timelineItems.firstNotNullOfOrNull { item ->
-            ((item as? TimelineItem.Event)?.content as? TimelineItemMediaStackContent)?.takeIf { stack -> stack.members.any { it.eventId == focusedEventId } }
-        }?.let { stack -> mediaStackPositions.showMember(stack, focusedEventId) }
-    }
+    BringFocusedMemberToFrontEffect(state.focusRequestState, state.timelineItems, mediaStackPositions)
 
     // Animate alpha when timeline is first displayed, to avoid flashes or glitching when viewing rooms
     AnimatedVisibility(visible = true, enter = fadeIn()) {
@@ -270,8 +256,9 @@ fun TimelineView(
                                 val mediaStack = event.content as? TimelineItemMediaStackContent
                                 when {
                                     state.canSelect(event) -> onToggleSelection(event)
-                                    mediaStack != null -> onMediaStackClick(event, mediaStack)
-                                    else -> onContentClick(event)
+                                    mediaStack == null -> onContentClick(event)
+                                    // GUA FORK: a stack takes no part in a selection.
+                                    !isSelectionModeActive -> mediaStackPositions.onStackClick(event, mediaStack, timelineProtectionState, onGalleryItemClick)
                                 }
                             },
                             onGalleryItemClick = onGalleryItemClick,

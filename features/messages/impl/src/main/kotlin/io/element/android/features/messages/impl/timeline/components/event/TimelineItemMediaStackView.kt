@@ -20,7 +20,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.movableContentOf
@@ -51,8 +52,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -61,16 +63,17 @@ import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.messages.impl.R
 import io.element.android.features.messages.impl.mediastack.LocalMediaStackPositions
+import io.element.android.features.messages.impl.mediastack.hiddenMembers
+import io.element.android.features.messages.impl.mediastack.showMembers
 import io.element.android.features.messages.impl.timeline.TimelineEvent
 import io.element.android.features.messages.impl.timeline.components.MessageEventBubbleDefaults
 import io.element.android.features.messages.impl.timeline.components.TimelineEventTimestampView
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
-import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEventContent
-import io.element.android.features.messages.impl.timeline.model.event.TimelineItemImageContent
+import io.element.android.features.messages.impl.timeline.model.event.MediaStackMember
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemVideoContent
+import io.element.android.features.messages.impl.timeline.model.event.blurHash
 import io.element.android.features.messages.impl.timeline.protection.ProtectedView
-import io.element.android.features.messages.impl.timeline.protection.TimelineProtectionEvent
 import io.element.android.features.messages.impl.timeline.protection.TimelineProtectionState
 import io.element.android.features.messages.impl.timeline.protection.aTimelineProtectionState
 import io.element.android.features.messages.impl.timeline.util.handleAsyncImageStateChange
@@ -81,6 +84,7 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.CircularProgressIndicator
 import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.Text
+import io.element.android.libraries.matrix.api.media.MediaSource
 import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSendState
 import io.element.android.libraries.matrix.ui.media.contentvalidation.collectOverallState
 import io.element.android.libraries.matrix.ui.media.contentvalidation.rememberEventContentValidationState
@@ -91,10 +95,12 @@ import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.libraries.ui.utils.time.formatShort
 import io.element.android.wysiwyg.link.Link
 import kotlin.math.abs
+import kotlin.math.sign
 
 private val CARD_WIDTH = 220.dp
 private val CARD_HEIGHT = 275.dp
 private val CARD_SHAPE = RoundedCornerShape(18.dp)
+private val CARD_SHADOW_COLOR = Color.Black.copy(alpha = 0.12f)
 private val FRAME_EXTRA_WIDTH = 12.dp
 private val FRAME_EXTRA_HEIGHT = 8.dp
 private val BEHIND_CARD_OFFSET_X = 6.dp
@@ -107,13 +113,8 @@ private val COMMIT_VELOCITY_PER_SECOND = 500.dp
 private const val THROWN_DISTANCE_FRACTION = 1.2f
 private const val UNSENT_CARD_ALPHA = 0.6f
 private val STACK_SPRING = spring<Float>(dampingRatio = 0.85f, stiffness = 400f)
-private val OverlayColor = Color.Black.copy(alpha = 0.45f)
+internal val MediaStackOverlayColor = Color.Black.copy(alpha = 0.45f)
 
-/**
- * Several photos and videos sent together, as a fanned stack of cards. Dragging the stack sideways brings the next or previous card
- * to the front; the front card is kept in [LocalMediaStackPositions]. The timestamp is drawn on the front card, or in the caption
- * bubble when there is one.
- */
 @Composable
 fun TimelineItemMediaStackView(
     content: TimelineItemMediaStackContent,
@@ -121,6 +122,7 @@ fun TimelineItemMediaStackView(
     gesturesEnabled: Boolean,
     timelineProtectionState: TimelineProtectionState,
     eventSink: (TimelineEvent.TimelineItemEvent) -> Unit,
+    onActivate: (() -> Unit)?,
     onLinkClick: (Link) -> Unit,
     onLinkLongClick: (Link) -> Unit,
     timestamp: @Composable (Modifier) -> Unit,
@@ -129,7 +131,7 @@ fun TimelineItemMediaStackView(
     val positions = LocalMediaStackPositions.current
     val frontIndex = positions.frontIndex(content)
     val header = mediaStackHeaderText(content.kind, content.members.size)
-    val position = mediaStackPositionText(content, frontIndex)
+    val position = mediaStackPositionText(frontIndex, content.members.size, content.members[frontIndex].videoDuration())
     val caption = content.caption
     val timestampContent = remember(timestamp) { movableContentOf(timestamp) }
     Column(
@@ -141,6 +143,7 @@ fun TimelineItemMediaStackView(
             enabled = gesturesEnabled,
             onClick = { eventSink(TimelineEvent.OpenMediaStackGrid(content)) },
         )
+        Spacer(modifier = Modifier.height(6.dp))
         Box {
             MediaStackCards(
                 content = content,
@@ -153,6 +156,12 @@ fun TimelineItemMediaStackView(
                 modifier = Modifier.clearAndSetSemantics {
                     contentDescription = listOfNotNull(header, caption).joinToString(", ")
                     stateDescription = position
+                    onActivate?.let { activate ->
+                        onClick {
+                            activate()
+                            true
+                        }
+                    }
                 },
             )
             if (caption == null) {
@@ -197,9 +206,9 @@ private fun MediaStackHeader(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
             .clickable(enabled = enabled, onClick = onClick)
-            .heightIn(min = 48.dp)
             .padding(horizontal = 4.dp)
-            .clearAndSetSemantics {},
+            // A screen reader opens the grid with the stack's Show all action instead.
+            .clearAndSetSemantics { hideFromAccessibility() },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -240,9 +249,11 @@ private fun MediaStackCards(
     val dragOffset = remember(content.stackId) { mutableFloatStateOf(0f) }
     val latestFrontIndex by rememberUpdatedState(frontIndex)
     val draggableState = rememberDraggableState { delta -> dragOffset.floatValue += delta }
+    // Dragging toward the leading edge brings the next card, toward the trailing edge the previous one.
+    val revealStep by remember(dragOffset, isRtl) { derivedStateOf { if (isTowardTrailing(dragOffset.floatValue, isRtl)) -1 else 1 } }
     val members = content.members
     val visibleCount = minOf(members.size, 1 + BEHIND_CARD_ROTATIONS.size)
-    val hiddenMembers = members.filter { timelineProtectionState.hideMediaContent(it.eventId, it.isMine) }
+    val hiddenMembers = timelineProtectionState.hiddenMembers(content)
 
     Box(
         modifier = modifier
@@ -253,12 +264,8 @@ private fun MediaStackCards(
                 enabled = gesturesEnabled,
                 onDragStopped = { velocity ->
                     val offset = dragOffset.floatValue
-                    val direction = when {
-                        offset < -cardWidthPx * COMMIT_DISTANCE_FRACTION || velocity < -commitVelocityPx -> -1
-                        offset > cardWidthPx * COMMIT_DISTANCE_FRACTION || velocity > commitVelocityPx -> 1
-                        else -> 0
-                    }
-                    if (direction == 0) {
+                    val direction = commitDirection(offset, velocity, cardWidthPx, commitVelocityPx)
+                    if (direction == 0f) {
                         animate(offset, 0f, velocity, STACK_SPRING) { value, _ -> dragOffset.floatValue = value }
                     } else {
                         if (animationsEnabled) {
@@ -266,9 +273,7 @@ private fun MediaStackCards(
                                 dragOffset.floatValue = value
                             }
                         }
-                        // Dragging toward the leading edge brings the next card, toward the trailing edge the previous one.
-                        val towardLeading = if (isRtl) direction > 0 else direction < 0
-                        onFrontIndexChange(latestFrontIndex + if (towardLeading) 1 else -1)
+                        onFrontIndexChange(latestFrontIndex + if (isTowardTrailing(direction, isRtl)) -1 else 1)
                         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                         dragOffset.floatValue = 0f
                     }
@@ -277,89 +282,93 @@ private fun MediaStackCards(
         contentAlignment = if (isMine) Alignment.BottomEnd else Alignment.BottomStart,
     ) {
         for (depth in visibleCount - 1 downTo 0) {
-            val member = members[(frontIndex + depth) % members.size]
-            key(member.id) {
+            val member = members[(frontIndex + depth * revealStep).mod(members.size)]
+            key(member.event.id) {
                 MediaStackCard(
                     member = member,
-                    hideContent = member in hiddenMembers,
-                    onShowClick = { hiddenMembers.forEach { timelineProtectionState.eventSink(TimelineProtectionEvent.ShowContent(it.eventId)) } },
+                    hideContent = member.event in hiddenMembers,
+                    onShowClick = { timelineProtectionState.showMembers(content) },
                     eventSink = eventSink,
-                    modifier = Modifier.graphicsLayer {
-                        val offset = dragOffset.floatValue
-                        val dragProgress = (abs(offset) / cardWidthPx).coerceAtMost(1f)
-                        if (depth == 0) {
-                            if (animationsEnabled) {
-                                translationX = offset
-                                rotationZ = MAX_DRAG_ROTATION * (offset / cardWidthPx).coerceIn(-1f, 1f)
-                            }
-                        } else {
-                            val restingScale = 1f - BEHIND_CARD_SCALE_STEP * depth
-                            val cardScale = if (depth == 1) restingScale + (1f - restingScale) * dragProgress else restingScale
-                            translationX = towardCentre * (BEHIND_CARD_OFFSET_X * depth).toPx()
-                            translationY = -(BEHIND_CARD_OFFSET_Y * depth).toPx()
-                            rotationZ = towardCentre * BEHIND_CARD_ROTATIONS[depth - 1]
-                            scaleX = cardScale
-                            scaleY = cardScale
-                        }
-                        shadowElevation = 3.dp.toPx()
-                        ambientShadowColor = Color.Black.copy(alpha = 0.12f)
-                        spotShadowColor = Color.Black.copy(alpha = 0.12f)
-                        shape = CARD_SHAPE
-                        clip = true
-                    },
+                    modifier = Modifier.stackCardTransform(
+                        depth = depth,
+                        dragOffset = { dragOffset.floatValue },
+                        cardWidthPx = cardWidthPx,
+                        towardCentre = towardCentre,
+                        followsDrag = animationsEnabled,
+                    ),
                 )
             }
         }
     }
 }
 
+private fun isTowardTrailing(offset: Float, isRtl: Boolean) = if (isRtl) offset < 0 else offset > 0
+
+// The sign of the drag when the release commits, past 30% of a card or flung the same way fast enough, else 0 to spring back.
+private fun commitDirection(offset: Float, velocity: Float, cardWidthPx: Float, commitVelocityPx: Float): Float {
+    val isPastDistance = abs(offset) > cardWidthPx * COMMIT_DISTANCE_FRACTION
+    val isFlungAlong = abs(velocity) > commitVelocityPx && velocity * offset > 0
+    return if (isPastDistance || isFlungAlong) sign(offset) else 0f
+}
+
+private fun Modifier.stackCardTransform(
+    depth: Int,
+    dragOffset: () -> Float,
+    cardWidthPx: Float,
+    towardCentre: Float,
+    followsDrag: Boolean,
+) = graphicsLayer {
+    val offset = dragOffset()
+    if (depth == 0) {
+        if (followsDrag) {
+            translationX = offset
+            rotationZ = MAX_DRAG_ROTATION * (offset / cardWidthPx).coerceIn(-1f, 1f)
+        }
+    } else {
+        val restingScale = 1f - BEHIND_CARD_SCALE_STEP * depth
+        // The card the drag reveals grows to full size as the front card leaves.
+        val scale = if (depth == 1) restingScale + (1f - restingScale) * (abs(offset) / cardWidthPx).coerceAtMost(1f) else restingScale
+        translationX = towardCentre * (BEHIND_CARD_OFFSET_X * depth).toPx()
+        translationY = -(BEHIND_CARD_OFFSET_Y * depth).toPx()
+        rotationZ = towardCentre * BEHIND_CARD_ROTATIONS[depth - 1]
+        scaleX = scale
+        scaleY = scale
+    }
+    shadowElevation = 3.dp.toPx()
+    ambientShadowColor = CARD_SHADOW_COLOR
+    spotShadowColor = CARD_SHADOW_COLOR
+    shape = CARD_SHAPE
+    clip = true
+}
+
 @Composable
 private fun MediaStackCard(
-    member: TimelineItem.Event,
+    member: MediaStackMember,
     hideContent: Boolean,
     onShowClick: () -> Unit,
     eventSink: (TimelineEvent.TimelineItemEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val media = member.content
-    val blurhash = (media as? TimelineItemImageContent)?.blurhash ?: (media as? TimelineItemVideoContent)?.blurHash
-    val validationState = rememberEventContentValidationState(eventId = member.eventId, needsValidation = true)
+    val event = member.event
+    val validationState = rememberEventContentValidationState(eventId = event.eventId, needsValidation = true)
     val validation by validationState.collectOverallState()
-    val thumbnail = media.stackThumbnail()
     val updatedEventSink by rememberUpdatedState(eventSink)
-    LaunchedEffect(member.eventId, media) {
-        val eventId = member.eventId ?: return@LaunchedEffect
-        val sources = when (media) {
-            is TimelineItemImageContent -> listOfNotNull(media.thumbnailSource, media.mediaSource)
-            is TimelineItemVideoContent -> listOfNotNull(media.thumbnailSource, media.mediaSource)
-            else -> return@LaunchedEffect
-        }
-        updatedEventSink(TimelineEvent.ValidateMedia(eventId, sources, validationState))
+    LaunchedEffect(event.eventId, member.media) {
+        val eventId = event.eventId ?: return@LaunchedEffect
+        updatedEventSink(TimelineEvent.ValidateMedia(eventId, listOfNotNull(member.thumbnailSource, member.media.mediaSource), validationState))
     }
-    val sendState = member.localSendState
-    val isUnsent = sendState is LocalEventSendState.Sending
+    val isUnsent = event.localSendState is LocalEventSendState.Sending
     val darkBorder = if (ElementTheme.isLightTheme) Modifier else Modifier.border(0.5.dp, ElementTheme.colors.borderInteractiveSecondary, CARD_SHAPE)
     Box(
         modifier = modifier
             .size(CARD_WIDTH, CARD_HEIGHT)
             .background(ElementTheme.colors.bgSubtleSecondary)
-            .blurHashBackground(blurhash, alpha = 0.9f)
+            .blurHashBackground(member.media.blurHash(), alpha = 0.9f)
             .then(darkBorder),
         contentAlignment = Alignment.Center,
     ) {
         when {
-            validation.hasError() -> Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(ElementTheme.colors.bgCriticalSubtle),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = CompoundIcons.Error(),
-                    contentDescription = null,
-                    tint = ElementTheme.colors.iconCriticalPrimary,
-                )
-            }
+            validation.hasError() -> MediaStackScanFailure()
             !validation.isValidated() -> CircularProgressIndicator()
             else -> ProtectedView(hideContent = hideContent, onShowClick = onShowClick) {
                 Box(
@@ -367,14 +376,15 @@ private fun MediaStackCard(
                         .fillMaxSize()
                         .then(if (isUnsent) Modifier.alpha(UNSENT_CARD_ALPHA) else Modifier),
                 ) {
+                    val still = member.stillSource?.let(::mediaStackStill)
                     AsyncImage(
                         modifier = Modifier.fillMaxSize(),
-                        model = thumbnail,
+                        model = still,
                         contentScale = ContentScale.Crop,
                         alignment = Alignment.Center,
                         contentDescription = null,
                         onState = { state ->
-                            val url = thumbnail?.source?.safeUrl ?: return@AsyncImage
+                            val url = still?.source?.safeUrl ?: return@AsyncImage
                             handleAsyncImageStateChange(
                                 state = state,
                                 onLoaded = {},
@@ -382,18 +392,35 @@ private fun MediaStackCard(
                             )
                         },
                     )
-                    if (media is TimelineItemVideoContent) {
-                        VideoCardOverlay(media)
+                    if (member is MediaStackMember.Video) {
+                        VideoCardOverlay(member.media)
                     }
                 }
             }
         }
+        // At the top, as the timestamp covers the bottom corner of the front card.
         MediaStackCardSendState(
-            member = member,
+            member = event,
             eventSink = eventSink,
             modifier = Modifier
-                .align(Alignment.BottomEnd)
+                .align(Alignment.TopEnd)
                 .padding(8.dp),
+        )
+    }
+}
+
+@Composable
+internal fun MediaStackScanFailure(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(ElementTheme.colors.bgCriticalSubtle),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = CompoundIcons.Error(),
+            contentDescription = null,
+            tint = ElementTheme.colors.iconCriticalPrimary,
         )
     }
 }
@@ -405,7 +432,7 @@ private fun VideoCardOverlay(video: TimelineItemVideoContent) {
             modifier = Modifier
                 .align(Alignment.Center)
                 .size(44.dp)
-                .background(OverlayColor, CircleShape),
+                .background(MediaStackOverlayColor, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -416,12 +443,12 @@ private fun VideoCardOverlay(video: TimelineItemVideoContent) {
         }
         Text(
             text = video.duration.formatShort(),
-            style = ElementTheme.typography.fontBodySmMedium.copy(fontFamily = FontFamily.Monospace),
+            style = ElementTheme.typography.fontBodyXsMedium.copy(fontFeatureSettings = "tnum"),
             color = Color.White,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(8.dp)
-                .background(OverlayColor, CircleShape)
+                .background(MediaStackOverlayColor, CircleShape)
                 .padding(horizontal = 6.dp, vertical = 2.dp),
         )
     }
@@ -433,21 +460,20 @@ private fun MediaStackCardSendState(
     eventSink: (TimelineEvent.TimelineItemEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val progressModifier = modifier
+        .background(MediaStackOverlayColor, CircleShape)
+        .size(20.dp)
     when (val sendState = member.localSendState) {
         is LocalEventSendState.Sending.MediaWithProgress -> CircularProgressIndicator(
             progress = { if (sendState.total > 0) sendState.progress.toFloat() / sendState.total else 0f },
             color = Color.White,
             strokeWidth = 2.dp,
-            modifier = modifier
-                .background(OverlayColor, CircleShape)
-                .size(20.dp),
+            modifier = progressModifier,
         )
         is LocalEventSendState.Sending -> CircularProgressIndicator(
             color = Color.White,
             strokeWidth = 2.dp,
-            modifier = modifier
-                .background(OverlayColor, CircleShape)
-                .size(20.dp),
+            modifier = progressModifier,
         )
         is LocalEventSendState.Failed -> Icon(
             imageVector = CompoundIcons.ErrorSolid(),
@@ -464,42 +490,27 @@ private fun MediaStackCardSendState(
     }
 }
 
-// A still for every card: the thumbnail of a GIF or WebP is not animated, and a video never plays in the stack.
-private fun TimelineItemEventContent.stackThumbnail(): MediaRequestData? = when (this) {
-    is TimelineItemImageContent -> MediaRequestData(
-        source = thumbnailSource ?: mediaSource,
-        kind = MediaRequestData.Kind.Thumbnail(
-            width = thumbnailWidth?.toLong() ?: MAX_THUMBNAIL_WIDTH,
-            height = thumbnailHeight?.toLong() ?: MAX_THUMBNAIL_HEIGHT,
-        ),
-    )
-    is TimelineItemVideoContent -> thumbnailSource?.let { source ->
-        MediaRequestData(
-            source = source,
-            kind = MediaRequestData.Kind.Thumbnail(
-                width = thumbnailWidth?.toLong() ?: MAX_THUMBNAIL_WIDTH,
-                height = thumbnailHeight?.toLong() ?: MAX_THUMBNAIL_HEIGHT,
-            ),
-        )
-    }
-    else -> null
+internal fun mediaStackStill(source: MediaSource) = MediaRequestData(
+    source = source,
+    kind = MediaRequestData.Kind.Thumbnail(width = MAX_THUMBNAIL_WIDTH, height = MAX_THUMBNAIL_HEIGHT),
+)
+
+internal fun MediaStackMember.videoDuration(): String? = when (this) {
+    is MediaStackMember.Photo -> null
+    is MediaStackMember.Video -> media.duration.formatShort()
 }
 
 @Composable
 internal fun mediaStackHeaderText(kind: TimelineItemMediaStackContent.Kind, count: Int): String = pluralStringResource(kind.headerPlural, count, count)
 
 @Composable
-private fun mediaStackPositionText(content: TimelineItemMediaStackContent, frontIndex: Int): String {
-    val count = content.members.size
-    return when (val media = content.members[frontIndex].content) {
-        is TimelineItemVideoContent -> stringResource(R.string.gua_media_stack_a11y_video_position, frontIndex + 1, count, media.duration.formatShort())
-        else -> stringResource(R.string.gua_media_stack_a11y_photo_position, frontIndex + 1, count)
-    }
+internal fun mediaStackPositionText(index: Int, count: Int, videoDuration: String?): String = if (videoDuration != null) {
+    stringResource(R.string.gua_media_stack_a11y_video_position, index + 1, count, videoDuration)
+} else {
+    stringResource(R.string.gua_media_stack_a11y_photo_position, index + 1, count)
 }
 
-/**
- * The TalkBack actions of a stack: the swipe and the header tap cannot be reached with a screen reader.
- */
+// The swipe and the header tap are out of a screen reader's reach.
 @Composable
 internal fun rememberMediaStackAccessibilityActions(
     content: TimelineItemMediaStackContent,
@@ -540,6 +551,7 @@ internal fun TimelineItemMediaStackViewPreview(
         gesturesEnabled = true,
         timelineProtectionState = aTimelineProtectionState(),
         eventSink = {},
+        onActivate = {},
         onLinkClick = {},
         onLinkLongClick = {},
         timestamp = { modifier -> TimelineEventTimestampView(event = content.first, eventSink = {}, modifier = modifier) },

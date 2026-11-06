@@ -209,6 +209,7 @@ fun TimelineItemEventContentView(
                     gesturesEnabled = !isSelectionModeActive,
                     timelineProtectionState = timelineProtectionState,
                     eventSink = eventSink,
+                    onActivate = onContentClick,
                     onLinkClick = onLinkClick,
                     onLinkLongClick = onLinkLongClick,
                     timestamp = timestamp,
