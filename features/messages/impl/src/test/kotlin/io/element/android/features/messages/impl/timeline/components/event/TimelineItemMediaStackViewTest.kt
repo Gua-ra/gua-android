@@ -26,9 +26,12 @@ import io.element.android.features.messages.impl.R
 import io.element.android.features.messages.impl.timeline.TimelineEvent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemImageContent
+import io.element.android.features.messages.impl.timeline.protection.ProtectionState
 import io.element.android.features.messages.impl.timeline.protection.TimelineProtectionState
 import io.element.android.features.messages.impl.timeline.protection.aTimelineProtectionState
+import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.robolectric.RobolectricTest
+import kotlinx.collections.immutable.persistentSetOf
 import org.junit.Test
 
 class TimelineItemMediaStackViewTest : RobolectricTest() {
@@ -45,6 +48,15 @@ class TimelineItemMediaStackViewTest : RobolectricTest() {
         val position = activity!!.getString(R.string.gua_media_stack_a11y_photo_position, 1, 3)
         onNode(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf(header)))
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "$position, Beach day"))
+    }
+
+    @Test
+    fun `a stack whose media are hidden ends with Show, which activating it does`() = runAndroidComposeUiTest<ComponentActivity> {
+        setStack(timelineProtectionState = aTimelineProtectionState(protectionState = ProtectionState.RenderOnly(persistentSetOf())))
+
+        val position = activity!!.getString(R.string.gua_media_stack_a11y_photo_position, 1, 3)
+        val show = activity!!.getString(CommonStrings.action_show)
+        onNode(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "$position, Beach day, $show")).assertExists()
     }
 
     private fun AndroidComposeUiTest<ComponentActivity>.setStack(

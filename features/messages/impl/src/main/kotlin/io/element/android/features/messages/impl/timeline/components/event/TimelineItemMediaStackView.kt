@@ -133,6 +133,8 @@ fun TimelineItemMediaStackView(
     val header = mediaStackHeaderText(content.kind, content.members.size)
     val position = mediaStackPositionText(frontIndex, content.members.size, content.members[frontIndex].videoDuration())
     val caption = content.caption
+    // Activating a stack whose media are hidden shows them, as the Show button over a single hidden photo does.
+    val showLabel = stringResource(CommonStrings.action_show).takeIf { timelineProtectionState.hiddenMembers(content).isNotEmpty() }
     val timestampContent = remember(timestamp) { movableContentOf(timestamp) }
     Column(
         modifier = modifier,
@@ -155,7 +157,7 @@ fun TimelineItemMediaStackView(
                 onFrontIndexChange = { positions.show(content, it) },
                 modifier = Modifier.clearAndSetSemantics {
                     contentDescription = header
-                    stateDescription = listOfNotNull(position, caption).joinToString(", ")
+                    stateDescription = listOfNotNull(position, caption, showLabel).joinToString(", ")
                     onActivate?.let { activate ->
                         onClick {
                             activate()
