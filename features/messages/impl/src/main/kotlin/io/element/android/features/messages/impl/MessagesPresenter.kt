@@ -285,13 +285,14 @@ class MessagesPresenter(
                 is MessagesEvent.ConfirmRedact -> {
                     val confirming = redactEventAction.value
                     redactEventAction.value = AsyncAction.Uninitialized
+                    val reason = event.reason?.takeIf { it.isNotBlank() }
                     when (confirming) {
                         is MessagesState.ConfirmingRedaction -> localCoroutineScope.launch {
-                            redact(confirming.eventId.toEventOrTransactionId(), event.reason?.takeIf { it.isNotBlank() })
+                            redact(confirming.eventId.toEventOrTransactionId(), reason)
                         }
                         // Redacting a member that is not sent yet cancels its sending. The loop outlives the screen, as it takes a call per member.
                         is MessagesState.ConfirmingMediaStackRemoval -> sessionCoroutineScope.launch {
-                            confirming.stack.members.forEach { member -> redact(member.event.eventOrTransactionId, reason = null) }
+                            confirming.stack.members.forEach { member -> redact(member.event.eventOrTransactionId, reason) }
                         }
                         else -> Unit
                     }

@@ -12,22 +12,25 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import io.element.android.features.messages.impl.R
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
-import io.element.android.libraries.designsystem.components.dialogs.ConfirmationDialog
+import io.element.android.libraries.designsystem.components.dialogs.TextFieldDialog
 import io.element.android.libraries.ui.strings.CommonStrings
 
 @Composable
 fun MediaStackRemovalDialog(
     stack: TimelineItemMediaStackContent,
-    onSubmit: () -> Unit,
+    onSubmit: (reason: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val count = stack.members.size
-    ConfirmationDialog(
+    TextFieldDialog(
         title = pluralStringResource(stack.kind.removalTitlePlural, count, count),
         content = stringResource(R.string.gua_media_stack_remove_subtitle),
+        placeholder = stringResource(R.string.screen_room_confirm_removal_reason_placeholder),
+        supportingText = stringResource(R.string.screen_room_confirm_removal_reason_supporting_text),
+        value = null,
         submitText = stringResource(CommonStrings.action_remove),
         destructiveSubmit = true,
-        onSubmitClick = onSubmit,
-        onDismiss = onDismiss,
+        onSubmit = onSubmit,
+        onDismissRequest = onDismiss,
     )
 }

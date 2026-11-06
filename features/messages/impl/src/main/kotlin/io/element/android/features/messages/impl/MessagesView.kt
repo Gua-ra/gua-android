@@ -584,7 +584,7 @@ fun MessagesView(
     if (mediaStackRemoval != null) {
         MediaStackRemovalDialog(
             stack = mediaStackRemoval.stack,
-            onSubmit = { state.eventSink(MessagesEvent.ConfirmRedact(reason = null)) },
+            onSubmit = { reason -> state.eventSink(MessagesEvent.ConfirmRedact(reason)) },
             onDismiss = { state.eventSink(MessagesEvent.CancelRedact) },
         )
     }

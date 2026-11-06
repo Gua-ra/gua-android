@@ -607,7 +607,7 @@ class MessagesPresenterTest {
     }
 
     @Test
-    fun `present - removing a media stack asks to confirm, then removes every member`() = runTest {
+    fun `present - removing a media stack asks to confirm, then removes every member with the reason`() = runTest {
         val coroutineDispatchers = testCoroutineDispatchers(useUnconfinedTestDispatcher = true)
         val liveTimeline = FakeTimeline()
         val joinedRoom = FakeJoinedRoom(
@@ -626,12 +626,12 @@ class MessagesPresenterTest {
             advanceUntilIdle()
             val confirmingState = expectMostRecentItem()
             assertThat(confirmingState.redactEventAction).isEqualTo(MessagesState.ConfirmingMediaStackRemoval(stack.content))
-            confirmingState.eventSink(MessagesEvent.ConfirmRedact(reason = null))
+            confirmingState.eventSink(MessagesEvent.ConfirmRedact(A_REASON))
             advanceUntilIdle()
             runCurrent()
             assertThat(expectMostRecentItem().redactEventAction).isEqualTo(AsyncAction.Uninitialized)
             assert(redactEventLambda).isCalledExactly(3).withSequence(
-                *members.map { listOf(value(it.event.eventOrTransactionId), value(null)) }.toTypedArray()
+                *members.map { listOf(value(it.event.eventOrTransactionId), value(A_REASON)) }.toTypedArray()
             )
         }
     }
