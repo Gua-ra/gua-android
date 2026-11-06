@@ -1052,11 +1052,13 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
         presenter.test {
             awaitItem().eventSink(AttachmentsPreviewEvent.SendAttachment)
             val failedState = consumeItemsUntilPredicate { it.sendActionState is SendActionState.Failure }.last()
+            assertThat(failedState.attachments).containsExactlyElementsIn(attachments.drop(1)).inOrder()
             failedState.eventSink(AttachmentsPreviewEvent.CancelAndClearSendState)
             consumeItemsUntilPredicate { it.sendActionState is SendActionState.Sending.ReadyToUpload }.last()
-                .eventSink(AttachmentsPreviewEvent.SetCurrentCarouselIndex(2))
-            consumeItemsUntilPredicate { it.currentIndex == 2 }.last().eventSink(AttachmentsPreviewEvent.OpenImageEditor)
+                .eventSink(AttachmentsPreviewEvent.SetCurrentCarouselIndex(1))
+            consumeItemsUntilPredicate { it.currentIndex == 1 }.last().eventSink(AttachmentsPreviewEvent.OpenImageEditor)
             val editorState = consumeItemsUntilPredicate { it.imageEditorState != null }.last()
+            assertThat(editorState.imageEditorState?.localMedia).isEqualTo((attachments[2] as Attachment.Media).localMedia)
             editorState.eventSink(AttachmentsPreviewEvent.RotateImageToTheLeft)
             consumeItemsUntilPredicate { it.imageEditorState?.edits?.hasChanges == true }.last().eventSink(AttachmentsPreviewEvent.ApplyImageEdits)
             consumeItemsUntilPredicate { it.imageEditorState == null && it.sendActionState is SendActionState.Sending.ReadyToUpload }.last()
@@ -1067,6 +1069,28 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
             val batches = sentMedia.sent.map { it.batch() }
             assertThat(batches.map { it?.index }).containsExactly(0, 1, 2).inOrder()
             assertThat(batches.map { it?.id }.toSet()).hasSize(1)
+        }
+    }
+
+    @Test
+    fun `present - a preview left on a photo still to send stays on it once the photos already sent leave the preview`() = runTest {
+        val attachments = photoLibraryAttachments(3)
+        val presenter = createAttachmentsPreviewPresenter(
+            room = SentMediaRecorder(failingCall = 1).room(),
+            attachments = attachments,
+            mediaPreProcessor = PickedFileMediaPreProcessor(),
+            onDoneListener = {},
+        )
+        presenter.test {
+            awaitItem().eventSink(AttachmentsPreviewEvent.SetCurrentCarouselIndex(2))
+            consumeItemsUntilPredicate { it.currentIndex == 2 }.last().eventSink(AttachmentsPreviewEvent.SendAttachment)
+            val failedState = consumeItemsUntilPredicate { it.sendActionState is SendActionState.Failure }.last()
+            assertThat(failedState.attachments).containsExactlyElementsIn(attachments.drop(1)).inOrder()
+            assertThat(failedState.currentIndex).isEqualTo(1)
+
+            failedState.eventSink(AttachmentsPreviewEvent.OpenImageEditor)
+            val editorState = consumeItemsUntilPredicate { it.imageEditorState != null }.last()
+            assertThat(editorState.imageEditorState?.localMedia).isEqualTo((attachments[2] as Attachment.Media).localMedia)
         }
     }
 
