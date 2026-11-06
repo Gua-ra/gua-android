@@ -38,8 +38,8 @@ import io.element.android.features.messages.impl.timeline.TimelineState
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
 import io.element.android.features.messages.impl.timeline.aTimelineState
 import io.element.android.features.messages.impl.timeline.components.event.aMediaStackEvent
-import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.TimelineItemThreadInfo
+import io.element.android.features.messages.impl.timeline.model.event.MediaStackMember
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemFileContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemImageContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
@@ -626,9 +626,10 @@ class MessagesPresenterTest {
             assertThat(confirmingState.redactEventAction).isEqualTo(MessagesState.ConfirmingMediaStackRemoval(stack.content))
             confirmingState.eventSink(MessagesEvent.ConfirmRedact(reason = null))
             advanceUntilIdle()
+            runCurrent()
             assertThat(expectMostRecentItem().redactEventAction).isEqualTo(AsyncAction.Uninitialized)
             assert(redactEventLambda).isCalledExactly(3).withSequence(
-                *members.map { listOf(value(it.eventOrTransactionId), value(null)) }.toTypedArray()
+                *members.map { listOf(value(it.event.eventOrTransactionId), value(null)) }.toTypedArray()
             )
         }
     }
@@ -654,7 +655,7 @@ class MessagesPresenterTest {
 
     @Test
     fun `present - saving and reporting a media stack act on every member`() = runTest {
-        val saveLambda = lambdaRecorder<List<TimelineItem.Event>, Unit> { }
+        val saveLambda = lambdaRecorder<List<MediaStackMember>, Unit> { }
         val onReportContentClickLambda = lambdaRecorder { _: List<EventId>, _: UserId -> }
         val presenter = createMessagesPresenter(
             navigator = FakeMessagesNavigator(onReportContentClickLambda = onReportContentClickLambda),
@@ -666,9 +667,11 @@ class MessagesPresenterTest {
             val initialState = awaitItem()
             initialState.eventSink(MessagesEvent.HandleAction(TimelineItemAction.Save, stack))
             initialState.eventSink(MessagesEvent.HandleAction(TimelineItemAction.ReportContent, stack))
+            advanceUntilIdle()
+            runCurrent()
             cancelAndIgnoreRemainingEvents()
             saveLambda.assertions().isCalledOnce().with(value(members))
-            onReportContentClickLambda.assertions().isCalledOnce().with(value(members.map { it.eventId }), value(stack.senderId))
+            onReportContentClickLambda.assertions().isCalledOnce().with(value(members.map { it.event.eventId }), value(stack.senderId))
         }
     }
 

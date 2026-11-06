@@ -288,9 +288,9 @@ class MessagesPresenter(
                         is MessagesState.ConfirmingRedaction -> localCoroutineScope.launch {
                             redact(confirming.eventId.toEventOrTransactionId(), event.reason?.takeIf { it.isNotBlank() })
                         }
-                        // Redacting a member that is not sent yet cancels its sending.
-                        is MessagesState.ConfirmingMediaStackRemoval -> localCoroutineScope.launch {
-                            confirming.stack.members.forEach { member -> redact(member.eventOrTransactionId, reason = null) }
+                        // Redacting a member that is not sent yet cancels its sending. The loop outlives the screen, as it takes a call per member.
+                        is MessagesState.ConfirmingMediaStackRemoval -> sessionCoroutineScope.launch {
+                            confirming.stack.members.forEach { member -> redact(member.event.eventOrTransactionId, reason = null) }
                         }
                         else -> Unit
                     }
@@ -464,25 +464,23 @@ class MessagesPresenter(
         }
     }
 
-    /**
-     * Applies [action] to every member of a media stack where it makes sense. Returns false for the actions that only act on the first
-     * member, which the stack event stands for.
-     */
+    // The actions left out here act on the first member, which the stack event stands for.
     private suspend fun handleMediaStackAction(
         action: TimelineItemAction,
         stackEvent: TimelineItem.Event,
         stack: TimelineItemMediaStackContent,
         redactEventAction: MutableState<AsyncAction<Unit>>,
     ): Boolean {
+        val members = stack.members.map { it.event }
         when (action) {
             TimelineItemAction.Redact -> redactEventAction.value = MessagesState.ConfirmingMediaStackRemoval(stack)
             TimelineItemAction.Forward -> navigator.forwardEvents(
-                eventIds = stack.members.mapNotNull { it.eventId },
+                eventIds = members.mapNotNull { it.eventId },
                 timelineProvider = timelineController,
                 asMediaStack = featureFlagService.isFeatureEnabled(FeatureFlags.GuaMediaStacks),
             )
-            TimelineItemAction.Save -> mediaStackSaver.save(stack.members)
-            TimelineItemAction.ReportContent -> navigator.navigateToReportMessage(stack.members.mapNotNull { it.eventId }, stackEvent.senderId)
+            TimelineItemAction.Save -> sessionCoroutineScope.launch { mediaStackSaver.save(stack.members) }
+            TimelineItemAction.ReportContent -> navigator.navigateToReportMessage(members.mapNotNull { it.eventId }, stackEvent.senderId)
             TimelineItemAction.RetrySending -> stack.failedMembers.forEach { handleRetrySending(it) }
             TimelineItemAction.AbortSending -> stack.failedMembers.forEach { handleActionAbortSend(it) }
             else -> return false
