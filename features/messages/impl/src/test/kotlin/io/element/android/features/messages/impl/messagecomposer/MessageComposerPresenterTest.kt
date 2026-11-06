@@ -110,6 +110,7 @@ import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.lambda.any
 import io.element.android.tests.testutils.lambda.assert
 import io.element.android.tests.testutils.lambda.lambdaRecorder
+import io.element.android.tests.testutils.lambda.matching
 import io.element.android.tests.testutils.lambda.value
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import io.element.android.tests.testutils.test
@@ -827,7 +828,7 @@ class MessageComposerPresenterTest : RobolectricTest() {
         val presenter = createPresenter(
             navigator = navigator,
             featureFlagService = FakeFeatureFlagService(
-                initialState = mapOf(FeatureFlags.SendGalleryMessages.key to true)
+                initialState = mapOf(FeatureFlags.GuaMediaStacks.key to true)
             ),
         )
         pickerProvider.givenMimeType(MimeTypes.Images)
@@ -844,6 +845,24 @@ class MessageComposerPresenterTest : RobolectricTest() {
             onPreviewAttachmentLambda.assertions().isCalledOnce()
             expectNoEvents()
             assertThat(state.mode).isEqualTo(editMode)
+        }
+    }
+
+    @Test
+    fun `present - Pick several media from the photo library sends them as a stack`() = runTest {
+        val onPreviewAttachmentLambda = lambdaRecorder { _: ImmutableList<Attachment>, _: EventId? -> }
+        val presenter = createPresenter(
+            navigator = FakeMessagesNavigator(onPreviewAttachmentLambda = onPreviewAttachmentLambda),
+            featureFlagService = FakeFeatureFlagService(initialState = mapOf(FeatureFlags.GuaMediaStacks.key to true)),
+        )
+        pickerProvider.givenMimeType(MimeTypes.Images)
+        pickerProvider.givenMultipleResults(listOf(mockk(), mockk()))
+        presenter.test {
+            awaitFirstItem().eventSink(MessageComposerEvent.PickAttachmentSource.FromGallery)
+            onPreviewAttachmentLambda.assertions().isCalledOnce().with(
+                matching<ImmutableList<Attachment>> { attachments -> attachments.size == 2 && attachments.all { (it as Attachment.Media).isFromPhotoLibrary } },
+                any(),
+            )
         }
     }
 

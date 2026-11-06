@@ -30,6 +30,9 @@ import io.element.android.features.messages.impl.attachments.preview.imageeditor
 import io.element.android.features.messages.impl.attachments.video.MediaOptimizationSelectorPresenter
 import io.element.android.features.messages.impl.attachments.video.MediaOptimizationSelectorState
 import io.element.android.features.messages.impl.attachments.video.VideoCompressionPresetSelector
+import io.element.android.features.messages.impl.mediastack.MediaBatch
+import io.element.android.features.messages.impl.mediastack.PendingMediaBatches
+import io.element.android.features.messages.impl.mediastack.pendingMedia
 import io.element.android.libraries.androidutils.file.TemporaryUriDeleter
 import io.element.android.libraries.androidutils.file.safeDelete
 import io.element.android.libraries.androidutils.hash.hash
@@ -39,8 +42,11 @@ import io.element.android.libraries.core.coroutine.firstInstanceOf
 import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.core.mimetype.MimeTypes.isMimeTypeVideo
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
+import io.element.android.libraries.featureflag.api.FeatureFlagService
+import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.permalink.PermalinkBuilder
+import io.element.android.libraries.matrix.api.room.BaseRoom
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfig
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfigProvider
@@ -75,6 +81,9 @@ class AttachmentsPreviewPresenter(
     @SessionCoroutineScope private val sessionCoroutineScope: CoroutineScope,
     private val dispatchers: CoroutineDispatchers,
     private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
+    private val room: BaseRoom,
+    private val featureFlagService: FeatureFlagService,
+    private val pendingMediaBatches: PendingMediaBatches,
 ) : Presenter<AttachmentsPreviewState> {
     @AssistedFactory
     interface Factory {
@@ -509,6 +518,36 @@ class AttachmentsPreviewPresenter(
         onDoneListener()
     }
 
+    /**
+     * GUA FORK: several media are sent as separate events, never as a gallery event, so every client shows each of them. The fallback
+     * picker of devices without the system photo picker ignores the limit, so a larger pick goes out as several batches.
+     */
+    private suspend fun sendSeparately(
+        mediaUploadInfos: List<MediaUploadInfo>,
+        caption: String?,
+        inReplyToEventId: EventId?,
+    ) {
+        val sendsAsMediaStack = attachments.all { it is Attachment.Media && it.isFromPhotoLibrary } &&
+            featureFlagService.isFeatureEnabled(FeatureFlags.GuaMediaStacks)
+        val groups = if (sendsAsMediaStack) mediaUploadInfos.chunked(MediaBatch.MAX_SEND_COUNT) else mediaUploadInfos.map(::listOf)
+        groups.forEachIndexed { groupIndex, group ->
+            val batches = if (group.size >= 2) MediaBatch.newBatch(group.size) else null
+            if (batches != null) {
+                pendingMediaBatches.register(room.roomId, group.map { it.pendingMedia() }.zip(batches))
+            }
+            group.forEachIndexed { index, mediaUploadInfo ->
+                val isFirst = groupIndex == 0 && index == 0
+                mediaSender.sendPreProcessedMedia(
+                    mediaUploadInfo = mediaUploadInfo,
+                    caption = caption.takeIf { isFirst },
+                    formattedCaption = null,
+                    inReplyToEventId = inReplyToEventId.takeIf { isFirst },
+                    extraContentJson = batches?.get(index)?.extraContentJson(),
+                ).getOrThrow()
+            }
+        }
+    }
+
     private fun cleanUp(
         mediaUploadInfo: MediaUploadInfo,
     ) {
@@ -536,14 +575,10 @@ class AttachmentsPreviewPresenter(
                 caption = caption,
                 formattedCaption = null,
                 inReplyToEventId = inReplyToEventId,
+                extraContentJson = null,
             ).getOrThrow()
         } else {
-            mediaSender.sendGallery(
-                mediaUploadInfos = mediaUploadInfos,
-                caption = caption,
-                formattedCaption = null,
-                inReplyToEventId = inReplyToEventId,
-            ).getOrThrow()
+            sendSeparately(mediaUploadInfos, caption, inReplyToEventId)
         }
     }.fold(
         onSuccess = {
