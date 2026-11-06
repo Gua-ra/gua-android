@@ -103,6 +103,7 @@ class AttachmentsPreviewPresenter(
     private val mediaSender = mediaSenderFactory.create(timelineMode)
 
     // GUA FORK: a send that fails part way keeps the media not sent yet, so a retry neither repeats the others nor splits their batch.
+    @Volatile
     private var unsentMedia = emptyList<MediaSend>()
 
     @Composable
@@ -475,6 +476,8 @@ class AttachmentsPreviewPresenter(
         sendActionState.value = SendActionState.Sending.Processing(displayProgress = displayProgress)
         val mediaUploadInfos = mutableListOf<MediaUploadInfo>()
         attachments.forEachIndexed { index, attachment ->
+            // GUA FORK: once a send has failed part way, only the media still to send are prepared again.
+            if (unsentMedia.isNotEmpty() && unsentMedia.none { it.attachmentIndex == index }) return@forEachIndexed
             when (attachment) {
                 is Attachment.Media -> {
                     mediaSender.preProcessMedia(
@@ -529,8 +532,14 @@ class AttachmentsPreviewPresenter(
         val batches = if (sendsAsMediaStack) MediaBatch.makeBatches(mediaUploadInfos.size) else List(mediaUploadInfos.size) { null }
         pendingMediaBatches.register(room.roomId, mediaUploadInfos.zip(batches).mapNotNull { (info, batch) -> batch?.let { info.pendingMedia() to it } })
         return mediaUploadInfos.mapIndexed { index, mediaUploadInfo ->
-            MediaSend(mediaUploadInfo = mediaUploadInfo, isFirst = index == 0, batch = batches[index])
+            MediaSend(mediaUploadInfo = mediaUploadInfo, attachmentIndex = index, batch = batches[index])
         }
+    }
+
+    // Media prepared again for a retry come in the order of those still to send, and keep their place in the batch.
+    private fun List<MediaSend>.preparedAgain(mediaUploadInfos: List<MediaUploadInfo>): List<MediaSend> {
+        check(size == mediaUploadInfos.size) { "Prepared ${mediaUploadInfos.size} media for $size still to send" }
+        return zip(mediaUploadInfos) { send, mediaUploadInfo -> send.copy(mediaUploadInfo = mediaUploadInfo) }
     }
 
     private suspend fun sendSeparately(caption: String?, inReplyToEventId: EventId?) {
@@ -567,7 +576,7 @@ class AttachmentsPreviewPresenter(
         sendActionState: MutableState<SendActionState>,
         inReplyToEventId: EventId?,
     ) = runCatchingExceptions {
-        unsentMedia = unsentMedia.takeIf { sends -> sends.map { it.mediaUploadInfo } == mediaUploadInfos } ?: planSends(mediaUploadInfos)
+        unsentMedia = if (unsentMedia.isEmpty()) planSends(mediaUploadInfos) else unsentMedia.preparedAgain(mediaUploadInfos)
         if (unsentMedia.singleOrNull()?.isFirst == true) {
             sendActionState.value = SendActionState.Sending.Uploading(mediaUploadInfos)
             mediaSender.sendPreProcessedMedia(
@@ -600,6 +609,9 @@ class AttachmentsPreviewPresenter(
 
 private data class MediaSend(
     val mediaUploadInfo: MediaUploadInfo,
-    val isFirst: Boolean,
+    val attachmentIndex: Int,
     val batch: MediaBatch?,
-)
+) {
+    // The caption and the reply belong to the first media picked, whichever attempt sends it.
+    val isFirst: Boolean get() = attachmentIndex == 0
+}

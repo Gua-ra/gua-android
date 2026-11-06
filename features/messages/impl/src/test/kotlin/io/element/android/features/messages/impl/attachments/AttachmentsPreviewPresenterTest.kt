@@ -17,6 +17,7 @@ import io.element.android.features.messages.impl.attachments.preview.Attachments
 import io.element.android.features.messages.impl.attachments.preview.AttachmentsPreviewPresenter
 import io.element.android.features.messages.impl.attachments.preview.OnDoneListener
 import io.element.android.features.messages.impl.attachments.preview.SendActionState
+import io.element.android.features.messages.impl.attachments.preview.aMediaUploadInfo
 import io.element.android.features.messages.impl.attachments.preview.imageeditor.AttachmentImageEditor
 import io.element.android.features.messages.impl.attachments.preview.imageeditor.AttachmentImageEdits
 import io.element.android.features.messages.impl.attachments.preview.imageeditor.EditedLocalMedia
@@ -1003,6 +1004,72 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
     }
 
     @Test
+    fun `present - retrying a batch that failed part way prepares and sends only the rest, without the caption or the reply`() = runTest {
+        val sentMedia = SentMediaRecorder(failingCall = 1)
+        val mediaPreProcessor = PickedFileMediaPreProcessor()
+        val presenter = createAttachmentsPreviewPresenter(
+            room = sentMedia.room(),
+            attachments = photoLibraryAttachments(3),
+            mediaPreProcessor = mediaPreProcessor,
+            onDoneListener = {},
+            inReplyToEventId = AN_EVENT_ID,
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.textEditorState.setMarkdown(A_CAPTION)
+            initialState.eventSink(AttachmentsPreviewEvent.SendAttachment)
+            val failedState = consumeItemsUntilPredicate { it.sendActionState is SendActionState.Failure }.last()
+            mediaPreProcessor.processed.clear()
+            failedState.eventSink(AttachmentsPreviewEvent.SendAttachment)
+            consumeItemsUntilPredicate { it.sendActionState == SendActionState.Done }
+
+            assertThat(mediaPreProcessor.processed).containsExactly("1.jpeg", "2.jpeg").inOrder()
+            assertThat(sentMedia.sent.map { it.filename }).containsExactly("0.jpeg", "1.jpeg", "2.jpeg").inOrder()
+            assertThat(sentMedia.sent.map { it.caption }).containsExactly(A_CAPTION, null, null).inOrder()
+            assertThat(sentMedia.sent.map { it.inReplyTo }).containsExactly(AN_EVENT_ID, null, null).inOrder()
+            val batches = sentMedia.sent.map { it.batch() }
+            assertThat(batches.map { it?.index }).containsExactly(0, 1, 2).inOrder()
+            assertThat(batches.map { it?.count }.toSet()).containsExactly(3)
+            assertThat(batches.map { it?.id }.toSet()).hasSize(1)
+        }
+    }
+
+    @Test
+    fun `present - editing a photo after a batch failed part way sends the edited photo in its place on retry`() = runTest {
+        val sentMedia = SentMediaRecorder(failingCall = 1)
+        val attachments = photoLibraryAttachments(3)
+        val presenter = createAttachmentsPreviewPresenter(
+            room = sentMedia.room(),
+            attachments = attachments,
+            mediaPreProcessor = PickedFileMediaPreProcessor(),
+            onDoneListener = {},
+            attachmentImageEditor = FakeAttachmentImageEditor {
+                val edited = (attachments[2] as Attachment.Media).localMedia.copy(uri = Uri.parse("file:///tmp/2-edited.jpeg"))
+                Result.success(EditedLocalMedia(localMedia = edited, file = File("/tmp/2-edited.jpeg")))
+            },
+        )
+        presenter.test {
+            awaitItem().eventSink(AttachmentsPreviewEvent.SendAttachment)
+            val failedState = consumeItemsUntilPredicate { it.sendActionState is SendActionState.Failure }.last()
+            failedState.eventSink(AttachmentsPreviewEvent.CancelAndClearSendState)
+            consumeItemsUntilPredicate { it.sendActionState is SendActionState.Sending.ReadyToUpload }.last()
+                .eventSink(AttachmentsPreviewEvent.SetCurrentCarouselIndex(2))
+            consumeItemsUntilPredicate { it.currentIndex == 2 }.last().eventSink(AttachmentsPreviewEvent.OpenImageEditor)
+            val editorState = consumeItemsUntilPredicate { it.imageEditorState != null }.last()
+            editorState.eventSink(AttachmentsPreviewEvent.RotateImageToTheLeft)
+            consumeItemsUntilPredicate { it.imageEditorState?.edits?.hasChanges == true }.last().eventSink(AttachmentsPreviewEvent.ApplyImageEdits)
+            consumeItemsUntilPredicate { it.imageEditorState == null && it.sendActionState is SendActionState.Sending.ReadyToUpload }.last()
+                .eventSink(AttachmentsPreviewEvent.SendAttachment)
+            consumeItemsUntilPredicate { it.sendActionState == SendActionState.Done }
+
+            assertThat(sentMedia.sent.map { it.filename }).containsExactly("0.jpeg", "1.jpeg", "2-edited.jpeg").inOrder()
+            val batches = sentMedia.sent.map { it.batch() }
+            assertThat(batches.map { it?.index }).containsExactly(0, 1, 2).inOrder()
+            assertThat(batches.map { it?.id }.toSet()).hasSize(1)
+        }
+    }
+
+    @Test
     fun `present - photos are sent without a batch when the flag is off`() = runTest {
         val sentMedia = SentMediaRecorder()
         val presenter = createAttachmentsPreviewPresenter(
@@ -1060,7 +1127,7 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
         aMediaAttachment(aLocalMedia(uri = Uri.parse("file:///tmp/$index.jpeg")), isFromPhotoLibrary = true)
     }
 
-    private data class SentMedia(val caption: String?, val inReplyTo: EventId?, val extraContent: String?) {
+    private data class SentMedia(val caption: String?, val inReplyTo: EventId?, val extraContent: String?, val filename: String = "") {
         fun batch(): MediaBatch? = extraContent?.let { extra ->
             MediaBatch.fromContent(JsonObject(Json.parseToJsonElement(extra).jsonObject + ("msgtype" to JsonPrimitive("m.image"))))
         }
@@ -1073,15 +1140,37 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
 
         fun room(): FakeJoinedRoom {
             val timeline = FakeTimeline()
-            timeline.sendImageLambda = { _, _, _, caption, _, inReplyTo, extraContent ->
+            timeline.sendImageLambda = { file, _, _, caption, _, inReplyTo, extraContent ->
                 if (calls++ == failingCall) {
                     Result.failure(IllegalStateException("Sending failed"))
                 } else {
-                    sent += SentMedia(caption, inReplyTo, extraContent)
+                    sent += SentMedia(caption, inReplyTo, extraContent, file.name)
                     Result.success(FakeMediaUploadHandler())
                 }
             }
             return FakeJoinedRoom(liveTimeline = timeline)
+        }
+    }
+
+    // Prepares each picked file as an image of the same name, so a test can tell which picked file each send carries.
+    private class PickedFileMediaPreProcessor : MediaPreProcessor {
+        val processed = mutableListOf<String>()
+        var cleanUpCount = 0
+            private set
+
+        override suspend fun process(
+            uri: Uri,
+            mimeType: String,
+            deleteOriginal: Boolean,
+            mediaOptimizationConfig: MediaOptimizationConfig,
+        ): Result<MediaUploadInfo> {
+            val filename = uri.lastPathSegment.orEmpty()
+            processed += filename
+            return Result.success(aMediaUploadInfo(filePath = filename))
+        }
+
+        override fun cleanUp() {
+            cleanUpCount++
         }
     }
 
