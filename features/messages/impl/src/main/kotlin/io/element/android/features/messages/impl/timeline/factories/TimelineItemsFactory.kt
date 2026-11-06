@@ -11,14 +11,17 @@ package io.element.android.features.messages.impl.timeline.factories
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
+import io.element.android.features.messages.impl.mediastack.PendingMediaBatches
 import io.element.android.features.messages.impl.timeline.diff.TimelineItemsCacheInvalidator
 import io.element.android.features.messages.impl.timeline.factories.event.TimelineItemEventFactory
 import io.element.android.features.messages.impl.timeline.factories.virtual.TimelineItemVirtualFactory
+import io.element.android.features.messages.impl.timeline.groups.MediaStackGrouper
 import io.element.android.features.messages.impl.timeline.groups.TimelineItemGrouper
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.libraries.androidutils.diff.DiffCacheUpdater
 import io.element.android.libraries.androidutils.diff.MutableListDiffCache
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
+import io.element.android.libraries.matrix.api.room.BaseRoom
 import io.element.android.libraries.matrix.api.room.RoomMember
 import io.element.android.libraries.matrix.api.timeline.MatrixTimelineItem
 import io.element.android.libraries.matrix.api.timeline.item.event.EventTimelineItem
@@ -40,6 +43,8 @@ class TimelineItemsFactory(
     private val dispatchers: CoroutineDispatchers,
     private val virtualItemFactory: TimelineItemVirtualFactory,
     private val timelineItemGrouper: TimelineItemGrouper,
+    room: BaseRoom,
+    pendingMediaBatches: PendingMediaBatches,
 ) {
     @AssistedFactory
     interface Creator {
@@ -47,6 +52,7 @@ class TimelineItemsFactory(
     }
 
     private val eventItemFactory = eventItemFactoryCreator.create(config)
+    private val mediaStackGrouper = MediaStackGrouper(room.roomId, pendingMediaBatches).takeIf { config.groupMediaStacks }
     private val _timelineItems = MutableSharedFlow<ImmutableList<TimelineItem>>(replay = 1)
     private val lock = Mutex()
     private val diffCache = MutableListDiffCache<TimelineItem>()
@@ -101,7 +107,7 @@ class TimelineItemsFactory(
                 newTimelineItemStates.add(updatedItem)
             }
         }
-        val result = timelineItemGrouper.group(newTimelineItemStates).toImmutableList()
+        val result = timelineItemGrouper.group(newTimelineItemStates, mediaStackGrouper).toImmutableList()
         this._timelineItems.emit(result)
     }
 

@@ -9,11 +9,13 @@
 package io.element.android.features.messages.impl.timeline.model
 
 import androidx.compose.runtime.Immutable
+import io.element.android.features.messages.impl.mediastack.MediaBatch
 import io.element.android.features.messages.impl.timeline.components.MessageShieldData
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemAttachmentsContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEventContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemGalleryContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemImageContent
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemStickerContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemTextBasedContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemVideoContent
@@ -52,7 +54,7 @@ sealed interface TimelineItem {
     fun isEvent(eventId: EventId?): Boolean {
         if (eventId == null) return false
         return when (this) {
-            is Event -> this.eventId == eventId
+            is Event -> this.eventId == eventId || (content as? TimelineItemMediaStackContent)?.members?.any { it.event.eventId == eventId } == true
             else -> false
         }
     }
@@ -108,6 +110,7 @@ sealed interface TimelineItem {
         val forwarder: UserId?,
         /** If [forwarder] is set, the profile of the forwarding user, if it was cached at the time the `EventTimelineItem` was created. */
         val forwarderProfile: ProfileDetails?,
+        val mediaBatch: MediaBatch? = null,
     ) : TimelineItem {
         val showSenderInformation = groupPosition.isNew() && !isMine
 
@@ -131,6 +134,8 @@ sealed interface TimelineItem {
             is TimelineItemVideoContent -> content.formattedCaption == null && content.caption == null
             is TimelineItemGalleryContent -> false
             is TimelineItemAttachmentsContent -> false
+            // GUA FORK: a media stack takes the click as well, since a screen reader cannot click its bubble.
+            is TimelineItemMediaStackContent -> false
             else -> true
         }
 

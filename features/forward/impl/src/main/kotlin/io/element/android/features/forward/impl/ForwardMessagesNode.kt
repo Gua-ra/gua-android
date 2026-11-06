@@ -29,6 +29,7 @@ import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.SessionId
+import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
 import io.element.android.libraries.matrix.api.timeline.TimelineProvider
 import io.element.android.libraries.roomselect.api.RoomSelectEntryPoint
 import io.element.android.libraries.roomselect.api.RoomSelectMode
@@ -59,11 +60,12 @@ class ForwardMessagesNode(
         val eventIds: List<EventId>,
         val timelineProvider: TimelineProvider,
         val fromRoomId: RoomId,
+        val extraContents: ForwardExtraContents?,
     ) : NodeInputs
 
     private val inputs = inputs<Inputs>()
     private val callback: ForwardEntryPoint.Callback = callback()
-    private val presenter = presenterFactory.create(inputs.eventIds, inputs.timelineProvider)
+    private val presenter = presenterFactory.create(inputs.eventIds, inputs.timelineProvider, inputs.extraContents)
 
     override fun resolve(navTarget: NavTarget, buildContext: BuildContext): Node {
         val callback = object : RoomSelectEntryPoint.Callback {

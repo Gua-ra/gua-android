@@ -62,6 +62,7 @@ open class AttachmentsPreviewStatePreviewParam : PreviewParameterProvider<Attach
                     displayVideoPresetSelectorDialog = true,
                 )
             ),
+            anAttachmentsPreviewGalleryState(canEditCaption = false),
         )
 }
 
@@ -73,6 +74,7 @@ fun anAttachmentsPreviewState(
     mediaOptimizationSelectorState: MediaOptimizationSelectorState = aMediaOptimisationSelectorState(),
     displayFileTooLargeError: Boolean = false,
     currentIndex: Int = 0,
+    canEditCaption: Boolean = true,
 ) = AttachmentsPreviewState(
     attachments = persistentListOf(
         Attachment.Media(
@@ -85,6 +87,7 @@ fun anAttachmentsPreviewState(
     displayImageEditError = false,
     sendActionState = sendActionState,
     textEditorState = textEditorState,
+    canEditCaption = canEditCaption,
     mediaOptimizationSelectorState = mediaOptimizationSelectorState,
     displayFileTooLargeError = displayFileTooLargeError,
     currentIndex = currentIndex,
@@ -97,6 +100,7 @@ fun anAttachmentsPreviewGalleryState(
     sendActionState: SendActionState = SendActionState.Idle,
     mediaOptimizationSelectorState: MediaOptimizationSelectorState = aMediaOptimisationSelectorState(),
     currentIndex: Int = 0,
+    canEditCaption: Boolean = true,
 ) = AttachmentsPreviewState(
     attachments = persistentListOf(
         Attachment.Media(
@@ -115,6 +119,7 @@ fun anAttachmentsPreviewGalleryState(
     displayImageEditError = false,
     sendActionState = sendActionState,
     textEditorState = textEditorState,
+    canEditCaption = canEditCaption,
     mediaOptimizationSelectorState = mediaOptimizationSelectorState,
     displayFileTooLargeError = false,
     currentIndex = currentIndex,

@@ -20,6 +20,7 @@ import io.element.android.libraries.matrix.api.media.VideoInfo
 import io.element.android.libraries.matrix.api.poll.PollKind
 import io.element.android.libraries.matrix.api.room.IntentionalMention
 import io.element.android.libraries.matrix.api.room.location.AssetType
+import io.element.android.libraries.matrix.api.timeline.ForwardProgress
 import io.element.android.libraries.matrix.api.timeline.MatrixTimelineItem
 import io.element.android.libraries.matrix.api.timeline.MsgType
 import io.element.android.libraries.matrix.api.timeline.ReceiptType
@@ -171,7 +172,8 @@ class FakeTimeline(
         body: String?,
         formattedBody: String?,
         inReplyToEventId: EventId?,
-    ) -> Result<MediaUploadHandler> = { _, _, _, _, _, _ ->
+        extraContentJson: String?,
+    ) -> Result<MediaUploadHandler> = { _, _, _, _, _, _, _ ->
         Result.success(FakeMediaUploadHandler())
     }
 
@@ -182,6 +184,7 @@ class FakeTimeline(
         caption: String?,
         formattedCaption: String?,
         inReplyToEventId: EventId?,
+        extraContentJson: String?,
     ): Result<MediaUploadHandler> = simulateLongTask {
         sendImageLambda(
             file,
@@ -190,6 +193,7 @@ class FakeTimeline(
             caption,
             formattedCaption,
             inReplyToEventId,
+            extraContentJson,
         )
     }
 
@@ -200,7 +204,8 @@ class FakeTimeline(
         body: String?,
         formattedBody: String?,
         inReplyToEventId: EventId?,
-    ) -> Result<MediaUploadHandler> = { _, _, _, _, _, _ ->
+        extraContentJson: String?,
+    ) -> Result<MediaUploadHandler> = { _, _, _, _, _, _, _ ->
         Result.success(FakeMediaUploadHandler())
     }
 
@@ -211,6 +216,7 @@ class FakeTimeline(
         caption: String?,
         formattedCaption: String?,
         inReplyToEventId: EventId?,
+        extraContentJson: String?,
     ): Result<MediaUploadHandler> = simulateLongTask {
         sendVideoLambda(
             file,
@@ -219,6 +225,7 @@ class FakeTimeline(
             caption,
             formattedCaption,
             inReplyToEventId,
+            extraContentJson,
         )
     }
 
@@ -358,10 +365,16 @@ class FakeTimeline(
         )
     }
 
-    var forwardEventsLambda: (eventIds: List<EventId>, roomIds: List<RoomId>) -> Result<Unit> = { _, _ -> lambdaError() }
+    var forwardEventsLambda: suspend (eventIds: List<EventId>, roomIds: List<RoomId>, progress: ForwardProgress) -> Result<Unit> = { _, _, _ ->
+        lambdaError()
+    }
 
-    override suspend fun forwardEvents(eventIds: List<EventId>, roomIds: List<RoomId>): Result<Unit> = simulateLongTask {
-        forwardEventsLambda(eventIds, roomIds)
+    override suspend fun forwardEvents(
+        eventIds: List<EventId>,
+        roomIds: List<RoomId>,
+        progress: ForwardProgress,
+    ): Result<Unit> = simulateLongTask {
+        forwardEventsLambda(eventIds, roomIds, progress)
     }
 
     var createPollLambda: (

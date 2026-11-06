@@ -30,14 +30,14 @@ class ReportMessageNode(
     presenterFactory: ReportMessagePresenter.Factory,
 ) : Node(buildContext, plugins = plugins) {
     data class Inputs(
-        val eventId: EventId,
+        val eventIds: List<EventId>,
         val senderId: UserId,
     ) : NodeInputs
 
     private val inputs = inputs<Inputs>()
 
     private val presenter = presenterFactory.create(
-        ReportMessagePresenter.Inputs(inputs.eventId, inputs.senderId)
+        ReportMessagePresenter.Inputs(inputs.eventIds, inputs.senderId)
     )
 
     @Composable

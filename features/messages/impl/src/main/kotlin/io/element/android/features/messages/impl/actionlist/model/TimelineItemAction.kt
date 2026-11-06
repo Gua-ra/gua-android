@@ -36,8 +36,9 @@ enum class TimelineItemAction(
     EndPoll(CommonStrings.action_end_poll, CompoundDrawables.ic_compound_polls_end),
     Pin(CommonStrings.action_pin, CompoundDrawables.ic_compound_pin),
     Unpin(CommonStrings.action_unpin, CompoundDrawables.ic_compound_unpin),
+    Save(CommonStrings.action_save, CompoundDrawables.ic_compound_download),
 
-    // Note: these actions are not used in UI for now
+    // GUA FORK: only a media stack with a member that failed to send shows these.
     RetrySending(CommonStrings.action_retry, CompoundDrawables.ic_compound_send_solid),
     AbortSending(CommonStrings.action_cancel, CompoundDrawables.ic_compound_send_solid),
 }

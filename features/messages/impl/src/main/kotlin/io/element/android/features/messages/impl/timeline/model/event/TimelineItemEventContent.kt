@@ -90,7 +90,8 @@ fun TimelineItemEventContent.canReact(): Boolean =
         is TimelineItemVoiceContent,
         is TimelineItemVideoContent,
         is TimelineItemGalleryContent,
-        is TimelineItemAttachmentsContent -> true
+        is TimelineItemAttachmentsContent,
+        is TimelineItemMediaStackContent -> true
         is TimelineItemStateContent,
         is TimelineItemRedactedContent,
         is TimelineItemLegacyCallInviteContent,
@@ -120,6 +121,7 @@ fun TimelineItemEventContent.captionOrNull(): String? = when (this) {
     is TimelineItemEventContentWithAttachment -> caption
     is TimelineItemGalleryContent -> caption
     is TimelineItemAttachmentsContent -> caption
+    is TimelineItemMediaStackContent -> caption
     else -> null
 }
 
@@ -127,6 +129,7 @@ fun TimelineItemEventContent.formattedCaptionOrNull(): CharSequence? = when (thi
     is TimelineItemEventContentWithAttachment -> formattedCaption
     is TimelineItemGalleryContent -> formattedCaption
     is TimelineItemAttachmentsContent -> formattedCaption
+    is TimelineItemMediaStackContent -> formattedCaption
     else -> null
 }
 

@@ -38,6 +38,7 @@ import io.element.android.features.messages.impl.MessagesNavigator
 import io.element.android.features.messages.impl.attachments.Attachment
 import io.element.android.features.messages.impl.attachments.preview.error.sendAttachmentError
 import io.element.android.features.messages.impl.draft.ComposerDraftService
+import io.element.android.features.messages.impl.mediastack.MediaBatch
 import io.element.android.features.messages.impl.messagecomposer.suggestions.RoomAliasSuggestionsDataSource
 import io.element.android.features.messages.impl.messagecomposer.suggestions.SuggestionsProcessor
 import io.element.android.features.messages.impl.timeline.TimelineController
@@ -190,11 +191,13 @@ class MessageComposerPresenter(
 
         val isSendGalleryMessagesEnabled by featureFlagService.isFeatureEnabledFlow(FeatureFlags.SendGalleryMessages)
             .collectAsState(initial = false)
+        val isMediaStacksEnabled by featureFlagService.isFeatureEnabledFlow(FeatureFlags.GuaMediaStacks)
+            .collectAsState(initial = false)
 
         val galleryMediaPicker = mediaPickerProvider.registerGalleryPicker { uri, mimeType ->
             localCoroutineScope.handlePickedMedia(uri, mimeType)
         }
-        val galleryMultiMediaPicker = mediaPickerProvider.registerGalleryMultiPicker { uris ->
+        val galleryMultiMediaPicker = mediaPickerProvider.registerGalleryOrderedMultiPicker(MediaBatch.MAX_SEND_COUNT) { uris ->
             localCoroutineScope.handlePickedMediaList(uris)
         }
         val filesPicker = mediaPickerProvider.registerFileMultiPicker(AnyMimeTypes) { uris ->
@@ -307,7 +310,7 @@ class MessageComposerPresenter(
                 MessageComposerEvent.DismissAttachmentMenu -> showAttachmentSourcePicker = false
                 MessageComposerEvent.PickAttachmentSource.FromGallery -> localCoroutineScope.launch {
                     showAttachmentSourcePicker = false
-                    if (isSendGalleryMessagesEnabled) {
+                    if (isMediaStacksEnabled) {
                         galleryMultiMediaPicker.launch()
                     } else {
                         galleryMediaPicker.launch()
@@ -683,7 +686,7 @@ class MessageComposerPresenter(
                     uri = uri,
                     mimeType = null,
                 )
-                Attachment.Media(localMedia, sendAsFile = sendAsFile)
+                Attachment.Media(localMedia, sendAsFile = sendAsFile, isFromPhotoLibrary = !sendAsFile)
             }.toImmutableList()
             val inReplyToEventId = (messageComposerContext.composerMode as? MessageComposerMode.Reply)?.eventId
             navigator.navigateToPreviewAttachments(attachments, inReplyToEventId)

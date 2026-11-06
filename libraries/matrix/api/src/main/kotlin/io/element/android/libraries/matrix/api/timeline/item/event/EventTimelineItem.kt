@@ -43,6 +43,7 @@ data class EventTimelineItem(
     val forwarder: UserId?,
     /** If [forwarder] is set, the profile of the forwarding user, if it was cached at the time this `EventTimelineItem` was created. */
     val forwarderProfile: ProfileDetails?,
+    val latestJsonProvider: LatestJsonProvider = LatestJsonProvider { null },
 ) {
     fun inReplyTo(): InReplyTo? {
         return (content as? MessageContent)?.inReplyTo
@@ -69,6 +70,13 @@ data class EventTimelineItem(
 fun interface TimelineItemDebugInfoProvider {
     /** Returns the debug information of the item, including its original and latest edit JSON. */
     operator fun invoke(): TimelineItemDebugInfo
+}
+
+/**
+ * Provides the JSON of the whole event on demand: its latest edit when there is one, `null` for a local echo.
+ */
+fun interface LatestJsonProvider {
+    operator fun invoke(): String?
 }
 
 /**

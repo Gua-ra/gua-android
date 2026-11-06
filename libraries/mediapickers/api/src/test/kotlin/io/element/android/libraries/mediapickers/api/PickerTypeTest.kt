@@ -24,6 +24,16 @@ class PickerTypeTest : RobolectricTest() {
     }
 
     @Test
+    fun `ImageAndVideoOrderedMulti - asks for an ordered selection up to the limit`() {
+        val pickerType = PickerType.ImageAndVideoOrderedMulti(maxItems = 20)
+        assertThat(pickerType.getContract()).isInstanceOf(ActivityResultContracts.PickMultipleVisualMedia::class.java)
+        val request = pickerType.getDefaultRequest()
+        assertThat(request.mediaType).isEqualTo(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
+        assertThat(request.maxItems).isEqualTo(20)
+        assertThat(request.isOrderedSelection).isTrue()
+    }
+
+    @Test
     fun `File - assert types`() {
         val pickerType = PickerType.File()
         assertThat(pickerType.getContract()).isInstanceOf(ActivityResultContracts.GetContent::class.java)

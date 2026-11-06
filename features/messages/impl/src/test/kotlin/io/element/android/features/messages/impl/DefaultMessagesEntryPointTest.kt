@@ -20,6 +20,7 @@ import io.element.android.features.location.test.FakeLocationService
 import io.element.android.features.location.test.FakeShareLocationEntryPoint
 import io.element.android.features.location.test.FakeShowLocationEntryPoint
 import io.element.android.features.messages.api.MessagesEntryPoint
+import io.element.android.features.messages.impl.mediastack.PendingMediaBatches
 import io.element.android.features.messages.impl.pinned.banner.createPinnedEventsTimelineProvider
 import io.element.android.features.messages.impl.timeline.createTimelineController
 import io.element.android.features.poll.test.create.FakeCreatePollEntryPoint
@@ -40,6 +41,7 @@ import io.element.android.libraries.mediaviewer.test.FakeMediaViewerEntryPoint
 import io.element.android.libraries.textcomposer.mentions.MentionSpanTheme
 import io.element.android.libraries.textcomposer.mentions.MentionSpanUpdater
 import io.element.android.services.analytics.test.FakeAnalyticsService
+import io.element.android.services.toolbox.test.systemclock.FakeSystemClock
 import io.element.android.tests.testutils.lambda.lambdaError
 import io.element.android.tests.testutils.node.TestParentNode
 import io.element.android.tests.testutils.testCoroutineDispatchers
@@ -87,7 +89,8 @@ class DefaultMessagesEntryPointTest {
                 knockRequestsListEntryPoint = FakeKnockRequestsListEntryPoint(),
                 dateFormatter = FakeDateFormatter(),
                 coroutineDispatchers = testCoroutineDispatchers(),
-                hasVulkanSupport = DeviceHasVulkanSupport(mockk(relaxed = true))
+                hasVulkanSupport = DeviceHasVulkanSupport(mockk(relaxed = true)),
+                pendingMediaBatches = PendingMediaBatches(FakeSystemClock()),
             )
         }
         val callback = object : MessagesEntryPoint.Callback {

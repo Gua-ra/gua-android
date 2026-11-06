@@ -75,6 +75,7 @@ dependencies {
     implementation(libs.sigpwned.emoji4j)
     implementation(libs.telephoto.zoomableimage)
     implementation(libs.matrix.emojibase.bindings)
+    implementation(libs.serialization.json)
     implementation(projects.features.knockrequests.api)
     implementation(projects.features.roommembermoderation.api)
 
