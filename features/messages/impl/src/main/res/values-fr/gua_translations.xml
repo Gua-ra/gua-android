@@ -20,16 +20,16 @@
     <item quantity="other">%1$d éléments</item>
   </plurals>
   <plurals name="gua_media_stack_remove_photos_title">
-    <item quantity="one">Supprimer %1$d photo ?</item>
-    <item quantity="other">Supprimer %1$d photos ?</item>
+    <item quantity="one">Supprimer %1$d photo ?</item>
+    <item quantity="other">Supprimer %1$d photos ?</item>
   </plurals>
   <plurals name="gua_media_stack_remove_videos_title">
-    <item quantity="one">Supprimer %1$d vidéo ?</item>
-    <item quantity="other">Supprimer %1$d vidéos ?</item>
+    <item quantity="one">Supprimer %1$d vidéo ?</item>
+    <item quantity="other">Supprimer %1$d vidéos ?</item>
   </plurals>
   <plurals name="gua_media_stack_remove_items_title">
-    <item quantity="one">Supprimer %1$d élément ?</item>
-    <item quantity="other">Supprimer %1$d éléments ?</item>
+    <item quantity="one">Supprimer %1$d élément ?</item>
+    <item quantity="other">Supprimer %1$d éléments ?</item>
   </plurals>
   <plurals name="gua_media_stack_saved">
     <item quantity="one">%1$d élément enregistré</item>
