@@ -97,6 +97,20 @@ class DefaultPickerProvider(
         }
     }
 
+    @Composable
+    override fun registerGalleryOrderedMultiPicker(
+        maxItems: Int,
+        onResult: (uris: List<Uri>) -> Unit
+    ): PickerLauncher<PickVisualMediaRequest, List<Uri>> {
+        return if (LocalInspectionMode.current) {
+            NoOpPickerLauncher { onResult(emptyList()) }
+        } else {
+            rememberPickerLauncher(type = PickerType.ImageAndVideoOrderedMulti(maxItems)) { uris ->
+                onResult(uris)
+            }
+        }
+    }
+
     /**
      * Remembers and returns a [PickerLauncher] for a file of a certain [mimeType] (any type of file, by default).
      * [onResult] will be called with either the selected file's [Uri] or `null` if nothing was selected.

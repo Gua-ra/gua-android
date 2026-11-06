@@ -49,6 +49,18 @@ interface PickerProvider {
     ): PickerLauncher<PickVisualMediaRequest, List<Uri>>
 
     /**
+     * Registers a picker for several photos or videos at once, returned in the order the user picked them where the system picker supports it.
+     *
+     * @param maxItems the most items the user can pick; the fallback picker of devices without the system photo picker ignores it.
+     * @param onResult called with the picked media, empty when the user cancelled.
+     */
+    @Composable
+    fun registerGalleryOrderedMultiPicker(
+        maxItems: Int,
+        onResult: (uris: List<Uri>) -> Unit
+    ): PickerLauncher<PickVisualMediaRequest, List<Uri>>
+
+    /**
      * Registers a picker for a single file of any kind.
      *
      * @param mimeType the MIME type to filter on, `*` / `*` to accept anything.
