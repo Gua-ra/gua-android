@@ -15,10 +15,12 @@ import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.test.AN_EVENT_ID
+import io.element.android.libraries.matrix.test.AN_EVENT_ID_2
 import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.matrix.test.room.FakeJoinedRoom
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.lambda.lambdaRecorder
+import io.element.android.tests.testutils.lambda.value
 import io.element.android.tests.testutils.test
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -105,6 +107,34 @@ class ReportMessagePresenterTest {
     }
 
     @Test
+    fun `presenter - a media stack is reported as every member, blocking the sender once`() = runTest {
+        val reportContentResult = lambdaRecorder<EventId, String, UserId?, Result<Unit>> { _, _, _ ->
+            Result.success(Unit)
+        }
+        val room = FakeJoinedRoom(
+            reportContentResult = reportContentResult
+        )
+        val presenter = createReportMessagePresenter(
+            inputs = ReportMessagePresenter.Inputs(listOf(AN_EVENT_ID, AN_EVENT_ID_2), A_USER_ID),
+            joinedRoom = room,
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.eventSink(ReportMessageEvent.UpdateReason("spam"))
+            skipItems(1)
+            initialState.eventSink(ReportMessageEvent.ToggleBlockUser)
+            skipItems(1)
+            initialState.eventSink(ReportMessageEvent.Report)
+            assertThat(awaitItem().result).isInstanceOf(AsyncAction.Loading::class.java)
+            assertThat(awaitItem().result).isInstanceOf(AsyncAction.Success::class.java)
+            reportContentResult.assertions().isCalledExactly(2).withSequence(
+                listOf(value(AN_EVENT_ID), value("spam"), value(A_USER_ID)),
+                listOf(value(AN_EVENT_ID_2), value("spam"), value(null)),
+            )
+        }
+    }
+
+    @Test
     fun `presenter - handle failed report`() = runTest {
         val reportContentResult = lambdaRecorder<EventId, String, UserId?, Result<Unit>> { _, _, _ ->
             Result.failure(Exception("Failed to report content"))
@@ -127,7 +157,7 @@ class ReportMessagePresenterTest {
     }
 
     private fun createReportMessagePresenter(
-        inputs: ReportMessagePresenter.Inputs = ReportMessagePresenter.Inputs(AN_EVENT_ID, A_USER_ID),
+        inputs: ReportMessagePresenter.Inputs = ReportMessagePresenter.Inputs(listOf(AN_EVENT_ID), A_USER_ID),
         joinedRoom: JoinedRoom = FakeJoinedRoom(),
         snackbarDispatcher: SnackbarDispatcher = SnackbarDispatcher(),
     ) = ReportMessagePresenter(

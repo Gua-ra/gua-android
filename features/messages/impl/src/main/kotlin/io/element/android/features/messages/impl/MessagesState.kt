@@ -19,6 +19,7 @@ import io.element.android.features.messages.impl.timeline.TimelineState
 import io.element.android.features.messages.impl.timeline.components.customreaction.CustomReactionState
 import io.element.android.features.messages.impl.timeline.components.reactionsummary.ReactionSummaryState
 import io.element.android.features.messages.impl.timeline.components.receipt.bottomsheet.ReadReceiptBottomSheetState
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.protection.TimelineProtectionState
 import io.element.android.features.roomcall.api.RoomCallState
 import io.element.android.features.roommembermoderation.api.RoomMemberModerationState
@@ -78,6 +79,11 @@ data class MessagesState(
     /** The user asked to remove [eventId] and has to confirm, optionally giving a reason. */
     data class ConfirmingRedaction(
         val eventId: EventId,
+    ) : AsyncAction.Confirming
+
+    /** The user asked to remove every member of [stack] and has to confirm. */
+    data class ConfirmingMediaStackRemoval(
+        val stack: TimelineItemMediaStackContent,
     ) : AsyncAction.Confirming
 }
 

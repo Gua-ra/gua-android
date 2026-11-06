@@ -34,6 +34,7 @@ import io.element.android.features.messages.impl.actionlist.ActionListState
 import io.element.android.features.messages.impl.actionlist.model.TimelineItemAction
 import io.element.android.features.messages.impl.crypto.identity.IdentityChangeState
 import io.element.android.features.messages.impl.link.LinkState
+import io.element.android.features.messages.impl.mediastack.MediaStackSaver
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerEvent
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerState
 import io.element.android.features.messages.impl.messagemenu.MessageMenuPresenter
@@ -49,6 +50,7 @@ import io.element.android.features.messages.impl.timeline.components.reactionsum
 import io.element.android.features.messages.impl.timeline.components.receipt.bottomsheet.ReadReceiptBottomSheetState
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.TimelineItemThreadInfo
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemPollContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemStateContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemTextBasedContent
@@ -139,6 +141,7 @@ class MessagesPresenter(
     private val markAsFullyRead: MarkAsFullyRead,
     private val liveLocationShareManager: ActiveLiveLocationShareManager,
     @SessionCoroutineScope private val sessionCoroutineScope: CoroutineScope,
+    private val mediaStackSaver: MediaStackSaver,
 ) : Presenter<MessagesState> {
     @AssistedFactory
     interface Factory {
@@ -279,12 +282,17 @@ class MessagesPresenter(
                     }
                 }
                 is MessagesEvent.ConfirmRedact -> {
-                    val confirming = redactEventAction.value as? MessagesState.ConfirmingRedaction
+                    val confirming = redactEventAction.value
                     redactEventAction.value = AsyncAction.Uninitialized
-                    if (confirming != null) {
-                        localCoroutineScope.launch {
+                    when (confirming) {
+                        is MessagesState.ConfirmingRedaction -> localCoroutineScope.launch {
                             redact(confirming.eventId.toEventOrTransactionId(), event.reason?.takeIf { it.isNotBlank() })
                         }
+                        // Redacting a member that is not sent yet cancels its sending.
+                        is MessagesState.ConfirmingMediaStackRemoval -> localCoroutineScope.launch {
+                            confirming.stack.members.forEach { member -> redact(member.eventOrTransactionId, reason = null) }
+                        }
+                        else -> Unit
                     }
                 }
                 MessagesEvent.CancelRedact -> {
@@ -410,6 +418,8 @@ class MessagesPresenter(
         timelineState: TimelineState,
         redactEventAction: MutableState<AsyncAction<Unit>>,
     ) = launch {
+        val mediaStack = targetEvent.content as? TimelineItemMediaStackContent
+        if (mediaStack != null && handleMediaStackAction(action, targetEvent, mediaStack, redactEventAction)) return@launch
         when (action) {
             TimelineItemAction.CopyText -> handleCopyContents(targetEvent)
             TimelineItemAction.CopyCaption -> handleCopyCaption(targetEvent)
@@ -450,7 +460,34 @@ class MessagesPresenter(
             TimelineItemAction.ViewInTimeline -> Unit
             TimelineItemAction.RetrySending -> handleRetrySending(targetEvent)
             TimelineItemAction.AbortSending -> handleActionAbortSend(targetEvent)
+            TimelineItemAction.Save -> Unit
         }
+    }
+
+    /**
+     * Applies [action] to every member of a media stack where it makes sense. Returns false for the actions that only act on the first
+     * member, which the stack event stands for.
+     */
+    private suspend fun handleMediaStackAction(
+        action: TimelineItemAction,
+        stackEvent: TimelineItem.Event,
+        stack: TimelineItemMediaStackContent,
+        redactEventAction: MutableState<AsyncAction<Unit>>,
+    ): Boolean {
+        when (action) {
+            TimelineItemAction.Redact -> redactEventAction.value = MessagesState.ConfirmingMediaStackRemoval(stack)
+            TimelineItemAction.Forward -> navigator.forwardEvents(
+                eventIds = stack.members.mapNotNull { it.eventId },
+                timelineProvider = timelineController,
+                asMediaStack = featureFlagService.isFeatureEnabled(FeatureFlags.GuaMediaStacks),
+            )
+            TimelineItemAction.Save -> mediaStackSaver.save(stack.members)
+            TimelineItemAction.ReportContent -> navigator.navigateToReportMessage(stack.members.mapNotNull { it.eventId }, stackEvent.senderId)
+            TimelineItemAction.RetrySending -> stack.failedMembers.forEach { handleRetrySending(it) }
+            TimelineItemAction.AbortSending -> stack.failedMembers.forEach { handleActionAbortSend(it) }
+            else -> return false
+        }
+        return true
     }
 
     private suspend fun handleRetrySending(targetEvent: TimelineItem.Event) {
@@ -647,7 +684,7 @@ class MessagesPresenter(
 
     private fun handleReportAction(event: TimelineItem.Event) {
         if (event.eventId == null) return
-        navigator.navigateToReportMessage(event.eventId, event.senderId)
+        navigator.navigateToReportMessage(listOf(event.eventId), event.senderId)
     }
 
     private fun handleEndPollAction(

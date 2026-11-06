@@ -33,6 +33,7 @@ import io.element.android.features.messages.impl.timeline.model.event.TimelineIt
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEventContentWithAttachment
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemGalleryContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemLegacyCallInviteContent
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemPollContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRedactedContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRtcNotificationContent
@@ -182,6 +183,7 @@ class DefaultActionListPresenter(
         isThreadsEnabled: Boolean,
     ): List<TimelineItemAction> {
         val canRedact = timelineItem.isMine && usersEventPermissions.canRedactOwn || !timelineItem.isMine && usersEventPermissions.canRedactOther
+        val mediaStack = timelineItem.content as? TimelineItemMediaStackContent
         return buildSet {
             if (timelineItem.canBeRepliedTo && usersEventPermissions.canSendMessage) {
                 if (isThreadsEnabled && timelineMode !is Timeline.Mode.Thread && timelineItem.isRemote) {
@@ -198,8 +200,16 @@ class DefaultActionListPresenter(
                     }
                 }
             }
-            if (timelineItem.isRemote && timelineItem.content.canBeForwarded()) {
+            val canBeForwarded = mediaStack?.members?.all { it.isRemote } ?: (timelineItem.isRemote && timelineItem.content.canBeForwarded())
+            if (canBeForwarded) {
                 add(TimelineItemAction.Forward)
+            }
+            if (mediaStack != null) {
+                add(TimelineItemAction.Save)
+                if (mediaStack.failedMembers.isNotEmpty()) {
+                    add(TimelineItemAction.RetrySending)
+                    add(TimelineItemAction.AbortSending)
+                }
             }
             if (timelineItem.isEditable && usersEventPermissions.canSendMessage) {
                 if (timelineItem.content is TimelineItemEventContentWithAttachment ||
@@ -222,7 +232,7 @@ class DefaultActionListPresenter(
             if (canRedact && timelineItem.content is TimelineItemPollContent && !timelineItem.content.isEnded) {
                 add(TimelineItemAction.EndPoll)
             }
-            val canPinUnpin = usersEventPermissions.canPinUnpin && timelineItem.isRemote
+            val canPinUnpin = usersEventPermissions.canPinUnpin && timelineItem.isRemote && mediaStack == null
             if (canPinUnpin) {
                 if (isEventPinned) {
                     add(TimelineItemAction.Unpin)

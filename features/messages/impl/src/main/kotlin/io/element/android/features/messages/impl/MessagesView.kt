@@ -71,6 +71,7 @@ import io.element.android.features.messages.impl.actionlist.model.TimelineItemAc
 import io.element.android.features.messages.impl.crypto.identity.IdentityChangeStateView
 import io.element.android.features.messages.impl.link.LinkEvent
 import io.element.android.features.messages.impl.link.LinkView
+import io.element.android.features.messages.impl.mediastack.MediaStackRemovalDialog
 import io.element.android.features.messages.impl.messagecomposer.AttachmentsBottomSheet
 import io.element.android.features.messages.impl.messagecomposer.DisabledComposerView
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerEvent
@@ -577,6 +578,14 @@ fun MessagesView(
             destructiveSubmit = true,
             onSubmit = { reason -> state.eventSink(MessagesEvent.ConfirmRedact(reason)) },
             onDismissRequest = { state.eventSink(MessagesEvent.CancelRedact) },
+        )
+    }
+    val mediaStackRemoval = state.redactEventAction as? MessagesState.ConfirmingMediaStackRemoval
+    if (mediaStackRemoval != null) {
+        MediaStackRemovalDialog(
+            stack = mediaStackRemoval.stack,
+            onSubmit = { state.eventSink(MessagesEvent.ConfirmRedact(reason = null)) },
+            onDismiss = { state.eventSink(MessagesEvent.CancelRedact) },
         )
     }
 }

@@ -17,8 +17,10 @@ import io.element.android.features.messages.impl.crypto.sendfailure.VerifiedUser
 import io.element.android.features.messages.impl.fixtures.aMessageEvent
 import io.element.android.features.messages.impl.messagemenu.MessageQuickReactions
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
+import io.element.android.features.messages.impl.timeline.components.event.aMediaStackEvent
 import io.element.android.features.messages.impl.timeline.model.TimelineItemThreadInfo
 import io.element.android.features.messages.impl.timeline.model.event.RtcNotificationState
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRedactedContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRtcNotificationContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemTextContent
@@ -28,6 +30,7 @@ import io.element.android.features.messages.impl.timeline.model.event.aTimelineI
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemLocationContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemPollContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemStateEventContent
+import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemVideoContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemVoiceContent
 import io.element.android.features.poll.api.pollcontent.aPollAnswerItemList
 import io.element.android.libraries.dateformatter.test.FakeDateFormatter
@@ -189,6 +192,84 @@ class ActionListPresenterTest {
             )
             initialState.eventSink.invoke(ActionListEvent.Clear)
             assertThat(awaitItem().target).isEqualTo(ActionListState.Target.None)
+        }
+    }
+
+    @Test
+    fun `present - compute for a media stack`() = runTest {
+        val presenter = createActionListPresenter(isDeveloperModeEnabled = true)
+        presenter.test {
+            val initialState = awaitItem()
+            val stack = aMediaStackEvent(
+                isMine = false,
+                members = listOf(aTimelineItemImageContent(caption = "Beach day"), aTimelineItemVideoContent()),
+            ).copy(canBeRepliedTo = true)
+            initialState.eventSink.invoke(
+                ActionListEvent.ComputeForMessage(
+                    event = stack,
+                    userEventPermissions = aUserEventPermissions(
+                        canRedactOwn = false,
+                        canRedactOther = true,
+                        canSendMessage = true,
+                        canSendReaction = true,
+                        canPinUnpin = true,
+                    )
+                )
+            )
+            val successState = awaitItem()
+            assertThat((successState.target as ActionListState.Target.Success).actions).containsExactly(
+                TimelineItemAction.Reply,
+                TimelineItemAction.Forward,
+                TimelineItemAction.Save,
+                TimelineItemAction.CopyLink,
+                TimelineItemAction.CopyCaption,
+                TimelineItemAction.ViewSource,
+                TimelineItemAction.ReportContent,
+                TimelineItemAction.Redact,
+            ).inOrder()
+        }
+    }
+
+    @Test
+    fun `present - a media stack with an unsent member cannot be forwarded`() = runTest {
+        val presenter = createActionListPresenter(isDeveloperModeEnabled = false)
+        presenter.test {
+            val initialState = awaitItem()
+            val sent = aMediaStackEvent(isMine = true, members = List(2) { aTimelineItemImageContent() })
+            val content = sent.content as TimelineItemMediaStackContent
+            val stack = sent.copy(
+                content = content.copy(members = (content.members.take(1) + content.members[1].copy(eventId = null)).toImmutableList()),
+            )
+            initialState.eventSink.invoke(
+                ActionListEvent.ComputeForMessage(event = stack, userEventPermissions = aUserEventPermissions(canRedactOwn = true, canSendMessage = false))
+            )
+            val successState = awaitItem()
+            assertThat((successState.target as ActionListState.Target.Success).actions).containsExactly(
+                TimelineItemAction.Save,
+                TimelineItemAction.CopyLink,
+                TimelineItemAction.Redact,
+            ).inOrder()
+        }
+    }
+
+    @Test
+    fun `present - a media stack with a failed member offers to retry or cancel it`() = runTest {
+        val presenter = createActionListPresenter(isDeveloperModeEnabled = false)
+        presenter.test {
+            val initialState = awaitItem()
+            val stack = aMediaStackEvent(
+                isMine = true,
+                members = List(2) { aTimelineItemImageContent() },
+                sendStates = listOf(null, LocalEventSendState.Failed.Unknown("error")),
+            )
+            initialState.eventSink.invoke(
+                ActionListEvent.ComputeForMessage(event = stack, userEventPermissions = aUserEventPermissions(canRedactOwn = true, canSendMessage = false))
+            )
+            val successState = awaitItem()
+            assertThat((successState.target as ActionListState.Target.Success).actions).containsAtLeast(
+                TimelineItemAction.RetrySending,
+                TimelineItemAction.AbortSending,
+            )
         }
     }
 

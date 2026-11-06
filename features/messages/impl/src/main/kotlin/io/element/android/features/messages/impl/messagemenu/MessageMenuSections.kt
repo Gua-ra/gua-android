@@ -85,6 +85,7 @@ internal val MessageMenuAction.placement: Placement?
             TimelineItemAction.AddCaption,
             TimelineItemAction.EditPoll -> Placement(Section.Primary, 4)
             TimelineItemAction.Forward -> Placement(Section.Primary, 5)
+            TimelineItemAction.Save -> Placement(Section.Primary, 6)
             TimelineItemAction.ReplyInThread -> Placement(Section.More, 0)
             TimelineItemAction.Pin,
             TimelineItemAction.Unpin -> Placement(Section.More, 1)
@@ -94,7 +95,8 @@ internal val MessageMenuAction.placement: Placement?
             TimelineItemAction.ViewSource -> Placement(Section.More, 5)
             TimelineItemAction.ReportContent -> Placement(Section.More, 6)
             TimelineItemAction.Redact -> Placement(Section.Destructive, 0)
-            TimelineItemAction.RetrySending,
-            TimelineItemAction.AbortSending -> null
+            // Only a media stack with a member that failed to send offers these, for all its failed members at once.
+            TimelineItemAction.RetrySending -> Placement(Section.Primary, 7)
+            TimelineItemAction.AbortSending -> Placement(Section.Destructive, 1)
         }
     }

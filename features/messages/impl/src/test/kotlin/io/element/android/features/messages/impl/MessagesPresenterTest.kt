@@ -21,6 +21,7 @@ import io.element.android.features.messages.impl.actionlist.model.TimelineItemAc
 import io.element.android.features.messages.impl.crypto.identity.anIdentityChangeState
 import io.element.android.features.messages.impl.fixtures.aMessageEvent
 import io.element.android.features.messages.impl.link.aLinkState
+import io.element.android.features.messages.impl.mediastack.MediaStackSaver
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerEvent
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerState
 import io.element.android.features.messages.impl.messagecomposer.aMessageComposerState
@@ -36,9 +37,12 @@ import io.element.android.features.messages.impl.timeline.TimelineEvent
 import io.element.android.features.messages.impl.timeline.TimelineState
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
 import io.element.android.features.messages.impl.timeline.aTimelineState
+import io.element.android.features.messages.impl.timeline.components.event.aMediaStackEvent
+import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.TimelineItemThreadInfo
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemFileContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemImageContent
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemTextContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemVideoContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemImageContent
@@ -313,7 +317,7 @@ class MessagesPresenterTest {
 
     @Test
     fun `present - handle action forward navigates directly when multi select is disabled`() = runTest {
-        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, Unit> { _, _ -> }
+        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, Boolean, Unit> { _, _, _ -> }
         val navigator = FakeMessagesNavigator(
             onForwardEventClickLambda = onForwardEventClickLambda,
         )
@@ -325,7 +329,7 @@ class MessagesPresenterTest {
             val initialState = awaitItem()
             initialState.eventSink(MessagesEvent.HandleAction(TimelineItemAction.Forward, aMessageEvent()))
             assertThat(awaitItem().actionListState.target).isEqualTo(ActionListState.Target.None)
-            onForwardEventClickLambda.assertions().isCalledOnce().with(value(listOf(AN_EVENT_ID)), any())
+            onForwardEventClickLambda.assertions().isCalledOnce().with(value(listOf(AN_EVENT_ID)), any(), value(false))
         }
     }
 
@@ -601,6 +605,74 @@ class MessagesPresenterTest {
     }
 
     @Test
+    fun `present - removing a media stack asks to confirm, then removes every member`() = runTest {
+        val coroutineDispatchers = testCoroutineDispatchers(useUnconfinedTestDispatcher = true)
+        val liveTimeline = FakeTimeline()
+        val joinedRoom = FakeJoinedRoom(
+            baseRoom = FakeBaseRoom(roomPermissions = roomPermissions()),
+            liveTimeline = liveTimeline,
+            typingNoticeResult = { Result.success(Unit) },
+        )
+        val redactEventLambda = lambdaRecorder { _: EventOrTransactionId, _: String? -> Result.success(Unit) }
+        liveTimeline.redactEventLambda = redactEventLambda
+        val presenter = createMessagesPresenter(timeline = liveTimeline, joinedRoom = joinedRoom, coroutineDispatchers = coroutineDispatchers)
+        val stack = aMediaStackEvent(isMine = true, members = List(3) { aTimelineItemImageContent() })
+        val members = (stack.content as TimelineItemMediaStackContent).members
+        presenter.testWithLifecycleOwner {
+            val initialState = awaitItem()
+            initialState.eventSink(MessagesEvent.HandleAction(TimelineItemAction.Redact, stack))
+            advanceUntilIdle()
+            val confirmingState = expectMostRecentItem()
+            assertThat(confirmingState.redactEventAction).isEqualTo(MessagesState.ConfirmingMediaStackRemoval(stack.content))
+            confirmingState.eventSink(MessagesEvent.ConfirmRedact(reason = null))
+            advanceUntilIdle()
+            assertThat(expectMostRecentItem().redactEventAction).isEqualTo(AsyncAction.Uninitialized)
+            assert(redactEventLambda).isCalledExactly(3).withSequence(
+                *members.map { listOf(value(it.eventOrTransactionId), value(null)) }.toTypedArray()
+            )
+        }
+    }
+
+    @Test
+    fun `present - forwarding a media stack forwards every member as a stack, without selecting`() = runTest {
+        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, Boolean, Unit> { _, _, _ -> }
+        val presenter = createMessagesPresenter(
+            navigator = FakeMessagesNavigator(onForwardEventClickLambda = onForwardEventClickLambda),
+            featureFlagService = FakeFeatureFlagService(
+                initialState = mapOf(FeatureFlags.MessageMultiSelect.key to true, FeatureFlags.GuaMediaStacks.key to true),
+            ),
+        )
+        val stack = aMediaStackEvent(isMine = false, members = List(2) { aTimelineItemImageContent() })
+        presenter.testWithLifecycleOwner {
+            val initialState = awaitItem()
+            initialState.eventSink(MessagesEvent.HandleAction(TimelineItemAction.Forward, stack))
+            assertThat(awaitItem().actionListState.target).isEqualTo(ActionListState.Target.None)
+            onForwardEventClickLambda.assertions().isCalledOnce()
+                .with(value(listOf(EventId("\$member0"), EventId("\$member1"))), any(), value(true))
+        }
+    }
+
+    @Test
+    fun `present - saving and reporting a media stack act on every member`() = runTest {
+        val saveLambda = lambdaRecorder<List<TimelineItem.Event>, Unit> { }
+        val onReportContentClickLambda = lambdaRecorder { _: List<EventId>, _: UserId -> }
+        val presenter = createMessagesPresenter(
+            navigator = FakeMessagesNavigator(onReportContentClickLambda = onReportContentClickLambda),
+            mediaStackSaver = MediaStackSaver { members -> saveLambda(members) },
+        )
+        val stack = aMediaStackEvent(isMine = false, members = List(2) { aTimelineItemImageContent() })
+        val members = (stack.content as TimelineItemMediaStackContent).members
+        presenter.testWithLifecycleOwner {
+            val initialState = awaitItem()
+            initialState.eventSink(MessagesEvent.HandleAction(TimelineItemAction.Save, stack))
+            initialState.eventSink(MessagesEvent.HandleAction(TimelineItemAction.ReportContent, stack))
+            cancelAndIgnoreRemainingEvents()
+            saveLambda.assertions().isCalledOnce().with(value(members))
+            onReportContentClickLambda.assertions().isCalledOnce().with(value(members.map { it.eventId }), value(stack.senderId))
+        }
+    }
+
+    @Test
     fun `present - handle action redact - a blank reason is not sent`() = runTest {
         val coroutineDispatchers = testCoroutineDispatchers(useUnconfinedTestDispatcher = true)
         val liveTimeline = FakeTimeline()
@@ -669,7 +741,7 @@ class MessagesPresenterTest {
 
     @Test
     fun `present - handle action report content`() = runTest {
-        val onReportContentClickLambda = lambdaRecorder { _: EventId, _: UserId -> }
+        val onReportContentClickLambda = lambdaRecorder { _: List<EventId>, _: UserId -> }
         val navigator = FakeMessagesNavigator(
             onReportContentClickLambda = onReportContentClickLambda
         )
@@ -678,7 +750,7 @@ class MessagesPresenterTest {
             val initialState = awaitItem()
             initialState.eventSink(MessagesEvent.HandleAction(TimelineItemAction.ReportContent, aMessageEvent()))
             assertThat(awaitItem().actionListState.target).isEqualTo(ActionListState.Target.None)
-            onReportContentClickLambda.assertions().isCalledOnce().with(value(AN_EVENT_ID), value(A_USER_ID))
+            onReportContentClickLambda.assertions().isCalledOnce().with(value(listOf(AN_EVENT_ID)), value(A_USER_ID))
         }
     }
 
@@ -1525,7 +1597,7 @@ class MessagesPresenterTest {
 
     @Test
     fun `present - confirm selection action forwards the selection in timeline order`() = runTest {
-        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, Unit> { _, _ -> }
+        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, Boolean, Unit> { _, _, _ -> }
         val navigator = FakeMessagesNavigator(onForwardEventClickLambda = onForwardEventClickLambda)
         val timelineEventSink = lambdaRecorder<TimelineEvent, Unit> { }
         val presenter = createMessagesPresenter(
@@ -1547,7 +1619,7 @@ class MessagesPresenterTest {
         presenter.testWithLifecycleOwner {
             val initialState = awaitItem()
             initialState.eventSink(MessagesEvent.ConfirmSelectionAction)
-            onForwardEventClickLambda.assertions().isCalledOnce().with(value(listOf(AN_EVENT_ID, AN_EVENT_ID_2)), any())
+            onForwardEventClickLambda.assertions().isCalledOnce().with(value(listOf(AN_EVENT_ID, AN_EVENT_ID_2)), any(), value(false))
             // Selection mode is not exited here: this is done by the parent node, and only if the forward actually happened.
             timelineEventSink.assertions().isNeverCalled()
             cancelAndIgnoreRemainingEvents()
@@ -1556,7 +1628,7 @@ class MessagesPresenterTest {
 
     @Test
     fun `present - confirm selection action does nothing when no selection is active`() = runTest {
-        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, Unit> { _, _ -> }
+        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, Boolean, Unit> { _, _, _ -> }
         val navigator = FakeMessagesNavigator(onForwardEventClickLambda = onForwardEventClickLambda)
         val presenter = createMessagesPresenter(navigator = navigator)
         presenter.testWithLifecycleOwner {
@@ -1606,6 +1678,7 @@ class MessagesPresenterTest {
         addRecentEmoji: AddRecentEmoji = AddRecentEmoji { _ -> lambdaError() },
         markAsFullyRead: MarkAsFullyRead = FakeMarkAsFullyRead(),
         liveLocationShareManager: FakeActiveLiveLocationShareManager = FakeActiveLiveLocationShareManager(),
+        mediaStackSaver: MediaStackSaver = MediaStackSaver { lambdaError() },
     ): MessagesPresenter {
         return MessagesPresenter(
             navigator = navigator,
@@ -1643,6 +1716,7 @@ class MessagesPresenterTest {
             markAsFullyRead = markAsFullyRead,
             liveLocationShareManager = liveLocationShareManager,
             sessionCoroutineScope = backgroundScope,
+            mediaStackSaver = mediaStackSaver,
         )
     }
 }
