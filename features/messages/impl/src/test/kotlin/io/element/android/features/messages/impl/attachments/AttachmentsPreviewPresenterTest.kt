@@ -1190,6 +1190,32 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
     }
 
     @Test
+    fun `present - dismissing a failure to prepare the photos prepares them again on the next send`() = runTest {
+        val sentMedia = SentMediaRecorder()
+        val mediaPreProcessor = FakeMediaPreProcessor().apply { givenResult(Result.failure(IllegalStateException("Preparing failed"))) }
+        val onDoneListener = lambdaRecorder<Unit> { }
+        val presenter = createAttachmentsPreviewPresenter(
+            room = sentMedia.room(),
+            attachments = photoLibraryAttachments(2),
+            mediaPreProcessor = mediaPreProcessor,
+            onDoneListener = { onDoneListener() },
+        )
+        presenter.test {
+            awaitItem().eventSink(AttachmentsPreviewEvent.SendAttachment)
+            val failedState = consumeItemsUntilPredicate { it.sendActionState is SendActionState.Failure }.last()
+            mediaPreProcessor.givenImageResult()
+            failedState.eventSink(AttachmentsPreviewEvent.CancelAndClearSendState)
+            val clearedState = awaitLastSequentialItem()
+            assertThat(clearedState.sendActionState).isEqualTo(SendActionState.Idle)
+            clearedState.eventSink(AttachmentsPreviewEvent.SendAttachment)
+            consumeItemsUntilPredicate { it.sendActionState == SendActionState.Done }
+
+            assertThat(sentMedia.sent).hasSize(2)
+            onDoneListener.assertions().isCalledOnce()
+        }
+    }
+
+    @Test
     fun `present - photos are sent without a batch when the flag is off`() = runTest {
         val sentMedia = SentMediaRecorder()
         val presenter = createAttachmentsPreviewPresenter(

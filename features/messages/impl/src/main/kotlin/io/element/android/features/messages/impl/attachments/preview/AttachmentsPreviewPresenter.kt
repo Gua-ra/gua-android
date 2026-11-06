@@ -337,7 +337,8 @@ class AttachmentsPreviewPresenter(
                         ongoingSendAttachmentJob.value = null
                     }
 
-                    val mediaUploadInfoList = sendActionState.value.mediaUploadInfoList()
+                    // GUA FORK: media that failed to prepare are prepared again on the next send, as sending none would close the preview as if sent.
+                    val mediaUploadInfoList = sendActionState.value.mediaUploadInfoList()?.takeIf { it.isNotEmpty() }
                     sendActionState.value = if (mediaUploadInfoList != null) {
                         SendActionState.Sending.ReadyToUpload(mediaUploadInfoList)
                     } else {
