@@ -326,8 +326,8 @@ private fun Modifier.stackCardTransform(
         }
     } else {
         val restingScale = 1f - BEHIND_CARD_SCALE_STEP * depth
-        // The card the drag reveals grows to full size as the front card leaves.
-        val scale = if (depth == 1) restingScale + (1f - restingScale) * (abs(offset) / cardWidthPx).coerceAtMost(1f) else restingScale
+        // The card the drag reveals grows to full size as the front card leaves; without animations every card stays in place.
+        val scale = if (depth == 1 && followsDrag) restingScale + (1f - restingScale) * (abs(offset) / cardWidthPx).coerceAtMost(1f) else restingScale
         translationX = towardCentre * (BEHIND_CARD_OFFSET_X * depth).toPx()
         translationY = -(BEHIND_CARD_OFFSET_Y * depth).toPx()
         rotationZ = towardCentre * BEHIND_CARD_ROTATIONS[depth - 1]
