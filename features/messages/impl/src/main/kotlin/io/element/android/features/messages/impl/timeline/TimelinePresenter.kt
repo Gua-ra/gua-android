@@ -28,11 +28,14 @@ import io.element.android.features.messages.impl.MessagesNavigator
 import io.element.android.features.messages.impl.UserEventPermissions
 import io.element.android.features.messages.impl.crypto.sendfailure.resolve.ResolveVerifiedUserSendFailureEvent
 import io.element.android.features.messages.impl.crypto.sendfailure.resolve.ResolveVerifiedUserSendFailureState
+import io.element.android.features.messages.impl.mediastack.showMembers
 import io.element.android.features.messages.impl.timeline.components.MessageShieldData
 import io.element.android.features.messages.impl.timeline.factories.TimelineItemsFactory
 import io.element.android.features.messages.impl.timeline.factories.TimelineItemsFactoryConfig
 import io.element.android.features.messages.impl.timeline.model.NewEventState
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
+import io.element.android.features.messages.impl.timeline.model.event.sendFailureSource
 import io.element.android.features.messages.impl.timeline.model.virtual.TimelineItemReadMarkerModel
 import io.element.android.features.messages.impl.timeline.model.virtual.TimelineItemTypingNotificationModel
 import io.element.android.features.messages.impl.timeline.protection.TimelineProtectionEvent
@@ -317,36 +320,38 @@ class TimelinePresenter(
                 }
                 is TimelineEvent.ShowShieldDialog -> messageShieldDialogData.value = event.messageShieldData
                 is TimelineEvent.ShowSendFailureDialog -> {
-                    val (_, sendStateFailure) = event.event.pendingSend() ?: return
+                    // GUA FORK: a media stack shows the failure of one of its members.
+                    val failedEvent = event.event.sendFailureSource()
+                    val (_, sendStateFailure) = failedEvent.pendingSend() ?: return
                     if (sendStateFailure !is LocalEventSendState.Failed) return
 
                     when (sendStateFailure) {
                         is LocalEventSendState.Failed.VerifiedUser -> {
                             // defer to the resolveVerifiedUserSendFailureState to handle this case,
                             // as it will show a dialog with the right information
-                            resolveVerifiedUserSendFailureState.eventSink(ResolveVerifiedUserSendFailureEvent.ComputeForMessage(event.event))
+                            resolveVerifiedUserSendFailureState.eventSink(ResolveVerifiedUserSendFailureEvent.ComputeForMessage(failedEvent))
                         }
                         is LocalEventSendState.Failed.InvalidMimeType -> {
                             sendFailureDialogState = SendFailureDialogState.Show(
-                                event = event.event,
+                                event = failedEvent,
                                 sendFailureType = SendFailureDialogState.SendFailureType.InvalidMimeType(sendStateFailure.mimeType),
                             )
                         }
                         LocalEventSendState.Failed.MissingMediaContent -> {
                             sendFailureDialogState = SendFailureDialogState.Show(
-                                event = event.event,
+                                event = failedEvent,
                                 sendFailureType = SendFailureDialogState.SendFailureType.MissingMediaContent,
                             )
                         }
                         LocalEventSendState.Failed.SendingFromUnverifiedDevice -> {
                             sendFailureDialogState = SendFailureDialogState.Show(
-                                event = event.event,
+                                event = failedEvent,
                                 sendFailureType = SendFailureDialogState.SendFailureType.SendingFromUnverifiedDevice,
                             )
                         }
                         is LocalEventSendState.Failed.Unknown -> {
                             sendFailureDialogState = SendFailureDialogState.Show(
-                                event = event.event,
+                                event = failedEvent,
                                 sendFailureType = if (sendStateFailure.error.isNotBlank()) {
                                     SendFailureDialogState.SendFailureType.Error(sendStateFailure.error)
                                 } else {
@@ -360,7 +365,7 @@ class TimelinePresenter(
                     sendFailureDialogState = SendFailureDialogState.Hidden
                 }
                 is TimelineEvent.ComputeVerifiedUserSendFailure -> {
-                    resolveVerifiedUserSendFailureState.eventSink(ResolveVerifiedUserSendFailureEvent.ComputeForMessage(event.event))
+                    resolveVerifiedUserSendFailureState.eventSink(ResolveVerifiedUserSendFailureEvent.ComputeForMessage(event.event.sendFailureSource()))
                 }
                 is TimelineEvent.NavigateToPredecessorOrSuccessorRoom -> {
                     // Navigate to the predecessor or successor room
@@ -378,6 +383,8 @@ class TimelinePresenter(
                 }
                 is TimelineEvent.OpenMediaStackGrid -> {
                     val mode = if (isLive) timelineMode else timelineController.detachedTimelineMode() ?: return
+                    // Opening the grid of a stack whose media are hidden is asking to see them.
+                    timelineProtectionState.showMembers(event.stack)
                     navigator.navigateToMediaStackGrid(mode, event.stack)
                 }
                 is TimelineEvent.CopyToClipboard -> {
@@ -430,7 +437,8 @@ class TimelinePresenter(
                 .launchIn(this)
         }
 
-        LaunchedEffect(timelineItems.size) {
+        // GUA FORK: keyed on the items, as a photo joining a media stack leaves their count unchanged.
+        LaunchedEffect(timelineItems) {
             computeNewItemState(timelineItems, prevMostRecentItemId, newEventState)
         }
 
@@ -617,6 +625,9 @@ class TimelinePresenter(
         val newMostRecentItem = timelineItems.firstOrNull {
             // Ignore typing item
             (it as? TimelineItem.Virtual)?.model !is TimelineItemTypingNotificationModel
+        }?.let {
+            // GUA FORK: the newest member of a media stack is its newest event, the stack keeping one id.
+            ((it as? TimelineItem.Event)?.content as? TimelineItemMediaStackContent)?.newest ?: it
         }
         val prevMostRecentItemIdValue = prevMostRecentItemId.value
         val newMostRecentItemId = newMostRecentItem?.identifier()
@@ -659,7 +670,8 @@ class TimelinePresenter(
         for (i in index until items.count()) {
             val item = items[i]
             if (item is TimelineItem.Event) {
-                return item.eventId
+                // GUA FORK: a media stack is read up to its newest member.
+                return (item.content as? TimelineItemMediaStackContent)?.newest?.eventId ?: item.eventId
             }
         }
         return null
