@@ -10,6 +10,7 @@ package io.element.android.features.messages.impl.timeline
 
 import dev.zacsweers.metro.Inject
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.libraries.matrix.api.core.EventId
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.sync.Mutex
@@ -62,6 +63,7 @@ class TimelineItemIndexer {
     }
 
     private fun processEvent(event: TimelineItem.Event, index: Int) {
+        (event.content as? TimelineItemMediaStackContent)?.members?.forEach { member -> processEvent(member, index) }
         if (event.eventId == null) return
         timelineEventsIndexes[event.eventId] = index
     }

@@ -11,6 +11,7 @@ package io.element.android.features.messages.impl.timeline.factories.event
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
+import io.element.android.features.messages.impl.mediastack.MediaBatchCache
 import io.element.android.features.messages.impl.timeline.factories.TimelineItemsFactoryConfig
 import io.element.android.features.messages.impl.timeline.groups.canBeDisplayedInBubbleBlock
 import io.element.android.features.messages.impl.timeline.model.AggregatedReaction
@@ -54,6 +55,7 @@ class TimelineItemEventFactory(
     private val dateFormatter: DateFormatter,
     private val permalinkParser: PermalinkParser,
     private val summaryFormatter: MessageSummaryFormatter,
+    private val mediaBatchCache: MediaBatchCache,
 ) {
     @AssistedFactory
     interface Creator {
@@ -149,6 +151,7 @@ class TimelineItemEventFactory(
             sendHandleProvider = currentTimelineItem.event.sendHandleProvider,
             forwarder = currentTimelineItem.event.forwarder,
             forwarderProfile = currentTimelineItem.event.forwarderProfile,
+            mediaBatch = mediaBatchCache.batchOf(currentTimelineItem.eventId, currentTimelineItem.event),
         )
     }
 

@@ -8,6 +8,8 @@
 
 package io.element.android.features.messages.impl.fixtures
 
+import io.element.android.features.messages.impl.mediastack.MediaBatchCache
+import io.element.android.features.messages.impl.mediastack.PendingMediaBatches
 import io.element.android.features.messages.impl.messagesummary.FakeMessageSummaryFormatter
 import io.element.android.features.messages.impl.timeline.factories.TimelineItemsFactory
 import io.element.android.features.messages.impl.timeline.factories.TimelineItemsFactoryConfig
@@ -38,8 +40,10 @@ import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.timeline.item.event.EventContent
 import io.element.android.libraries.matrix.test.FakeMatrixClient
 import io.element.android.libraries.matrix.test.permalink.FakePermalinkParser
+import io.element.android.libraries.matrix.test.room.FakeBaseRoom
 import io.element.android.libraries.mediaviewer.test.util.FileExtensionExtractorWithoutValidation
 import io.element.android.services.toolbox.test.strings.FakeStringProvider
+import io.element.android.services.toolbox.test.systemclock.FakeSystemClock
 import io.element.android.tests.testutils.testCoroutineDispatchers
 import kotlinx.coroutines.test.TestScope
 
@@ -96,6 +100,7 @@ internal fun TestScope.aTimelineItemsFactory(
                     permalinkParser = FakePermalinkParser(),
                     config = config,
                     summaryFormatter = FakeMessageSummaryFormatter(),
+                    mediaBatchCache = MediaBatchCache(),
                 )
             }
         },
@@ -105,6 +110,8 @@ internal fun TestScope.aTimelineItemsFactory(
             ),
         ),
         timelineItemGrouper = TimelineItemGrouper(),
+        room = FakeBaseRoom(),
+        pendingMediaBatches = PendingMediaBatches(FakeSystemClock()),
         config = config
     )
 }
