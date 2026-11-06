@@ -35,6 +35,7 @@ class FakeMediaSender(
         caption: String?,
         formattedCaption: String?,
         inReplyToEventId: EventId?,
+        extraContentJson: String?,
     ): Result<Unit> {
         return sendPreProcessedMediaResult()
     }

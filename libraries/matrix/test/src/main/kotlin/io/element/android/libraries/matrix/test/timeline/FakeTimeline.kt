@@ -171,7 +171,8 @@ class FakeTimeline(
         body: String?,
         formattedBody: String?,
         inReplyToEventId: EventId?,
-    ) -> Result<MediaUploadHandler> = { _, _, _, _, _, _ ->
+        extraContentJson: String?,
+    ) -> Result<MediaUploadHandler> = { _, _, _, _, _, _, _ ->
         Result.success(FakeMediaUploadHandler())
     }
 
@@ -182,6 +183,7 @@ class FakeTimeline(
         caption: String?,
         formattedCaption: String?,
         inReplyToEventId: EventId?,
+        extraContentJson: String?,
     ): Result<MediaUploadHandler> = simulateLongTask {
         sendImageLambda(
             file,
@@ -190,6 +192,7 @@ class FakeTimeline(
             caption,
             formattedCaption,
             inReplyToEventId,
+            extraContentJson,
         )
     }
 
@@ -200,7 +203,8 @@ class FakeTimeline(
         body: String?,
         formattedBody: String?,
         inReplyToEventId: EventId?,
-    ) -> Result<MediaUploadHandler> = { _, _, _, _, _, _ ->
+        extraContentJson: String?,
+    ) -> Result<MediaUploadHandler> = { _, _, _, _, _, _, _ ->
         Result.success(FakeMediaUploadHandler())
     }
 
@@ -211,6 +215,7 @@ class FakeTimeline(
         caption: String?,
         formattedCaption: String?,
         inReplyToEventId: EventId?,
+        extraContentJson: String?,
     ): Result<MediaUploadHandler> = simulateLongTask {
         sendVideoLambda(
             file,
@@ -219,6 +224,7 @@ class FakeTimeline(
             caption,
             formattedCaption,
             inReplyToEventId,
+            extraContentJson,
         )
     }
 
@@ -358,10 +364,16 @@ class FakeTimeline(
         )
     }
 
-    var forwardEventsLambda: (eventIds: List<EventId>, roomIds: List<RoomId>) -> Result<Unit> = { _, _ -> lambdaError() }
+    var forwardEventsLambda: (eventIds: List<EventId>, roomIds: List<RoomId>, extraContentJsons: (() -> List<String>)?) -> Result<Unit> = { _, _, _ ->
+        lambdaError()
+    }
 
-    override suspend fun forwardEvents(eventIds: List<EventId>, roomIds: List<RoomId>): Result<Unit> = simulateLongTask {
-        forwardEventsLambda(eventIds, roomIds)
+    override suspend fun forwardEvents(
+        eventIds: List<EventId>,
+        roomIds: List<RoomId>,
+        extraContentJsons: (() -> List<String>)?,
+    ): Result<Unit> = simulateLongTask {
+        forwardEventsLambda(eventIds, roomIds, extraContentJsons)
     }
 
     var createPollLambda: (

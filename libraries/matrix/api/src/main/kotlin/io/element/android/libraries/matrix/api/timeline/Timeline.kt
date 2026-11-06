@@ -185,6 +185,7 @@ interface Timeline : AutoCloseable {
      * @param caption the text shown along with the image, or `null` for none.
      * @param formattedCaption the caption as HTML, or `null` to send it unformatted.
      * @param inReplyToEventId the event this message replies to, or `null` if it is not a reply.
+     * @param extraContentJson a JSON object whose fields are added at the top level of the event content, or `null` for none.
      */
     suspend fun sendImage(
         file: File,
@@ -193,6 +194,7 @@ interface Timeline : AutoCloseable {
         caption: String?,
         formattedCaption: String?,
         inReplyToEventId: EventId?,
+        extraContentJson: String?,
     ): Result<MediaUploadHandler>
 
     /**
@@ -204,6 +206,7 @@ interface Timeline : AutoCloseable {
      * @param caption the text shown along with the video, or `null` for none.
      * @param formattedCaption the caption as HTML, or `null` to send it unformatted.
      * @param inReplyToEventId the event this message replies to, or `null` if it is not a reply.
+     * @param extraContentJson a JSON object whose fields are added at the top level of the event content, or `null` for none.
      */
     suspend fun sendVideo(
         file: File,
@@ -212,6 +215,7 @@ interface Timeline : AutoCloseable {
         caption: String?,
         formattedCaption: String?,
         inReplyToEventId: EventId?,
+        extraContentJson: String?,
     ): Result<MediaUploadHandler>
 
     /**
@@ -322,8 +326,14 @@ interface Timeline : AutoCloseable {
      *
      * @param eventIds the events whose content is forwarded.
      * @param roomIds the rooms to forward them to.
+     * @param extraContentJsons called once per room, returns for each event a JSON object whose fields are added at the top level
+     *  of its content, or `null` to forward the contents unchanged.
      */
-    suspend fun forwardEvents(eventIds: List<EventId>, roomIds: List<RoomId>): Result<Unit>
+    suspend fun forwardEvents(
+        eventIds: List<EventId>,
+        roomIds: List<RoomId>,
+        extraContentJsons: (() -> List<String>)? = null,
+    ): Result<Unit>
 
     /**
      * Cancels an event that is still waiting in the send queue, by redacting its local echo.

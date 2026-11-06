@@ -35,12 +35,14 @@ class RoomContentForwarder(
      * @param fromTimeline the room to forward the events from
      * @param eventIds the ids of the events to forward, in the order they must be sent
      * @param toRoomIds the ids of the rooms to forward the events to
+     * @param extraContentJsons called once per room, returns the extra top level content fields of each event, in the order of [eventIds]
      * @param timeoutMs the maximum time in milliseconds to wait for an event to be sent to a room
      */
     suspend fun forward(
         fromTimeline: Timeline,
         eventIds: List<EventId>,
         toRoomIds: List<RoomId>,
+        extraContentJsons: (() -> List<String>)? = null,
         timeoutMs: Long = 5000L
     ) {
         val contents = eventIds.map { eventId ->
@@ -55,10 +57,16 @@ class RoomContentForwarder(
             room.use { targetRoom ->
                 runCatchingExceptions {
                     targetRoom.timeline().use { timeline ->
+                        val extraContents = extraContentJsons?.invoke()
                         // Send the contents sequentially, so that they are received in the same order
-                        contents.forEach { content ->
+                        contents.forEachIndexed { index, content ->
                             withTimeout(timeoutMs.milliseconds) {
-                                timeline.send(content)
+                                val extraContent = extraContents?.getOrNull(index)
+                                if (extraContent == null) {
+                                    timeline.send(content)
+                                } else {
+                                    timeline.sendWithExtraContent(content, extraContent)
+                                }
                             }
                         }
                     }
