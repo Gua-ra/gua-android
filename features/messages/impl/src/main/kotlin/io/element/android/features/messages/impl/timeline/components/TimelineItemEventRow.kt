@@ -919,7 +919,8 @@ private fun MessageEventBubbleContent(
             ContentPadding.Textual ->
                 Modifier.padding(start = 12.dp, end = 12.dp, top = topPadding, bottom = 8.dp)
             ContentPadding.Media -> {
-                if (inReplyToDetails == null) {
+                // GUA FORK: a stack's cards are never clipped, so a dragged card can leave the stack under a reply too.
+                if (inReplyToDetails == null || event.content is TimelineItemMediaStackContent) {
                     Modifier
                 } else {
                     Modifier.clip(RoundedCornerShape(10.dp))
