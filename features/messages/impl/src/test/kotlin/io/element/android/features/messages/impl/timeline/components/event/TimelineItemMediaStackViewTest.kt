@@ -45,13 +45,13 @@ class TimelineItemMediaStackViewTest : RobolectricTest() {
     ).content as TimelineItemMediaStackContent
 
     @Test
-    fun `the stack is read as its header, then its position and caption`() = runAndroidComposeUiTest<ComponentActivity> {
+    fun `the stack is named by its header and caption, and its position is its state`() = runAndroidComposeUiTest<ComponentActivity> {
         setStack()
 
         val header = activity!!.resources.getQuantityString(R.plurals.gua_media_stack_photos, 3, 3)
         val position = activity!!.getString(R.string.gua_media_stack_a11y_photo_position, 1, 3)
-        onNode(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf(header)))
-            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "$position, Beach day"))
+        onNode(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf("$header, Beach day")))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, position))
     }
 
     @Test
@@ -60,7 +60,7 @@ class TimelineItemMediaStackViewTest : RobolectricTest() {
 
         val position = activity!!.getString(R.string.gua_media_stack_a11y_photo_position, 1, 3)
         val show = activity!!.getString(CommonStrings.action_show)
-        onNode(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "$position, Beach day, $show")).assertExists()
+        onNode(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "$position, $show")).assertExists()
     }
 
     @Test
