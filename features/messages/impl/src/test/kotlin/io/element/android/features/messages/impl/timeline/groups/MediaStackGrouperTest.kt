@@ -48,7 +48,7 @@ class MediaStackGrouperTest {
     }
 
     @Test
-    fun `a later member heading a thread renders on its own past a read marker, and when removed`() {
+    fun `a removed later member heading a thread renders on its own`() {
         fun item(id: String, kind: String, index: Int, isThreadRoot: Boolean = false) = MediaBatchFixtures.GroupingItem(
             id = id,
             sender = ALICE.value,
@@ -57,21 +57,24 @@ class MediaStackGrouperTest {
             known = MediaBatch("t", index, 4).takeIf { kind == "redacted" },
             isThreadRoot = isThreadRoot,
         )
-        val readMarker = MediaBatchFixtures.GroupingItem("marker", null, "readMarker", null, null, false)
-        val pastReadMarker = listOf(item("\$t1", "image", 0), item("\$t2", "image", 1), readMarker, item("\$t3", "image", 2, true), item("\$t4", "image", 3))
         val removed = listOf(item("\$r1", "image", 0), item("\$r2", "image", 1), item("\$r3", "redacted", 2, true), item("\$r4", "image", 3))
 
-        assertThat(groupFixtureItems(pastReadMarker)).containsExactly(
-            listOf("stack", "photos", "\$t1", "\$t2"),
-            listOf("readMarker"),
-            listOf("item", "\$t3"),
-            listOf("item", "\$t4"),
-        ).inOrder()
         assertThat(groupFixtureItems(removed)).containsExactly(
             listOf("stack", "photos", "\$r1", "\$r2"),
             listOf("item", "\$r3"),
             listOf("item", "\$r4"),
         ).inOrder()
+    }
+
+    @Test
+    fun `the read marker keeps its place beside a removed batch`() {
+        val items = listOf(
+            MediaBatchFixtures.GroupingItem("\$x1", ALICE.value, "redacted", null, MediaBatch("x", 0, 2), false),
+            MediaBatchFixtures.GroupingItem("marker", null, "readMarker", null, null, false),
+            MediaBatchFixtures.GroupingItem("\$x2", ALICE.value, "redacted", null, MediaBatch("x", 1, 2), false),
+        )
+
+        assertThat(groupFixtureItems(items)).containsExactly(listOf("item", "\$x1"), listOf("readMarker")).inOrder()
     }
 
     @Test

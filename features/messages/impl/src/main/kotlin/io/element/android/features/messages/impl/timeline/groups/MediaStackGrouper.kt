@@ -118,23 +118,22 @@ private fun MutableList<TimelineItem>.addRun(
         val member = (item as? TimelineItem.Event)?.toMediaStackMember()
         if (member != null && batch != null) member to batch else null
     }
-    addAll(run.filter { it.isReadMarker() })
-    when (media.size) {
-        // Every member was removed: the first removed message stands for the whole batch.
-        0 -> add(run.first())
-        1 -> add(media.single().first.event)
-        else -> {
-            val members = media.sortedBy { it.second.index }.map { it.first }
-            add(
-                mediaStack(
-                    id = stackIds.stackIdFor(members, usedStackIds),
-                    members = members,
-                    oldest = media.first().first.event,
-                    newest = media.last().first.event,
-                )
-            )
-        }
+    if (media.size < 2) {
+        // Without a stack the read marker keeps its place; with every member removed, the first removed message stands for the batch.
+        val shown = media.singleOrNull()?.first?.event ?: run.first()
+        run.filterTo(this) { it === shown || it.isReadMarker() }
+        return
     }
+    addAll(run.filter { it.isReadMarker() })
+    val members = media.sortedBy { it.second.index }.map { it.first }
+    add(
+        mediaStack(
+            id = stackIds.stackIdFor(members, usedStackIds),
+            members = members,
+            oldest = media.first().first.event,
+            newest = media.last().first.event,
+        )
+    )
 }
 
 private fun MutableMap<String, String>.stackIdFor(members: List<MediaStackMember>, usedStackIds: MutableSet<String>): UniqueId {
