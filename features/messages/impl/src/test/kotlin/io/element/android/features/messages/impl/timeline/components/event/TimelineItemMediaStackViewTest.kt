@@ -16,7 +16,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
@@ -52,15 +54,17 @@ class TimelineItemMediaStackViewTest : RobolectricTest() {
         val position = activity!!.getString(R.string.gua_media_stack_a11y_photo_position, 1, 3)
         onNode(SemanticsMatcher.expectValue(SemanticsProperties.ContentDescription, listOf("$header, Beach day")))
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, position))
+            .assert(clickLabelled(null))
     }
 
     @Test
-    fun `a stack whose media are hidden ends with Show, which activating it does`() = runAndroidComposeUiTest<ComponentActivity> {
+    fun `activating a stack whose media are hidden is labelled Show`() = runAndroidComposeUiTest<ComponentActivity> {
         setStack(timelineProtectionState = aTimelineProtectionState(protectionState = ProtectionState.RenderOnly(persistentSetOf())))
 
         val position = activity!!.getString(R.string.gua_media_stack_a11y_photo_position, 1, 3)
         val show = activity!!.getString(CommonStrings.action_show)
-        onNode(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "$position, $show")).assertExists()
+        onNode(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, position))
+            .assert(clickLabelled(show))
     }
 
     @Test
@@ -79,6 +83,10 @@ class TimelineItemMediaStackViewTest : RobolectricTest() {
         eventsRecorder.clear()
         header.performTouchInput { click(Offset(centerX, -expansion - 2f)) }
         eventsRecorder.assertEmpty()
+    }
+
+    private fun clickLabelled(label: String?) = SemanticsMatcher("click labelled $label") { node ->
+        node.config.getOrNull(SemanticsActions.OnClick)?.let { it.label == label } == true
     }
 
     private fun AndroidComposeUiTest<ComponentActivity>.setStack(

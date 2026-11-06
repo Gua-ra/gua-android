@@ -158,9 +158,9 @@ fun TimelineItemMediaStackView(
                 modifier = Modifier.clearAndSetSemantics {
                     // TalkBack's default order speaks the state before the name, so the caption stays with the header, not after the position.
                     contentDescription = listOfNotNull(header, caption).joinToString(", ")
-                    stateDescription = listOfNotNull(position, showLabel).joinToString(", ")
+                    stateDescription = position
                     onActivate?.let { activate ->
-                        onClick {
+                        onClick(label = showLabel) {
                             activate()
                             true
                         }
