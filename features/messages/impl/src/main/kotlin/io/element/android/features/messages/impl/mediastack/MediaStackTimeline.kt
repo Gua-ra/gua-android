@@ -24,17 +24,20 @@ internal fun TimelineProtectionState.hiddenMembers(stack: TimelineItemMediaStack
 internal fun TimelineProtectionState.showMembers(stack: TimelineItemMediaStackContent) =
     hiddenMembers(stack).forEach { eventSink(TimelineProtectionEvent.ShowContent(it.eventId)) }
 
-// The first tap on a stack whose media are hidden shows them all, the next ones open the front card.
+// The first tap on a stack whose media are hidden shows them all; a failed front card shows its failure; otherwise the front card opens.
 internal fun MediaStackPositions.onStackClick(
     stackEvent: TimelineItem.Event,
     stack: TimelineItemMediaStackContent,
     timelineProtectionState: TimelineProtectionState,
+    onSendFailureClick: (TimelineItem.Event) -> Unit,
     openMember: (TimelineItem.Event, Int) -> Unit,
 ) {
-    if (timelineProtectionState.hiddenMembers(stack).isEmpty()) {
-        openMember(stackEvent, frontIndex(stack))
-    } else {
-        timelineProtectionState.showMembers(stack)
+    val frontIndex = frontIndex(stack)
+    val front = stack.members[frontIndex].event
+    when {
+        timelineProtectionState.hiddenMembers(stack).isNotEmpty() -> timelineProtectionState.showMembers(stack)
+        front.failedToSend -> onSendFailureClick(front)
+        else -> openMember(stackEvent, frontIndex)
     }
 }
 

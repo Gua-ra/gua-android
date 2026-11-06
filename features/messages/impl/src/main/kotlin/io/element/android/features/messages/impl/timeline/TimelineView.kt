@@ -258,7 +258,13 @@ fun TimelineView(
                                     state.canSelect(event) -> onToggleSelection(event)
                                     mediaStack == null -> onContentClick(event)
                                     // GUA FORK: a stack takes no part in a selection.
-                                    !isSelectionModeActive -> mediaStackPositions.onStackClick(event, mediaStack, timelineProtectionState, onGalleryItemClick)
+                                    !isSelectionModeActive -> mediaStackPositions.onStackClick(
+                                        stackEvent = event,
+                                        stack = mediaStack,
+                                        timelineProtectionState = timelineProtectionState,
+                                        onSendFailureClick = { member -> state.eventSink(TimelineEvent.ShowSendFailureDialog(member)) },
+                                        openMember = onGalleryItemClick,
+                                    )
                                 }
                             },
                             onGalleryItemClick = onGalleryItemClick,
