@@ -24,16 +24,20 @@ import io.element.android.libraries.matrix.test.AN_EVENT_ID_2
 import io.element.android.libraries.matrix.test.AN_EVENT_ID_3
 import io.element.android.libraries.matrix.test.A_ROOM_ID
 import io.element.android.libraries.matrix.test.A_ROOM_ID_2
+import io.element.android.libraries.matrix.test.A_ROOM_ID_3
 import io.element.android.libraries.matrix.test.room.FakeJoinedRoom
 import io.element.android.libraries.matrix.test.room.aRoomSummary
 import io.element.android.libraries.matrix.test.timeline.FakeTimeline
 import io.element.android.libraries.matrix.test.timeline.LiveTimelineProvider
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.lambda.lambdaRecorder
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.junit.Rule
 import org.junit.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 class ForwardMessagesPresenterTest {
     @get:Rule
@@ -195,10 +199,86 @@ class ForwardMessagesPresenterTest {
             assertThat(awaitItem().forwardAction).isEqualTo(AsyncAction.Success(listOf(A_ROOM_ID)))
         }
     }
+
+    @Test
+    fun `present - when the error is not a ForwardEventException, dismissing it still closes the picker to the rooms that received everything`() = runTest {
+        val forwarder = RecordingForwarder(
+            failingSends = setOf(A_ROOM_ID_2 to 0),
+            failure = { IllegalStateException("Room object has already been destroyed") },
+        )
+        val presenter = createForwardMessagesPresenter(eventIds = listOf(AN_EVENT_ID, AN_EVENT_ID_2), fakeRoom = forwarder.aRoom())
+        moleculeFlow(RecompositionMode.Immediate) {
+            presenter.present()
+        }.test {
+            skipItems(1)
+            presenter.onRoomSelected(listOf(A_ROOM_ID, A_ROOM_ID_2))
+            skipItems(1)
+            val failedState = awaitItem()
+            assertThat(failedState.forwardAction.isFailure()).isTrue()
+            failedState.eventSink(ForwardMessagesEvent.ClearError)
+            assertThat(awaitItem().forwardAction).isEqualTo(AsyncAction.Success(listOf(A_ROOM_ID)))
+        }
+    }
+
+    @Test
+    fun `present - when a send times out, dismissing the error closes the picker to the rooms that received everything`() = runTest {
+        val forwarder = RecordingForwarder(timingOutSends = setOf(A_ROOM_ID_2 to 1))
+        val presenter = createForwardMessagesPresenter(eventIds = listOf(AN_EVENT_ID, AN_EVENT_ID_2), fakeRoom = forwarder.aRoom())
+        moleculeFlow(RecompositionMode.Immediate) {
+            presenter.present()
+        }.test {
+            skipItems(1)
+            presenter.onRoomSelected(listOf(A_ROOM_ID, A_ROOM_ID_2))
+            skipItems(1)
+            val failedState = awaitItem()
+            assertThat(failedState.forwardAction.isFailure()).isTrue()
+            failedState.eventSink(ForwardMessagesEvent.ClearError)
+            assertThat(awaitItem().forwardAction).isEqualTo(AsyncAction.Success(listOf(A_ROOM_ID)))
+        }
+    }
+
+    @Test
+    fun `present - when every room failed, dismissing the error keeps the picker open`() = runTest {
+        val forwarder = RecordingForwarder(failingSends = setOf(A_ROOM_ID to 0, A_ROOM_ID_2 to 1))
+        val presenter = createForwardMessagesPresenter(eventIds = listOf(AN_EVENT_ID, AN_EVENT_ID_2), fakeRoom = forwarder.aRoom())
+        moleculeFlow(RecompositionMode.Immediate) {
+            presenter.present()
+        }.test {
+            skipItems(1)
+            presenter.onRoomSelected(listOf(A_ROOM_ID, A_ROOM_ID_2))
+            skipItems(1)
+            val failedState = awaitItem()
+            assertThat(failedState.forwardAction.isFailure()).isTrue()
+            failedState.eventSink(ForwardMessagesEvent.ClearError)
+            assertThat(awaitItem().forwardAction.isUninitialized()).isTrue()
+        }
+    }
+
+    @Test
+    fun `present - dismissing the error never closes the picker to a room that could not be found`() = runTest {
+        val forwarder = RecordingForwarder(failingSends = setOf(A_ROOM_ID_3 to 0), unresolvedRoomIds = setOf(A_ROOM_ID_2))
+        val presenter = createForwardMessagesPresenter(fakeRoom = forwarder.aRoom())
+        moleculeFlow(RecompositionMode.Immediate) {
+            presenter.present()
+        }.test {
+            skipItems(1)
+            presenter.onRoomSelected(listOf(A_ROOM_ID, A_ROOM_ID_2, A_ROOM_ID_3))
+            skipItems(1)
+            val failedState = awaitItem()
+            assertThat(failedState.forwardAction.isFailure()).isTrue()
+            failedState.eventSink(ForwardMessagesEvent.ClearError)
+            assertThat(awaitItem().forwardAction).isEqualTo(AsyncAction.Success(listOf(A_ROOM_ID)))
+        }
+    }
 }
 
 // Forwards one room after another through the progress, as RoomContentForwarder does, and records each send; each send in failingSends fails once.
-private class RecordingForwarder(failingSends: Set<Pair<RoomId, Int>> = emptySet()) {
+private class RecordingForwarder(
+    failingSends: Set<Pair<RoomId, Int>> = emptySet(),
+    private val timingOutSends: Set<Pair<RoomId, Int>> = emptySet(),
+    private val unresolvedRoomIds: Set<RoomId> = emptySet(),
+    private val failure: (List<RoomId>) -> Exception = ::ForwardEventException,
+) {
     data class Send(val roomId: RoomId, val eventId: EventId, val extraContent: String? = null)
 
     private val failingSends = failingSends.toMutableSet()
@@ -207,15 +287,17 @@ private class RecordingForwarder(failingSends: Set<Pair<RoomId, Int>> = emptySet
     fun aRoom() = FakeJoinedRoom(liveTimeline = FakeTimeline().apply { forwardEventsLambda = this@RecordingForwarder::forward })
 
     private suspend fun forward(eventIds: List<EventId>, roomIds: List<RoomId>, progress: ForwardProgress): Result<Unit> {
-        val failedRoomIds = roomIds.filter { roomId ->
+        // Unresolved rooms go unreported, so only the progress can tell the presenter that they got nothing.
+        val failedRoomIds = (roomIds - unresolvedRoomIds).filter { roomId ->
             runCatchingExceptions {
                 progress.forwardTo(roomId, eventIds) { index, extraContent ->
+                    if (roomId to index in timingOutSends) withTimeout(1.milliseconds) { awaitCancellation() }
                     check(!failingSends.remove(roomId to index)) { "Sending failed" }
                     sends += Send(roomId, eventIds[index], extraContent)
                 }
             }.isFailure
         }
-        return if (failedRoomIds.isEmpty()) Result.success(Unit) else Result.failure(ForwardEventException(failedRoomIds))
+        return if (failedRoomIds.isEmpty()) Result.success(Unit) else Result.failure(failure(failedRoomIds))
     }
 }
 

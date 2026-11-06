@@ -20,7 +20,6 @@ import io.element.android.libraries.architecture.runCatchingUpdatingState
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
-import io.element.android.libraries.matrix.api.room.ForwardEventException
 import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
 import io.element.android.libraries.matrix.api.timeline.ForwardProgress
 import io.element.android.libraries.matrix.api.timeline.TimelineProvider
@@ -78,12 +77,16 @@ class ForwardMessagesPresenter(
         roomIds: List<RoomId>,
     ) = launch {
         suspend {
-            timelineProvider.getActiveTimeline().forwardEvents(eventIds, roomIds, forwardProgress)
-                .onFailure {
-                    Timber.e(it, "Error while forwarding events")
-                    forwardedRoomIds = (it as? ForwardEventException)?.let { error -> roomIds - error.roomIds.toSet() }.orEmpty()
-                }
-                .getOrThrow()
+            try {
+                timelineProvider.getActiveTimeline().forwardEvents(eventIds, roomIds, forwardProgress)
+                    .onFailure {
+                        Timber.e(it, "Error while forwarding events")
+                    }
+                    .getOrThrow()
+            } finally {
+                // GUA FORK: from what each room received, since a send timeout throws past onFailure and the error need not list every failed room.
+                forwardedRoomIds = roomIds.filter(forwardProgress::hasSentAll)
+            }
             roomIds
         }.runCatchingUpdatingState(forwardingActionState)
     }
