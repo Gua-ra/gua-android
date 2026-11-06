@@ -64,7 +64,12 @@ internal fun aMediaStackEvent(
     val stackId = UniqueId("member0_stack")
     return stackMembers.first().event.copy(
         id = stackId,
-        content = TimelineItemMediaStackContent(stackId = stackId, members = stackMembers.toImmutableList(), newest = stackMembers.last().event),
+        content = TimelineItemMediaStackContent(
+            stackId = stackId,
+            members = stackMembers.toImmutableList(),
+            newest = stackMembers.last().event,
+            newestEventId = stackMembers.last().event.eventId,
+        ),
         localSendState = sendStates.firstOrNull { it is LocalEventSendState.Failed } ?: sendStates.firstOrNull { it is LocalEventSendState.Sending },
     )
 }

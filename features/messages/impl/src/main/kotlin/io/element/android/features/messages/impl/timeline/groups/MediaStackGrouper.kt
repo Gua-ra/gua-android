@@ -21,6 +21,7 @@ import io.element.android.features.messages.impl.timeline.model.event.TimelineIt
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemVideoContent
 import io.element.android.features.messages.impl.timeline.model.event.toMediaStackMember
 import io.element.android.features.messages.impl.timeline.model.virtual.TimelineItemReadMarkerModel
+import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.UniqueId
 import io.element.android.libraries.matrix.api.core.UserId
@@ -132,6 +133,7 @@ private fun MutableList<TimelineItem>.addRun(
             members = members,
             oldest = media.first().first.event,
             newest = media.last().first.event,
+            newestEventId = media.lastOrNull { it.first.event.eventId != null }?.first?.event?.eventId,
         )
     )
 }
@@ -158,6 +160,7 @@ private fun mediaStack(
     members: List<MediaStackMember>,
     oldest: TimelineItem.Event,
     newest: TimelineItem.Event,
+    newestEventId: EventId?,
 ): TimelineItem.Event {
     val continuesBelow = newest.groupPosition == TimelineItemGroupPosition.First || newest.groupPosition == TimelineItemGroupPosition.Middle
     val groupPosition = when {
@@ -169,7 +172,7 @@ private fun mediaStack(
     val events = members.map { it.event }
     return events.first().copy(
         id = id,
-        content = TimelineItemMediaStackContent(stackId = id, members = members.toImmutableList(), newest = newest),
+        content = TimelineItemMediaStackContent(stackId = id, members = members.toImmutableList(), newest = newest, newestEventId = newestEventId),
         sentTimeMillis = newest.sentTimeMillis,
         sentTime = newest.sentTime,
         sentDate = newest.sentDate,

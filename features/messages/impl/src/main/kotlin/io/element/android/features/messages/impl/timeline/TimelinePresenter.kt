@@ -670,8 +670,8 @@ class TimelinePresenter(
         for (i in index until items.count()) {
             val item = items[i]
             if (item is TimelineItem.Event) {
-                // GUA FORK: a media stack is read up to its newest member.
-                return (item.content as? TimelineItemMediaStackContent)?.newest?.eventId ?: item.eventId
+                // GUA FORK: a media stack is read up to its newest sent member.
+                return (item.content as? TimelineItemMediaStackContent)?.newestEventId ?: item.eventId
             }
         }
         return null

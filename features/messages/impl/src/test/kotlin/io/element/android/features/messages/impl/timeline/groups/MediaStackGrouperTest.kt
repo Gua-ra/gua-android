@@ -137,6 +137,18 @@ class MediaStackGrouperTest {
     }
 
     @Test
+    fun `the read receipt of a partly sent stack goes to its newest sent member`() {
+        val sent = listOf(0, 1).map { index -> photo("\$s$index", MediaBatch("b", index, 3)) }
+        val unsent = photo("\$s2", MediaBatch("b", 2, 3))
+            .copy(id = UniqueId("t2"), eventId = null, transactionId = TransactionId("t2"), localSendState = LocalEventSendState.Sending.Event)
+
+        val content = (group(sent[0], sent[1], unsent).single() as TimelineItem.Event).content as TimelineItemMediaStackContent
+
+        assertThat(content.newest.transactionId).isEqualTo(TransactionId("t2"))
+        assertThat(content.newestEventId).isEqualTo(EventId("\$s1"))
+    }
+
+    @Test
     fun `stacks are not grouped without a media stack grouper`() {
         val items = listOf(photo("\$p1", MediaBatch("b", 0, 2)), photo("\$p2", MediaBatch("b", 1, 2)))
         assertThat(grouper.group(items.reversed())).isEqualTo(items.reversed())

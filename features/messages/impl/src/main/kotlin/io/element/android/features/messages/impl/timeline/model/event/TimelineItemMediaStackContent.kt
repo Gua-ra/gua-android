@@ -11,6 +11,7 @@ import androidx.annotation.PluralsRes
 import androidx.compose.runtime.Immutable
 import io.element.android.features.messages.impl.R
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
+import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.UniqueId
 import io.element.android.libraries.matrix.api.media.MediaSource
 import kotlinx.collections.immutable.ImmutableList
@@ -22,6 +23,8 @@ data class TimelineItemMediaStackContent(
     val members: ImmutableList<MediaStackMember>,
     // The member that arrived last in the timeline; members are in the order they were picked.
     val newest: TimelineItem.Event,
+    // The read receipt goes to the newest member in timeline order that is sent, so a member not sent yet never holds it back.
+    val newestEventId: EventId?,
 ) : TimelineItemEventContent {
     override val type: String = "TimelineItemMediaStackContent"
 
