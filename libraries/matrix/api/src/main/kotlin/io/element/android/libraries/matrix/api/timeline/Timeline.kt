@@ -323,6 +323,7 @@ interface Timeline : AutoCloseable {
     /**
      * Forwards the content of some events to other rooms, as new messages sent by the current user.
      * The events are forwarded in the order of [eventIds].
+     * GUA FORK: a resumable forward must pass all of its events in this one call, since [progress] counts what each room received of that whole list.
      *
      * @param eventIds the events whose content is forwarded.
      * @param roomIds the rooms to forward them to.

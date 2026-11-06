@@ -45,7 +45,7 @@ class ForwardMessagesPresenter(
     private val forwardingActionState: MutableState<AsyncAction<List<RoomId>>> = mutableStateOf(AsyncAction.Uninitialized)
 
     // GUA FORK: one per forward, so that forwarding again after a failure sends each room only what it has not received.
-    private val forwardProgress = ForwardProgress(extraContents)
+    private val forwardProgress = ForwardProgress(eventIds, extraContents)
 
     // GUA FORK: the rooms that received everything when another failed; as on iOS, the picker then closes once the error is dismissed.
     @Volatile

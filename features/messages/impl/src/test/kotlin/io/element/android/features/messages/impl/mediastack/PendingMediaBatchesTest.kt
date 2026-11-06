@@ -9,6 +9,7 @@ package io.element.android.features.messages.impl.mediastack
 
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.core.extensions.runCatchingExceptions
+import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.TransactionId
 import io.element.android.libraries.matrix.api.timeline.ForwardProgress
@@ -116,11 +117,12 @@ class PendingMediaBatchesTest {
     @Test
     fun `a stack forward retried after it failed part way sends only the rest, in the same batch, and nothing to a chat that got everything`() = runTest {
         val files = listOf(photo, video, photo.copy(filename = "IMG_0414.jpg"), photo.copy(filename = "IMG_0415.jpg"))
-        val progress = ForwardProgress(pendingMediaBatches.forwardExtraContents(files))
+        val eventIds = List(files.size) { EventId("\$anEventId$it") }
+        val progress = ForwardProgress(eventIds, pendingMediaBatches.forwardExtraContents(files))
         val sends = mutableListOf<Triple<RoomId, Int, MediaBatch?>>()
         var failingSend: Pair<RoomId, Int>? = A_ROOM_ID to 2
         suspend fun forward(roomId: RoomId) = runCatchingExceptions {
-            progress.forwardTo(roomId, files.size) { index, extraContent ->
+            progress.forwardTo(roomId, eventIds) { index, extraContent ->
                 check(failingSend != roomId to index) { "Sending failed" }
                 sends += Triple(roomId, index, extraContent?.toBatch())
             }

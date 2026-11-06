@@ -209,7 +209,7 @@ private class RecordingForwarder(failingSends: Set<Pair<RoomId, Int>> = emptySet
     private suspend fun forward(eventIds: List<EventId>, roomIds: List<RoomId>, progress: ForwardProgress): Result<Unit> {
         val failedRoomIds = roomIds.filter { roomId ->
             runCatchingExceptions {
-                progress.forwardTo(roomId, eventIds.size) { index, extraContent ->
+                progress.forwardTo(roomId, eventIds) { index, extraContent ->
                     check(!failingSends.remove(roomId to index)) { "Sending failed" }
                     sends += Send(roomId, eventIds[index], extraContent)
                 }

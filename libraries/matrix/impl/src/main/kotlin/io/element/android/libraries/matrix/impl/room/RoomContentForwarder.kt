@@ -59,7 +59,7 @@ class RoomContentForwarder(
                 runCatchingExceptions {
                     targetRoom.timeline().use { timeline ->
                         // Send the contents sequentially, so that they are received in the same order
-                        progress.forwardTo(RoomId(targetRoom.id()), contents.size) { index, extraContent ->
+                        progress.forwardTo(RoomId(targetRoom.id()), eventIds) { index, extraContent ->
                             withTimeout(timeoutMs.milliseconds) {
                                 if (extraContent == null) {
                                     timeline.send(contents[index])
