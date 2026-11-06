@@ -16,8 +16,10 @@ import io.element.android.libraries.matrix.api.room.ForwardEventException
 import io.element.android.libraries.matrix.api.timeline.ForwardProgress
 import io.element.android.libraries.matrix.impl.roomlist.roomOrNull
 import kotlinx.coroutines.withTimeout
+import org.matrix.rustcomponents.sdk.MessageContent
 import org.matrix.rustcomponents.sdk.MsgLikeKind
 import org.matrix.rustcomponents.sdk.RoomListService
+import org.matrix.rustcomponents.sdk.RoomMessageEventContentWithoutRelation
 import org.matrix.rustcomponents.sdk.Timeline
 import org.matrix.rustcomponents.sdk.TimelineItemContent
 import org.matrix.rustcomponents.sdk.contentWithoutRelationFromMessage
@@ -26,9 +28,11 @@ import kotlin.time.Duration.Companion.milliseconds
 /**
  * Helper to forward event contents from a room to a set of other rooms.
  * @param roomListService the [RoomListService] to fetch room instances to forward the event to
+ * @param contentWithoutRelation GUA FORK: makes the content to send from a message, replaceable in tests, which cannot load the native conversion
  */
 class RoomContentForwarder(
     private val roomListService: RoomListService,
+    private val contentWithoutRelation: (MessageContent) -> RoomMessageEventContentWithoutRelation = ::contentWithoutRelationFromMessage,
 ) {
     /**
      * Forwards the events with the given [eventIds] from the [fromTimeline] to the given [toRoomIds].
@@ -50,16 +54,16 @@ class RoomContentForwarder(
             val timelineEvent = fromTimeline.getEventTimelineItemByEventId(eventId.value)
             val content = timelineEvent.content as? TimelineItemContent.MsgLike ?: throw ForwardEventException(toRoomIds)
             val message = content.content.kind as? MsgLikeKind.Message ?: throw ForwardEventException(toRoomIds)
-            contentWithoutRelationFromMessage(message.content)
+            contentWithoutRelation(message.content)
         }
-        val targetRooms = toRoomIds.toSet().mapNotNull { roomId -> roomListService.roomOrNull(roomId) }
-        val failedForwardingTo = mutableSetOf<RoomId>()
-        targetRooms.parallelMap { room ->
-            room.use { targetRoom ->
+        // GUA FORK: as on iOS, a chosen room that cannot be found counts as failed.
+        val targetRooms = toRoomIds.toSet().map { roomId -> roomId to roomListService.roomOrNull(roomId) }
+        val failedForwardingTo = targetRooms.parallelMap { (roomId, room) ->
+            val result = room?.use { targetRoom ->
                 runCatchingExceptions {
                     targetRoom.timeline().use { timeline ->
                         // Send the contents sequentially, so that they are received in the same order
-                        progress.forwardTo(RoomId(targetRoom.id()), eventIds) { index, extraContent ->
+                        progress.forwardTo(roomId, eventIds) { index, extraContent ->
                             withTimeout(timeoutMs.milliseconds) {
                                 if (extraContent == null) {
                                     timeline.send(contents[index])
@@ -70,13 +74,13 @@ class RoomContentForwarder(
                         }
                     }
                 }
-            }.onFailure {
-                failedForwardingTo.add(RoomId(room.id()))
             }
-        }
+            // GUA FORK: the chosen id, since room.id() throws once use() has destroyed the room.
+            roomId.takeIf { result == null || result.isFailure }
+        }.filterNotNull()
 
         if (failedForwardingTo.isNotEmpty()) {
-            throw ForwardEventException(failedForwardingTo.toList())
+            throw ForwardEventException(failedForwardingTo)
         }
     }
 }
