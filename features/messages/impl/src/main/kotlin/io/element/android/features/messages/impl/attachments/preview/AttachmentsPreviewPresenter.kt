@@ -530,7 +530,6 @@ class AttachmentsPreviewPresenter(
             featureFlagService.isFeatureEnabled(FeatureFlags.GuaMediaStacks)
         // The fallback picker of devices without the system photo picker ignores the limit.
         val batches = if (sendsAsMediaStack) MediaBatch.makeBatches(mediaUploadInfos.size) else List(mediaUploadInfos.size) { null }
-        pendingMediaBatches.register(room.roomId, mediaUploadInfos.zip(batches).mapNotNull { (info, batch) -> batch?.let { info.pendingMedia() to it } })
         return mediaUploadInfos.mapIndexed { index, mediaUploadInfo ->
             MediaSend(mediaUploadInfo = mediaUploadInfo, attachmentIndex = index, batch = batches[index])
         }
@@ -545,13 +544,17 @@ class AttachmentsPreviewPresenter(
     private suspend fun sendSeparately(caption: String?, inReplyToEventId: EventId?) {
         while (unsentMedia.isNotEmpty()) {
             val send = unsentMedia.first()
+            // Registered one at a time, so a send that stops or is abandoned leaves no entry a later echo of the same file could bind to.
+            send.batch?.let { pendingMediaBatches.register(room.roomId, listOf(send.mediaUploadInfo.pendingMedia() to it)) }
             mediaSender.sendPreProcessedMedia(
                 mediaUploadInfo = send.mediaUploadInfo,
                 caption = caption.takeIf { send.isFirst },
                 formattedCaption = null,
                 inReplyToEventId = inReplyToEventId.takeIf { send.isFirst },
                 extraContentJson = send.batch?.extraContentJson(),
-            ).getOrThrow()
+            )
+                .onFailure { send.batch?.let { pendingMediaBatches.unregister(room.roomId, listOf(it)) } }
+                .getOrThrow()
             unsentMedia = unsentMedia.drop(1)
         }
     }

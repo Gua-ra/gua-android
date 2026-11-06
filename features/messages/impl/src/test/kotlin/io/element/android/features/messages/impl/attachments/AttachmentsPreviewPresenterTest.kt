@@ -1070,6 +1070,33 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
     }
 
     @Test
+    fun `present - a batch registers each photo as it is enqueued, so one that stops part way leaves no entry for the rest`() = runTest {
+        val sentMedia = SentMediaRecorder(failingCall = 1)
+        val pendingMediaBatches = PendingMediaBatches(FakeSystemClock())
+        val presenter = createAttachmentsPreviewPresenter(
+            room = sentMedia.room(),
+            attachments = photoLibraryAttachments(3),
+            mediaPreProcessor = PickedFileMediaPreProcessor(),
+            onDoneListener = {},
+            pendingMediaBatches = pendingMediaBatches,
+        )
+        fun photo(filename: String) = PendingMediaBatches.Media(filename = filename, fileSize = 1000, mimeType = MimeTypes.Jpeg)
+        presenter.test {
+            awaitItem().eventSink(AttachmentsPreviewEvent.SendAttachment)
+            val failedState = consumeItemsUntilPredicate { it.sendActionState is SendActionState.Failure }.last()
+
+            assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t0"), photo("0.jpeg"))).isEqualTo(sentMedia.sent.single().batch())
+            assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t1"), photo("1.jpeg"))).isNull()
+            assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t2"), photo("2.jpeg"))).isNull()
+
+            failedState.eventSink(AttachmentsPreviewEvent.SendAttachment)
+            consumeItemsUntilPredicate { it.sendActionState == SendActionState.Done }
+            assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t1"), photo("1.jpeg"))?.index).isEqualTo(1)
+            assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t2"), photo("2.jpeg"))?.index).isEqualTo(2)
+        }
+    }
+
+    @Test
     fun `present - photos are sent without a batch when the flag is off`() = runTest {
         val sentMedia = SentMediaRecorder()
         val presenter = createAttachmentsPreviewPresenter(
