@@ -178,6 +178,23 @@ class ForwardMessagesPresenterTest {
             ).inOrder()
         }
     }
+
+    @Test
+    fun `present - when another room failed, dismissing the error closes the picker to the rooms that received everything`() = runTest {
+        val forwarder = RecordingForwarder(failingSends = setOf(A_ROOM_ID_2 to 0))
+        val presenter = createForwardMessagesPresenter(fakeRoom = forwarder.aRoom())
+        moleculeFlow(RecompositionMode.Immediate) {
+            presenter.present()
+        }.test {
+            skipItems(1)
+            presenter.onRoomSelected(listOf(A_ROOM_ID, A_ROOM_ID_2))
+            skipItems(1)
+            val failedState = awaitItem()
+            assertThat(failedState.forwardAction.isFailure()).isTrue()
+            failedState.eventSink(ForwardMessagesEvent.ClearError)
+            assertThat(awaitItem().forwardAction).isEqualTo(AsyncAction.Success(listOf(A_ROOM_ID)))
+        }
+    }
 }
 
 // Forwards one room after another through the progress, as RoomContentForwarder does, and records each send; each send in failingSends fails once.

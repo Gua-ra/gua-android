@@ -20,6 +20,7 @@ import io.element.android.libraries.architecture.runCatchingUpdatingState
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.matrix.api.room.ForwardEventException
 import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
 import io.element.android.libraries.matrix.api.timeline.ForwardProgress
 import io.element.android.libraries.matrix.api.timeline.TimelineProvider
@@ -46,6 +47,10 @@ class ForwardMessagesPresenter(
     // GUA FORK: one per forward, so that forwarding again after a failure sends each room only what it has not received.
     private val forwardProgress = ForwardProgress(extraContents)
 
+    // GUA FORK: the rooms that received everything when another failed; as on iOS, the picker then closes once the error is dismissed.
+    @Volatile
+    private var forwardedRoomIds = emptyList<RoomId>()
+
     fun onRoomSelected(roomIds: List<RoomId>) {
         sessionCoroutineScope.forwardEvents(eventIds, roomIds)
     }
@@ -54,7 +59,11 @@ class ForwardMessagesPresenter(
     override fun present(): ForwardMessagesState {
         fun handleEvent(event: ForwardMessagesEvent) {
             when (event) {
-                ForwardMessagesEvent.ClearError -> forwardingActionState.value = AsyncAction.Uninitialized
+                ForwardMessagesEvent.ClearError -> forwardingActionState.value = if (forwardedRoomIds.isEmpty()) {
+                    AsyncAction.Uninitialized
+                } else {
+                    AsyncAction.Success(forwardedRoomIds)
+                }
             }
         }
 
@@ -72,6 +81,7 @@ class ForwardMessagesPresenter(
             timelineProvider.getActiveTimeline().forwardEvents(eventIds, roomIds, forwardProgress)
                 .onFailure {
                     Timber.e(it, "Error while forwarding events")
+                    forwardedRoomIds = (it as? ForwardEventException)?.let { error -> roomIds - error.roomIds.toSet() }.orEmpty()
                 }
                 .getOrThrow()
             roomIds
