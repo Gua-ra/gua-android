@@ -58,17 +58,25 @@ class RoomContentForwarder(
             room.use { targetRoom ->
                 runCatchingExceptions {
                     targetRoom.timeline().use { timeline ->
-                        val chatExtraContents = extraContents?.forChat(RoomId(targetRoom.id()))
-                        // Send the contents sequentially, so that they are received in the same order
-                        contents.forEachIndexed { index, content ->
-                            withTimeout(timeoutMs.milliseconds) {
-                                val extraContent = chatExtraContents?.getOrNull(index)
-                                if (extraContent == null) {
-                                    timeline.send(content)
-                                } else {
-                                    timeline.sendWithExtraContent(content, extraContent)
+                        val chatId = RoomId(targetRoom.id())
+                        val chatExtraContents = extraContents?.forChat(chatId)
+                        var sentCount = 0
+                        try {
+                            // Send the contents sequentially, so that they are received in the same order
+                            contents.forEachIndexed { index, content ->
+                                withTimeout(timeoutMs.milliseconds) {
+                                    val extraContent = chatExtraContents?.getOrNull(index)
+                                    if (extraContent == null) {
+                                        timeline.send(content)
+                                    } else {
+                                        timeline.sendWithExtraContent(content, extraContent)
+                                    }
                                 }
+                                sentCount = index + 1
                             }
+                        } finally {
+                            // A timeout is a CancellationException, which runCatchingExceptions rethrows past onFailure below.
+                            if (sentCount < contents.size) extraContents?.onUnsent(chatId, sentCount)
                         }
                     }
                 }

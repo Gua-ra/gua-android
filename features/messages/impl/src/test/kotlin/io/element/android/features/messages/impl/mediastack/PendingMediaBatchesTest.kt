@@ -91,6 +91,24 @@ class PendingMediaBatchesTest {
         assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t3"), video)).isNull()
     }
 
+    @Test
+    fun `a forward that stops part way drops the batches of the members it did not send, so a retry stacks as one`() {
+        val other = photo.copy(filename = "IMG_0414.jpg")
+        val files = listOf(photo, video, other)
+        val failed = pendingMediaBatches.forwardExtraContents(files)
+        val failedBatches = failed.forChat(A_ROOM_ID).map { it?.toBatch() }
+        val otherChatBatches = failed.forChat(A_ROOM_ID_2).map { it?.toBatch() }
+        failed.onUnsent(A_ROOM_ID, fromIndex = 1)
+
+        val retryBatches = pendingMediaBatches.forwardExtraContents(files).forChat(A_ROOM_ID).map { it?.toBatch() }
+
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t1"), photo)).isEqualTo(failedBatches[0])
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t2"), photo)).isEqualTo(retryBatches[0])
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t3"), video)).isEqualTo(retryBatches[1])
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t4"), other)).isEqualTo(retryBatches[2])
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID_2, TransactionId("t5"), video)).isEqualTo(otherChatBatches[1])
+    }
+
     private fun String.toBatch(): MediaBatch? =
         MediaBatch.fromContent(JsonObject(Json.parseToJsonElement(this).jsonObject + ("msgtype" to JsonPrimitive("m.image"))))
 }

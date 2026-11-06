@@ -12,4 +12,7 @@ import io.element.android.libraries.matrix.api.core.RoomId
 // Asked once per chat forwarded to: one JSON object per forwarded event, whose fields are added at the top level of its content, or null for none.
 fun interface ForwardExtraContents {
     fun forChat(roomId: RoomId): List<String?>
+
+    // Called when forwarding to a chat stops before the event at fromIndex is sent; that event and the ones after it may never reach the chat.
+    fun onUnsent(roomId: RoomId, fromIndex: Int) {}
 }

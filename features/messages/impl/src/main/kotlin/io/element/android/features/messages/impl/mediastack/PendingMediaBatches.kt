@@ -19,6 +19,7 @@ import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
 import io.element.android.libraries.mediaupload.api.MediaUploadInfo
 import io.element.android.services.toolbox.api.systemclock.SystemClock
 import kotlinx.parcelize.Parcelize
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration.Companion.hours
 
 // A local echo has no event JSON to read its batch from, so it is matched by the file it carries, then by its transaction id once bound.
@@ -66,6 +67,11 @@ class PendingMediaBatches(
         entries.removeAll { it.roomId == roomId && it.batch == batch }
     }
 
+    @Synchronized
+    fun unregister(roomId: RoomId, batches: Collection<MediaBatch>) {
+        entries.removeAll { it.roomId == roomId && it.batch in batches }
+    }
+
     private fun removeExpired() {
         val oldestKept = systemClock.epochMillis() - EXPIRY.inWholeMilliseconds
         entries.removeAll { it.createdAt < oldestKept }
@@ -81,10 +87,21 @@ fun TimelineItemEventContentWithAttachment.pendingMedia(): PendingMediaBatches.M
     PendingMediaBatches.Media(filename = filename, fileSize = fileSize ?: 0, mimeType = mimeType)
 
 // Each chat forwarded to gets batches of its own, registered for that chat so its echoes stack before the server copies arrive.
-fun PendingMediaBatches.forwardExtraContents(files: List<PendingMediaBatches.Media>): ForwardExtraContents = ForwardExtraContents { roomId ->
-    val batches = MediaBatch.makeBatches(files.size)
-    register(roomId, files.zip(batches).mapNotNull { (file, batch) -> batch?.let { file to it } })
-    batches.map { it?.extraContentJson() }
+fun PendingMediaBatches.forwardExtraContents(files: List<PendingMediaBatches.Media>): ForwardExtraContents = object : ForwardExtraContents {
+    private val batchesByChat = ConcurrentHashMap<RoomId, List<MediaBatch?>>()
+
+    override fun forChat(roomId: RoomId): List<String?> {
+        val batches = MediaBatch.makeBatches(files.size)
+        batchesByChat[roomId] = batches
+        register(roomId, files.zip(batches).mapNotNull { (file, batch) -> batch?.let { file to it } })
+        return batches.map { it?.extraContentJson() }
+    }
+
+    // A retry registers new batches, so entries left for members never sent would otherwise bind some of its echoes to this attempt's batch.
+    override fun onUnsent(roomId: RoomId, fromIndex: Int) {
+        val batches = batchesByChat.remove(roomId) ?: return
+        unregister(roomId, batches.drop(fromIndex).filterNotNull())
+    }
 }
 
 fun MediaUploadInfo.pendingMedia(): PendingMediaBatches.Media = when (this) {
