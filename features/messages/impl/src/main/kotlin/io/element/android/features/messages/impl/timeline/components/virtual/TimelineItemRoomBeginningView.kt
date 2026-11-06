@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.messages.impl.R
 import io.element.android.libraries.designsystem.atomic.molecules.ComposerAlertMolecule
+import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
+import io.element.android.libraries.designsystem.chatbackground.legibleTextColor
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.preview.ROOM_NAME
@@ -64,7 +66,8 @@ fun TimelineItemRoomBeginningView(
                     stringResource(id = R.string.screen_room_timeline_beginning_of_room, roomName)
                 }
                 Text(
-                    color = ElementTheme.colors.textSecondary,
+                    modifier = Modifier.legibilityCapsule(),
+                    color = legibleTextColor(ElementTheme.colors.textSecondary),
                     style = ElementTheme.typography.fontBodyMdRegular,
                     text = text,
                     textAlign = TextAlign.Center,

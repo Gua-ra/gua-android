@@ -22,10 +22,16 @@ import io.element.android.libraries.androidutils.clipboard.FakeClipboardHelper
 import io.element.android.libraries.androidutils.toast.FakeToastHelper
 import io.element.android.libraries.androidutils.toast.ToastHelper
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.chatbackground.api.ChatBackground
+import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
+import io.element.android.libraries.chatbackground.test.FakeChatBackgroundService
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
+import io.element.android.libraries.featureflag.api.FeatureFlags
+import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.SessionId
 import io.element.android.libraries.matrix.api.core.UserId
+import io.element.android.libraries.matrix.api.room.CHAT_BACKGROUND_EVENT_TYPE
 import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.room.RoomMembersState
 import io.element.android.libraries.matrix.api.room.RoomNotificationMode
@@ -93,6 +99,8 @@ class RoomDetailsPresenterTest {
         navigator: RoomDetailsNavigator = FakeRoomDetailsNavigator(),
         notificationCleaner: NotificationCleaner = FakeNotificationCleaner(),
         sessionPreferencesStore: SessionPreferencesStore = InMemorySessionPreferencesStore(),
+        chatBackgroundService: FakeChatBackgroundService = FakeChatBackgroundService(),
+        featureFlagService: FakeFeatureFlagService = FakeFeatureFlagService(mapOf(FeatureFlags.ChatBackgrounds.key to false)),
     ): RoomDetailsPresenter {
         val matrixClient = FakeMatrixClient(notificationSettingsService = notificationSettingsService)
         val roomMemberDetailsPresenterFactory = object : RoomMemberDetailsPresenter.Factory {
@@ -123,7 +131,48 @@ class RoomDetailsPresenterTest {
             appPreferencesStore = appPreferencesStore,
             notificationCleaner = notificationCleaner,
             sessionPreferencesStore = sessionPreferencesStore,
+            chatBackgroundService = chatBackgroundService,
+            featureFlagService = featureFlagService,
         )
+    }
+
+    @Test
+    fun `present - the background row is hidden while the feature is off`() = runTest {
+        val presenter = createRoomDetailsPresenter(room = aJoinedRoom(roomPermissions = roomPermissions()))
+        presenter.testWithLifecycleOwner(lifecycleOwner = fakeLifecycleOwner) {
+            assertThat(awaitItem().chatBackgroundRow).isNull()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - the background row shows the chat's background and who can change it`() = runTest {
+        val room = aJoinedRoom(
+            roomPermissions = FakeRoomPermissions(canSendState = { it == StateEventType.Custom(CHAT_BACKGROUND_EVENT_TYPE) }),
+        )
+        val presenter = createRoomDetailsPresenter(
+            room = room,
+            chatBackgroundService = FakeChatBackgroundService(ChatBackground.Preset(ChatBackgroundPreset.Sand)),
+            featureFlagService = FakeFeatureFlagService(mapOf(FeatureFlags.ChatBackgrounds.key to true)),
+        )
+        presenter.testWithLifecycleOwner(lifecycleOwner = fakeLifecycleOwner) {
+            val state = consumeItemsUntilPredicate { it.chatBackgroundRow?.canChange == true }.last()
+            assertThat(state.chatBackgroundRow).isEqualTo(ChatBackgroundRowState(ChatBackground.Preset(ChatBackgroundPreset.Sand), canChange = true))
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - members without the power level see the background row disabled`() = runTest {
+        val presenter = createRoomDetailsPresenter(
+            room = aJoinedRoom(roomPermissions = FakeRoomPermissions(canSendState = { false })),
+            featureFlagService = FakeFeatureFlagService(mapOf(FeatureFlags.ChatBackgrounds.key to true)),
+        )
+        presenter.testWithLifecycleOwner(lifecycleOwner = fakeLifecycleOwner) {
+            val state = consumeItemsUntilPredicate { it.chatBackgroundRow?.canChange == false }.last()
+            assertThat(state.chatBackgroundRow).isEqualTo(ChatBackgroundRowState(ChatBackground.None, canChange = false))
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test

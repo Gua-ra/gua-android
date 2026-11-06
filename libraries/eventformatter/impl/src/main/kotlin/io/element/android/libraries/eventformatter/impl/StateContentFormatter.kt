@@ -82,14 +82,14 @@ class StateContentFormatter(
                     formatRoomPinnedEvents(content, senderIsYou, senderDisambiguatedDisplayName)
                 }
             }
-            is OtherState.Custom -> when (renderingMode) {
-                RenderingMode.RoomList -> {
-                    Timber.v("Filtering timeline item for room state change: $content")
-                    null
-                }
-                RenderingMode.Timeline -> {
-                    "Custom event ${content.eventType}"
-                }
+            // GUA FORK: custom state is never shown, other than Gua's chat background notice.
+            is OtherState.Custom -> {
+                Timber.v("Filtering timeline item for custom state: ${content.eventType}")
+                null
+            }
+            is OtherState.ChatBackground -> when (renderingMode) {
+                RenderingMode.RoomList -> null
+                RenderingMode.Timeline -> formatChatBackground(content, senderIsYou, senderDisambiguatedDisplayName)
             }
             OtherState.PolicyRuleRoom -> when (renderingMode) {
                 RenderingMode.RoomList -> {
@@ -199,6 +199,20 @@ class StateContentFormatter(
                     "SpaceParent"
                 }
             }
+        }
+    }
+
+    private fun formatChatBackground(
+        content: OtherState.ChatBackground,
+        senderIsYou: Boolean,
+        senderDisambiguatedDisplayName: String,
+    ): String {
+        val isRemoved = content.contentJson?.filterNot { it.isWhitespace() } == "{}"
+        return when {
+            senderIsYou && isRemoved -> sp.getString(R.string.gua_chat_background_notice_removed_by_you)
+            senderIsYou -> sp.getString(R.string.gua_chat_background_notice_changed_by_you)
+            isRemoved -> sp.getString(R.string.gua_chat_background_notice_removed, senderDisambiguatedDisplayName)
+            else -> sp.getString(R.string.gua_chat_background_notice_changed, senderDisambiguatedDisplayName)
         }
     }
 

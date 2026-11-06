@@ -30,6 +30,7 @@ dependencies {
     implementation(projects.libraries.accountselect.api)
     implementation(projects.libraries.androidutils)
     implementation(projects.libraries.architecture)
+    implementation(projects.libraries.chatbackground.api)
     implementation(projects.libraries.deeplink.api)
     implementation(projects.libraries.featureflag.api)
     implementation(projects.libraries.matrix.api)

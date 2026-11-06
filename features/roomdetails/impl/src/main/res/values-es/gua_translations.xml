@@ -10,4 +10,6 @@
     <string name="gua_identity_change_member_list">Los datos de seguridad de %1$s han cambiado</string>
     <string name="screen_room_notification_settings_mode_mentions_and_keywords">Solo menciones y respuestas</string>
     <string name="screen_room_notification_settings_mode_mute">Silenciar</string>
+    <string name="gua_chat_background_row_title">Fondo</string>
+    <string name="gua_chat_background_row_no_permission">Solo los administradores y moderadores pueden cambiarlo</string>
 </resources>

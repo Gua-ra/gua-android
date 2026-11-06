@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.messages.impl.R
+import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.HorizontalDivider
@@ -36,6 +37,7 @@ internal fun TimelineItemReadMarkerView(
         verticalArrangement = spacedBy(4.dp),
     ) {
         Text(
+            modifier = Modifier.legibilityCapsule(),
             text = stringResource(id = R.string.screen_room_timeline_read_marker_title).uppercase(),
             style = ElementTheme.typography.fontBodySmMedium,
             color = ElementTheme.colors.textActionAccent,

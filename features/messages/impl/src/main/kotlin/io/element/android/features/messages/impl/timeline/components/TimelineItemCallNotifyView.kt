@@ -13,6 +13,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -40,6 +41,8 @@ import io.element.android.features.messages.impl.timeline.components.receipt.aRe
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.event.RtcNotificationState
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRtcNotificationContent
+import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
+import io.element.android.libraries.designsystem.chatbackground.legibleTextColor
 import io.element.android.libraries.designsystem.modifiers.onKeyboardContextMenuAction
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
@@ -63,6 +66,7 @@ internal fun TimelineItemCallNotifyView(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, top = 16.dp)
+                .legibilityCapsule(shape = RoundedCornerShape(8.dp), padding = PaddingValues(0.dp))
                 .border(1.dp, ElementTheme.colors.borderInteractiveSecondary, RoundedCornerShape(8.dp))
                 .combinedClickable(
                     enabled = true,
@@ -86,7 +90,7 @@ internal fun TimelineItemCallNotifyView(
                 modifier = Modifier.weight(1f),
                 text = stringResource(getTextRes(timelineRoomInfo, state)),
                 style = ElementTheme.typography.fontBodyMdRegular,
-                color = ElementTheme.colors.textSecondary,
+                color = legibleTextColor(ElementTheme.colors.textSecondary),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -94,7 +98,7 @@ internal fun TimelineItemCallNotifyView(
             Text(
                 text = event.sentTime,
                 style = ElementTheme.typography.fontBodyMdRegular,
-                color = ElementTheme.colors.textSecondary,
+                color = legibleTextColor(ElementTheme.colors.textSecondary),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

@@ -13,6 +13,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -44,6 +45,8 @@ import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.event.RtcNotificationState
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRtcNotificationContent
 import io.element.android.libraries.dateformatter.api.toHumanReadableDuration
+import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
+import io.element.android.libraries.designsystem.chatbackground.legibleTextColor
 import io.element.android.libraries.designsystem.components.avatar.Avatar
 import io.element.android.libraries.designsystem.components.avatar.AvatarData
 import io.element.android.libraries.designsystem.components.avatar.AvatarRow
@@ -87,6 +90,7 @@ internal fun ActiveCallTimelineItemView(
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min)
                 .padding(start = 16.dp, end = 16.dp, top = 16.dp)
+                .legibilityCapsule(shape = RoundedCornerShape(8.dp), padding = PaddingValues(0.dp))
                 .border(1.dp, ElementTheme.colors.borderInteractivePrimary, RoundedCornerShape(8.dp))
                 .combinedClickable(
                     enabled = true,
@@ -233,7 +237,7 @@ private fun GroupCallBody(event: TimelineItem.Event, state: RtcNotificationState
                         modifier = Modifier.padding(start = 6.dp),
                         text = stringResource(CommonStrings.common_user_started_a_call, caller.displayName ?: caller.userId),
                         style = ElementTheme.typography.fontBodySmRegular,
-                        color = ElementTheme.colors.textSecondary,
+                        color = legibleTextColor(ElementTheme.colors.textSecondary),
                     )
                 }
             } else {
@@ -260,7 +264,7 @@ private fun GroupCallBody(event: TimelineItem.Event, state: RtcNotificationState
                         state.joinedMembers.size
                     ),
                     style = ElementTheme.typography.fontBodySmRegular,
-                    color = ElementTheme.colors.textSecondary,
+                    color = legibleTextColor(ElementTheme.colors.textSecondary),
                 )
             }
         }
@@ -288,7 +292,7 @@ private fun CallDurationText(
         modifier = modifier,
         text = "($duration)",
         style = ElementTheme.typography.fontBodyXsRegular,
-        color = ElementTheme.colors.textSecondary,
+        color = legibleTextColor(ElementTheme.colors.textSecondary),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
     )
