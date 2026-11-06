@@ -30,12 +30,13 @@ import timber.log.Timber
 class ForwardMessagesPresenter(
     @Assisted private val eventIds: List<EventId>,
     @Assisted private val timelineProvider: TimelineProvider,
+    @Assisted private val extraContentJsons: (() -> List<String>)?,
     @SessionCoroutineScope
     private val sessionCoroutineScope: CoroutineScope,
 ) : Presenter<ForwardMessagesState> {
     @AssistedFactory
     fun interface Factory {
-        fun create(eventIds: List<EventId>, timelineProvider: TimelineProvider): ForwardMessagesPresenter
+        fun create(eventIds: List<EventId>, timelineProvider: TimelineProvider, extraContentJsons: (() -> List<String>)?): ForwardMessagesPresenter
     }
 
     private val forwardingActionState: MutableState<AsyncAction<List<RoomId>>> = mutableStateOf(AsyncAction.Uninitialized)
@@ -63,7 +64,7 @@ class ForwardMessagesPresenter(
         roomIds: List<RoomId>,
     ) = launch {
         suspend {
-            timelineProvider.getActiveTimeline().forwardEvents(eventIds, roomIds)
+            timelineProvider.getActiveTimeline().forwardEvents(eventIds, roomIds, extraContentJsons)
                 .onFailure {
                     Timber.e(it, "Error while forwarding events")
                 }

@@ -26,6 +26,8 @@ interface ForwardEntryPoint : FeatureEntryPoint {
         val eventIds: List<EventId>,
         val timelineProvider: TimelineProvider,
         val fromRoomId: RoomId,
+        // GUA FORK: called once per chat forwarded to, returns the extra top level content fields of each event.
+        val extraContentJsons: (() -> List<String>)? = null,
     ) : NodeInputs
 
     fun createNode(

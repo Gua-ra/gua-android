@@ -30,6 +30,7 @@ class DefaultForwardEntryPoint : ForwardEntryPoint {
                     eventIds = params.eventIds,
                     timelineProvider = params.timelineProvider,
                     fromRoomId = params.fromRoomId,
+                    extraContentJsons = params.extraContentJsons,
                 ),
                 callback,
             )
