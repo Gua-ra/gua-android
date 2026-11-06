@@ -1182,10 +1182,58 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
                 .eventSink(AttachmentsPreviewEvent.CancelAndClearSendState)
             consumeItemsUntilPredicate { it.sendActionState is SendActionState.Sending.ReadyToUpload }.last()
                 .eventSink(AttachmentsPreviewEvent.SendAttachment)
+            consumeItemsUntilPredicate { it.sendActionState is SendActionState.Sending.Uploading }
             firstUpload.complete(Unit)
             consumeItemsUntilPredicate { it.sendActionState == SendActionState.Done }
 
             assertThat(sent).containsExactly("0.jpeg", "1.jpeg").inOrder()
+        }
+    }
+
+    @Test
+    fun `present - a photo edited while the others are still going out keeps its edited file until the preview is dismissed`() = runTest {
+        val firstUpload = CompletableDeferred<Unit>()
+        var sendCount = 0
+        val timeline = FakeTimeline().apply {
+            sendImageLambda = { _, _, _, _, _, _, _ ->
+                when (sendCount++) {
+                    0 -> Result.success(AwaitingMediaUploadHandler(firstUpload))
+                    else -> Result.failure(IllegalStateException("Sending failed"))
+                }
+            }
+        }
+        val attachments = photoLibraryAttachments(2)
+        val editedFile = File.createTempFile("1-edited", ".jpeg").apply { deleteOnExit() }
+        val presenter = createAttachmentsPreviewPresenter(
+            room = FakeJoinedRoom(liveTimeline = timeline),
+            attachments = attachments,
+            mediaPreProcessor = PickedFileMediaPreProcessor(),
+            temporaryUriDeleter = FakeTemporaryUriDeleter {},
+            onDoneListener = {},
+            attachmentImageEditor = FakeAttachmentImageEditor {
+                val edited = (attachments[1] as Attachment.Media).localMedia.copy(uri = Uri.fromFile(editedFile))
+                Result.success(EditedLocalMedia(localMedia = edited, file = editedFile))
+            },
+        )
+        presenter.test {
+            awaitItem().eventSink(AttachmentsPreviewEvent.SendAttachment)
+            consumeItemsUntilPredicate { it.sendActionState is SendActionState.Sending.Uploading }.last()
+                .eventSink(AttachmentsPreviewEvent.CancelAndClearSendState)
+            consumeItemsUntilPredicate { it.sendActionState is SendActionState.Sending.ReadyToUpload }.last()
+                .eventSink(AttachmentsPreviewEvent.SetCurrentCarouselIndex(1))
+            consumeItemsUntilPredicate { it.currentIndex == 1 }.last().eventSink(AttachmentsPreviewEvent.OpenImageEditor)
+            consumeItemsUntilPredicate { it.imageEditorState != null }.last().eventSink(AttachmentsPreviewEvent.RotateImageToTheLeft)
+            consumeItemsUntilPredicate { it.imageEditorState?.edits?.hasChanges == true }.last().eventSink(AttachmentsPreviewEvent.ApplyImageEdits)
+            consumeItemsUntilPredicate { it.imageEditorState == null && it.sendActionState is SendActionState.Sending.ReadyToUpload }.last()
+                .eventSink(AttachmentsPreviewEvent.SendAttachment)
+            consumeItemsUntilPredicate { it.sendActionState is SendActionState.Sending.Uploading }
+            firstUpload.complete(Unit)
+            val failedState = consumeItemsUntilPredicate { it.sendActionState is SendActionState.Failure }.last()
+            assertThat(editedFile.exists()).isTrue()
+
+            failedState.eventSink(AttachmentsPreviewEvent.CancelAndDismiss)
+            consumeItemsUntilPredicate { it.sendActionState == SendActionState.Done }
+            assertThat(editedFile.exists()).isFalse()
         }
     }
 

@@ -282,13 +282,17 @@ class AttachmentsPreviewPresenter(
                         val caption = markdownTextEditorState.getMessageMarkdown(permalinkBuilder)
                             .takeIf { it.isNotEmpty() }
 
+                        // GUA FORK: a send started while another is still going out would send its media twice, so the tap only shows its progress again.
+                        if (!isSendingMedia.compareAndSet(false, true)) {
+                            sendActionState.value = SendActionState.Sending.Uploading(allMediaUploadInfos)
+                            return@launch
+                        }
+
                         val editedTempFilesToDelete = editedTempFiles
                         editedTempFiles = emptyMap()
 
                         // Send the media using the session coroutine scope so it doesn't matter if this screen or the chat one are closed
                         sessionCoroutineScope.launch(dispatchers.io) {
-                            // GUA FORK: a send started while another is still going out would send its media twice.
-                            if (!isSendingMedia.compareAndSet(false, true)) return@launch
                             try {
                                 val isSent = sendMedia(
                                     mediaUploadInfos = allMediaUploadInfos,
