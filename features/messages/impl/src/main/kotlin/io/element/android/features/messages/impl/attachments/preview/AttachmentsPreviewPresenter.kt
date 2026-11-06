@@ -106,6 +106,9 @@ class AttachmentsPreviewPresenter(
     @Volatile
     private var unsentMedia = emptyList<MediaSend>()
 
+    // The caption went out with the first media, so anything typed afterwards would be dropped.
+    private var hasSentFirstMedia by mutableStateOf(false)
+
     @Composable
     override fun present(): AttachmentsPreviewState {
         val coroutineScope = rememberCoroutineScope()
@@ -196,6 +199,10 @@ class AttachmentsPreviewPresenter(
                     sendActionState = sendActionState,
                 )
             }
+        }
+
+        LaunchedEffect(hasSentFirstMedia) {
+            if (hasSentFirstMedia) textEditorState.reset()
         }
 
         LaunchedEffect(currentIndex) {
@@ -439,6 +446,7 @@ class AttachmentsPreviewPresenter(
             displayImageEditError = displayImageEditError,
             sendActionState = sendActionState.value,
             textEditorState = textEditorState,
+            canEditCaption = !hasSentFirstMedia,
             mediaOptimizationSelectorState = mediaOptimizationSelectorStates[currentIndex],
             displayFileTooLargeError = displayFileTooLargeError,
             currentIndex = currentIndex,
@@ -561,6 +569,7 @@ class AttachmentsPreviewPresenter(
                 .onFailure { send.batch?.let { pendingMediaBatches.unregister(room.roomId, listOf(it)) } }
                 .getOrThrow()
             unsentMedia = unsentMedia.drop(1)
+            if (send.isFirst) hasSentFirstMedia = true
         }
     }
 

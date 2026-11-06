@@ -24,6 +24,8 @@ data class AttachmentsPreviewState(
     val displayImageEditError: Boolean,
     val sendActionState: SendActionState,
     val textEditorState: TextEditorState,
+    // GUA FORK: false once the first media of a send that then failed has gone out with the caption.
+    val canEditCaption: Boolean,
     val mediaOptimizationSelectorState: MediaOptimizationSelectorState,
     val displayFileTooLargeError: Boolean,
     val currentIndex: Int,

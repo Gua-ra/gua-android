@@ -1122,6 +1122,44 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
     }
 
     @Test
+    fun `present - once the first photo of a batch has gone out, the caption is cleared and locked`() = runTest {
+        val presenter = createAttachmentsPreviewPresenter(
+            room = SentMediaRecorder(failingCall = 1).room(),
+            attachments = photoLibraryAttachments(3),
+            mediaPreProcessor = PickedFileMediaPreProcessor(),
+            onDoneListener = {},
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            assertThat(initialState.canEditCaption).isTrue()
+            initialState.textEditorState.setMarkdown(A_CAPTION)
+            initialState.eventSink(AttachmentsPreviewEvent.SendAttachment)
+            val failedState = consumeItemsUntilPredicate { it.sendActionState is SendActionState.Failure && !it.canEditCaption }.last()
+
+            assertThat(failedState.textEditorState.messageMarkdown(FakePermalinkBuilder())).isEmpty()
+        }
+    }
+
+    @Test
+    fun `present - the caption stays editable when the first photo of a batch fails`() = runTest {
+        val presenter = createAttachmentsPreviewPresenter(
+            room = SentMediaRecorder(failingCall = 0).room(),
+            attachments = photoLibraryAttachments(3),
+            mediaPreProcessor = PickedFileMediaPreProcessor(),
+            onDoneListener = {},
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.textEditorState.setMarkdown(A_CAPTION)
+            initialState.eventSink(AttachmentsPreviewEvent.SendAttachment)
+            val failedState = consumeItemsUntilPredicate { it.sendActionState is SendActionState.Failure }.last()
+
+            assertThat(failedState.canEditCaption).isTrue()
+            assertThat(failedState.textEditorState.messageMarkdown(FakePermalinkBuilder())).isEqualTo(A_CAPTION)
+        }
+    }
+
+    @Test
     fun `present - photos are sent without a batch when the flag is off`() = runTest {
         val sentMedia = SentMediaRecorder()
         val presenter = createAttachmentsPreviewPresenter(

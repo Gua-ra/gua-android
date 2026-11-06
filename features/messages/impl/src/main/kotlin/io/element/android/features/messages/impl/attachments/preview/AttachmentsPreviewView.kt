@@ -545,6 +545,7 @@ private fun AttachmentsPreviewBottomActions(
         onError = {},
         onTyping = {},
         onSelectRichContent = {},
+        isTextInputEnabled = state.canEditCaption,
     )
 }
 
