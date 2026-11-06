@@ -21,6 +21,7 @@ import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
+import io.element.android.libraries.matrix.api.timeline.ForwardProgress
 import io.element.android.libraries.matrix.api.timeline.TimelineProvider
 import io.element.android.libraries.matrix.api.timeline.getActiveTimeline
 import kotlinx.coroutines.CoroutineScope
@@ -31,7 +32,7 @@ import timber.log.Timber
 class ForwardMessagesPresenter(
     @Assisted private val eventIds: List<EventId>,
     @Assisted private val timelineProvider: TimelineProvider,
-    @Assisted private val extraContents: ForwardExtraContents?,
+    @Assisted extraContents: ForwardExtraContents?,
     @SessionCoroutineScope
     private val sessionCoroutineScope: CoroutineScope,
 ) : Presenter<ForwardMessagesState> {
@@ -41,6 +42,9 @@ class ForwardMessagesPresenter(
     }
 
     private val forwardingActionState: MutableState<AsyncAction<List<RoomId>>> = mutableStateOf(AsyncAction.Uninitialized)
+
+    // GUA FORK: one per forward, so that forwarding again after a failure sends each room only what it has not received.
+    private val forwardProgress = ForwardProgress(extraContents)
 
     fun onRoomSelected(roomIds: List<RoomId>) {
         sessionCoroutineScope.forwardEvents(eventIds, roomIds)
@@ -65,7 +69,7 @@ class ForwardMessagesPresenter(
         roomIds: List<RoomId>,
     ) = launch {
         suspend {
-            timelineProvider.getActiveTimeline().forwardEvents(eventIds, roomIds, extraContents)
+            timelineProvider.getActiveTimeline().forwardEvents(eventIds, roomIds, forwardProgress)
                 .onFailure {
                     Timber.e(it, "Error while forwarding events")
                 }

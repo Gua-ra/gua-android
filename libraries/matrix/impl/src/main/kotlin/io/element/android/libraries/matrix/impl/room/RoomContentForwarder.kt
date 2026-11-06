@@ -13,7 +13,7 @@ import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.room.ForwardEventException
-import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
+import io.element.android.libraries.matrix.api.timeline.ForwardProgress
 import io.element.android.libraries.matrix.impl.roomlist.roomOrNull
 import kotlinx.coroutines.withTimeout
 import org.matrix.rustcomponents.sdk.MsgLikeKind
@@ -36,14 +36,14 @@ class RoomContentForwarder(
      * @param fromTimeline the room to forward the events from
      * @param eventIds the ids of the events to forward, in the order they must be sent
      * @param toRoomIds the ids of the rooms to forward the events to
-     * @param extraContents the fields to add to the content of each event, or `null` to forward the contents unchanged
+     * @param progress what each room received in earlier attempts of the same forward, and the fields to add to the content of each event
      * @param timeoutMs the maximum time in milliseconds to wait for an event to be sent to a room
      */
     suspend fun forward(
         fromTimeline: Timeline,
         eventIds: List<EventId>,
         toRoomIds: List<RoomId>,
-        extraContents: ForwardExtraContents?,
+        progress: ForwardProgress,
         timeoutMs: Long = 5000L
     ) {
         val contents = eventIds.map { eventId ->
@@ -58,25 +58,15 @@ class RoomContentForwarder(
             room.use { targetRoom ->
                 runCatchingExceptions {
                     targetRoom.timeline().use { timeline ->
-                        val chatId = RoomId(targetRoom.id())
-                        val chatExtraContents = extraContents?.forChat(chatId)
-                        var sentCount = 0
-                        try {
-                            // Send the contents sequentially, so that they are received in the same order
-                            contents.forEachIndexed { index, content ->
-                                withTimeout(timeoutMs.milliseconds) {
-                                    val extraContent = chatExtraContents?.getOrNull(index)
-                                    if (extraContent == null) {
-                                        timeline.send(content)
-                                    } else {
-                                        timeline.sendWithExtraContent(content, extraContent)
-                                    }
+                        // Send the contents sequentially, so that they are received in the same order
+                        progress.forwardTo(RoomId(targetRoom.id()), contents.size) { index, extraContent ->
+                            withTimeout(timeoutMs.milliseconds) {
+                                if (extraContent == null) {
+                                    timeline.send(contents[index])
+                                } else {
+                                    timeline.sendWithExtraContent(contents[index], extraContent)
                                 }
-                                sentCount = index + 1
                             }
-                        } finally {
-                            // A timeout is a CancellationException, which runCatchingExceptions rethrows past onFailure below.
-                            if (sentCount < contents.size) extraContents?.onUnsent(chatId, sentCount)
                         }
                     }
                 }

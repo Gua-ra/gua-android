@@ -90,16 +90,15 @@ fun TimelineItemEventContentWithAttachment.pendingMedia(): PendingMediaBatches.M
 fun PendingMediaBatches.forwardExtraContents(files: List<PendingMediaBatches.Media>): ForwardExtraContents = object : ForwardExtraContents {
     private val batchesByChat = ConcurrentHashMap<RoomId, List<MediaBatch?>>()
 
-    override fun forChat(roomId: RoomId): List<String?> {
-        val batches = MediaBatch.makeBatches(files.size)
-        batchesByChat[roomId] = batches
-        register(roomId, files.zip(batches).mapNotNull { (file, batch) -> batch?.let { file to it } })
+    override fun forChat(roomId: RoomId, fromIndex: Int): List<String?> {
+        val batches = batchesByChat.getOrPut(roomId) { MediaBatch.makeBatches(files.size) }
+        register(roomId, files.zip(batches).drop(fromIndex).mapNotNull { (file, batch) -> batch?.let { file to it } })
         return batches.map { it?.extraContentJson() }
     }
 
-    // A retry registers new batches, so entries left for members never sent would otherwise bind some of its echoes to this attempt's batch.
+    // A retry registers these members again, and until then their entries could bind the echo of another send of the same file.
     override fun onUnsent(roomId: RoomId, fromIndex: Int) {
-        val batches = batchesByChat.remove(roomId) ?: return
+        val batches = batchesByChat[roomId] ?: return
         unregister(roomId, batches.drop(fromIndex).filterNotNull())
     }
 }

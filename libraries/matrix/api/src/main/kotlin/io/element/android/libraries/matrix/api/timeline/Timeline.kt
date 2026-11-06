@@ -326,12 +326,12 @@ interface Timeline : AutoCloseable {
      *
      * @param eventIds the events whose content is forwarded.
      * @param roomIds the rooms to forward them to.
-     * @param extraContents the fields to add to the content of each event, or `null` to forward the contents unchanged.
+     * @param progress what each room received in earlier attempts of the same forward, and the fields to add to the content of each event.
      */
     suspend fun forwardEvents(
         eventIds: List<EventId>,
         roomIds: List<RoomId>,
-        extraContents: ForwardExtraContents?,
+        progress: ForwardProgress,
     ): Result<Unit>
 
     /**
