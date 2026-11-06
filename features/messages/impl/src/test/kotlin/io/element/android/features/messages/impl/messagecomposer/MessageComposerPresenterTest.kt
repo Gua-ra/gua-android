@@ -833,7 +833,7 @@ class MessageComposerPresenterTest : RobolectricTest() {
         )
         pickerProvider.givenMimeType(MimeTypes.Images)
         // Two Uris take the multi-item branch (handlePickedMediaList) instead of delegating to the
-        // single-item path, so the edit is preserved for gallery messages too.
+        // single-item path, so the edit is preserved for media stacks too.
         pickerProvider.givenMultipleResults(listOf(mockk(), mockk()))
         presenter.test {
             var state = awaitFirstItem()

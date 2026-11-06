@@ -189,14 +189,19 @@ class MessageComposerPresenter(
 
         val canShareLocation by remember { locationService.isServiceAvailable() }.collectAsState()
 
+        val isSendGalleryMessagesEnabled by featureFlagService.isFeatureEnabledFlow(FeatureFlags.SendGalleryMessages)
+            .collectAsState(initial = false)
         val isMediaStacksEnabled by featureFlagService.isFeatureEnabledFlow(FeatureFlags.GuaMediaStacks)
             .collectAsState(initial = false)
 
         val galleryMediaPicker = mediaPickerProvider.registerGalleryPicker { uri, mimeType ->
             localCoroutineScope.handlePickedMedia(uri, mimeType)
         }
-        val galleryOrderedMultiPicker = mediaPickerProvider.registerGalleryOrderedMultiPicker(MediaBatch.MAX_SEND_COUNT) { uris ->
-            localCoroutineScope.handlePickedPhotoLibraryMedia(uris)
+        val galleryMultiMediaPicker = mediaPickerProvider.registerGalleryOrderedMultiPicker(MediaBatch.MAX_SEND_COUNT) { uris ->
+            localCoroutineScope.handlePickedMediaList(uris)
+        }
+        val filesPicker = mediaPickerProvider.registerFileMultiPicker(AnyMimeTypes) { uris ->
+            localCoroutineScope.handlePickedMediaList(uris, sendAsFile = true)
         }
         val fileSinglePicker = mediaPickerProvider.registerFilePicker(AnyMimeTypes) { uri, mimeType ->
             localCoroutineScope.handlePickedMedia(uri, mimeType ?: MimeTypes.OctetStream, sendAsFile = true)
@@ -306,14 +311,18 @@ class MessageComposerPresenter(
                 MessageComposerEvent.PickAttachmentSource.FromGallery -> localCoroutineScope.launch {
                     showAttachmentSourcePicker = false
                     if (isMediaStacksEnabled) {
-                        galleryOrderedMultiPicker.launch()
+                        galleryMultiMediaPicker.launch()
                     } else {
                         galleryMediaPicker.launch()
                     }
                 }
                 MessageComposerEvent.PickAttachmentSource.FromFiles -> localCoroutineScope.launch {
                     showAttachmentSourcePicker = false
-                    fileSinglePicker.launch()
+                    if (isSendGalleryMessagesEnabled) {
+                        filesPicker.launch()
+                    } else {
+                        fileSinglePicker.launch()
+                    }
                 }
                 MessageComposerEvent.PickAttachmentSource.PhotoFromCamera -> localCoroutineScope.launch {
                     showAttachmentSourcePicker = false
@@ -662,10 +671,13 @@ class MessageComposerPresenter(
         resetComposerModeAfterAttaching()
     }
 
-    private fun CoroutineScope.handlePickedPhotoLibraryMedia(uris: List<Uri>) {
+    private fun CoroutineScope.handlePickedMediaList(
+        uris: List<Uri>,
+        sendAsFile: Boolean = false,
+    ) {
         if (uris.isEmpty()) return
         if (uris.size == 1) {
-            handlePickedMedia(uris.first())
+            handlePickedMedia(uris.first(), sendAsFile = sendAsFile)
             return
         }
         launch {
@@ -674,7 +686,7 @@ class MessageComposerPresenter(
                     uri = uri,
                     mimeType = null,
                 )
-                Attachment.Media(localMedia, isFromPhotoLibrary = true)
+                Attachment.Media(localMedia, sendAsFile = sendAsFile, isFromPhotoLibrary = !sendAsFile)
             }.toImmutableList()
             val inReplyToEventId = (messageComposerContext.composerMode as? MessageComposerMode.Reply)?.eventId
             navigator.navigateToPreviewAttachments(attachments, inReplyToEventId)
