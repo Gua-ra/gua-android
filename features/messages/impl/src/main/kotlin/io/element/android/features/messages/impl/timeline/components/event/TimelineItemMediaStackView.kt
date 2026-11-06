@@ -154,8 +154,8 @@ fun TimelineItemMediaStackView(
                 eventSink = eventSink,
                 onFrontIndexChange = { positions.show(content, it) },
                 modifier = Modifier.clearAndSetSemantics {
-                    contentDescription = listOfNotNull(header, caption).joinToString(", ")
-                    stateDescription = position
+                    contentDescription = header
+                    stateDescription = listOfNotNull(position, caption).joinToString(", ")
                     onActivate?.let { activate ->
                         onClick {
                             activate()
