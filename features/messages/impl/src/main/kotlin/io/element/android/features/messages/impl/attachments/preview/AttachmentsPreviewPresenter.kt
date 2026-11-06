@@ -278,16 +278,21 @@ class AttachmentsPreviewPresenter(
 
                         // Send the media using the session coroutine scope so it doesn't matter if this screen or the chat one are closed
                         sessionCoroutineScope.launch(dispatchers.io) {
-                            sendMedia(
+                            val isSent = sendMedia(
                                 mediaUploadInfos = allMediaUploadInfos,
                                 caption = caption,
                                 sendActionState = sendActionState,
                                 inReplyToEventId = inReplyToEventId,
                             )
 
-                            // Clean up the pre-processed media after it's been sent
-                            mediaSender.cleanUp()
-                            editedTempFilesToDelete.values.forEach { it.safeDelete() }
+                            if (isSent) {
+                                // Clean up the pre-processed media after it's been sent
+                                mediaSender.cleanUp()
+                                editedTempFilesToDelete.values.forEach { it.safeDelete() }
+                            } else {
+                                // GUA FORK: the media not sent yet stay prepared for a retry, and dismissing the screen deletes them.
+                                editedTempFiles = editedTempFilesToDelete + editedTempFiles
+                            }
                         }
                     }
                 }
@@ -578,7 +583,7 @@ class AttachmentsPreviewPresenter(
         caption: String?,
         sendActionState: MutableState<SendActionState>,
         inReplyToEventId: EventId?,
-    ) = runCatchingExceptions {
+    ): Boolean = runCatchingExceptions {
         unsentMedia = if (unsentMedia.isEmpty()) planSends(mediaUploadInfos) else unsentMedia.preparedAgain(mediaUploadInfos)
         if (unsentMedia.singleOrNull()?.isFirst == true) {
             sendActionState.value = SendActionState.Sending.Uploading(mediaUploadInfos)
@@ -598,6 +603,7 @@ class AttachmentsPreviewPresenter(
             mediaUploadInfos.forEach { cleanUp(it) }
             sendActionState.value = SendActionState.Done
             onDoneListener()
+            true
         },
         onFailure = { error ->
             Timber.e(error, "Failed to send attachment")
@@ -606,6 +612,7 @@ class AttachmentsPreviewPresenter(
             } else {
                 sendActionState.value = SendActionState.Failure(error, unsentMedia.map { it.mediaUploadInfo })
             }
+            false
         }
     )
 }

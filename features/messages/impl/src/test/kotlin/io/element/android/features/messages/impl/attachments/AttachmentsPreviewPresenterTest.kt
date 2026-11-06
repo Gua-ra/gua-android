@@ -1097,6 +1097,31 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
     }
 
     @Test
+    fun `present - the photos not sent stay prepared after a batch fails part way, and are cleaned up once sent`() = runTest {
+        val sentMedia = SentMediaRecorder(failingCall = 1)
+        val mediaPreProcessor = PickedFileMediaPreProcessor()
+        val presenter = createAttachmentsPreviewPresenter(
+            room = sentMedia.room(),
+            attachments = photoLibraryAttachments(3),
+            mediaPreProcessor = mediaPreProcessor,
+            onDoneListener = {},
+        )
+        presenter.test {
+            awaitItem().eventSink(AttachmentsPreviewEvent.SendAttachment)
+            val failedState = consumeItemsUntilPredicate { it.sendActionState is SendActionState.Failure }.last()
+            assertThat(mediaPreProcessor.cleanUpCount).isEqualTo(0)
+
+            failedState.eventSink(AttachmentsPreviewEvent.CancelAndClearSendState)
+            consumeItemsUntilPredicate { it.sendActionState is SendActionState.Sending.ReadyToUpload }.last()
+                .eventSink(AttachmentsPreviewEvent.SendAttachment)
+            consumeItemsUntilPredicate { it.sendActionState == SendActionState.Done }
+
+            assertThat(sentMedia.sent.map { it.filename }).containsExactly("0.jpeg", "1.jpeg", "2.jpeg").inOrder()
+            assertThat(mediaPreProcessor.cleanUpCount).isEqualTo(1)
+        }
+    }
+
+    @Test
     fun `present - photos are sent without a batch when the flag is off`() = runTest {
         val sentMedia = SentMediaRecorder()
         val presenter = createAttachmentsPreviewPresenter(
