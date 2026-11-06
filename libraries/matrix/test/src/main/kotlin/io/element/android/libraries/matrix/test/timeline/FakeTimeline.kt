@@ -20,6 +20,7 @@ import io.element.android.libraries.matrix.api.media.VideoInfo
 import io.element.android.libraries.matrix.api.poll.PollKind
 import io.element.android.libraries.matrix.api.room.IntentionalMention
 import io.element.android.libraries.matrix.api.room.location.AssetType
+import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
 import io.element.android.libraries.matrix.api.timeline.MatrixTimelineItem
 import io.element.android.libraries.matrix.api.timeline.MsgType
 import io.element.android.libraries.matrix.api.timeline.ReceiptType
@@ -364,16 +365,16 @@ class FakeTimeline(
         )
     }
 
-    var forwardEventsLambda: (eventIds: List<EventId>, roomIds: List<RoomId>, extraContentJsons: (() -> List<String>)?) -> Result<Unit> = { _, _, _ ->
+    var forwardEventsLambda: (eventIds: List<EventId>, roomIds: List<RoomId>, extraContents: ForwardExtraContents?) -> Result<Unit> = { _, _, _ ->
         lambdaError()
     }
 
     override suspend fun forwardEvents(
         eventIds: List<EventId>,
         roomIds: List<RoomId>,
-        extraContentJsons: (() -> List<String>)?,
+        extraContents: ForwardExtraContents?,
     ): Result<Unit> = simulateLongTask {
-        forwardEventsLambda(eventIds, roomIds, extraContentJsons)
+        forwardEventsLambda(eventIds, roomIds, extraContents)
     }
 
     var createPollLambda: (

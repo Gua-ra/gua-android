@@ -24,6 +24,7 @@ import io.element.android.libraries.matrix.api.room.IntentionalMention
 import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.room.join.JoinRule
 import io.element.android.libraries.matrix.api.room.location.AssetType
+import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
 import io.element.android.libraries.matrix.api.timeline.MatrixTimelineItem
 import io.element.android.libraries.matrix.api.timeline.MsgType
 import io.element.android.libraries.matrix.api.timeline.ReceiptType
@@ -497,10 +498,10 @@ class RustTimeline(
     override suspend fun forwardEvents(
         eventIds: List<EventId>,
         roomIds: List<RoomId>,
-        extraContentJsons: (() -> List<String>)?,
+        extraContents: ForwardExtraContents?,
     ): Result<Unit> = withContext(dispatcher) {
         runCatchingExceptions {
-            roomContentForwarder.forward(fromTimeline = inner, eventIds = eventIds, toRoomIds = roomIds, extraContentJsons = extraContentJsons)
+            roomContentForwarder.forward(fromTimeline = inner, eventIds = eventIds, toRoomIds = roomIds, extraContents = extraContents)
         }.onFailure {
             Timber.tag(loggerTag).e(it)
         }

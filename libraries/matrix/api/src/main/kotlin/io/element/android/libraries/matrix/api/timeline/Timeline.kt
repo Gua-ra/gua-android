@@ -326,13 +326,12 @@ interface Timeline : AutoCloseable {
      *
      * @param eventIds the events whose content is forwarded.
      * @param roomIds the rooms to forward them to.
-     * @param extraContentJsons called once per room, returns for each event a JSON object whose fields are added at the top level
-     *  of its content, or `null` to forward the contents unchanged.
+     * @param extraContents the fields to add to the content of each event, or `null` to forward the contents unchanged.
      */
     suspend fun forwardEvents(
         eventIds: List<EventId>,
         roomIds: List<RoomId>,
-        extraContentJsons: (() -> List<String>)? = null,
+        extraContents: ForwardExtraContents?,
     ): Result<Unit>
 
     /**

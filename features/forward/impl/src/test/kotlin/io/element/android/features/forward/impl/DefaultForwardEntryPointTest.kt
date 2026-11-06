@@ -64,6 +64,7 @@ class DefaultForwardEntryPointTest {
                 eventIds = params.eventIds,
                 timelineProvider = params.timelineProvider,
                 fromRoomId = params.fromRoomId,
+                extraContents = params.extraContents,
             )
         )
         assertThat(result.plugins).contains(callback)

@@ -13,6 +13,7 @@ import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.room.ForwardEventException
+import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
 import io.element.android.libraries.matrix.impl.roomlist.roomOrNull
 import kotlinx.coroutines.withTimeout
 import org.matrix.rustcomponents.sdk.MsgLikeKind
@@ -35,14 +36,14 @@ class RoomContentForwarder(
      * @param fromTimeline the room to forward the events from
      * @param eventIds the ids of the events to forward, in the order they must be sent
      * @param toRoomIds the ids of the rooms to forward the events to
-     * @param extraContentJsons called once per room, returns the extra top level content fields of each event, in the order of [eventIds]
+     * @param extraContents the fields to add to the content of each event, or `null` to forward the contents unchanged
      * @param timeoutMs the maximum time in milliseconds to wait for an event to be sent to a room
      */
     suspend fun forward(
         fromTimeline: Timeline,
         eventIds: List<EventId>,
         toRoomIds: List<RoomId>,
-        extraContentJsons: (() -> List<String>)? = null,
+        extraContents: ForwardExtraContents?,
         timeoutMs: Long = 5000L
     ) {
         val contents = eventIds.map { eventId ->
@@ -57,11 +58,11 @@ class RoomContentForwarder(
             room.use { targetRoom ->
                 runCatchingExceptions {
                     targetRoom.timeline().use { timeline ->
-                        val extraContents = extraContentJsons?.invoke()
+                        val chatExtraContents = extraContents?.forChat()
                         // Send the contents sequentially, so that they are received in the same order
                         contents.forEachIndexed { index, content ->
                             withTimeout(timeoutMs.milliseconds) {
-                                val extraContent = extraContents?.getOrNull(index)
+                                val extraContent = chatExtraContents?.getOrNull(index)
                                 if (extraContent == null) {
                                     timeline.send(content)
                                 } else {

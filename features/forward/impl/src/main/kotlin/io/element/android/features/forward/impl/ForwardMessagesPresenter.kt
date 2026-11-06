@@ -20,6 +20,7 @@ import io.element.android.libraries.architecture.runCatchingUpdatingState
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
 import io.element.android.libraries.matrix.api.timeline.TimelineProvider
 import io.element.android.libraries.matrix.api.timeline.getActiveTimeline
 import kotlinx.coroutines.CoroutineScope
@@ -30,13 +31,13 @@ import timber.log.Timber
 class ForwardMessagesPresenter(
     @Assisted private val eventIds: List<EventId>,
     @Assisted private val timelineProvider: TimelineProvider,
-    @Assisted private val extraContentJsons: (() -> List<String>)?,
+    @Assisted private val extraContents: ForwardExtraContents?,
     @SessionCoroutineScope
     private val sessionCoroutineScope: CoroutineScope,
 ) : Presenter<ForwardMessagesState> {
     @AssistedFactory
     fun interface Factory {
-        fun create(eventIds: List<EventId>, timelineProvider: TimelineProvider, extraContentJsons: (() -> List<String>)?): ForwardMessagesPresenter
+        fun create(eventIds: List<EventId>, timelineProvider: TimelineProvider, extraContents: ForwardExtraContents?): ForwardMessagesPresenter
     }
 
     private val forwardingActionState: MutableState<AsyncAction<List<RoomId>>> = mutableStateOf(AsyncAction.Uninitialized)
@@ -64,7 +65,7 @@ class ForwardMessagesPresenter(
         roomIds: List<RoomId>,
     ) = launch {
         suspend {
-            timelineProvider.getActiveTimeline().forwardEvents(eventIds, roomIds, extraContentJsons)
+            timelineProvider.getActiveTimeline().forwardEvents(eventIds, roomIds, extraContents)
                 .onFailure {
                     Timber.e(it, "Error while forwarding events")
                 }

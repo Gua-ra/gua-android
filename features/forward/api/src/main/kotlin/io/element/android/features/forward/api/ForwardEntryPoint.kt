@@ -15,6 +15,7 @@ import io.element.android.libraries.architecture.FeatureEntryPoint
 import io.element.android.libraries.architecture.NodeInputs
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
 import io.element.android.libraries.matrix.api.timeline.TimelineProvider
 
 interface ForwardEntryPoint : FeatureEntryPoint {
@@ -26,8 +27,8 @@ interface ForwardEntryPoint : FeatureEntryPoint {
         val eventIds: List<EventId>,
         val timelineProvider: TimelineProvider,
         val fromRoomId: RoomId,
-        // GUA FORK: called once per chat forwarded to, returns the extra top level content fields of each event.
-        val extraContentJsons: (() -> List<String>)? = null,
+        // GUA FORK: set when the events are forwarded as a media stack.
+        val extraContents: ForwardExtraContents? = null,
     ) : NodeInputs
 
     fun createNode(
