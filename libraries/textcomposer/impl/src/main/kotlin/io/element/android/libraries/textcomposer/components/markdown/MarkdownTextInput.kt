@@ -55,8 +55,6 @@ fun MarkdownTextInput(
     onReceiveSuggestion: (Suggestion?) -> Unit,
     richTextEditorStyle: RichTextEditorStyle,
     onSelectRichContent: ((Uri) -> Unit)?,
-    // GUA FORK: lets the attachment preview lock a caption that has gone out.
-    isEnabled: Boolean = true,
 ) {
     // Copied from io.element.android.wysiwyg.internal.utils.UriContentListener
     class ReceiveUriContentListener(
@@ -134,11 +132,6 @@ fun MarkdownTextInput(
         },
         update = { editText ->
             editText.contentDescription = placeholder
-            editText.setHintTextColor(ColorStateList.valueOf(placeholderColor.toArgb()))
-            if (editText.isEnabled != isEnabled) {
-                editText.isEnabled = isEnabled
-                if (!isEnabled) editText.clearFocus()
-            }
             editText.applyStyleInCompose(richTextEditorStyle)
             editText.onEnterKeyListener = {
                 onSendMessage()

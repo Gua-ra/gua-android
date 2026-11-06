@@ -25,8 +25,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -524,6 +527,11 @@ private fun AttachmentsPreviewBottomActions(
     onSendClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // GUA FORK: the caption went out with the first media of the batch, so only the send button stays, as on iOS.
+    if (!state.canEditCaption) {
+        AttachmentsPreviewSendButton(onSendClick = onSendClick, modifier = modifier)
+        return
+    }
     TextComposer(
         modifier = modifier,
         state = state.textEditorState,
@@ -545,8 +553,38 @@ private fun AttachmentsPreviewBottomActions(
         onError = {},
         onTyping = {},
         onSelectRichContent = {},
-        isTextInputEnabled = state.canEditCaption,
     )
+}
+
+// GUA FORK: sized and placed like the composer's send button, so the bar keeps its height and the button does not move.
+@Composable
+private fun AttachmentsPreviewSendButton(
+    onSendClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier, contentAlignment = Alignment.BottomEnd) {
+        IconButton(
+            modifier = Modifier
+                .padding(vertical = 5.dp, horizontal = 6.dp)
+                .size(48.dp),
+            onClick = onSendClick,
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .size(36.dp)
+                    .background(ElementTheme.colors.bgAccentRest),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    modifier = Modifier.padding(start = 2.dp),
+                    imageVector = CompoundIcons.SendSolid(),
+                    contentDescription = stringResource(CommonStrings.action_send_message),
+                    tint = ElementTheme.colors.iconOnSolidPrimary,
+                )
+            }
+        }
+    }
 }
 
 // Only preview in dark, dark theme is forced on the Node.

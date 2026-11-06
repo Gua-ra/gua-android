@@ -132,8 +132,6 @@ fun TextComposer(
     modifier: Modifier = Modifier,
     showTextFormatting: Boolean = false,
     isInThreadTimeline: Boolean = false,
-    // GUA FORK: the attachment preview locks a caption that has gone out; only the markdown input it uses honours this.
-    isTextInputEnabled: Boolean = true,
 ) {
     val markdown = when (state) {
         is TextEditorState.Markdown -> state.state.text.value()
@@ -218,13 +216,12 @@ fun TextComposer(
                     MarkdownTextInput(
                         state = state.state,
                         placeholder = placeholder,
-                        placeholderColor = if (isTextInputEnabled) ElementTheme.colors.textSecondary else ElementTheme.colors.textDisabled,
+                        placeholderColor = ElementTheme.colors.textSecondary,
                         onTyping = onTyping,
                         onSendMessage = { if (canSendTextMessage) onSendMessage() },
                         onReceiveSuggestion = onReceiveSuggestion,
                         richTextEditorStyle = style,
                         onSelectRichContent = onSelectRichContent,
-                        isEnabled = isTextInputEnabled,
                     )
                 }
             }
