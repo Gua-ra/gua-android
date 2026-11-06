@@ -85,6 +85,8 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import org.junit.Rule
 import org.junit.Test
@@ -946,15 +948,11 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
 
     @Test
     fun `present - photos picked together are sent in order as one batch, the caption and reply on the first only`() = runTest {
-        val sentContents = mutableListOf<SentMedia>()
-        val sendImageResult = lambdaRecorder { _: File, _: File?, _: ImageInfo, caption: String?, _: String?, inReplyTo: EventId?, extraContent: String? ->
-            sentContents += SentMedia(caption, inReplyTo, extraContent)
-            Result.success(FakeMediaUploadHandler())
-        }
+        val sentMedia = SentMediaRecorder()
         val pendingMediaBatches = PendingMediaBatches(FakeSystemClock())
         val presenter = createAttachmentsPreviewPresenter(
-            room = FakeJoinedRoom(liveTimeline = FakeTimeline().apply { sendImageLambda = sendImageResult }),
-            attachments = List(3) { index -> aMediaAttachment(aLocalMedia(uri = Uri.parse("file:///tmp/$index.jpeg")), isFromPhotoLibrary = true) },
+            room = sentMedia.room(),
+            attachments = photoLibraryAttachments(3),
             mediaPreProcessor = FakeMediaPreProcessor().apply { givenImageResult() },
             onDoneListener = {},
             inReplyToEventId = AN_EVENT_ID,
@@ -966,28 +964,50 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
             initialState.eventSink(AttachmentsPreviewEvent.SendAttachment)
             consumeItemsUntilPredicate { it.sendActionState == SendActionState.Done }
 
-            sendImageResult.assertions().isCalledExactly(3)
-            assertThat(sentContents.map { it.caption }).containsExactly(A_CAPTION, null, null).inOrder()
-            assertThat(sentContents.map { it.inReplyTo }).containsExactly(AN_EVENT_ID, null, null).inOrder()
-            val batches = sentContents.map { it.batch() }
+            assertThat(sentMedia.sent.map { it.caption }).containsExactly(A_CAPTION, null, null).inOrder()
+            assertThat(sentMedia.sent.map { it.inReplyTo }).containsExactly(AN_EVENT_ID, null, null).inOrder()
+            val batches = sentMedia.sent.map { it.batch() }
             assertThat(batches.map { it?.index }).containsExactly(0, 1, 2).inOrder()
             assertThat(batches.map { it?.count }.toSet()).containsExactly(3)
             assertThat(batches.map { it?.id }.toSet()).hasSize(1)
             val pendingMedia = PendingMediaBatches.Media(filename = "image.jpg", fileSize = 1000, mimeType = MimeTypes.Jpeg)
-            assertThat(pendingMediaBatches.batchFor(A_ROOM_ID, TransactionId("t0"), pendingMedia)).isEqualTo(batches[0])
+            assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t0"), pendingMedia)).isEqualTo(batches[0])
+        }
+    }
+
+    @Test
+    fun `present - a batch that fails part way sends only the rest on retry, in the same batch`() = runTest {
+        val sentMedia = SentMediaRecorder(failingCall = 1)
+        val presenter = createAttachmentsPreviewPresenter(
+            room = sentMedia.room(),
+            attachments = photoLibraryAttachments(3),
+            mediaPreProcessor = FakeMediaPreProcessor().apply { givenImageResult() },
+            onDoneListener = {},
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            initialState.textEditorState.setMarkdown(A_CAPTION)
+            initialState.eventSink(AttachmentsPreviewEvent.SendAttachment)
+            val failedState = consumeItemsUntilPredicate { it.sendActionState is SendActionState.Failure }.last()
+            assertThat((failedState.sendActionState as SendActionState.Failure).mediaInfos).hasSize(2)
+            failedState.eventSink(AttachmentsPreviewEvent.CancelAndClearSendState)
+            val readyState = consumeItemsUntilPredicate { it.sendActionState is SendActionState.Sending.ReadyToUpload }.last()
+            readyState.eventSink(AttachmentsPreviewEvent.SendAttachment)
+            consumeItemsUntilPredicate { it.sendActionState == SendActionState.Done }
+
+            assertThat(sentMedia.sent.map { it.caption }).containsExactly(A_CAPTION, null, null).inOrder()
+            val batches = sentMedia.sent.map { it.batch() }
+            assertThat(batches.map { it?.index }).containsExactly(0, 1, 2).inOrder()
+            assertThat(batches.map { it?.id }.toSet()).hasSize(1)
         }
     }
 
     @Test
     fun `present - photos are sent without a batch when the flag is off`() = runTest {
-        val sentContents = mutableListOf<SentMedia>()
-        val sendImageResult = lambdaRecorder { _: File, _: File?, _: ImageInfo, caption: String?, _: String?, inReplyTo: EventId?, extraContent: String? ->
-            sentContents += SentMedia(caption, inReplyTo, extraContent)
-            Result.success(FakeMediaUploadHandler())
-        }
+        val sentMedia = SentMediaRecorder()
         val presenter = createAttachmentsPreviewPresenter(
-            room = FakeJoinedRoom(liveTimeline = FakeTimeline().apply { sendImageLambda = sendImageResult }),
-            attachments = List(2) { index -> aMediaAttachment(aLocalMedia(uri = Uri.parse("file:///tmp/$index.jpeg")), isFromPhotoLibrary = true) },
+            room = sentMedia.room(),
+            attachments = photoLibraryAttachments(2),
             mediaPreProcessor = FakeMediaPreProcessor().apply { givenImageResult() },
             onDoneListener = {},
             featureFlagService = FakeFeatureFlagService(initialState = mapOf(FeatureFlags.GuaMediaStacks.key to false)),
@@ -996,19 +1016,15 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
             awaitItem().eventSink(AttachmentsPreviewEvent.SendAttachment)
             consumeItemsUntilPredicate { it.sendActionState == SendActionState.Done }
 
-            assertThat(sentContents.map { it.extraContent }).containsExactly(null, null)
+            assertThat(sentMedia.sent.map { it.extraContent }).containsExactly(null, null)
         }
     }
 
     @Test
     fun `present - media not picked from the photo library are sent without a batch`() = runTest {
-        val sentContents = mutableListOf<SentMedia>()
-        val sendImageResult = lambdaRecorder { _: File, _: File?, _: ImageInfo, caption: String?, _: String?, inReplyTo: EventId?, extraContent: String? ->
-            sentContents += SentMedia(caption, inReplyTo, extraContent)
-            Result.success(FakeMediaUploadHandler())
-        }
+        val sentMedia = SentMediaRecorder()
         val presenter = createAttachmentsPreviewPresenter(
-            room = FakeJoinedRoom(liveTimeline = FakeTimeline().apply { sendImageLambda = sendImageResult }),
+            room = sentMedia.room(),
             attachments = List(2) { index -> aMediaAttachment(aLocalMedia(uri = Uri.parse("file:///tmp/$index.jpeg"))) },
             mediaPreProcessor = FakeMediaPreProcessor().apply { givenImageResult() },
             onDoneListener = {},
@@ -1017,22 +1033,16 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
             awaitItem().eventSink(AttachmentsPreviewEvent.SendAttachment)
             consumeItemsUntilPredicate { it.sendActionState == SendActionState.Done }
 
-            assertThat(sentContents.map { it.extraContent }).containsExactly(null, null)
+            assertThat(sentMedia.sent.map { it.extraContent }).containsExactly(null, null)
         }
     }
 
     @Test
     fun `present - a pick larger than the limit is sent as several batches, a lone last item without one`() = runTest {
-        val sentContents = mutableListOf<SentMedia>()
-        val sendImageResult = lambdaRecorder { _: File, _: File?, _: ImageInfo, caption: String?, _: String?, inReplyTo: EventId?, extraContent: String? ->
-            sentContents += SentMedia(caption, inReplyTo, extraContent)
-            Result.success(FakeMediaUploadHandler())
-        }
+        val sentMedia = SentMediaRecorder()
         val presenter = createAttachmentsPreviewPresenter(
-            room = FakeJoinedRoom(liveTimeline = FakeTimeline().apply { sendImageLambda = sendImageResult }),
-            attachments = List(MediaBatch.MAX_SEND_COUNT + 1) { index ->
-                aMediaAttachment(aLocalMedia(uri = Uri.parse("file:///tmp/$index.jpeg")), isFromPhotoLibrary = true)
-            },
+            room = sentMedia.room(),
+            attachments = photoLibraryAttachments(MediaBatch.MAX_SEND_COUNT + 1),
             mediaPreProcessor = FakeMediaPreProcessor().apply { givenImageResult() },
             onDoneListener = {},
         )
@@ -1040,16 +1050,39 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
             awaitItem().eventSink(AttachmentsPreviewEvent.SendAttachment)
             consumeItemsUntilPredicate { it.sendActionState == SendActionState.Done }
 
-            val batches = sentContents.map { it.batch() }
+            val batches = sentMedia.sent.map { it.batch() }
             assertThat(batches.take(MediaBatch.MAX_SEND_COUNT).map { it?.count }.toSet()).containsExactly(MediaBatch.MAX_SEND_COUNT)
             assertThat(batches.last()).isNull()
         }
     }
 
-    private data class SentMedia(val caption: String?, val inReplyTo: EventId?, val extraContent: String?) {
-        fun batch(): MediaBatch? = extraContent?.let { MediaBatch.fromContent(Json.parseToJsonElement(it.withImageMsgType()).jsonObject) }
+    private fun photoLibraryAttachments(count: Int) = List(count) { index ->
+        aMediaAttachment(aLocalMedia(uri = Uri.parse("file:///tmp/$index.jpeg")), isFromPhotoLibrary = true)
+    }
 
-        private fun String.withImageMsgType() = "{\"msgtype\":\"m.image\"," + removePrefix("{")
+    private data class SentMedia(val caption: String?, val inReplyTo: EventId?, val extraContent: String?) {
+        fun batch(): MediaBatch? = extraContent?.let { extra ->
+            MediaBatch.fromContent(JsonObject(Json.parseToJsonElement(extra).jsonObject + ("msgtype" to JsonPrimitive("m.image"))))
+        }
+    }
+
+    // Records each photo sent, in order; the send numbered [failingCall], counting from 0, fails.
+    private class SentMediaRecorder(private val failingCall: Int? = null) {
+        val sent = mutableListOf<SentMedia>()
+        private var calls = 0
+
+        fun room(): FakeJoinedRoom {
+            val timeline = FakeTimeline()
+            timeline.sendImageLambda = { _, _, _, caption, _, inReplyTo, extraContent ->
+                if (calls++ == failingCall) {
+                    Result.failure(IllegalStateException("Sending failed"))
+                } else {
+                    sent += SentMedia(caption, inReplyTo, extraContent)
+                    Result.success(FakeMediaUploadHandler())
+                }
+            }
+            return FakeJoinedRoom(liveTimeline = timeline)
+        }
     }
 
     private fun TestScope.createAttachmentsPreviewPresenter(

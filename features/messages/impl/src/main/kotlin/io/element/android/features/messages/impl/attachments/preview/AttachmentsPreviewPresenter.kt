@@ -102,6 +102,9 @@ class AttachmentsPreviewPresenter(
 
     private val mediaSender = mediaSenderFactory.create(timelineMode)
 
+    // GUA FORK: a send that fails part way keeps the media not sent yet, so a retry neither repeats the others nor splits their batch.
+    private var unsentMedia = emptyList<MediaSend>()
+
     @Composable
     override fun present(): AttachmentsPreviewState {
         val coroutineScope = rememberCoroutineScope()
@@ -518,33 +521,34 @@ class AttachmentsPreviewPresenter(
         onDoneListener()
     }
 
-    /**
-     * GUA FORK: several media are sent as separate events, never as a gallery event, so every client shows each of them. The fallback
-     * picker of devices without the system photo picker ignores the limit, so a larger pick goes out as several batches.
-     */
-    private suspend fun sendSeparately(
-        mediaUploadInfos: List<MediaUploadInfo>,
-        caption: String?,
-        inReplyToEventId: EventId?,
-    ) {
+    // GUA FORK: several media go out as separate events, never as a gallery, so every client shows each of them.
+    private suspend fun planSends(mediaUploadInfos: List<MediaUploadInfo>): List<MediaSend> {
         val sendsAsMediaStack = attachments.all { it is Attachment.Media && it.isFromPhotoLibrary } &&
             featureFlagService.isFeatureEnabled(FeatureFlags.GuaMediaStacks)
+        // The fallback picker of devices without the system photo picker ignores the limit.
         val groups = if (sendsAsMediaStack) mediaUploadInfos.chunked(MediaBatch.MAX_SEND_COUNT) else mediaUploadInfos.map(::listOf)
-        groups.forEachIndexed { groupIndex, group ->
+        return groups.flatMapIndexed { groupIndex, group ->
             val batches = if (group.size >= 2) MediaBatch.newBatch(group.size) else null
             if (batches != null) {
                 pendingMediaBatches.register(room.roomId, group.map { it.pendingMedia() }.zip(batches))
             }
-            group.forEachIndexed { index, mediaUploadInfo ->
-                val isFirst = groupIndex == 0 && index == 0
-                mediaSender.sendPreProcessedMedia(
-                    mediaUploadInfo = mediaUploadInfo,
-                    caption = caption.takeIf { isFirst },
-                    formattedCaption = null,
-                    inReplyToEventId = inReplyToEventId.takeIf { isFirst },
-                    extraContentJson = batches?.get(index)?.extraContentJson(),
-                ).getOrThrow()
+            group.mapIndexed { index, mediaUploadInfo ->
+                MediaSend(mediaUploadInfo = mediaUploadInfo, isFirst = groupIndex == 0 && index == 0, batch = batches?.get(index))
             }
+        }
+    }
+
+    private suspend fun sendSeparately(caption: String?, inReplyToEventId: EventId?) {
+        while (unsentMedia.isNotEmpty()) {
+            val send = unsentMedia.first()
+            mediaSender.sendPreProcessedMedia(
+                mediaUploadInfo = send.mediaUploadInfo,
+                caption = caption.takeIf { send.isFirst },
+                formattedCaption = null,
+                inReplyToEventId = inReplyToEventId.takeIf { send.isFirst },
+                extraContentJson = send.batch?.extraContentJson(),
+            ).getOrThrow()
+            unsentMedia = unsentMedia.drop(1)
         }
     }
 
@@ -568,7 +572,8 @@ class AttachmentsPreviewPresenter(
         sendActionState: MutableState<SendActionState>,
         inReplyToEventId: EventId?,
     ) = runCatchingExceptions {
-        if (mediaUploadInfos.size == 1) {
+        unsentMedia = unsentMedia.takeIf { sends -> sends.map { it.mediaUploadInfo } == mediaUploadInfos } ?: planSends(mediaUploadInfos)
+        if (unsentMedia.singleOrNull()?.isFirst == true) {
             sendActionState.value = SendActionState.Sending.Uploading(mediaUploadInfos)
             mediaSender.sendPreProcessedMedia(
                 mediaUploadInfo = mediaUploadInfos.first(),
@@ -578,10 +583,11 @@ class AttachmentsPreviewPresenter(
                 extraContentJson = null,
             ).getOrThrow()
         } else {
-            sendSeparately(mediaUploadInfos, caption, inReplyToEventId)
+            sendSeparately(caption, inReplyToEventId)
         }
     }.fold(
         onSuccess = {
+            unsentMedia = emptyList()
             mediaUploadInfos.forEach { cleanUp(it) }
             sendActionState.value = SendActionState.Done
             onDoneListener()
@@ -591,8 +597,14 @@ class AttachmentsPreviewPresenter(
             if (error is CancellationException) {
                 throw error
             } else {
-                sendActionState.value = SendActionState.Failure(error, mediaUploadInfos)
+                sendActionState.value = SendActionState.Failure(error, unsentMedia.map { it.mediaUploadInfo })
             }
         }
     )
 }
+
+private data class MediaSend(
+    val mediaUploadInfo: MediaUploadInfo,
+    val isFirst: Boolean,
+    val batch: MediaBatch?,
+)
