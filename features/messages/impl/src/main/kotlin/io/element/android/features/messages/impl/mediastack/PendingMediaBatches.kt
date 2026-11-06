@@ -7,14 +7,18 @@
 
 package io.element.android.features.messages.impl.mediastack
 
+import android.os.Parcelable
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEventContentWithAttachment
 import io.element.android.libraries.core.mimetype.MimeTypes
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.TransactionId
+import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
 import io.element.android.libraries.mediaupload.api.MediaUploadInfo
 import io.element.android.services.toolbox.api.systemclock.SystemClock
+import kotlinx.parcelize.Parcelize
 import kotlin.time.Duration.Companion.hours
 
 // A local echo has no event JSON to read its batch from, so it is matched by the file it carries, then by its transaction id once bound.
@@ -23,11 +27,12 @@ import kotlin.time.Duration.Companion.hours
 class PendingMediaBatches(
     private val systemClock: SystemClock,
 ) {
+    @Parcelize
     data class Media(
         val filename: String,
         val fileSize: Long,
         val mimeType: String,
-    )
+    ) : Parcelable
 
     private data class Entry(
         val roomId: RoomId,
@@ -69,6 +74,17 @@ class PendingMediaBatches(
     private companion object {
         val EXPIRY = 24.hours
     }
+}
+
+// A forwarded echo carries the original's content, so it matches the key read from the original's timeline item.
+fun TimelineItemEventContentWithAttachment.pendingMedia(): PendingMediaBatches.Media =
+    PendingMediaBatches.Media(filename = filename, fileSize = fileSize ?: 0, mimeType = mimeType)
+
+// Each chat forwarded to gets batches of its own, registered for that chat so its echoes stack before the server copies arrive.
+fun PendingMediaBatches.forwardExtraContents(files: List<PendingMediaBatches.Media>): ForwardExtraContents = ForwardExtraContents { roomId ->
+    val batches = MediaBatch.makeBatches(files.size)
+    register(roomId, files.zip(batches).mapNotNull { (file, batch) -> batch?.let { file to it } })
+    batches.map { it?.extraContentJson() }
 }
 
 fun MediaUploadInfo.pendingMedia(): PendingMediaBatches.Media = when (this) {

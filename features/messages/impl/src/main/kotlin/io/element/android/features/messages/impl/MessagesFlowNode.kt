@@ -43,7 +43,8 @@ import io.element.android.features.location.api.ShowLocationMode
 import io.element.android.features.messages.api.MessagesEntryPoint
 import io.element.android.features.messages.impl.attachments.Attachment
 import io.element.android.features.messages.impl.attachments.preview.AttachmentsPreviewNode
-import io.element.android.features.messages.impl.mediastack.MediaBatch
+import io.element.android.features.messages.impl.mediastack.PendingMediaBatches
+import io.element.android.features.messages.impl.mediastack.forwardExtraContents
 import io.element.android.features.messages.impl.mediastack.grid.MediaStackGridNode
 import io.element.android.features.messages.impl.mediastack.grid.MediaStackGridTile
 import io.element.android.features.messages.impl.pinned.DefaultPinnedEventsTimelineProvider
@@ -100,7 +101,6 @@ import io.element.android.libraries.matrix.api.room.BaseRoom
 import io.element.android.libraries.matrix.api.room.alias.matches
 import io.element.android.libraries.matrix.api.room.joinedRoomMembers
 import io.element.android.libraries.matrix.api.roomlist.RoomListService
-import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.timeline.TimelineProvider
 import io.element.android.libraries.matrix.api.timeline.item.TimelineItemDebugInfo
@@ -151,6 +151,7 @@ class MessagesFlowNode(
     private val dateFormatter: DateFormatter,
     private val coroutineDispatchers: CoroutineDispatchers,
     private val hasVulkanSupport: DeviceHasVulkanSupport,
+    private val pendingMediaBatches: PendingMediaBatches,
 ) : BaseFlowNode<MessagesFlowNode.NavTarget>(
     backstack = BackStack(
         initialElement = plugins.filterIsInstance<MessagesEntryPoint.Params>().first().initialTarget.toNavTarget(),
@@ -200,7 +201,7 @@ class MessagesFlowNode(
             val eventIds: List<EventId>,
             @IgnoredOnParcel
             val timelineProvider: TimelineProvider? = null,
-            val asMediaStack: Boolean = false,
+            val mediaStackFiles: List<PendingMediaBatches.Media>? = null,
         ) : NavTarget
 
         @Parcelize
@@ -331,8 +332,8 @@ class MessagesFlowNode(
                         backstack.push(NavTarget.EventDebugInfo(eventId, debugInfo))
                     }
 
-                    override fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider, asMediaStack: Boolean) {
-                        backstack.push(NavTarget.ForwardEvent(eventIds, timelineProvider, asMediaStack))
+                    override fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider, mediaStackFiles: List<PendingMediaBatches.Media>?) {
+                        backstack.push(NavTarget.ForwardEvent(eventIds, timelineProvider, mediaStackFiles))
                     }
 
                     override fun navigateToReportMessage(eventIds: List<EventId>, senderId: UserId) {
@@ -497,9 +498,7 @@ class MessagesFlowNode(
                     eventIds = navTarget.eventIds,
                     timelineProvider = timelineProvider,
                     fromRoomId = room.roomId,
-                    // Each chat forwarded to gets a batch of its own, so the photos stack there too.
-                    extraContents = ForwardExtraContents { MediaBatch.makeBatches(navTarget.eventIds.size).map { it?.extraContentJson() } }
-                        .takeIf { navTarget.asMediaStack },
+                    extraContents = navTarget.mediaStackFiles?.let(pendingMediaBatches::forwardExtraContents),
                 )
                 val callback = object : ForwardEntryPoint.Callback {
                     override fun onDone(roomIds: List<RoomId>) {
@@ -675,8 +674,12 @@ class MessagesFlowNode(
                         backstack.push(NavTarget.EventDebugInfo(eventId, debugInfo))
                     }
 
-                    override fun handleForwardEventClick(eventIds: List<EventId>, timelineProvider: TimelineProvider, asMediaStack: Boolean) {
-                        backstack.push(NavTarget.ForwardEvent(eventIds, timelineProvider, asMediaStack))
+                    override fun handleForwardEventClick(
+                        eventIds: List<EventId>,
+                        timelineProvider: TimelineProvider,
+                        mediaStackFiles: List<PendingMediaBatches.Media>?,
+                    ) {
+                        backstack.push(NavTarget.ForwardEvent(eventIds, timelineProvider, mediaStackFiles))
                     }
 
                     override fun navigateToReportMessage(eventIds: List<EventId>, senderId: UserId) {

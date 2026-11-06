@@ -12,6 +12,10 @@ import io.element.android.libraries.matrix.api.core.TransactionId
 import io.element.android.libraries.matrix.test.A_ROOM_ID
 import io.element.android.libraries.matrix.test.A_ROOM_ID_2
 import io.element.android.services.toolbox.test.systemclock.FakeSystemClock
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 import org.junit.Test
 import kotlin.time.Duration.Companion.hours
 
@@ -70,4 +74,23 @@ class PendingMediaBatchesTest {
 
         assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t1"), photo)).isNull()
     }
+
+    @Test
+    fun `forwarding gives each chat batches of its own, registered for that chat`() {
+        val files = List(MediaBatch.MAX_SEND_COUNT) { photo } + video
+        val extraContents = pendingMediaBatches.forwardExtraContents(files)
+
+        val first = extraContents.forChat(A_ROOM_ID).map { it?.toBatch() }
+        val second = extraContents.forChat(A_ROOM_ID_2).map { it?.toBatch() }
+
+        assertThat(first.dropLast(1).map { it?.count }.toSet()).containsExactly(MediaBatch.MAX_SEND_COUNT)
+        assertThat(first.last()).isNull()
+        assertThat(second.first()?.id).isNotEqualTo(first.first()?.id)
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t1"), photo)).isEqualTo(first.first())
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID_2, TransactionId("t2"), photo)).isEqualTo(second.first())
+        assertThat(pendingMediaBatches.bindBatch(A_ROOM_ID, TransactionId("t3"), video)).isNull()
+    }
+
+    private fun String.toBatch(): MediaBatch? =
+        MediaBatch.fromContent(JsonObject(Json.parseToJsonElement(this).jsonObject + ("msgtype" to JsonPrimitive("m.image"))))
 }

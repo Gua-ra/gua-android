@@ -35,6 +35,7 @@ import io.element.android.features.messages.impl.actionlist.model.TimelineItemAc
 import io.element.android.features.messages.impl.crypto.identity.IdentityChangeState
 import io.element.android.features.messages.impl.link.LinkState
 import io.element.android.features.messages.impl.mediastack.MediaStackSaver
+import io.element.android.features.messages.impl.mediastack.pendingMedia
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerEvent
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerState
 import io.element.android.features.messages.impl.messagemenu.MessageMenuPresenter
@@ -474,11 +475,14 @@ class MessagesPresenter(
         val members = stack.members.map { it.event }
         when (action) {
             TimelineItemAction.Redact -> redactEventAction.value = MessagesState.ConfirmingMediaStackRemoval(stack)
-            TimelineItemAction.Forward -> navigator.forwardEvents(
-                eventIds = members.mapNotNull { it.eventId },
-                timelineProvider = timelineController,
-                asMediaStack = featureFlagService.isFeatureEnabled(FeatureFlags.GuaMediaStacks),
-            )
+            TimelineItemAction.Forward -> {
+                val sent = stack.members.filter { it.event.eventId != null }
+                navigator.forwardEvents(
+                    eventIds = sent.mapNotNull { it.event.eventId },
+                    timelineProvider = timelineController,
+                    mediaStackFiles = sent.map { it.media.pendingMedia() }.takeIf { featureFlagService.isFeatureEnabled(FeatureFlags.GuaMediaStacks) },
+                )
+            }
             TimelineItemAction.Save -> sessionCoroutineScope.launch { mediaStackSaver.save(stack.members) }
             TimelineItemAction.ReportContent -> navigator.navigateToReportMessage(members.mapNotNull { it.eventId }, stackEvent.senderId)
             TimelineItemAction.RetrySending -> stack.failedMembers.forEach { handleRetrySending(it) }

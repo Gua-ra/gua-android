@@ -9,6 +9,7 @@ package io.element.android.features.messages.impl.timeline.groups
 
 import io.element.android.features.messages.impl.mediastack.MediaBatch
 import io.element.android.features.messages.impl.mediastack.PendingMediaBatches
+import io.element.android.features.messages.impl.mediastack.pendingMedia
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.TimelineItemGroupPosition
 import io.element.android.features.messages.impl.timeline.model.TimelineItemReadReceipts
@@ -68,11 +69,7 @@ class MediaStackGrouper(
         if (!isMine || eventId != null) return null
         val transactionId = transactionId ?: return null
         val media = content as TimelineItemEventContentWithAttachment
-        return pendingMediaBatches.bindBatch(
-            roomId = roomId,
-            transactionId = transactionId,
-            media = PendingMediaBatches.Media(filename = media.filename, fileSize = media.fileSize ?: 0, mimeType = media.mimeType),
-        )
+        return pendingMediaBatches.bindBatch(roomId = roomId, transactionId = transactionId, media = media.pendingMedia())
     }
 }
 

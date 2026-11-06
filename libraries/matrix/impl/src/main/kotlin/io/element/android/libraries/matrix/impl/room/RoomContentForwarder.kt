@@ -58,7 +58,7 @@ class RoomContentForwarder(
             room.use { targetRoom ->
                 runCatchingExceptions {
                     targetRoom.timeline().use { timeline ->
-                        val chatExtraContents = extraContents?.forChat()
+                        val chatExtraContents = extraContents?.forChat(RoomId(targetRoom.id()))
                         // Send the contents sequentially, so that they are received in the same order
                         contents.forEachIndexed { index, content ->
                             withTimeout(timeoutMs.milliseconds) {

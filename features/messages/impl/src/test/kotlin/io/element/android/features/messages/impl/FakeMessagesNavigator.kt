@@ -9,6 +9,7 @@
 package io.element.android.features.messages.impl
 
 import io.element.android.features.messages.impl.attachments.Attachment
+import io.element.android.features.messages.impl.mediastack.PendingMediaBatches
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
@@ -22,7 +23,11 @@ import kotlinx.collections.immutable.ImmutableList
 
 class FakeMessagesNavigator(
     private val onShowEventDebugInfoClickLambda: (eventId: EventId?, debugInfo: TimelineItemDebugInfo) -> Unit = { _, _ -> lambdaError() },
-    private val onForwardEventClickLambda: (eventIds: List<EventId>, timelineProvider: TimelineProvider, asMediaStack: Boolean) -> Unit = { _, _, _ ->
+    private val onForwardEventClickLambda: (
+        eventIds: List<EventId>,
+        timelineProvider: TimelineProvider,
+        mediaStackFiles: List<PendingMediaBatches.Media>?,
+    ) -> Unit = { _, _, _ ->
         lambdaError()
     },
     private val onReportContentClickLambda: (eventIds: List<EventId>, senderId: UserId) -> Unit = { _, _ -> lambdaError() },
@@ -40,8 +45,8 @@ class FakeMessagesNavigator(
         onShowEventDebugInfoClickLambda(eventId, debugInfo)
     }
 
-    override fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider, asMediaStack: Boolean) {
-        onForwardEventClickLambda(eventIds, timelineProvider, asMediaStack)
+    override fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider, mediaStackFiles: List<PendingMediaBatches.Media>?) {
+        onForwardEventClickLambda(eventIds, timelineProvider, mediaStackFiles)
     }
 
     override fun navigateToReportMessage(eventIds: List<EventId>, senderId: UserId) {

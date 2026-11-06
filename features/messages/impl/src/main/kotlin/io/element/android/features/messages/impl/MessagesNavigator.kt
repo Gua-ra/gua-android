@@ -9,6 +9,7 @@
 package io.element.android.features.messages.impl
 
 import io.element.android.features.messages.impl.attachments.Attachment
+import io.element.android.features.messages.impl.mediastack.PendingMediaBatches
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
@@ -21,7 +22,7 @@ import kotlinx.collections.immutable.ImmutableList
 
 interface MessagesNavigator {
     fun navigateToEventDebugInfo(eventId: EventId?, debugInfo: TimelineItemDebugInfo)
-    fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider, asMediaStack: Boolean = false)
+    fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider, mediaStackFiles: List<PendingMediaBatches.Media>? = null)
     fun navigateToReportMessage(eventIds: List<EventId>, senderId: UserId)
     fun navigateToMediaStackGrid(timelineMode: Timeline.Mode, stack: TimelineItemMediaStackContent)
     fun navigateToEditPoll(eventId: EventId)

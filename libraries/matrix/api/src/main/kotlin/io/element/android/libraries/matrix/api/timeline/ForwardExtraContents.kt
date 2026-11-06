@@ -7,7 +7,9 @@
 
 package io.element.android.libraries.matrix.api.timeline
 
+import io.element.android.libraries.matrix.api.core.RoomId
+
 // Asked once per chat forwarded to: one JSON object per forwarded event, whose fields are added at the top level of its content, or null for none.
 fun interface ForwardExtraContents {
-    fun forChat(): List<String?>
+    fun forChat(roomId: RoomId): List<String?>
 }

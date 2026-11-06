@@ -22,6 +22,8 @@ import io.element.android.features.messages.impl.crypto.identity.anIdentityChang
 import io.element.android.features.messages.impl.fixtures.aMessageEvent
 import io.element.android.features.messages.impl.link.aLinkState
 import io.element.android.features.messages.impl.mediastack.MediaStackSaver
+import io.element.android.features.messages.impl.mediastack.PendingMediaBatches
+import io.element.android.features.messages.impl.mediastack.pendingMedia
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerEvent
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerState
 import io.element.android.features.messages.impl.messagecomposer.aMessageComposerState
@@ -317,7 +319,7 @@ class MessagesPresenterTest {
 
     @Test
     fun `present - handle action forward navigates directly when multi select is disabled`() = runTest {
-        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, Boolean, Unit> { _, _, _ -> }
+        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, List<PendingMediaBatches.Media>?, Unit> { _, _, _ -> }
         val navigator = FakeMessagesNavigator(
             onForwardEventClickLambda = onForwardEventClickLambda,
         )
@@ -329,7 +331,7 @@ class MessagesPresenterTest {
             val initialState = awaitItem()
             initialState.eventSink(MessagesEvent.HandleAction(TimelineItemAction.Forward, aMessageEvent()))
             assertThat(awaitItem().actionListState.target).isEqualTo(ActionListState.Target.None)
-            onForwardEventClickLambda.assertions().isCalledOnce().with(value(listOf(AN_EVENT_ID)), any(), value(false))
+            onForwardEventClickLambda.assertions().isCalledOnce().with(value(listOf(AN_EVENT_ID)), any(), value(null))
         }
     }
 
@@ -636,7 +638,7 @@ class MessagesPresenterTest {
 
     @Test
     fun `present - forwarding a media stack forwards every member as a stack, without selecting`() = runTest {
-        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, Boolean, Unit> { _, _, _ -> }
+        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, List<PendingMediaBatches.Media>?, Unit> { _, _, _ -> }
         val presenter = createMessagesPresenter(
             navigator = FakeMessagesNavigator(onForwardEventClickLambda = onForwardEventClickLambda),
             featureFlagService = FakeFeatureFlagService(
@@ -649,7 +651,11 @@ class MessagesPresenterTest {
             initialState.eventSink(MessagesEvent.HandleAction(TimelineItemAction.Forward, stack))
             assertThat(awaitItem().actionListState.target).isEqualTo(ActionListState.Target.None)
             onForwardEventClickLambda.assertions().isCalledOnce()
-                .with(value(listOf(EventId("\$member0"), EventId("\$member1"))), any(), value(true))
+                .with(
+                    value(listOf(EventId("\$member0"), EventId("\$member1"))),
+                    any(),
+                    value((stack.content as TimelineItemMediaStackContent).members.map { it.media.pendingMedia() }),
+                )
         }
     }
 
@@ -1600,7 +1606,7 @@ class MessagesPresenterTest {
 
     @Test
     fun `present - confirm selection action forwards the selection in timeline order`() = runTest {
-        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, Boolean, Unit> { _, _, _ -> }
+        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, List<PendingMediaBatches.Media>?, Unit> { _, _, _ -> }
         val navigator = FakeMessagesNavigator(onForwardEventClickLambda = onForwardEventClickLambda)
         val timelineEventSink = lambdaRecorder<TimelineEvent, Unit> { }
         val presenter = createMessagesPresenter(
@@ -1622,7 +1628,7 @@ class MessagesPresenterTest {
         presenter.testWithLifecycleOwner {
             val initialState = awaitItem()
             initialState.eventSink(MessagesEvent.ConfirmSelectionAction)
-            onForwardEventClickLambda.assertions().isCalledOnce().with(value(listOf(AN_EVENT_ID, AN_EVENT_ID_2)), any(), value(false))
+            onForwardEventClickLambda.assertions().isCalledOnce().with(value(listOf(AN_EVENT_ID, AN_EVENT_ID_2)), any(), value(null))
             // Selection mode is not exited here: this is done by the parent node, and only if the forward actually happened.
             timelineEventSink.assertions().isNeverCalled()
             cancelAndIgnoreRemainingEvents()
@@ -1631,7 +1637,7 @@ class MessagesPresenterTest {
 
     @Test
     fun `present - confirm selection action does nothing when no selection is active`() = runTest {
-        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, Boolean, Unit> { _, _, _ -> }
+        val onForwardEventClickLambda = lambdaRecorder<List<EventId>, TimelineProvider, List<PendingMediaBatches.Media>?, Unit> { _, _, _ -> }
         val navigator = FakeMessagesNavigator(onForwardEventClickLambda = onForwardEventClickLambda)
         val presenter = createMessagesPresenter(navigator = navigator)
         presenter.testWithLifecycleOwner {
