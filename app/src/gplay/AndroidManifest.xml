@@ -5,7 +5,7 @@
   ~ Please see LICENSE files in the repository root for full details.
   -->
 <!-- GUA FORK: declarations the Play build does not ship. The feature behind each removal stays off
-     while BuildMeta.isGooglePlayBuild is true. -->
+     while BuildMeta.isGooglePlayBuild is true, or checks the permission before using it. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
@@ -26,7 +26,16 @@
         android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"
         tools:node="remove" />
     <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_CAMERA"
+        tools:node="remove" />
+    <uses-permission
         android:name="android.permission.USE_FULL_SCREEN_INTENT"
+        tools:node="remove" />
+
+    <!-- Installing an APK received in a conversation (AndroidLocalMediaActions opens the file
+         without the installer prompt). -->
+    <uses-permission
+        android:name="android.permission.REQUEST_INSTALL_PACKAGES"
         tools:node="remove" />
 
     <application>
@@ -36,6 +45,10 @@
 
         <service
             android:name="io.element.android.features.call.impl.services.CallForegroundService"
+            tools:node="remove" />
+
+        <service
+            android:name="io.element.android.call.impl.services.ElementCallForegroundService"
             tools:node="remove" />
     </application>
 
