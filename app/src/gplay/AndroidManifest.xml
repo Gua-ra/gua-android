@@ -47,8 +47,10 @@
             android:name="io.element.android.features.call.impl.services.CallForegroundService"
             tools:node="remove" />
 
+        <!-- Declared by the element-call library, which lint cannot see from this module. -->
         <service
             android:name="io.element.android.call.impl.services.ElementCallForegroundService"
+            tools:ignore="MissingClass"
             tools:node="remove" />
     </application>
 
