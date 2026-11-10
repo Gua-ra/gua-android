@@ -23,7 +23,9 @@ import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.room.RoomInfo
 import io.element.android.libraries.matrix.api.room.RoomMembersState
 import io.element.android.libraries.matrix.api.room.RoomNotificationSettingsState
+import io.element.android.libraries.matrix.api.room.RoomStateEvent
 import io.element.android.libraries.matrix.api.room.SendQueueUpdate
+import io.element.android.libraries.matrix.api.room.StateEventType
 import io.element.android.libraries.matrix.api.room.history.RoomHistoryVisibility
 import io.element.android.libraries.matrix.api.room.join.JoinRule
 import io.element.android.libraries.matrix.api.room.knock.KnockRequest
@@ -93,6 +95,8 @@ class FakeJoinedRoom(
     private val stopLiveLocationShareResult: () -> Result<Unit> = { lambdaError() },
     private val sendLiveLocationResult: (String) -> Result<Unit> = { lambdaError() },
     private val setOwnMemberDisplayNameResult: (String) -> Result<Unit> = { lambdaError() },
+    private val sendStateEventRawResult: (String, String, String) -> Result<EventId> = { _, _, _ -> lambdaError() },
+    val stateEvents: MutableStateFlow<List<RoomStateEvent>> = MutableStateFlow(emptyList()),
 ) : JoinedRoom, BaseRoom by baseRoom {
     private val sendQueueUpdates = MutableSharedFlow<SendQueueUpdate>(extraBufferCapacity = 10)
 
@@ -259,6 +263,12 @@ class FakeJoinedRoom(
     override suspend fun setOwnMemberDisplayName(displayName: String): Result<Unit> = simulateLongTask {
         setOwnMemberDisplayNameResult(displayName)
     }
+
+    override suspend fun sendStateEventRaw(eventType: String, stateKey: String, content: String): Result<EventId> = simulateLongTask {
+        sendStateEventRawResult(eventType, stateKey, content)
+    }
+
+    override fun stateEventsFlow(type: StateEventType): Flow<List<RoomStateEvent>> = stateEvents
 
     private suspend fun simulateSendMediaProgress(progressCallback: ProgressCallback?) {
         progressCallbackValues.forEach { (current, total) ->

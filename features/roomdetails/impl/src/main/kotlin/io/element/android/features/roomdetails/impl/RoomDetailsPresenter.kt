@@ -34,21 +34,26 @@ import io.element.android.features.securityandprivacy.api.securityAndPrivacyPerm
 import io.element.android.libraries.androidutils.clipboard.ClipboardHelper
 import io.element.android.libraries.androidutils.toast.ToastHelper
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.chatbackground.api.ChatBackgroundService
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.designsystem.utils.snackbar.LocalSnackbarDispatcher
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.designsystem.utils.snackbar.collectSnackbarMessageAsState
+import io.element.android.libraries.featureflag.api.FeatureFlagService
+import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.encryption.identity.IdentityState
 import io.element.android.libraries.matrix.api.notificationsettings.NotificationSettingsService
 import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.room.RoomMember
+import io.element.android.libraries.matrix.api.room.canChangeChatBackground
 import io.element.android.libraries.matrix.api.room.join.JoinRule
 import io.element.android.libraries.matrix.api.room.powerlevels.canEditRolesAndPermissions
 import io.element.android.libraries.matrix.api.room.powerlevels.permissionsAsState
 import io.element.android.libraries.matrix.api.room.roomNotificationSettings
 import io.element.android.libraries.matrix.api.timeline.ReceiptType
+import io.element.android.libraries.matrix.ui.chatbackground.collectBackgroundAsState
 import io.element.android.libraries.matrix.ui.room.getDirectRoomMember
 import io.element.android.libraries.matrix.ui.room.roomMemberIdentityStateChange
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
@@ -79,6 +84,8 @@ class RoomDetailsPresenter(
     private val appPreferencesStore: AppPreferencesStore,
     private val sessionPreferencesStore: SessionPreferencesStore,
     private val notificationCleaner: NotificationCleaner,
+    private val chatBackgroundService: ChatBackgroundService,
+    private val featureFlagService: FeatureFlagService,
 ) : Presenter<RoomDetailsState> {
     @AssistedFactory
     interface Factory {
@@ -193,6 +200,8 @@ class RoomDetailsPresenter(
 
         val canReportRoom by produceState(false) { value = client.canReportRoom() }
 
+        val chatBackgroundRow = chatBackgroundRowState(isSpace = roomInfo.isSpace)
+
         return RoomDetailsState(
             roomId = room.roomId,
             roomName = roomName,
@@ -224,8 +233,18 @@ class RoomDetailsPresenter(
             roomVersion = roomInfo.roomVersion,
             roomHistoryVisibility = roomInfo.historyVisibility,
             hasNewContent = hasNewContent,
+            chatBackgroundRow = chatBackgroundRow,
             eventSink = ::handleEvent,
         )
+    }
+
+    @Composable
+    private fun chatBackgroundRowState(isSpace: Boolean): ChatBackgroundRowState? {
+        val isEnabled by remember { featureFlagService.isFeatureEnabledFlow(FeatureFlags.ChatBackgrounds) }.collectAsState(initial = false)
+        if (!isEnabled || isSpace) return null
+        val background by chatBackgroundService.collectBackgroundAsState(room)
+        val canChange by room.permissionsAsState<Boolean?>(null) { it.canChangeChatBackground() }
+        return ChatBackgroundRowState(background = background, canChange = canChange)
     }
 
     @Composable

@@ -186,6 +186,15 @@ enum class FeatureFlags(
         defaultValue = { false },
         isFinished = false,
     ),
+    ChatBackgrounds(
+        key = "feature.chat_backgrounds",
+        title = "Chat backgrounds",
+        description = "GUA FORK: show the Background row in chat details. Backgrounds set from other devices always show." +
+            "\n\nOff in production until a release that hides the raw background event in group timelines is out.",
+        // On in debug and QA builds (the .dev application ID), off in production.
+        defaultValue = { buildMeta -> buildMeta.buildType != BuildType.RELEASE || buildMeta.applicationId.endsWith(".dev") },
+        isFinished = false,
+    ),
     ReceiveNotificationsFromOtherSignedInAccounts(
         key = "feature.receive_notifications_from_other_signed_in_accounts",
         title = "Receive notifications from other signed-in accounts",

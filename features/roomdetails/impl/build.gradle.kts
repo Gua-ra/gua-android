@@ -55,6 +55,9 @@ dependencies {
     implementation(projects.features.securityandprivacy.api)
     implementation(projects.features.roomdetailsedit.api)
     implementation(projects.features.invitepeople.api)
+    implementation(projects.features.chatbackground.api)
+    implementation(projects.libraries.chatbackground.api)
+    implementation(projects.libraries.featureflag.api)
 
     testCommonDependencies(libs, true)
     testImplementation(projects.libraries.matrix.test)
@@ -71,4 +74,7 @@ dependencies {
     testImplementation(projects.features.reportroom.test)
     testImplementation(projects.features.verifysession.test)
     testImplementation(projects.services.analytics.test)
+    testImplementation(projects.libraries.chatbackground.test)
+    testImplementation(projects.libraries.featureflag.test)
+    testImplementation(projects.features.chatbackground.test)
 }

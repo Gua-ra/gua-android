@@ -100,6 +100,7 @@ class KonsistPreviewTest {
         "HomeTopBarWithIndicatorPreview",
         "HomeTopBarWithStatusPreview",
         "IconsOtherPreview",
+        "LegibilityCapsulePreview",
         "MarkdownTextComposerEditPreview",
         "MatrixBadgeAtomInfoPreview",
         "MatrixBadgeAtomNegativePreview",

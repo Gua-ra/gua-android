@@ -9,15 +9,18 @@
 package io.element.android.features.messages.impl.timeline.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.tokens.generated.CompoundIcons
+import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Icon
@@ -39,7 +42,8 @@ fun RowScope.ReplySwipeIndicator(
             .graphicsLayer {
                 translationX = 36.dp.toPx() * swipeProgress().coerceAtMost(1f)
                 alpha = swipeProgress()
-            },
+            }
+            .legibilityCapsule(shape = CircleShape, padding = PaddingValues(4.dp)),
         contentDescription = null,
         imageVector = CompoundIcons.Reply(),
     )

@@ -40,4 +40,7 @@ sealed interface OtherState {
     data object SpaceChild : OtherState
     data object SpaceParent : OtherState
     data class Custom(val eventType: String) : OtherState
+
+    /** [contentJson] is null when the event content could not be read. */
+    data class ChatBackground(val contentJson: String?) : OtherState
 }
