@@ -4,8 +4,6 @@
   ~ SPDX-License-Identifier: AGPL-3.0-only
   ~ Please see LICENSE files in the repository root for full details.
   -->
-<!-- GUA FORK: declarations the Play build does not ship. The feature behind each removal stays off
-     while BuildMeta.isGooglePlayBuild is true, or checks the permission before using it. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
