@@ -11,10 +11,7 @@ import io.element.android.libraries.matrix.api.media.MediaPreviewValue
 import io.element.android.libraries.matrix.api.media.isPreviewEnabled
 import io.element.android.libraries.matrix.api.room.join.JoinRule
 
-/**
- * What a chat shows: its own theme, otherwise the personal default. A chat photo that the media setting hides falls back
- * to the default as a whole, while the default's own photo always shows.
- */
+/** A chat photo that the media setting hides falls back to the default as a whole, while the default's own photo always shows. */
 fun effectiveChatTheme(
     chatTheme: ChatTheme,
     defaultTheme: ChatTheme,
