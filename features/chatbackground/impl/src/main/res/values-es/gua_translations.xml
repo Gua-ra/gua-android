@@ -23,7 +23,7 @@
   <string name="gua_chat_theme_section_gradients">Degradados</string>
   <string name="gua_chat_theme_classic">Clásico</string>
   <string name="gua_chat_theme_default_note">Se aplica a todos los chats que no tienen su propio tema.</string>
-  <string name="gua_chat_theme_chat_note">Todos en este chat ven su tema.</string>
+  <string name="gua_chat_theme_chat_note">Todos en el chat ven este tema.</string>
   <string name="gua_chat_theme_no_permission">Solo los administradores y moderadores pueden cambiarlo</string>
   <string name="gua_chat_theme_action_set_theme">Establecer tema</string>
   <string name="gua_chat_theme_action_set_default">Establecer como predeterminado</string>
