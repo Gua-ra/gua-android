@@ -254,6 +254,27 @@
         "kind": "none",
         "bubble": "blue"
       }
+    },
+    {
+      "name": "a chat theme the app cannot read shows the default",
+      "chatTheme": {
+        "v": 1,
+        "kind": "preset",
+        "preset": "rainbow"
+      },
+      "defaultTheme": {
+        "v": 1,
+        "kind": "preset",
+        "preset": "sunset",
+        "bubble": "pink"
+      },
+      "roomIsPrivate": false,
+      "mediaShown": true,
+      "expected": {
+        "kind": "preset",
+        "preset": "sunset",
+        "bubble": "pink"
+      }
     }
   ]
 }
