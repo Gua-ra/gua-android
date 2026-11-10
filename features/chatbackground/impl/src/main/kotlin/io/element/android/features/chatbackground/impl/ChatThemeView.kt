@@ -57,7 +57,7 @@ fun ChatThemeView(
             BackHandler(onBack = cancel)
             ChatBackgroundPhotoPreviewView(
                 draft = photoDraft,
-                bubble = state.current.bubble,
+                bubble = state.baseTheme.bubble,
                 canChange = state.canChange,
                 eventSink = state.eventSink,
                 modifier = modifier,
@@ -141,19 +141,19 @@ private fun ChatThemeGalleryView(
             ) {
                 RoundOptionButton(
                     label = stringResource(R.string.gua_chat_theme_chat_bubble),
-                    currentValue = stringResource(state.current.bubble?.nameRes ?: R.string.gua_chat_theme_bubble_standard),
+                    currentValue = stringResource(state.baseTheme.bubble?.nameRes ?: R.string.gua_chat_theme_bubble_standard),
                     enabled = state.canChange,
                     onClick = { state.eventSink(ChatThemeEvent.OpenBubblePicker) },
                 ) {
-                    Box(Modifier.fillMaxSize().background(state.current.bubble.outgoingBubbleColor()))
+                    Box(Modifier.fillMaxSize().background(state.baseTheme.bubble.outgoingBubbleColor()))
                 }
                 RoundOptionButton(
                     label = stringResource(R.string.gua_chat_theme_wallpaper),
-                    currentValue = stringResource(state.shownCurrent.background.wallpaperNameRes),
+                    currentValue = stringResource(state.shownBase.background.wallpaperNameRes),
                     enabled = state.canChange,
                     onClick = { state.eventSink(ChatThemeEvent.OpenWallpaperPicker) },
                 ) {
-                    ChatBackgroundCanvas(background = state.shownCurrent.background, modifier = Modifier.fillMaxSize())
+                    ChatBackgroundCanvas(background = state.shownBase.background, modifier = Modifier.fillMaxSize())
                 }
             }
             ChatThemeSection.entries.forEach { section ->

@@ -77,7 +77,7 @@ internal fun ChatBubblePickerView(
             Button(
                 text = stringResource(R.string.gua_chat_theme_action_set),
                 onClick = { state.eventSink(ChatThemeEvent.Save) },
-                enabled = state.canChange && selection != state.current.bubble,
+                enabled = state.canChange && selection != state.baseTheme.bubble,
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
@@ -91,7 +91,7 @@ internal fun ChatBubblePickerView(
                 .consumeWindowInsets(padding)
                 .verticalScroll(rememberScrollState()),
         ) {
-            ChatThemePreviewCard(theme = state.shownCurrent.copy(bubble = selection), modifier = Modifier.padding(16.dp))
+            ChatThemePreviewCard(theme = state.shownTheme(saving = state.baseTheme.copy(bubble = selection)), modifier = Modifier.padding(16.dp))
             FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -182,7 +182,7 @@ internal fun ChatWallpaperPickerView(
                 enabled = state.canChange,
                 onClick = { state.eventSink(ChatThemeEvent.ChoosePhoto) },
             )
-            val isNoWallpaper = state.current.background == ChatBackground.None
+            val isNoWallpaper = state.baseTheme.background == ChatBackground.None
             ListItem(
                 modifier = Modifier.semantics { selected = isNoWallpaper },
                 content = { Text(stringResource(R.string.gua_chat_theme_no_wallpaper)) },
@@ -198,7 +198,7 @@ internal fun ChatWallpaperPickerView(
                         ChatThemeTile(
                             theme = ChatTheme(background),
                             label = stringResource(background.nameRes),
-                            isSelected = background == state.current.background,
+                            isSelected = background == state.baseTheme.background,
                             enabled = state.canChange,
                             showsBubbles = false,
                             onClick = { state.eventSink(ChatThemeEvent.SelectWallpaper(background)) },

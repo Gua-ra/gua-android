@@ -47,6 +47,7 @@ class ChatThemePresenter(
         val coroutineScope = rememberCoroutineScope()
         val targetState = target.present()
         val current = targetState.current
+        val base = baseChatTheme(target.mode, current, targetState.defaultTheme)
         val canChange = targetState.hasPermission == true
         var page by remember { mutableStateOf<ChatThemePage>(ChatThemePage.Gallery) }
         var preview by remember { mutableStateOf<ChatThemePreview?>(null) }
@@ -74,7 +75,7 @@ class ChatThemePresenter(
                 draft != null -> {
                     {
                         matrixClient.uploadMedia(draft.upload.mimetype, draft.upload.data)
-                            .flatMap { url -> target.set(current.copy(background = draft.toPhoto(url))) }
+                            .flatMap { url -> target.set(base.copy(background = draft.toPhoto(url))) }
                     }
                 }
                 previewed != null -> if (previewed.saved == current) {
@@ -83,7 +84,7 @@ class ChatThemePresenter(
                     { target.set(previewed.saved) }
                 }
                 picker != null -> {
-                    { target.set(current.copy(bubble = picker.selection)) }
+                    { target.set(base.copy(bubble = picker.selection)) }
                 }
                 else -> return
             }
@@ -98,12 +99,13 @@ class ChatThemePresenter(
                     val shown = if (target.mode == ChatThemeMode.Chat) targetState.defaultTheme else ChatTheme.STOCK
                     preview = ChatThemePreview(shown = shown, saved = ChatTheme.STOCK)
                 }
-                ChatThemeEvent.OpenBubblePicker -> if (canChange) page = ChatThemePage.BubblePicker(current.bubble)
+                ChatThemeEvent.OpenBubblePicker -> if (canChange) page = ChatThemePage.BubblePicker(base.bubble)
                 is ChatThemeEvent.SelectBubble -> (page as? ChatThemePage.BubblePicker)?.let { page = it.copy(selection = event.bubble) }
                 ChatThemeEvent.OpenWallpaperPicker -> if (canChange) page = ChatThemePage.WallpaperPicker
                 is ChatThemeEvent.SelectWallpaper -> if (canChange) {
-                    val theme = current.copy(background = event.background)
-                    preview = ChatThemePreview(shown = theme, saved = theme)
+                    val theme = base.copy(background = event.background)
+                    val shown = if (theme == ChatTheme.STOCK && target.mode == ChatThemeMode.Chat) targetState.defaultTheme else theme
+                    preview = ChatThemePreview(shown = shown, saved = theme)
                 }
                 ChatThemeEvent.ChoosePhoto -> if (canChange) photoPicker.launch()
                 is ChatThemeEvent.SetPhotoDim -> photoDraft = photoDraft?.copy(

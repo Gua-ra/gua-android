@@ -246,6 +246,61 @@ class ChatThemePresenterTest : RobolectricTest() {
     }
 
     @Test
+    fun `a chat following the default starts the pickers from it`() = runTest {
+        val service = FakeChatBackgroundService()
+        val presenter = createChatPresenter(service = service, setting = FakeChatThemeSetting(sunsetPink))
+        val dawn = ChatBackground.Preset(ChatBackgroundPreset.Dawn)
+
+        presenter.test {
+            val loaded = consumeItemsUntilPredicate { it.canChange && it.defaultTheme == sunsetPink }.last()
+            assertThat(loaded.baseTheme).isEqualTo(sunsetPink)
+            loaded.eventSink(ChatThemeEvent.OpenBubblePicker)
+            val picking = awaitItem()
+            assertThat(picking.page).isEqualTo(ChatThemePage.BubblePicker(selection = ChatBubbleColor.Pink))
+            picking.eventSink(ChatThemeEvent.Cancel)
+            awaitItem().eventSink(ChatThemeEvent.OpenWallpaperPicker)
+            awaitItem().eventSink(ChatThemeEvent.SelectWallpaper(dawn))
+            val previewing = awaitItem()
+            val dawnPink = ChatTheme(dawn, ChatBubbleColor.Pink)
+            assertThat(previewing.preview).isEqualTo(ChatThemePreview(shown = dawnPink, saved = dawnPink))
+            previewing.eventSink(ChatThemeEvent.Save)
+            consumeItemsUntilPredicate { it.preview == null && it.current == ChatTheme(dawn, ChatBubbleColor.Pink) }
+        }
+        assertThat(service.sentThemes).containsExactly(ChatTheme(dawn, ChatBubbleColor.Pink))
+    }
+
+    @Test
+    fun `the default photo never goes into a chat`() = runTest {
+        val service = FakeChatBackgroundService()
+        val defaultPhoto = ChatTheme(aChatBackgroundPhoto(), ChatBubbleColor.Green)
+        val presenter = createChatPresenter(service = service, setting = FakeChatThemeSetting(defaultPhoto))
+
+        presenter.test {
+            val loaded = consumeItemsUntilPredicate { it.canChange && it.defaultTheme == defaultPhoto }.last()
+            assertThat(loaded.baseTheme).isEqualTo(ChatTheme(bubble = ChatBubbleColor.Green))
+            loaded.eventSink(ChatThemeEvent.OpenBubblePicker)
+            awaitItem().eventSink(ChatThemeEvent.SelectBubble(ChatBubbleColor.Blue))
+            awaitItem().eventSink(ChatThemeEvent.Save)
+            consumeItemsUntilPredicate { it.page == ChatThemePage.Gallery && it.current == ChatTheme(bubble = ChatBubbleColor.Blue) }
+        }
+        assertThat(service.sentThemes).containsExactly(ChatTheme(bubble = ChatBubbleColor.Blue))
+    }
+
+    @Test
+    fun `a wallpaper choice that removes the chat theme previews the default`() = runTest {
+        val service = FakeChatBackgroundService(ChatTheme(ChatBackground.Preset(ChatBackgroundPreset.Aurora)))
+        val presenter = createChatPresenter(service = service, setting = FakeChatThemeSetting(sunsetPink))
+
+        presenter.test {
+            consumeItemsUntilPredicate { it.canChange && it.defaultTheme == sunsetPink }.last().eventSink(ChatThemeEvent.OpenWallpaperPicker)
+            awaitItem().eventSink(ChatThemeEvent.SelectWallpaper(ChatBackground.None))
+            val previewing = awaitItem()
+            assertThat(previewing.preview).isEqualTo(ChatThemePreview(shown = sunsetPink, saved = ChatTheme.STOCK))
+            assertThat(previewing.shownTheme(saving = ChatTheme.STOCK)).isEqualTo(sunsetPink)
+        }
+    }
+
+    @Test
     fun `cancel closes the preview, then the picker`() = runTest {
         val presenter = createChatPresenter()
 
@@ -435,12 +490,12 @@ class ChatThemePresenterTest : RobolectricTest() {
         createChatPresenter(service = FakeChatBackgroundService(photo), joinRule = JoinRule.Public, mediaPreviewConfig = mediaOff).test {
             val state = consumeItemsUntilPredicate { it.canChange }.last()
             assertThat(state.isPhotoHidden).isTrue()
-            assertThat(state.shownCurrent).isEqualTo(ChatTheme(bubble = ChatBubbleColor.Blue))
+            assertThat(state.shownBase).isEqualTo(ChatTheme(bubble = ChatBubbleColor.Blue))
         }
         createChatPresenter(service = FakeChatBackgroundService(photo), joinRule = JoinRule.Invite, mediaPreviewConfig = mediaOff).test {
             val state = consumeItemsUntilPredicate { it.canChange }.last()
             assertThat(state.isPhotoHidden).isFalse()
-            assertThat(state.shownCurrent).isEqualTo(photo)
+            assertThat(state.shownBase).isEqualTo(photo)
         }
     }
 

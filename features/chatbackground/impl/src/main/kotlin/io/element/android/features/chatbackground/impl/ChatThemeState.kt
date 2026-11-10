@@ -30,15 +30,32 @@ data class ChatThemeState(
     val canChange: Boolean
         get() = hasPermission == true
 
-    val shownCurrent: ChatTheme
-        get() = if (isPhotoHidden && current.background is ChatBackground.Photo) current.copy(background = ChatBackground.None) else current
+    val baseTheme: ChatTheme
+        get() = baseChatTheme(mode, current, defaultTheme)
+
+    val shownBase: ChatTheme
+        get() = hidingPhoto(baseTheme)
 
     val defaultTile: ChatTheme
         get() = when (mode) {
             ChatThemeMode.Chat -> defaultTheme
             ChatThemeMode.Default -> ChatTheme.STOCK
         }
+
+    /** Saving no theme makes a chat follow the default, so its preview shows that. */
+    fun shownTheme(saving: ChatTheme): ChatTheme = if (saving == ChatTheme.STOCK) defaultTile else hidingPhoto(saving)
+
+    private fun hidingPhoto(theme: ChatTheme) =
+        if (isPhotoHidden && theme.background is ChatBackground.Photo) theme.copy(background = ChatBackground.None) else theme
 }
+
+/** What the pickers start from: in a chat that follows the default, the default without its photo, which stays private. */
+internal fun baseChatTheme(mode: ChatThemeMode, current: ChatTheme, defaultTheme: ChatTheme): ChatTheme =
+    if (mode == ChatThemeMode.Chat && current == ChatTheme.STOCK) {
+        if (defaultTheme.background is ChatBackground.Photo) defaultTheme.copy(background = ChatBackground.None) else defaultTheme
+    } else {
+        current
+    }
 
 sealed interface ChatThemePage {
     data object Gallery : ChatThemePage
