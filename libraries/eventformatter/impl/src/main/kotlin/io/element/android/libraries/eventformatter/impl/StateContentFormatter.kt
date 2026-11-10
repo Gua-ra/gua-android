@@ -82,7 +82,7 @@ class StateContentFormatter(
                     formatRoomPinnedEvents(content, senderIsYou, senderDisambiguatedDisplayName)
                 }
             }
-            // GUA FORK: custom state is never shown, other than Gua's chat background notice.
+            // GUA FORK: custom state is never shown, other than Gua's chat theme notice.
             is OtherState.Custom -> {
                 Timber.v("Filtering timeline item for custom state: ${content.eventType}")
                 null
@@ -209,10 +209,10 @@ class StateContentFormatter(
     ): String {
         val isRemoved = content.contentJson?.filterNot { it.isWhitespace() } == "{}"
         return when {
-            senderIsYou && isRemoved -> sp.getString(R.string.gua_chat_background_notice_removed_by_you)
-            senderIsYou -> sp.getString(R.string.gua_chat_background_notice_changed_by_you)
-            isRemoved -> sp.getString(R.string.gua_chat_background_notice_removed, senderDisambiguatedDisplayName)
-            else -> sp.getString(R.string.gua_chat_background_notice_changed, senderDisambiguatedDisplayName)
+            senderIsYou && isRemoved -> sp.getString(R.string.gua_chat_theme_notice_removed_by_you)
+            senderIsYou -> sp.getString(R.string.gua_chat_theme_notice_changed_by_you)
+            isRemoved -> sp.getString(R.string.gua_chat_theme_notice_removed, senderDisambiguatedDisplayName)
+            else -> sp.getString(R.string.gua_chat_theme_notice_changed, senderDisambiguatedDisplayName)
         }
     }
 
