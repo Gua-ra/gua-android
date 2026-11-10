@@ -9,10 +9,13 @@
 package io.element.android.features.messages.impl
 
 import io.element.android.features.messages.impl.attachments.Attachment
+import io.element.android.features.messages.impl.mediastack.PendingMediaBatches
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.ThreadId
 import io.element.android.libraries.matrix.api.core.UserId
+import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.timeline.TimelineProvider
 import io.element.android.libraries.matrix.api.timeline.item.TimelineItemDebugInfo
 import io.element.android.tests.testutils.lambda.lambdaError
@@ -20,8 +23,15 @@ import kotlinx.collections.immutable.ImmutableList
 
 class FakeMessagesNavigator(
     private val onShowEventDebugInfoClickLambda: (eventId: EventId?, debugInfo: TimelineItemDebugInfo) -> Unit = { _, _ -> lambdaError() },
-    private val onForwardEventClickLambda: (eventIds: List<EventId>, timelineProvider: TimelineProvider) -> Unit = { _, _ -> lambdaError() },
-    private val onReportContentClickLambda: (eventId: EventId, senderId: UserId) -> Unit = { _, _ -> lambdaError() },
+    private val onForwardEventClickLambda: (
+        eventIds: List<EventId>,
+        timelineProvider: TimelineProvider,
+        mediaStackFiles: List<PendingMediaBatches.Media>?,
+    ) -> Unit = { _, _, _ ->
+        lambdaError()
+    },
+    private val onReportContentClickLambda: (eventIds: List<EventId>, senderId: UserId) -> Unit = { _, _ -> lambdaError() },
+    private val onMediaStackGridLambda: (timelineMode: Timeline.Mode, stack: TimelineItemMediaStackContent) -> Unit = { _, _ -> lambdaError() },
     private val onEditPollClickLambda: (eventId: EventId) -> Unit = { _ -> lambdaError() },
     private val onPreviewAttachmentLambda: (attachments: ImmutableList<Attachment>, inReplyToEventId: EventId?) -> Unit = { _, _ -> lambdaError() },
     private val onNavigateToRoomLambda: (roomId: RoomId, threadId: EventId?, serverNames: List<String>) -> Unit = { _, _, _ -> lambdaError() },
@@ -35,12 +45,16 @@ class FakeMessagesNavigator(
         onShowEventDebugInfoClickLambda(eventId, debugInfo)
     }
 
-    override fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider) {
-        onForwardEventClickLambda(eventIds, timelineProvider)
+    override fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider, mediaStackFiles: List<PendingMediaBatches.Media>?) {
+        onForwardEventClickLambda(eventIds, timelineProvider, mediaStackFiles)
     }
 
-    override fun navigateToReportMessage(eventId: EventId, senderId: UserId) {
-        onReportContentClickLambda(eventId, senderId)
+    override fun navigateToReportMessage(eventIds: List<EventId>, senderId: UserId) {
+        onReportContentClickLambda(eventIds, senderId)
+    }
+
+    override fun navigateToMediaStackGrid(timelineMode: Timeline.Mode, stack: TimelineItemMediaStackContent) {
+        onMediaStackGridLambda(timelineMode, stack)
     }
 
     override fun navigateToEditPoll(eventId: EventId) {

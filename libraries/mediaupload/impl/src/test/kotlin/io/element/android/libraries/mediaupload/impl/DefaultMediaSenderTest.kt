@@ -71,7 +71,7 @@ class DefaultMediaSenderTest : RobolectricTest() {
     @Test
     fun `given an attachment when sending it the Room will call sendMedia`() = runTest {
         val sendImageResult =
-            lambdaRecorder { _: File, _: File?, _: ImageInfo, _: String?, _: String?, _: EventId? ->
+            lambdaRecorder { _: File, _: File?, _: ImageInfo, _: String?, _: String?, _: EventId?, _: String? ->
                 Result.success(FakeMediaUploadHandler())
             }
         val room = FakeJoinedRoom(
@@ -104,7 +104,7 @@ class DefaultMediaSenderTest : RobolectricTest() {
             givenImageResult()
         }
         val sendImageResult =
-            lambdaRecorder { _: File, _: File?, _: ImageInfo, _: String?, _: String?, _: EventId? ->
+            lambdaRecorder { _: File, _: File?, _: ImageInfo, _: String?, _: String?, _: EventId?, _: String? ->
                 Result.failure<FakeMediaUploadHandler>(Exception())
             }
         val room = FakeJoinedRoom(

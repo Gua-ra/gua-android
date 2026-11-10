@@ -32,6 +32,7 @@ import androidx.core.content.PermissionChecker
 import androidx.core.net.toFile
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.binding
 import io.element.android.libraries.androidutils.file.saveWithUniqueFileName
 import io.element.android.libraries.androidutils.system.startInstallFromSourceIntent
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
@@ -40,6 +41,7 @@ import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.core.mimetype.MimeTypes
 import io.element.android.libraries.di.annotations.ApplicationContext
 import io.element.android.libraries.mediaviewer.api.local.LocalMedia
+import io.element.android.libraries.mediaviewer.api.local.LocalMediaSaver
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -48,7 +50,8 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 
-@ContributesBinding(AppScope::class)
+@ContributesBinding(AppScope::class, binding = binding<LocalMediaActions>())
+@ContributesBinding(AppScope::class, binding = binding<LocalMediaSaver>())
 class AndroidLocalMediaActions(
     @ApplicationContext private val context: Context,
     private val coroutineDispatchers: CoroutineDispatchers,

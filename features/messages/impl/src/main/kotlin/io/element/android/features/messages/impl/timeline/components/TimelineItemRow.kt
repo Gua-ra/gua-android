@@ -97,6 +97,9 @@ internal fun TimelineItemRow(
                 eventSink = eventSink,
                 modifier = contentModifier,
                 onContentLayoutChange = onContentLayoutChange,
+                isMine = event.isMine,
+                isSelectionModeActive = selectionData.isSelectionModeActive,
+                timestamp = { timestampModifier -> TimelineEventTimestampView(event = event, eventSink = eventSink, modifier = timestampModifier) },
             )
         },
 ) {

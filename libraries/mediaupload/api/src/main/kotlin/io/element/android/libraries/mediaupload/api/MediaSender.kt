@@ -71,12 +71,14 @@ interface MediaSender {
      * @param caption the text shown along with the media, or `null` for none.
      * @param formattedCaption the caption as HTML, or `null` to send it unformatted.
      * @param inReplyToEventId the event this message replies to, or `null` if it is not a reply.
+     * @param extraContentJson a JSON object whose fields are added at the top level of an image or video event content, or `null` for none.
      */
     suspend fun sendPreProcessedMedia(
         mediaUploadInfo: MediaUploadInfo,
         caption: String?,
         formattedCaption: String?,
         inReplyToEventId: EventId?,
+        extraContentJson: String?,
     ): Result<Unit>
 
     /**
