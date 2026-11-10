@@ -99,4 +99,5 @@
     <string name="gua_preferences_spaces_title">Spaces</string>
     <string name="gua_preferences_spaces_description">Organize related chats and communities in one place</string>
     <string name="gua_notification_settings_no_push_service">This device has no push service, so Gua can\'t deliver notifications on it.</string>
+    <string name="gua_chat_theme_settings_row_title">Chat theme</string>
 </resources>

@@ -12,6 +12,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.bumble.appyx.core.modality.BuildContext
 import com.bumble.appyx.testing.junit4.util.MainDispatcherRule
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.chatbackground.test.FakeChatBackgroundEntryPoint
 import io.element.android.features.deactivation.test.FakeAccountDeactivationEntryPoint
 import io.element.android.features.licenses.test.FakeOpenSourceLicensesEntryPoint
 import io.element.android.features.lockscreen.test.FakeLockScreenEntryPoint
@@ -49,6 +50,7 @@ class DefaultPreferencesEntryPointTest {
                 logoutEntryPoint = FakeLogoutEntryPoint(),
                 openSourceLicensesEntryPoint = FakeOpenSourceLicensesEntryPoint(),
                 accountDeactivationEntryPoint = FakeAccountDeactivationEntryPoint(),
+                chatBackgroundEntryPoint = FakeChatBackgroundEntryPoint(),
             )
         }
         val callback = object : PreferencesEntryPoint.Callback {

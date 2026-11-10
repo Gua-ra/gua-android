@@ -25,42 +25,51 @@ object ChatBackgroundCodec {
     const val REMOVED_CONTENT = "{}"
 
     private const val VERSION = 1L
+    private const val KIND_NONE = "none"
     private const val KIND_PRESET = "preset"
     private const val KIND_PHOTO = "photo"
     private const val MAX_DIMENSION = 8192L
     private const val MAX_BLURHASH_LENGTH = 100
 
-    fun decode(contentJson: String?): ChatBackground {
-        val content = tryOrNull { Json.parseToJsonElement(contentJson.orEmpty()) } as? JsonObject ?: return ChatBackground.None
-        val kind = content["kind"].stringOrNull().takeIf { content["v"].integerOrNull() == VERSION }
-        return when (kind) {
+    fun decode(contentJson: String?): ChatTheme {
+        val content = tryOrNull { Json.parseToJsonElement(contentJson.orEmpty()) } as? JsonObject ?: return ChatTheme.STOCK
+        // The bubble is part of version 1: content of any other version keeps only its fallback wallpaper.
+        if (content["v"].integerOrNull() != VERSION) return ChatTheme(decodePreset(content["fallback_preset"]))
+        val background = when (content["kind"].stringOrNull()) {
+            KIND_NONE -> ChatBackground.None
             KIND_PRESET -> decodePreset(content["preset"])
             KIND_PHOTO -> decodePhoto(content["photo"])
             else -> decodePreset(content["fallback_preset"])
         }
+        return ChatTheme(background, ChatBubbleColor.fromId(content["bubble"].stringOrNull()))
     }
 
-    fun encode(background: ChatBackground): String = when (background) {
-        ChatBackground.None -> REMOVED_CONTENT
-        is ChatBackground.Preset -> buildJsonObject {
-            put("kind", KIND_PRESET)
-            put("preset", background.preset.id)
-            put("v", VERSION)
-        }.toString()
-        is ChatBackground.Photo -> buildJsonObject {
-            put("kind", KIND_PHOTO)
-            putJsonObject("photo") {
-                putJsonObject("align") {
-                    put("x", background.alignX)
-                    put("y", background.alignY)
+    fun encode(theme: ChatTheme): String {
+        if (theme == ChatTheme.STOCK) return REMOVED_CONTENT
+        return buildJsonObject {
+            theme.bubble?.let { put("bubble", it.id) }
+            when (val background = theme.background) {
+                ChatBackground.None -> put("kind", KIND_NONE)
+                is ChatBackground.Preset -> {
+                    put("kind", KIND_PRESET)
+                    put("preset", background.preset.id)
                 }
-                background.blurhash?.let { put("blurhash", it) }
-                put("dim", background.dim)
-                put("h", background.height)
-                put("mimetype", background.mimetype)
-                put("size", background.size)
-                put("url", background.url)
-                put("w", background.width)
+                is ChatBackground.Photo -> {
+                    put("kind", KIND_PHOTO)
+                    putJsonObject("photo") {
+                        putJsonObject("align") {
+                            put("x", background.alignX)
+                            put("y", background.alignY)
+                        }
+                        background.blurhash?.let { put("blurhash", it) }
+                        put("dim", background.dim)
+                        put("h", background.height)
+                        put("mimetype", background.mimetype)
+                        put("size", background.size)
+                        put("url", background.url)
+                        put("w", background.width)
+                    }
+                }
             }
             put("v", VERSION)
         }.toString()

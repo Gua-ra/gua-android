@@ -28,6 +28,10 @@ interface ChatBackgroundCache {
 
     /** Stores [stored] as the most recently used entry. */
     suspend fun save(roomId: RoomId, stored: StoredChatBackground)
+
+    suspend fun loadDefaultTheme(): String?
+
+    suspend fun saveDefaultTheme(contentJson: String)
 }
 
 // In the session's own directory, which every sign-out deletes with the rest of the session's data.
@@ -41,6 +45,7 @@ class DataStoreChatBackgroundCache(
         File(matrixClient.sessionPaths.fileDirectory, "chat-backgrounds.preferences_pb")
     }
     private val entriesKey = stringPreferencesKey("entries")
+    private val defaultThemeKey = stringPreferencesKey("default_theme")
 
     override suspend fun load(): Map<RoomId, StoredChatBackground> {
         val json = tryOrNull { store.data.first()[entriesKey] } ?: return emptyMap()
@@ -56,6 +61,12 @@ class DataStoreChatBackgroundCache(
                 preferences[entriesKey] = Json.encodeToString(updated.take(MAX_ROOMS))
             }
         }
+    }
+
+    override suspend fun loadDefaultTheme(): String? = tryOrNull { store.data.first()[defaultThemeKey] }
+
+    override suspend fun saveDefaultTheme(contentJson: String) {
+        tryOrNull { store.edit { it[defaultThemeKey] = contentJson } }
     }
 
     private companion object {

@@ -9,25 +9,33 @@ package io.element.android.features.messages.impl.chatbackground
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import dev.zacsweers.metro.ContributesBinding
 import io.element.android.features.messages.impl.timeline.TimelineController
 import io.element.android.libraries.architecture.Presenter
-import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundService
+import io.element.android.libraries.chatbackground.api.ChatTheme
+import io.element.android.libraries.chatbackground.api.ChatThemeSetting
+import io.element.android.libraries.chatbackground.api.effectiveChatTheme
+import io.element.android.libraries.chatbackground.api.isPrivateChat
+import io.element.android.libraries.core.coroutine.mapState
 import io.element.android.libraries.di.RoomScope
 import io.element.android.libraries.matrix.api.core.EventId
+import io.element.android.libraries.matrix.api.media.MediaPreviewService
+import io.element.android.libraries.matrix.api.media.isPreviewEnabled
 import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.timeline.MatrixTimelineItem
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.timeline.item.event.OtherState
 import io.element.android.libraries.matrix.api.timeline.item.event.StateContent
-import io.element.android.libraries.matrix.ui.chatbackground.collectBackgroundAsState
+import io.element.android.libraries.matrix.ui.chatbackground.collectThemeAsState
 
-fun interface MessagesChatBackgroundPresenter : Presenter<ChatBackground> {
+fun interface MessagesChatBackgroundPresenter : Presenter<ChatTheme> {
     fun interface Factory {
         fun create(timelineController: TimelineController): MessagesChatBackgroundPresenter
     }
@@ -38,6 +46,8 @@ class DefaultMessagesChatBackgroundPresenter(
     @Assisted private val timelineController: TimelineController,
     private val room: JoinedRoom,
     private val chatBackgroundService: ChatBackgroundService,
+    private val chatThemeSetting: ChatThemeSetting,
+    private val mediaPreviewService: MediaPreviewService,
 ) : MessagesChatBackgroundPresenter {
     @AssistedFactory
     @ContributesBinding(RoomScope::class)
@@ -51,13 +61,21 @@ class DefaultMessagesChatBackgroundPresenter(
     }
 
     @Composable
-    override fun present(): ChatBackground {
-        if (!showsBackground) return ChatBackground.None
+    override fun present(): ChatTheme {
+        if (!showsBackground) return ChatTheme.STOCK
         LaunchedEffect(Unit) {
             reportTimelineChanges()
         }
-        val background by chatBackgroundService.collectBackgroundAsState(room)
-        return background
+        val chatTheme by chatBackgroundService.collectThemeAsState(room)
+        val defaultTheme by chatThemeSetting.theme.collectAsState()
+        val mediaPreviewValue by remember { mediaPreviewService.mediaPreviewConfigFlow.mapState { it.mediaPreviewValue } }.collectAsState()
+        val joinRule by remember { room.roomInfoFlow.mapState { it.joinRule } }.collectAsState()
+        return effectiveChatTheme(
+            chatTheme = chatTheme,
+            defaultTheme = defaultTheme,
+            roomIsPrivate = joinRule.isPrivateChat(),
+            mediaShown = mediaPreviewValue.isPreviewEnabled(joinRule),
+        )
     }
 
     private suspend fun reportTimelineChanges() {

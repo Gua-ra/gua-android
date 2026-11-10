@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.theme.Theme
 import io.element.android.libraries.chatbackground.api.ChatBackground
+import io.element.android.libraries.chatbackground.api.ChatBubbleColor
 import io.element.android.libraries.designsystem.chatbackground.LocalChatBackgroundActive
 import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
 import io.element.android.libraries.designsystem.components.button.BackButton
@@ -78,8 +79,10 @@ private const val NUDGE = 100
 @Composable
 internal fun ChatBackgroundPhotoPreviewView(
     draft: ChatBackgroundPhotoDraft,
+    bubble: ChatBubbleColor?,
+    saveLabel: String,
     canChange: Boolean,
-    eventSink: (ChatBackgroundEvent) -> Unit,
+    eventSink: (ChatThemeEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val isDarkPreview = draft.isDarkPreview ?: !ElementTheme.isLightTheme
@@ -89,8 +92,8 @@ internal fun ChatBackgroundPhotoPreviewView(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                titleStr = stringResource(R.string.gua_chat_background_screen_title),
-                navigationIcon = { BackButton(onClick = { eventSink(ChatBackgroundEvent.DiscardPhoto) }) },
+                titleStr = stringResource(R.string.gua_chat_theme_screen_title),
+                navigationIcon = { BackButton(onClick = { eventSink(ChatThemeEvent.Cancel) }) },
             )
         },
     ) { padding ->
@@ -104,6 +107,7 @@ internal fun ChatBackgroundPhotoPreviewView(
             ElementTheme(theme = if (isDarkPreview) Theme.Dark else Theme.Light, applySystemBarsUpdate = false) {
                 PhotoFrame(
                     draft = draft,
+                    bubble = bubble,
                     bottomInset = controlsHeight,
                     eventSink = eventSink,
                     modifier = Modifier.fillMaxSize(),
@@ -112,6 +116,7 @@ internal fun ChatBackgroundPhotoPreviewView(
             PreviewControls(
                 draft = draft,
                 isDarkPreview = isDarkPreview,
+                saveLabel = saveLabel,
                 canChange = canChange,
                 eventSink = eventSink,
                 modifier = Modifier
@@ -127,8 +132,9 @@ internal fun ChatBackgroundPhotoPreviewView(
 private fun PreviewControls(
     draft: ChatBackgroundPhotoDraft,
     isDarkPreview: Boolean,
+    saveLabel: String,
     canChange: Boolean,
-    eventSink: (ChatBackgroundEvent) -> Unit,
+    eventSink: (ChatThemeEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val dimLabel = stringResource(R.string.gua_chat_background_dim)
@@ -146,14 +152,14 @@ private fun PreviewControls(
                 index = 0,
                 count = 2,
                 selected = !isDarkPreview,
-                onClick = { eventSink(ChatBackgroundEvent.SetDarkPreview(false)) },
+                onClick = { eventSink(ChatThemeEvent.SetDarkPreview(false)) },
                 text = stringResource(R.string.gua_chat_background_preview_light),
             )
             SegmentedButton(
                 index = 1,
                 count = 2,
                 selected = isDarkPreview,
-                onClick = { eventSink(ChatBackgroundEvent.SetDarkPreview(true)) },
+                onClick = { eventSink(ChatThemeEvent.SetDarkPreview(true)) },
                 text = stringResource(R.string.gua_chat_background_preview_dark),
             )
         }
@@ -164,7 +170,7 @@ private fun PreviewControls(
         )
         Slider(
             value = draft.dim.toFloat(),
-            onValueChange = { eventSink(ChatBackgroundEvent.SetPhotoDim((it / DIM_STEP).roundToInt() * DIM_STEP)) },
+            onValueChange = { eventSink(ChatThemeEvent.SetPhotoDim((it / DIM_STEP).roundToInt() * DIM_STEP)) },
             valueRange = 0f..ChatBackground.Photo.MAX_DIM.toFloat(),
             steps = ChatBackground.Photo.MAX_DIM / DIM_STEP - 1,
             // Without this, TalkBack reads the position within 0 to 80 % as a percentage: 35 % would be "44 percent".
@@ -179,8 +185,8 @@ private fun PreviewControls(
             color = ElementTheme.colors.textSecondary,
         )
         Button(
-            text = stringResource(R.string.gua_chat_background_action_set),
-            onClick = { eventSink(ChatBackgroundEvent.Apply) },
+            text = saveLabel,
+            onClick = { eventSink(ChatThemeEvent.Save) },
             enabled = canChange,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -190,8 +196,9 @@ private fun PreviewControls(
 @Composable
 private fun PhotoFrame(
     draft: ChatBackgroundPhotoDraft,
+    bubble: ChatBubbleColor?,
     bottomInset: Dp,
-    eventSink: (ChatBackgroundEvent) -> Unit,
+    eventSink: (ChatThemeEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val image by produceState<ImageBitmap?>(initialValue = null, draft.upload) {
@@ -207,7 +214,7 @@ private fun PhotoFrame(
     val moveUp = stringResource(R.string.gua_chat_background_a11y_move_up)
     val moveDown = stringResource(R.string.gua_chat_background_a11y_move_down)
     fun nudge(dx: Int, dy: Int): Boolean {
-        eventSink(ChatBackgroundEvent.SetPhotoAlign(currentDraft.alignX + dx, currentDraft.alignY + dy))
+        eventSink(ChatThemeEvent.SetPhotoAlign(currentDraft.alignX + dx, currentDraft.alignY + dy))
         return true
     }
     BoxWithConstraints(
@@ -248,7 +255,7 @@ private fun PhotoFrame(
                     ) { change, dragAmount ->
                         change.consume()
                         dragged += dragAmount
-                        eventSink(ChatBackgroundEvent.SetPhotoAlign(draggedAlign(startX, dragged.x, overflowX), draggedAlign(startY, dragged.y, overflowY)))
+                        eventSink(ChatThemeEvent.SetPhotoAlign(draggedAlign(startX, dragged.x, overflowX), draggedAlign(startY, dragged.y, overflowY)))
                     }
                 },
         ) {
@@ -262,7 +269,7 @@ private fun PhotoFrame(
                 )
             } ?: ChatBackgroundBlurHash(draft.upload.blurhash, draft.upload.width, draft.upload.height, draft.alignX, draft.alignY)
             ChatBackgroundScrim(photoDim = draft.dim)
-            ChatBackgroundSampleMessages(isOnBackground = true)
+            ChatBackgroundSampleMessages(isOnBackground = true, bubble = bubble)
             CompositionLocalProvider(LocalChatBackgroundActive provides true) {
                 Text(
                     text = positionHint,
@@ -290,6 +297,8 @@ internal fun ChatBackgroundPhotoPreviewViewPreview(@PreviewParameter(ChatBackgro
     ElementPreview {
         ChatBackgroundPhotoPreviewView(
             draft = draft,
+            bubble = ChatBubbleColor.Blue,
+            saveLabel = stringResource(R.string.gua_chat_theme_action_set_theme),
             canChange = true,
             eventSink = {},
         )

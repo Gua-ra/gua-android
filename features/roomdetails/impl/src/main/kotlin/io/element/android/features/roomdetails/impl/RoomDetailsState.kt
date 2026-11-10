@@ -12,7 +12,7 @@ import androidx.compose.runtime.Immutable
 import io.element.android.features.leaveroom.api.LeaveRoomState
 import io.element.android.features.roomcall.api.RoomCallState
 import io.element.android.features.userprofile.api.UserProfileState
-import io.element.android.libraries.chatbackground.api.ChatBackground
+import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.matrix.api.core.RoomAlias
 import io.element.android.libraries.matrix.api.core.RoomId
@@ -78,7 +78,7 @@ data class RoomDetailsState(
 }
 
 data class ChatBackgroundRowState(
-    val background: ChatBackground,
+    val theme: ChatTheme,
     /** Null until the permissions have loaded. */
     val canChange: Boolean?,
 )

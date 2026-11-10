@@ -47,6 +47,7 @@ class PreferencesRootNode(
         fun navigateToMediaSettings()
         fun navigateToLocationSettings()
         fun navigateToLabs()
+        fun navigateToChatTheme()
     }
 
     private val callback: Callback = callback()
@@ -86,6 +87,7 @@ class PreferencesRootNode(
             onOpenMediaSettings = callback::navigateToMediaSettings,
             onOpenLocationSettings = callback::navigateToLocationSettings,
             onOpenLabs = callback::navigateToLabs,
+            onOpenChatTheme = callback::navigateToChatTheme,
             onOpenLockScreenSettings = callback::navigateToLockScreenSettings,
             onOpenRageShake = callback::navigateToBugReport,
             onSecureBackupClick = callback::navigateToSecureBackup,

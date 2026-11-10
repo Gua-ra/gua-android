@@ -9,9 +9,9 @@ package io.element.android.libraries.chatbackground.impl
 
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.SingleIn
-import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundCodec
 import io.element.android.libraries.chatbackground.api.ChatBackgroundService
+import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.core.EventId
@@ -62,12 +62,12 @@ class DefaultChatBackgroundService(
         cached.start()
     }
 
-    override fun currentBackground(roomId: RoomId): ChatBackground {
+    override fun currentTheme(roomId: RoomId): ChatTheme {
         val stored = slots[roomId]?.value?.stored ?: loadedCache?.get(roomId)
         return ChatBackgroundCodec.decode(stored?.contentJson)
     }
 
-    override fun backgroundFlow(room: JoinedRoom): Flow<ChatBackground> = channelFlow {
+    override fun themeFlow(room: JoinedRoom): Flow<ChatTheme> = channelFlow {
         val slot = slot(room.roomId)
         launch {
             appForegroundStateService.isInForeground.filter { it }.collect { refresh(room.roomId) }
@@ -92,10 +92,10 @@ class DefaultChatBackgroundService(
         }
     }
 
-    override suspend fun set(room: JoinedRoom, background: ChatBackground): Result<Unit> {
-        val content = ChatBackgroundCodec.encode(background)
+    override suspend fun set(room: JoinedRoom, theme: ChatTheme): Result<Unit> {
+        val content = ChatBackgroundCodec.encode(theme)
         return room.sendStateEventRaw(CHAT_BACKGROUND_EVENT_TYPE, "", content)
-            .onFailure { Timber.e(it, "Failed to send the chat background of ${room.roomId}") }
+            .onFailure { Timber.e(it, "Failed to send the chat theme of ${room.roomId}") }
             .map { eventId ->
                 update(room.roomId) { current ->
                     // Never the device clock: a clock running ahead would make the next real change look older.

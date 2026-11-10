@@ -1,17 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
-  <string name="gua_chat_background_screen_title">Fondo del chat</string>
-  <string name="gua_chat_background_choose_photo">Elegir foto</string>
-  <string name="gua_chat_background_shared_note">Todos en este chat, incluidas las personas que se unan después, verán el fondo.</string>
   <string name="gua_chat_background_photo_note">Las fotos de fondo no tienen cifrado de extremo a extremo.</string>
   <string name="gua_chat_background_dim">Oscurecer en modo oscuro</string>
   <string name="gua_chat_background_preview_light">Claro</string>
   <string name="gua_chat_background_preview_dark">Oscuro</string>
   <string name="gua_chat_background_position_hint">Arrastra para colocar la foto</string>
-  <string name="gua_chat_background_action_set">Establecer fondo</string>
-  <string name="gua_chat_background_action_remove">Quitar fondo</string>
-  <string name="gua_chat_background_progress">Estableciendo fondo…</string>
-  <string name="gua_chat_background_progress_remove">Quitando fondo…</string>
   <string name="gua_chat_background_error_generic">No se pudo cambiar el fondo. Inténtalo de nuevo.</string>
   <string name="gua_chat_background_error_too_large">Esta foto es demasiado grande. Elige otra.</string>
   <string name="gua_chat_background_preview_a11y">Vista previa del fondo</string>
@@ -22,4 +15,22 @@
   <string name="gua_chat_background_a11y_move_right">Mover la foto a la derecha</string>
   <string name="gua_chat_background_a11y_move_up">Mover la foto hacia arriba</string>
   <string name="gua_chat_background_a11y_move_down">Mover la foto hacia abajo</string>
+  <string name="gua_chat_theme_screen_title">Tema del chat</string>
+  <string name="gua_chat_theme_chat_bubble">Burbuja del chat</string>
+  <string name="gua_chat_theme_wallpaper">Fondo de pantalla</string>
+  <string name="gua_chat_theme_section_featured">Destacados</string>
+  <string name="gua_chat_theme_section_colours">Colores</string>
+  <string name="gua_chat_theme_section_gradients">Degradados</string>
+  <string name="gua_chat_theme_classic">Clásico</string>
+  <string name="gua_chat_theme_default_note">Se aplica a todos los chats que no tienen su propio tema.</string>
+  <string name="gua_chat_theme_chat_note">Todos en este chat ven su tema.</string>
+  <string name="gua_chat_theme_no_permission">Solo los administradores y moderadores pueden cambiarlo</string>
+  <string name="gua_chat_theme_action_set_theme">Establecer tema</string>
+  <string name="gua_chat_theme_action_set_default">Establecer como predeterminado</string>
+  <string name="gua_chat_theme_action_set">Establecer</string>
+  <string name="gua_chat_theme_progress">Estableciendo tema…</string>
+  <string name="gua_chat_theme_choose_photo">Elegir una foto</string>
+  <string name="gua_chat_theme_no_wallpaper">Sin fondo</string>
+  <string name="gua_chat_theme_bubble_standard">Estándar</string>
+  <string name="gua_chat_theme_bubble_a11y">Burbuja %1$s</string>
 </resources>

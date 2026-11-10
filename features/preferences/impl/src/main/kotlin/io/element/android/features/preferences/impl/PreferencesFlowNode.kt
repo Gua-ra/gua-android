@@ -20,6 +20,7 @@ import com.bumble.appyx.navmodel.backstack.operation.push
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
+import io.element.android.features.chatbackground.api.ChatBackgroundEntryPoint
 import io.element.android.features.deactivation.api.AccountDeactivationEntryPoint
 import io.element.android.features.licenses.api.OpenSourceLicensesEntryPoint
 import io.element.android.features.lockscreen.api.LockScreenEntryPoint
@@ -68,6 +69,7 @@ class PreferencesFlowNode(
     private val logoutEntryPoint: LogoutEntryPoint,
     private val openSourceLicensesEntryPoint: OpenSourceLicensesEntryPoint,
     private val accountDeactivationEntryPoint: AccountDeactivationEntryPoint,
+    private val chatBackgroundEntryPoint: ChatBackgroundEntryPoint,
 ) : BaseFlowNode<PreferencesFlowNode.NavTarget>(
     backstack = BackStack(
         initialElement = plugins.filterIsInstance<PreferencesEntryPoint.Params>().first().initialElement.toNavTarget(),
@@ -145,6 +147,9 @@ class PreferencesFlowNode(
 
         @Parcelize
         data object OssLicenses : NavTarget
+
+        @Parcelize
+        data object ChatTheme : NavTarget
     }
 
     private val callback: PreferencesEntryPoint.Callback = callback()
@@ -195,6 +200,10 @@ class PreferencesFlowNode(
 
                     override fun navigateToLabs() {
                         backstack.push(NavTarget.Labs)
+                    }
+
+                    override fun navigateToChatTheme() {
+                        backstack.push(NavTarget.ChatTheme)
                     }
 
                     override fun navigateToBugReport() {
@@ -428,6 +437,9 @@ class PreferencesFlowNode(
             }
             NavTarget.AccountDeactivation -> {
                 accountDeactivationEntryPoint.createNode(this, buildContext)
+            }
+            NavTarget.ChatTheme -> {
+                chatBackgroundEntryPoint.createDefaultNode(this, buildContext)
             }
         }
     }

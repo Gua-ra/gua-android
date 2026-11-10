@@ -15,26 +15,23 @@ import com.bumble.appyx.core.plugin.Plugin
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
-import io.element.android.features.chatbackground.api.ChatBackgroundEntryPoint
-import io.element.android.libraries.architecture.callback
-import io.element.android.libraries.di.RoomScope
+import io.element.android.libraries.di.SessionScope
 
-@ContributesNode(RoomScope::class)
+@ContributesNode(SessionScope::class)
 @AssistedInject
-class ChatBackgroundNode(
+class DefaultChatThemeNode(
     @Assisted buildContext: BuildContext,
     @Assisted plugins: List<Plugin>,
-    private val presenter: ChatBackgroundPresenter,
+    presenterFactory: ChatThemePresenter.Factory,
+    target: PersonalDefaultChatThemeTarget,
 ) : Node(buildContext, plugins = plugins) {
-    private val callback: ChatBackgroundEntryPoint.Callback = callback()
+    private val presenter = presenterFactory.create(target)
 
     @Composable
     override fun View(modifier: Modifier) {
-        val state = presenter.present()
-        ChatBackgroundView(
-            state = state,
+        ChatThemeView(
+            state = presenter.present(),
             onBackClick = ::navigateUp,
-            onDone = callback::onDone,
             modifier = modifier,
         )
     }

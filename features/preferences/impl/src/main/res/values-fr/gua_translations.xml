@@ -105,4 +105,5 @@
     <string name="screen_labs_enable_knocking">Demander à rejoindre</string>
     <string name="gua_preferences_spaces_title">Espaces</string>
     <string name="gua_preferences_spaces_description">Regroupez les conversations et communautés liées en un seul endroit</string>
+    <string name="gua_chat_theme_settings_row_title">Thème des conversations</string>
 </resources>

@@ -26,6 +26,9 @@ import io.element.android.features.roomdetails.impl.members.aRoomMember
 import io.element.android.features.userprofile.shared.aUserProfileState
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
+import io.element.android.libraries.chatbackground.api.ChatBubbleColor
+import io.element.android.libraries.chatbackground.api.ChatTheme
+import io.element.android.libraries.chatbackground.api.nameRes
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.notification.CallIntent
@@ -310,31 +313,46 @@ class RoomDetailsViewTest : RobolectricTest() {
 
     @Config(qualifiers = "h1500dp")
     @Test
-    fun `click on the background row invokes expected callback`() = runAndroidComposeUiTest {
+    fun `click on the chat theme row invokes expected callback`() = runAndroidComposeUiTest {
         ensureCalledOnce { callback ->
             setRoomDetailView(
                 state = aRoomDetailsState(
                     eventSink = EventsRecorder(expectEvents = false),
-                    chatBackgroundRow = ChatBackgroundRowState(ChatBackground.Preset(ChatBackgroundPreset.Mint), canChange = true),
+                    chatBackgroundRow = ChatBackgroundRowState(
+                        theme = ChatTheme(ChatBackground.Preset(ChatBackgroundPreset.Mint), ChatBubbleColor.Green),
+                        canChange = true,
+                    ),
                 ),
                 onChatBackgroundClick = callback,
             )
             onNodeWithText(activity!!.getString(ChatBackgroundPreset.Mint.nameRes)).assertExists()
-            clickOn(R.string.gua_chat_background_row_title)
+            clickOn(R.string.gua_chat_theme_row_title)
         }
     }
 
     @Config(qualifiers = "h1500dp")
     @Test
-    fun `the background row is disabled without permission`() = runAndroidComposeUiTest<ComponentActivity> {
+    fun `the chat theme row names a chat without a theme of its own Default`() = runAndroidComposeUiTest<ComponentActivity> {
         setRoomDetailView(
             state = aRoomDetailsState(
                 eventSink = EventsRecorder(expectEvents = false),
-                chatBackgroundRow = ChatBackgroundRowState(ChatBackground.None, canChange = false),
+                chatBackgroundRow = ChatBackgroundRowState(ChatTheme.STOCK, canChange = true),
+            ),
+        )
+        onNodeWithText(activity!!.getString(ChatTheme.STOCK.nameRes)).assertExists()
+    }
+
+    @Config(qualifiers = "h1500dp")
+    @Test
+    fun `the chat theme row is disabled without permission`() = runAndroidComposeUiTest<ComponentActivity> {
+        setRoomDetailView(
+            state = aRoomDetailsState(
+                eventSink = EventsRecorder(expectEvents = false),
+                chatBackgroundRow = ChatBackgroundRowState(ChatTheme.STOCK, canChange = false),
             ),
         )
         onNodeWithText(activity!!.getString(R.string.gua_chat_background_row_no_permission)).assertExists()
-        onNodeWithText(activity!!.getString(R.string.gua_chat_background_row_title)).performClick()
+        onNodeWithText(activity!!.getString(R.string.gua_chat_theme_row_title)).performClick()
     }
 
     @Config(qualifiers = "h1500dp")

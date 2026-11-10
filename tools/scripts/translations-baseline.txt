@@ -48,6 +48,9 @@ fr:common_suggestions
 fr:dialog_title_confirmation
 fr:gua_chat_background_preset_graphite
 fr:gua_chat_background_value_photo
+fr:gua_chat_theme_bubble_graphite
+fr:gua_chat_theme_bubble_orange
+fr:gua_chat_theme_bubble_standard
 fr:gua_duration_minutes
 fr:gua_retry_wait_minutes
 fr:notification_compat_summary_title

@@ -478,15 +478,7 @@ class RoomDetailsFlowNode(
             }
 
             NavTarget.ChatBackground -> {
-                chatBackgroundEntryPoint.createNode(
-                    parentNode = this,
-                    buildContext = buildContext,
-                    callback = object : ChatBackgroundEntryPoint.Callback {
-                        override fun onDone() {
-                            backstack.pop()
-                        }
-                    },
-                )
+                chatBackgroundEntryPoint.createNode(parentNode = this, buildContext = buildContext)
             }
 
             is NavTarget.SelectNewOwnersWhenLeaving -> {

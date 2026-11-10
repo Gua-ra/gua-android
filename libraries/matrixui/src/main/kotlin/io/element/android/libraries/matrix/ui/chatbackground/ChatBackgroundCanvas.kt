@@ -49,6 +49,7 @@ import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundFill
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
 import io.element.android.libraries.chatbackground.api.ChatBackgroundService
+import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.chatbackground.api.UnitPoint
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
@@ -62,9 +63,9 @@ private const val CROSSFADE_DURATION_MS = 200
 private const val MAX_DECODED_EDGE_PX = 2048
 
 @Composable
-fun ChatBackgroundService.collectBackgroundAsState(room: JoinedRoom): State<ChatBackground> {
-    val initial = remember { currentBackground(room.roomId) }
-    return remember { backgroundFlow(room) }.collectAsState(initial)
+fun ChatBackgroundService.collectThemeAsState(room: JoinedRoom): State<ChatTheme> {
+    val initial = remember { currentTheme(room.roomId) }
+    return remember { themeFlow(room) }.collectAsState(initial)
 }
 
 @Composable
