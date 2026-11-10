@@ -22,9 +22,11 @@ fun effectiveChatTheme(
     mediaShown: Boolean,
 ): ChatTheme {
     if (chatTheme == ChatTheme.STOCK) return defaultTheme
-    val isPhotoHidden = chatTheme.background is ChatBackground.Photo && !roomIsPrivate && !mediaShown
+    val isPhotoHidden = chatTheme.background is ChatBackground.Photo && isChatPhotoHidden(roomIsPrivate, mediaShown)
     return if (isPhotoHidden) defaultTheme else chatTheme
 }
+
+fun isChatPhotoHidden(roomIsPrivate: Boolean, mediaShown: Boolean) = !roomIsPrivate && !mediaShown
 
 /** The rooms that the "in private chats" media setting treats as private. */
 fun JoinRule?.isPrivateChat(): Boolean = MediaPreviewValue.Private.isPreviewEnabled(this)

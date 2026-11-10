@@ -15,6 +15,7 @@ import dev.zacsweers.metro.Inject
 import io.element.android.libraries.chatbackground.api.ChatBackgroundService
 import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.chatbackground.api.ChatThemeSetting
+import io.element.android.libraries.chatbackground.api.isChatPhotoHidden
 import io.element.android.libraries.chatbackground.api.isPrivateChat
 import io.element.android.libraries.core.coroutine.mapState
 import io.element.android.libraries.matrix.api.media.MediaPreviewService
@@ -65,7 +66,7 @@ class RoomChatThemeTarget(
             current = current,
             defaultTheme = defaultTheme,
             canChange = canChange,
-            isPhotoHidden = !joinRule.isPrivateChat() && !mediaPreviewValue.isPreviewEnabled(joinRule),
+            isPhotoHidden = isChatPhotoHidden(joinRule.isPrivateChat(), mediaPreviewValue.isPreviewEnabled(joinRule)),
         )
     }
 
