@@ -14,9 +14,11 @@ import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasStateDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -60,6 +62,24 @@ class ChatThemeViewTest : RobolectricTest() {
         clickOn(R.string.gua_chat_theme_chat_bubble)
         clickOn(R.string.gua_chat_theme_wallpaper)
         eventsRecorder.assertList(listOf(ChatThemeEvent.OpenBubblePicker, ChatThemeEvent.OpenWallpaperPicker))
+    }
+
+    @Test
+    fun `the round buttons tell the current bubble and wallpaper`() = runAndroidComposeUiTest<ComponentActivity> {
+        setChatThemeView(aChatThemeState(current = oceanTeal))
+        val context: Context = activity!!
+        onNodeWithText(context.getString(R.string.gua_chat_theme_chat_bubble)).assert(hasStateDescription(context.getString(ChatBubbleColor.Teal.nameRes)))
+        onNodeWithText(context.getString(R.string.gua_chat_theme_wallpaper)).assert(hasStateDescription(context.getString(ChatBackgroundPreset.Ocean.nameRes)))
+    }
+
+    @Test
+    fun `without a theme the round buttons tell the standard bubble and no wallpaper`() = runAndroidComposeUiTest<ComponentActivity> {
+        setChatThemeView(aChatThemeState())
+        val context: Context = activity!!
+        onNodeWithText(context.getString(R.string.gua_chat_theme_chat_bubble))
+            .assert(hasStateDescription(context.getString(R.string.gua_chat_theme_bubble_standard)))
+        onNodeWithText(context.getString(R.string.gua_chat_theme_wallpaper))
+            .assert(hasStateDescription(context.getString(R.string.gua_chat_theme_no_wallpaper)))
     }
 
     @Test
@@ -190,6 +210,7 @@ class ChatThemeViewTest : RobolectricTest() {
         val eventsRecorder = EventsRecorder<ChatThemeEvent>()
         setChatThemeView(aChatThemeState(current = oceanTeal, page = ChatThemePage.WallpaperPicker, eventSink = eventsRecorder))
         clickOn(R.string.gua_chat_theme_choose_photo)
+        onNodeWithText(activity!!.getString(R.string.gua_chat_theme_no_wallpaper)).assertIsNotSelected()
         clickOn(R.string.gua_chat_theme_no_wallpaper)
         onNodeWithText(activity!!.getString(ChatBackgroundPreset.Ocean.nameRes)).assertIsSelected()
         scrollToAndClick(ChatBackgroundPreset.Mint.nameRes)
@@ -202,6 +223,12 @@ class ChatThemeViewTest : RobolectricTest() {
                 ChatThemeEvent.Cancel,
             )
         )
+    }
+
+    @Test
+    fun `no wallpaper reads as selected while the theme has no wallpaper`() = runAndroidComposeUiTest<ComponentActivity> {
+        setChatThemeView(aChatThemeState(current = ChatTheme(bubble = ChatBubbleColor.Blue), page = ChatThemePage.WallpaperPicker))
+        onNodeWithText(activity!!.getString(R.string.gua_chat_theme_no_wallpaper)).assertIsSelected()
     }
 
     @Test

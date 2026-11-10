@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -34,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -93,6 +95,7 @@ internal fun ChatBubblePickerView(
             FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .selectableGroup()
                     .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -179,10 +182,12 @@ internal fun ChatWallpaperPickerView(
                 enabled = state.canChange,
                 onClick = { state.eventSink(ChatThemeEvent.ChoosePhoto) },
             )
+            val isNoWallpaper = state.current.background == ChatBackground.None
             ListItem(
+                modifier = Modifier.semantics { selected = isNoWallpaper },
                 content = { Text(stringResource(R.string.gua_chat_theme_no_wallpaper)) },
                 leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Block())),
-                trailingContent = if (state.current.background == ChatBackground.None) ListItemContent.Icon(IconSource.Vector(CompoundIcons.Check())) else null,
+                trailingContent = if (isNoWallpaper) ListItemContent.Icon(IconSource.Vector(CompoundIcons.Check())) else null,
                 enabled = state.canChange,
                 onClick = { state.eventSink(ChatThemeEvent.SelectWallpaper(ChatBackground.None)) },
             )

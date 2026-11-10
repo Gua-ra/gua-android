@@ -8,6 +8,7 @@
 package io.element.android.features.chatbackground.impl
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
+import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.chatbackground.api.nameRes
 import io.element.android.libraries.designsystem.components.async.AsyncActionView
@@ -139,6 +141,7 @@ private fun ChatThemeGalleryView(
             ) {
                 RoundOptionButton(
                     label = stringResource(R.string.gua_chat_theme_chat_bubble),
+                    currentValue = stringResource(state.current.bubble?.nameRes ?: R.string.gua_chat_theme_bubble_standard),
                     enabled = state.canChange,
                     onClick = { state.eventSink(ChatThemeEvent.OpenBubblePicker) },
                 ) {
@@ -146,6 +149,7 @@ private fun ChatThemeGalleryView(
                 }
                 RoundOptionButton(
                     label = stringResource(R.string.gua_chat_theme_wallpaper),
+                    currentValue = stringResource(state.shownCurrent.background.wallpaperNameRes),
                     enabled = state.canChange,
                     onClick = { state.eventSink(ChatThemeEvent.OpenWallpaperPicker) },
                 ) {
@@ -197,6 +201,10 @@ private fun ChatThemeGalleryView(
         }
     }
 }
+
+@get:StringRes
+private val ChatBackground.wallpaperNameRes: Int
+    get() = if (this == ChatBackground.None) R.string.gua_chat_theme_no_wallpaper else nameRes
 
 @Composable
 internal fun ChatThemeNote(text: String, modifier: Modifier = Modifier) {
