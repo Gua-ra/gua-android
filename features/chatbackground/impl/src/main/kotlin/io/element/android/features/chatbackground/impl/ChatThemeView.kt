@@ -67,7 +67,7 @@ fun ChatThemeView(
             ChatThemePreviewView(
                 preview = preview,
                 saveLabel = saveLabel(state.mode),
-                canChange = state.canChange,
+                canChange = state.canChange && preview.saved != state.current,
                 eventSink = state.eventSink,
                 modifier = modifier,
             )

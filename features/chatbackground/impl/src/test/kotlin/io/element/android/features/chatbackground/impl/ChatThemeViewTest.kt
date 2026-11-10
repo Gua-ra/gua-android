@@ -120,6 +120,14 @@ class ChatThemeViewTest : RobolectricTest() {
     }
 
     @Test
+    fun `the preview cannot set the theme the chat already has`() = runAndroidComposeUiTest<ComponentActivity> {
+        setChatThemeView(
+            aChatThemeState(current = oceanTeal, preview = ChatThemePreview(oceanTeal, oceanTeal), eventSink = EventsRecorder(expectEvents = false))
+        )
+        clickOn(R.string.gua_chat_theme_action_set_theme)
+    }
+
+    @Test
     fun `the preview of the default says Set default`() = runAndroidComposeUiTest<ComponentActivity> {
         val eventsRecorder = EventsRecorder<ChatThemeEvent>()
         setChatThemeView(aChatThemeState(mode = ChatThemeMode.Default, preview = ChatThemePreview(oceanTeal, oceanTeal), eventSink = eventsRecorder))

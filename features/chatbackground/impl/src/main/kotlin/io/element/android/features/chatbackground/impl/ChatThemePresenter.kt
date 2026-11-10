@@ -77,7 +77,9 @@ class ChatThemePresenter(
                             .flatMap { url -> target.set(current.copy(background = draft.toPhoto(url))) }
                     }
                 }
-                previewed != null -> {
+                previewed != null -> if (previewed.saved == current) {
+                    return
+                } else {
                     { target.set(previewed.saved) }
                 }
                 picker != null -> {

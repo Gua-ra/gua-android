@@ -126,6 +126,46 @@ class ChatThemePresenterTest : RobolectricTest() {
     }
 
     @Test
+    fun `previewing the theme the chat already has saves nothing`() = runTest {
+        val service = FakeChatBackgroundService(auroraGreen)
+        val presenter = createChatPresenter(service = service)
+
+        presenter.test {
+            consumeItemsUntilPredicate { it.canChange }.last().eventSink(ChatThemeEvent.SelectTheme(auroraGreen))
+            awaitItem().eventSink(ChatThemeEvent.Save)
+            expectNoEvents()
+        }
+        assertThat(service.sentThemes).isEmpty()
+    }
+
+    @Test
+    fun `the Default tile of a chat without a theme saves nothing`() = runTest {
+        val service = FakeChatBackgroundService()
+        val presenter = createChatPresenter(service = service, setting = FakeChatThemeSetting(sunsetPink))
+
+        presenter.test {
+            consumeItemsUntilPredicate { it.canChange }.last().eventSink(ChatThemeEvent.SelectDefault)
+            awaitItem().eventSink(ChatThemeEvent.Save)
+            expectNoEvents()
+        }
+        assertThat(service.sentThemes).isEmpty()
+    }
+
+    @Test
+    fun `no wallpaper for a chat without a wallpaper saves nothing`() = runTest {
+        val service = FakeChatBackgroundService(ChatTheme(bubble = ChatBubbleColor.Green))
+        val presenter = createChatPresenter(service = service)
+
+        presenter.test {
+            consumeItemsUntilPredicate { it.canChange }.last().eventSink(ChatThemeEvent.OpenWallpaperPicker)
+            awaitItem().eventSink(ChatThemeEvent.SelectWallpaper(ChatBackground.None))
+            awaitItem().eventSink(ChatThemeEvent.Save)
+            expectNoEvents()
+        }
+        assertThat(service.sentThemes).isEmpty()
+    }
+
+    @Test
     fun `the Classic tile of the default previews the stock look and clears the default`() = runTest {
         val setting = FakeChatThemeSetting(sunsetPink)
         val presenter = createDefaultPresenter(setting = setting)
