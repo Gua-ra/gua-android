@@ -81,7 +81,6 @@ internal fun ChatThemePreviewView(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PreviewControls(
     isDarkPreview: Boolean,
@@ -98,22 +97,7 @@ private fun PreviewControls(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            SegmentedButton(
-                index = 0,
-                count = 2,
-                selected = !isDarkPreview,
-                onClick = { eventSink(ChatThemeEvent.SetDarkPreview(false)) },
-                text = stringResource(R.string.gua_chat_background_preview_light),
-            )
-            SegmentedButton(
-                index = 1,
-                count = 2,
-                selected = isDarkPreview,
-                onClick = { eventSink(ChatThemeEvent.SetDarkPreview(true)) },
-                text = stringResource(R.string.gua_chat_background_preview_dark),
-            )
-        }
+        LightDarkPreviewToggle(isDarkPreview = isDarkPreview, eventSink = eventSink)
         Button(
             text = saveLabel,
             onClick = { eventSink(ChatThemeEvent.Save) },
@@ -124,6 +108,31 @@ private fun PreviewControls(
             text = stringResource(CommonStrings.action_cancel),
             onClick = { eventSink(ChatThemeEvent.Cancel) },
             modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun LightDarkPreviewToggle(
+    isDarkPreview: Boolean,
+    eventSink: (ChatThemeEvent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
+        SegmentedButton(
+            index = 0,
+            count = 2,
+            selected = !isDarkPreview,
+            onClick = { eventSink(ChatThemeEvent.SetDarkPreview(false)) },
+            text = stringResource(R.string.gua_chat_background_preview_light),
+        )
+        SegmentedButton(
+            index = 1,
+            count = 2,
+            selected = isDarkPreview,
+            onClick = { eventSink(ChatThemeEvent.SetDarkPreview(true)) },
+            text = stringResource(R.string.gua_chat_background_preview_dark),
         )
     }
 }

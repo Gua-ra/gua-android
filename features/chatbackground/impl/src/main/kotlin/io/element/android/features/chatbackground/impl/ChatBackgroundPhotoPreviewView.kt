@@ -19,8 +19,6 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -60,7 +58,6 @@ import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Button
 import io.element.android.libraries.designsystem.theme.components.Scaffold
-import io.element.android.libraries.designsystem.theme.components.SegmentedButton
 import io.element.android.libraries.designsystem.theme.components.Slider
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.designsystem.theme.components.TopAppBar
@@ -125,7 +122,6 @@ internal fun ChatBackgroundPhotoPreviewView(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PreviewControls(
     draft: ChatBackgroundPhotoDraft,
@@ -144,22 +140,7 @@ private fun PreviewControls(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            SegmentedButton(
-                index = 0,
-                count = 2,
-                selected = !isDarkPreview,
-                onClick = { eventSink(ChatThemeEvent.SetDarkPreview(false)) },
-                text = stringResource(R.string.gua_chat_background_preview_light),
-            )
-            SegmentedButton(
-                index = 1,
-                count = 2,
-                selected = isDarkPreview,
-                onClick = { eventSink(ChatThemeEvent.SetDarkPreview(true)) },
-                text = stringResource(R.string.gua_chat_background_preview_dark),
-            )
-        }
+        LightDarkPreviewToggle(isDarkPreview = isDarkPreview, eventSink = eventSink)
         Text(
             text = dimLabel,
             style = ElementTheme.typography.fontBodyMdMedium,
