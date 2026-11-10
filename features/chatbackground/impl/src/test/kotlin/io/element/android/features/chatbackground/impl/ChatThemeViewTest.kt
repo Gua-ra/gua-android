@@ -136,6 +136,16 @@ class ChatThemeViewTest : RobolectricTest() {
     }
 
     @Test
+    fun `a wallpaper chosen from the picker is previewed with Set`() = runAndroidComposeUiTest<ComponentActivity> {
+        val eventsRecorder = EventsRecorder<ChatThemeEvent>()
+        setChatThemeView(
+            aChatThemeState(page = ChatThemePage.WallpaperPicker, preview = ChatThemePreview(oceanTeal, oceanTeal), eventSink = eventsRecorder)
+        )
+        clickOn(R.string.gua_chat_theme_action_set)
+        eventsRecorder.assertSingle(ChatThemeEvent.Save)
+    }
+
+    @Test
     fun `the bubble picker selects a colour and sets it`() = runAndroidComposeUiTest<ComponentActivity> {
         val eventsRecorder = EventsRecorder<ChatThemeEvent>()
         setChatThemeView(
@@ -197,7 +207,7 @@ class ChatThemeViewTest : RobolectricTest() {
         val eventsRecorder = EventsRecorder<ChatThemeEvent>()
         setChatThemeView(aChatThemeState(photoDraft = aChatBackgroundPhotoDraft(), eventSink = eventsRecorder))
         clickOn(R.string.gua_chat_background_preview_dark)
-        clickOn(R.string.gua_chat_theme_action_set_theme)
+        clickOn(R.string.gua_chat_theme_action_set)
         pressBack()
         eventsRecorder.assertList(
             listOf(ChatThemeEvent.SetDarkPreview(true), ChatThemeEvent.Save, ChatThemeEvent.Cancel)
@@ -236,7 +246,7 @@ class ChatThemeViewTest : RobolectricTest() {
         setChatThemeView(
             aChatThemeState(photoDraft = aChatBackgroundPhotoDraft(), hasPermission = false, eventSink = EventsRecorder(expectEvents = false))
         )
-        clickOn(R.string.gua_chat_theme_action_set_theme)
+        clickOn(R.string.gua_chat_theme_action_set)
     }
 
     @Test

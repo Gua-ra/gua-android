@@ -56,7 +56,6 @@ fun ChatThemeView(
             ChatBackgroundPhotoPreviewView(
                 draft = photoDraft,
                 bubble = state.current.bubble,
-                saveLabel = saveLabel(state.mode),
                 canChange = state.canChange,
                 eventSink = state.eventSink,
                 modifier = modifier,
@@ -66,7 +65,7 @@ fun ChatThemeView(
             BackHandler(onBack = cancel)
             ChatThemePreviewView(
                 preview = preview,
-                saveLabel = saveLabel(state.mode),
+                saveLabel = if (page == ChatThemePage.WallpaperPicker) stringResource(R.string.gua_chat_theme_action_set) else saveLabel(state.mode),
                 canChange = state.canChange && preview.saved != state.current,
                 eventSink = state.eventSink,
                 modifier = modifier,

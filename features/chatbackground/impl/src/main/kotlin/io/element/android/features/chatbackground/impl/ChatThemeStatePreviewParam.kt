@@ -49,6 +49,14 @@ class ChatThemeStatePreviewParam : PreviewParameterProvider<ChatThemeState> {
             ),
             aChatThemeState(current = ChatTheme(aChatBackgroundPhoto(), ChatBubbleColor.Blue), isPhotoHidden = true),
             aChatThemeState(current = aTheme(ChatBackgroundPreset.Ocean, ChatBubbleColor.Teal), hasPermission = null),
+            aChatThemeState(
+                current = aTheme(ChatBackgroundPreset.Night, ChatBubbleColor.Purple),
+                page = ChatThemePage.WallpaperPicker,
+                preview = ChatThemePreview(
+                    shown = aTheme(ChatBackgroundPreset.Mint, ChatBubbleColor.Purple),
+                    saved = aTheme(ChatBackgroundPreset.Mint, ChatBubbleColor.Purple),
+                ),
+            ),
         )
 }
 

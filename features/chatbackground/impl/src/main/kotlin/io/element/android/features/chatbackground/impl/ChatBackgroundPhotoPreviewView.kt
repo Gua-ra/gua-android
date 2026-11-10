@@ -80,7 +80,6 @@ private const val NUDGE = 100
 internal fun ChatBackgroundPhotoPreviewView(
     draft: ChatBackgroundPhotoDraft,
     bubble: ChatBubbleColor?,
-    saveLabel: String,
     canChange: Boolean,
     eventSink: (ChatThemeEvent) -> Unit,
     modifier: Modifier = Modifier,
@@ -92,7 +91,7 @@ internal fun ChatBackgroundPhotoPreviewView(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                titleStr = stringResource(R.string.gua_chat_theme_screen_title),
+                titleStr = stringResource(R.string.gua_chat_theme_wallpaper),
                 navigationIcon = { BackButton(onClick = { eventSink(ChatThemeEvent.Cancel) }) },
             )
         },
@@ -116,7 +115,6 @@ internal fun ChatBackgroundPhotoPreviewView(
             PreviewControls(
                 draft = draft,
                 isDarkPreview = isDarkPreview,
-                saveLabel = saveLabel,
                 canChange = canChange,
                 eventSink = eventSink,
                 modifier = Modifier
@@ -132,7 +130,6 @@ internal fun ChatBackgroundPhotoPreviewView(
 private fun PreviewControls(
     draft: ChatBackgroundPhotoDraft,
     isDarkPreview: Boolean,
-    saveLabel: String,
     canChange: Boolean,
     eventSink: (ChatThemeEvent) -> Unit,
     modifier: Modifier = Modifier,
@@ -185,7 +182,7 @@ private fun PreviewControls(
             color = ElementTheme.colors.textSecondary,
         )
         Button(
-            text = saveLabel,
+            text = stringResource(R.string.gua_chat_theme_action_set),
             onClick = { eventSink(ChatThemeEvent.Save) },
             enabled = canChange,
             modifier = Modifier.fillMaxWidth(),
@@ -298,7 +295,6 @@ internal fun ChatBackgroundPhotoPreviewViewPreview(@PreviewParameter(ChatBackgro
         ChatBackgroundPhotoPreviewView(
             draft = draft,
             bubble = ChatBubbleColor.Blue,
-            saveLabel = stringResource(R.string.gua_chat_theme_action_set_theme),
             canChange = true,
             eventSink = {},
         )
