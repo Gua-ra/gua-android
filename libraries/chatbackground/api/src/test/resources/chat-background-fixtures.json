@@ -1183,6 +1183,63 @@
       "expected": {
         "kind": "none"
       }
+    },
+    {
+      "name": "kind none with a standard bubble is no theme",
+      "content": {
+        "v": 1,
+        "kind": "none",
+        "bubble": "standard"
+      },
+      "expected": {
+        "kind": "none"
+      }
+    },
+    {
+      "name": "kind none ignores a preset",
+      "content": {
+        "v": 1,
+        "kind": "none",
+        "preset": "aurora",
+        "bubble": "blue"
+      },
+      "expected": {
+        "kind": "none",
+        "bubble": "blue"
+      }
+    },
+    {
+      "name": "unreadable photo keeps the bubble",
+      "content": {
+        "v": 1,
+        "kind": "photo",
+        "photo": {
+          "url": "https://gua.global/photo.jpg",
+          "mimetype": "image/jpeg",
+          "w": 800,
+          "h": 600,
+          "size": 1000
+        },
+        "bubble": "green"
+      },
+      "expected": {
+        "kind": "none",
+        "bubble": "green"
+      }
+    },
+    {
+      "name": "unknown kind on version 1 keeps the bubble",
+      "content": {
+        "v": 1,
+        "kind": "pattern",
+        "fallback_preset": "night",
+        "bubble": "purple"
+      },
+      "expected": {
+        "kind": "preset",
+        "preset": "night",
+        "bubble": "purple"
+      }
     }
   ],
   "encode_cases": [
