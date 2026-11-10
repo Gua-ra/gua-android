@@ -68,7 +68,7 @@ fun ChatThemeView(
             ChatThemePreviewView(
                 preview = preview,
                 saveLabel = if (page == ChatThemePage.WallpaperPicker) stringResource(R.string.gua_chat_theme_action_set) else saveLabel(state.mode),
-                canChange = state.canChange && preview.saved != state.current,
+                canChange = state.canSave(preview.saved, isPickerChoice = page == ChatThemePage.WallpaperPicker),
                 eventSink = state.eventSink,
                 modifier = modifier,
             )
@@ -149,7 +149,7 @@ private fun ChatThemeGalleryView(
                 }
                 RoundOptionButton(
                     label = stringResource(R.string.gua_chat_theme_wallpaper),
-                    currentValue = stringResource(state.shownBase.background.wallpaperNameRes),
+                    currentValue = stringResource(state.baseTheme.background.wallpaperNameRes),
                     enabled = state.canChange,
                     onClick = { state.eventSink(ChatThemeEvent.OpenWallpaperPicker) },
                 ) {

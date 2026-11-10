@@ -78,13 +78,18 @@ class ChatThemePresenter(
                             .flatMap { url -> target.set(base.copy(background = draft.toPhoto(url))) }
                     }
                 }
-                previewed != null -> if (previewed.saved == current) {
+                previewed != null -> if (!isChange(previewed.saved, current, base, isPickerChoice = page == ChatThemePage.WallpaperPicker)) {
                     return
                 } else {
                     { target.set(previewed.saved) }
                 }
                 picker != null -> {
-                    { target.set(base.copy(bubble = picker.selection)) }
+                    val theme = base.copy(bubble = picker.selection)
+                    if (!isChange(theme, current, base, isPickerChoice = true)) {
+                        return
+                    } else {
+                        { target.set(theme) }
+                    }
                 }
                 else -> return
             }

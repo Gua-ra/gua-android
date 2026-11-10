@@ -32,6 +32,7 @@ import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
 import io.element.android.libraries.chatbackground.api.ChatBubbleColor
 import io.element.android.libraries.chatbackground.api.ChatTheme
+import io.element.android.libraries.matrix.ui.chatbackground.aChatBackgroundPhoto
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureNeverCalled
 import io.element.android.tests.testutils.EventsRecorder
@@ -80,6 +81,14 @@ class ChatThemeViewTest : RobolectricTest() {
             .assert(hasStateDescription(context.getString(R.string.gua_chat_theme_bubble_standard)))
         onNodeWithText(context.getString(R.string.gua_chat_theme_wallpaper))
             .assert(hasStateDescription(context.getString(R.string.gua_chat_theme_no_wallpaper)))
+    }
+
+    @Test
+    fun `a chat photo hidden by the media setting is still named on the wallpaper button`() = runAndroidComposeUiTest<ComponentActivity> {
+        setChatThemeView(aChatThemeState(current = ChatTheme(aChatBackgroundPhoto(), ChatBubbleColor.Blue), isPhotoHidden = true))
+        val context: Context = activity!!
+        onNodeWithText(context.getString(R.string.gua_chat_theme_wallpaper))
+            .assert(hasStateDescription(context.getString(ChatBackgroundR.string.gua_chat_background_value_photo)))
     }
 
     @Test
@@ -199,6 +208,30 @@ class ChatThemeViewTest : RobolectricTest() {
             aChatThemeState(
                 current = oceanTeal,
                 page = ChatThemePage.BubblePicker(selection = ChatBubbleColor.Teal),
+                eventSink = EventsRecorder(expectEvents = false),
+            )
+        )
+        clickOn(R.string.gua_chat_theme_action_set)
+    }
+
+    @Test
+    fun `the bubble picker cannot set what it started from in a chat that follows the default`() = runAndroidComposeUiTest<ComponentActivity> {
+        setChatThemeView(
+            aChatThemeState(
+                defaultTheme = oceanTeal,
+                page = ChatThemePage.BubblePicker(selection = ChatBubbleColor.Teal),
+                eventSink = EventsRecorder(expectEvents = false),
+            )
+        )
+        clickOn(R.string.gua_chat_theme_action_set)
+    }
+
+    @Test
+    fun `the bubble picker cannot remove a theme the chat does not have`() = runAndroidComposeUiTest<ComponentActivity> {
+        setChatThemeView(
+            aChatThemeState(
+                defaultTheme = ChatTheme(aChatBackgroundPhoto(), ChatBubbleColor.Blue),
+                page = ChatThemePage.BubblePicker(selection = null),
                 eventSink = EventsRecorder(expectEvents = false),
             )
         )

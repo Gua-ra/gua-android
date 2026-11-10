@@ -42,12 +42,18 @@ data class ChatThemeState(
             ChatThemeMode.Default -> ChatTheme.STOCK
         }
 
+    fun canSave(theme: ChatTheme, isPickerChoice: Boolean = false) = canChange && isChange(theme, current, baseTheme, isPickerChoice)
+
     /** Saving no theme makes a chat follow the default, so its preview shows that. */
     fun shownTheme(saving: ChatTheme): ChatTheme = if (saving == ChatTheme.STOCK) defaultTile else hidingPhoto(saving)
 
     private fun hidingPhoto(theme: ChatTheme) =
         if (isPhotoHidden && theme.background is ChatBackground.Photo) theme.copy(background = ChatBackground.None) else theme
 }
+
+/** A picker starts from [base], so keeping it is no change either. */
+internal fun isChange(theme: ChatTheme, current: ChatTheme, base: ChatTheme, isPickerChoice: Boolean) =
+    theme != current && !(isPickerChoice && theme == base)
 
 /** What the pickers start from: in a chat that follows the default, the default without its photo, which stays private. */
 internal fun baseChatTheme(mode: ChatThemeMode, current: ChatTheme, defaultTheme: ChatTheme): ChatTheme =

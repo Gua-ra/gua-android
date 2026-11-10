@@ -77,7 +77,7 @@ internal fun ChatBubblePickerView(
             Button(
                 text = stringResource(R.string.gua_chat_theme_action_set),
                 onClick = { state.eventSink(ChatThemeEvent.Save) },
-                enabled = state.canChange && selection != state.baseTheme.bubble,
+                enabled = state.canSave(state.baseTheme.copy(bubble = selection), isPickerChoice = true),
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()

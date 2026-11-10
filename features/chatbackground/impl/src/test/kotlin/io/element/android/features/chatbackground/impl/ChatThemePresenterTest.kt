@@ -270,6 +270,51 @@ class ChatThemePresenterTest : RobolectricTest() {
     }
 
     @Test
+    fun `keeping what a picker starts from sends nothing, while a tile can still pin the default`() = runTest {
+        val service = FakeChatBackgroundService()
+        val presenter = createChatPresenter(service = service, setting = FakeChatThemeSetting(sunsetPink))
+
+        presenter.test {
+            consumeItemsUntilPredicate { it.canChange && it.defaultTheme == sunsetPink }.last().eventSink(ChatThemeEvent.OpenBubblePicker)
+            val picking = awaitItem()
+            assertThat(picking.canSave(sunsetPink, isPickerChoice = true)).isFalse()
+            picking.eventSink(ChatThemeEvent.Save)
+            picking.eventSink(ChatThemeEvent.Cancel)
+            awaitItem().eventSink(ChatThemeEvent.OpenWallpaperPicker)
+            awaitItem().eventSink(ChatThemeEvent.SelectWallpaper(sunsetPink.background))
+            val previewing = awaitItem()
+            assertThat(previewing.preview?.saved).isEqualTo(sunsetPink)
+            previewing.eventSink(ChatThemeEvent.Save)
+            previewing.eventSink(ChatThemeEvent.Cancel)
+            awaitItem().eventSink(ChatThemeEvent.Cancel)
+            val gallery = awaitItem()
+            assertThat(gallery.page).isEqualTo(ChatThemePage.Gallery)
+            assertThat(service.sentThemes).isEmpty()
+            gallery.eventSink(ChatThemeEvent.SelectTheme(sunsetPink))
+            awaitItem().eventSink(ChatThemeEvent.Save)
+            consumeItemsUntilPredicate { it.preview == null && it.current == sunsetPink }
+        }
+        assertThat(service.sentThemes).containsExactly(sunsetPink)
+    }
+
+    @Test
+    fun `Standard on a chat without a theme of its own sends nothing`() = runTest {
+        val service = FakeChatBackgroundService()
+        val presenter = createChatPresenter(service = service, setting = FakeChatThemeSetting(ChatTheme(aChatBackgroundPhoto(), ChatBubbleColor.Blue)))
+
+        presenter.test {
+            consumeItemsUntilPredicate { it.canChange && it.defaultTheme.bubble == ChatBubbleColor.Blue }.last().eventSink(ChatThemeEvent.OpenBubblePicker)
+            awaitItem().eventSink(ChatThemeEvent.SelectBubble(null))
+            val standard = awaitItem()
+            assertThat(standard.canSave(ChatTheme.STOCK, isPickerChoice = true)).isFalse()
+            standard.eventSink(ChatThemeEvent.Save)
+            expectNoEvents()
+            assertThat(standard.page).isEqualTo(ChatThemePage.BubblePicker(selection = null))
+        }
+        assertThat(service.sentThemes).isEmpty()
+    }
+
+    @Test
     fun `the default photo never goes into a chat`() = runTest {
         val service = FakeChatBackgroundService()
         val defaultPhoto = ChatTheme(aChatBackgroundPhoto(), ChatBubbleColor.Green)
