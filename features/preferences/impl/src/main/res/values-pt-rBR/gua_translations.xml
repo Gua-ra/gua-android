@@ -140,5 +140,5 @@
     <string name="screen_settings_user_status_in_a_meeting">Em uma reunião</string>
     <string name="screen_settings_user_status_on_the_road">Na estrada</string>
     <string name="screen_settings_user_status_placeholder">Qual é o seu status?</string>
-    <string name="gua_chat_theme_settings_row_title">Tema das conversas</string>
+    <string name="gua_chat_theme_settings_row_title">Tema da conversa</string>
 </resources>

@@ -16,7 +16,7 @@
   <string name="gua_chat_background_a11y_move_up">Déplacer la photo vers le haut</string>
   <string name="gua_chat_background_a11y_move_down">Déplacer la photo vers le bas</string>
   <string name="gua_chat_theme_screen_title">Thème de la conversation</string>
-  <string name="gua_chat_theme_chat_bubble">Bulle de discussion</string>
+  <string name="gua_chat_theme_chat_bubble">Bulle de conversation</string>
   <string name="gua_chat_theme_wallpaper">Fond d’écran</string>
   <string name="gua_chat_theme_section_featured">À la une</string>
   <string name="gua_chat_theme_section_colours">Couleurs</string>
@@ -32,5 +32,5 @@
   <string name="gua_chat_theme_choose_photo">Choisir une photo</string>
   <string name="gua_chat_theme_no_wallpaper">Aucun fond d’écran</string>
   <string name="gua_chat_theme_bubble_standard">Standard</string>
-  <string name="gua_chat_theme_bubble_a11y">Bulle %1$s</string>
+  <string name="gua_chat_theme_bubble_a11y">Bulle : %1$s</string>
 </resources>

@@ -30,7 +30,7 @@
   <string name="gua_chat_theme_action_set">Establecer</string>
   <string name="gua_chat_theme_progress">Estableciendo tema…</string>
   <string name="gua_chat_theme_choose_photo">Elegir una foto</string>
-  <string name="gua_chat_theme_no_wallpaper">Sin fondo</string>
+  <string name="gua_chat_theme_no_wallpaper">Sin fondo de pantalla</string>
   <string name="gua_chat_theme_bubble_standard">Estándar</string>
-  <string name="gua_chat_theme_bubble_a11y">Burbuja %1$s</string>
+  <string name="gua_chat_theme_bubble_a11y">Burbuja: %1$s</string>
 </resources>
