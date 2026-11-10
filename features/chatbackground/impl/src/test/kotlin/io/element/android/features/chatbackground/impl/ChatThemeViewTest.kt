@@ -18,7 +18,7 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -66,7 +66,9 @@ class ChatThemeViewTest : RobolectricTest() {
     fun `clicking on a tile selects its theme`() = runAndroidComposeUiTest<ComponentActivity> {
         val eventsRecorder = EventsRecorder<ChatThemeEvent>()
         setChatThemeView(aChatThemeState(eventSink = eventsRecorder))
-        onAllNodesWithText(activity!!.getString(ChatBackgroundPreset.Ocean.nameRes))[0].performClick()
+        val ocean = activity!!.getString(ChatBackgroundPreset.Ocean.nameRes)
+        onNodeWithText(ocean).assertDoesNotExist()
+        onAllNodesWithContentDescription(ocean, substring = true)[0].performClick()
         eventsRecorder.assertSingle(ChatThemeEvent.SelectTheme(oceanTeal))
     }
 
@@ -85,7 +87,7 @@ class ChatThemeViewTest : RobolectricTest() {
     fun `for the default the first tile is Classic, and the note says where it applies`() = runAndroidComposeUiTest<ComponentActivity> {
         setChatThemeView(aChatThemeState(mode = ChatThemeMode.Default, current = oceanTeal))
         onNodeWithText(activity!!.getString(R.string.gua_chat_theme_classic)).assertIsNotSelected()
-        onAllNodesWithText(activity!!.getString(ChatBackgroundPreset.Ocean.nameRes))[0].assertIsSelected()
+        onAllNodesWithContentDescription(activity!!.getString(ChatBackgroundPreset.Ocean.nameRes), substring = true)[0].assertIsSelected()
         onNode(hasText(activity!!.getString(R.string.gua_chat_theme_default_note))).performScrollTo()
     }
 
@@ -94,7 +96,7 @@ class ChatThemeViewTest : RobolectricTest() {
         setChatThemeView(aChatThemeState(current = oceanTeal, hasPermission = false, eventSink = EventsRecorder(expectEvents = false)))
         clickOn(R.string.gua_chat_theme_chat_bubble)
         clickOn(R.string.gua_chat_theme_wallpaper)
-        onAllNodesWithText(activity!!.getString(ChatBackgroundPreset.Ocean.nameRes))[0].performClick()
+        onAllNodesWithContentDescription(activity!!.getString(ChatBackgroundPreset.Ocean.nameRes), substring = true)[0].performClick()
         onNode(hasText(activity!!.getString(R.string.gua_chat_theme_no_permission))).performScrollTo()
     }
 

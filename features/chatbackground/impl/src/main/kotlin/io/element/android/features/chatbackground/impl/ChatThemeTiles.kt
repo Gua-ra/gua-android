@@ -86,12 +86,14 @@ internal fun ChatThemeTile(
     showsBubbles: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    showsLabel: Boolean = true,
 ) {
     val bubbleDescription = if (showsBubbles) {
         stringResource(R.string.gua_chat_theme_bubble_a11y, stringResource(theme.bubble?.nameRes ?: R.string.gua_chat_theme_bubble_standard))
     } else {
         null
     }
+    val description = listOfNotNull(label.takeUnless { showsLabel }, bubbleDescription).joinToString(", ")
     Column(
         modifier = modifier
             .width(TILE_WIDTH)
@@ -111,7 +113,7 @@ internal fun ChatThemeTile(
                     color = if (isSelected) ElementTheme.colors.borderInteractivePrimary else ElementTheme.colors.borderInteractiveSecondary,
                     shape = TILE_SHAPE,
                 )
-                .clearAndSetSemantics { bubbleDescription?.let { contentDescription = it } },
+                .clearAndSetSemantics { if (description.isNotEmpty()) contentDescription = description },
         ) {
             ChatBackgroundCanvas(background = theme.background, modifier = Modifier.fillMaxSize())
             if (showsBubbles) {
@@ -121,14 +123,16 @@ internal fun ChatThemeTile(
                 SelectedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(6.dp))
             }
         }
-        Text(
-            text = label,
-            style = ElementTheme.typography.fontBodySmRegular,
-            color = if (enabled) ElementTheme.colors.textPrimary else ElementTheme.colors.textDisabled,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        if (showsLabel) {
+            Text(
+                text = label,
+                style = ElementTheme.typography.fontBodySmRegular,
+                color = if (enabled) ElementTheme.colors.textPrimary else ElementTheme.colors.textDisabled,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

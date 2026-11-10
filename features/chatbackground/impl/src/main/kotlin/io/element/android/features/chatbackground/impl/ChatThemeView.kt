@@ -177,6 +177,7 @@ private fun ChatThemeGalleryView(
                             isSelected = theme == state.current,
                             enabled = state.canChange,
                             showsBubbles = true,
+                            showsLabel = false,
                             onClick = { state.eventSink(ChatThemeEvent.SelectTheme(theme)) },
                         )
                     }
