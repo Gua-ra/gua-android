@@ -33,7 +33,7 @@ enum class ChatThemeMode {
 data class ChatThemeTargetState(
     val current: ChatTheme,
     val defaultTheme: ChatTheme,
-    val canChange: Boolean,
+    val hasPermission: Boolean?,
     val isPhotoHidden: Boolean,
 )
 
@@ -59,13 +59,13 @@ class RoomChatThemeTarget(
     override fun present(): ChatThemeTargetState {
         val current by chatBackgroundService.collectThemeAsState(room)
         val defaultTheme by chatThemeSetting.theme.collectAsState()
-        val canChange by room.permissionsAsState(false) { it.canChangeChatBackground() }
+        val hasPermission by room.permissionsAsState<Boolean?>(null) { it.canChangeChatBackground() }
         val mediaPreviewValue by remember { mediaPreviewService.mediaPreviewConfigFlow.mapState { it.mediaPreviewValue } }.collectAsState()
         val joinRule by remember { room.roomInfoFlow.mapState { it.joinRule } }.collectAsState()
         return ChatThemeTargetState(
             current = current,
             defaultTheme = defaultTheme,
-            canChange = canChange,
+            hasPermission = hasPermission,
             isPhotoHidden = isChatPhotoHidden(joinRule.isPrivateChat(), mediaPreviewValue.isPreviewEnabled(joinRule)),
         )
     }
@@ -83,7 +83,7 @@ class PersonalDefaultChatThemeTarget(
     override fun present(): ChatThemeTargetState {
         val current by chatThemeSetting.theme.collectAsState()
         // The user's own photo always shows.
-        return ChatThemeTargetState(current = current, defaultTheme = current, canChange = true, isPhotoHidden = false)
+        return ChatThemeTargetState(current = current, defaultTheme = current, hasPermission = true, isPhotoHidden = false)
     }
 
     override suspend fun set(theme: ChatTheme): Result<Unit> = chatThemeSetting.set(theme)

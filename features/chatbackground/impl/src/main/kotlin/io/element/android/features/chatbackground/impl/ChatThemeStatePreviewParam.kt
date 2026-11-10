@@ -24,7 +24,7 @@ class ChatThemeStatePreviewParam : PreviewParameterProvider<ChatThemeState> {
                 current = aTheme(ChatBackgroundPreset.Aurora, ChatBubbleColor.Green),
                 defaultTheme = aTheme(ChatBackgroundPreset.Dusk, ChatBubbleColor.Orange),
             ),
-            aChatThemeState(current = aTheme(ChatBackgroundPreset.Dawn, ChatBubbleColor.Blue), canChange = false),
+            aChatThemeState(current = aTheme(ChatBackgroundPreset.Dawn, ChatBubbleColor.Blue), hasPermission = false),
             aChatThemeState(mode = ChatThemeMode.Default),
             aChatThemeState(mode = ChatThemeMode.Default, current = ChatTheme(aChatBackgroundPhoto(), ChatBubbleColor.Teal), action = AsyncAction.Loading),
             aChatThemeState(operation = ChatThemeOperation.PreparePhoto, action = AsyncAction.Failure(PhotoTooLargeException())),
@@ -48,6 +48,7 @@ class ChatThemeStatePreviewParam : PreviewParameterProvider<ChatThemeState> {
                 ),
             ),
             aChatThemeState(current = ChatTheme(aChatBackgroundPhoto(), ChatBubbleColor.Blue), isPhotoHidden = true),
+            aChatThemeState(current = aTheme(ChatBackgroundPreset.Ocean, ChatBubbleColor.Teal), hasPermission = null),
         )
 }
 
@@ -66,7 +67,7 @@ internal fun aChatThemeState(
     mode: ChatThemeMode = ChatThemeMode.Chat,
     current: ChatTheme = ChatTheme.STOCK,
     defaultTheme: ChatTheme = ChatTheme.STOCK,
-    canChange: Boolean = true,
+    hasPermission: Boolean? = true,
     isPhotoHidden: Boolean = false,
     page: ChatThemePage = ChatThemePage.Gallery,
     preview: ChatThemePreview? = null,
@@ -78,7 +79,7 @@ internal fun aChatThemeState(
     mode = mode,
     current = current,
     defaultTheme = defaultTheme,
-    canChange = canChange,
+    hasPermission = hasPermission,
     isPhotoHidden = isPhotoHidden,
     page = page,
     preview = preview,

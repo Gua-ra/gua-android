@@ -47,7 +47,7 @@ class ChatThemePresenter(
         val coroutineScope = rememberCoroutineScope()
         val targetState = target.present()
         val current = targetState.current
-        val canChange = targetState.canChange
+        val canChange = targetState.hasPermission == true
         var page by remember { mutableStateOf<ChatThemePage>(ChatThemePage.Gallery) }
         var preview by remember { mutableStateOf<ChatThemePreview?>(null) }
         var photoDraft by remember { mutableStateOf<ChatBackgroundPhotoDraft?>(null) }
@@ -134,7 +134,7 @@ class ChatThemePresenter(
             mode = target.mode,
             current = current,
             defaultTheme = targetState.defaultTheme,
-            canChange = canChange,
+            hasPermission = targetState.hasPermission,
             isPhotoHidden = targetState.isPhotoHidden,
             page = page,
             preview = preview,

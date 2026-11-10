@@ -91,11 +91,19 @@ class ChatThemeViewTest : RobolectricTest() {
 
     @Test
     fun `without permission nothing can be chosen and the reason shows`() = runAndroidComposeUiTest<ComponentActivity> {
-        setChatThemeView(aChatThemeState(current = oceanTeal, canChange = false, eventSink = EventsRecorder(expectEvents = false)))
+        setChatThemeView(aChatThemeState(current = oceanTeal, hasPermission = false, eventSink = EventsRecorder(expectEvents = false)))
         clickOn(R.string.gua_chat_theme_chat_bubble)
         clickOn(R.string.gua_chat_theme_wallpaper)
         onAllNodesWithText(activity!!.getString(ChatBackgroundPreset.Ocean.nameRes))[0].performClick()
         onNode(hasText(activity!!.getString(R.string.gua_chat_theme_no_permission))).performScrollTo()
+    }
+
+    @Test
+    fun `while the permissions load nothing can be chosen and no reason shows`() = runAndroidComposeUiTest<ComponentActivity> {
+        setChatThemeView(aChatThemeState(current = oceanTeal, hasPermission = null, eventSink = EventsRecorder(expectEvents = false)))
+        clickOn(R.string.gua_chat_theme_chat_bubble)
+        clickOn(R.string.gua_chat_theme_wallpaper)
+        onNodeWithText(activity!!.getString(R.string.gua_chat_theme_no_permission)).assertDoesNotExist()
     }
 
     @Test
@@ -218,7 +226,7 @@ class ChatThemeViewTest : RobolectricTest() {
     @Test
     fun `without permission the photo preview cannot save the photo`() = runAndroidComposeUiTest<ComponentActivity> {
         setChatThemeView(
-            aChatThemeState(photoDraft = aChatBackgroundPhotoDraft(), canChange = false, eventSink = EventsRecorder(expectEvents = false))
+            aChatThemeState(photoDraft = aChatBackgroundPhotoDraft(), hasPermission = false, eventSink = EventsRecorder(expectEvents = false))
         )
         clickOn(R.string.gua_chat_theme_action_set_theme)
     }

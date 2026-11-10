@@ -358,7 +358,7 @@ class ChatThemePresenterTest : RobolectricTest() {
         )
 
         presenter.test {
-            val state = awaitItem()
+            val state = consumeItemsUntilPredicate { it.hasPermission == false }.last()
             assertThat(state.current).isEqualTo(auroraGreen)
             assertThat(state.canChange).isFalse()
             state.eventSink(ChatThemeEvent.SelectTheme(sunsetPink))
@@ -372,6 +372,19 @@ class ChatThemePresenterTest : RobolectricTest() {
         }
         assertThat(service.sentThemes).isEmpty()
         assertThat(processedPhotos).isEqualTo(0)
+    }
+
+    @Test
+    fun `nothing can change until the permissions have loaded`() = runTest {
+        createChatPresenter().test {
+            val loading = awaitItem()
+            assertThat(loading.hasPermission).isNull()
+            assertThat(loading.canChange).isFalse()
+            loading.eventSink(ChatThemeEvent.SelectTheme(sunsetPink))
+            val loaded = consumeItemsUntilPredicate { it.hasPermission != null }.last()
+            assertThat(loaded.canChange).isTrue()
+            assertThat(loaded.preview).isNull()
+        }
     }
 
     @Test

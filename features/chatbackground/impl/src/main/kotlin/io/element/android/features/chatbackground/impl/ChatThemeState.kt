@@ -17,7 +17,8 @@ data class ChatThemeState(
     val mode: ChatThemeMode,
     val current: ChatTheme,
     val defaultTheme: ChatTheme,
-    val canChange: Boolean,
+    /** Null until the permissions have loaded. */
+    val hasPermission: Boolean?,
     val isPhotoHidden: Boolean,
     val page: ChatThemePage,
     val preview: ChatThemePreview?,
@@ -26,6 +27,9 @@ data class ChatThemeState(
     val action: AsyncAction<Unit>,
     val eventSink: (ChatThemeEvent) -> Unit,
 ) {
+    val canChange: Boolean
+        get() = hasPermission == true
+
     val shownCurrent: ChatTheme
         get() = if (isPhotoHidden && current.background is ChatBackground.Photo) current.copy(background = ChatBackground.None) else current
 

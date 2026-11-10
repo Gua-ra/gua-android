@@ -191,7 +191,7 @@ private fun ChatThemeGalleryView(
                     }
                 ),
             )
-            if (!state.canChange) {
+            if (state.hasPermission == false) {
                 ChatThemeNote(text = stringResource(R.string.gua_chat_theme_no_permission))
             }
         }
