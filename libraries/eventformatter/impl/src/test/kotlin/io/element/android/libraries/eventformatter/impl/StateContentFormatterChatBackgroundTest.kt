@@ -25,24 +25,30 @@ class StateContentFormatterChatBackgroundTest : RobolectricTest() {
         formatter.format(StateContent("", content), senderDisambiguatedDisplayName = "Alice", senderIsYou = senderIsYou, renderingMode = renderingMode)
 
     @Test
-    fun `a changed background names who changed it`() {
+    fun `a changed theme names who changed it`() {
         val changed = OtherState.ChatBackground("""{"v":1,"kind":"preset","preset":"mint"}""")
 
-        assertThat(format(changed, senderIsYou = true)).isEqualTo("You changed the chat background")
-        assertThat(format(changed, senderIsYou = false)).isEqualTo("Alice changed the chat background")
+        assertThat(format(changed, senderIsYou = true)).isEqualTo("You changed the chat theme")
+        assertThat(format(changed, senderIsYou = false)).isEqualTo("Alice changed the chat theme")
+    }
+
+    @Test
+    fun `a bubble colour alone is a change`() {
+        assertThat(format(OtherState.ChatBackground("""{"bubble":"blue","kind":"none","v":1}"""), senderIsYou = false))
+            .isEqualTo("Alice changed the chat theme")
     }
 
     @Test
     fun `empty content is a removal`() {
         val removed = OtherState.ChatBackground("{ }")
 
-        assertThat(format(removed, senderIsYou = true)).isEqualTo("You removed the chat background")
-        assertThat(format(removed, senderIsYou = false)).isEqualTo("Alice removed the chat background")
+        assertThat(format(removed, senderIsYou = true)).isEqualTo("You removed the chat theme")
+        assertThat(format(removed, senderIsYou = false)).isEqualTo("Alice removed the chat theme")
     }
 
     @Test
     fun `unreadable content reads as a change`() {
-        assertThat(format(OtherState.ChatBackground(null), senderIsYou = false)).isEqualTo("Alice changed the chat background")
+        assertThat(format(OtherState.ChatBackground(null), senderIsYou = false)).isEqualTo("Alice changed the chat theme")
     }
 
     @Test

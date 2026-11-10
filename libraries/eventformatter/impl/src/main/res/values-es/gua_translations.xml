@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
-  <string name="gua_chat_background_notice_changed_by_you">Cambiaste el fondo del chat</string>
-  <string name="gua_chat_background_notice_changed">%1$s cambió el fondo del chat</string>
-  <string name="gua_chat_background_notice_removed_by_you">Quitaste el fondo del chat</string>
-  <string name="gua_chat_background_notice_removed">%1$s quitó el fondo del chat</string>
+  <string name="gua_chat_theme_notice_changed_by_you">Cambiaste el tema del chat</string>
+  <string name="gua_chat_theme_notice_changed">%1$s cambió el tema del chat</string>
+  <string name="gua_chat_theme_notice_removed_by_you">Quitaste el tema del chat</string>
+  <string name="gua_chat_theme_notice_removed">%1$s quitó el tema del chat</string>
 </resources>

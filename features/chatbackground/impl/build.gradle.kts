@@ -32,6 +32,7 @@ dependencies {
     implementation(projects.libraries.matrix.api)
     implementation(projects.libraries.matrixui)
     implementation(projects.libraries.mediapickers.api)
+    implementation(projects.libraries.uiStrings)
 
     testCommonDependencies(libs, true)
     testImplementation(projects.libraries.chatbackground.test)

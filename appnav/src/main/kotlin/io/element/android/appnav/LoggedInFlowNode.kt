@@ -78,6 +78,7 @@ import io.element.android.libraries.architecture.createNode
 import io.element.android.libraries.architecture.waitForChildAttached
 import io.element.android.libraries.architecture.waitForNavTargetAttached
 import io.element.android.libraries.chatbackground.api.ChatBackgroundService
+import io.element.android.libraries.chatbackground.api.ChatThemeSetting
 import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.designsystem.theme.ElementThemeApp
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
@@ -161,6 +162,7 @@ class LoggedInFlowNode(
     private val loggedInEventProcessorFactory: LoggedInEventProcessor.Factory,
     private val newSignInMonitor: NewSignInMonitor,
     private val chatBackgroundService: ChatBackgroundService,
+    private val chatThemeSetting: ChatThemeSetting,
 ) : BaseFlowNode<LoggedInFlowNode.NavTarget>(
     backstack = BackStack(
         initialElement = NavTarget.Placeholder,
@@ -221,6 +223,7 @@ class LoggedInFlowNode(
                 }
                 mediaPreviewConfigMigration()
                 chatBackgroundService.preload()
+                chatThemeSetting.preload()
                 sessionCoroutineScope.launch {
                     // Wait for the network to be connected before pre-fetching the max file upload size
                     networkMonitor.connectivity.first { networkStatus -> networkStatus == NetworkStatus.Connected }

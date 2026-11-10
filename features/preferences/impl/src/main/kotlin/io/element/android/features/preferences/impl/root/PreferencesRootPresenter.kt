@@ -163,6 +163,9 @@ class PreferencesRootPresenter(
 
         val showDeveloperSettings by showDeveloperSettingsProvider.showDeveloperSettings.collectAsState()
         val isSpacesEnabled by spacesSwitch.isEnabled.collectAsState()
+        val showChatThemeItem by remember {
+            featureFlagService.isFeatureEnabledFlow(FeatureFlags.ChatBackgrounds)
+        }.collectAsState(initial = false)
 
         val isLocationServiceAvailable by remember { locationService.isServiceAvailable() }.collectAsState()
 
@@ -206,6 +209,7 @@ class PreferencesRootPresenter(
             hasAccountStrongFactor = hasAccountStrongFactor,
             showLocationSettings = isLocationServiceAvailable,
             isSpacesEnabled = isSpacesEnabled,
+            showChatThemeItem = showChatThemeItem,
             snackbarMessage = snackbarMessage,
             eventSink = ::handleEvent,
         )

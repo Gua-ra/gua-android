@@ -1,17 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
-  <string name="gua_chat_background_screen_title">Chat background</string>
-  <string name="gua_chat_background_choose_photo">Choose photo</string>
-  <string name="gua_chat_background_shared_note">Everyone in this chat, including people who join later, will see the background.</string>
   <string name="gua_chat_background_photo_note">Background photos are not end-to-end encrypted.</string>
   <string name="gua_chat_background_dim">Dim in dark mode</string>
   <string name="gua_chat_background_preview_light">Light</string>
   <string name="gua_chat_background_preview_dark">Dark</string>
   <string name="gua_chat_background_position_hint">Drag to position the photo</string>
-  <string name="gua_chat_background_action_set">Set background</string>
-  <string name="gua_chat_background_action_remove">Remove background</string>
-  <string name="gua_chat_background_progress">Setting background…</string>
-  <string name="gua_chat_background_progress_remove">Removing background…</string>
   <string name="gua_chat_background_error_generic">Couldn’t change the background. Try again.</string>
   <string name="gua_chat_background_error_too_large">This photo is too large. Choose another one.</string>
   <string name="gua_chat_background_preview_a11y">Background preview</string>
@@ -22,4 +15,22 @@
   <string name="gua_chat_background_a11y_move_right">Move the photo right</string>
   <string name="gua_chat_background_a11y_move_up">Move the photo up</string>
   <string name="gua_chat_background_a11y_move_down">Move the photo down</string>
+  <string name="gua_chat_theme_screen_title">Chat theme</string>
+  <string name="gua_chat_theme_chat_bubble">Chat bubble</string>
+  <string name="gua_chat_theme_wallpaper">Wallpaper</string>
+  <string name="gua_chat_theme_section_featured">Featured</string>
+  <string name="gua_chat_theme_section_colours">Colours</string>
+  <string name="gua_chat_theme_section_gradients">Gradients</string>
+  <string name="gua_chat_theme_classic">Classic</string>
+  <string name="gua_chat_theme_default_note">Applies to every chat that doesn’t have its own theme.</string>
+  <string name="gua_chat_theme_chat_note">Everyone in the chat sees this theme.</string>
+  <string name="gua_chat_theme_no_permission">Only admins and moderators can change it</string>
+  <string name="gua_chat_theme_action_set_theme">Set theme</string>
+  <string name="gua_chat_theme_action_set_default">Set default</string>
+  <string name="gua_chat_theme_action_set">Set</string>
+  <string name="gua_chat_theme_progress">Setting theme…</string>
+  <string name="gua_chat_theme_choose_photo">Choose a photo</string>
+  <string name="gua_chat_theme_no_wallpaper">No wallpaper</string>
+  <string name="gua_chat_theme_bubble_standard">Standard</string>
+  <string name="gua_chat_theme_bubble_a11y">%1$s bubble</string>
 </resources>

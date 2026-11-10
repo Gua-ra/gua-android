@@ -112,4 +112,5 @@
     <string name="screen_notification_settings_show_all_activity_title">Mostrar toda la actividad en la lista de chats</string>
     <string name="gua_preferences_spaces_title">Espacios</string>
     <string name="gua_preferences_spaces_description">Organiza chats y comunidades relacionados en un solo lugar</string>
+    <string name="gua_chat_theme_settings_row_title">Tema del chat</string>
 </resources>

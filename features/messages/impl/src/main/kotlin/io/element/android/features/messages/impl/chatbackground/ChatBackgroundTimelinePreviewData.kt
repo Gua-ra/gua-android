@@ -43,10 +43,10 @@ internal fun aChatBackgroundTimelineItems(): ImmutableList<TimelineItem> = persi
         timelineItemReactions = aTimelineItemReactions(count = 2),
     ),
     aTimelineItemEvent(
-        content = aTimelineItemTextContent(body = "I picked a new background for us"),
+        content = aTimelineItemTextContent(body = "I picked a new theme for us"),
         groupPosition = TimelineItemGroupPosition.First,
     ),
-    aTimelineItemEvent(content = TimelineItemChatBackgroundContent("Alice changed the chat background")),
+    aTimelineItemEvent(content = TimelineItemChatBackgroundContent("Alice changed the chat theme")),
     aGroupedEvents(),
     aTimelineItemDaySeparator(),
     TimelineItem.Virtual(UniqueId("loading"), TimelineItemLoadingIndicatorModel(Timeline.PaginationDirection.BACKWARDS, 0)),

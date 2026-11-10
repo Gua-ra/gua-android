@@ -3,6 +3,6 @@
   <!-- GUA FORK: replaces upstream's "%1$s's digital identity was reset."
        Same plain wording as the conversation banner. %1$s is the display name. -->
   <string name="gua_identity_change_member_list">Les informations de sécurité de %1$s ont changé</string>
-  <string name="gua_chat_background_row_title">Arrière-plan</string>
+  <string name="gua_chat_theme_row_title">Thème de la conversation</string>
   <string name="gua_chat_background_row_no_permission">Seuls les administrateurs et les modérateurs peuvent le modifier</string>
 </resources>

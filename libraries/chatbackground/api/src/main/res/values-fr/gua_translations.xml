@@ -12,4 +12,16 @@
   <string name="gua_chat_background_preset_night">Nuit</string>
   <string name="gua_chat_background_value_default">Par défaut</string>
   <string name="gua_chat_background_value_photo">Photo</string>
+  <string name="gua_chat_theme_preset_dawn">Aube</string>
+  <string name="gua_chat_theme_preset_forest">Forêt</string>
+  <string name="gua_chat_theme_preset_dusk">Soir</string>
+  <string name="gua_chat_theme_preset_citrus">Agrumes</string>
+  <string name="gua_chat_theme_bubble_green">Vert</string>
+  <string name="gua_chat_theme_bubble_teal">Bleu canard</string>
+  <string name="gua_chat_theme_bubble_blue">Bleu</string>
+  <string name="gua_chat_theme_bubble_purple">Violet</string>
+  <string name="gua_chat_theme_bubble_pink">Rose</string>
+  <string name="gua_chat_theme_bubble_orange">Orange</string>
+  <string name="gua_chat_theme_bubble_yellow">Jaune</string>
+  <string name="gua_chat_theme_bubble_graphite">Graphite</string>
 </resources>

@@ -13,11 +13,7 @@ import io.element.android.features.chatbackground.api.ChatBackgroundEntryPoint
 import io.element.android.tests.testutils.lambda.lambdaError
 
 class FakeChatBackgroundEntryPoint : ChatBackgroundEntryPoint {
-    override fun createNode(
-        parentNode: Node,
-        buildContext: BuildContext,
-        callback: ChatBackgroundEntryPoint.Callback,
-    ): Node {
-        lambdaError()
-    }
+    override fun createNode(parentNode: Node, buildContext: BuildContext): Node = lambdaError()
+
+    override fun createDefaultNode(parentNode: Node, buildContext: BuildContext): Node = lambdaError()
 }

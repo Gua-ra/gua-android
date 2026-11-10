@@ -162,6 +162,25 @@ class PreferencesRootPresenterTest {
     }
 
     @Test
+    fun `present - the Chat theme row follows the chat backgrounds flag`() = runTest {
+        createPreferencesRootPresenter(
+            featureFlagService = FakeFeatureFlagService().apply {
+                setFeatureEnabled(FeatureFlags.ChatBackgrounds, false)
+            }
+        ).test {
+            assertThat(awaitLastSequentialItem().showChatThemeItem).isFalse()
+        }
+        createPreferencesRootPresenter(
+            featureFlagService = FakeFeatureFlagService().apply {
+                setFeatureEnabled(FeatureFlags.ChatBackgrounds, true)
+            }
+        ).test {
+            assertThat(consumeItemsUntilPredicate { it.showChatThemeItem }.last().showChatThemeItem).isTrue()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `present - the Spaces row turns the Spaces switch on`() = runTest {
         val spacesSwitch = FakeSpacesSwitch(initialValue = false)
         createPreferencesRootPresenter(spacesSwitch = spacesSwitch).test {

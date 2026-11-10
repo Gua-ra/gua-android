@@ -19,6 +19,8 @@ import io.element.android.features.userprofile.shared.aUserProfileState
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
+import io.element.android.libraries.chatbackground.api.ChatBubbleColor
+import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.matrix.api.core.RoomAlias
 import io.element.android.libraries.matrix.api.core.RoomId
@@ -64,9 +66,10 @@ open class RoomDetailsStatePreviewParam : PreviewParameterProvider<RoomDetailsSt
             aSharedHistoryRoomDetailsState(roomHistoryVisibility = RoomHistoryVisibility.Joined),
             aSharedHistoryRoomDetailsState(roomHistoryVisibility = RoomHistoryVisibility.Shared),
             aSharedHistoryRoomDetailsState(roomHistoryVisibility = RoomHistoryVisibility.WorldReadable),
-            aRoomDetailsState(chatBackgroundRow = ChatBackgroundRowState(ChatBackground.None, canChange = true)),
-            aRoomDetailsState(chatBackgroundRow = ChatBackgroundRowState(ChatBackground.Preset(ChatBackgroundPreset.Aurora), canChange = true)),
-            aDmRoomDetailsState().copy(chatBackgroundRow = ChatBackgroundRowState(aChatBackgroundPhoto(), canChange = false)),
+            aRoomDetailsState(chatBackgroundRow = ChatBackgroundRowState(ChatTheme.STOCK, canChange = true)),
+            aRoomDetailsState(chatBackgroundRow = ChatBackgroundRowState(ChatTheme(ChatBackground.Preset(ChatBackgroundPreset.Aurora)), canChange = true)),
+            aDmRoomDetailsState().copy(chatBackgroundRow = ChatBackgroundRowState(ChatTheme(aChatBackgroundPhoto()), canChange = false)),
+            aRoomDetailsState(chatBackgroundRow = ChatBackgroundRowState(ChatTheme(bubble = ChatBubbleColor.Blue), canChange = true)),
             // Add other state here
         )
 }

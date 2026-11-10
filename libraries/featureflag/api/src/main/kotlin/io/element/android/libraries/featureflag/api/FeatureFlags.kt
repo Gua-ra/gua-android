@@ -188,8 +188,8 @@ enum class FeatureFlags(
     ),
     ChatBackgrounds(
         key = "feature.chat_backgrounds",
-        title = "Chat backgrounds",
-        description = "GUA FORK: show the Background row in chat details. Backgrounds set from other devices always show." +
+        title = "Chat themes",
+        description = "GUA FORK: show the Chat theme rows in Settings and chat details. Themes set from other devices always show." +
             "\n\nOff in production until a release that hides the raw background event in group timelines is out.",
         // On in debug and QA builds (the .dev application ID), off in production.
         defaultValue = { buildMeta -> buildMeta.buildType != BuildType.RELEASE || buildMeta.applicationId.endsWith(".dev") },

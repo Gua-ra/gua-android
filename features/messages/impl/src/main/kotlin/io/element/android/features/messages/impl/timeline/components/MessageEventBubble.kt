@@ -40,6 +40,7 @@ import io.element.android.features.messages.impl.timeline.model.TimelineItemGrou
 import io.element.android.features.messages.impl.timeline.model.bubble.BubbleState
 import io.element.android.features.messages.impl.timeline.model.bubble.BubbleStatePreviewParam
 import io.element.android.libraries.core.extensions.to01
+import io.element.android.libraries.designsystem.chatbackground.LocalOutgoingBubbleColor
 import io.element.android.libraries.designsystem.components.avatar.AvatarSize
 import io.element.android.libraries.designsystem.modifiers.onKeyboardContextMenuAction
 import io.element.android.libraries.designsystem.preview.ElementPreview
@@ -183,7 +184,8 @@ object MessageEventBubbleDefaults {
     @Composable
     fun backgroundBubbleColor(isMine: Boolean): Color {
         return if (isMine) {
-            ElementTheme.colors.messageFromMeBackground
+            // GUA FORK: a chat theme can colour the outgoing bubble.
+            LocalOutgoingBubbleColor.current ?: ElementTheme.colors.messageFromMeBackground
         } else {
             ElementTheme.colors.messageFromOtherBackground
         }

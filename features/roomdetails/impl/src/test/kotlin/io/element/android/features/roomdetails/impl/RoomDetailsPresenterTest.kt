@@ -24,6 +24,8 @@ import io.element.android.libraries.androidutils.toast.ToastHelper
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
+import io.element.android.libraries.chatbackground.api.ChatBubbleColor
+import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.chatbackground.test.FakeChatBackgroundService
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.featureflag.api.FeatureFlags
@@ -152,12 +154,14 @@ class RoomDetailsPresenterTest {
         )
         val presenter = createRoomDetailsPresenter(
             room = room,
-            chatBackgroundService = FakeChatBackgroundService(ChatBackground.Preset(ChatBackgroundPreset.Sand)),
+            chatBackgroundService = FakeChatBackgroundService(ChatTheme(ChatBackground.Preset(ChatBackgroundPreset.Sand), ChatBubbleColor.Orange)),
             featureFlagService = FakeFeatureFlagService(mapOf(FeatureFlags.ChatBackgrounds.key to true)),
         )
         presenter.testWithLifecycleOwner(lifecycleOwner = fakeLifecycleOwner) {
             val state = consumeItemsUntilPredicate { it.chatBackgroundRow?.canChange == true }.last()
-            assertThat(state.chatBackgroundRow).isEqualTo(ChatBackgroundRowState(ChatBackground.Preset(ChatBackgroundPreset.Sand), canChange = true))
+            assertThat(state.chatBackgroundRow).isEqualTo(
+                ChatBackgroundRowState(ChatTheme(ChatBackground.Preset(ChatBackgroundPreset.Sand), ChatBubbleColor.Orange), canChange = true)
+            )
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -170,7 +174,7 @@ class RoomDetailsPresenterTest {
         )
         presenter.testWithLifecycleOwner(lifecycleOwner = fakeLifecycleOwner) {
             val state = consumeItemsUntilPredicate { it.chatBackgroundRow?.canChange == false }.last()
-            assertThat(state.chatBackgroundRow).isEqualTo(ChatBackgroundRowState(ChatBackground.None, canChange = false))
+            assertThat(state.chatBackgroundRow).isEqualTo(ChatBackgroundRowState(ChatTheme.STOCK, canChange = false))
             cancelAndIgnoreRemainingEvents()
         }
     }

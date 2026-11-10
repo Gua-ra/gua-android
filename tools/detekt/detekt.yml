@@ -244,6 +244,7 @@ Compose:
       - LocalTimelineEventRendererConfig
       - LocalMessageMenuController
       - LocalChatBackgroundActive
+      - LocalOutgoingBubbleColor
   CompositionLocalNaming:
     active: true
   ContentEmitterReturningValues:
