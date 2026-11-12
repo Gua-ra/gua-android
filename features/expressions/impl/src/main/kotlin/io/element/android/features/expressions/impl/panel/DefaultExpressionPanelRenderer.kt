@@ -9,7 +9,9 @@ package io.element.android.features.expressions.impl.panel
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import dev.zacsweers.metro.ContributesBinding
 import io.element.android.features.expressions.api.gif.GifImageLoader
 import io.element.android.features.expressions.api.panel.ExpressionPanelRenderer
@@ -32,7 +34,7 @@ class DefaultExpressionPanelRenderer(
         if (state is DefaultExpressionPanelState && state.isOpen) {
             ExpressionPanelView(
                 state = state,
-                keyboardHeight = keyboardHeight,
+                heights = PanelHeights.of(keyboardHeight, LocalConfiguration.current.screenHeightDp.dp),
                 emojiPickerRenderer = emojiPickerRenderer,
                 gifImageLoader = gifImageLoader.imageLoader,
                 modifier = modifier,

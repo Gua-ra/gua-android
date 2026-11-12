@@ -43,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -51,9 +50,7 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
 import coil3.ImageLoader
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.expressions.api.panel.ExpressionPanelEvent
@@ -65,9 +62,6 @@ import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.emoji.api.picker.EmojiPickerRenderer
 import io.element.android.libraries.emoji.api.picker.NoOpEmojiPickerRenderer
 import kotlinx.collections.immutable.persistentSetOf
-
-private const val EXPANDED_FRACTION = 0.85f
-private const val CLOSE_FRACTION = 0.6f
 
 private val searchChips = listOf(
     R.string.gua_expressions_word_hi,
@@ -81,15 +75,14 @@ private val searchChips = listOf(
 @Composable
 internal fun ExpressionPanelView(
     state: DefaultExpressionPanelState,
-    keyboardHeight: Dp,
+    heights: PanelHeights,
     emojiPickerRenderer: EmojiPickerRenderer,
     gifImageLoader: ImageLoader,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
-    val expandedHeight = max(keyboardHeight, LocalConfiguration.current.screenHeightDp.dp * EXPANDED_FRACTION)
-    var height by remember(keyboardHeight) { mutableStateOf(keyboardHeight) }
-    val dragState = rememberDraggableState { delta -> height = (height - with(density) { delta.toDp() }).coerceIn(0.dp, expandedHeight) }
+    var height by remember(heights) { mutableStateOf(heights.opening) }
+    val dragState = rememberDraggableState { delta -> height = (height - with(density) { delta.toDp() }).coerceIn(0.dp, heights.expanded) }
     val searchInteractionSource = remember { MutableInteractionSource() }
     val isSearchFocused by searchInteractionSource.collectIsFocusedAsState()
     val isImeVisible = WindowInsets.isImeVisible
@@ -106,21 +99,16 @@ internal fun ExpressionPanelView(
             .background(ElementTheme.colors.bgCanvasDefault),
     ) {
         Grabber(
-            isExpanded = height > keyboardHeight,
-            onExpand = { height = expandedHeight },
-            onCollapse = { height = keyboardHeight },
+            isExpanded = height > heights.opening,
+            onExpand = { height = heights.expanded },
+            onCollapse = { height = heights.opening },
             modifier = Modifier.draggable(
                 state = dragState,
                 orientation = Orientation.Vertical,
                 onDragStopped = {
-                    height = when {
-                        height < keyboardHeight * CLOSE_FRACTION -> {
-                            state.eventSink(ExpressionPanelEvent.Close)
-                            keyboardHeight
-                        }
-                        height > (keyboardHeight + expandedHeight) / 2 -> expandedHeight
-                        else -> keyboardHeight
-                    }
+                    val settled = heights.settle(height)
+                    if (settled == null) state.eventSink(ExpressionPanelEvent.Close)
+                    height = settled ?: heights.opening
                 },
             ),
         )
@@ -243,7 +231,7 @@ internal fun ExpressionPanelViewPreview(@PreviewParameter(DefaultExpressionPanel
     val context = LocalContext.current
     ExpressionPanelView(
         state = state,
-        keyboardHeight = 320.dp,
+        heights = PanelHeights(opening = 480.dp, expanded = 480.dp),
         emojiPickerRenderer = NoOpEmojiPickerRenderer,
         gifImageLoader = remember { ImageLoader(context) },
     )
