@@ -9,7 +9,6 @@ package io.element.android.features.expressions.api.gif
 
 import kotlinx.coroutines.flow.Flow
 
-/** The ids of the GIFs sent from this device, newest first. */
 interface RecentGifsStore {
     val recents: Flow<List<String>>
 

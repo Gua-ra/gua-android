@@ -35,7 +35,6 @@ import kotlin.math.sin
 interface StickerEditorEngine {
     suspend fun load(uri: Uri): Bitmap?
 
-    /** The subjects outlined in white, or null when there is no automatic cut-out. */
     suspend fun cutOut(picture: Bitmap): Bitmap?
 
     suspend fun render(picture: Bitmap, frame: EditorFrame, text: String): Bitmap

@@ -89,7 +89,6 @@ class KlipyGifProvider(
     }
 }
 
-/** The device region as a lowercase ISO 3166 code, else the app language. */
 internal fun deviceLocale(): String {
     val locale = Locale.getDefault()
     return locale.country.lowercase(Locale.ROOT).ifEmpty { locale.language.lowercase(Locale.ROOT) }

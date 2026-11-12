@@ -61,7 +61,6 @@ object StickerPackCodec {
         )
     }
 
-    /** A missing or empty usage allows every usage. */
     private fun JsonArray?.allowsStickers(): Boolean {
         if (isNullOrEmpty()) return true
         return any { (it as? JsonPrimitive)?.takeIf { usage -> usage.isString }?.content == STICKER_USAGE }

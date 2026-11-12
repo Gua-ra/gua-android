@@ -27,7 +27,6 @@ import kotlinx.serialization.json.put
 
 private val DEFAULT_PANEL_HEIGHT = 300.dp
 
-/** The tallest the keyboard has been on this screen, which the expression panel takes in its place. */
 @Composable
 internal fun rememberLastKeyboardHeight(): Dp {
     val density = LocalDensity.current

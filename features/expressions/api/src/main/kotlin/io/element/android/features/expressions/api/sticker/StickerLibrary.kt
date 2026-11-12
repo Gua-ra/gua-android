@@ -7,7 +7,6 @@
 
 package io.element.android.features.expressions.api.sticker
 
-/** The `global.gua.stickers` account data, read: invalid images are left out. */
 data class StickerLibrary(
     val favourites: List<StickerImage>,
     val stickers: List<OwnSticker>,

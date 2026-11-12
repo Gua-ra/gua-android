@@ -210,7 +210,6 @@ private fun StickerTileView(
     }
 }
 
-/** The long-press actions, which accessibility services offer as custom actions. */
 @Composable
 internal fun stickerActions(
     tile: StickerTile,

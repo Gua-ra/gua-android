@@ -52,7 +52,6 @@ import io.element.android.features.expressions.api.R as ExpressionsR
 
 private val STICKER_MAX_SIZE = 160.dp
 
-/** A sticker shows at its info size, else at the largest size, fitted within 160×160. */
 internal fun stickerDisplaySize(width: Int?, height: Int?): DpSize {
     if (width == null || height == null || minOf(width, height) <= 0) return DpSize(STICKER_MAX_SIZE, STICKER_MAX_SIZE)
     val scale = minOf(1f, STICKER_MAX_SIZE.value / maxOf(width, height))

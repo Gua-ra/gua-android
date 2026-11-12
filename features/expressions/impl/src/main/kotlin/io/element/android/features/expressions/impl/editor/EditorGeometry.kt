@@ -46,7 +46,6 @@ object EditorGeometry {
         return FrameRect(centreX - width / 2, centreY - height / 2, centreX + width / 2, centreY + height / 2)
     }
 
-    /** Applies a pinch and a drag measured in pixels on a canvas of [canvasSide]. */
     fun transformed(frame: EditorFrame, zoom: Float, panX: Float, panY: Float, canvasSide: Float): EditorFrame = EditorFrame(
         scale = (frame.scale * zoom).coerceIn(MIN_SCALE, MAX_SCALE),
         offsetX = (frame.offsetX + panX / canvasSide).coerceIn(-1f, 1f),
@@ -56,7 +55,6 @@ object EditorGeometry {
     /** The outline thickness in the picture's own pixels, so it is [OUTLINE_WIDTH] once fitted to the canvas. */
     fun outlineWidth(sourceWidth: Int, sourceHeight: Int): Float = OUTLINE_WIDTH * max(sourceWidth, sourceHeight).toFloat() / CANVAS_SIZE
 
-    /** The text size that keeps a line of [measuredWidthAtFullSize] inside the canvas margins. */
     fun textSize(measuredWidthAtFullSize: Float, canvasSide: Float = CANVAS_SIZE.toFloat()): Float {
         val available = canvasSide - 2 * TEXT_MARGIN * canvasSide / CANVAS_SIZE
         val fullSize = TEXT_SIZE * canvasSide / CANVAS_SIZE

@@ -20,7 +20,6 @@ object GifRenditions {
 
     private val sendOrder = listOf(GifSize.Hd, GifSize.Md, GifSize.Sm, GifSize.Xs)
 
-    /** `hd` when it is at most [MAX_HD_SIZE], else the next size down. */
     fun forSending(item: GifItem): GifSelection? = sendOrder.firstNotNullOfOrNull { size ->
         val rendition = item.renditions[size]
         rendition?.animated

@@ -15,11 +15,9 @@ interface ExpressionComposer {
     val timelineMode: Timeline.Mode
     val inReplyToEventId: EventId?
 
-    /** In a thread, the relation names the thread's latest event. */
     suspend fun stickerRelation(): StickerRelation
 
     fun insertEmoji(emoji: String)
 
-    /** Ends a reply once a sticker or GIF has gone. */
     fun onSent()
 }

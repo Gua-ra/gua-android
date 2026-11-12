@@ -22,7 +22,6 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/** Turns a picture into a sticker file of at most [MAX_FILE_SIZE] when it can be. */
 @Inject
 class StickerImageEncoder {
     /** An edited picture: trimmed, then fitted into the canvas with a margin. */

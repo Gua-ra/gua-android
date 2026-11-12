@@ -21,7 +21,6 @@ sealed class GifSendException(cause: Throwable?) : Exception(cause) {
     class SendFailed(cause: Throwable) : GifSendException(cause)
 }
 
-/** Sends a GIF to the current chat as an animated image, through the send queue. */
 interface GifSender {
     suspend fun send(
         item: GifItem,

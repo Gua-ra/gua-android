@@ -119,7 +119,6 @@ class DefaultGifSender(
         )
     }
 
-    /** The still has the GIF's own size. */
     private fun animatedImageInfo(file: File, width: Int, height: Int, mimetype: String, stillFile: File?) = ImageInfo(
         height = height.toLong(),
         width = width.toLong(),

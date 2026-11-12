@@ -29,7 +29,6 @@ sealed interface StickerSectionKind {
 
 data class StickerTile(
     val image: StickerImage,
-    /** Set for My stickers, which can be deleted by it. */
     val shortcode: String?,
 )
 
@@ -68,7 +67,6 @@ internal object StickerSections {
         return (listOf(recent) + others.filter { it.tiles.isNotEmpty() }).toImmutableList()
     }
 
-    /** Case and accent insensitive. */
     fun normalise(text: String): String = Normalizer.normalize(text.trim(), Normalizer.Form.NFD)
         .replace(combiningMarks, "")
         .lowercase(Locale.ROOT)

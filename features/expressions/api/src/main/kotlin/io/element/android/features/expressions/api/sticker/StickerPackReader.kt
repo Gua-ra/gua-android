@@ -10,6 +10,5 @@ package io.element.android.features.expressions.api.sticker
 import io.element.android.libraries.matrix.api.core.RoomId
 
 interface StickerPackReader {
-    /** Packs without stickers are left out. */
     suspend fun packs(roomId: RoomId, roomName: String, roomAvatarUrl: String?): Result<List<StickerPack>>
 }

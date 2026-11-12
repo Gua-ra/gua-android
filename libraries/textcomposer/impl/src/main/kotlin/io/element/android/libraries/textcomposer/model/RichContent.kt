@@ -9,7 +9,6 @@ package io.element.android.libraries.textcomposer.model
 
 import android.net.Uri
 
-/** Content a keyboard inserted or the user pasted into the composer. */
 data class RichContent(
     val uri: Uri,
     val mimeType: String?,

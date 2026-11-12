@@ -25,7 +25,6 @@ internal object StickerGeometry {
     const val SHRINK_FACTOR = 0.8
     const val MIN_SIZE = 96
 
-    /** The smallest box holding every pixel that is not fully transparent, null when there is none. */
     fun opaqueBounds(width: Int, height: Int, argbPixels: IntArray): PixelBounds? {
         var left = width
         var top = height
@@ -44,7 +43,6 @@ internal object StickerGeometry {
         return if (right < 0) null else PixelBounds(left, top, right + 1, bottom + 1)
     }
 
-    /** The trimmed picture's size once scaled, up or down, to fill the canvas inside its margin. */
     fun fittedContentSize(width: Int, height: Int): StickerSize {
         val box = (CANVAS_SIZE - 2 * PADDING).toDouble()
         val scale = box / max(width, height)
@@ -56,7 +54,6 @@ internal object StickerGeometry {
 
     fun canvasSize(content: StickerSize) = StickerSize(content.width + 2 * PADDING, content.height + 2 * PADDING)
 
-    /** The next, smaller size to try when the file is too large, or null at the smallest size. */
     fun shrunk(size: StickerSize): StickerSize? {
         if (max(size.width, size.height) <= MIN_SIZE) return null
         return StickerSize(

@@ -9,7 +9,6 @@ package io.element.android.features.expressions.api.sticker
 
 import io.element.android.libraries.matrix.api.core.EventId
 
-/** A sticker file ready to upload, at its pixel size. */
 data class StickerFile(
     val bytes: ByteArray,
     val mimetype: String,

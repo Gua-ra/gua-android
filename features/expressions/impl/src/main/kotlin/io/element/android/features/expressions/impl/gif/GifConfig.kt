@@ -21,7 +21,6 @@ sealed interface GifProxy {
         // Groups: a bracketed IPv6 address, else a host name or IPv4 address, then an optional port.
         private val hostAndPort = Regex("""^(?:\[([0-9A-Fa-f:.]+)]|([A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?))(?::([0-9]{1,5}))?$""")
 
-        /** Parses `host[:port]`. */
         fun parse(value: String): GifProxy {
             val trimmed = value.trim()
             if (trimmed.isEmpty()) return None

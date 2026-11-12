@@ -17,11 +17,9 @@ interface ExpressionPanelRenderer {
     @Composable
     fun ToggleButton(state: ExpressionPanelState, onClick: () -> Unit)
 
-    /** The panel in place of the keyboard, starting at [keyboardHeight]. */
     @Composable
     fun Panel(state: ExpressionPanelState, keyboardHeight: Dp, modifier: Modifier)
 
-    /** Sheets and dialogs, which also show while the panel is closed. */
     @Composable
     fun Overlays(state: ExpressionPanelState)
 }

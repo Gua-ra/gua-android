@@ -9,7 +9,6 @@ package io.element.android.features.expressions.api.sticker
 
 import kotlinx.coroutines.flow.Flow
 
-/** The stickers sent from this device, newest first. */
 interface RecentStickersStore {
     val recents: Flow<List<StickerImage>>
 

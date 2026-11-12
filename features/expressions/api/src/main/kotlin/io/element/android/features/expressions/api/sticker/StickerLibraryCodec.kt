@@ -35,7 +35,6 @@ object StickerLibraryCodec {
         stickers = content.validImages().sortedWith(newestFirst),
     )
 
-    /** Adds [image] to My stickers, refusing once it holds [MAX_STICKERS]. */
     fun add(content: JsonObject, image: StickerImage, now: Long): JsonObject {
         if (content.validImages().size >= MAX_STICKERS) throw StickerLimitReachedException()
         val images = content.obj("images") ?: JsonObject(emptyMap())
@@ -64,7 +63,6 @@ object StickerLibraryCodec {
         return if (url != null) unfavourite(withoutImage, url) else withoutImage.withVersion()
     }
 
-    /** `s` and the creation time in base 36, then `-2`, `-3`… when that is taken. */
     fun shortcode(now: Long, existing: Set<String>): String {
         val base = "s" + now.toString(36)
         if (base !in existing) return base

@@ -15,7 +15,6 @@ import io.element.android.libraries.di.SessionScope
 import kotlinx.coroutines.flow.first
 import timber.log.Timber
 
-/** The last stored content of each account data type, shown until the store has been read. */
 interface AccountDataCache {
     suspend fun load(eventType: String): String?
 

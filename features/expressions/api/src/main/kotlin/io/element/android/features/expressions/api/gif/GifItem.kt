@@ -21,7 +21,6 @@ data class GifFile(
     val size: Long,
 )
 
-/** One size of a GIF: the animated WebP and the still JPEG of the same frame size. */
 data class GifRendition(
     val animated: GifFile?,
     val still: GifFile?,
