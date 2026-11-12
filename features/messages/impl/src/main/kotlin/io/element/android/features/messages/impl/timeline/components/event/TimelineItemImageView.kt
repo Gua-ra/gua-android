@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -25,10 +26,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import io.element.android.compound.theme.ElementTheme
+import io.element.android.features.messages.impl.R
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
 import io.element.android.features.messages.impl.timeline.components.ATimelineItemEventRow
 import io.element.android.features.messages.impl.timeline.model.TimelineItemGroupPosition
@@ -38,16 +43,20 @@ import io.element.android.features.messages.impl.timeline.model.event.aTimelineI
 import io.element.android.features.messages.impl.timeline.protection.ProtectedView
 import io.element.android.features.messages.impl.timeline.protection.coerceRatioWhenHidingContent
 import io.element.android.features.messages.impl.timeline.util.handleAsyncImageStateChange
+import io.element.android.libraries.core.mimetype.MimeTypes.isMimeTypeAnimatedImage
 import io.element.android.libraries.designsystem.components.blurhash.blurHashBackground
 import io.element.android.libraries.designsystem.modifiers.onKeyboardContextMenuAction
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.CircularProgressIndicator
+import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.matrix.ui.media.contentvalidation.ContentValidationState
 import io.element.android.libraries.matrix.ui.media.contentvalidation.LocalEventContentValidationState
 import io.element.android.libraries.matrix.ui.media.contentvalidation.NoopContentValidationState
 import io.element.android.libraries.matrix.ui.media.contentvalidation.NoopEventContentValidationCache
 import io.element.android.libraries.matrix.ui.media.contentvalidation.collectOverallState
+import io.element.android.libraries.matrixmedia.api.firstFrameOnly
+import io.element.android.libraries.matrixmedia.api.shouldAnimateImages
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.libraries.ui.utils.a11y.isTalkbackActive
 
@@ -72,6 +81,15 @@ fun TimelineItemImageView(
 
         val eventContentValidation by contentValidationState.collectOverallState()
         val isContentBeingValidated = !eventContentValidation.isValidated()
+        val context = LocalContext.current
+        val shouldAnimate = context.shouldAnimateImages()
+        val model = remember(content.thumbnailMediaRequestData, shouldAnimate) {
+            if (shouldAnimate || !content.mimeType.isMimeTypeAnimatedImage()) {
+                content.thumbnailMediaRequestData
+            } else {
+                ImageRequest.Builder(context).data(content.thumbnailMediaRequestData).firstFrameOnly().build()
+            }
+        }
         TimelineItemAspectRatioBox(
             modifier = containerModifier
                 .blurHashBackground(content.blurhash, alpha = 0.9f)
@@ -102,7 +120,7 @@ fun TimelineItemImageView(
                                     Modifier
                                 }
                             ),
-                        model = content.thumbnailMediaRequestData,
+                        model = model,
                         contentScale = ContentScale.Crop,
                         alignment = Alignment.Center,
                         contentDescription = description,
@@ -118,9 +136,24 @@ fun TimelineItemImageView(
                         },
                     )
                 }
+                if (content.isAnimated && !shouldAnimate && !hideMediaContent) {
+                    GifBadge(modifier = Modifier.align(Alignment.TopStart).padding(4.dp))
+                }
             }
         }
     }
+}
+
+@Composable
+private fun GifBadge(modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(R.string.gua_gif_badge),
+        modifier = modifier
+            .background(ElementTheme.colors.bgSubtleSecondary, RoundedCornerShape(10.dp))
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        style = ElementTheme.typography.fontBodyXsMedium,
+        color = ElementTheme.colors.textPrimary,
+    )
 }
 
 @PreviewsDayNight
