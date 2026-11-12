@@ -11,4 +11,42 @@
     <string name="gua_gif_send_failed">Couldn\'t send the GIF</string>
     <string name="gua_gifs_load_failed">Couldn\'t load GIFs</string>
     <string name="gua_gifs_unavailable">GIFs aren\'t available in this version</string>
+    <string name="gua_expressions_tab_emoji" translatable="false">Emoji</string>
+    <string name="gua_expressions_tab_gif" translatable="false">GIF</string>
+    <string name="gua_expressions_tab_stickers">Stickers</string>
+    <string name="gua_expressions_search_stickers">Search stickers</string>
+    <string name="gua_expressions_search_klipy" translatable="false">Search KLIPY</string>
+    <string name="gua_expressions_word_hi">Hi</string>
+    <string name="gua_expressions_word_haha">Haha</string>
+    <string name="gua_expressions_word_love">Love</string>
+    <string name="gua_expressions_word_sad">Sad</string>
+    <string name="gua_expressions_word_wow">Wow</string>
+    <string name="gua_expressions_word_thumbs_up">Thumbs up</string>
+    <string name="gua_expressions_word_celebrate">Celebrate</string>
+    <string name="gua_expressions_word_angry">Angry</string>
+    <string name="gua_expressions_word_dance">Dance</string>
+    <string name="gua_a11y_expressions_expand">Expand the panel</string>
+    <string name="gua_a11y_expressions_collapse">Collapse the panel</string>
+    <string name="gua_stickers_section_recent">Recent</string>
+    <string name="gua_stickers_section_favourites">Favourites</string>
+    <string name="gua_stickers_section_mine">My stickers</string>
+    <string name="gua_stickers_create">Create sticker</string>
+    <string name="gua_stickers_add_favourite">Add to favourites</string>
+    <string name="gua_stickers_remove_favourite">Remove from favourites</string>
+    <string name="gua_stickers_remove_recent">Remove from recents</string>
+    <string name="gua_stickers_save">Save to my stickers</string>
+    <string name="gua_stickers_saved">Saved to my stickers</string>
+    <string name="gua_stickers_delete_title">Delete this sticker?</string>
+    <string name="gua_stickers_delete_message">It will be removed from My stickers on all your devices.</string>
+    <string name="gua_stickers_from_pack">From %1$s</string>
+    <string name="gua_stickers_none_found">No stickers found</string>
+    <string name="gua_stickers_editor_cut_out">Cut out</string>
+    <string name="gua_stickers_editor_text">Text</string>
+    <string name="gua_stickers_editor_note">Stickers are stored on Gua\'s servers without end-to-end encryption, so you can use them in any chat.</string>
+    <string name="gua_stickers_editor_unreadable">Couldn\'t open this picture</string>
+    <string name="gua_gifs_trending">Trending</string>
+    <string name="gua_gifs_none_found">No GIFs found</string>
+    <string name="gua_gifs_caption">Add a caption</string>
+    <string name="gua_a11y_expressions_open">Stickers and GIFs</string>
+    <string name="gua_a11y_expressions_keyboard">Keyboard</string>
 </resources>
