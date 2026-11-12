@@ -18,7 +18,8 @@ fun RustImageInfo.map(): ImageInfo = ImageInfo(
     size = size?.toLong(),
     thumbnailInfo = thumbnailInfo?.map(),
     thumbnailSource = thumbnailSource?.map(),
-    blurhash = blurhash
+    blurhash = blurhash,
+    isAnimated = isAnimated,
 )
 
 fun ImageInfo.map(): RustImageInfo = RustImageInfo(
@@ -29,5 +30,5 @@ fun ImageInfo.map(): RustImageInfo = RustImageInfo(
     thumbnailInfo = thumbnailInfo?.map(),
     thumbnailSource = null,
     blurhash = blurhash,
-    isAnimated = null
+    isAnimated = isAnimated
 )

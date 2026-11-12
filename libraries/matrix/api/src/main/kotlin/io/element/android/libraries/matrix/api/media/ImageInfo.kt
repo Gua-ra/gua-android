@@ -15,5 +15,6 @@ data class ImageInfo(
     val size: Long?,
     val thumbnailInfo: ThumbnailInfo?,
     val thumbnailSource: MediaSource?,
-    val blurhash: String?
+    val blurhash: String?,
+    val isAnimated: Boolean? = null,
 )

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_sticker_send_failed">No se pudo enviar el sticker</string>
+    <string name="gua_sticker_limit_reached">Puedes tener hasta 120 stickers</string>
+    <string name="gua_gif_send_failed">No se pudo enviar el GIF</string>
+    <string name="gua_gifs_load_failed">No se pudieron cargar los GIF</string>
+    <string name="gua_gifs_unavailable">Los GIF no están disponibles en esta versión</string>
+    <string name="gua_expressions_tab_stickers">Stickers</string>
+    <string name="gua_expressions_search_stickers">Buscar stickers</string>
+    <string name="gua_expressions_word_hi">Hola</string>
+    <string name="gua_expressions_word_haha">Jaja</string>
+    <string name="gua_expressions_word_love">Amor</string>
+    <string name="gua_expressions_word_sad">Triste</string>
+    <string name="gua_expressions_word_wow">Guau</string>
+    <string name="gua_expressions_word_thumbs_up">Pulgar arriba</string>
+    <string name="gua_expressions_word_celebrate">Celebrar</string>
+    <string name="gua_expressions_word_angry">Enojado</string>
+    <string name="gua_expressions_word_dance">Baile</string>
+    <string name="gua_a11y_expressions_expand">Expandir el panel</string>
+    <string name="gua_a11y_expressions_collapse">Contraer el panel</string>
+    <string name="gua_stickers_section_recent">Recientes</string>
+    <string name="gua_stickers_section_favourites">Favoritos</string>
+    <string name="gua_stickers_section_mine">Mis stickers</string>
+    <string name="gua_stickers_create">Crear sticker</string>
+    <string name="gua_stickers_add_favourite">Añadir a favoritos</string>
+    <string name="gua_stickers_remove_favourite">Quitar de favoritos</string>
+    <string name="gua_stickers_remove_recent">Quitar de recientes</string>
+    <string name="gua_stickers_save">Guardar en mis stickers</string>
+    <string name="gua_stickers_saved">Guardado en mis stickers</string>
+    <string name="gua_stickers_delete_title">¿Eliminar este sticker?</string>
+    <string name="gua_stickers_delete_message">Se quitará de Mis stickers en todos tus dispositivos.</string>
+    <string name="gua_stickers_from_pack">De %1$s</string>
+    <string name="gua_stickers_none_found">No se encontraron stickers</string>
+    <string name="gua_stickers_editor_cut_out">Recortar</string>
+    <string name="gua_stickers_editor_text">Texto</string>
+    <string name="gua_stickers_editor_note">Los stickers se guardan en los servidores de Gua sin cifrado de extremo a extremo, para que puedas usarlos en cualquier chat.</string>
+    <string name="gua_stickers_editor_unreadable">No se pudo abrir esta imagen</string>
+    <string name="gua_gifs_trending">Tendencias</string>
+    <string name="gua_gifs_none_found">No se encontraron GIF</string>
+    <string name="gua_gifs_caption">Añadir un comentario</string>
+    <string name="gua_a11y_expressions_open">Stickers y GIF</string>
+    <string name="gua_a11y_expressions_keyboard">Teclado</string>
+</resources>
