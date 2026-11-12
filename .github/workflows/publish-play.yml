@@ -230,6 +230,9 @@ jobs:
           GUA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.GUA_RELEASE_KEYSTORE_PASSWORD }}
           GUA_RELEASE_KEY_ALIAS: ${{ secrets.GUA_RELEASE_KEY_ALIAS }}
           GUA_RELEASE_KEY_PASSWORD: ${{ secrets.GUA_RELEASE_KEY_PASSWORD }}
+          # Both may be empty: the app then has no GIF search, or talks to KLIPY directly.
+          KLIPY_API_KEY: ${{ secrets.KLIPY_API_KEY }}
+          GIF_PROXY_HOST: ${{ vars.GIF_PROXY_HOST }}
         run: >-
           ./gradlew bundleGplayRelease
           -Pgua.deployment=dev
@@ -390,6 +393,8 @@ jobs:
           GUA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.GUA_RELEASE_KEYSTORE_PASSWORD }}
           GUA_RELEASE_KEY_ALIAS: ${{ secrets.GUA_RELEASE_KEY_ALIAS }}
           GUA_RELEASE_KEY_PASSWORD: ${{ secrets.GUA_RELEASE_KEY_PASSWORD }}
+          KLIPY_API_KEY: ${{ secrets.KLIPY_API_KEY }}
+          GIF_PROXY_HOST: ${{ vars.GIF_PROXY_HOST }}
         run: ./gradlew bundleGplayRelease $CI_GRADLE_ARG_PROPERTIES
       # Pin to a commit SHA before relying on this in production.
       - name: Upload to Google Play
