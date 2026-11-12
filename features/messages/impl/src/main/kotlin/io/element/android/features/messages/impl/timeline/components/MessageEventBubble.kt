@@ -87,7 +87,8 @@ fun MessageEventBubble(
     }
 
     // Ignore state.isHighlighted for now, we need a design decision on it.
-    val backgroundBubbleColor by rememberUpdatedState(customBackgroundColor ?: MessageEventBubbleDefaults.backgroundBubbleColor(state.isMine))
+    val defaultBackgroundColor = if (state.displayBackground) MessageEventBubbleDefaults.backgroundBubbleColor(state.isMine) else Color.Transparent
+    val backgroundBubbleColor by rememberUpdatedState(customBackgroundColor ?: defaultBackgroundColor)
     val radiusPx = (avatarRadius + SENDER_AVATAR_BORDER_WIDTH).toPx()
     val yOffsetPx = -(NEGATIVE_MARGIN_FOR_BUBBLE + avatarRadius).toPx()
 
