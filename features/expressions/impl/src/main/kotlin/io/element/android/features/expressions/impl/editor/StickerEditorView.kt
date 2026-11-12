@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -40,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -48,6 +48,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
@@ -68,6 +70,9 @@ import io.element.android.libraries.ui.strings.CommonStrings
 import kotlin.math.roundToInt
 
 private val TEXT_OUTLINE_COLOR = Color(0xE6000000)
+private val SCREEN_PADDING = 16.dp
+private val SPACING = 16.dp
+private val MIN_CANVAS_SIZE = 120.dp
 
 @Composable
 internal fun StickerEditorView(
@@ -77,63 +82,102 @@ internal fun StickerEditorView(
 ) {
     var frame by remember { mutableStateOf(EditorFrame.Initial) }
     Surface(modifier = modifier.fillMaxSize(), color = ElementTheme.colors.bgCanvasDefault) {
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .systemBarsPadding()
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                .imePadding(),
         ) {
-            Text(text = stringResource(R.string.gua_stickers_create), style = ElementTheme.typography.fontHeadingSmMedium)
-            EditorCanvas(editor = editor, frame = frame, onFrameChange = { frame = it })
-            if (editor.cutOut != null) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .toggleable(
-                            value = editor.isCutOutOn,
-                            role = Role.Switch,
-                            onValueChange = { eventSink(PanelEvent.SetCutOut(it)) },
-                        ),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(text = stringResource(R.string.gua_stickers_editor_cut_out), modifier = Modifier.weight(1f))
-                    Switch(checked = editor.isCutOutOn, onCheckedChange = null)
-                }
-            }
-            TextField(
-                value = editor.text,
-                onValueChange = { eventSink(PanelEvent.UpdateStickerText(it)) },
-                label = stringResource(R.string.gua_stickers_editor_text),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+            EditorLayout(
+                viewportHeight = maxHeight - SCREEN_PADDING * 2,
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .padding(SCREEN_PADDING),
+                title = { Text(text = stringResource(R.string.gua_stickers_create), style = ElementTheme.typography.fontHeadingSmMedium) },
+                canvas = { EditorCanvas(editor = editor, frame = frame, onFrameChange = { frame = it }) },
+                controls = { EditorControls(editor = editor, frame = frame, eventSink = eventSink) },
             )
-            val canSave = editor.shownPicture != null && !editor.isSaving
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(text = stringResource(CommonStrings.action_cancel), onClick = { eventSink(PanelEvent.DismissOverlay) })
-                OutlinedButton(
-                    text = stringResource(CommonStrings.action_save),
-                    onClick = { eventSink(PanelEvent.SaveCreatedSticker(frame, send = false)) },
-                    enabled = canSave,
-                    modifier = Modifier.weight(1f),
-                )
-                Button(
-                    text = stringResource(CommonStrings.action_send),
-                    onClick = { eventSink(PanelEvent.SaveCreatedSticker(frame, send = true)) },
-                    enabled = canSave,
-                    showProgress = editor.isSaving,
-                    modifier = Modifier.weight(1f),
-                )
+        }
+    }
+}
+
+/** The canvas gets the height the title and controls leave, so the note stays in view; below its minimum the editor scrolls. */
+@Composable
+private fun EditorLayout(
+    viewportHeight: Dp,
+    title: @Composable () -> Unit,
+    canvas: @Composable () -> Unit,
+    controls: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Layout(contents = listOf(title, canvas, controls), modifier = modifier) { (titleMeasurables, canvasMeasurables, controlsMeasurables), constraints ->
+        val width = constraints.maxWidth
+        val spacing = SPACING.roundToPx()
+        val titlePlaceable = titleMeasurables.single().measure(Constraints(maxWidth = width))
+        val controlsPlaceable = controlsMeasurables.single().measure(Constraints(maxWidth = width))
+        val available = viewportHeight.roundToPx() - titlePlaceable.height - controlsPlaceable.height - 2 * spacing
+        val side = available.coerceIn(minOf(MIN_CANVAS_SIZE.roundToPx(), width), width)
+        val canvasPlaceable = canvasMeasurables.single().measure(Constraints.fixed(side, side))
+        layout(width, titlePlaceable.height + side + controlsPlaceable.height + 2 * spacing) {
+            titlePlaceable.place(0, 0)
+            canvasPlaceable.place((width - side) / 2, titlePlaceable.height + spacing)
+            controlsPlaceable.place(0, titlePlaceable.height + side + 2 * spacing)
+        }
+    }
+}
+
+@Composable
+private fun EditorControls(
+    editor: StickerEditorState,
+    frame: EditorFrame,
+    eventSink: (PanelEvent) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(SPACING)) {
+        if (editor.cutOut != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .toggleable(
+                        value = editor.isCutOutOn,
+                        role = Role.Switch,
+                        onValueChange = { eventSink(PanelEvent.SetCutOut(it)) },
+                    ),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(text = stringResource(R.string.gua_stickers_editor_cut_out), modifier = Modifier.weight(1f))
+                Switch(checked = editor.isCutOutOn, onCheckedChange = null)
             }
-            if (editor.showsNote) {
-                Text(
-                    text = stringResource(R.string.gua_stickers_editor_note),
-                    style = ElementTheme.typography.fontBodySmRegular,
-                    color = ElementTheme.colors.textSecondary,
-                )
-            }
+        }
+        TextField(
+            value = editor.text,
+            onValueChange = { eventSink(PanelEvent.UpdateStickerText(it)) },
+            label = stringResource(R.string.gua_stickers_editor_text),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        val canSave = editor.shownPicture != null && !editor.isSaving
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            TextButton(text = stringResource(CommonStrings.action_cancel), onClick = { eventSink(PanelEvent.DismissOverlay) })
+            OutlinedButton(
+                text = stringResource(CommonStrings.action_save),
+                onClick = { eventSink(PanelEvent.SaveCreatedSticker(frame, send = false)) },
+                enabled = canSave,
+                modifier = Modifier.weight(1f),
+            )
+            Button(
+                text = stringResource(CommonStrings.action_send),
+                onClick = { eventSink(PanelEvent.SaveCreatedSticker(frame, send = true)) },
+                enabled = canSave,
+                showProgress = editor.isSaving,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        if (editor.showsNote) {
+            Text(
+                text = stringResource(R.string.gua_stickers_editor_note),
+                style = ElementTheme.typography.fontBodySmRegular,
+                color = ElementTheme.colors.textSecondary,
+            )
         }
     }
 }
@@ -148,8 +192,7 @@ private fun EditorCanvas(
     val currentFrame by rememberUpdatedState(frame)
     BoxWithConstraints(
         modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(1f)
+            .fillMaxSize()
             .clipToBounds()
             .background(ElementTheme.colors.bgSubtleSecondary, RoundedCornerShape(16.dp)),
     ) {
