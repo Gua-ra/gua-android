@@ -8,7 +8,7 @@ import extension.testCommonDependencies
  */
 
 plugins {
-    id("io.element.android-library")
+    id("io.element.android-compose-library")
 }
 
 android {
@@ -16,6 +16,7 @@ android {
 }
 
 dependencies {
+    api(projects.libraries.architecture)
     api(projects.libraries.matrix.api)
     implementation(projects.libraries.core)
     api(libs.serialization.json)

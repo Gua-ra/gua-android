@@ -12,10 +12,15 @@ import io.element.android.features.expressions.api.gif.GifSender
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.tests.testutils.lambda.lambdaError
+import java.io.File
 
 class FakeGifSender(
     private val sendResult: (GifItem, String?, EventId?, Timeline.Mode) -> Result<Unit> = { _, _, _, _ -> lambdaError() },
+    private val sendFileResult: (File, EventId?, Timeline.Mode) -> Result<Unit> = { _, _, _ -> lambdaError() },
 ) : GifSender {
     override suspend fun send(item: GifItem, caption: String?, inReplyToEventId: EventId?, timelineMode: Timeline.Mode): Result<Unit> =
         sendResult(item, caption, inReplyToEventId, timelineMode)
+
+    override suspend fun sendFile(file: File, inReplyToEventId: EventId?, timelineMode: Timeline.Mode): Result<Unit> =
+        sendFileResult(file, inReplyToEventId, timelineMode)
 }
