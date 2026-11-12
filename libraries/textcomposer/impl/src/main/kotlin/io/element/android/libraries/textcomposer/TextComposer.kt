@@ -9,7 +9,6 @@
 package io.element.android.libraries.textcomposer
 
 import android.content.res.Configuration
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -89,6 +88,7 @@ import io.element.android.libraries.textcomposer.components.VoiceMessageRecordin
 import io.element.android.libraries.textcomposer.components.markdown.MarkdownTextInput
 import io.element.android.libraries.textcomposer.components.textInputRoundedCornerShape
 import io.element.android.libraries.textcomposer.model.MessageComposerMode
+import io.element.android.libraries.textcomposer.model.RichContent
 import io.element.android.libraries.textcomposer.model.Suggestion
 import io.element.android.libraries.textcomposer.model.TextEditorState
 import io.element.android.libraries.textcomposer.model.VoiceMessagePlayerEvent
@@ -126,12 +126,13 @@ fun TextComposer(
     onError: (Throwable) -> Unit,
     onTyping: (Boolean) -> Unit,
     onReceiveSuggestion: (Suggestion?) -> Unit,
-    onSelectRichContent: ((Uri) -> Unit)?,
+    onSelectRichContent: ((RichContent) -> Unit)?,
     resolveMentionDisplay: (text: String, url: String) -> TextDisplay,
     resolveAtRoomMentionDisplay: () -> TextDisplay,
     modifier: Modifier = Modifier,
     showTextFormatting: Boolean = false,
     isInThreadTimeline: Boolean = false,
+    expressionButton: (@Composable () -> Unit)? = null,
 ) {
     val markdown = when (state) {
         is TextEditorState.Markdown -> state.state.text.value()
@@ -167,7 +168,7 @@ fun TextComposer(
         is TextEditorState.Rich -> {
             val coroutineScope = rememberCoroutineScope()
             val view = LocalView.current
-            remember(state.richTextEditorState, composerMode, onResetComposerMode, onError) {
+            remember(state.richTextEditorState, composerMode, onResetComposerMode, onError, expressionButton) {
                 @Composable {
                     TextInputBox(
                         modifier = Modifier
@@ -186,6 +187,7 @@ fun TextComposer(
                         composerMode = composerMode,
                         onResetComposerMode = onResetComposerMode,
                         isTextEmpty = state.richTextEditorState.messageHtml.isEmpty(),
+                        trailingContent = expressionButton,
                     ) {
                         RichTextEditor(
                             state = state.richTextEditorState,
@@ -198,7 +200,10 @@ fun TextComposer(
                             resolveMentionDisplay = resolveMentionDisplay,
                             resolveRoomMentionDisplay = resolveAtRoomMentionDisplay,
                             onError = onError,
-                            onRichContentSelected = onSelectRichContent,
+                            // The rich editor does not say where content came from.
+                            onRichContentSelected = onSelectRichContent?.let { onContent ->
+                                { uri -> onContent(RichContent(uri = uri, mimeType = null, isFromInputMethod = false)) }
+                            },
                             onTyping = onTyping,
                         )
                     }
@@ -212,6 +217,7 @@ fun TextComposer(
                     composerMode = composerMode,
                     onResetComposerMode = onResetComposerMode,
                     isTextEmpty = state.state.text.value().isEmpty(),
+                    trailingContent = expressionButton,
                 ) {
                     MarkdownTextInput(
                         state = state.state,
@@ -645,6 +651,7 @@ private fun TextInputBox(
     onResetComposerMode: () -> Unit,
     isTextEmpty: Boolean,
     modifier: Modifier = Modifier,
+    trailingContent: (@Composable () -> Unit)? = null,
     textInput: @Composable () -> Unit,
 ) {
     val bgColor = ElementTheme.colors.bgSubtleSecondary
@@ -670,30 +677,34 @@ private fun TextInputBox(
             Spacer(Modifier.height(4.dp))
         }
 
-        Box(
-            modifier = Modifier
-                .padding(top = 1.dp, bottom = 4.dp, start = 12.dp, end = 12.dp)
-                .then(Modifier.testTag(TestTags.textEditor)),
-            contentAlignment = Alignment.CenterStart,
-        ) {
-            textInput()
-            if (isTextEmpty && composerMode.showCaptionCompatibilityWarning()) {
-                var showBottomSheet by remember { mutableStateOf(false) }
-                Icon(
-                    modifier = Modifier
-                        .clickable { showBottomSheet = true }
-                        .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
-                        .align(Alignment.CenterEnd),
-                    imageVector = CompoundIcons.InfoSolid(),
-                    tint = ElementTheme.colors.iconCriticalPrimary,
-                    contentDescription = stringResource(CommonStrings.a11y_info),
-                )
-                if (showBottomSheet) {
-                    CaptionWarningBottomSheet(
-                        onDismiss = { showBottomSheet = false },
+        Row(verticalAlignment = Alignment.Bottom) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(top = 1.dp, bottom = 4.dp, start = 12.dp, end = if (trailingContent == null) 12.dp else 0.dp)
+                    .then(Modifier.testTag(TestTags.textEditor)),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                textInput()
+                if (isTextEmpty && composerMode.showCaptionCompatibilityWarning()) {
+                    var showBottomSheet by remember { mutableStateOf(false) }
+                    Icon(
+                        modifier = Modifier
+                            .clickable { showBottomSheet = true }
+                            .padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp)
+                            .align(Alignment.CenterEnd),
+                        imageVector = CompoundIcons.InfoSolid(),
+                        tint = ElementTheme.colors.iconCriticalPrimary,
+                        contentDescription = stringResource(CommonStrings.a11y_info),
                     )
+                    if (showBottomSheet) {
+                        CaptionWarningBottomSheet(
+                            onDismiss = { showBottomSheet = false },
+                        )
+                    }
                 }
             }
+            trailingContent?.invoke()
         }
     }
 }
