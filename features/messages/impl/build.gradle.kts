@@ -31,6 +31,7 @@ dependencies {
     implementation(projects.features.call.api)
     implementation(projects.features.enterprise.api)
     implementation(projects.features.forward.api)
+    implementation(projects.features.expressions.api)
     implementation(projects.features.location.api)
     implementation(projects.features.poll.api)
     implementation(projects.features.roomcall.api)

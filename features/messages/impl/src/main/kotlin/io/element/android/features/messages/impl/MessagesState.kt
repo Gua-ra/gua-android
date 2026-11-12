@@ -8,6 +8,7 @@
 
 package io.element.android.features.messages.impl
 
+import io.element.android.features.expressions.api.panel.ExpressionPanelState
 import io.element.android.features.messages.api.timeline.voicemessages.composer.VoiceMessageComposerState
 import io.element.android.features.messages.impl.actionlist.ActionListState
 import io.element.android.features.messages.impl.crypto.identity.IdentityChangeState
@@ -40,6 +41,7 @@ data class MessagesState(
     val heroes: ImmutableList<AvatarData>,
     val userEventPermissions: UserEventPermissions,
     val composerState: MessageComposerState,
+    val expressionPanelState: ExpressionPanelState,
     val voiceMessageComposerState: VoiceMessageComposerState,
     val timelineState: TimelineState,
     val timelineProtectionState: TimelineProtectionState,

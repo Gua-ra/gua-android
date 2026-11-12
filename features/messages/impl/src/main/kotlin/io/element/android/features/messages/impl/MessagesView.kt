@@ -42,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,9 +61,14 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
+import io.element.android.features.expressions.api.panel.ExpressionPanelEvent
+import io.element.android.features.expressions.api.panel.ExpressionPanelRenderer
+import io.element.android.features.expressions.api.panel.KeyboardContent
+import io.element.android.features.expressions.api.panel.NoOpExpressionPanelRenderer
 import io.element.android.features.location.api.LiveLocationSharingBanner
 import io.element.android.features.messages.api.timeline.voicemessages.composer.VoiceMessageComposerEvent
 import io.element.android.features.messages.impl.actionlist.ActionListEvent
@@ -107,6 +113,7 @@ import io.element.android.features.messages.impl.timeline.components.receipt.bot
 import io.element.android.features.messages.impl.timeline.isSelectionModeActive
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.TimelineItemGroupPosition
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemStickerContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemStateEventContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemTextContent
 import io.element.android.features.messages.impl.timeline.selectedCount
@@ -118,6 +125,7 @@ import io.element.android.features.messages.impl.voicemessages.composer.VoiceMes
 import io.element.android.features.messages.impl.voicemessages.composer.VoiceMessageSendingFailedDialog
 import io.element.android.features.roomcall.api.RoomCallState
 import io.element.android.libraries.androidutils.ui.hideKeyboard
+import io.element.android.libraries.androidutils.ui.showKeyboard
 import io.element.android.libraries.designsystem.atomic.molecules.ComposerAlertMolecule
 import io.element.android.libraries.designsystem.components.ExpandableBottomSheetLayout
 import io.element.android.libraries.designsystem.components.ExpandableBottomSheetLayoutState
@@ -154,6 +162,7 @@ import io.element.android.libraries.ui.utils.a11y.isTalkbackActive
 import io.element.android.wysiwyg.link.Link
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -174,6 +183,7 @@ fun MessagesView(
     knockRequestsBannerView: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     forceJumpToBottomVisibility: Boolean = false,
+    expressionPanelRenderer: ExpressionPanelRenderer = NoOpExpressionPanelRenderer,
     customReactionBottomSheet: @Composable () -> Unit,
 ) {
     val eventContentValidationState = LocalEventContentValidationState.current
@@ -189,6 +199,7 @@ fun MessagesView(
     val snackbarHostState = rememberSnackbarHostState(snackbarMessage = state.snackbarMessage)
 
     var maxComposerHeightPx by remember { mutableIntStateOf(120) }
+    var layoutHeightPx by remember { mutableIntStateOf(0) }
 
     // This is needed because the composer is inside an AndroidView that can't be affected by the FocusManager in Compose
     val localView = LocalView.current
@@ -201,6 +212,24 @@ fun MessagesView(
     val isTalkbackActive = isTalkbackActive()
     val messageMenuController = rememberMessageMenuController()
     val focusManager = LocalFocusManager.current
+
+    val expressionPanelState = state.expressionPanelState
+    val keyboardHeight = rememberLastKeyboardHeight()
+    val expressionCoroutineScope = rememberCoroutineScope()
+    BackHandler(enabled = expressionPanelState.isOpen) {
+        expressionPanelState.eventSink(ExpressionPanelEvent.Close)
+    }
+
+    fun toggleExpressionPanel() {
+        if (expressionPanelState.isOpen) {
+            expressionPanelState.eventSink(ExpressionPanelEvent.Close)
+            expressionCoroutineScope.launch { state.composerState.textEditorState.requestFocus() }
+            localView.showKeyboard()
+        } else {
+            localView.hideKeyboard()
+            expressionPanelState.eventSink(ExpressionPanelEvent.Open)
+        }
+    }
 
     // Entering selection mode collapses the composer, so dismiss the keyboard too. hideKeyboard
     // triggers the IME hide animation, keeping it in sync with the composer collapse.
@@ -218,6 +247,13 @@ fun MessagesView(
         Timber.v("onMessageClick= ${event.id}")
         val eventId = event.eventId
         if (eventId != null && eventContentValidationState[eventId].getCurrentOverallState() != ContentValidationValue.Valid) return
+
+        val sticker = (event.content as? TimelineItemStickerContent)?.toStickerImage()
+        if (expressionPanelState.isEnabled && sticker != null) {
+            localView.hideKeyboard()
+            expressionPanelState.eventSink(ExpressionPanelEvent.ShowTimelineSticker(sticker))
+            return
+        }
 
         val hideKeyboard = onEventContentClick(state.timelineState.isLive, event)
         if (hideKeyboard) {
@@ -319,6 +355,7 @@ fun MessagesView(
                     // The value will be different if the soft keyboard is displayed
                     // or not.
                     maxComposerHeightPx = (size.height * 0.5f).toInt()
+                    layoutHeightPx = size.height
                 },
             content = {
                 Scaffold(
@@ -447,6 +484,9 @@ fun MessagesView(
             bottomSheetContent = {
                 MessagesViewComposerBottomSheetContents(
                     state = state,
+                    expressionPanelRenderer = expressionPanelRenderer,
+                    keyboardHeight = keyboardHeight,
+                    onToggleExpressionPanel = ::toggleExpressionPanel,
                     onLinkClick = { url, customTab -> onLinkClick(url, customTab) },
                     onRoomSuccessorClick = { roomId ->
                         state.timelineState.eventSink(TimelineEvent.NavigateToPredecessorOrSuccessorRoom(roomId = roomId))
@@ -487,7 +527,7 @@ fun MessagesView(
             } else {
                 RectangleShape
             },
-            maxBottomSheetContentHeight = maxComposerHeightPx.toDp(),
+            maxBottomSheetContentHeight = (if (expressionPanelState.isOpen) layoutHeightPx else maxComposerHeightPx).toDp(),
         )
     }
 
@@ -523,6 +563,8 @@ fun MessagesView(
     )
 
     customReactionBottomSheet()
+
+    expressionPanelRenderer.Overlays(expressionPanelState)
 
     MessageTextSelectionSheet(
         text = state.messageMenuState.selectableText,
@@ -733,6 +775,9 @@ private fun MessagesViewContent(
 @Composable
 private fun MessagesViewComposerBottomSheetContents(
     state: MessagesState,
+    expressionPanelRenderer: ExpressionPanelRenderer,
+    keyboardHeight: Dp,
+    onToggleExpressionPanel: () -> Unit,
     onRoomSuccessorClick: (RoomId) -> Unit,
     onLinkClick: (String, Boolean) -> Unit,
 ) {
@@ -767,11 +812,31 @@ private fun MessagesViewComposerBottomSheetContents(
                 if (verificationViolation != null) {
                     DisabledComposerView(modifier = Modifier.fillMaxWidth())
                 } else {
+                    val expressionPanelState = state.expressionPanelState
                     MessageComposerView(
                         state = state.composerState,
                         voiceMessageState = state.voiceMessageComposerState,
                         modifier = Modifier.fillMaxWidth(),
+                        expressionButton = if (expressionPanelState.isEnabled) {
+                            { expressionPanelRenderer.ToggleButton(expressionPanelState, onToggleExpressionPanel) }
+                        } else {
+                            null
+                        },
+                        onReceiveContent = if (expressionPanelState.isEnabled) {
+                            { content ->
+                                expressionPanelState.eventSink(
+                                    ExpressionPanelEvent.ReceiveKeyboardContent(
+                                        content = KeyboardContent(content.uri, content.mimeType, content.isFromInputMethod),
+                                        fallback = { state.composerState.eventSink(MessageComposerEvent.SendUri(content.uri)) },
+                                    )
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                        onComposerAction = { if (expressionPanelState.isOpen) expressionPanelState.eventSink(ExpressionPanelEvent.Close) },
                     )
+                    expressionPanelRenderer.Panel(expressionPanelState, keyboardHeight, Modifier.fillMaxWidth())
                 }
             }
         }
