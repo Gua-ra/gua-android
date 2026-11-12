@@ -168,7 +168,6 @@ private fun EditorControls(
                 text = stringResource(CommonStrings.action_send),
                 onClick = { eventSink(PanelEvent.SaveCreatedSticker(frame, send = true)) },
                 enabled = canSave,
-                showProgress = editor.isSaving,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -222,6 +221,9 @@ private fun EditorCanvas(
         )
         if (editor.text.isNotBlank()) {
             EditorText(text = editor.text.trim(), side = side, modifier = Modifier.align(Alignment.BottomCenter))
+        }
+        if (editor.isSaving) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         }
     }
 }
