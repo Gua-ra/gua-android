@@ -8,10 +8,8 @@
 package io.element.android.features.expressions.api.panel
 
 import android.net.Uri
-import androidx.compose.runtime.Immutable
 import io.element.android.features.expressions.api.sticker.StickerImage
 
-@Immutable
 sealed interface ExpressionPanelEvent {
     data object Open : ExpressionPanelEvent
 
