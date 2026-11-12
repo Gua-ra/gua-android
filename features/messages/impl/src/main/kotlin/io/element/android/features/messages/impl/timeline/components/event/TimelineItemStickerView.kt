@@ -48,6 +48,7 @@ import io.element.android.libraries.matrixmedia.api.MediaRequestData
 import io.element.android.libraries.matrixmedia.api.firstFrameOnly
 import io.element.android.libraries.matrixmedia.api.shouldAnimateImages
 import io.element.android.libraries.ui.strings.CommonStrings
+import io.element.android.features.expressions.api.R as ExpressionsR
 
 private val STICKER_MAX_SIZE = 160.dp
 
@@ -68,7 +69,9 @@ fun TimelineItemStickerView(
     contentValidationState: ContentValidationState,
     modifier: Modifier = Modifier,
 ) {
-    val description = content.bestDescription.takeIf { it.isNotEmpty() } ?: stringResource(CommonStrings.common_image)
+    val description = content.bestDescription.takeIf { it.isNotEmpty() }
+        ?.let { stringResource(ExpressionsR.string.gua_a11y_sticker, it) }
+        ?: stringResource(CommonStrings.common_sticker)
 
     val eventContentValidation by contentValidationState.collectOverallState()
     val isContentBeingValidated = !eventContentValidation.isValidated()

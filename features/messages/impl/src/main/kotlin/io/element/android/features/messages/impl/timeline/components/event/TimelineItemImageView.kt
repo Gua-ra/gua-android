@@ -59,6 +59,7 @@ import io.element.android.libraries.matrixmedia.api.firstFrameOnly
 import io.element.android.libraries.matrixmedia.api.shouldAnimateImages
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.libraries.ui.utils.a11y.isTalkbackActive
+import io.element.android.features.expressions.api.R as ExpressionsR
 
 @Composable
 fun TimelineItemImageView(
@@ -71,7 +72,11 @@ fun TimelineItemImageView(
     modifier: Modifier = Modifier,
 ) {
     val a11yLabel = stringResource(CommonStrings.common_image)
-    val description = content.caption?.let { "$a11yLabel: $it" } ?: a11yLabel
+    val description = if (content.isAnimated) {
+        stringResource(ExpressionsR.string.gua_a11y_gif, content.caption ?: content.filename)
+    } else {
+        content.caption?.let { "$a11yLabel: $it" } ?: a11yLabel
+    }
     Column(modifier = modifier.wrapContentWidth(Alignment.CenterHorizontally)) {
         val containerModifier = if (content.showCaption) {
             Modifier.clip(RoundedCornerShape(10.dp))
