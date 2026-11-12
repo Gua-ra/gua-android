@@ -193,7 +193,14 @@ enum class FeatureFlags(
             "Note this may result in duplicate notifications if you have multiple accounts signed in on the same device, it should only be used for testing.",
         defaultValue = { false },
         isFinished = false,
-    )
+    ),
+    StickersAndGifs(
+        key = "feature.stickers_and_gifs",
+        title = "Stickers and GIFs",
+        description = "Show the sticker and GIF panel in the composer.",
+        defaultValue = { buildMeta -> buildMeta.buildType != BuildType.RELEASE || buildMeta.applicationId.endsWith(".dev") },
+        isFinished = false,
+    ),
 }
 
 /**
