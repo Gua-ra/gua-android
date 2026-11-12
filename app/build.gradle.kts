@@ -353,6 +353,9 @@ dependencies {
     // location feature.
     "gplayImplementation"(libs.maplibre.compose.location.runtime.gms)
 
+    // ML Kit subject segmentation needs Google Play services, so the F-Droid build has no automatic sticker cut-out.
+    "gplayImplementation"(projects.features.expressions.mlkit)
+
     implementation(libs.appyx.core)
     implementation(libs.androidx.splash)
     implementation(libs.androidx.core)
