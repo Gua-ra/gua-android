@@ -27,6 +27,8 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -40,7 +42,9 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.expressions.api.sticker.StickerContent
@@ -57,6 +61,7 @@ import io.element.android.features.expressions.api.R as ApiR
 
 private val TILE_SIZE = 72.dp
 private val TILE_CELL_MIN_WIDTH = 84.dp
+private val MIN_LABEL_SIZE = 7.sp
 
 @Composable
 internal fun StickersTabView(
@@ -160,14 +165,22 @@ private fun CreateStickerTile(onClick: () -> Unit) {
             },
         contentAlignment = Alignment.Center,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Icon(imageVector = CompoundIcons.Plus(), contentDescription = null, tint = ElementTheme.colors.iconSecondary)
-            Text(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(imageVector = CompoundIcons.Plus(), contentDescription = null, tint = ElementTheme.colors.iconSecondary, modifier = Modifier.size(20.dp))
+            val style = ElementTheme.typography.fontBodyXsMedium
+            // Shrinks rather than clips when large text would not fit two lines in the tile.
+            BasicText(
                 text = label,
-                style = ElementTheme.typography.fontBodyXsMedium,
-                color = ElementTheme.colors.textSecondary,
+                modifier = Modifier.weight(1f, fill = false),
+                style = style.copy(color = ElementTheme.colors.textSecondary, textAlign = TextAlign.Center),
                 maxLines = 2,
-                modifier = Modifier.padding(horizontal = 4.dp),
+                autoSize = TextAutoSize.StepBased(minFontSize = MIN_LABEL_SIZE, maxFontSize = style.fontSize),
             )
         }
     }
