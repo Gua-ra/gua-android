@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_sticker_send_failed">No se pudo enviar el sticker</string>
+    <string name="gua_sticker_limit_reached">Puedes tener hasta 120 stickers</string>
+    <string name="gua_gif_send_failed">No se pudo enviar el GIF</string>
+    <string name="gua_gifs_load_failed">No se pudieron cargar los GIF</string>
+    <string name="gua_gifs_unavailable">Los GIF no están disponibles en esta versión</string>
+</resources>
