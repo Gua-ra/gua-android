@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.Flow
 interface RecentStickersStore {
     val recents: Flow<List<StickerImage>>
 
-    /** Moves [image] to the front. */
     suspend fun add(image: StickerImage)
 
     suspend fun remove(url: String)

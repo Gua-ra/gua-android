@@ -9,7 +9,6 @@ package io.element.android.features.expressions.api.sticker
 
 import io.element.android.libraries.matrix.api.core.RoomId
 
-/** Reads the sticker packs a chat has; they are read only. */
 interface StickerPackReader {
     /** Packs without stickers are left out. */
     suspend fun packs(roomId: RoomId, roomName: String, roomAvatarUrl: String?): Result<List<StickerPack>>

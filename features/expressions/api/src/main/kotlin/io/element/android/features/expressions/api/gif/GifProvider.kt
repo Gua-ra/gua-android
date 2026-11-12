@@ -11,13 +11,11 @@ class GifsUnavailableException : Exception("This build has no GIF provider key")
 
 /** Results keep the provider's order. */
 interface GifProvider {
-    /** The provider name stored with favourites. */
     val id: String
 
     /** False when this build cannot reach the provider; every request then fails with [GifsUnavailableException]. */
     val isAvailable: Boolean
 
-    /** [page] starts at 1. */
     suspend fun search(query: String, page: Int): Result<GifPage>
 
     suspend fun trending(page: Int): Result<GifPage>

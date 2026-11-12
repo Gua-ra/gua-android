@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.Flow
 interface RecentGifsStore {
     val recents: Flow<List<String>>
 
-    /** Moves [id] to the front. */
     suspend fun add(id: String)
 
     suspend fun remove(id: String)

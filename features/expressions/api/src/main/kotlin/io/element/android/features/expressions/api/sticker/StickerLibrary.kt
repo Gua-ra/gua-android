@@ -10,7 +10,6 @@ package io.element.android.features.expressions.api.sticker
 /** The `global.gua.stickers` account data, read: invalid images are left out. */
 data class StickerLibrary(
     val favourites: List<StickerImage>,
-    /** My stickers, newest first. */
     val stickers: List<OwnSticker>,
 ) {
     fun isFavourite(url: String): Boolean = favourites.any { it.url == url }

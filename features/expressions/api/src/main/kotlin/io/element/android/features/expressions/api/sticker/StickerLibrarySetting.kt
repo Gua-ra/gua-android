@@ -9,9 +9,7 @@ package io.element.android.features.expressions.api.sticker
 
 import kotlinx.coroutines.flow.StateFlow
 
-/** My stickers and the favourite stickers, synced across the user's devices. */
 interface StickerLibrarySetting {
-    /** Empty until the cached or stored library has loaded. */
     val library: StateFlow<StickerLibrary>
 
     fun preload()

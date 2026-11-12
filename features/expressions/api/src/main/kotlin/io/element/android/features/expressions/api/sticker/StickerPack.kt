@@ -19,7 +19,6 @@ data class StickerPack(
     val stateKey: String,
     val displayName: String,
     val avatarUrl: String?,
-    /** Ordered by shortcode. */
     val stickers: List<PackSticker>,
 )
 

@@ -9,9 +9,7 @@ package io.element.android.features.expressions.api.gif
 
 import kotlinx.coroutines.flow.StateFlow
 
-/** The favourite GIFs, synced across the user's devices. */
 interface GifLibrarySetting {
-    /** Empty until the cached or stored library has loaded. */
     val library: StateFlow<GifLibrary>
 
     fun preload()

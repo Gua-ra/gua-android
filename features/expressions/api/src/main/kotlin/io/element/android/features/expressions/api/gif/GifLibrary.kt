@@ -22,7 +22,6 @@ data class GifFavourite(
     val provider: String,
 )
 
-/** The `global.gua.gifs` account data, newest favourite first. */
 data class GifLibrary(
     val favourites: List<GifFavourite>,
 ) {

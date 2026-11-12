@@ -13,7 +13,6 @@ import io.element.android.features.expressions.api.gif.GifsUnavailableException
 import io.element.android.features.expressions.api.sticker.StickerLimitReachedException
 import io.element.android.features.expressions.api.sticker.StickerSendException
 
-/** The message for a failed sticker or GIF action, null for failures that are not one. */
 @StringRes
 fun Throwable.expressionErrorMessage(): Int? = when (this) {
     is StickerLimitReachedException -> R.string.gua_sticker_limit_reached
@@ -23,6 +22,5 @@ fun Throwable.expressionErrorMessage(): Int? = when (this) {
     else -> null
 }
 
-/** The message for a GIF search, trending or favourites request that failed. */
 @StringRes
 fun Throwable.gifLoadErrorMessage(): Int = expressionErrorMessage() ?: R.string.gua_gifs_load_failed
