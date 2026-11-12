@@ -13,6 +13,7 @@ import io.element.android.features.expressions.api.gif.GifRenditions
 import io.element.android.features.expressions.api.gif.GifSelection
 import io.element.android.features.expressions.api.gif.GifSendException
 import io.element.android.features.expressions.api.gif.GifSender
+import io.element.android.features.expressions.impl.keyboard.ImageFiles
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.core.extensions.mapFailure
 import io.element.android.libraries.core.extensions.runCatchingExceptions
@@ -33,12 +34,13 @@ import java.io.File
 import java.io.IOException
 import java.util.UUID
 
-/** Sends the provider's file as it is: it never goes through the media pre-processor. */
+/** Sends GIF files as they are: they never go through the media pre-processor. */
 @ContributesBinding(RoomScope::class)
 class DefaultGifSender(
     private val httpClient: GifHttpClient,
     private val mediaSenderFactory: MediaSenderFactory,
     private val blurhashEncoder: BlurhashEncoder,
+    private val imageFiles: ImageFiles,
     @CacheDirectory private val cacheDir: File,
     private val dispatchers: CoroutineDispatchers,
 ) : GifSender {
@@ -49,18 +51,37 @@ class DefaultGifSender(
         timelineMode: Timeline.Mode,
     ): Result<Unit> {
         val selection = GifRenditions.forSending(item) ?: return Result.failure(GifSendException.NoRendition())
-        val directory = File(cacheDir, "$SEND_DIRECTORY/${UUID.randomUUID()}")
-        try {
+        return inSendDirectory { directory ->
             val media = withContext(dispatchers.io) { runCatchingExceptions { download(selection, directory) } }
-                .getOrElse { return Result.failure(GifSendException.DownloadFailed(it)) }
-            return mediaSenderFactory.create(timelineMode)
-                .sendPreProcessedMedia(
-                    mediaUploadInfo = media,
-                    caption = caption?.takeIf { it.isNotBlank() },
-                    formattedCaption = null,
-                    inReplyToEventId = inReplyToEventId,
-                )
-                .mapFailure { GifSendException.SendFailed(it) }
+                .getOrElse { return@inSendDirectory Result.failure(GifSendException.DownloadFailed(it)) }
+            sendMedia(media, caption, inReplyToEventId, timelineMode)
+        }
+    }
+
+    override suspend fun sendFile(file: File, inReplyToEventId: EventId?, timelineMode: Timeline.Mode): Result<Unit> = try {
+        inSendDirectory { directory ->
+            val media = withContext(dispatchers.io) { runCatchingExceptions { prepareFile(file, directory) } }
+                .getOrElse { return@inSendDirectory Result.failure(GifSendException.UnreadableFile(it)) }
+            sendMedia(media, caption = null, inReplyToEventId, timelineMode)
+        }
+    } finally {
+        withContext(NonCancellable + dispatchers.io) { file.delete() }
+    }
+
+    private suspend fun sendMedia(media: MediaUploadInfo, caption: String?, inReplyToEventId: EventId?, timelineMode: Timeline.Mode): Result<Unit> =
+        mediaSenderFactory.create(timelineMode)
+            .sendPreProcessedMedia(
+                mediaUploadInfo = media,
+                caption = caption?.takeIf { it.isNotBlank() },
+                formattedCaption = null,
+                inReplyToEventId = inReplyToEventId,
+            )
+            .mapFailure { GifSendException.SendFailed(it) }
+
+    private suspend fun inSendDirectory(block: suspend (File) -> Result<Unit>): Result<Unit> {
+        val directory = File(cacheDir, "$SEND_DIRECTORY/${UUID.randomUUID()}")
+        return try {
+            block(directory)
         } finally {
             // The send queue has its own copy once the send is queued.
             withContext(NonCancellable + dispatchers.io) { directory.deleteRecursively() }
@@ -78,25 +99,39 @@ class DefaultGifSender(
                     .isSuccess
             }
         }
-        val imageInfo = ImageInfo(
-            height = selection.file.height.toLong(),
-            width = selection.file.width.toLong(),
-            mimetype = MimeTypes.WebP,
-            size = file.length(),
-            thumbnailInfo = stillFile?.let {
-                ThumbnailInfo(
-                    height = selection.still?.height?.toLong(),
-                    width = selection.still?.width?.toLong(),
-                    mimetype = MimeTypes.Jpeg,
-                    size = it.length(),
-                )
-            },
-            thumbnailSource = null,
-            blurhash = stillFile?.let(blurhashEncoder::encode),
-            isAnimated = true,
+        return MediaUploadInfo.Image(
+            file = file,
+            imageInfo = animatedImageInfo(file, selection.file.width, selection.file.height, MimeTypes.WebP, stillFile),
+            thumbnailFile = stillFile,
         )
-        return MediaUploadInfo.Image(file = file, imageInfo = imageInfo, thumbnailFile = stillFile)
     }
+
+    private fun prepareFile(source: File, directory: File): MediaUploadInfo.Image {
+        if (!directory.mkdirs()) throw IOException("Cannot create ${directory.name}")
+        val file = File(directory, GifRenditions.DEFAULT_BODY)
+        source.copyTo(file)
+        val facts = imageFiles.facts(file, MimeTypes.Gif) ?: throw IOException("Unreadable GIF")
+        val stillFile = File(directory, STILL_FILE_NAME).takeIf { imageFiles.writeFirstFrame(file, it) }
+        return MediaUploadInfo.Image(
+            file = file,
+            imageInfo = animatedImageInfo(file, facts.width, facts.height, MimeTypes.Gif, stillFile),
+            thumbnailFile = stillFile,
+        )
+    }
+
+    /** The still has the GIF's own size. */
+    private fun animatedImageInfo(file: File, width: Int, height: Int, mimetype: String, stillFile: File?) = ImageInfo(
+        height = height.toLong(),
+        width = width.toLong(),
+        mimetype = mimetype,
+        size = file.length(),
+        thumbnailInfo = stillFile?.let {
+            ThumbnailInfo(height = height.toLong(), width = width.toLong(), mimetype = MimeTypes.Jpeg, size = it.length())
+        },
+        thumbnailSource = null,
+        blurhash = stillFile?.let(blurhashEncoder::encode),
+        isAnimated = true,
+    )
 
     private suspend fun fetch(url: String, target: File) {
         httpClient.okHttpClient.newCall(Request.Builder().url(url).build()).await().use { response ->

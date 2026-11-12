@@ -14,6 +14,7 @@ import io.element.android.features.expressions.api.gif.GifItem
 import io.element.android.features.expressions.api.gif.GifRendition
 import io.element.android.features.expressions.api.gif.GifSendException
 import io.element.android.features.expressions.api.gif.GifSize
+import io.element.android.features.expressions.impl.keyboard.FakeImageFiles
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.media.ImageInfo
@@ -188,6 +189,7 @@ class DefaultGifSenderTest {
             mediaSender
         },
         blurhashEncoder = { "a-blurhash" },
+        imageFiles = FakeImageFiles(),
         cacheDir = cacheDir,
         dispatchers = CoroutineDispatchers(io = Dispatchers.IO, computation = Dispatchers.Default, main = Dispatchers.Default),
     )
