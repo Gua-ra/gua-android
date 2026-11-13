@@ -926,7 +926,12 @@ private fun MessageEventBubbleContent(
 
         val threadDecoration = @Composable {
             if (showThreadDecoration) {
-                ThreadDecoration(modifier = Modifier.padding(top = 8.dp, start = 12.dp, end = 12.dp))
+                ThreadDecoration(
+                    modifier = Modifier
+                        .padding(top = 8.dp, start = 12.dp, end = 12.dp)
+                        // A sticker has no bubble, so over a chat background the label needs its own.
+                        .then(if (event.content is TimelineItemStickerContent) Modifier.legibilityCapsule() else Modifier)
+                )
             }
         }
         val contentWithTimestamp = @Composable {
