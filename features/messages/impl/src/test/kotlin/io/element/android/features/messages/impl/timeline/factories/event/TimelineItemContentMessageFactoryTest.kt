@@ -583,6 +583,37 @@ class TimelineItemContentMessageFactoryTest : RobolectricTest() {
     }
 
     @Test
+    fun `an image is animated when its info says so or it is a GIF`() = runTest {
+        val sut = createTimelineItemContentMessageFactory()
+        fun imageWith(mimetype: String, isAnimated: Boolean?) = createMessageContent(
+            type = ImageMessageType(
+                filename = "a",
+                caption = null,
+                formattedCaption = null,
+                source = MediaSource("url"),
+                info = ImageInfo(
+                    height = 10L,
+                    width = 10L,
+                    mimetype = mimetype,
+                    size = 1L,
+                    thumbnailInfo = null,
+                    thumbnailSource = null,
+                    blurhash = null,
+                    isAnimated = isAnimated,
+                ),
+            ),
+        )
+
+        val animatedWebp = sut.create(imageWith(MimeTypes.WebP, isAnimated = true), A_USER_ID, aProfileDetails(), AN_EVENT_ID)
+        val gif = sut.create(imageWith(MimeTypes.Gif, isAnimated = null), A_USER_ID, aProfileDetails(), AN_EVENT_ID)
+        val staticWebp = sut.create(imageWith(MimeTypes.WebP, isAnimated = null), A_USER_ID, aProfileDetails(), AN_EVENT_ID)
+
+        assertThat((animatedWebp as TimelineItemImageContent).isAnimated).isTrue()
+        assertThat((gif as TimelineItemImageContent).isAnimated).isTrue()
+        assertThat((staticWebp as TimelineItemImageContent).isAnimated).isFalse()
+    }
+
+    @Test
     fun `test create FileMessageType`() = runTest {
         val sut = createTimelineItemContentMessageFactory()
         val result = sut.create(

@@ -35,6 +35,16 @@ import org.junit.Test
 
 class MarkdownTextEditorStateTest : RobolectricTest() {
     @Test
+    fun `insertText - replaces the selection and moves the cursor after the text`() {
+        val state = aMarkdownTextEditorState(initialText = "Hello world", initialFocus = true).apply { selection = 6..11 }
+
+        state.insertText("🐈")
+
+        assertThat(state.text.value().toString()).isEqualTo("Hello 🐈")
+        assertThat(state.selection).isEqualTo(8..8)
+    }
+
+    @Test
     fun `insertMention - room alias - getMentions return empty list`() {
         val state = aMarkdownTextEditorState(initialText = "Hello @", initialFocus = true)
         val suggestion = aRoomAliasSuggestion()

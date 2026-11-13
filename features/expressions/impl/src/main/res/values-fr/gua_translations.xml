@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<resources>
+    <string name="gua_sticker_send_failed">Impossible d\'envoyer l\'autocollant</string>
+    <string name="gua_sticker_limit_reached">Vous pouvez avoir jusqu\'à 120 autocollants</string>
+    <string name="gua_gif_send_failed">Impossible d\'envoyer le GIF</string>
+    <string name="gua_gifs_load_failed">Impossible de charger les GIF</string>
+    <string name="gua_gifs_unavailable">Les GIF ne sont pas disponibles dans cette version</string>
+    <string name="gua_expressions_tab_stickers">Autocollants</string>
+    <string name="gua_expressions_search_stickers">Rechercher des autocollants</string>
+    <string name="gua_expressions_word_hi">Salut</string>
+    <string name="gua_expressions_word_haha">Mdr</string>
+    <string name="gua_expressions_word_love">Amour</string>
+    <string name="gua_expressions_word_sad">Triste</string>
+    <string name="gua_expressions_word_wow">Waouh</string>
+    <string name="gua_expressions_word_thumbs_up">Pouce levé</string>
+    <string name="gua_expressions_word_celebrate">Fête</string>
+    <string name="gua_expressions_word_angry">En colère</string>
+    <string name="gua_expressions_word_dance">Danse</string>
+    <string name="gua_a11y_expressions_expand">Agrandir le panneau</string>
+    <string name="gua_a11y_expressions_collapse">Réduire le panneau</string>
+    <string name="gua_stickers_section_recent">Récents</string>
+    <string name="gua_stickers_section_favourites">Favoris</string>
+    <string name="gua_stickers_section_mine">Mes autocollants</string>
+    <string name="gua_stickers_create">Créer un autocollant</string>
+    <string name="gua_stickers_add_favourite">Ajouter aux favoris</string>
+    <string name="gua_stickers_remove_favourite">Retirer des favoris</string>
+    <string name="gua_stickers_remove_recent">Retirer des récents</string>
+    <string name="gua_stickers_save">Ajouter à mes autocollants</string>
+    <string name="gua_stickers_saved">Ajouté à mes autocollants</string>
+    <string name="gua_stickers_delete_title">Supprimer cet autocollant ?</string>
+    <string name="gua_stickers_delete_message">Il sera retiré de Mes autocollants sur tous vos appareils.</string>
+    <string name="gua_stickers_from_pack">De %1$s</string>
+    <string name="gua_stickers_none_found">Aucun autocollant trouvé</string>
+    <string name="gua_stickers_editor_cut_out">Détourer</string>
+    <string name="gua_stickers_editor_text">Texte</string>
+    <string name="gua_stickers_editor_note">Les autocollants sont stockés sur les serveurs de Gua sans chiffrement de bout en bout, pour que vous puissiez les utiliser dans toutes vos conversations.</string>
+    <string name="gua_stickers_editor_unreadable">Impossible d\'ouvrir cette image</string>
+    <string name="gua_gifs_trending">Tendances</string>
+    <string name="gua_gifs_none_found">Aucun GIF trouvé</string>
+    <string name="gua_gifs_caption">Ajouter une légende</string>
+    <string name="gua_a11y_expressions_open">Autocollants et GIF</string>
+    <string name="gua_a11y_expressions_keyboard">Clavier</string>
+</resources>

@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -26,6 +27,7 @@ import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import im.vector.app.features.analytics.plan.PinUnpinAction
 import io.element.android.appconfig.MessageComposerConfig
+import io.element.android.features.expressions.api.panel.ExpressionPanelPresenter
 import io.element.android.features.location.api.live.ActiveLiveLocationShareManager
 import io.element.android.features.location.api.live.isCurrentlySharing
 import io.element.android.features.messages.api.timeline.HtmlConverterProvider
@@ -37,6 +39,7 @@ import io.element.android.features.messages.impl.crypto.identity.IdentityChangeS
 import io.element.android.features.messages.impl.link.LinkState
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerEvent
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerState
+import io.element.android.features.messages.impl.messagecomposer.TimelineExpressionComposer
 import io.element.android.features.messages.impl.messagemenu.MessageMenuPresenter
 import io.element.android.features.messages.impl.pinned.banner.PinnedMessagesBannerState
 import io.element.android.features.messages.impl.timeline.MarkAsFullyRead
@@ -139,6 +142,7 @@ class MessagesPresenter(
     private val addRecentEmoji: AddRecentEmoji,
     private val markAsFullyRead: MarkAsFullyRead,
     private val liveLocationShareManager: ActiveLiveLocationShareManager,
+    private val expressionPanelPresenterFactory: ExpressionPanelPresenter.Factory,
     @SessionCoroutineScope private val sessionCoroutineScope: CoroutineScope,
     chatBackgroundPresenterFactory: MessagesChatBackgroundPresenter.Factory,
 ) : Presenter<MessagesState> {
@@ -173,6 +177,11 @@ class MessagesPresenter(
         val roomInfo by room.roomInfoFlow.collectAsState()
         val localCoroutineScope = rememberCoroutineScope()
         val composerState = composerPresenter.present()
+        val latestComposerState by rememberUpdatedState(composerState)
+        val expressionPanelPresenter = remember {
+            expressionPanelPresenterFactory.create(TimelineExpressionComposer(timelineController) { latestComposerState })
+        }
+        val expressionPanelState = expressionPanelPresenter.present()
         val voiceMessageComposerState = voiceMessageComposerPresenter.present()
         val timelineState = timelinePresenter.present()
         val timelineProtectionState = timelineProtectionPresenter.present()
@@ -346,6 +355,7 @@ class MessagesPresenter(
             heroes = heroes,
             userEventPermissions = userEventPermissions,
             composerState = composerState,
+            expressionPanelState = expressionPanelState,
             voiceMessageComposerState = voiceMessageComposerState,
             timelineState = timelineState,
             timelineProtectionState = timelineProtectionState,

@@ -14,7 +14,9 @@ es:common_sentence_delimiter
 es:common_sticker
 es:common_video
 es:dialog_title_error
+es:gua_a11y_sticker
 es:gua_chat_background_preset_aurora
+es:gua_expressions_tab_stickers
 es:notification_ticker_text_dm
 es:notification_ticker_text_group
 es:screen_change_server_error_element_pro_required_action_android

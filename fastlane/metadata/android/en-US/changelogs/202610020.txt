@@ -1,0 +1,1 @@
+This build prepares Gua for testing on Google Play. It no longer asks for permissions it does not use. Thanks for helping us test Gua.

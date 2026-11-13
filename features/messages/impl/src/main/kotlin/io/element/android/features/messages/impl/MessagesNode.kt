@@ -29,6 +29,7 @@ import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
 import io.element.android.compound.theme.ElementTheme
+import io.element.android.features.expressions.api.panel.ExpressionPanelRenderer
 import io.element.android.features.knockrequests.api.banner.KnockRequestsBannerRenderer
 import io.element.android.features.messages.impl.actionlist.ActionListPresenter
 import io.element.android.features.messages.impl.actionlist.model.TimelineItemActionPostProcessor
@@ -106,6 +107,7 @@ class MessagesNode(
     private val roomMemberModerationRenderer: RoomMemberModerationRenderer,
     private val eventContentValidationCache: EventContentValidationCache,
     private val emojiPickerRenderer: EmojiPickerRenderer,
+    private val expressionPanelRenderer: ExpressionPanelRenderer,
     private val dispatchers: CoroutineDispatchers,
 ) : Node(buildContext, plugins = plugins), MessagesNavigator, TimelineSelectionOwner {
     data class Inputs(
@@ -355,6 +357,7 @@ class MessagesNode(
                         emojiPickerRenderer = emojiPickerRenderer,
                     )
                 },
+                expressionPanelRenderer = expressionPanelRenderer,
                 onThreadsListClick = callback::navigateToThreadsList,
             )
             roomMemberModerationRenderer.Render(
