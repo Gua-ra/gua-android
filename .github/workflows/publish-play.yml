@@ -220,6 +220,19 @@ jobs:
         env:
           GUA_DEV_LOCAL_PROPERTIES: ${{ secrets.GUA_DEV_LOCAL_PROPERTIES }}
         run: printf '%s\n' "$GUA_DEV_LOCAL_PROPERTIES" >> local.properties
+      # Compile first and stop the Kotlin daemon, so it does not hold memory while R8 runs on the 16 GB runner.
+      - name: Compile Kotlin before the bundle (QA)
+        env:
+          GUA_RELEASE_KEYSTORE: ${{ runner.temp }}/gua-upload.jks
+          GUA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.GUA_RELEASE_KEYSTORE_PASSWORD }}
+          GUA_RELEASE_KEY_ALIAS: ${{ secrets.GUA_RELEASE_KEY_ALIAS }}
+          GUA_RELEASE_KEY_PASSWORD: ${{ secrets.GUA_RELEASE_KEY_PASSWORD }}
+          # Both may be empty: the app then has no GIF search, or talks to KLIPY directly.
+          KLIPY_API_KEY: ${{ secrets.KLIPY_API_KEY }}
+          GIF_PROXY_HOST: ${{ vars.GIF_PROXY_HOST }}
+        run: |
+          ./gradlew :app:compileGplayReleaseKotlin -Pgua.deployment=dev -Pgua.versionCodeOffset=${{ github.run_number }} $CI_GRADLE_ARG_PROPERTIES
+          pkill -f KotlinCompileDaemon || true
       # gua.versionCodeOffset is what makes a label usable more than once: Play rejects a
       # versionCode it has already accepted, and the CalVer code in Versions.kt only moves when the
       # release script bumps it. The run number is unique and always increasing, so every QA upload
