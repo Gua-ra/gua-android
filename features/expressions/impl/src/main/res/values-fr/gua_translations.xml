@@ -13,15 +13,6 @@
     <string name="gua_gifs_unavailable">Les GIF ne sont pas disponibles dans cette version</string>
     <string name="gua_expressions_tab_stickers">Autocollants</string>
     <string name="gua_expressions_search_stickers">Rechercher des autocollants</string>
-    <string name="gua_expressions_word_hi">Salut</string>
-    <string name="gua_expressions_word_haha">Mdr</string>
-    <string name="gua_expressions_word_love">Amour</string>
-    <string name="gua_expressions_word_sad">Triste</string>
-    <string name="gua_expressions_word_wow">Waouh</string>
-    <string name="gua_expressions_word_thumbs_up">Pouce levé</string>
-    <string name="gua_expressions_word_celebrate">Fête</string>
-    <string name="gua_expressions_word_angry">En colère</string>
-    <string name="gua_expressions_word_dance">Danse</string>
     <string name="gua_a11y_expressions_expand">Agrandir le panneau</string>
     <string name="gua_a11y_expressions_collapse">Réduire le panneau</string>
     <string name="gua_stickers_section_recent">Récents</string>

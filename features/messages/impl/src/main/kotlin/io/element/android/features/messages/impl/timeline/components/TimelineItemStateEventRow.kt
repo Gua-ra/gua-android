@@ -72,6 +72,7 @@ fun TimelineItemStateEventRow(
             ) {
                 TimelineItemEventContentView(
                     eventId = event.eventId,
+                    isMine = event.isMine,
                     content = event.content,
                     onLinkClick = {},
                     onLinkLongClick = {},

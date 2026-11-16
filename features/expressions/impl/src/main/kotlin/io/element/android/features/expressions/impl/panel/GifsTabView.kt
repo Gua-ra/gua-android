@@ -10,7 +10,6 @@ package io.element.android.features.expressions.impl.panel
 import androidx.annotation.StringRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,10 +24,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,17 +57,6 @@ import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import io.element.android.features.expressions.api.R as ApiR
-
-internal val gifMoods = listOf(
-    R.string.gua_expressions_word_haha,
-    R.string.gua_expressions_word_love,
-    R.string.gua_expressions_word_sad,
-    R.string.gua_expressions_word_thumbs_up,
-    R.string.gua_expressions_word_celebrate,
-    R.string.gua_expressions_word_wow,
-    R.string.gua_expressions_word_angry,
-    R.string.gua_expressions_word_dance,
-)
 
 @Composable
 internal fun GifsTabView(
@@ -190,23 +175,12 @@ private fun GifsBottomBar(state: DefaultExpressionPanelState) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
             .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BrowseButton(GifBrowse.Recent, R.string.gua_stickers_section_recent, isBrowsing && state.gifBrowse == GifBrowse.Recent, state.panelSink)
         BrowseButton(GifBrowse.Favourites, R.string.gua_stickers_section_favourites, isBrowsing && state.gifBrowse == GifBrowse.Favourites, state.panelSink)
         BrowseButton(GifBrowse.Trending, R.string.gua_gifs_trending, isBrowsing && state.gifBrowse == GifBrowse.Trending, state.panelSink)
-        gifMoods.forEach { mood ->
-            val word = stringResource(mood)
-            FilterChip(
-                selected = state.gifQuery == word,
-                onClick = { state.panelSink(PanelEvent.UpdateQuery(word)) },
-                label = { Text(text = word, style = ElementTheme.typography.fontBodyMdRegular) },
-                shape = CircleShape,
-                modifier = Modifier.padding(horizontal = 4.dp),
-            )
-        }
     }
 }
 

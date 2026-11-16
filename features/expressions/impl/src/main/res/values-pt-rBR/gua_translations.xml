@@ -13,15 +13,6 @@
     <string name="gua_gifs_unavailable">Os GIFs não estão disponíveis nesta versão</string>
     <string name="gua_expressions_tab_stickers">Figurinhas</string>
     <string name="gua_expressions_search_stickers">Buscar figurinhas</string>
-    <string name="gua_expressions_word_hi">Oi</string>
-    <string name="gua_expressions_word_haha">Kkkk</string>
-    <string name="gua_expressions_word_love">Amor</string>
-    <string name="gua_expressions_word_sad">Triste</string>
-    <string name="gua_expressions_word_wow">Uau</string>
-    <string name="gua_expressions_word_thumbs_up">Joinha</string>
-    <string name="gua_expressions_word_celebrate">Comemorar</string>
-    <string name="gua_expressions_word_angry">Com raiva</string>
-    <string name="gua_expressions_word_dance">Dança</string>
     <string name="gua_a11y_expressions_expand">Expandir o painel</string>
     <string name="gua_a11y_expressions_collapse">Recolher o painel</string>
     <string name="gua_stickers_section_recent">Recentes</string>

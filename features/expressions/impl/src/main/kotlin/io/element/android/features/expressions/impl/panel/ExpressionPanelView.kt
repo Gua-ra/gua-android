@@ -11,25 +11,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.runtime.Composable
@@ -62,14 +57,6 @@ import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.emoji.api.picker.EmojiPickerRenderer
 import io.element.android.libraries.emoji.api.picker.NoOpEmojiPickerRenderer
 import kotlinx.collections.immutable.persistentSetOf
-
-private val searchChips = listOf(
-    R.string.gua_expressions_word_hi,
-    R.string.gua_expressions_word_haha,
-    R.string.gua_expressions_word_love,
-    R.string.gua_expressions_word_sad,
-    R.string.gua_expressions_word_wow,
-)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -208,21 +195,14 @@ private fun SearchHeader(state: DefaultExpressionPanelState, placeholder: String
     LaunchedEffect(fieldState) {
         snapshotFlow { fieldState.text.toString() }.collect { if (it != query) eventSink(PanelEvent.UpdateQuery(it)) }
     }
-    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
-        SearchField(state = fieldState, placeholder = placeholder, interactionSource = interactionSource, modifier = Modifier.fillMaxWidth())
-        Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-            searchChips.forEach { chip ->
-                val word = stringResource(chip)
-                FilterChip(
-                    selected = state.query == word,
-                    onClick = { state.panelSink(PanelEvent.UpdateQuery(word)) },
-                    label = { Text(text = word, style = ElementTheme.typography.fontBodyMdRegular) },
-                    shape = CircleShape,
-                    modifier = Modifier.padding(end = 8.dp),
-                )
-            }
-        }
-    }
+    SearchField(
+        state = fieldState,
+        placeholder = placeholder,
+        interactionSource = interactionSource,
+        modifier = Modifier
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .fillMaxWidth(),
+    )
 }
 
 @PreviewsDayNight

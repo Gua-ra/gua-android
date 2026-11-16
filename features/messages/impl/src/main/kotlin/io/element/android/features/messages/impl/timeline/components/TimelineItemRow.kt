@@ -87,6 +87,7 @@ internal fun TimelineItemRow(
         { event, contentModifier, onContentLayoutChange ->
             TimelineItemEventContentView(
                 eventId = event.eventId,
+                isMine = event.isMine,
                 content = event.content,
                 timelineProtectionState = timelineProtectionState,
                 onContentClick = { onContentClick(event) },
