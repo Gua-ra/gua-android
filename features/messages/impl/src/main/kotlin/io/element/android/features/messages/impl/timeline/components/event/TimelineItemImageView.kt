@@ -55,8 +55,8 @@ import io.element.android.libraries.matrix.ui.media.contentvalidation.LocalEvent
 import io.element.android.libraries.matrix.ui.media.contentvalidation.NoopContentValidationState
 import io.element.android.libraries.matrix.ui.media.contentvalidation.NoopEventContentValidationCache
 import io.element.android.libraries.matrix.ui.media.contentvalidation.collectOverallState
+import io.element.android.libraries.matrixmedia.api.LocalPlayGifsAutomatically
 import io.element.android.libraries.matrixmedia.api.firstFrameOnly
-import io.element.android.libraries.matrixmedia.api.shouldAnimateImages
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.libraries.ui.utils.a11y.isTalkbackActive
 import io.element.android.features.expressions.api.R as ExpressionsR
@@ -87,7 +87,7 @@ fun TimelineItemImageView(
         val eventContentValidation by contentValidationState.collectOverallState()
         val isContentBeingValidated = !eventContentValidation.isValidated()
         val context = LocalContext.current
-        val shouldAnimate = context.shouldAnimateImages()
+        val shouldAnimate = LocalPlayGifsAutomatically.current
         val model = remember(content.thumbnailMediaRequestData, shouldAnimate) {
             if (shouldAnimate || !content.mimeType.isMimeTypeAnimatedImage()) {
                 content.thumbnailMediaRequestData

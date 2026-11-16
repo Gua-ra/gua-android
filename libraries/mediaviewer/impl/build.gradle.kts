@@ -67,6 +67,7 @@ dependencies {
     testImplementation(projects.libraries.audio.test)
     testImplementation(projects.libraries.dateformatter.test)
     testImplementation(projects.libraries.matrix.test)
+    testImplementation(projects.libraries.matrixmedia.test)
     testImplementation(projects.libraries.mediaviewer.test)
     testImplementation(projects.services.toolbox.test)
     testImplementation(libs.coroutines.core)

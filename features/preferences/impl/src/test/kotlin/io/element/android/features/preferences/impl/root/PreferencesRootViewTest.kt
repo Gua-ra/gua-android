@@ -280,7 +280,7 @@ class PreferencesRootViewTest : RobolectricTest() {
     }
 
     @Test
-    fun `click on Media upload quality invokes the expected callback`() = runAndroidComposeUiTest {
+    fun `click on Media settings invokes the expected callback`() = runAndroidComposeUiTest {
         val eventsRecorder = EventsRecorder<PreferencesRootEvent>(expectEvents = false)
         ensureCalledOnce { callback ->
             setView(
@@ -289,7 +289,7 @@ class PreferencesRootViewTest : RobolectricTest() {
                 ),
                 onOpenMediaSettings = callback,
             )
-            val text = activity!!.getString(CommonStrings.common_media_upload_quality)
+            val text = activity!!.getString(R.string.gua_media_settings_title)
             onNode(hasText(text) and hasClickAction()).performScrollTo().performClick()
         }
     }

@@ -141,4 +141,7 @@
     <string name="screen_settings_user_status_on_the_road">Na estrada</string>
     <string name="screen_settings_user_status_placeholder">Qual é o seu status?</string>
     <string name="gua_chat_theme_settings_row_title">Tema da conversa</string>
+    <string name="gua_media_settings_title">Configurações de mídia</string>
+    <string name="gua_media_settings_play_gifs_title">Reproduzir GIFs automaticamente</string>
+    <string name="gua_media_settings_play_gifs_description">Também figurinhas animadas. GIFs que você abrir sempre são reproduzidos.</string>
 </resources>

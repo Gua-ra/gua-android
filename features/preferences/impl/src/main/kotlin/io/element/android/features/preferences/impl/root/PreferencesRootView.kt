@@ -396,7 +396,7 @@ private fun AppSettingsSection(
             )
         }
         ListItem(
-            content = { Text(stringResource(id = CommonStrings.common_media_upload_quality)) },
+            content = { Text(stringResource(id = R.string.gua_media_settings_title)) },
             leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Image())),
             onClick = onOpenMediaSettings,
         )

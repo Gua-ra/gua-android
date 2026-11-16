@@ -81,6 +81,7 @@ dependencies {
     implementation(projects.features.roommembermoderation.api)
 
     testCommonDependencies(libs, true)
+    testImplementation(projects.libraries.matrixmedia.test)
     testImplementation(projects.libraries.matrix.test)
     testImplementation(projects.libraries.chatbackground.test)
     testImplementation(projects.libraries.dateformatter.test)

@@ -41,5 +41,6 @@ dependencies {
     implementation(projects.libraries.previewutils)
 
     testCommonDependencies(libs, true)
+    testImplementation(projects.libraries.matrixmedia.test)
     testImplementation(projects.libraries.matrix.test)
 }

@@ -9,6 +9,7 @@
 package io.element.android.features.preferences.impl.media
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import dev.zacsweers.metro.Inject
@@ -16,6 +17,7 @@ import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
+import io.element.android.libraries.preferences.api.store.GifAutoplayStore
 import io.element.android.libraries.preferences.api.store.SessionPreferencesStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.combine
@@ -27,6 +29,7 @@ class MediaSettingsPresenter(
     @SessionCoroutineScope
     private val sessionCoroutineScope: CoroutineScope,
     private val featureFlagService: FeatureFlagService,
+    private val gifAutoplayStore: GifAutoplayStore,
 ) : Presenter<MediaSettingsState> {
     @Composable
     override fun present(): MediaSettingsState {
@@ -47,6 +50,7 @@ class MediaSettingsPresenter(
                 }
             }.collect { value = it }
         }
+        val playGifsAutomatically by gifAutoplayStore.playGifsAutomatically.collectAsState()
 
         fun handleEvent(event: MediaSettingsEvent) {
             when (event) {
@@ -56,11 +60,13 @@ class MediaSettingsPresenter(
                 is MediaSettingsEvent.SetVideoUploadQuality -> sessionCoroutineScope.launch {
                     sessionPreferencesStore.setVideoCompressionPreset(event.videoPreset)
                 }
+                is MediaSettingsEvent.SetPlayGifsAutomatically -> gifAutoplayStore.setPlayGifsAutomatically(event.enabled)
             }
         }
 
         return MediaSettingsState(
             mediaOptimizationState = mediaOptimizationState,
+            playGifsAutomatically = playGifsAutomatically,
             eventSink = ::handleEvent,
         )
     }
