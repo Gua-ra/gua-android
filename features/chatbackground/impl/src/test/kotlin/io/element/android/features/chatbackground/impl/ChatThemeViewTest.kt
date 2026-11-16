@@ -10,13 +10,17 @@
 package io.element.android.features.chatbackground.impl
 
 import android.content.Context
+import android.os.PowerManager
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsEqualTo
@@ -38,6 +42,7 @@ import androidx.compose.ui.test.performCustomAccessibilityActionWithLabel
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import androidx.compose.ui.unit.height
 import io.element.android.compound.theme.ElementTheme
@@ -48,6 +53,8 @@ import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
 import io.element.android.libraries.chatbackground.api.ChatBubbleColor
 import io.element.android.libraries.chatbackground.api.ChatTheme
+import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperCues
+import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperCuesKey
 import io.element.android.libraries.matrix.ui.chatbackground.aChatBackgroundPhoto
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureNeverCalled
@@ -57,6 +64,7 @@ import io.element.android.tests.testutils.ensureCalledOnce
 import io.element.android.tests.testutils.pressBack
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.Test
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import io.element.android.libraries.chatbackground.api.R as ChatBackgroundR
 
@@ -435,6 +443,47 @@ class ChatThemeViewTest : RobolectricTest() {
         onNodeWithText(activity!!.getString(R.string.gua_chat_background_error_generic)).assertExists()
         clickOn(CommonStrings.action_ok)
         eventsRecorder.assertSingle(ChatThemeEvent.ClearError)
+    }
+
+    @Test
+    fun `the preview of a live artwork previews a send without saving, and Set still saves`() = runAndroidComposeUiTest<ComponentActivity> {
+        val eventsRecorder = EventsRecorder<ChatThemeEvent>()
+        val glassDrops = ChatArtwork.GlassDrops.theme
+        setChatThemeView(aChatThemeState(preview = ChatThemePreview(glassDrops, glassDrops), eventSink = eventsRecorder))
+        val previewSend = activity!!.getString(R.string.gua_chat_theme_preview_send_a11y)
+        val wallpaper = onNode(SemanticsMatcher.keyIsDefined(LiveWallpaperCuesKey))
+        wallpaper.assert(SemanticsMatcher.expectValue(LiveWallpaperCuesKey, LiveWallpaperCues(sendCount = 0)))
+        onNodeWithText(activity!!.getString(R.string.gua_chat_background_sample_outgoing))
+            .assert(SemanticsMatcher("offers $previewSend") { it.config.getOrNull(SemanticsActions.OnClick)?.label == previewSend })
+            .performSemanticsAction(SemanticsActions.OnClick)
+        wallpaper.assert(SemanticsMatcher.expectValue(LiveWallpaperCuesKey, LiveWallpaperCues(sendCount = 1)))
+        onNodeWithText(activity!!.getString(R.string.gua_chat_background_sample_incoming)).performClick()
+        wallpaper.assert(SemanticsMatcher.expectValue(LiveWallpaperCuesKey, LiveWallpaperCues(sendCount = 2)))
+        clickOn(R.string.gua_chat_theme_action_set_theme)
+        eventsRecorder.assertSingle(ChatThemeEvent.Save)
+    }
+
+    @Test
+    fun `the preview of a still artwork offers no send preview`() = runAndroidComposeUiTest<ComponentActivity> {
+        val palmCoast = ChatArtwork.PalmCoast.theme
+        setChatThemeView(aChatThemeState(preview = ChatThemePreview(palmCoast, palmCoast), eventSink = EventsRecorder(expectEvents = false)))
+        onNodeWithText(activity!!.getString(R.string.gua_chat_background_sample_outgoing)).assert(hasClickAction().not())
+        onNodeWithText(activity!!.getString(R.string.gua_chat_background_sample_incoming)).performClick()
+        onNode(SemanticsMatcher.keyIsDefined(LiveWallpaperCuesKey))
+            .assert(SemanticsMatcher.expectValue(LiveWallpaperCuesKey, LiveWallpaperCues(sendCount = 0)))
+    }
+
+    @Test
+    fun `the preview of a live artwork offers no send preview while Battery Saver shows its still`() = runAndroidComposeUiTest<ComponentActivity> {
+        val powerManager = activity!!.getSystemService(PowerManager::class.java)
+        shadowOf(powerManager).setIsPowerSaveMode(true)
+        try {
+            val silk = ChatArtwork.Silk.theme
+            setChatThemeView(aChatThemeState(preview = ChatThemePreview(silk, silk), eventSink = EventsRecorder(expectEvents = false)))
+            onNodeWithText(activity!!.getString(R.string.gua_chat_background_sample_outgoing)).assert(hasClickAction().not())
+        } finally {
+            shadowOf(powerManager).setIsPowerSaveMode(false)
+        }
     }
 }
 

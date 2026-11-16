@@ -70,6 +70,7 @@ import io.element.android.features.messages.api.timeline.voicemessages.composer.
 import io.element.android.features.messages.impl.actionlist.ActionListEvent
 import io.element.android.features.messages.impl.actionlist.ActionListView
 import io.element.android.features.messages.impl.actionlist.model.TimelineItemAction
+import io.element.android.features.messages.impl.chatbackground.liveWallpaperCues
 import io.element.android.features.messages.impl.crypto.identity.IdentityChangeStateView
 import io.element.android.features.messages.impl.link.LinkEvent
 import io.element.android.features.messages.impl.link.LinkView
@@ -329,6 +330,8 @@ fun MessagesView(
                     .messageMenuBackdrop(messageMenuController, isMenuShown = state.messageMenuState.target is MessageMenuState.Target.Shown)
                     .systemBarsPadding()
                     .padding(top = topBarHeight),
+                // GUA FORK: a live artwork animates behind the timeline and pulses when the user sends.
+                live = state.liveWallpaperCues(),
             )
         }
         ExpandableBottomSheetLayout(
