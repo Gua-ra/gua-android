@@ -28,6 +28,7 @@ object ChatBackgroundCodec {
     private const val KIND_NONE = "none"
     private const val KIND_PRESET = "preset"
     private const val KIND_PHOTO = "photo"
+    private const val KIND_ART = "art"
     private const val MAX_DIMENSION = 8192L
     private const val MAX_BLURHASH_LENGTH = 100
 
@@ -39,17 +40,26 @@ object ChatBackgroundCodec {
             KIND_NONE -> ChatBackground.None
             KIND_PRESET -> decodePreset(content["preset"])
             KIND_PHOTO -> decodePhoto(content["photo"])
+            KIND_ART -> ChatArtwork.fromId(content["art"].stringOrNull())?.let(ChatBackground::Art) ?: decodePreset(content["fallback_preset"])
             else -> decodePreset(content["fallback_preset"])
         }
-        return ChatTheme(background, ChatBubbleColor.fromId(content["bubble"].stringOrNull()))
+        val bubble = ChatBubbleColor.fromId(content["bubble"].stringOrNull())
+        val bubbleDark = ChatBubbleColor.fromId(content["bubble_dark"].stringOrNull())
+        return ChatTheme(background, bubble, bubbleDark).normalized()
     }
 
     fun encode(theme: ChatTheme): String {
-        if (theme == ChatTheme.STOCK) return REMOVED_CONTENT
+        val normalized = theme.normalized()
+        if (normalized == ChatTheme.STOCK) return REMOVED_CONTENT
+        val artwork = (normalized.background as? ChatBackground.Art)?.artwork
         return buildJsonObject {
-            theme.bubble?.let { put("bubble", it.id) }
-            when (val background = theme.background) {
+            artwork?.let { put("art", it.id) }
+            normalized.bubble?.let { put("bubble", it.id) }
+            normalized.bubbleDark?.let { put("bubble_dark", it.id) }
+            artwork?.let { put("fallback_preset", it.fallbackPreset.id) }
+            when (val background = normalized.background) {
                 ChatBackground.None -> put("kind", KIND_NONE)
+                is ChatBackground.Art -> put("kind", KIND_ART)
                 is ChatBackground.Preset -> {
                     put("kind", KIND_PRESET)
                     put("preset", background.preset.id)
