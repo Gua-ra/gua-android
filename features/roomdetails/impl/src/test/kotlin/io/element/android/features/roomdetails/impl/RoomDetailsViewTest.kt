@@ -339,7 +339,7 @@ class RoomDetailsViewTest : RobolectricTest() {
                 chatBackgroundRow = ChatBackgroundRowState(ChatTheme.STOCK, canChange = true),
             ),
         )
-        onNodeWithText(activity!!.getString(ChatTheme.STOCK.nameRes)).assertExists()
+        onNodeWithText(activity!!.getString(ChatTheme.STOCK.nameRes(isLight = true))).assertExists()
     }
 
     @Config(qualifiers = "h1500dp")

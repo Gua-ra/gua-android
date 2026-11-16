@@ -62,9 +62,11 @@ private val BUBBLE_SWATCHES = listOf(null) + ChatBubbleColor.entries
 @Composable
 internal fun ChatBubblePickerView(
     state: ChatThemeState,
-    selection: ChatBubbleColor?,
+    picker: ChatThemePage.BubblePicker,
     modifier: Modifier = Modifier,
 ) {
+    val chosen = picker.appliedTo(state.baseTheme)
+    val shownBubble = chosen.outgoingBubble(ElementTheme.isLightTheme)
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -77,7 +79,7 @@ internal fun ChatBubblePickerView(
             Button(
                 text = stringResource(R.string.gua_chat_theme_action_set),
                 onClick = { state.eventSink(ChatThemeEvent.Save) },
-                enabled = state.canSave(state.baseTheme.copy(bubble = selection), isPickerChoice = true),
+                enabled = state.canSave(chosen, isPickerChoice = true),
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
@@ -91,7 +93,7 @@ internal fun ChatBubblePickerView(
                 .consumeWindowInsets(padding)
                 .verticalScroll(rememberScrollState()),
         ) {
-            ChatThemePreviewCard(theme = state.shownTheme(saving = state.baseTheme.copy(bubble = selection)), modifier = Modifier.padding(16.dp))
+            ChatThemePreviewCard(theme = state.shownTheme(saving = chosen), modifier = Modifier.padding(16.dp))
             FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -103,14 +105,14 @@ internal fun ChatBubblePickerView(
                 BUBBLE_SWATCHES.forEach { bubble ->
                     BubbleSwatch(
                         bubble = bubble,
-                        isSelected = bubble == selection,
+                        isSelected = bubble == shownBubble,
                         enabled = state.canChange,
                         onClick = { state.eventSink(ChatThemeEvent.SelectBubble(bubble)) },
                     )
                 }
             }
             Text(
-                text = stringResource(selection?.nameRes ?: R.string.gua_chat_theme_bubble_standard),
+                text = stringResource(shownBubble?.nameRes ?: R.string.gua_chat_theme_bubble_standard),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
@@ -215,7 +217,7 @@ private fun ChatThemePreviewCard(
     theme: ChatTheme,
     modifier: Modifier = Modifier,
 ) {
-    val description = "${stringResource(R.string.gua_chat_background_preview_a11y)}, ${stringResource(theme.nameRes)}"
+    val description = "${stringResource(R.string.gua_chat_background_preview_a11y)}, ${stringResource(theme.nameRes(ElementTheme.isLightTheme))}"
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -225,6 +227,6 @@ private fun ChatThemePreviewCard(
             .clearAndSetSemantics { contentDescription = description },
     ) {
         ChatBackgroundCanvas(background = theme.background, modifier = Modifier.matchParentSize())
-        ChatBackgroundSampleMessages(isOnBackground = theme.background != ChatBackground.None, bubble = theme.bubble)
+        ChatBackgroundSampleMessages(isOnBackground = theme.background != ChatBackground.None, theme = theme)
     }
 }

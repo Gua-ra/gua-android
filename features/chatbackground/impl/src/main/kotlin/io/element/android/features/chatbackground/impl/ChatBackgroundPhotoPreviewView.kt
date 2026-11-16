@@ -51,6 +51,7 @@ import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.theme.Theme
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBubbleColor
+import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.designsystem.chatbackground.LocalChatBackgroundActive
 import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
 import io.element.android.libraries.designsystem.components.button.BackButton
@@ -76,7 +77,7 @@ private const val NUDGE = 100
 @Composable
 internal fun ChatBackgroundPhotoPreviewView(
     draft: ChatBackgroundPhotoDraft,
-    bubble: ChatBubbleColor?,
+    theme: ChatTheme,
     canChange: Boolean,
     eventSink: (ChatThemeEvent) -> Unit,
     modifier: Modifier = Modifier,
@@ -103,7 +104,7 @@ internal fun ChatBackgroundPhotoPreviewView(
             ElementTheme(theme = if (isDarkPreview) Theme.Dark else Theme.Light, applySystemBarsUpdate = false) {
                 PhotoFrame(
                     draft = draft,
-                    bubble = bubble,
+                    theme = theme,
                     bottomInset = controlsHeight,
                     eventSink = eventSink,
                     modifier = Modifier.fillMaxSize(),
@@ -174,7 +175,7 @@ private fun PreviewControls(
 @Composable
 private fun PhotoFrame(
     draft: ChatBackgroundPhotoDraft,
-    bubble: ChatBubbleColor?,
+    theme: ChatTheme,
     bottomInset: Dp,
     eventSink: (ChatThemeEvent) -> Unit,
     modifier: Modifier = Modifier,
@@ -247,7 +248,7 @@ private fun PhotoFrame(
                 )
             } ?: ChatBackgroundBlurHash(draft.upload.blurhash, draft.upload.width, draft.upload.height, draft.alignX, draft.alignY)
             ChatBackgroundScrim(photoDim = draft.dim)
-            ChatBackgroundSampleMessages(isOnBackground = true, bubble = bubble)
+            ChatBackgroundSampleMessages(isOnBackground = true, theme = theme)
             CompositionLocalProvider(LocalChatBackgroundActive provides true) {
                 Text(
                     text = positionHint,
@@ -275,7 +276,7 @@ internal fun ChatBackgroundPhotoPreviewViewPreview(@PreviewParameter(ChatBackgro
     ElementPreview {
         ChatBackgroundPhotoPreviewView(
             draft = draft,
-            bubble = ChatBubbleColor.Blue,
+            theme = ChatTheme(bubble = ChatBubbleColor.Blue),
             canChange = true,
             eventSink = {},
         )

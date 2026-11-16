@@ -84,7 +84,7 @@ class ChatThemePresenter(
                     { target.set(previewed.saved) }
                 }
                 picker != null -> {
-                    val theme = base.copy(bubble = picker.selection)
+                    val theme = picker.appliedTo(base)
                     if (!isChange(theme, current, base, isPickerChoice = true)) {
                         return
                     } else {
@@ -104,8 +104,8 @@ class ChatThemePresenter(
                     val shown = if (target.mode == ChatThemeMode.Chat) targetState.defaultTheme else ChatTheme.STOCK
                     preview = ChatThemePreview(shown = shown, saved = ChatTheme.STOCK)
                 }
-                ChatThemeEvent.OpenBubblePicker -> if (canChange) page = ChatThemePage.BubblePicker(base.bubble)
-                is ChatThemeEvent.SelectBubble -> (page as? ChatThemePage.BubblePicker)?.let { page = it.copy(selection = event.bubble) }
+                ChatThemeEvent.OpenBubblePicker -> if (canChange) page = ChatThemePage.BubblePicker(base.bubble, base.bubbleDark)
+                is ChatThemeEvent.SelectBubble -> if (page is ChatThemePage.BubblePicker) page = ChatThemePage.BubblePicker(selection = event.bubble)
                 ChatThemeEvent.OpenWallpaperPicker -> if (canChange) page = ChatThemePage.WallpaperPicker
                 is ChatThemeEvent.SelectWallpaper -> if (canChange) {
                     val theme = base.copy(background = event.background)

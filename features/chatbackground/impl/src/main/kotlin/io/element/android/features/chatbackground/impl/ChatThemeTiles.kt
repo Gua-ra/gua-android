@@ -44,7 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
-import io.element.android.libraries.chatbackground.api.ChatBubbleColor
+import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.Text
@@ -93,11 +93,14 @@ internal fun ChatThemeTile(
     showsLabel: Boolean = true,
 ) {
     val bubbleDescription = if (showsBubbles) {
-        stringResource(R.string.gua_chat_theme_bubble_a11y, stringResource(theme.bubble?.nameRes ?: R.string.gua_chat_theme_bubble_standard))
+        val bubble = theme.outgoingBubble(ElementTheme.isLightTheme)
+        stringResource(R.string.gua_chat_theme_bubble_a11y, stringResource(bubble?.nameRes ?: R.string.gua_chat_theme_bubble_standard))
     } else {
         null
     }
-    val description = listOfNotNull(label.takeUnless { showsLabel }, bubbleDescription).joinToString(", ")
+    val isLive = (theme.background as? ChatBackground.Art)?.artwork?.isLive == true
+    val liveDescription = if (isLive) stringResource(R.string.gua_chat_theme_live_badge) else null
+    val description = listOfNotNull(label.takeUnless { showsLabel }, liveDescription, bubbleDescription).joinToString(", ")
     Column(
         modifier = modifier
             .width(TILE_WIDTH)
@@ -121,7 +124,10 @@ internal fun ChatThemeTile(
         ) {
             ChatBackgroundCanvas(background = theme.background, modifier = Modifier.fillMaxSize())
             if (showsBubbles) {
-                TileBubbles(bubble = theme.bubble)
+                TileBubbles(theme = theme)
+            }
+            if (isLive) {
+                LiveBadge(modifier = Modifier.align(Alignment.TopStart).padding(6.dp))
             }
             if (isSelected) {
                 SelectedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(6.dp))
@@ -141,7 +147,7 @@ internal fun ChatThemeTile(
 }
 
 @Composable
-private fun TileBubbles(bubble: ChatBubbleColor?) {
+private fun TileBubbles(theme: ChatTheme) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -159,9 +165,22 @@ private fun TileBubbles(bubble: ChatBubbleColor?) {
                 .align(Alignment.End)
                 .fillMaxWidth(0.65f)
                 .height(14.dp)
-                .background(bubble.outgoingBubbleColor(), RoundedCornerShape(7.dp)),
+                .background(theme.outgoingBubbleColor(), RoundedCornerShape(7.dp)),
         )
     }
+}
+
+@Composable
+private fun LiveBadge(modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(R.string.gua_chat_theme_live_badge),
+        modifier = modifier
+            .background(ElementTheme.colors.bgCanvasDefault, CircleShape)
+            .padding(horizontal = 6.dp, vertical = 1.dp),
+        style = ElementTheme.typography.fontBodyXsMedium,
+        color = ElementTheme.colors.textPrimary,
+        maxLines = 1,
+    )
 }
 
 @Composable

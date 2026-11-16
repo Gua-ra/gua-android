@@ -11,6 +11,7 @@ import android.net.Uri
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import io.element.android.libraries.architecture.AsyncAction
+import io.element.android.libraries.chatbackground.api.ChatArtwork
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
 import io.element.android.libraries.chatbackground.api.ChatBubbleColor
@@ -210,6 +211,72 @@ class ChatThemePresenterTest : RobolectricTest() {
             consumeItemsUntilPredicate { it.page == ChatThemePage.Gallery && it.current == auroraGreen.copy(bubble = ChatBubbleColor.Purple) }
         }
         assertThat(service.sentThemes).containsExactly(auroraGreen.copy(bubble = ChatBubbleColor.Purple))
+    }
+
+    @Test
+    fun `an artwork tile saves its bubble pair`() = runTest {
+        val service = FakeChatBackgroundService()
+        val presenter = createChatPresenter(service = service)
+        val glassDrops = ChatArtwork.GlassDrops.theme
+
+        presenter.test {
+            consumeItemsUntilPredicate { it.canChange }.last().eventSink(ChatThemeEvent.SelectTheme(glassDrops))
+            awaitItem().eventSink(ChatThemeEvent.Save)
+            consumeItemsUntilPredicate { it.preview == null && it.current == glassDrops }
+        }
+        assertThat(glassDrops.bubbleDark).isEqualTo(ChatBubbleColor.Pink)
+        assertThat(service.sentThemes).containsExactly(glassDrops)
+    }
+
+    @Test
+    fun `the bubble picker starts on the bubble pair, and a chosen bubble clears the dark one`() = runTest {
+        val service = FakeChatBackgroundService(ChatArtwork.GlassDrops.theme)
+        val presenter = createChatPresenter(service = service)
+
+        presenter.test {
+            consumeItemsUntilPredicate { it.canChange }.last().eventSink(ChatThemeEvent.OpenBubblePicker)
+            val picking = awaitItem()
+            assertThat(picking.page).isEqualTo(ChatThemePage.BubblePicker(selection = ChatBubbleColor.Purple, selectionDark = ChatBubbleColor.Pink))
+            picking.eventSink(ChatThemeEvent.SelectBubble(ChatBubbleColor.Purple))
+            val chosen = awaitItem()
+            assertThat(chosen.page).isEqualTo(ChatThemePage.BubblePicker(selection = ChatBubbleColor.Purple))
+            chosen.eventSink(ChatThemeEvent.Save)
+            consumeItemsUntilPredicate { it.page == ChatThemePage.Gallery && it.current.bubbleDark == null }
+        }
+        assertThat(service.sentThemes).containsExactly(ChatTheme(ChatBackground.Art(ChatArtwork.GlassDrops), ChatBubbleColor.Purple))
+    }
+
+    @Test
+    fun `keeping the bubble pair in the bubble picker sends nothing`() = runTest {
+        val service = FakeChatBackgroundService(ChatArtwork.GlassDrops.theme)
+        val presenter = createChatPresenter(service = service)
+
+        presenter.test {
+            consumeItemsUntilPredicate { it.canChange }.last().eventSink(ChatThemeEvent.OpenBubblePicker)
+            val picking = awaitItem()
+            assertThat(picking.canSave(ChatArtwork.GlassDrops.theme, isPickerChoice = true)).isFalse()
+            picking.eventSink(ChatThemeEvent.Save)
+            expectNoEvents()
+        }
+        assertThat(service.sentThemes).isEmpty()
+    }
+
+    @Test
+    fun `a wallpaper chosen in the picker keeps the bubble pair`() = runTest {
+        val service = FakeChatBackgroundService(ChatArtwork.PalmCoast.theme)
+        val presenter = createChatPresenter(service = service)
+        val azulejo = ChatBackground.Art(ChatArtwork.Azulejo)
+        val expected = ChatTheme(azulejo, ChatBubbleColor.Orange, ChatBubbleColor.Blue)
+
+        presenter.test {
+            consumeItemsUntilPredicate { it.canChange }.last().eventSink(ChatThemeEvent.OpenWallpaperPicker)
+            awaitItem().eventSink(ChatThemeEvent.SelectWallpaper(azulejo))
+            val previewing = awaitItem()
+            assertThat(previewing.preview).isEqualTo(ChatThemePreview(shown = expected, saved = expected))
+            previewing.eventSink(ChatThemeEvent.Save)
+            consumeItemsUntilPredicate { it.preview == null && it.current == expected }
+        }
+        assertThat(service.sentThemes).containsExactly(expected)
     }
 
     @Test

@@ -153,8 +153,8 @@ import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSen
 import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundCanvas
 import io.element.android.libraries.matrix.ui.chatbackground.isShowingBackground
+import io.element.android.libraries.matrix.ui.chatbackground.outgoingBubbleColorOrNull
 import io.element.android.libraries.matrix.ui.chatbackground.rememberChatBackgroundTransition
-import io.element.android.libraries.matrix.ui.chatbackground.toColor
 import io.element.android.libraries.matrix.ui.media.contentvalidation.ContentValidationValue
 import io.element.android.libraries.matrix.ui.media.contentvalidation.LocalEventContentValidationState
 import io.element.android.libraries.textcomposer.model.TextEditorState
@@ -707,7 +707,7 @@ private fun MessagesViewContent(
 
             CompositionLocalProvider(
                 LocalChatBackgroundActive provides (state.chatTheme.background != ChatBackground.None),
-                LocalOutgoingBubbleColor provides state.chatTheme.bubble?.toColor(),
+                LocalOutgoingBubbleColor provides state.chatTheme.outgoingBubbleColorOrNull(),
             ) {
                 TimelineView(
                     state = state.timelineState,

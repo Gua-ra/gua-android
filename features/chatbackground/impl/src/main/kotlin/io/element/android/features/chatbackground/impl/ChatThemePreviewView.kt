@@ -72,7 +72,7 @@ internal fun ChatThemePreviewView(
                     ChatBackgroundCanvas(background = preview.shown.background, modifier = Modifier.fillMaxSize())
                     ChatBackgroundSampleMessages(
                         isOnBackground = preview.shown.background != ChatBackground.None,
-                        bubble = preview.shown.bubble,
+                        theme = preview.shown,
                         modifier = Modifier.align(Alignment.TopCenter),
                     )
                 }
