@@ -44,7 +44,9 @@ import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
+import com.google.common.truth.Truth.assertThat
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.theme.Theme
 import io.element.android.libraries.architecture.AsyncAction
@@ -56,6 +58,7 @@ import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperCues
 import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperCuesKey
 import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperSession
+import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperVisibleAreaKey
 import io.element.android.libraries.matrix.ui.chatbackground.aChatBackgroundPhoto
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureNeverCalled
@@ -462,6 +465,23 @@ class ChatThemeViewTest : RobolectricTest() {
         wallpaper.assert(SemanticsMatcher.expectValue(LiveWallpaperCuesKey, LiveWallpaperCues(sendCount = 2)))
         clickOn(R.string.gua_chat_theme_action_set_theme)
         eventsRecorder.assertSingle(ChatThemeEvent.Save)
+    }
+
+    @Test
+    fun `the preview of a live artwork starts its send pulse above its controls`() = runAndroidComposeUiTest<ComponentActivity> {
+        val glassDrops = ChatArtwork.GlassDrops.theme
+        setChatThemeView(aChatThemeState(preview = ChatThemePreview(glassDrops, glassDrops), eventSink = EventsRecorder(expectEvents = false)))
+        val wallpaper = onNode(SemanticsMatcher.keyIsDefined(LiveWallpaperVisibleAreaKey)).fetchSemanticsNode()
+        val area = wallpaper.config[LiveWallpaperVisibleAreaKey]
+        val lightToggle = onNodeWithText(activity!!.getString(R.string.gua_chat_background_preview_light)).fetchSemanticsNode().boundsInRoot
+        val cancel = onNodeWithText(activity!!.getString(CommonStrings.action_cancel)).fetchSemanticsNode().boundsInRoot
+        runOnIdle {
+            assertThat(area.top).isNull()
+            assertThat(area.bottom).isLessThan(wallpaper.boundsInRoot.bottom)
+            assertThat(area.bottom).isAtMost(lightToggle.top)
+            assertThat(lightToggle.top - area.bottom!!).isLessThan(with(density) { 16.dp.toPx() })
+            assertThat(cancel.bottom).isAtMost(wallpaper.boundsInRoot.bottom)
+        }
     }
 
     @Test

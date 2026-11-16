@@ -50,13 +50,15 @@ private val GRAIN_STYLE = wallpaperGrainStyle()
  * An artwork's still image, decoded by Coil off the main thread at the frame's size and cropped around its anchor.
  * Its fallback preset shows until the first image has loaded, and if it never does; a new size or appearance keeps the previous image until
  * its own has loaded.
- * With [live] cues a live artwork animates over its still on Android 13 and up; previews and UI tests always show the still.
+ * With [live] cues a live artwork animates over its still on Android 13 and up, with its send pulse in [visibleArea]; previews and UI tests
+ * always show the still.
  */
 @Composable
 internal fun ArtBackground(
     artwork: ChatArtwork,
     modifier: Modifier = Modifier,
     live: LiveWallpaperCues? = null,
+    visibleArea: LiveWallpaperVisibleArea? = null,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize().wallpaperGrain(rememberWallpaperGrain())) {
         val density = LocalDensity.current
@@ -72,7 +74,7 @@ internal fun ArtBackground(
         }
         val canAnimate = live != null && artwork.isLive && !isInspected && !LocalUiTestMode.current
         if (canAnimate && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            LiveArt(artwork = artwork, cues = live, still = still)
+            LiveArt(artwork = artwork, cues = live, visibleArea = visibleArea, still = still)
         } else {
             still()
         }

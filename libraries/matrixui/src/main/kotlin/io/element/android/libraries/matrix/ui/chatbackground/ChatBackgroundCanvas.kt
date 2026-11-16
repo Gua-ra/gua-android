@@ -76,13 +76,17 @@ fun rememberChatBackgroundTransition(background: ChatBackground): Transition<Cha
 val Transition<ChatBackground>.isShowingBackground: Boolean
     get() = currentState != ChatBackground.None || targetState != ChatBackground.None
 
-/** With [live] cues a live artwork animates; without them, as on tiles and pickers, it shows its still. */
+/**
+ * With [live] cues a live artwork animates; without them, as on tiles and pickers, it shows its still. Its send pulse starts in
+ * [visibleArea], the part of the screen where the chat shows.
+ */
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ChatBackgroundCanvas(
     transition: Transition<ChatBackground>,
     modifier: Modifier = Modifier,
     live: LiveWallpaperCues? = null,
+    visibleArea: LiveWallpaperVisibleArea? = null,
 ) {
     val context = LocalContext.current
     val animationsEnabled = remember(context) { context.areAnimationsEnabled() }
@@ -91,6 +95,7 @@ fun ChatBackgroundCanvas(
             .fillMaxSize()
             .clearAndSetSemantics {
                 if (live != null) liveWallpaperCues = live
+                if (visibleArea != null) liveWallpaperVisibleArea = visibleArea
             },
         animationSpec = if (animationsEnabled) tween(CROSSFADE_DURATION_MS) else snap(),
     ) { background ->
@@ -103,7 +108,7 @@ fun ChatBackgroundCanvas(
                     Box(Modifier.fillMaxSize().drawChatBackgroundFill(fill).wallpaperGrain(grain))
                     ChatBackgroundScrim(photoDim = null)
                 }
-                is ChatBackground.Art -> ArtBackground(background.artwork, live = live)
+                is ChatBackground.Art -> ArtBackground(background.artwork, live = live, visibleArea = visibleArea)
                 is ChatBackground.Photo -> PhotoBackground(background)
             }
         }
@@ -115,8 +120,9 @@ fun ChatBackgroundCanvas(
     background: ChatBackground,
     modifier: Modifier = Modifier,
     live: LiveWallpaperCues? = null,
+    visibleArea: LiveWallpaperVisibleArea? = null,
 ) {
-    ChatBackgroundCanvas(transition = rememberChatBackgroundTransition(background), modifier = modifier, live = live)
+    ChatBackgroundCanvas(transition = rememberChatBackgroundTransition(background), modifier = modifier, live = live, visibleArea = visibleArea)
 }
 
 fun Modifier.drawChatBackgroundFill(fill: ChatBackgroundFill): Modifier = drawBehind { drawFill(fill) }

@@ -13,11 +13,14 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.withInfiniteAnimationFrameNanos
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -33,8 +36,12 @@ import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.findRootCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.InfiniteAnimationPolicy
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.chatbackground.api.ChatArtwork
 import io.element.android.libraries.chatbackground.api.UnitPoint
@@ -51,7 +58,7 @@ import kotlin.math.max
 internal const val LIVE_STILL_WIDTH = 1290f
 internal const val LIVE_STILL_HEIGHT = 2796f
 
-/** The shaders' default send-pulse spot, as shares of the width and the height from the bottom-left corner. */
+/** The shaders' default send-pulse spot, as shares of the width and the height from the bottom-left corner of the area it is taken on. */
 private const val PULSE_SPOT_X = 0.83f
 private const val PULSE_SPOT_Y = 0.113f
 
@@ -68,12 +75,14 @@ internal val LIVE_WALLPAPER_UNIFORMS = mapOf(
 /**
  * A live artwork over its [still]. The still shows until the shader has drawn its first frame, and whenever [rememberWallpaperMotion]
  * asks for it. Under a test harness that stops infinite animations the shader is never created, so tests always see the still.
+ * Its send pulse starts in the screen's [visibleArea].
  */
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun LiveArt(
     artwork: ChatArtwork,
     cues: LiveWallpaperCues,
+    visibleArea: LiveWallpaperVisibleArea?,
     still: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
@@ -89,7 +98,7 @@ internal fun LiveArt(
     if (readyShader == null) {
         still()
     } else {
-        RunningLiveArt(shader = readyShader, artwork = artwork, isCovered = cues.isCovered, sends = sends, still = still)
+        RunningLiveArt(shader = readyShader, artwork = artwork, isCovered = cues.isCovered, sends = sends, visibleArea = visibleArea, still = still)
     }
 }
 
@@ -105,6 +114,7 @@ private fun RunningLiveArt(
     artwork: ChatArtwork,
     isCovered: Boolean,
     sends: LiveWallpaperSendPulse,
+    visibleArea: LiveWallpaperVisibleArea?,
     still: @Composable () -> Unit,
 ) {
     val motion = rememberWallpaperMotion(isCovered = isCovered)
@@ -121,6 +131,7 @@ private fun RunningLiveArt(
                 anchor = artwork.anchor,
                 animates = motion == WallpaperMotion.Animating,
                 sends = sends,
+                visibleArea = visibleArea,
                 onDraw = { hasDrawn = true },
             )
         }
@@ -135,6 +146,7 @@ private fun LiveArtLayer(
     anchor: UnitPoint,
     animates: Boolean,
     sends: LiveWallpaperSendPulse,
+    visibleArea: LiveWallpaperVisibleArea?,
     onDraw: () -> Unit,
 ) {
     // A new clock each time the shader replaces the still, so its first frame is the still again.
@@ -161,9 +173,16 @@ private fun LiveArtLayer(
             }
         }
     }
+    val systemBottomInset = WindowInsets.systemBars.getBottom(LocalDensity.current).toFloat()
+    var canvasTop by remember { mutableFloatStateOf(0f) }
+    var spaceBelowCanvas by remember { mutableFloatStateOf(0f) }
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .onGloballyPositioned { coordinates ->
+                canvasTop = coordinates.positionInRoot().y
+                spaceBelowCanvas = coordinates.findRootCoordinates().size.height - canvasTop - coordinates.size.height
+            }
             // An offscreen layer keeps the rendered frame, so the shader runs once per wallpaper frame rather than each time the
             // window redraws over it, such as while the timeline scrolls.
             .graphicsLayer {
@@ -171,16 +190,29 @@ private fun LiveArtLayer(
                 compositingStrategy = CompositingStrategy.Offscreen
             }
             .drawBehind {
-                drawLiveWallpaper(shader, anchor = anchor, time = clock.time, pulse = clock.pulse, isDark = isDark)
+                // The frame depends on the canvas alone, so the composer and the keyboard only ever move the pulse's spot.
+                val frame = liveWallpaperFrame(size, anchor)
+                val chat = liveWallpaperCanvasArea(
+                    canvasRootTop = canvasTop,
+                    area = visibleArea,
+                    systemBottomInset = systemBottomInset,
+                    spaceBelowCanvas = spaceBelowCanvas,
+                )
+                val origin = liveWallpaperPulseOrigin(
+                    canvasSize = size,
+                    frame = frame,
+                    visibleTop = chat.top,
+                    visibleBottom = chat.bottom,
+                    bottomInset = chat.bottomInset,
+                )
+                drawLiveWallpaper(shader, frame = frame, origin = origin, time = clock.time, pulse = clock.pulse, isDark = isDark)
                 onDraw()
             }
     )
 }
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-private fun DrawScope.drawLiveWallpaper(shader: LiveWallpaperShader, anchor: UnitPoint, time: Float, pulse: Float, isDark: Boolean) {
-    val frame = liveWallpaperFrame(size, anchor)
-    val origin = liveWallpaperPulseOrigin(size, frame)
+private fun DrawScope.drawLiveWallpaper(shader: LiveWallpaperShader, frame: Rect, origin: Offset, time: Float, pulse: Float, isDark: Boolean) {
     with(shader.runtimeShader) {
         // The brush covers the whole frame, and fragCoord is relative to its top left, so u_res is the frame's size.
         setFloatUniform("u_res", frame.width, frame.height)
@@ -206,13 +238,24 @@ internal fun liveWallpaperFrame(viewSize: Size, anchor: UnitPoint): Rect {
 }
 
 /**
- * The shader's `u_origin` when the visible chat area, of [viewSize], shows [frame]: the shaders' default send-pulse spot taken on the
- * visible area rather than on the frame, which reaches past it, in the frame's pixels with y measured from its bottom.
+ * The shader's `u_origin` for a canvas of [canvasSize] drawing [frame]: the shaders' default send-pulse spot taken on the visible chat area
+ * rather than on the frame, which reaches past it, in the frame's pixels with y measured from its bottom.
+ * The visible area spans the canvas's width, from [visibleTop] (else the canvas's top) down to [visibleBottom], in the canvas's pixels
+ * measured from its top. Without a [visibleBottom], such as when no composer shows, it ends [bottomInset] above the canvas's bottom.
  */
-internal fun liveWallpaperPulseOrigin(viewSize: Size, frame: Rect): Offset {
+internal fun liveWallpaperPulseOrigin(
+    canvasSize: Size,
+    frame: Rect,
+    visibleTop: Float?,
+    visibleBottom: Float?,
+    bottomInset: Float,
+): Offset {
+    // The chat only shows where the canvas does, so an area reported past it, such as one that starts under the top bar, is cut to it.
+    val top = (visibleTop ?: 0f).coerceIn(0f, canvasSize.height)
+    val bottom = (visibleBottom ?: canvasSize.height - bottomInset).coerceIn(top, canvasSize.height)
     return Offset(
-        x = viewSize.width * PULSE_SPOT_X - frame.left,
-        y = frame.bottom - viewSize.height * (1 - PULSE_SPOT_Y),
+        x = canvasSize.width * PULSE_SPOT_X - frame.left,
+        y = frame.bottom - (bottom - (bottom - top) * PULSE_SPOT_Y),
     )
 }
 

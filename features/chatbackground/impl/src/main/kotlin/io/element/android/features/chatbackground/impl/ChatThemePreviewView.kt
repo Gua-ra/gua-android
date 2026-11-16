@@ -41,7 +41,9 @@ import io.element.android.libraries.designsystem.theme.components.TextButton
 import io.element.android.libraries.designsystem.theme.components.TopAppBar
 import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundCanvas
 import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperCues
+import io.element.android.libraries.matrix.ui.chatbackground.liveWallpaperChatAreaEnd
 import io.element.android.libraries.matrix.ui.chatbackground.rememberLiveWallpaperCanAnimate
+import io.element.android.libraries.matrix.ui.chatbackground.rememberLiveWallpaperVisibleArea
 import io.element.android.libraries.ui.strings.CommonStrings
 
 @Composable
@@ -53,6 +55,7 @@ internal fun ChatThemePreviewView(
     modifier: Modifier = Modifier,
 ) {
     val isDarkPreview = preview.isDarkPreview ?: !ElementTheme.isLightTheme
+    val chatArea = rememberLiveWallpaperVisibleArea()
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -67,6 +70,7 @@ internal fun ChatThemePreviewView(
                 saveLabel = saveLabel,
                 canChange = canChange,
                 eventSink = eventSink,
+                modifier = Modifier.liveWallpaperChatAreaEnd(chatArea),
             )
         },
     ) { padding ->
@@ -104,6 +108,7 @@ internal fun ChatThemePreviewView(
                         background = preview.shown.background,
                         modifier = Modifier.fillMaxSize(),
                         live = LiveWallpaperCues(sendCount = previewSends),
+                        visibleArea = chatArea,
                     )
                     ChatBackgroundSampleMessages(
                         isOnBackground = preview.shown.background != ChatBackground.None,

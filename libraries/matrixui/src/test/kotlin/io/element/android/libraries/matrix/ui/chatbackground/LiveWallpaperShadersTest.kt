@@ -9,7 +9,6 @@ package io.element.android.libraries.matrix.ui.chatbackground
 
 import android.content.Context
 import android.graphics.BitmapFactory
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.IntSize
@@ -76,38 +75,6 @@ class LiveWallpaperShadersTest : RobolectricTest() {
             assertWithMessage(artwork.id).that(frame.left).isWithin(1f).of(stillOffset.x.toFloat())
             assertWithMessage(artwork.id).that(frame.top).isWithin(1f).of(stillOffset.y.toFloat())
         }
-    }
-
-    @Test
-    fun `the send pulse starts at the spot of the visible chat area, in the frame's pixels from its bottom left`() {
-        // The same shape as the still: the shaders' own default spot.
-        assertOrigin(Size(645f, 1398f), UnitPoint(0.5f, 0f), Offset(535.35f, 157.974f))
-        // Narrower than the still: the frame reaches past both sides.
-        assertOrigin(Size(1000f, 2796f), UnitPoint(0.5f, 0.5f), Offset(975f, 315.948f))
-        assertOrigin(Size(1000f, 2796f), UnitPoint(1f, 0f), Offset(1120f, 315.948f))
-        // Wider than the still: the frame reaches past the top and the bottom.
-        assertOrigin(Size(645f, 1000f), UnitPoint(0.5f, 0.08f), Offset(535.35f, 479.16f))
-    }
-
-    @Test
-    fun `the send pulse spot is on the visible chat area for every live artwork`() {
-        val view = Size(1080f, 2050f)
-        ChatArtwork.entries.filter { it.isLive }.forEach { artwork ->
-            val frame = liveWallpaperFrame(view, artwork.anchor)
-            val origin = liveWallpaperPulseOrigin(view, frame)
-            assertWithMessage(artwork.id).that(origin.x).isAtLeast(0f)
-            assertWithMessage(artwork.id).that(origin.x).isAtMost(frame.width)
-            assertWithMessage(artwork.id).that(origin.y).isAtLeast(0f)
-            assertWithMessage(artwork.id).that(origin.y).isAtMost(frame.height)
-            assertWithMessage(artwork.id).that(frame.left + origin.x).isWithin(0.01f).of(view.width * 0.83f)
-            assertWithMessage(artwork.id).that(frame.bottom - origin.y).isWithin(0.01f).of(view.height - view.height * 0.113f)
-        }
-    }
-
-    private fun assertOrigin(viewSize: Size, anchor: UnitPoint, expected: Offset) {
-        val origin = liveWallpaperPulseOrigin(viewSize, liveWallpaperFrame(viewSize, anchor))
-        assertWithMessage("$viewSize $anchor").that(origin.x).isWithin(0.01f).of(expected.x)
-        assertWithMessage("$viewSize $anchor").that(origin.y).isWithin(0.01f).of(expected.y)
     }
 
     private fun assertFrame(actual: Rect, expected: Rect) {
