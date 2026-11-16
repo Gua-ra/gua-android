@@ -63,6 +63,7 @@ fun TimelineItemGroupedEventsRow(
         { event, contentModifier, onContentLayoutChange ->
             TimelineItemEventContentView(
                 eventId = event.eventId,
+                isMine = event.isMine,
                 content = event.content,
                 timelineProtectionState = timelineProtectionState,
                 onLinkClick = onLinkClick,
@@ -135,6 +136,7 @@ private fun TimelineItemGroupedEventsRowContent(
         { event, contentModifier, onContentLayoutChange ->
             TimelineItemEventContentView(
                 eventId = event.eventId,
+                isMine = event.isMine,
                 content = event.content,
                 timelineProtectionState = timelineProtectionState,
                 onLinkClick = onLinkClick,

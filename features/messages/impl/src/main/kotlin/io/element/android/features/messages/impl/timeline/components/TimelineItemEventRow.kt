@@ -196,6 +196,7 @@ fun TimelineItemEventRow(
 
         TimelineItemEventContentView(
             eventId = event.eventId,
+            isMine = event.isMine,
             content = event.content,
             timelineProtectionState = timelineProtectionState,
             onContentClick = onContentClick,
