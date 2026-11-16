@@ -9,6 +9,7 @@ package io.element.android.libraries.matrix.ui.chatbackground
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageShader
 import androidx.compose.ui.graphics.ShaderBrush
@@ -30,7 +30,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
+import coil3.annotation.ExperimentalCoilApi
 import coil3.compose.AsyncImage
+import coil3.compose.useExistingImageAsPlaceholder
 import coil3.request.ImageRequest
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.chatbackground.api.ChatArtwork
@@ -40,48 +42,97 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import kotlin.math.roundToInt
 
-// Overlay keeps the mean colour, so the grain only dithers: at this opacity a mid-tone moves by about 1 to 2 levels.
-private const val GRAIN_ALPHA = 0.04f
+private val GRAIN_STYLE = wallpaperGrainStyle()
 
 /**
  * An artwork's still image, decoded by Coil off the main thread at the frame's size and cropped around its anchor.
- * Its fallback preset shows until the image has loaded, and if it never does.
+ * Its fallback preset shows until the first image has loaded, and if it never does; a new size or appearance keeps the previous image until
+ * its own has loaded.
  */
 @Composable
 internal fun ArtBackground(
     artwork: ChatArtwork,
     modifier: Modifier = Modifier,
 ) {
-    val isLight = ElementTheme.isLightTheme
-    val file = artwork.file(isLight)
-    var isLoaded by remember(file) { mutableStateOf(false) }
     BoxWithConstraints(modifier = modifier.fillMaxSize().wallpaperGrain(rememberWallpaperGrain())) {
         val density = LocalDensity.current
         val widthPx = with(density) { maxWidth.toPx() }.roundToInt().coerceIn(1, MAX_DECODED_EDGE_PX)
         val heightPx = with(density) { maxHeight.toPx() }.roundToInt().coerceIn(1, MAX_DECODED_EDGE_PX)
-        if (!isLoaded) {
-            Box(Modifier.fillMaxSize().drawChatBackgroundFill(artwork.fallbackPreset.fill(isLight)))
+        if (LocalInspectionMode.current) {
+            InspectedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
+        } else {
+            LoadedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
         }
-        val context = LocalContext.current
-        val request = remember(file, widthPx, heightPx) {
-            ImageRequest.Builder(context)
-                .data(wallpaperAssetUri(file))
-                .size(widthPx, heightPx)
-                .build()
-        }
-        AsyncImage(
-            model = request,
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-            alignment = chatBackgroundAlignment(artwork.anchor),
-            onSuccess = { isLoaded = true },
-        )
         ChatBackgroundScrim(photoDim = null)
     }
 }
 
-private fun wallpaperAssetUri(file: String) = "file:///android_asset/${ChatArtwork.ASSETS_FOLDER}/$file"
+@Composable
+private fun LoadedArtStill(artwork: ChatArtwork, widthPx: Int, heightPx: Int) {
+    val isLight = ElementTheme.isLightTheme
+    val file = artwork.file(isLight)
+    var isLoaded by remember(file) { mutableStateOf(false) }
+    val context = LocalContext.current
+    val request = remember(file, widthPx, heightPx) { wallpaperStillRequest(context, file, widthPx, heightPx) }
+    AsyncImage(
+        model = request,
+        contentDescription = null,
+        modifier = Modifier
+            .fillMaxSize()
+            .then(if (isLoaded) Modifier else Modifier.drawChatBackgroundFill(artwork.fallbackPreset.fill(isLight))),
+        contentScale = ContentScale.Crop,
+        alignment = chatBackgroundAlignment(artwork.anchor),
+        onSuccess = { isLoaded = true },
+    )
+}
+
+/** In a preview Coil answers every request with the preview handler's sample image, so the still is decoded in place. */
+@Composable
+private fun InspectedArtStill(artwork: ChatArtwork, widthPx: Int, heightPx: Int) {
+    val isLight = ElementTheme.isLightTheme
+    val file = artwork.file(isLight)
+    val context = LocalContext.current
+    val still = remember(context, file, widthPx, heightPx) { decodeWallpaperStill(context, file, widthPx, heightPx) }
+    if (still == null) {
+        Box(Modifier.fillMaxSize().drawChatBackgroundFill(artwork.fallbackPreset.fill(isLight)))
+    } else {
+        Image(
+            bitmap = still,
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            alignment = chatBackgroundAlignment(artwork.anchor),
+        )
+    }
+}
+
+@OptIn(ExperimentalCoilApi::class)
+internal fun wallpaperStillRequest(context: Context, file: String, widthPx: Int, heightPx: Int): ImageRequest = ImageRequest.Builder(context)
+    .data("file:///android_asset/${wallpaperAssetPath(file)}")
+    .size(widthPx, heightPx)
+    .useExistingImageAsPlaceholder(true)
+    .build()
+
+/** Decodes the still on the calling thread, downsampled while it still covers the frame; null if it cannot be read. */
+internal fun decodeWallpaperStill(context: Context, file: String, widthPx: Int, heightPx: Int): ImageBitmap? = runCatchingExceptions {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    context.assets.open(wallpaperAssetPath(file)).use { BitmapFactory.decodeStream(it, null, bounds) }
+    val options = BitmapFactory.Options().apply { inSampleSize = wallpaperSampleSize(bounds.outWidth, bounds.outHeight, widthPx, heightPx) }
+    context.assets.open(wallpaperAssetPath(file)).use { BitmapFactory.decodeStream(it, null, options) }?.asImageBitmap()
+}
+    .onFailure { Timber.w(it, "Could not load the wallpaper %s", file) }
+    .getOrNull()
+
+/** The largest power of two that the image can be divided by and still cover a frame of [frameWidth] x [frameHeight]. */
+internal fun wallpaperSampleSize(imageWidth: Int, imageHeight: Int, frameWidth: Int, frameHeight: Int): Int {
+    var sampleSize = 1
+    while (imageWidth / (sampleSize * 2) >= frameWidth && imageHeight / (sampleSize * 2) >= frameHeight) {
+        sampleSize *= 2
+    }
+    return sampleSize
+}
+
+private fun wallpaperAssetPath(file: String) = "${ChatArtwork.ASSETS_FOLDER}/$file"
 
 /** The shared grain tile, or null until it has loaded off the main thread. */
 @Composable
@@ -104,7 +155,7 @@ internal fun Modifier.wallpaperGrain(grain: ImageBitmap?): Modifier {
         val brush = ShaderBrush(ImageShader(grain, TileMode.Repeated, TileMode.Repeated))
         onDrawWithContent {
             drawContent()
-            drawRect(brush = brush, alpha = GRAIN_ALPHA, blendMode = BlendMode.Overlay)
+            drawRect(brush = brush, alpha = GRAIN_STYLE.alpha, blendMode = GRAIN_STYLE.blendMode)
         }
     }
 }
@@ -115,7 +166,7 @@ private object WallpaperNoise {
         private set
 
     fun decode(context: Context): ImageBitmap? = runCatchingExceptions {
-        context.assets.open("${ChatArtwork.ASSETS_FOLDER}/${ChatArtwork.NOISE_FILE}").use { BitmapFactory.decodeStream(it) }?.asImageBitmap()
+        context.assets.open(wallpaperAssetPath(ChatArtwork.NOISE_FILE)).use { BitmapFactory.decodeStream(it) }?.asImageBitmap()
     }
         .onFailure { Timber.w(it, "Could not load the wallpaper grain") }
         .getOrNull()

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -103,11 +104,13 @@ internal fun ChatBubblePickerView(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 BUBBLE_SWATCHES.forEach { bubble ->
+                    val isSelected = bubble == shownBubble
                     BubbleSwatch(
                         bubble = bubble,
-                        isSelected = bubble == shownBubble,
+                        isSelected = isSelected,
                         enabled = state.canChange,
-                        onClick = { state.eventSink(ChatThemeEvent.SelectBubble(bubble)) },
+                        // Choosing the checked swatch would drop the other half of a pair the user cannot see.
+                        onClick = { if (!isSelected) state.eventSink(ChatThemeEvent.SelectBubble(bubble)) },
                     )
                 }
             }
@@ -196,7 +199,7 @@ internal fun ChatWallpaperPickerView(
             ChatThemeSection.wallpaperSections.forEach { section ->
                 ChatThemeSectionTitle(section.titleRes)
                 ChatThemeTileRow {
-                    section.themes.map { it.background }.forEach { background ->
+                    items(section.themes.map { it.background }) { background ->
                         ChatThemeTile(
                             theme = ChatTheme(background),
                             label = stringResource(background.nameRes),

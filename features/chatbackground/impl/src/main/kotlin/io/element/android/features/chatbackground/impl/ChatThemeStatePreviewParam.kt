@@ -66,6 +66,7 @@ class ChatThemeStatePreviewParam : PreviewParameterProvider<ChatThemeState> {
                 page = ChatThemePage.BubblePicker(selection = ChatBubbleColor.Pink, selectionDark = ChatBubbleColor.Yellow),
             ),
             aChatThemeState(current = ChatArtwork.Azulejo.theme, page = ChatThemePage.WallpaperPicker),
+            aChatThemeState(current = ChatArtwork.GlassDrops.theme, page = ChatThemePage.WallpaperPicker),
         )
 }
 

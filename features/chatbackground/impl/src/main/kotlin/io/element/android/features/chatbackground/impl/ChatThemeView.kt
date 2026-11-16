@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -166,21 +167,23 @@ private fun ChatThemeGalleryView(
                 ChatThemeSectionTitle(section.titleRes)
                 ChatThemeTileRow {
                     if (section == ChatThemeSection.Featured) {
-                        ChatThemeTile(
-                            theme = state.defaultTile,
-                            label = stringResource(
-                                when (state.mode) {
-                                    ChatThemeMode.Chat -> ChatBackgroundR.string.gua_chat_background_value_default
-                                    ChatThemeMode.Default -> R.string.gua_chat_theme_classic
-                                }
-                            ),
-                            isSelected = state.current == ChatTheme.STOCK,
-                            enabled = state.canChange,
-                            showsBubbles = true,
-                            onClick = { state.eventSink(ChatThemeEvent.SelectDefault) },
-                        )
+                        item {
+                            ChatThemeTile(
+                                theme = state.defaultTile,
+                                label = stringResource(
+                                    when (state.mode) {
+                                        ChatThemeMode.Chat -> ChatBackgroundR.string.gua_chat_background_value_default
+                                        ChatThemeMode.Default -> R.string.gua_chat_theme_classic
+                                    }
+                                ),
+                                isSelected = state.current == ChatTheme.STOCK,
+                                enabled = state.canChange,
+                                showsBubbles = true,
+                                onClick = { state.eventSink(ChatThemeEvent.SelectDefault) },
+                            )
+                        }
                     }
-                    section.themes.forEach { theme ->
+                    items(section.themes) { theme ->
                         ChatThemeTile(
                             theme = theme,
                             label = stringResource(theme.nameRes(ElementTheme.isLightTheme)),
