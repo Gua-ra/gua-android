@@ -76,18 +76,22 @@ fun rememberChatBackgroundTransition(background: ChatBackground): Transition<Cha
 val Transition<ChatBackground>.isShowingBackground: Boolean
     get() = currentState != ChatBackground.None || targetState != ChatBackground.None
 
+/** With [live] cues a live artwork animates; without them, as on tiles and pickers, it shows its still. */
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ChatBackgroundCanvas(
     transition: Transition<ChatBackground>,
     modifier: Modifier = Modifier,
+    live: LiveWallpaperCues? = null,
 ) {
     val context = LocalContext.current
     val animationsEnabled = remember(context) { context.areAnimationsEnabled() }
     transition.Crossfade(
         modifier = modifier
             .fillMaxSize()
-            .clearAndSetSemantics {},
+            .clearAndSetSemantics {
+                if (live != null) liveWallpaperCues = live
+            },
         animationSpec = if (animationsEnabled) tween(CROSSFADE_DURATION_MS) else snap(),
     ) { background ->
         Box(modifier = Modifier.fillMaxSize()) {
@@ -99,7 +103,7 @@ fun ChatBackgroundCanvas(
                     Box(Modifier.fillMaxSize().drawChatBackgroundFill(fill).wallpaperGrain(grain))
                     ChatBackgroundScrim(photoDim = null)
                 }
-                is ChatBackground.Art -> ArtBackground(background.artwork)
+                is ChatBackground.Art -> ArtBackground(background.artwork, live = live)
                 is ChatBackground.Photo -> PhotoBackground(background)
             }
         }
@@ -110,8 +114,9 @@ fun ChatBackgroundCanvas(
 fun ChatBackgroundCanvas(
     background: ChatBackground,
     modifier: Modifier = Modifier,
+    live: LiveWallpaperCues? = null,
 ) {
-    ChatBackgroundCanvas(transition = rememberChatBackgroundTransition(background), modifier = modifier)
+    ChatBackgroundCanvas(transition = rememberChatBackgroundTransition(background), modifier = modifier, live = live)
 }
 
 fun Modifier.drawChatBackgroundFill(fill: ChatBackgroundFill): Modifier = drawBehind { drawFill(fill) }

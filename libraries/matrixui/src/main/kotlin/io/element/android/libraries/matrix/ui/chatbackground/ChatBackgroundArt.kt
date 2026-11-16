@@ -9,6 +9,7 @@ package io.element.android.libraries.matrix.ui.chatbackground
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -37,6 +38,7 @@ import coil3.request.ImageRequest
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.chatbackground.api.ChatArtwork
 import io.element.android.libraries.core.extensions.runCatchingExceptions
+import io.element.android.libraries.designsystem.utils.LocalUiTestMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -48,20 +50,31 @@ private val GRAIN_STYLE = wallpaperGrainStyle()
  * An artwork's still image, decoded by Coil off the main thread at the frame's size and cropped around its anchor.
  * Its fallback preset shows until the first image has loaded, and if it never does; a new size or appearance keeps the previous image until
  * its own has loaded.
+ * With [live] cues a live artwork animates over its still on Android 13 and up; previews and UI tests always show the still.
  */
 @Composable
 internal fun ArtBackground(
     artwork: ChatArtwork,
     modifier: Modifier = Modifier,
+    live: LiveWallpaperCues? = null,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize().wallpaperGrain(rememberWallpaperGrain())) {
         val density = LocalDensity.current
         val widthPx = with(density) { maxWidth.toPx() }.roundToInt().coerceIn(1, MAX_DECODED_EDGE_PX)
         val heightPx = with(density) { maxHeight.toPx() }.roundToInt().coerceIn(1, MAX_DECODED_EDGE_PX)
-        if (LocalInspectionMode.current) {
-            InspectedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
+        val isInspected = LocalInspectionMode.current
+        val still = @Composable {
+            if (isInspected) {
+                InspectedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
+            } else {
+                LoadedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
+            }
+        }
+        val canAnimate = live != null && artwork.isLive && !isInspected && !LocalUiTestMode.current
+        if (canAnimate && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            LiveArt(artwork = artwork, cues = live, still = still)
         } else {
-            LoadedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
+            still()
         }
         ChatBackgroundScrim(photoDim = null)
     }
