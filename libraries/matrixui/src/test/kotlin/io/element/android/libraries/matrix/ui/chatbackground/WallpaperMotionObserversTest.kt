@@ -19,6 +19,7 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
+import io.element.android.libraries.chatbackground.api.ChatArtwork
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.After
 import org.junit.Test
@@ -33,6 +34,7 @@ class WallpaperMotionObserversTest : RobolectricTest() {
         setAnimatorDurationScale(1f)
         shadowOf(powerManager).setIsPowerSaveMode(false)
         shadowOf(powerManager).setCurrentThermalStatus(PowerManager.THERMAL_STATUS_NONE)
+        LiveWallpaperSession.reset()
     }
 
     @Test
@@ -64,7 +66,7 @@ class WallpaperMotionObserversTest : RobolectricTest() {
         var canAnimate: Boolean? = null
         setContent {
             motion = rememberWallpaperMotion(isCovered = false)
-            canAnimate = rememberLiveWallpaperCanAnimate()
+            canAnimate = rememberLiveWallpaperCanAnimate(ChatArtwork.GlassDrops)
         }
         runOnIdle { assertThat(canAnimate).isTrue() }
         shadowOf(powerManager).setCurrentThermalStatus(PowerManager.THERMAL_STATUS_MODERATE)
@@ -78,7 +80,7 @@ class WallpaperMotionObserversTest : RobolectricTest() {
     fun `battery saver shows the still`() = runAndroidComposeUiTest<ComponentActivity> {
         shadowOf(powerManager).setIsPowerSaveMode(true)
         var canAnimate: Boolean? = null
-        setContent { canAnimate = rememberLiveWallpaperCanAnimate() }
+        setContent { canAnimate = rememberLiveWallpaperCanAnimate(ChatArtwork.GlassDrops) }
         runOnIdle { assertThat(canAnimate).isFalse() }
     }
 
@@ -86,7 +88,7 @@ class WallpaperMotionObserversTest : RobolectricTest() {
     fun `remove animations shows the still`() = runAndroidComposeUiTest<ComponentActivity> {
         setAnimatorDurationScale(0f)
         var canAnimate: Boolean? = null
-        setContent { canAnimate = rememberLiveWallpaperCanAnimate() }
+        setContent { canAnimate = rememberLiveWallpaperCanAnimate(ChatArtwork.GlassDrops) }
         runOnIdle { assertThat(canAnimate).isFalse() }
     }
 
@@ -96,11 +98,34 @@ class WallpaperMotionObserversTest : RobolectricTest() {
         var canAnimate: Boolean? = null
         setContent {
             motion = rememberWallpaperMotion(isCovered = true)
-            canAnimate = rememberLiveWallpaperCanAnimate()
+            canAnimate = rememberLiveWallpaperCanAnimate(ChatArtwork.GlassDrops)
         }
         runOnIdle {
             assertThat(motion).isEqualTo(WallpaperMotion.Paused)
             assertThat(canAnimate).isTrue()
+        }
+    }
+
+    @Test
+    fun `an artwork whose shader failed cannot animate, from the moment it fails`() = runAndroidComposeUiTest<ComponentActivity> {
+        var glassDrops: Boolean? = null
+        var silk: Boolean? = null
+        var stillArtwork: Boolean? = null
+        setContent {
+            glassDrops = rememberLiveWallpaperCanAnimate(ChatArtwork.GlassDrops)
+            silk = rememberLiveWallpaperCanAnimate(ChatArtwork.Silk)
+            stillArtwork = rememberLiveWallpaperCanAnimate(ChatArtwork.PalmCoast)
+        }
+        runOnIdle {
+            assertThat(glassDrops).isTrue()
+            assertThat(silk).isTrue()
+            assertThat(stillArtwork).isFalse()
+        }
+        assertThat(LiveWallpaperSession.reportUnavailable(ChatArtwork.GlassDrops)).isTrue()
+        assertThat(LiveWallpaperSession.reportUnavailable(ChatArtwork.GlassDrops)).isFalse()
+        runOnIdle {
+            assertThat(glassDrops).isFalse()
+            assertThat(silk).isTrue()
         }
     }
 

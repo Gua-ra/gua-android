@@ -16,13 +16,18 @@ import com.bumble.appyx.navmodel.backstack.BackStack
 import io.element.android.features.messages.impl.MessagesState
 import io.element.android.features.messages.impl.actionlist.ActionListState
 import io.element.android.features.messages.impl.crypto.sendfailure.VerifiedUserSendFailure
+import io.element.android.features.messages.impl.link.ConfirmingLinkClick
 import io.element.android.features.messages.impl.messagemenu.MessageMenuState
 import io.element.android.features.messages.impl.timeline.components.customreaction.CustomReactionState
+import io.element.android.features.messages.impl.timeline.sendfailure.SendFailureDialogState
 import io.element.android.libraries.architecture.overlay.Overlay
 import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperCues
 import io.element.android.libraries.matrix.ui.chatbackground.LocalLiveWallpaperHidden
 
-/** What the timeline's live wallpaper needs: whether a sheet or the message menu covers it, and the user's sends from this device. */
+/**
+ * What the timeline's live wallpaper needs: whether a sheet, a dialog or the message menu covers it, and the user's sends from this
+ * device.
+ */
 internal fun MessagesState.liveWallpaperCues() = LiveWallpaperCues(
     isCovered = isTimelineCovered(),
     sendCount = timelineState.ownNewEventCount,
@@ -36,7 +41,22 @@ internal fun MessagesState.isTimelineCovered(): Boolean {
         reactionSummaryState.target != null ||
         readReceiptBottomSheetState.selectedEvent != null ||
         composerState.showAttachmentSourcePicker ||
-        timelineState.resolveVerifiedUserSendFailureState.verifiedUserSendFailure !is VerifiedUserSendFailure.None
+        timelineState.resolveVerifiedUserSendFailureState.verifiedUserSendFailure !is VerifiedUserSendFailure.None ||
+        isDialogShown()
+}
+
+/**
+ * The end-poll confirmation is the view's own state, and the member moderation sheet keeps its target out of [MessagesState], so the
+ * wallpaper keeps going under them.
+ */
+private fun MessagesState.isDialogShown(): Boolean {
+    return redactEventAction is MessagesState.ConfirmingRedaction ||
+        showReinvitePrompt ||
+        linkState.linkClick is ConfirmingLinkClick ||
+        timelineState.sendFailureDialogState is SendFailureDialogState.Show ||
+        timelineState.messageShieldDialogData != null ||
+        voiceMessageComposerState.showPermissionRationaleDialog ||
+        voiceMessageComposerState.showSendFailureDialog
 }
 
 /**

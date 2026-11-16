@@ -11,9 +11,17 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
 import io.element.android.features.messages.impl.timeline.aTimelineItemReactions
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
+import io.element.android.features.messages.impl.timeline.model.event.aStaticLocationMode
+import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemImageContent
+import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemLocationContent
+import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemPollContent
+import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemStickerContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemTextContent
+import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemVoiceContent
+import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.TransactionId
 import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSendState
+import io.element.android.libraries.matrix.ui.messages.reply.InReplyToDetails
 import kotlinx.collections.immutable.persistentListOf
 import org.junit.Test
 
@@ -49,6 +57,24 @@ class OwnNewEventCounterTest {
         val counter = OwnNewEventCounter(openedAtMillis = OPENED_AT)
         counter.onTimelineItems(listOf(aLocalEcho("a", OPENED_AT + 1), aLocalEcho("b", OPENED_AT + 1), aLocalEcho("c", OPENED_AT + 1)))
         assertThat(counter.count).isEqualTo(3)
+    }
+
+    @Test
+    fun `every kind of message sent from this device counts`() {
+        val counter = OwnNewEventCounter(openedAtMillis = OPENED_AT)
+        val sends = listOf(
+            aLocalEcho("text", OPENED_AT + 1),
+            aLocalEcho("reply", OPENED_AT + 1).copy(inReplyTo = InReplyToDetails.Loading(EventId("\$original"))),
+            aLocalEcho("voice", OPENED_AT + 1).copy(content = aTimelineItemVoiceContent(eventId = null)),
+            aLocalEcho("image or GIF", OPENED_AT + 1).copy(content = aTimelineItemImageContent()),
+            aLocalEcho("sticker", OPENED_AT + 1).copy(content = aTimelineItemStickerContent()),
+            aLocalEcho("poll", OPENED_AT + 1).copy(content = aTimelineItemPollContent(isMine = true)),
+            aLocalEcho("location", OPENED_AT + 1).copy(content = aTimelineItemLocationContent(mode = aStaticLocationMode())),
+        )
+        sends.forEachIndexed { index, send ->
+            counter.onTimelineItems(sends.take(index + 1).reversed())
+            assertThat(counter.count).isEqualTo(index + 1)
+        }
     }
 
     @Test

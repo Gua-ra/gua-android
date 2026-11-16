@@ -7,28 +7,30 @@
 
 package io.element.android.libraries.matrix.ui.chatbackground
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import kotlin.math.ceil
 
 private const val NO_FRAME = Long.MIN_VALUE
 private const val PERCENTILE = 0.9
+private const val WINDOW_NANOS = 2_000_000_000L
+
+/** 1.5 times the 30 fps budget plus [FRAME_TOLERANCE_NANOS]: 54 ms. */
+private const val LIMIT_NANOS = 1_000_000_000L * 3 / (2 * LIVE_WALLPAPER_FPS) + FRAME_TOLERANCE_NANOS
+
+/** With fewer frames than this in the window, one stray frame would decide the percentile. */
+internal const val WATCHDOG_MINIMUM_FRAMES = 10
 
 /**
- * Trips once the 90th-percentile time between the wallpaper's frames, over the last [percentileWindowNanos], has stayed above
- * 1.5 times the 30 fps budget for [sustainNanos]. A device too slow for the shader stays above it, while a short hitch elsewhere in the
- * app does not. Each animation run gets a new instance, so a pause never reads as one slow frame.
+ * Trips once the 90th percentile of the intervals between the wallpaper's drawn frames, over a rolling 2 s window that holds at least
+ * [WATCHDOG_MINIMUM_FRAMES] of them, is over 54 ms. Each animation run gets a new instance, so a pause restarts the window and is never
+ * read as one slow frame.
  */
-internal class WallpaperFrameWatchdog(
-    budgetNanos: Long = LIVE_WALLPAPER_FRAME_NANOS,
-    private val percentileWindowNanos: Long = 1_000_000_000L,
-    private val sustainNanos: Long = 2_000_000_000L,
-) {
-    private val limitNanos = budgetNanos * 3 / 2 + FRAME_TOLERANCE_NANOS
+internal class WallpaperFrameWatchdog {
     private val frames = ArrayDeque<Frame>()
     private var lastFrameNanos = NO_FRAME
-    private var overBudgetSinceNanos = NO_FRAME
+
+    // When a run starts with the shader's first draw, the render thread compiles its GPU program and can hold up the next frame, so the
+    // window starts at the run's second drawn frame and that compile is never read as a slow frame.
+    private var framesBeforeWindow = 2
 
     var hasTripped = false
         private set
@@ -38,17 +40,15 @@ internal class WallpaperFrameWatchdog(
         if (hasTripped) return true
         val previousFrameNanos = lastFrameNanos
         lastFrameNanos = frameTimeNanos
-        if (previousFrameNanos == NO_FRAME) return false
+        if (framesBeforeWindow > 0) {
+            framesBeforeWindow--
+            return false
+        }
         frames.addLast(Frame(endNanos = frameTimeNanos, durationNanos = frameTimeNanos - previousFrameNanos))
-        while (frames.first().endNanos <= frameTimeNanos - percentileWindowNanos) {
+        while (frames.first().endNanos <= frameTimeNanos - WINDOW_NANOS) {
             frames.removeFirst()
         }
-        if (percentile90() > limitNanos) {
-            if (overBudgetSinceNanos == NO_FRAME) overBudgetSinceNanos = frameTimeNanos
-            hasTripped = frameTimeNanos - overBudgetSinceNanos >= sustainNanos
-        } else {
-            overBudgetSinceNanos = NO_FRAME
-        }
+        hasTripped = frames.size >= WATCHDOG_MINIMUM_FRAMES && percentile90() > LIMIT_NANOS
         return hasTripped
     }
 
@@ -58,9 +58,4 @@ internal class WallpaperFrameWatchdog(
     }
 
     private data class Frame(val endNanos: Long, val durationNanos: Long)
-}
-
-/** Once a live wallpaper has been too slow, every live wallpaper shows its still until the app restarts. */
-internal object LiveWallpaperSession {
-    var isOverFrameBudget by mutableStateOf(false)
 }

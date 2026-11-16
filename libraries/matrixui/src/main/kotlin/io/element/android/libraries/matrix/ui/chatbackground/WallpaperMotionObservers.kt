@@ -27,14 +27,19 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
+import io.element.android.libraries.chatbackground.api.ChatArtwork
 
 /**
- * Whether live wallpapers can animate here and now: Android 13 and up, and nothing that asks for the still applies (Remove animations,
- * Battery Saver, the thermal status or the frame watchdog). A paused screen can still animate once it resumes.
+ * Whether [artwork] can animate here and now: a live artwork on Android 13 and up whose shader has not failed, and nothing that asks for
+ * the still applies (Remove animations, Battery Saver, the thermal status or the frame watchdog). A paused screen can still animate once
+ * it resumes.
  */
 @Composable
-fun rememberLiveWallpaperCanAnimate(): Boolean {
-    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && rememberWallpaperMotion(isCovered = false) != WallpaperMotion.Still
+fun rememberLiveWallpaperCanAnimate(artwork: ChatArtwork): Boolean {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        artwork.isLive &&
+        LiveWallpaperSession.isAvailable(artwork) &&
+        rememberWallpaperMotion(isCovered = false) != WallpaperMotion.Still
 }
 
 /**

@@ -10,6 +10,7 @@ package io.element.android.libraries.matrix.ui.chatbackground
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.setValue
 import kotlin.math.exp
 import kotlin.math.max
@@ -62,9 +63,7 @@ internal fun liveWallpaperWakeDelayMillis(frameTimeNanos: Long, nowNanos: Long):
  * starts the envelope at the time it is seen, in the time base of frame times. The envelope runs in real time, so a frame drawn after a
  * pause shows only what is left of it, and nothing from 4.2 s after the send.
  */
-internal class LiveWallpaperSendPulse(private var seenCount: Int) {
-    private var startNanos = NO_TIME
-
+internal class LiveWallpaperSendPulse(private var seenCount: Int, private var startNanos: Long = NO_TIME) {
     fun onSendCount(count: Int, nowNanos: Long) {
         if (count > seenCount) {
             startNanos = nowNanos
@@ -76,6 +75,17 @@ internal class LiveWallpaperSendPulse(private var seenCount: Int) {
     fun at(frameTimeNanos: Long): Float {
         if (startNanos == NO_TIME) return 0f
         return sendPulse((frameTimeNanos - startNanos) / NANOS_PER_SECOND)
+    }
+
+    companion object {
+        /**
+         * Keeps the count and the last send while the screen leaves the composition, as a chat does under a screen pushed over it, so a
+         * chat shown again within 4.2 s of a send plays the rest of the pulse.
+         */
+        val Saver = Saver<LiveWallpaperSendPulse, LongArray>(
+            save = { longArrayOf(it.seenCount.toLong(), it.startNanos) },
+            restore = { LiveWallpaperSendPulse(seenCount = it[0].toInt(), startNanos = it[1]) },
+        )
     }
 }
 

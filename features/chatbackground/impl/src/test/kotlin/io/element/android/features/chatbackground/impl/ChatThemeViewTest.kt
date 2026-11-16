@@ -55,6 +55,7 @@ import io.element.android.libraries.chatbackground.api.ChatBubbleColor
 import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperCues
 import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperCuesKey
+import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperSession
 import io.element.android.libraries.matrix.ui.chatbackground.aChatBackgroundPhoto
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureNeverCalled
@@ -483,6 +484,23 @@ class ChatThemeViewTest : RobolectricTest() {
             onNodeWithText(activity!!.getString(R.string.gua_chat_background_sample_outgoing)).assert(hasClickAction().not())
         } finally {
             shadowOf(powerManager).setIsPowerSaveMode(false)
+        }
+    }
+
+    @Test
+    fun `the preview of a live artwork stops offering a send preview once its shader fails`() = runAndroidComposeUiTest<ComponentActivity> {
+        try {
+            val glassDrops = ChatArtwork.GlassDrops.theme
+            setChatThemeView(aChatThemeState(preview = ChatThemePreview(glassDrops, glassDrops), eventSink = EventsRecorder(expectEvents = false)))
+            val outgoing = onNodeWithText(activity!!.getString(R.string.gua_chat_background_sample_outgoing))
+            outgoing.assert(hasClickAction())
+            LiveWallpaperSession.reportUnavailable(ChatArtwork.GlassDrops)
+            outgoing.assert(hasClickAction().not())
+            onNodeWithText(activity!!.getString(R.string.gua_chat_background_sample_incoming)).performClick()
+            onNode(SemanticsMatcher.keyIsDefined(LiveWallpaperCuesKey))
+                .assert(SemanticsMatcher.expectValue(LiveWallpaperCuesKey, LiveWallpaperCues(sendCount = 0)))
+        } finally {
+            LiveWallpaperSession.reset()
         }
     }
 }

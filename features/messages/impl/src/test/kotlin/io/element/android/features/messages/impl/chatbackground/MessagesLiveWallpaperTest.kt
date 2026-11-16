@@ -8,6 +8,8 @@
 package io.element.android.features.messages.impl.chatbackground
 
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.messages.api.timeline.voicemessages.composer.aVoiceMessageComposerState
+import io.element.android.features.messages.impl.MessagesState
 import io.element.android.features.messages.impl.aCustomReactionState
 import io.element.android.features.messages.impl.aMessagesState
 import io.element.android.features.messages.impl.aReactionSummaryState
@@ -16,6 +18,9 @@ import io.element.android.features.messages.impl.actionlist.ActionListState
 import io.element.android.features.messages.impl.actionlist.anActionListState
 import io.element.android.features.messages.impl.crypto.sendfailure.resolve.aResolveVerifiedUserSendFailureState
 import io.element.android.features.messages.impl.crypto.sendfailure.resolve.anUnsignedDeviceSendFailure
+import io.element.android.features.messages.impl.link.ConfirmingLinkClick
+import io.element.android.features.messages.impl.link.aLink
+import io.element.android.features.messages.impl.link.aLinkState
 import io.element.android.features.messages.impl.messagecomposer.aMessageComposerState
 import io.element.android.features.messages.impl.messagemenu.MessageMenuGesture
 import io.element.android.features.messages.impl.messagemenu.MessageMenuSections
@@ -24,8 +29,11 @@ import io.element.android.features.messages.impl.messagemenu.MessageQuickReactio
 import io.element.android.features.messages.impl.messagemenu.aMessageMenuState
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
 import io.element.android.features.messages.impl.timeline.aTimelineState
+import io.element.android.features.messages.impl.timeline.components.aCriticalShield
 import io.element.android.features.messages.impl.timeline.components.customreaction.CustomReactionState
 import io.element.android.features.messages.impl.timeline.components.reactionsummary.ReactionSummaryState
+import io.element.android.features.messages.impl.timeline.sendfailure.SendFailureDialogState
+import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperCues
 import kotlinx.collections.immutable.persistentListOf
@@ -79,5 +87,33 @@ class MessagesLiveWallpaperTest {
         ).forEach { state ->
             assertThat(state.isTimelineCovered()).isTrue()
         }
+    }
+
+    @Test
+    fun `every dialog the state opens over the timeline covers it`() {
+        listOf(
+            aMessagesState(redactEventAction = MessagesState.ConfirmingRedaction(EventId("\$event"))),
+            aMessagesState(showReinvitePrompt = true),
+            aMessagesState(linkState = aLinkState(linkClick = ConfirmingLinkClick(aLink))),
+            aMessagesState(
+                timelineState = aTimelineState(
+                    sendFailureDialogState = SendFailureDialogState.Show(
+                        event = event,
+                        sendFailureType = SendFailureDialogState.SendFailureType.Unknown,
+                    ),
+                ),
+            ),
+            aMessagesState(timelineState = aTimelineState(messageShield = aCriticalShield())),
+            aMessagesState(voiceMessageComposerState = aVoiceMessageComposerState(showPermissionRationaleDialog = true)),
+            aMessagesState(voiceMessageComposerState = aVoiceMessageComposerState(showSendFailureDialog = true)),
+        ).forEach { state ->
+            assertThat(state.isTimelineCovered()).isTrue()
+        }
+    }
+
+    @Test
+    fun `a removal that is not waiting for confirmation, or a link that needs none, leaves the timeline uncovered`() {
+        assertThat(aMessagesState(redactEventAction = AsyncAction.Loading).isTimelineCovered()).isFalse()
+        assertThat(aMessagesState(linkState = aLinkState(linkClick = AsyncAction.Success(aLink))).isTimelineCovered()).isFalse()
     }
 }

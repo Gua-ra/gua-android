@@ -82,7 +82,8 @@ internal fun ChatThemePreviewView(
             ElementTheme(theme = if (isDarkPreview) Theme.Dark else Theme.Light, applySystemBarsUpdate = false) {
                 // A tap on the frame stands for a send, so a live artwork previews its send pulse.
                 var previewSends by remember { mutableIntStateOf(0) }
-                val onPreviewSend: (() -> Unit)? = if (preview.shown.background.isLiveArt() && rememberLiveWallpaperCanAnimate()) {
+                val artwork = (preview.shown.background as? ChatBackground.Art)?.artwork
+                val onPreviewSend: (() -> Unit)? = if (artwork != null && rememberLiveWallpaperCanAnimate(artwork)) {
                     { previewSends++ }
                 } else {
                     null
@@ -115,8 +116,6 @@ internal fun ChatThemePreviewView(
         }
     }
 }
-
-private fun ChatBackground.isLiveArt() = this is ChatBackground.Art && artwork.isLive
 
 @Composable
 private fun PreviewControls(

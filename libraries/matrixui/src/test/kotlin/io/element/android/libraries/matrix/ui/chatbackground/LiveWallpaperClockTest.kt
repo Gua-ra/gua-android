@@ -7,6 +7,7 @@
 
 package io.element.android.libraries.matrix.ui.chatbackground
 
+import androidx.compose.runtime.saveable.SaverScope
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import kotlin.math.exp
@@ -162,6 +163,19 @@ class LiveWallpaperClockTest {
         val clock = LiveWallpaperClock(stillTime = 0f)
         clock.onFrame(1_250 * MS, sends)
         assertThat(clock.pulse).isWithin(1e-6f).of(1f)
+    }
+
+    @Test
+    fun `a send keeps its pulse while the screen leaves the composition`() {
+        val sends = LiveWallpaperSendPulse(seenCount = 2)
+        sends.onSendCount(3, nowNanos = 0)
+        val saved = with(LiveWallpaperSendPulse.Saver) { SaverScope { true }.save(sends) }
+        val restored = LiveWallpaperSendPulse.Saver.restore(saved!!)!!
+        restored.onSendCount(3, nowNanos = 1_000 * MS)
+        assertThat(restored.at(1_150 * MS)).isWithin(1e-6f).of(exp(-1.0).toFloat())
+        assertThat(restored.at(4_300 * MS)).isEqualTo(0f)
+        restored.onSendCount(4, nowNanos = 5_000 * MS)
+        assertThat(restored.at(5_250 * MS)).isWithin(1e-6f).of(1f)
     }
 
     @Test

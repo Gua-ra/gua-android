@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -50,6 +51,10 @@ import kotlin.math.max
 internal const val LIVE_STILL_WIDTH = 1290f
 internal const val LIVE_STILL_HEIGHT = 2796f
 
+/** The shaders' default send-pulse spot, as shares of the width and the height from the bottom-left corner. */
+private const val PULSE_SPOT_X = 0.83f
+private const val PULSE_SPOT_Y = 0.113f
+
 /** The uniforms every live wallpaper shader declares, with their number of floats. */
 internal val LIVE_WALLPAPER_UNIFORMS = mapOf(
     "u_res" to 2,
@@ -74,7 +79,7 @@ internal fun LiveArt(
     val context = LocalContext.current
     // Here rather than in the layer, so the count the screen opened with is the baseline even when the shader or the motion
     // replaces the layer later.
-    val sends = remember { LiveWallpaperSendPulse(seenCount = cues.sendCount) }
+    val sends = rememberSaveable(saver = LiveWallpaperSendPulse.Saver) { LiveWallpaperSendPulse(seenCount = cues.sendCount) }
     SideEffect { sends.onSendCount(cues.sendCount, System.nanoTime()) }
     val shader by produceState<LiveWallpaperShader?>(initialValue = null, artwork) {
         if (coroutineContext[InfiniteAnimationPolicy] != null) return@produceState
@@ -175,9 +180,11 @@ private fun LiveArtLayer(
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 private fun DrawScope.drawLiveWallpaper(shader: LiveWallpaperShader, anchor: UnitPoint, time: Float, pulse: Float, isDark: Boolean) {
     val frame = liveWallpaperFrame(size, anchor)
+    val origin = liveWallpaperPulseOrigin(size, frame)
     with(shader.runtimeShader) {
         // The brush covers the whole frame, and fragCoord is relative to its top left, so u_res is the frame's size.
         setFloatUniform("u_res", frame.width, frame.height)
+        setFloatUniform("u_origin", origin.x, origin.y)
         setFloatUniform("u_time", time)
         setFloatUniform("u_dark", if (isDark) 1f else 0f)
         setFloatUniform("u_pulse", pulse)
@@ -198,6 +205,17 @@ internal fun liveWallpaperFrame(viewSize: Size, anchor: UnitPoint): Rect {
     return Rect(topLeft, frameSize)
 }
 
+/**
+ * The shader's `u_origin` when the visible chat area, of [viewSize], shows [frame]: the shaders' default send-pulse spot taken on the
+ * visible area rather than on the frame, which reaches past it, in the frame's pixels with y measured from its bottom.
+ */
+internal fun liveWallpaperPulseOrigin(viewSize: Size, frame: Rect): Offset {
+    return Offset(
+        x = viewSize.width * PULSE_SPOT_X - frame.left,
+        y = frame.bottom - viewSize.height * (1 - PULSE_SPOT_Y),
+    )
+}
+
 /** One shader per artwork, wrapped once in its brush. Each draw sets its uniforms just before drawing, so screens can share it. */
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal data class LiveWallpaperShader(val runtimeShader: RuntimeShader, val brush: ShaderBrush)
@@ -205,22 +223,21 @@ internal data class LiveWallpaperShader(val runtimeShader: RuntimeShader, val br
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal object LiveWallpaperShaders {
     private val shaders = ConcurrentHashMap<ChatArtwork, LiveWallpaperShader>()
-    private val failed: MutableSet<ChatArtwork> = ConcurrentHashMap.newKeySet()
 
-    /** The artwork's shader, read and compiled on first use. Null if that failed, which is logged once and never retried. */
+    /**
+     * The artwork's shader, read and compiled on first use. Null if that failed, which is logged once, never retried and recorded in
+     * [LiveWallpaperSession].
+     */
     fun get(context: Context, artwork: ChatArtwork): LiveWallpaperShader? {
         shaders[artwork]?.let { return it }
         val file = artwork.shaderFile ?: return null
-        if (artwork in failed) return null
+        if (!LiveWallpaperSession.isAvailable(artwork)) return null
         return runCatchingExceptions {
             val source = context.assets.open("${ChatArtwork.ASSETS_FOLDER}/$file").bufferedReader().use { it.readText() }
-            val runtimeShader = RuntimeShader(source).apply {
-                setFloatUniform("u_tilt", 0f, 0f)
-                setFloatUniform("u_origin", 0f, 0f)
-            }
+            val runtimeShader = RuntimeShader(source).apply { setFloatUniform("u_tilt", 0f, 0f) }
             LiveWallpaperShader(runtimeShader, ShaderBrush(runtimeShader))
         }
-            .onFailure { if (failed.add(artwork)) Timber.w(it, "Could not create the live wallpaper %s", artwork.id) }
+            .onFailure { if (LiveWallpaperSession.reportUnavailable(artwork)) Timber.w(it, "Could not create the live wallpaper %s", artwork.id) }
             .getOrNull()
             ?.let { shaders.putIfAbsent(artwork, it) ?: it }
     }

@@ -20,20 +20,43 @@ class WallpaperFrameWatchdogTest {
     }
 
     @Test
-    fun `slow frames for 2 seconds trip it`() {
+    fun `slow frames trip it as soon as the window holds 10 of them`() {
         val watchdog = WallpaperFrameWatchdog()
-        assertThat(watchdog.drawFrames(List(30) { 60 * MS })).isFalse()
-        assertThat(watchdog.drawFrames(List(10) { 60 * MS }, startNanos = 30 * 60 * MS)).isTrue()
+        assertThat(watchdog.drawFrames(listOf(33 * MS) + List(WATCHDOG_MINIMUM_FRAMES - 1) { 60 * MS })).isFalse()
+        assertThat(watchdog.onFrame(33 * MS + WATCHDOG_MINIMUM_FRAMES * 60 * MS)).isTrue()
     }
 
     @Test
-    fun `hitches shorter than 2 seconds do not trip it`() {
-        val hitch = List(15) { 60 * MS } + List(60) { 33 * MS }
-        assertThat(WallpaperFrameWatchdog().drawFrames(hitch + hitch + hitch)).isFalse()
+    fun `the first interval of a run is not in the window`() {
+        val compile = 400 * MS
+        val janky = listOf(60 * MS) + List(8) { 33 * MS }
+        assertThat(WallpaperFrameWatchdog().drawFrames(listOf(compile) + janky + List(60) { 33 * MS })).isFalse()
+        assertThat(WallpaperFrameWatchdog().drawFrames(listOf(33 * MS, compile) + janky)).isTrue()
+        assertThat(WallpaperFrameWatchdog().drawFrames(List(WATCHDOG_MINIMUM_FRAMES + 1) { 60 * MS })).isTrue()
     }
 
     @Test
-    fun `it trips when more than a tenth of the frames stay over 1,5 times the budget`() {
+    fun `the 90th percentile of 10 frames ignores one slow frame but not two`() {
+        assertThat(WallpaperFrameWatchdog().drawFrames(listOf(33 * MS) + List(9) { 33 * MS } + 500 * MS)).isFalse()
+        assertThat(WallpaperFrameWatchdog().drawFrames(listOf(33 * MS) + List(8) { 33 * MS } + List(2) { 60 * MS })).isTrue()
+    }
+
+    @Test
+    fun `a single long stall does not trip it`() {
+        listOf(500 * MS, 1_500 * MS, 3_000 * MS).forEach { stall ->
+            val frames = List(60) { 33 * MS } + stall + List(60) { 33 * MS }
+            assertThat(WallpaperFrameWatchdog().drawFrames(frames)).isFalse()
+        }
+    }
+
+    @Test
+    fun `frames older than 2 seconds leave the window`() {
+        val frames = List(WATCHDOG_MINIMUM_FRAMES) { 60 * MS } + 2_500 * MS + List(WATCHDOG_MINIMUM_FRAMES - 1) { 33 * MS }
+        assertThat(WallpaperFrameWatchdog().drawFrames(frames)).isFalse()
+    }
+
+    @Test
+    fun `it trips when more than a tenth of the frames in the window are slow`() {
         val rarelySlow = List(20) { index -> if (index == 0) VSYNC_60_HZ * 4 else VSYNC_60_HZ * 2 }
         assertThat(WallpaperFrameWatchdog().drawFrames(List(10) { rarelySlow }.flatten())).isFalse()
         val oftenSlow = List(4) { index -> if (index == 0) VSYNC_60_HZ * 4 else VSYNC_60_HZ * 2 }
@@ -54,9 +77,11 @@ class WallpaperFrameWatchdogTest {
     }
 
     @Test
-    fun `frames over 1,5 times the budget by more than a vsync's jitter trip it`() {
+    fun `frames of 54 ms do not trip it and frames over 54 ms do`() {
         assertThat(WallpaperFrameWatchdog().drawFrames(List(150) { 53_999_999L })).isFalse()
-        assertThat(WallpaperFrameWatchdog().drawFrames(List(150) { 54_000_000L })).isTrue()
+        assertThat(WallpaperFrameWatchdog().drawFrames(List(150) { 54_000_000L })).isFalse()
+        assertThat(WallpaperFrameWatchdog().drawFrames(List(150) { 54_000_001L })).isTrue()
+        assertThat(WallpaperFrameWatchdog().drawFrames(List(WATCHDOG_MINIMUM_FRAMES + 1) { 54_000_001L })).isTrue()
     }
 
     @Test

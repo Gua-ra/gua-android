@@ -26,7 +26,7 @@ enum class WallpaperMotion {
  *
  * @property isOnScreen the screen is resumed and nothing hides it: not in the background, not under another screen or an overlay such as
  * the media viewer, and the display is on.
- * @property isCovered a sheet or the message menu covers the chat.
+ * @property isCovered a sheet, a dialog or the message menu covers the chat.
  * @property animationsEnabled the system animator duration scale is not 0 ("Remove animations" is off).
  * @property isPowerSaveMode Battery Saver is on.
  * @property thermalStatus a `PowerManager.THERMAL_STATUS_*` value; `THERMAL_STATUS_NONE` below Android 10.

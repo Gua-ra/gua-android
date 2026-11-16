@@ -15,7 +15,7 @@ import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 /**
  * What a screen tells its live artwork. A chat background drawn without cues shows the still, as tiles and pickers do.
  *
- * @property isCovered a sheet or the message menu covers the wallpaper, so it pauses.
+ * @property isCovered a sheet, a dialog or the message menu covers the wallpaper, so it pauses.
  * @property sendCount the user's sends; each increase plays the send pulse.
  */
 @Immutable
