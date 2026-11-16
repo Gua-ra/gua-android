@@ -23,19 +23,23 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
 import io.element.android.libraries.chatbackground.api.ChatArtwork
+import io.element.android.libraries.designsystem.utils.LocalUiTestMode
 
 /**
- * Whether [artwork] can animate here and now: a live artwork on Android 13 and up whose shader has not failed, and nothing that asks for
- * the still applies (Remove animations, Battery Saver, the thermal status or the frame watchdog). A paused screen can still animate once
- * it resumes.
+ * Whether [artwork] can animate here and now: a live artwork on Android 13 and up whose shader has not failed, outside previews and UI tests,
+ * and nothing that asks for the still applies (Remove animations, Battery Saver, the thermal status or the frame watchdog). A paused screen
+ * can still animate once it resumes.
  */
 @Composable
 fun rememberLiveWallpaperCanAnimate(artwork: ChatArtwork): Boolean {
+    // Previews and screenshot tests never animate, and their render host cannot register the platform listeners below.
+    if (LocalInspectionMode.current || LocalUiTestMode.current) return false
     return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
         artwork.isLive &&
         LiveWallpaperSession.isAvailable(artwork) &&

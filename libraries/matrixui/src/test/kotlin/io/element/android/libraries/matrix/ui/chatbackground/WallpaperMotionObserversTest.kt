@@ -15,11 +15,13 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.chatbackground.api.ChatArtwork
+import io.element.android.libraries.designsystem.utils.LocalUiTestMode
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.After
 import org.junit.Test
@@ -73,6 +75,24 @@ class WallpaperMotionObserversTest : RobolectricTest() {
         runOnIdle {
             assertThat(motion).isEqualTo(WallpaperMotion.Still)
             assertThat(canAnimate).isFalse()
+        }
+    }
+
+    @Test
+    fun `previews and UI tests never offer a live wallpaper`() = runAndroidComposeUiTest<ComponentActivity> {
+        var inPreview: Boolean? = null
+        var inUiTest: Boolean? = null
+        setContent {
+            CompositionLocalProvider(LocalInspectionMode provides true) {
+                inPreview = rememberLiveWallpaperCanAnimate(ChatArtwork.GlassDrops)
+            }
+            CompositionLocalProvider(LocalUiTestMode provides true) {
+                inUiTest = rememberLiveWallpaperCanAnimate(ChatArtwork.GlassDrops)
+            }
+        }
+        runOnIdle {
+            assertThat(inPreview).isFalse()
+            assertThat(inUiTest).isFalse()
         }
     }
 
