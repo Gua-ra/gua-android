@@ -51,7 +51,7 @@ fun MediaSettingsView(
     PreferencePage(
         modifier = modifier,
         onBackClick = onBackClick,
-        title = stringResource(id = CommonStrings.common_media_upload_quality),
+        title = stringResource(id = R.string.gua_media_settings_title),
         snackbarHost = {
             SnackbarHost(
                 snackbarHostState,
@@ -144,6 +144,7 @@ fun MediaSettingsView(
                 }
             }
         }
+        PlayGifsAutomaticallySection(state)
     }
 }
 

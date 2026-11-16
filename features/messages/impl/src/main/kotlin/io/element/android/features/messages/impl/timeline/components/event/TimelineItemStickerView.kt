@@ -44,9 +44,9 @@ import io.element.android.libraries.designsystem.theme.components.CircularProgre
 import io.element.android.libraries.matrix.ui.media.contentvalidation.ContentValidationState
 import io.element.android.libraries.matrix.ui.media.contentvalidation.NoopContentValidationState
 import io.element.android.libraries.matrix.ui.media.contentvalidation.collectOverallState
+import io.element.android.libraries.matrixmedia.api.LocalPlayGifsAutomatically
 import io.element.android.libraries.matrixmedia.api.MediaRequestData
 import io.element.android.libraries.matrixmedia.api.firstFrameOnly
-import io.element.android.libraries.matrixmedia.api.shouldAnimateImages
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.features.expressions.api.R as ExpressionsR
 
@@ -88,7 +88,7 @@ fun TimelineItemStickerView(
                 onShowClick = onShowClick,
             ) {
                 val context = LocalContext.current
-                val shouldAnimate = context.shouldAnimateImages()
+                val shouldAnimate = LocalPlayGifsAutomatically.current
                 val model = remember(content.preferredMediaSource, content.filename, content.mimeType, shouldAnimate) {
                     val request = MediaRequestData(
                         source = content.preferredMediaSource,

@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -72,7 +73,9 @@ import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.matrix.api.media.MediaSource
 import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.matrix.ui.model.getAvatarData
+import io.element.android.libraries.matrixmedia.api.LocalPlayGifsAutomatically
 import io.element.android.libraries.matrixmedia.api.MediaRequestData
+import io.element.android.libraries.matrixmedia.api.animatedImageModel
 import kotlinx.coroutines.launch
 
 internal val REACTION_SUMMARY_LINE_HEIGHT = 25.sp
@@ -209,7 +212,10 @@ private fun AggregatedReactionButton(
                     modifier = Modifier
                         .heightIn(min = REACTION_SUMMARY_LINE_HEIGHT.toDp(), max = REACTION_SUMMARY_LINE_HEIGHT.toDp())
                         .aspectRatio(REACTION_IMAGE_ASPECT_RATIO, false),
-                    model = MediaRequestData(MediaSource(reaction.key), MediaRequestData.Kind.Content),
+                    model = LocalContext.current.animatedImageModel(
+                        MediaRequestData(MediaSource(reaction.key), MediaRequestData.Kind.Content),
+                        LocalPlayGifsAutomatically.current,
+                    ),
                     contentDescription = null
                 )
             } else {

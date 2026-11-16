@@ -36,8 +36,8 @@ appId: ${MAESTRO_APP_ID}
 - assertVisible: "Appearance"
 
 - tapOn:
-    text: "Media upload quality"
-- assertVisible: "Media upload quality"
+    text: "Media settings"
+- assertVisible: "Media settings"
 - back
 
 - tapOn:

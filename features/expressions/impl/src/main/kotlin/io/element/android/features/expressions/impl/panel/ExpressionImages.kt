@@ -18,15 +18,14 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
 import io.element.android.features.expressions.api.gif.GifFile
 import io.element.android.features.expressions.api.sticker.StickerImage
 import io.element.android.features.expressions.impl.R
 import io.element.android.libraries.core.mimetype.MimeTypes
 import io.element.android.libraries.matrix.api.media.MediaSource
+import io.element.android.libraries.matrixmedia.api.LocalPlayGifsAutomatically
 import io.element.android.libraries.matrixmedia.api.MediaRequestData
-import io.element.android.libraries.matrixmedia.api.firstFrameOnly
-import io.element.android.libraries.matrixmedia.api.shouldAnimateImages
+import io.element.android.libraries.matrixmedia.api.animatedImageModel
 import kotlin.math.absoluteValue
 
 @Composable
@@ -40,34 +39,35 @@ internal fun StickerImageView(
         return
     }
     val context = LocalContext.current
-    val shouldAnimate = context.shouldAnimateImages()
-    val model = remember(image.url, image.mimetype, shouldAnimate) {
+    val play = LocalPlayGifsAutomatically.current
+    val model = remember(image.url, image.mimetype, play) {
         val data = MediaRequestData(
             source = MediaSource(image.url),
             kind = MediaRequestData.Kind.File(fileName = image.body ?: "sticker", mimeType = image.mimetype ?: MimeTypes.Png),
         )
-        if (shouldAnimate) data else ImageRequest.Builder(context).data(data).firstFrameOnly().build()
+        context.animatedImageModel(data, play)
     }
     AsyncImage(model = model, contentDescription = contentDescription, modifier = modifier, contentScale = ContentScale.Fit)
 }
 
-/** Provider media only ever loads through the GIF client, never the app's own image loader. */
+/**
+ * Provider media only ever loads through the GIF client, never the app's own image loader.
+ * Without [play] it shows the first frame only; a GIF the user opened plays whatever the setting.
+ */
 @Composable
 internal fun GifImageView(
     file: GifFile,
     imageLoader: ImageLoader,
     contentDescription: String?,
     modifier: Modifier = Modifier,
+    play: Boolean = LocalPlayGifsAutomatically.current,
 ) {
     if (LocalInspectionMode.current) {
         Image(painterResource(previewDrawable(file.url)), contentDescription, modifier, contentScale = ContentScale.Fit)
         return
     }
     val context = LocalContext.current
-    val shouldAnimate = context.shouldAnimateImages()
-    val model = remember(file.url, shouldAnimate) {
-        ImageRequest.Builder(context).data(file.url).apply { if (!shouldAnimate) firstFrameOnly() }.build()
-    }
+    val model = remember(file.url, play) { context.animatedImageModel(file.url, play) }
     AsyncImage(model = model, contentDescription = contentDescription, imageLoader = imageLoader, modifier = modifier, contentScale = ContentScale.Crop)
 }
 

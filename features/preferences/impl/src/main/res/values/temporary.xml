@@ -99,4 +99,7 @@
     <string name="gua_preferences_spaces_title">Spaces</string>
     <string name="gua_preferences_spaces_description">Organize related chats and communities in one place</string>
     <string name="gua_notification_settings_no_push_service">This device has no push service, so Gua can\'t deliver notifications on it.</string>
+    <string name="gua_media_settings_title">Media settings</string>
+    <string name="gua_media_settings_play_gifs_title">Play GIFs automatically</string>
+    <string name="gua_media_settings_play_gifs_description">Also animated stickers. GIFs you open always play.</string>
 </resources>

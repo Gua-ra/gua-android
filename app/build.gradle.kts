@@ -341,6 +341,7 @@ dependencies {
     implementation(projects.appnav)
     implementation(projects.appconfig)
     implementation(projects.services.analytics.compose)
+    implementation(projects.libraries.matrixui)
 
     if (ModulesConfig.pushProvidersConfig.includeFirebase) {
         "gplayImplementation"(projects.libraries.pushproviders.firebase)

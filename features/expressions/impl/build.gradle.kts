@@ -65,7 +65,8 @@ dependencies {
     implementation(libs.serialization.json)
     implementation(libs.vanniktech.blurhash)
 
-    testCommonDependencies(libs)
+    testCommonDependencies(libs, true)
+    testImplementation(projects.libraries.matrixmedia.test)
     testImplementation(projects.features.expressions.test)
     testImplementation(projects.libraries.emoji.test)
     testImplementation(projects.libraries.featureflag.test)

@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.tokens.generated.CompoundIcons
@@ -28,7 +29,9 @@ import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.matrix.api.media.MediaSource
+import io.element.android.libraries.matrixmedia.api.LocalPlayGifsAutomatically
 import io.element.android.libraries.matrixmedia.api.MediaRequestData
+import io.element.android.libraries.matrixmedia.api.animatedImageModel
 import kotlinx.parcelize.Parcelize
 
 @Composable
@@ -44,7 +47,7 @@ fun AttachmentThumbnail(
             kind = MediaRequestData.Kind.Thumbnail(thumbnailSize),
         )
         BlurHashAsyncImage(
-            model = mediaRequestData,
+            model = LocalContext.current.animatedImageModel(mediaRequestData, LocalPlayGifsAutomatically.current),
             blurHash = info.blurHash,
             contentDescription = info.textContent,
             contentScale = ContentScale.Crop,

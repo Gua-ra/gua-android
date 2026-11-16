@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +53,7 @@ import io.element.android.libraries.designsystem.theme.components.ListItem
 import io.element.android.libraries.designsystem.theme.components.ModalBottomSheet
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.designsystem.theme.components.TextField
+import io.element.android.libraries.matrixmedia.api.LocalPlayGifsAutomatically
 import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.collections.immutable.ImmutableList
 import io.element.android.features.expressions.api.R as ApiR
@@ -109,13 +111,16 @@ internal fun ExpressionOverlaysView(
 
 @Composable
 private fun LargeSticker(image: StickerImage) {
-    StickerImageView(
-        image = image,
-        contentDescription = stringResource(ApiR.string.gua_a11y_sticker, image.body ?: StickerContent.DEFAULT_BODY),
-        modifier = Modifier
-            .padding(16.dp)
-            .size(192.dp),
-    )
+    // Opening a sticker is a request to see it move, whatever "Play GIFs automatically" says.
+    CompositionLocalProvider(LocalPlayGifsAutomatically provides true) {
+        StickerImageView(
+            image = image,
+            contentDescription = stringResource(ApiR.string.gua_a11y_sticker, image.body ?: StickerContent.DEFAULT_BODY),
+            modifier = Modifier
+                .padding(16.dp)
+                .size(192.dp),
+        )
+    }
 }
 
 @Composable
@@ -188,6 +193,7 @@ internal fun GifPreviewContent(
                     .heightIn(max = 320.dp)
                     .aspectRatio(shown.width.toFloat() / shown.height.coerceAtLeast(1))
                     .clip(RoundedCornerShape(12.dp)),
+                play = true,
             )
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
