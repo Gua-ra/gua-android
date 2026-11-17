@@ -33,6 +33,15 @@ class LiveWallpaperPulseOriginTest {
     }
 
     @Test
+    fun `right to left, the spot is mirrored to the outgoing side`() {
+        val frame = liveWallpaperFrame(phone, centre)
+        val ltr = liveWallpaperPulseOrigin(phone, frame, visibleTop = 0f, visibleBottom = 1900f, bottomInset = 0f)
+        val rtl = liveWallpaperPulseOrigin(phone, frame, visibleTop = 0f, visibleBottom = 1900f, bottomInset = 0f, isRtl = true)
+        assertNear(rtl, Offset(phone.width * 0.17f - frame.left, ltr.y))
+        assertNear(Offset(frame.left + rtl.x, 0f), Offset(phone.width - (frame.left + ltr.x), 0f))
+    }
+
+    @Test
     fun `the spot rides up with the keyboard`() {
         val closed = spotOnCanvas(phone, centre, visibleTop = 0f, visibleBottom = 1900f)
         val open = spotOnCanvas(phone, centre, visibleTop = 0f, visibleBottom = 1150f)

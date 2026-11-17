@@ -34,8 +34,8 @@ The Lab contract (spec 6.1). The shaders work in GL coordinates: origin bottom-l
 | `u_res` | float2 | Render target size in pixels. |
 | `u_time` | float | `(still_time + seconds since the wallpaper appeared) mod 1800`, with the artwork's `still_time` from `manifest.json`. Starting at the still's time rather than 0 refines the shared spec (6.1) so the first live frame is the still it replaces. Previews with frozen time use `still_time`. |
 | `u_dark` | float | 1 for the dark variant, 0 for light. |
-| `u_pulse` | float | Send envelope, 0 when idle. For `dt` seconds after a send: `a = min(1, dt/0.25)`, `pulse = a*a*(3-2a) * exp(-max(0, dt-0.25)/0.9)`, and 0 from `dt > 4.2`. |
-| `u_tilt` | float2 | Device tilt in -1..1. (0,0) for now. |
+| `u_pulse` | float | Send envelope, 0 when idle. For `dt` seconds after the pulse starts: `a = min(1, dt/0.25)`, `pulse = a*a*(3-2a) * exp(-max(0, dt-0.25)/0.9)`, and 0 from `dt > 4.2`. A send starts it at `now - 0.25*(0.5 - sin(asin(1 - 2v)/3))`, `v` the current value, so a send while it plays never makes it jump (spec 6.5). |
+| `u_tilt` | float2 | Device tilt in the interface's frame, each component in -1..1: (1,0) is the viewer to the right of the screen, (0,1) above it (spec 6.6). (0,0) wherever tilt does not run. |
 | `u_origin` | float2 | Centre of the sent bubble in render-target pixels: the same space as `u_res` and `gl_FragCoord`/`fragCoord` (on iOS the half-size drawable, not points or view pixels), with y measured from the bottom, so `y = height - y_top_left`. (0,0) means each shader's default spot near the newest outgoing bubble. |
 
 ## iOS (MSL)

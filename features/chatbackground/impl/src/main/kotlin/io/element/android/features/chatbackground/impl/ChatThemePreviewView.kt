@@ -8,16 +8,19 @@
 package io.element.android.features.chatbackground.impl
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.runtime.Composable
@@ -27,14 +30,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.theme.Theme
+import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.designsystem.components.button.BackButton
 import io.element.android.libraries.designsystem.theme.components.Button
+import io.element.android.libraries.designsystem.theme.components.Icon
+import io.element.android.libraries.designsystem.theme.components.IconButton
 import io.element.android.libraries.designsystem.theme.components.Scaffold
 import io.element.android.libraries.designsystem.theme.components.SegmentedButton
 import io.element.android.libraries.designsystem.theme.components.TextButton
@@ -56,6 +61,13 @@ internal fun ChatThemePreviewView(
 ) {
     val isDarkPreview = preview.isDarkPreview ?: !ElementTheme.isLightTheme
     val chatArea = rememberLiveWallpaperVisibleArea()
+    var previewSends by remember { mutableIntStateOf(0) }
+    val artwork = (preview.shown.background as? ChatBackground.Art)?.artwork
+    val onPreviewSend: (() -> Unit)? = if (artwork != null && rememberLiveWallpaperCanAnimate(artwork)) {
+        { previewSends++ }
+    } else {
+        null
+    }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -69,6 +81,7 @@ internal fun ChatThemePreviewView(
                 isDarkPreview = isDarkPreview,
                 saveLabel = saveLabel,
                 canChange = canChange,
+                onPreviewSend = onPreviewSend,
                 eventSink = eventSink,
                 modifier = Modifier.liveWallpaperChatAreaEnd(chatArea),
             )
@@ -84,25 +97,10 @@ internal fun ChatThemePreviewView(
                 .fillMaxSize(),
         ) {
             ElementTheme(theme = if (isDarkPreview) Theme.Dark else Theme.Light, applySystemBarsUpdate = false) {
-                // A tap on the frame stands for a send, so a live artwork previews its send pulse.
-                var previewSends by remember { mutableIntStateOf(0) }
-                val artwork = (preview.shown.background as? ChatBackground.Art)?.artwork
-                val onPreviewSend: (() -> Unit)? = if (artwork != null && rememberLiveWallpaperCanAnimate(artwork)) {
-                    { previewSends++ }
-                } else {
-                    null
-                }
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(ElementTheme.colors.bgCanvasDefault)
-                        .then(
-                            if (onPreviewSend == null) {
-                                Modifier
-                            } else {
-                                Modifier.pointerInput(Unit) { detectTapGestures { onPreviewSend() } }
-                            }
-                        ),
+                        .background(ElementTheme.colors.bgCanvasDefault),
                 ) {
                     ChatBackgroundCanvas(
                         background = preview.shown.background,
@@ -114,7 +112,6 @@ internal fun ChatThemePreviewView(
                         isOnBackground = preview.shown.background != ChatBackground.None,
                         theme = preview.shown,
                         modifier = Modifier.align(Alignment.TopCenter),
-                        onPreviewSend = onPreviewSend,
                     )
                 }
             }
@@ -122,11 +119,14 @@ internal fun ChatThemePreviewView(
     }
 }
 
+/** [onPreviewSend], when given, is offered as a send button that plays the live wallpaper's send pulse. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PreviewControls(
     isDarkPreview: Boolean,
     saveLabel: String,
     canChange: Boolean,
+    onPreviewSend: (() -> Unit)?,
     eventSink: (ChatThemeEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -138,7 +138,18 @@ private fun PreviewControls(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        LightDarkPreviewToggle(isDarkPreview = isDarkPreview, eventSink = eventSink)
+        // When large text leaves the toggle's labels too little room beside the send button, the button wraps to its own line.
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+            LightDarkPreviewToggle(isDarkPreview = isDarkPreview, eventSink = eventSink, modifier = Modifier.weight(1f))
+            if (onPreviewSend != null) {
+                PreviewSendButton(onClick = onPreviewSend)
+            }
+        }
         Button(
             text = saveLabel,
             onClick = { eventSink(ChatThemeEvent.Save) },
@@ -150,6 +161,27 @@ private fun PreviewControls(
             onClick = { eventSink(ChatThemeEvent.Cancel) },
             modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+/** Drawn like the composer's send button. */
+@Composable
+private fun PreviewSendButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    IconButton(onClick = onClick, modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(ElementTheme.colors.bgAccentRest, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = CompoundIcons.SendSolid(),
+                contentDescription = stringResource(R.string.gua_chat_theme_preview_send_a11y),
+                // The composer's optical centring of the arrow.
+                modifier = Modifier.padding(start = 2.dp),
+                tint = ElementTheme.colors.iconOnSolidPrimary,
+            )
+        }
     }
 }
 

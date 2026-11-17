@@ -9,20 +9,21 @@ package io.element.android.libraries.matrix.ui.chatbackground
 
 import android.os.PowerManager
 
-/** How a live artwork shows. */
+/** How a live artwork shows, and how any artwork follows the device's tilt. */
 enum class WallpaperMotion {
-    /** The shader runs. */
+    /** The shader runs and the artwork tilts. */
     Animating,
 
-    /** The last frame stays and the wallpaper's time stops; it continues from there. */
+    /** The last frame and the tilt stay and the wallpaper's time stops; it continues from there. */
     Paused,
 
-    /** The still image, with no pulse. */
+    /** The still image at rest, with no pulse. */
     Still,
 }
 
 /**
- * Whether a live artwork animates. The platform observers fill in the conditions; anything that asks for the still wins over a pause.
+ * Whether a live artwork animates, and an artwork tilts. The platform observers fill in the conditions; anything that asks for the still
+ * wins over a pause.
  *
  * @property isOnScreen the screen is resumed and nothing hides it: not in the background, not under another screen or an overlay such as
  * the media viewer, and the display is on.

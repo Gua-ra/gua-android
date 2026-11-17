@@ -10,11 +10,16 @@ package io.element.android.libraries.matrix.ui.chatbackground
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import kotlin.math.asin
 import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToLong
+import kotlin.math.sin
 
 /** Live wallpapers draw at most this many frames a second. */
 internal const val LIVE_WALLPAPER_FPS = 30
@@ -45,12 +50,17 @@ internal fun liveWallpaperTime(stillTime: Float, elapsedSeconds: Double): Float 
     return ((stillTime + elapsedSeconds) % TIME_PERIOD_SECONDS).toFloat()
 }
 
-/** The shader's `u_pulse`, [secondsSinceSend] after the user sent a message: the Lab's "Send a message" envelope. */
-internal fun sendPulse(secondsSinceSend: Double): Float {
-    if (secondsSinceSend < 0 || secondsSinceSend > PULSE_END_SECONDS) return 0f
-    val rise = min(1.0, secondsSinceSend / PULSE_RISE_SECONDS)
-    val decay = exp(-max(0.0, secondsSinceSend - PULSE_RISE_SECONDS) / PULSE_DECAY_SECONDS)
-    return (rise * rise * (3 - 2 * rise) * decay).toFloat()
+/** The shader's `u_pulse`, [secondsSinceStart] after a pulse started: the Lab's "Send a message" envelope. */
+internal fun sendPulse(secondsSinceStart: Double): Double {
+    if (secondsSinceStart < 0 || secondsSinceStart > PULSE_END_SECONDS) return 0.0
+    val rise = min(1.0, secondsSinceStart / PULSE_RISE_SECONDS)
+    val decay = exp(-max(0.0, secondsSinceStart - PULSE_RISE_SECONDS) / PULSE_DECAY_SECONDS)
+    return rise * rise * (3 - 2 * rise) * decay
+}
+
+/** How long after its start the pulse's rising edge reaches [value], from 0 for 0 to 0.25 s for 1. */
+internal fun sendPulseRiseSeconds(value: Double): Double {
+    return PULSE_RISE_SECONDS * (0.5 - sin(asin(1 - 2 * value) / 3))
 }
 
 /** How long the frame loop can sleep after drawing the frame of the vsync at [frameTimeNanos], when it is [nowNanos]. */
@@ -60,13 +70,15 @@ internal fun liveWallpaperWakeDelayMillis(frameTimeNanos: Long, nowNanos: Long):
 
 /**
  * The user's sends, as the wallpaper's send pulse. The count it starts with is only where counting starts; each increase after that
- * starts the envelope at the time it is seen, in the time base of frame times. The envelope runs in real time, so a frame drawn after a
- * pause shows only what is left of it, and nothing from 4.2 s after the send.
+ * plays the envelope from the time it is seen, in the time base of frame times. A send while a pulse shows never restarts it from 0,
+ * which would snap the shaders' rings back: the new pulse starts where its rising edge has the current value. The envelope runs in real
+ * time, so a frame drawn after a pause shows only what is left of it, and nothing from 4.2 s after the send.
  */
 internal class LiveWallpaperSendPulse(private var seenCount: Int, private var startNanos: Long = NO_TIME) {
     fun onSendCount(count: Int, nowNanos: Long) {
         if (count > seenCount) {
-            startNanos = nowNanos
+            val current = if (startNanos == NO_TIME) 0.0 else sendPulse((nowNanos - startNanos) / NANOS_PER_SECOND)
+            startNanos = nowNanos - (sendPulseRiseSeconds(current) * NANOS_PER_SECOND).roundToLong()
         }
         seenCount = count
     }
@@ -74,7 +86,7 @@ internal class LiveWallpaperSendPulse(private var seenCount: Int, private var st
     /** The pulse in the frame of the vsync at [frameTimeNanos]. */
     fun at(frameTimeNanos: Long): Float {
         if (startNanos == NO_TIME) return 0f
-        return sendPulse((frameTimeNanos - startNanos) / NANOS_PER_SECOND)
+        return sendPulse((frameTimeNanos - startNanos) / NANOS_PER_SECOND).toFloat()
     }
 
     companion object {
@@ -91,7 +103,7 @@ internal class LiveWallpaperSendPulse(private var seenCount: Int, private var st
 
 /**
  * A live wallpaper's own time. It advances only through [onFrame], at most 30 times a second, so a pause freezes the frame and
- * [resume] continues from it. Read [time] and [pulse] only while drawing, so a new frame redraws without recomposing.
+ * [resume] continues from it. Read [time], [pulse] and [tilt] only while drawing, so a new frame redraws without recomposing.
  */
 @Stable
 internal class LiveWallpaperClock(private val stillTime: Float) {
@@ -99,11 +111,13 @@ internal class LiveWallpaperClock(private val stillTime: Float) {
         private set
     var pulse by mutableFloatStateOf(0f)
         private set
+    var tilt by mutableStateOf(Offset.Zero)
+        private set
 
     private var elapsedNanos = 0L
     private var lastFrameNanos = NO_TIME
 
-    /** The frame stays as it is but shows no pulse, as a paused wallpaper does. */
+    /** The frame stays as it is, tilt included, but shows no pulse, as a paused wallpaper does. */
     fun hold() {
         pulse = 0f
     }
@@ -114,10 +128,10 @@ internal class LiveWallpaperClock(private val stillTime: Float) {
     }
 
     /**
-     * Moves to the vsync at [frameTimeNanos] if a 30 fps frame has passed since the last frame drawn, with the pulse of [sends] at that
-     * vsync; returns whether it did.
+     * Moves to the vsync at [frameTimeNanos] if a 30 fps frame has passed since the last frame drawn, with the pulse of [sends] and the
+     * device's [tilt] at that vsync; returns whether it did.
      */
-    fun onFrame(frameTimeNanos: Long, sends: LiveWallpaperSendPulse): Boolean {
+    fun onFrame(frameTimeNanos: Long, sends: LiveWallpaperSendPulse, tilt: Offset = Offset.Zero): Boolean {
         if (lastFrameNanos != NO_TIME) {
             val delta = frameTimeNanos - lastFrameNanos
             if (delta < LIVE_WALLPAPER_FRAME_NANOS - FRAME_TOLERANCE_NANOS) return false
@@ -126,6 +140,7 @@ internal class LiveWallpaperClock(private val stillTime: Float) {
         lastFrameNanos = frameTimeNanos
         time = liveWallpaperTime(stillTime, elapsedNanos / NANOS_PER_SECOND)
         pulse = sends.at(frameTimeNanos)
+        this.tilt = tilt
         return true
     }
 }

@@ -8,6 +8,7 @@
 package io.element.android.libraries.matrix.ui.chatbackground
 
 import androidx.compose.runtime.saveable.SaverScope
+import androidx.compose.ui.geometry.Offset
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import kotlin.math.exp
@@ -30,18 +31,28 @@ class LiveWallpaperClockTest {
 
     @Test
     fun `the send pulse follows the Lab envelope`() {
-        assertThat(sendPulse(0.0)).isEqualTo(0f)
-        assertThat(sendPulse(0.125)).isWithin(1e-6f).of(0.5f)
-        assertThat(sendPulse(0.25)).isWithin(1e-6f).of(1f)
-        assertThat(sendPulse(1.15)).isWithin(1e-6f).of(exp(-1.0).toFloat())
-        assertThat(sendPulse(4.2)).isWithin(1e-6f).of(exp(-3.95 / 0.9).toFloat())
+        assertThat(sendPulse(0.0)).isEqualTo(0.0)
+        assertThat(sendPulse(0.125)).isWithin(1e-9).of(0.5)
+        assertThat(sendPulse(0.25)).isWithin(1e-9).of(1.0)
+        assertThat(sendPulse(1.15)).isWithin(1e-9).of(exp(-1.0))
+        assertThat(sendPulse(4.2)).isWithin(1e-9).of(exp(-3.95 / 0.9))
     }
 
     @Test
     fun `the send pulse is 0 before a send and from 4,2 seconds after it`() {
-        assertThat(sendPulse(-0.1)).isEqualTo(0f)
-        assertThat(sendPulse(4.2001)).isEqualTo(0f)
-        assertThat(sendPulse(60.0)).isEqualTo(0f)
+        assertThat(sendPulse(-0.1)).isEqualTo(0.0)
+        assertThat(sendPulse(4.2001)).isEqualTo(0.0)
+        assertThat(sendPulse(60.0)).isEqualTo(0.0)
+    }
+
+    @Test
+    fun `the rising edge reaches each pulse value at the time a send starts a pulse from it`() {
+        assertThat(sendPulseRiseSeconds(0.0)).isWithin(1e-9).of(0.0)
+        assertThat(sendPulseRiseSeconds(0.5)).isWithin(1e-9).of(0.125)
+        assertThat(sendPulseRiseSeconds(1.0)).isWithin(1e-9).of(0.25)
+        listOf(0.1, 0.37, 0.8).forEach { value ->
+            assertThat(sendPulse(sendPulseRiseSeconds(value))).isWithin(1e-9).of(value)
+        }
     }
 
     @Test
@@ -86,6 +97,19 @@ class LiveWallpaperClockTest {
     }
 
     @Test
+    fun `each drawn frame takes the device's tilt at its vsync, and a pause keeps it`() {
+        val clock = LiveWallpaperClock(stillTime = 0f)
+        clock.onFrame(0, noSends, tilt = Offset(0.2f, -0.1f))
+        assertThat(clock.tilt).isEqualTo(Offset(0.2f, -0.1f))
+        clock.onFrame(VSYNC_60_HZ, noSends, tilt = Offset(0.3f, 0f))
+        assertThat(clock.tilt).isEqualTo(Offset(0.2f, -0.1f))
+        clock.onFrame(2 * VSYNC_60_HZ, noSends, tilt = Offset(0.3f, 0f))
+        assertThat(clock.tilt).isEqualTo(Offset(0.3f, 0f))
+        clock.hold()
+        assertThat(clock.tilt).isEqualTo(Offset(0.3f, 0f))
+    }
+
+    @Test
     fun `a new send count plays the pulse from when it is seen`() {
         val sends = LiveWallpaperSendPulse(seenCount = 3)
         val clock = LiveWallpaperClock(stillTime = 0f)
@@ -95,11 +119,23 @@ class LiveWallpaperClockTest {
         assertThat(clock.pulse).isEqualTo(0f)
         sends.onSendCount(4, nowNanos = FRAME)
         clock.onFrame(2 * FRAME, sends)
-        assertThat(clock.pulse).isWithin(1e-6f).of(sendPulse(FRAME / 1e9))
+        assertThat(clock.pulse).isWithin(1e-6f).of(sendPulse(FRAME / 1e9).toFloat())
         clock.onFrame(FRAME + 250 * MS, sends)
         assertThat(clock.pulse).isWithin(1e-6f).of(1f)
         clock.onFrame(FRAME + 4_300 * MS, sends)
         assertThat(clock.pulse).isEqualTo(0f)
+    }
+
+    @Test
+    fun `a send while the pulse decays rises again from where it is, and one while it rises changes nothing`() {
+        val sends = LiveWallpaperSendPulse(seenCount = 0)
+        sends.onSendCount(1, nowNanos = 0)
+        sends.onSendCount(2, nowNanos = 100 * MS)
+        assertThat(sends.at(150 * MS)).isWithin(1e-6f).of(sendPulse(0.15).toFloat())
+        val decayed = sends.at(1_000 * MS)
+        sends.onSendCount(3, nowNanos = 1_000 * MS)
+        assertThat(sends.at(1_000 * MS)).isWithin(1e-6f).of(decayed)
+        assertThat(sends.at(1_050 * MS)).isGreaterThan(decayed)
     }
 
     @Test
