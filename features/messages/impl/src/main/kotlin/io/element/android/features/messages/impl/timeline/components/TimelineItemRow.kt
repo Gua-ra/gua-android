@@ -97,6 +97,7 @@ internal fun TimelineItemRow(
                 eventSink = eventSink,
                 modifier = contentModifier,
                 onContentLayoutChange = onContentLayoutChange,
+                hideActionsFromAccessibility = selectionData.isSelectionModeActive && selectionData.canBeSelected,
             )
         },
 ) {
