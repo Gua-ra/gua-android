@@ -70,14 +70,65 @@ class ChatBackgroundCodecTest {
 
     @Test
     fun `every theme reads back the same as written`() {
-        val backgrounds = listOf(ChatBackground.None, aPhoto()) + ChatBackgroundPreset.entries.map(ChatBackground::Preset)
+        val backgrounds = listOf(ChatBackground.None, aPhoto()) +
+            ChatBackgroundPreset.entries.map(ChatBackground::Preset) +
+            ChatArtwork.entries.map(ChatBackground::Art)
         val bubbles = listOf(null) + ChatBubbleColor.entries
         backgrounds.forEach { background ->
             bubbles.forEach { bubble ->
-                val theme = ChatTheme(background, bubble)
-                assertThat(ChatBackgroundCodec.decode(ChatBackgroundCodec.encode(theme))).isEqualTo(theme)
+                bubbles.forEach { bubbleDark ->
+                    val theme = ChatTheme(background, bubble, bubbleDark).normalized()
+                    assertThat(ChatBackgroundCodec.decode(ChatBackgroundCodec.encode(theme))).isEqualTo(theme)
+                }
             }
         }
+    }
+
+    @Test
+    fun `an artwork is written with its fallback preset, and only a dark bubble that differs is written`() {
+        assertThat(ChatBackgroundCodec.encode(ChatArtwork.GlassDrops.theme))
+            .isEqualTo("""{"art":"glass-drops","bubble":"purple","bubble_dark":"pink","fallback_preset":"blush","kind":"art","v":1}""")
+        assertThat(ChatBackgroundCodec.encode(ChatArtwork.Silk.theme))
+            .isEqualTo("""{"art":"silk","bubble":"teal","fallback_preset":"mint","kind":"art","v":1}""")
+        assertThat(ChatBackgroundCodec.encode(ChatTheme(bubbleDark = ChatBubbleColor.Pink))).isEqualTo("{}")
+    }
+
+    @Test
+    fun `the dark bubble shows only in dark appearance and only next to a palette bubble`() {
+        val pair = ChatTheme(bubble = ChatBubbleColor.Purple, bubbleDark = ChatBubbleColor.Pink)
+        assertThat(pair.outgoingBubble(isLight = true)).isEqualTo(ChatBubbleColor.Purple)
+        assertThat(pair.outgoingBubble(isLight = false)).isEqualTo(ChatBubbleColor.Pink)
+        assertThat(ChatTheme(bubble = ChatBubbleColor.Teal).outgoingBubble(isLight = false)).isEqualTo(ChatBubbleColor.Teal)
+        assertThat(ChatTheme(bubbleDark = ChatBubbleColor.Pink).outgoingBubble(isLight = false)).isNull()
+        assertThat(ChatTheme(bubbleDark = ChatBubbleColor.Pink).normalized()).isEqualTo(ChatTheme.STOCK)
+        assertThat(ChatTheme(bubble = ChatBubbleColor.Teal, bubbleDark = ChatBubbleColor.Teal).normalized()).isEqualTo(ChatTheme(bubble = ChatBubbleColor.Teal))
+    }
+
+    @Test
+    fun `a theme with no wallpaper is named after the bubble shown in each appearance`() {
+        val pair = ChatTheme(bubble = ChatBubbleColor.Orange, bubbleDark = ChatBubbleColor.Blue)
+        assertThat(pair.nameRes(isLight = true)).isEqualTo(ChatBubbleColor.Orange.nameRes)
+        assertThat(pair.nameRes(isLight = false)).isEqualTo(ChatBubbleColor.Blue.nameRes)
+        val palmCoast = ChatArtwork.PalmCoast.theme
+        assertThat(palmCoast.nameRes(isLight = false)).isEqualTo(ChatArtwork.PalmCoast.nameRes)
+        assertThat(ChatTheme.STOCK.nameRes(isLight = false)).isEqualTo(ChatBackground.None.nameRes)
+    }
+
+    @Test
+    fun `artwork ids are unique, valid and never a reserved word`() {
+        val ids = ChatArtwork.entries.map { it.id }
+
+        assertThat(ids).hasSize(26)
+        assertThat(ids).containsNoDuplicates()
+        assertThat(ids).containsNoneOf("rainbow", "pattern", "video", "Blue")
+        ids.forEach { assertThat(ChatArtwork.fromId(it)?.id).isEqualTo(it) }
+        assertThat(ChatArtwork.fromId("Silk")).isNull()
+    }
+
+    @Test
+    fun `an artwork's fallback is one of the original ten presets`() {
+        val originalTen = ChatBackgroundPreset.entries.take(10)
+        ChatArtwork.entries.forEach { assertWithMessage(it.id).that(it.fallbackPreset).isIn(originalTen) }
     }
 
     @Test
@@ -168,6 +219,10 @@ private fun aPhoto() = ChatBackground.Photo(
 internal fun ChatTheme.toFixture(): JsonElement = buildJsonObject {
     when (val background = background) {
         ChatBackground.None -> put("kind", "none")
+        is ChatBackground.Art -> {
+            put("kind", "art")
+            put("art", background.artwork.id)
+        }
         is ChatBackground.Preset -> {
             put("kind", "preset")
             put("preset", background.preset.id)
@@ -190,12 +245,14 @@ internal fun ChatTheme.toFixture(): JsonElement = buildJsonObject {
         }
     }
     bubble?.let { put("bubble", it.id) }
+    bubbleDark?.let { put("bubble_dark", it.id) }
 }.normalized()
 
 private fun JsonObject.toChatTheme(): ChatTheme {
     val background = when (getValue("kind").jsonPrimitive.content) {
         "none" -> ChatBackground.None
         "preset" -> ChatBackground.Preset(ChatBackgroundPreset.fromId(getValue("preset").jsonPrimitive.content)!!)
+        "art" -> ChatBackground.Art(ChatArtwork.fromId(getValue("art").jsonPrimitive.content)!!)
         else -> getValue("photo").jsonObject.let { photo ->
             val align = photo.getValue("align").jsonObject
             ChatBackground.Photo(
@@ -212,7 +269,8 @@ private fun JsonObject.toChatTheme(): ChatTheme {
         }
     }
     val bubble = get("bubble")?.jsonPrimitive?.content?.takeUnless { it == "standard" }?.let { ChatBubbleColor.fromId(it)!! }
-    return ChatTheme(background, bubble)
+    val bubbleDark = get("bubble_dark")?.jsonPrimitive?.content?.let { ChatBubbleColor.fromId(it)!! }
+    return ChatTheme(background, bubble, bubbleDark)
 }
 
 // Fixtures may write 1 or 1.0 for the same number, so numbers are compared by value.

@@ -745,7 +745,7 @@ private fun ChatBackgroundItem(
             null
         },
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Theme())),
-        trailingContent = ListItemContent.Text(stringResource(row.theme.nameRes)),
+        trailingContent = ListItemContent.Text(stringResource(row.theme.nameRes(ElementTheme.isLightTheme))),
         enabled = row.canChange != false,
         onClick = onClick,
     )
