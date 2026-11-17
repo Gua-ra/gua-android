@@ -115,6 +115,16 @@ enum class ChatArtwork(
         fallbackPreset = ChatBackgroundPreset.Lavender,
         stillTime = 24f,
     ),
+    DuneLagoons(
+        id = "dune-lagoons",
+        section = ChatArtworkSection.Nature,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_dune_lagoons,
+        bubble = ChatBubbleColor.Teal,
+        bubbleDark = ChatBubbleColor.Purple,
+        anchor = UnitPoint(0.5f, 0.25f),
+        fallbackPreset = ChatBackgroundPreset.Mint,
+    ),
     PalmCoast(
         id = "palm-coast",
         section = ChatArtworkSection.Nature,

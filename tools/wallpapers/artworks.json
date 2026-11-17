@@ -82,6 +82,15 @@
       "fallback_preset": "lavender"
     },
     {
+      "id": "dune-lagoons",
+      "lab": "nature.dunes",
+      "section": "nature",
+      "live": false,
+      "bubble": { "light": "teal", "dark": "purple" },
+      "anchor": { "x": 0.5, "y": 0.25 },
+      "fallback_preset": "mint"
+    },
+    {
       "id": "palm-coast",
       "lab": "nature.palms",
       "section": "nature",
