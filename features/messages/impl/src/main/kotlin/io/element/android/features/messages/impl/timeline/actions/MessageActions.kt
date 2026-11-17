@@ -61,8 +61,30 @@ object MessageActions {
 
     // The names of the "<name>" and "</name>" forms; br has forms of its own and no end tag.
     private val ELEMENT_NAMES = setOf(
-        "a", "b", "blockquote", "code", "del", "div", "em", "h1", "h2", "h3", "h4", "h5", "h6",
-        "i", "li", "ol", "p", "s", "span", "strong", "sub", "sup", "u", "ul",
+        "a",
+        "b",
+        "blockquote",
+        "code",
+        "del",
+        "div",
+        "em",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "i",
+        "li",
+        "ol",
+        "p",
+        "s",
+        "span",
+        "strong",
+        "sub",
+        "sup",
+        "u",
+        "ul",
     )
     private val HEADINGS = setOf("h1", "h2", "h3", "h4", "h5", "h6")
     private val NOT_IN_PARAGRAPH = HEADINGS + setOf("blockquote", "div", "li", "ol", "p", "ul")
