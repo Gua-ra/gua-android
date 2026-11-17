@@ -66,7 +66,13 @@ internal fun baseChatTheme(mode: ChatThemeMode, current: ChatTheme, defaultTheme
 sealed interface ChatThemePage {
     data object Gallery : ChatThemePage
 
-    data class BubblePicker(val selection: ChatBubbleColor?) : ChatThemePage
+    /** Opens on the theme's bubble pair; choosing a swatch picks one colour for both appearances. */
+    data class BubblePicker(
+        val selection: ChatBubbleColor?,
+        val selectionDark: ChatBubbleColor? = null,
+    ) : ChatThemePage {
+        fun appliedTo(theme: ChatTheme) = theme.copy(bubble = selection, bubbleDark = selectionDark)
+    }
 
     data object WallpaperPicker : ChatThemePage
 }

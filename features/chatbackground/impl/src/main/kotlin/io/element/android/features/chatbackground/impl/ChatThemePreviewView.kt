@@ -8,9 +8,11 @@
 package io.element.android.features.chatbackground.impl
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,8 +21,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
@@ -33,6 +40,10 @@ import io.element.android.libraries.designsystem.theme.components.SegmentedButto
 import io.element.android.libraries.designsystem.theme.components.TextButton
 import io.element.android.libraries.designsystem.theme.components.TopAppBar
 import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundCanvas
+import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperCues
+import io.element.android.libraries.matrix.ui.chatbackground.liveWallpaperChatAreaEnd
+import io.element.android.libraries.matrix.ui.chatbackground.rememberLiveWallpaperCanAnimate
+import io.element.android.libraries.matrix.ui.chatbackground.rememberLiveWallpaperVisibleArea
 import io.element.android.libraries.ui.strings.CommonStrings
 
 @Composable
@@ -44,6 +55,7 @@ internal fun ChatThemePreviewView(
     modifier: Modifier = Modifier,
 ) {
     val isDarkPreview = preview.isDarkPreview ?: !ElementTheme.isLightTheme
+    val chatArea = rememberLiveWallpaperVisibleArea()
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -58,22 +70,51 @@ internal fun ChatThemePreviewView(
                 saveLabel = saveLabel,
                 canChange = canChange,
                 eventSink = eventSink,
+                modifier = Modifier.liveWallpaperChatAreaEnd(chatArea),
             )
         },
     ) { padding ->
+        // The chat's own frame, with the controls drawn over it like the composer, so an artwork is cropped exactly as in the chat.
+        val framePadding = PaddingValues(top = padding.calculateTopPadding())
         Box(
             modifier = Modifier
-                .padding(padding)
-                .consumeWindowInsets(padding)
+                .padding(framePadding)
+                .consumeWindowInsets(framePadding)
+                .navigationBarsPadding()
                 .fillMaxSize(),
         ) {
             ElementTheme(theme = if (isDarkPreview) Theme.Dark else Theme.Light, applySystemBarsUpdate = false) {
-                Box(modifier = Modifier.fillMaxSize().background(ElementTheme.colors.bgCanvasDefault)) {
-                    ChatBackgroundCanvas(background = preview.shown.background, modifier = Modifier.fillMaxSize())
+                // A tap on the frame stands for a send, so a live artwork previews its send pulse.
+                var previewSends by remember { mutableIntStateOf(0) }
+                val artwork = (preview.shown.background as? ChatBackground.Art)?.artwork
+                val onPreviewSend: (() -> Unit)? = if (artwork != null && rememberLiveWallpaperCanAnimate(artwork)) {
+                    { previewSends++ }
+                } else {
+                    null
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(ElementTheme.colors.bgCanvasDefault)
+                        .then(
+                            if (onPreviewSend == null) {
+                                Modifier
+                            } else {
+                                Modifier.pointerInput(Unit) { detectTapGestures { onPreviewSend() } }
+                            }
+                        ),
+                ) {
+                    ChatBackgroundCanvas(
+                        background = preview.shown.background,
+                        modifier = Modifier.fillMaxSize(),
+                        live = LiveWallpaperCues(sendCount = previewSends),
+                        visibleArea = chatArea,
+                    )
                     ChatBackgroundSampleMessages(
                         isOnBackground = preview.shown.background != ChatBackground.None,
-                        bubble = preview.shown.bubble,
+                        theme = preview.shown,
                         modifier = Modifier.align(Alignment.TopCenter),
+                        onPreviewSend = onPreviewSend,
                     )
                 }
             }

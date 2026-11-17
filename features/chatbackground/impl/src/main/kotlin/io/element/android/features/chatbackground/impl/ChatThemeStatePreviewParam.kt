@@ -9,6 +9,7 @@ package io.element.android.features.chatbackground.impl
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import io.element.android.libraries.architecture.AsyncAction
+import io.element.android.libraries.chatbackground.api.ChatArtwork
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPhotoUpload
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
@@ -57,6 +58,15 @@ class ChatThemeStatePreviewParam : PreviewParameterProvider<ChatThemeState> {
                     saved = aTheme(ChatBackgroundPreset.Mint, ChatBubbleColor.Purple),
                 ),
             ),
+            aChatThemeState(current = ChatArtwork.GlassDrops.theme),
+            aChatThemeState(preview = ChatThemePreview(shown = ChatArtwork.PalmCoast.theme, saved = ChatArtwork.PalmCoast.theme)),
+            aChatThemeState(preview = ChatThemePreview(shown = ChatArtwork.GlassDrops.theme, saved = ChatArtwork.GlassDrops.theme)),
+            aChatThemeState(
+                current = ChatArtwork.Ipe.theme,
+                page = ChatThemePage.BubblePicker(selection = ChatBubbleColor.Pink, selectionDark = ChatBubbleColor.Yellow),
+            ),
+            aChatThemeState(current = ChatArtwork.Azulejo.theme, page = ChatThemePage.WallpaperPicker),
+            aChatThemeState(current = ChatArtwork.GlassDrops.theme, page = ChatThemePage.WallpaperPicker),
         )
 }
 

@@ -43,4 +43,6 @@ dependencies {
     testCommonDependencies(libs, true)
     testImplementation(projects.libraries.matrixmedia.test)
     testImplementation(projects.libraries.matrix.test)
+    // GUA FORK: the wallpaper manifest test reads manifest.json.
+    testImplementation(libs.serialization.json)
 }

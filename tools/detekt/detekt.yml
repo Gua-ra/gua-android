@@ -246,6 +246,7 @@ Compose:
       - LocalChatBackgroundActive
       - LocalOutgoingBubbleColor
       - LocalPlayGifsAutomatically
+      - LocalLiveWallpaperHidden
   CompositionLocalNaming:
     active: true
   ContentEmitterReturningValues:

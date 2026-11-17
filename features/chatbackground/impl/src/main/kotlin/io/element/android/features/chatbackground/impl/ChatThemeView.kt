@@ -7,6 +7,7 @@
 
 package io.element.android.features.chatbackground.impl
 
+import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -18,22 +19,27 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
+import io.element.android.libraries.chatbackground.api.ChatArtwork
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.chatbackground.api.nameRes
 import io.element.android.libraries.designsystem.components.async.AsyncActionView
 import io.element.android.libraries.designsystem.components.async.AsyncActionViewDefaults
 import io.element.android.libraries.designsystem.components.button.BackButton
+import io.element.android.libraries.designsystem.preview.DAY_MODE_NAME
 import io.element.android.libraries.designsystem.preview.ElementPreview
+import io.element.android.libraries.designsystem.preview.NIGHT_MODE_NAME
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Scaffold
 import io.element.android.libraries.designsystem.theme.components.Text
@@ -57,7 +63,7 @@ fun ChatThemeView(
             BackHandler(onBack = cancel)
             ChatBackgroundPhotoPreviewView(
                 draft = photoDraft,
-                bubble = state.baseTheme.bubble,
+                theme = state.baseTheme,
                 canChange = state.canChange,
                 eventSink = state.eventSink,
                 modifier = modifier,
@@ -75,7 +81,7 @@ fun ChatThemeView(
         }
         page is ChatThemePage.BubblePicker -> {
             BackHandler(onBack = cancel)
-            ChatBubblePickerView(state = state, selection = page.selection, modifier = modifier)
+            ChatBubblePickerView(state = state, picker = page, modifier = modifier)
         }
         page == ChatThemePage.WallpaperPicker -> {
             BackHandler(onBack = cancel)
@@ -139,13 +145,14 @@ private fun ChatThemeGalleryView(
                     .padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(32.dp, Alignment.CenterHorizontally),
             ) {
+                val bubble = state.baseTheme.outgoingBubble(ElementTheme.isLightTheme)
                 RoundOptionButton(
                     label = stringResource(R.string.gua_chat_theme_chat_bubble),
-                    currentValue = stringResource(state.baseTheme.bubble?.nameRes ?: R.string.gua_chat_theme_bubble_standard),
+                    currentValue = stringResource(bubble?.nameRes ?: R.string.gua_chat_theme_bubble_standard),
                     enabled = state.canChange,
                     onClick = { state.eventSink(ChatThemeEvent.OpenBubblePicker) },
                 ) {
-                    Box(Modifier.fillMaxSize().background(state.baseTheme.bubble.outgoingBubbleColor()))
+                    Box(Modifier.fillMaxSize().background(state.baseTheme.outgoingBubbleColor()))
                 }
                 RoundOptionButton(
                     label = stringResource(R.string.gua_chat_theme_wallpaper),
@@ -160,24 +167,26 @@ private fun ChatThemeGalleryView(
                 ChatThemeSectionTitle(section.titleRes)
                 ChatThemeTileRow {
                     if (section == ChatThemeSection.Featured) {
-                        ChatThemeTile(
-                            theme = state.defaultTile,
-                            label = stringResource(
-                                when (state.mode) {
-                                    ChatThemeMode.Chat -> ChatBackgroundR.string.gua_chat_background_value_default
-                                    ChatThemeMode.Default -> R.string.gua_chat_theme_classic
-                                }
-                            ),
-                            isSelected = state.current == ChatTheme.STOCK,
-                            enabled = state.canChange,
-                            showsBubbles = true,
-                            onClick = { state.eventSink(ChatThemeEvent.SelectDefault) },
-                        )
+                        item {
+                            ChatThemeTile(
+                                theme = state.defaultTile,
+                                label = stringResource(
+                                    when (state.mode) {
+                                        ChatThemeMode.Chat -> ChatBackgroundR.string.gua_chat_background_value_default
+                                        ChatThemeMode.Default -> R.string.gua_chat_theme_classic
+                                    }
+                                ),
+                                isSelected = state.current == ChatTheme.STOCK,
+                                enabled = state.canChange,
+                                showsBubbles = true,
+                                onClick = { state.eventSink(ChatThemeEvent.SelectDefault) },
+                            )
+                        }
                     }
-                    section.themes.forEach { theme ->
+                    items(section.themes) { theme ->
                         ChatThemeTile(
                             theme = theme,
-                            label = stringResource(theme.nameRes),
+                            label = stringResource(theme.nameRes(ElementTheme.isLightTheme)),
                             isSelected = theme == state.current,
                             enabled = state.canChange,
                             showsBubbles = true,
@@ -221,6 +230,16 @@ internal fun ChatThemeNote(text: String, modifier: Modifier = Modifier) {
 internal fun ChatThemeViewPreview(@PreviewParameter(ChatThemeStatePreviewParam::class) state: ChatThemeState) = ElementPreview {
     ChatThemeView(
         state = state,
+        onBackClick = {},
+    )
+}
+
+@Preview(name = DAY_MODE_NAME, heightDp = 1600)
+@Preview(name = NIGHT_MODE_NAME, heightDp = 1600, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+internal fun ChatThemeViewAllSectionsPreview() = ElementPreview {
+    ChatThemeView(
+        state = aChatThemeState(current = ChatArtwork.Silk.theme),
         onBackClick = {},
     )
 }

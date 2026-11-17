@@ -1,0 +1,241 @@
+{
+  "artworks": [
+    {
+      "id": "glass-drops",
+      "lab": "live-bubble-lamp",
+      "section": "live",
+      "live": true,
+      "bubble": { "light": "purple", "dark": "pink" },
+      "anchor": { "x": 0.5, "y": 0.08 },
+      "still_time": 0,
+      "fallback_preset": "blush"
+    },
+    {
+      "id": "glass-drops-blue",
+      "lab": "live-glass-drops-blue",
+      "section": "live",
+      "live": true,
+      "bubble": { "light": "teal", "dark": "teal" },
+      "anchor": { "x": 0.5, "y": 0.35 },
+      "still_time": 14,
+      "fallback_preset": "sky"
+    },
+    {
+      "id": "molten-pearl",
+      "lab": "live-molten-pearl",
+      "section": "live",
+      "live": true,
+      "bubble": { "light": "purple", "dark": "blue" },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "still_time": 24,
+      "fallback_preset": "sky"
+    },
+    {
+      "id": "silk",
+      "lab": "live-silk",
+      "section": "live",
+      "live": true,
+      "bubble": { "light": "teal", "dark": "teal" },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "still_time": 0,
+      "fallback_preset": "mint"
+    },
+    {
+      "id": "ipe",
+      "lab": "live-ipe",
+      "section": "live",
+      "live": true,
+      "bubble": { "light": "pink", "dark": "yellow" },
+      "anchor": { "x": 0.5, "y": 0 },
+      "still_time": 24,
+      "fallback_preset": "sunset"
+    },
+    {
+      "id": "rain-on-glass",
+      "lab": "live-rain-glass",
+      "section": "live",
+      "live": true,
+      "bubble": { "light": "green", "dark": "blue" },
+      "anchor": { "x": 0.5, "y": 0.3 },
+      "still_time": 48,
+      "fallback_preset": "aurora"
+    },
+    {
+      "id": "pantanal",
+      "lab": "live-pantanal",
+      "section": "live",
+      "live": true,
+      "bubble": { "light": "green", "dark": "green" },
+      "anchor": { "x": 0.5, "y": 0.38 },
+      "still_time": 24,
+      "fallback_preset": "mint",
+      "lab_size": true
+    },
+    {
+      "id": "currents-live",
+      "lab": "pattern-currents-live",
+      "section": "live",
+      "live": true,
+      "bubble": { "light": "purple", "dark": "purple" },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "still_time": 24,
+      "fallback_preset": "lavender"
+    },
+    {
+      "id": "palm-coast",
+      "lab": "nature.palms",
+      "section": "nature",
+      "live": false,
+      "bubble": { "light": "orange", "dark": "blue" },
+      "anchor": { "x": 0.5, "y": 0.2 },
+      "fallback_preset": "ocean"
+    },
+    {
+      "id": "river-bends",
+      "lab": "nature.river",
+      "section": "nature",
+      "live": false,
+      "bubble": { "light": "teal", "dark": "teal" },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "fallback_preset": "mint"
+    },
+    {
+      "id": "highland-mist",
+      "lab": "nature.highlands",
+      "section": "nature",
+      "live": false,
+      "bubble": { "light": "blue", "dark": "green" },
+      "anchor": { "x": 0.5, "y": 0.3 },
+      "fallback_preset": "mint"
+    },
+    {
+      "id": "glacier-lake",
+      "lab": "nature.lake",
+      "section": "nature",
+      "live": false,
+      "bubble": { "light": "teal", "dark": "teal" },
+      "anchor": { "x": 0.5, "y": 0.35 },
+      "fallback_preset": "ocean"
+    },
+    {
+      "id": "canola-sky",
+      "lab": "nature.canola",
+      "section": "nature",
+      "live": false,
+      "bubble": { "light": "green", "dark": "orange" },
+      "anchor": { "x": 0.4, "y": 0.38 },
+      "fallback_preset": "sand"
+    },
+    {
+      "id": "harbour-fog",
+      "lab": "nature.fog",
+      "section": "nature",
+      "live": false,
+      "bubble": { "light": "blue", "dark": "blue" },
+      "anchor": { "x": 0.7, "y": 0.3 },
+      "fallback_preset": "ocean"
+    },
+    {
+      "id": "canyon-glow",
+      "lab": "nature.canyon",
+      "section": "nature",
+      "live": false,
+      "bubble": { "light": "blue", "dark": "purple" },
+      "anchor": { "x": 0.5, "y": 0.3 },
+      "fallback_preset": "sand"
+    },
+    {
+      "id": "polar-ice",
+      "lab": "nature.polar",
+      "section": "nature",
+      "live": false,
+      "bubble": { "light": "blue", "dark": "purple" },
+      "anchor": { "x": 0.5, "y": 0.3 },
+      "fallback_preset": "night"
+    },
+    {
+      "id": "moon-tide",
+      "lab": "nature.tide",
+      "section": "nature",
+      "live": false,
+      "bubble": { "light": "blue", "dark": "blue" },
+      "anchor": { "x": 0.5, "y": 0.72 },
+      "fallback_preset": "ocean"
+    },
+    {
+      "id": "currents",
+      "lab": "pattern-currents",
+      "section": "patterns",
+      "live": false,
+      "bubble": { "light": "purple", "dark": "purple" },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "fallback_preset": "lavender"
+    },
+    {
+      "id": "azulejo",
+      "lab": "pattern-azulejo",
+      "section": "patterns",
+      "live": false,
+      "bubble": { "light": "blue", "dark": "blue" },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "fallback_preset": "sky"
+    },
+    {
+      "id": "calcadao",
+      "lab": "pattern-calcadao",
+      "section": "patterns",
+      "live": false,
+      "bubble": { "light": "teal", "dark": "teal" },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "fallback_preset": "sand"
+    },
+    {
+      "id": "knit",
+      "lab": "pattern-knit",
+      "section": "patterns",
+      "live": false,
+      "bubble": { "light": "blue", "dark": "blue" },
+      "anchor": { "x": 0.5, "y": 0 },
+      "fallback_preset": "sand"
+    },
+    {
+      "id": "doodles-brasil",
+      "lab": "doodle-brasil",
+      "section": "patterns",
+      "live": false,
+      "bubble": { "light": "green", "dark": "green" },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "fallback_preset": "mint"
+    },
+    {
+      "id": "doodles-canada",
+      "lab": "doodle-canada",
+      "section": "patterns",
+      "live": false,
+      "bubble": { "light": "blue", "dark": "blue" },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "fallback_preset": "sand"
+    },
+    {
+      "id": "paper",
+      "lab": "paper",
+      "section": "minimal",
+      "live": false,
+      "option": "cream",
+      "bubble": { "light": "green", "dark": "green" },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "fallback_preset": "sand",
+      "lab_texture": true
+    },
+    {
+      "id": "paper-cut",
+      "lab": "papercut",
+      "section": "minimal",
+      "live": false,
+      "option": "apricot",
+      "bubble": { "light": "teal", "dark": "orange" },
+      "anchor": { "x": 1, "y": 0 },
+      "fallback_preset": "sand"
+    }
+  ]
+}

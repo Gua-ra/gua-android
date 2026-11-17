@@ -14,6 +14,8 @@ sealed interface ChatBackground {
 
     data class Preset(val preset: ChatBackgroundPreset) : ChatBackground
 
+    data class Art(val artwork: ChatArtwork) : ChatBackground
+
     // Whole numbers because rooms from version 6 refuse an event holding a float.
     data class Photo(
         val url: String,
@@ -46,5 +48,6 @@ val ChatBackground.nameRes: Int
     get() = when (this) {
         ChatBackground.None -> R.string.gua_chat_background_value_default
         is ChatBackground.Preset -> preset.nameRes
+        is ChatBackground.Art -> artwork.nameRes
         is ChatBackground.Photo -> R.string.gua_chat_background_value_photo
     }

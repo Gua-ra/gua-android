@@ -15,6 +15,7 @@ import io.element.android.features.messages.api.timeline.voicemessages.composer.
 import io.element.android.features.messages.api.timeline.voicemessages.composer.aVoiceMessagePreviewState
 import io.element.android.features.messages.impl.actionlist.ActionListState
 import io.element.android.features.messages.impl.actionlist.anActionListState
+import io.element.android.features.messages.impl.chatbackground.aChatArtworkMessagesState
 import io.element.android.features.messages.impl.chatbackground.aChatBackgroundTimelineItems
 import io.element.android.features.messages.impl.chatbackground.aChatBackgroundTimelineRoomInfo
 import io.element.android.features.messages.impl.crypto.identity.IdentityChangeState
@@ -121,6 +122,8 @@ open class MessagesStatePreviewParam : PreviewParameterProvider<MessagesState> {
                 chatTheme = ChatTheme(bubble = ChatBubbleColor.Purple),
                 timelineState = aTimelineState(timelineItems = aChatBackgroundTimelineItems(), timelineRoomInfo = aChatBackgroundTimelineRoomInfo()),
             ),
+            // GUA FORK: the timeline over an illustrated wallpaper.
+            aChatArtworkMessagesState(),
         )
 }
 

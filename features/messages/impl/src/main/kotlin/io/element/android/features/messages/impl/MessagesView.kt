@@ -76,6 +76,7 @@ import io.element.android.features.messages.api.timeline.voicemessages.composer.
 import io.element.android.features.messages.impl.actionlist.ActionListEvent
 import io.element.android.features.messages.impl.actionlist.ActionListView
 import io.element.android.features.messages.impl.actionlist.model.TimelineItemAction
+import io.element.android.features.messages.impl.chatbackground.liveWallpaperCues
 import io.element.android.features.messages.impl.crypto.identity.IdentityChangeStateView
 import io.element.android.features.messages.impl.link.LinkEvent
 import io.element.android.features.messages.impl.link.LinkView
@@ -161,8 +162,10 @@ import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSen
 import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundCanvas
 import io.element.android.libraries.matrix.ui.chatbackground.isShowingBackground
+import io.element.android.libraries.matrix.ui.chatbackground.liveWallpaperChatArea
+import io.element.android.libraries.matrix.ui.chatbackground.outgoingBubbleColorOrNull
 import io.element.android.libraries.matrix.ui.chatbackground.rememberChatBackgroundTransition
-import io.element.android.libraries.matrix.ui.chatbackground.toColor
+import io.element.android.libraries.matrix.ui.chatbackground.rememberLiveWallpaperVisibleArea
 import io.element.android.libraries.matrix.ui.media.contentvalidation.ContentValidationValue
 import io.element.android.libraries.matrix.ui.media.contentvalidation.LocalEventContentValidationState
 import io.element.android.libraries.textcomposer.model.TextEditorState
@@ -336,6 +339,8 @@ fun MessagesView(
     val chatBackgroundTransition = rememberChatBackgroundTransition(state.chatTheme.background)
     val isShowingChatBackground = chatBackgroundTransition.isShowingBackground
     var topBarHeight by remember { mutableStateOf(0.dp) }
+    // GUA FORK: where the chat shows over a live wallpaper, so its send pulse starts above the composer.
+    val chatArea = rememberLiveWallpaperVisibleArea()
     MessageMenuHost(
         controller = messageMenuController,
         modifier = modifier,
@@ -365,6 +370,9 @@ fun MessagesView(
                     .messageMenuBackdrop(messageMenuController, isMenuShown = state.messageMenuState.target is MessageMenuState.Target.Shown)
                     .systemBarsPadding()
                     .padding(top = topBarHeight),
+                // GUA FORK: a live artwork animates behind the timeline and pulses when the user sends.
+                live = state.liveWallpaperCues(),
+                visibleArea = chatArea,
             )
         }
         ExpandableBottomSheetLayout(
@@ -438,6 +446,8 @@ fun MessagesView(
                             modifier = Modifier
                                 .padding(padding)
                                 .consumeWindowInsets(padding)
+                                // GUA FORK: the chat shows between the top bar and the composer, which rides on the keyboard.
+                                .liveWallpaperChatArea(chatArea)
                         ) {
                             MessagesViewContent(
                                 state = state,
@@ -749,7 +759,7 @@ private fun MessagesViewContent(
 
             CompositionLocalProvider(
                 LocalChatBackgroundActive provides (state.chatTheme.background != ChatBackground.None),
-                LocalOutgoingBubbleColor provides state.chatTheme.bubble?.toColor(),
+                LocalOutgoingBubbleColor provides state.chatTheme.outgoingBubbleColorOrNull(),
             ) {
                 TimelineView(
                     state = state.timelineState,

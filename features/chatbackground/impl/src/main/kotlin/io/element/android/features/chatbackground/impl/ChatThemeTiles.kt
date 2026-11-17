@@ -11,28 +11,35 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -44,7 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
-import io.element.android.libraries.chatbackground.api.ChatBubbleColor
+import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.Text
@@ -68,14 +75,22 @@ internal fun ChatThemeSectionTitle(@StringRes titleRes: Int, modifier: Modifier 
 @Composable
 internal fun ChatThemeTileRow(
     modifier: Modifier = Modifier,
-    content: @Composable RowScope.() -> Unit,
+    content: LazyListScope.() -> Unit,
 ) {
-    Row(
+    val density = LocalDensity.current
+    // A lazy row is only as tall as the tiles on screen, so it keeps the tallest height it has had: scrolling a labelled tile out
+    // of view never moves the rows below.
+    var minHeight by remember { mutableStateOf(0.dp) }
+    LazyRow(
         modifier = modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .selectableGroup()
-            .padding(horizontal = 16.dp),
+            .heightIn(min = minHeight)
+            .onSizeChanged { size ->
+                val height = with(density) { size.height.toDp() }
+                if (height > minHeight) minHeight = height
+            }
+            .selectableGroup(),
+        contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         content = content,
     )
@@ -93,11 +108,14 @@ internal fun ChatThemeTile(
     showsLabel: Boolean = true,
 ) {
     val bubbleDescription = if (showsBubbles) {
-        stringResource(R.string.gua_chat_theme_bubble_a11y, stringResource(theme.bubble?.nameRes ?: R.string.gua_chat_theme_bubble_standard))
+        val bubble = theme.outgoingBubble(ElementTheme.isLightTheme)
+        stringResource(R.string.gua_chat_theme_bubble_a11y, stringResource(bubble?.nameRes ?: R.string.gua_chat_theme_bubble_standard))
     } else {
         null
     }
-    val description = listOfNotNull(label.takeUnless { showsLabel }, bubbleDescription).joinToString(", ")
+    val isLive = (theme.background as? ChatBackground.Art)?.artwork?.isLive == true
+    val liveDescription = if (isLive) stringResource(R.string.gua_chat_theme_live_badge) else null
+    val description = listOfNotNull(label, liveDescription, bubbleDescription).joinToString(", ")
     Column(
         modifier = modifier
             .width(TILE_WIDTH)
@@ -117,11 +135,14 @@ internal fun ChatThemeTile(
                     color = if (isSelected) ElementTheme.colors.borderInteractivePrimary else ElementTheme.colors.borderInteractiveSecondary,
                     shape = TILE_SHAPE,
                 )
-                .clearAndSetSemantics { if (description.isNotEmpty()) contentDescription = description },
+                .clearAndSetSemantics { contentDescription = description },
         ) {
             ChatBackgroundCanvas(background = theme.background, modifier = Modifier.fillMaxSize())
+            // The badge stays out of the top row, where a translated badge would run into the selection check.
             if (showsBubbles) {
-                TileBubbles(bubble = theme.bubble)
+                TileBubbles(theme = theme, isLive = isLive)
+            } else if (isLive) {
+                LiveBadge(modifier = Modifier.align(Alignment.BottomCenter).padding(6.dp))
             }
             if (isSelected) {
                 SelectedBadge(modifier = Modifier.align(Alignment.TopEnd).padding(6.dp))
@@ -130,10 +151,12 @@ internal fun ChatThemeTile(
         if (showsLabel) {
             Text(
                 text = label,
+                // Already read first in the tile's description.
+                modifier = Modifier.clearAndSetSemantics {},
                 style = ElementTheme.typography.fontBodySmRegular,
                 color = if (enabled) ElementTheme.colors.textPrimary else ElementTheme.colors.textDisabled,
                 textAlign = TextAlign.Center,
-                maxLines = 1,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
         }
@@ -141,7 +164,7 @@ internal fun ChatThemeTile(
 }
 
 @Composable
-private fun TileBubbles(bubble: ChatBubbleColor?) {
+private fun TileBubbles(theme: ChatTheme, isLive: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -159,9 +182,27 @@ private fun TileBubbles(bubble: ChatBubbleColor?) {
                 .align(Alignment.End)
                 .fillMaxWidth(0.65f)
                 .height(14.dp)
-                .background(bubble.outgoingBubbleColor(), RoundedCornerShape(7.dp)),
+                .background(theme.outgoingBubbleColor(), RoundedCornerShape(7.dp)),
         )
+        if (isLive) {
+            LiveBadge(modifier = Modifier.align(Alignment.CenterHorizontally))
+        }
     }
+}
+
+@Composable
+private fun LiveBadge(modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(R.string.gua_chat_theme_live_badge),
+        modifier = modifier
+            // At a large font scale a translated badge can be wider than the space left inside the tile; it stays whole and centred.
+            .wrapContentWidth(unbounded = true)
+            .background(ElementTheme.colors.bgCanvasDefault, CircleShape)
+            .padding(horizontal = 6.dp, vertical = 1.dp),
+        style = ElementTheme.typography.fontBodyXsMedium,
+        color = ElementTheme.colors.textPrimary,
+        maxLines = 1,
+    )
 }
 
 @Composable

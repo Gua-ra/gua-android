@@ -21,20 +21,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
-import io.element.android.libraries.chatbackground.api.ChatBubbleColor
+import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.designsystem.chatbackground.LocalChatBackgroundActive
 import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.designsystem.theme.messageFromOtherBackground
 import io.element.android.libraries.matrix.ui.chatbackground.outgoingBubbleColor
 
+/** [onPreviewSend], when given, plays the live wallpaper's send pulse; the outgoing bubble offers it to accessibility services. */
 @Composable
 internal fun ChatBackgroundSampleMessages(
     isOnBackground: Boolean,
-    bubble: ChatBubbleColor?,
+    theme: ChatTheme,
     modifier: Modifier = Modifier,
+    onPreviewSend: (() -> Unit)? = null,
 ) {
     CompositionLocalProvider(LocalChatBackgroundActive provides isOnBackground) {
         Column(
@@ -56,10 +60,24 @@ internal fun ChatBackgroundSampleMessages(
                 color = ElementTheme.colors.messageFromOtherBackground,
                 modifier = Modifier.align(Alignment.Start),
             )
+            val previewSendLabel = stringResource(R.string.gua_chat_theme_preview_send_a11y)
             SampleBubble(
                 text = stringResource(R.string.gua_chat_background_sample_outgoing),
-                color = bubble.outgoingBubbleColor(),
-                modifier = Modifier.align(Alignment.End),
+                color = theme.outgoingBubbleColor(),
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .then(
+                        if (onPreviewSend == null) {
+                            Modifier
+                        } else {
+                            Modifier.semantics(mergeDescendants = true) {
+                                onClick(label = previewSendLabel) {
+                                    onPreviewSend()
+                                    true
+                                }
+                            }
+                        }
+                    ),
             )
         }
     }
