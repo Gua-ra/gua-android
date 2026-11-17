@@ -7,6 +7,7 @@
 
 package io.element.android.features.expressions.impl.panel
 
+import android.graphics.Bitmap
 import android.net.Uri
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.expressions.api.gif.GifFile
@@ -20,11 +21,13 @@ import io.element.android.features.expressions.api.panel.ExpressionPanelState
 import io.element.android.features.expressions.api.panel.KeyboardContent
 import io.element.android.features.expressions.api.sticker.OwnSticker
 import io.element.android.features.expressions.api.sticker.PackSticker
+import io.element.android.features.expressions.api.sticker.StickerFile
 import io.element.android.features.expressions.api.sticker.StickerImage
 import io.element.android.features.expressions.api.sticker.StickerLibrary
 import io.element.android.features.expressions.api.sticker.StickerPack
 import io.element.android.features.expressions.api.sticker.StickerRelation
 import io.element.android.features.expressions.impl.R
+import io.element.android.features.expressions.impl.editor.EditorFrame
 import io.element.android.features.expressions.impl.keyboard.FakeImageFiles
 import io.element.android.features.expressions.impl.keyboard.KeyboardStickers
 import io.element.android.features.expressions.impl.sticker.StickerImageEncoder
@@ -94,6 +97,7 @@ class DefaultExpressionPanelPresenterTest {
             state.eventSink(ExpressionPanelEvent.Open)
             val open = consumeItemsUntilPredicate { it.isOpen }.last().asDefault()
             assertThat(open.tab).isEqualTo(ExpressionTab.Stickers)
+            assertThat(open.isShowingOverlay).isFalse()
 
             open.panelSink(PanelEvent.SelectTab(ExpressionTab.Emoji))
             assertThat(consumeItemsUntilPredicate { it.asDefault().tab == ExpressionTab.Emoji }.last().asDefault().tab).isEqualTo(ExpressionTab.Emoji)
@@ -137,15 +141,17 @@ class DefaultExpressionPanelPresenterTest {
     }
 
     @Test
-    fun `a sticker is sent with the reply, then goes to recents and ends the reply`() = runTest {
+    fun `a sticker pulses the wallpaper once as it is sent with the reply, then goes to recents and ends the reply`() = runTest {
         val composer = RecordingComposer(inReplyToEventId = AN_EVENT_ID)
         val recents = FakeRecentStickersStore()
         val relations = mutableListOf<StickerRelation>()
+        val pulsesAtSend = mutableListOf<Int>()
         createPresenter(
             composer = composer,
             recentStickersStore = recents,
             stickerSender = FakeStickerSender(sendResult = { _, relation ->
                 relations += relation
+                pulsesAtSend += composer.stickerSentCount
                 Result.success(AN_EVENT_ID)
             }),
         ).test {
@@ -153,6 +159,8 @@ class DefaultExpressionPanelPresenterTest {
             consumeItemsUntilPredicate { cat.url in it.asDefault().sendingStickerUrls }
             consumeItemsUntilPredicate { it.asDefault().sendingStickerUrls.isEmpty() }
             assertThat(relations).containsExactly(StickerRelation.Reply(AN_EVENT_ID))
+            assertThat(pulsesAtSend).containsExactly(1)
+            assertThat(composer.stickerSentCount).isEqualTo(1)
             assertThat(recents.recents.value).containsExactly(cat)
             assertThat(composer.sentCount).isEqualTo(1)
         }
@@ -160,8 +168,10 @@ class DefaultExpressionPanelPresenterTest {
 
     @Test
     fun `a sticker that fails to send offers a retry`() = runTest {
+        val composer = RecordingComposer()
         val snackbarDispatcher = SnackbarDispatcher()
         createPresenter(
+            composer = composer,
             snackbarDispatcher = snackbarDispatcher,
             stickerSender = FakeStickerSender(sendResult = { _, _ -> Result.failure(Exception("offline")) }),
         ).test {
@@ -171,6 +181,9 @@ class DefaultExpressionPanelPresenterTest {
             val message = snackbarDispatcher.snackbarMessage.first()!!
             assertThat(message.messageResId).isEqualTo(R.string.gua_sticker_send_failed)
             assertThat(message.actionResId).isEqualTo(CommonStrings.action_retry)
+            // It pulsed as it went out, as a text send's local echo appears before the send fails.
+            assertThat(composer.stickerSentCount).isEqualTo(1)
+            assertThat(composer.sentCount).isEqualTo(0)
         }
     }
 
@@ -262,6 +275,8 @@ class DefaultExpressionPanelPresenterTest {
             assertThat(sends).containsExactly(Triple("g1", "Morning", AN_EVENT_ID))
             assertThat(recentGifs.recents.value).containsExactly("g1")
             assertThat(composer.sentCount).isEqualTo(1)
+            // The GIF's local echo pulses the wallpaper already.
+            assertThat(composer.stickerSentCount).isEqualTo(0)
             assertThat(last.overlay).isNull()
         }
     }
@@ -297,10 +312,11 @@ class DefaultExpressionPanelPresenterTest {
             awaitEnabled().panelSink(PanelEvent.RequestDeleteSticker("sdog"))
             val confirming = consumeItemsUntilPredicate { it.asDefault().overlay != null }.last().asDefault()
             assertThat(confirming.overlay).isEqualTo(ExpressionOverlay.ConfirmDelete("sdog"))
+            assertThat(confirming.isShowingOverlay).isTrue()
             assertThat(deleted).isEmpty()
 
             confirming.panelSink(PanelEvent.ConfirmDeleteSticker)
-            consumeItemsUntilPredicate { it.asDefault().overlay == null }
+            assertThat(consumeItemsUntilPredicate { it.asDefault().overlay == null }.last().isShowingOverlay).isFalse()
             consumeItemsUntilTimeout()
             assertThat(deleted).containsExactly("sdog")
         }
@@ -321,7 +337,9 @@ class DefaultExpressionPanelPresenterTest {
         var fallbacks = 0
         val sentFiles = mutableListOf<File>()
         val copy = File.createTempFile("keyboard", ".gif")
+        val composer = RecordingComposer()
         createPresenter(
+            composer = composer,
             imageFiles = FakeImageFiles(copyResult = { copy }),
             gifSender = FakeGifSender(sendFileResult = { file, _, _ ->
                 sentFiles += file
@@ -334,6 +352,44 @@ class DefaultExpressionPanelPresenterTest {
             consumeItemsUntilTimeout()
             assertThat(fallbacks).isEqualTo(1)
             assertThat(sentFiles).containsExactly(copy)
+            assertThat(composer.stickerSentCount).isEqualTo(0)
+        }
+    }
+
+    @Test
+    fun `a sticker made in the editor pulses the wallpaper once, as Save and send sends it`() = runTest {
+        val composer = RecordingComposer()
+        val made = StickerImage(url = "mxc://gua.global/made", body = "Sticker", info = null)
+        val pulsesAtUpload = mutableListOf<Int>()
+        val pulsesAtSend = mutableListOf<Int>()
+        createPresenter(
+            composer = composer,
+            pickerProvider = FakePickerProvider().apply { givenResult(Uri.parse("content://gallery/1")) },
+            editorEngine = FakeStickerEditorEngine(
+                loadResult = { Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888) },
+                encodeResult = { _, body -> StickerFile(byteArrayOf(1), "image/webp", 4, 4, body, isAnimated = false) },
+            ),
+            stickerLibrarySetting = FakeStickerLibrarySetting(addResult = { Result.success(Unit) }),
+            stickerSender = FakeStickerSender(
+                uploadResult = {
+                    pulsesAtUpload += composer.stickerSentCount
+                    Result.success(made)
+                },
+                sendResult = { _, _ ->
+                    pulsesAtSend += composer.stickerSentCount
+                    Result.success(AN_EVENT_ID)
+                },
+            ),
+        ).test {
+            awaitEnabled().panelSink(PanelEvent.CreateSticker)
+            val editing = consumeItemsUntilPredicate { (it.asDefault().overlay as? ExpressionOverlay.Editor)?.editor?.picture != null }.last()
+            assertThat(editing.isShowingOverlay).isTrue()
+            editing.panelSinkOf().invoke(PanelEvent.SaveCreatedSticker(EditorFrame.Initial, send = true))
+            consumeItemsUntilPredicate { it.asDefault().overlay == null }
+            consumeItemsUntilTimeout()
+            assertThat(pulsesAtUpload).containsExactly(0)
+            assertThat(pulsesAtSend).containsExactly(1)
+            assertThat(composer.stickerSentCount).isEqualTo(1)
         }
     }
 
@@ -363,6 +419,7 @@ class DefaultExpressionPanelPresenterTest {
     private class RecordingComposer(override val inReplyToEventId: EventId? = null) : ExpressionComposer {
         override val timelineMode: Timeline.Mode = Timeline.Mode.Live
         var sentCount = 0
+        var stickerSentCount = 0
         val inserted = mutableListOf<String>()
 
         override suspend fun stickerRelation(): StickerRelation = inReplyToEventId?.let(StickerRelation::Reply) ?: StickerRelation.None
@@ -373,6 +430,10 @@ class DefaultExpressionPanelPresenterTest {
 
         override fun onSent() {
             sentCount++
+        }
+
+        override fun onStickerSent() {
+            stickerSentCount++
         }
     }
 
@@ -389,6 +450,8 @@ class DefaultExpressionPanelPresenterTest {
         gifSender: FakeGifSender = FakeGifSender(),
         gifProvider: FakeGifProvider = FakeGifProvider(trendingResult = { Result.success(GifPage(emptyList(), 1, false)) }),
         imageFiles: FakeImageFiles = FakeImageFiles(),
+        pickerProvider: FakePickerProvider = FakePickerProvider(),
+        editorEngine: FakeStickerEditorEngine = FakeStickerEditorEngine(),
         panelStore: InMemoryExpressionPanelStore = InMemoryExpressionPanelStore(),
         snackbarDispatcher: SnackbarDispatcher = SnackbarDispatcher(),
     ) = DefaultExpressionPanelPresenter(
@@ -406,8 +469,8 @@ class DefaultExpressionPanelPresenterTest {
         emojiPickerPresenterFactory = fakeEmojiPickerPresenterFactory(),
         getRecentEmojis = { Result.success(kotlinx.collections.immutable.persistentListOf()) },
         addRecentEmoji = { Result.success(Unit) },
-        pickerProvider = FakePickerProvider(),
-        editorEngine = FakeStickerEditorEngine(),
+        pickerProvider = pickerProvider,
+        editorEngine = editorEngine,
         keyboardStickers = KeyboardStickers(
             imageFiles = imageFiles,
             stickerSender = stickerSender,

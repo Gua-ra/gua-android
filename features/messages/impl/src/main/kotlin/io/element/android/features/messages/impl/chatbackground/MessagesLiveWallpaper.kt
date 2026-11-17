@@ -26,10 +26,10 @@ import io.element.android.libraries.matrix.ui.chatbackground.LocalLiveWallpaperH
 
 /**
  * What the timeline's live wallpaper needs: whether a sheet, a dialog or the message menu covers it, and the user's sends from this
- * device.
+ * device. [isChatHidden] is true while no chat shows at all, such as when the expanded expression panel takes its whole height.
  */
-internal fun MessagesState.liveWallpaperCues() = LiveWallpaperCues(
-    isCovered = isTimelineCovered(),
+internal fun MessagesState.liveWallpaperCues(isChatHidden: Boolean = false) = LiveWallpaperCues(
+    isCovered = isChatHidden || isTimelineCovered(),
     sendCount = timelineState.ownNewEventCount,
 )
 
@@ -42,6 +42,7 @@ internal fun MessagesState.isTimelineCovered(): Boolean {
         readReceiptBottomSheetState.selectedEvent != null ||
         composerState.showAttachmentSourcePicker ||
         timelineState.resolveVerifiedUserSendFailureState.verifiedUserSendFailure !is VerifiedUserSendFailure.None ||
+        expressionPanelState.isShowingOverlay ||
         isDialogShown()
 }
 

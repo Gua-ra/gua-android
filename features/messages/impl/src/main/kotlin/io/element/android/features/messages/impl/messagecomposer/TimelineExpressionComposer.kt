@@ -10,6 +10,8 @@ package io.element.android.features.messages.impl.messagecomposer
 import io.element.android.features.expressions.api.panel.ExpressionComposer
 import io.element.android.features.expressions.api.sticker.StickerRelation
 import io.element.android.features.messages.impl.timeline.TimelineController
+import io.element.android.features.messages.impl.timeline.TimelineEvent
+import io.element.android.features.messages.impl.timeline.TimelineState
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.asEventId
 import io.element.android.libraries.matrix.api.timeline.Timeline
@@ -18,6 +20,7 @@ import io.element.android.libraries.textcomposer.model.MessageComposerMode
 internal class TimelineExpressionComposer(
     private val timelineController: TimelineController,
     private val composerState: () -> MessageComposerState,
+    private val timelineState: () -> TimelineState,
 ) : ExpressionComposer {
     override val timelineMode: Timeline.Mode get() = timelineController.mainTimelineMode()
 
@@ -39,5 +42,9 @@ internal class TimelineExpressionComposer(
 
     override fun onSent() {
         if (composerState().mode is MessageComposerMode.Reply) composerState().eventSink(MessageComposerEvent.CloseSpecialMode)
+    }
+
+    override fun onStickerSent() {
+        timelineState().eventSink(TimelineEvent.StickerSent)
     }
 }

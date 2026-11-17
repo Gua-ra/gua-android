@@ -64,7 +64,11 @@ class KeyboardStickers(
         return try {
             val stickerFile = withContext(dispatchers.io) { stickerFile(received) } ?: return Outcome.NotOurs
             stickerSender.upload(stickerFile)
-                .flatMap { image -> stickerSender.send(image, composer.stickerRelation()).map { image } }
+                .flatMap { image ->
+                    val relation = composer.stickerRelation()
+                    composer.onStickerSent()
+                    stickerSender.send(image, relation).map { image }
+                }
                 .fold(
                     onSuccess = { image ->
                         composer.onSent()

@@ -59,10 +59,12 @@ class KeyboardStickersTest {
     }
 
     @Test
-    fun `a small transparent keyboard image is sent as it is as a sticker`() = runTest {
+    fun `a small transparent keyboard image is sent as it is as a sticker, pulsing once as it is sent after its upload`() = runTest {
         val file = temporaryFolder.newFile().apply { writeBytes(byteArrayOf(1, 2, 3)) }
         val uploads = mutableListOf<StickerFile>()
         val sends = mutableListOf<StickerRelation>()
+        val pulsesAtUpload = mutableListOf<Int>()
+        val pulsesAtSend = mutableListOf<Int>()
         val image = StickerImage(url = "mxc://gua.global/new", body = "Sticker", info = null)
         val composer = RecordingComposer()
         val stickers = createKeyboardStickers(
@@ -73,10 +75,12 @@ class KeyboardStickersTest {
             stickerSender = FakeStickerSender(
                 uploadResult = {
                     uploads += it
+                    pulsesAtUpload += composer.stickerSentCount
                     Result.success(image)
                 },
                 sendResult = { _, relation ->
                     sends += relation
+                    pulsesAtSend += composer.stickerSentCount
                     Result.success(AN_EVENT_ID)
                 },
             ),
@@ -88,6 +92,9 @@ class KeyboardStickersTest {
         assertThat(outcome).isEqualTo(KeyboardStickers.Outcome.SentSticker(image))
         assertThat(uploads.single()).isEqualTo(StickerFile(byteArrayOf(1, 2, 3), "image/png", 400, 300, "Sticker", isAnimated = false))
         assertThat(sends).containsExactly(StickerRelation.None)
+        assertThat(pulsesAtUpload).containsExactly(0)
+        assertThat(pulsesAtSend).containsExactly(1)
+        assertThat(composer.stickerSentCount).isEqualTo(1)
         assertThat(composer.sentCount).isEqualTo(1)
         assertThat(file.exists()).isFalse()
     }
@@ -102,9 +109,11 @@ class KeyboardStickersTest {
             ),
         )
 
-        val outcome = stickers.send(stickers.take(KeyboardContent(uri, "image/jpeg", isFromInputMethod = true))!!, RecordingComposer())
+        val composer = RecordingComposer()
+        val outcome = stickers.send(stickers.take(KeyboardContent(uri, "image/jpeg", isFromInputMethod = true))!!, composer)
 
         assertThat(outcome).isEqualTo(KeyboardStickers.Outcome.NotOurs)
+        assertThat(composer.stickerSentCount).isEqualTo(0)
         assertThat(file.exists()).isFalse()
     }
 
@@ -126,11 +135,14 @@ class KeyboardStickersTest {
         assertThat(outcome).isEqualTo(KeyboardStickers.Outcome.SentGif)
         assertThat(sends).containsExactly(AN_EVENT_ID)
         assertThat(composer.sentCount).isEqualTo(1)
+        // The GIF's local echo pulses the wallpaper already.
+        assertThat(composer.stickerSentCount).isEqualTo(0)
     }
 
     private class RecordingComposer(override val inReplyToEventId: EventId? = null) : ExpressionComposer {
         override val timelineMode: Timeline.Mode = Timeline.Mode.Live
         var sentCount = 0
+        var stickerSentCount = 0
 
         override suspend fun stickerRelation(): StickerRelation = inReplyToEventId?.let(StickerRelation::Reply) ?: StickerRelation.None
 
@@ -138,6 +150,10 @@ class KeyboardStickersTest {
 
         override fun onSent() {
             sentCount++
+        }
+
+        override fun onStickerSent() {
+            stickerSentCount++
         }
     }
 

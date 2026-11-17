@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -341,6 +342,15 @@ fun MessagesView(
     var topBarHeight by remember { mutableStateOf(0.dp) }
     // GUA FORK: where the chat shows over a live wallpaper, so its send pulse starts above the composer.
     val chatArea = rememberLiveWallpaperVisibleArea()
+    // GUA FORK: the expanded or searching expression panel squeezes the chat to nothing, and the live wallpaper pauses under it.
+    val density = LocalDensity.current
+    val isChatHidden by remember(density) {
+        derivedStateOf {
+            val top = chatArea.top
+            val bottom = chatArea.bottom
+            top != null && bottom != null && bottom - top < with(density) { 1.dp.toPx() }
+        }
+    }
     MessageMenuHost(
         controller = messageMenuController,
         modifier = modifier,
@@ -371,7 +381,7 @@ fun MessagesView(
                     .systemBarsPadding()
                     .padding(top = topBarHeight),
                 // GUA FORK: a live artwork animates behind the timeline and pulses when the user sends.
-                live = state.liveWallpaperCues(),
+                live = state.liveWallpaperCues(isChatHidden = isChatHidden),
                 visibleArea = chatArea,
             )
         }

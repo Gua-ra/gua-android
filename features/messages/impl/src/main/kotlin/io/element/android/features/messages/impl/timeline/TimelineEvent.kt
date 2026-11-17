@@ -33,6 +33,9 @@ sealed interface TimelineEvent {
     data object ExitSelectionMode : TimelineEvent
     data class CopyToClipboard(val text: String) : TimelineEvent
 
+    // GUA FORK: the composer sent a sticker, which has no local echo to start the live wallpaper's send pulse.
+    data object StickerSent : TimelineEvent
+
     /**
      * Events coming from a timeline item.
      */

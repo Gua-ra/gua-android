@@ -196,7 +196,9 @@ class DefaultExpressionPanelPresenter(
             if (image.url in sendingStickerUrls) return
             sendingStickerUrls = sendingStickerUrls + image.url
             sessionCoroutineScope.launch {
-                stickerSender.send(image, composer.stickerRelation())
+                val relation = composer.stickerRelation()
+                composer.onStickerSent()
+                stickerSender.send(image, relation)
                     .onSuccess {
                         recentStickersStore.add(image)
                         composer.onSent()

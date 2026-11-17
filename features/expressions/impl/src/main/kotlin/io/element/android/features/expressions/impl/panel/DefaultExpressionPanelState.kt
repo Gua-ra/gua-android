@@ -32,4 +32,7 @@ data class DefaultExpressionPanelState(
     override val eventSink: (ExpressionPanelEvent) -> Unit,
 ) : ExpressionPanelState {
     val query: String get() = if (tab == ExpressionTab.Gif) gifQuery else stickerQuery
+
+    // The renderer draws overlays only while the feature is enabled.
+    override val isShowingOverlay: Boolean get() = isEnabled && overlay != null
 }

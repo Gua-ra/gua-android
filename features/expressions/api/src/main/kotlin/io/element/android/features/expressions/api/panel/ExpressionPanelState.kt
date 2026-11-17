@@ -13,12 +13,16 @@ import androidx.compose.runtime.Stable
 interface ExpressionPanelState {
     val isEnabled: Boolean
     val isOpen: Boolean
+
+    /** A sheet or dialog of the panel shows over the chat; the open panel itself does not cover it. */
+    val isShowingOverlay: Boolean
     val eventSink: (ExpressionPanelEvent) -> Unit
 
     companion object {
         val Disabled: ExpressionPanelState = object : ExpressionPanelState {
             override val isEnabled = false
             override val isOpen = false
+            override val isShowingOverlay = false
             override val eventSink: (ExpressionPanelEvent) -> Unit = {}
         }
     }

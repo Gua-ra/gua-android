@@ -384,6 +384,8 @@ class TimelinePresenter(
                         toastHelper.show(CommonStrings.common_copied_to_clipboard)
                     }
                 }
+                // GUA FORK: counts a sticker the user sends, for the live wallpaper's send pulse.
+                TimelineEvent.StickerSent -> ownNewEventCounter.onStickerSent()
             }
         }
 
