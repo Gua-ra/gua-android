@@ -390,6 +390,54 @@
     ctx.fill();
   }
 
+  // The near side's maria as [darkness, x1, y1, x2, y2, ...] outlines on the unit disc, x toward Mare Crisium
+  // and y toward the north pole.
+  var MARIA = [
+    [0.9, -0.52, 0.62, -0.38, 0.72, -0.18, 0.72, -0.04, 0.62, -0.02, 0.48, -0.08, 0.38, -0.22, 0.3, -0.38, 0.3, -0.5, 0.4],
+    [0.8, -0.55, 0.62, -0.66, 0.55, -0.8, 0.35, -0.86, 0.1, -0.84, -0.12, -0.74, -0.3,
+      -0.62, -0.38, -0.52, -0.28, -0.46, -0.08, -0.4, 0.08, -0.42, 0.25, -0.5, 0.4],
+    [0.7, -0.46, 0.15, -0.3, 0.27, -0.12, 0.22, -0.12, 0.08, -0.22, -0.05, -0.4, -0.08],
+    [0.7, -0.4, -0.1, -0.22, -0.12, -0.02, -0.24, 0, -0.38, -0.12, -0.5, -0.3, -0.46, -0.42, -0.3],
+    [0.8, -0.4, -0.4, -0.43, -0.33, -0.5, -0.3, -0.57, -0.33, -0.6, -0.4, -0.57, -0.47, -0.5, -0.5, -0.43, -0.47],
+    [0.6, -0.05, 0.32, 0.08, 0.36, 0.12, 0.22, 0.05, 0.12, -0.06, 0.15],
+    [1, 0.36, 0.42, 0.33, 0.51, 0.25, 0.56, 0.15, 0.56, 0.07, 0.51, 0.04, 0.42, 0.07, 0.33, 0.15, 0.28, 0.25, 0.28, 0.33, 0.33],
+    [1, 0.2, 0.25, 0.33, 0.32, 0.5, 0.28, 0.58, 0.16, 0.55, 0, 0.42, -0.03, 0.3, 0.02, 0.18, 0.1, 0.16, 0.18],
+    [0.85, 0.52, 0.06, 0.62, 0.06, 0.7, -0.1, 0.66, -0.3, 0.56, -0.32, 0.5, -0.18, 0.48, -0.04],
+    [0.85, 0.42, -0.25, 0.39, -0.19, 0.33, -0.16, 0.27, -0.19, 0.24, -0.25, 0.27, -0.31, 0.33, -0.34, 0.39, -0.31],
+    [0.7, 0.42, 0, 0.38, -0.18, 0.3, -0.17, 0.34, 0],
+    [1, 0.76, 0.3, 0.74, 0.37, 0.7, 0.41, 0.64, 0.41, 0.6, 0.37, 0.58, 0.3, 0.6, 0.23, 0.64, 0.19, 0.7, 0.19, 0.74, 0.23],
+    [0.6, -0.55, 0.74, -0.2, 0.8, 0.2, 0.8, 0.42, 0.74, 0.38, 0.7, 0.1, 0.74, -0.25, 0.75, -0.5, 0.7]
+  ];
+  // lit is the illuminated fraction; deg the screen angle (y down) of Mare Crisium, which faces the sun while the moon
+  // waxes; earth the earthshine on the night side; mare the darkest mare's albedo drop.
+  function moonFace(ctx, x, y, r, col, lit, deg, earth, mare) {
+    var q = r + 2, a = (deg * Math.PI) / 180, ca = Math.cos(a), sa = Math.sin(a), c = hx(col);
+    var cp = clamp(2 * lit - 1, -1, 1), sp = Math.sqrt(1 - cp * cp);
+    var tex = field(2 * q, 2 * q, Math.round(2 * q) + 1, function (uu, vv, out) {
+      var X = (uu - 0.5) * 2 * q, Y = (vv - 0.5) * 2 * q, d = Math.hypot(X, Y);
+      out[0] = c[0]; out[1] = c[1]; out[2] = c[2]; out[3] = 0;
+      if (d > r + 0.5) return;
+      var nx = X / r, ny = Y / r, nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+      // screen to face coordinates: a reflection, so the same matrix maps both ways
+      var fx = ca * nx + sa * ny, fy = sa * nx - ca * ny, mu = sp * fx + cp * nz, m = 0;
+      var px = fx + 0.12 * f2(fx * 4, fy * 4, 991, 3), py = fy + 0.12 * f2(fx * 4 + 7, fy * 4, 992, 3);
+      for (var i = 0; i < MARIA.length; i++) {
+        var A = MARIA[i], inside = false, dm = 9;
+        for (var j = 1, k = A.length - 2; j < A.length; k = j, j += 2) {
+          var ax = A[k], ay = A[k + 1], ex = A[j] - ax, ey = A[j + 1] - ay;
+          var t = clamp(((px - ax) * ex + (py - ay) * ey) / (ex * ex + ey * ey), 0, 1);
+          if (ay > py !== A[j + 1] > py && px < ax + ((py - ay) * ex) / ey) inside = !inside;
+          dm = Math.min(dm, Math.hypot(px - ax - t * ex, py - ay - t * ey));
+        }
+        m = Math.max(m, A[0] * sstep(-0.07, 0.02, inside ? dm : -dm));
+      }
+      var alb = 1 - mare * m - 0.05 * (0.5 + 0.5 * f2(fx * 11, fy * 11, 993, 3));
+      var day = sstep(-0.05, 0.08, mu), sh = 0.8 + 0.2 * clamp((2 * mu) / (mu + nz + 0.05), 0, 1);
+      out[3] = 255 * clamp(r - d + 0.5, 0, 1) * alb * (day * sh + (1 - day) * earth);
+    });
+    blit(ctx, tex, x - q, y - q, 2 * q, 2 * q);
+  }
+
   // Gull-like silhouette: two crescent wings meeting at the body.
   function bird(ctx, x, y, s, flap, tilt) {
     var f = flap == null ? 1 : flap;
@@ -1829,6 +1877,852 @@
     grain(ctx, w, h, d ? 0.09 : 0.05, d);
   }
 
+
+  // ---------------------------------------------------------------- 14. Guará (araucaria grassland)
+  // Closed centripetal Catmull-Rom curve through [x, y, k] points; k scales both handles of a point, so 0 makes a corner.
+  function guaraLoop(g, p) {
+    var n = p.length, i, j;
+    function d(a, b) { return Math.max(1e-6, Math.sqrt(Math.hypot(b[0] - a[0], b[1] - a[1]))); }
+    g.moveTo(p[0][0], p[0][1]);
+    for (i = 0; i < n; i++) {
+      var p0 = p[(i + n - 1) % n], p1 = p[i], p2 = p[(i + 1) % n], p3 = p[(i + 2) % n];
+      var d1 = d(p0, p1), d2 = d(p1, p2), d3 = d(p2, p3), k1 = p1[2] == null ? 1 : p1[2], k2 = p2[2] == null ? 1 : p2[2], c = [];
+      for (j = 0; j < 2; j++) {
+        var b1 = (d1 * d1 * p2[j] - d2 * d2 * p0[j] + (2 * d1 * d1 + 3 * d1 * d2 + d2 * d2) * p1[j]) / (3 * d1 * (d1 + d2));
+        var b2 = (d3 * d3 * p1[j] - d2 * d2 * p3[j] + (2 * d3 * d3 + 3 * d3 * d2 + d2 * d2) * p2[j]) / (3 * d3 * (d3 + d2));
+        c.push(p1[j] + (b1 - p1[j]) * k1, p2[j] + (b2 - p2[j]) * k2);
+      }
+      g.bezierCurveTo(c[0], c[2], c[1], c[3], p2[0], p2[1]);
+    }
+    g.closePath();
+  }
+  // Separable Gaussian blur of a w x h field of floats; sg is in pixels.
+  function guaraBlur(a, w, h, sg) {
+    if (sg < 0.3) return a;
+    var r = Math.ceil(sg * 3), k = new Float32Array(2 * r + 1), t = new Float32Array(w * h), o = new Float32Array(w * h), sum = 0, i, x, y, acc;
+    for (i = -r; i <= r; i++) { k[i + r] = Math.exp(-i * i / (2 * sg * sg)); sum += k[i + r]; }
+    for (i = 0; i <= 2 * r; i++) k[i] /= sum;
+    for (y = 0; y < h; y++) {
+      var row = y * w;
+      for (x = 0; x < w; x++) {
+        acc = 0;
+        for (i = Math.max(-r, -x); i <= Math.min(r, w - 1 - x); i++) acc += a[row + x + i] * k[i + r];
+        t[row + x] = acc;
+      }
+    }
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      acc = 0;
+      for (i = Math.max(-r, -y); i <= Math.min(r, h - 1 - y); i++) acc += t[(y + i) * w + x] * k[i + r];
+      o[y * w + x] = acc;
+    }
+    return o;
+  }
+  // px inside a mask, from where its alpha crosses one half; a chamfer distance, so a few percent long on diagonals
+  function guaraInDist(a, w, h) {
+    var d = new Float32Array(w * h), R2 = Math.SQRT2, i, x, y, m;
+    for (i = 0; i < w * h; i++) d[i] = a[i] < 0.5 ? 0 : a[i] < 1 ? a[i] - 0.5 : 1e9;
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      i = y * w + x; m = d[i];
+      if (m === 0) continue;
+      if (x > 0) m = Math.min(m, d[i - 1] + 1);
+      if (y > 0) {
+        m = Math.min(m, d[i - w] + 1);
+        if (x > 0) m = Math.min(m, d[i - w - 1] + R2);
+        if (x < w - 1) m = Math.min(m, d[i - w + 1] + R2);
+      }
+      d[i] = m;
+    }
+    for (y = h - 1; y >= 0; y--) for (x = w - 1; x >= 0; x--) {
+      i = y * w + x; m = d[i];
+      if (m === 0) continue;
+      if (x < w - 1) m = Math.min(m, d[i + 1] + 1);
+      if (y < h - 1) {
+        m = Math.min(m, d[i + w] + 1);
+        if (x < w - 1) m = Math.min(m, d[i + w + 1] + R2);
+        if (x > 0) m = Math.min(m, d[i + w - 1] + R2);
+      }
+      d[i] = m;
+    }
+    return d;
+  }
+
+  // Maned wolf in profile, in units of its shoulder height, y up, facing +x, feet on y = 0. Each part is a
+  // closed curve; the near parts are welded into one silhouette, the far legs into another.
+  // Head parts are in head units: the eye at the origin, the nose tip at (1, 0), y up. GUARA_HEAD places the eye at
+  // (x, y) on the figure; k is the head unit in shoulder heights; a turns the head about the eye, lifting the nose if > 0.
+  var GUARA_HEAD = { x: 1.201, y: 1.245, k: 0.188, a: 0 };
+  function guaraHead(p) {
+    var H = GUARA_HEAD, cs = Math.cos(H.a) * H.k, sn = Math.sin(H.a) * H.k;
+    return p.map(function (q) { return [H.x + cs * q[0] - sn * q[1], H.y + sn * q[0] + cs * q[1], q[2]]; });
+  }
+  // the inverse of guaraHead: the figure point (x, y) in head units, into q
+  function guaraHeadAt(x, y, q) {
+    var H = GUARA_HEAD, u = (x - H.x) / H.k, v = (y - H.y) / H.k, cs = Math.cos(H.a), sn = Math.sin(H.a);
+    q[0] = cs * u + sn * v; q[1] = cs * v - sn * u;
+    return q;
+  }
+  // in head units
+  var GUARA_EAR_FAN = [-0.8, 0.02];
+  var GUARA = {
+    body: [[0.98, 1.22], [0.92, 1.14], [0.84, 1.065], [0.74, 1.008], [0.6, 0.982], [0.45, 0.968], [0.32, 0.968], [0.23, 0.973], [0.16, 0.966],
+      [0.115, 0.952], [0.085, 0.94], [0.055, 0.905], [0.04, 0.855], [0.045, 0.8], [0.075, 0.76], [0.13, 0.735], [0.21, 0.72], [0.29, 0.712],
+      [0.345, 0.706], [0.38, 0.698], [0.42, 0.686], [0.48, 0.664], [0.55, 0.636], [0.62, 0.61], [0.68, 0.592], [0.74, 0.583], [0.8, 0.585],
+      [0.85, 0.578], [0.885, 0.583], [0.905, 0.6], [0.916, 0.625], [0.932, 0.66], [0.953, 0.715], [0.972, 0.785], [0.986, 0.855], [0.998, 0.925],
+      [1.022, 1], [1.045, 1.055], [1.06, 1.09], [1.05, 1.16]],
+    head: guaraHead([[-1.12, 0.36], [-0.92, 0.51], [-0.64, 0.585], [-0.36, 0.575], [-0.16, 0.53], [0, 0.455], [0.13, 0.362], [0.235, 0.245],
+      [0.34, 0.13], [0.519, 0.07], [0.687, 0.026], [0.855, -0.018], [0.925, -0.042], [0.962, -0.038], [1.01, -0.022], [1.07, -0.03],
+      [1.118, -0.06], [1.15, -0.098], [1.164, -0.138], [1.148, -0.195], [1.112, -0.236], [1.06, -0.258], [1.03, -0.29, 0.7], [0.985, -0.304],
+      [0.952, -0.33], [0.93, -0.372], [0.895, -0.407], [0.84, -0.432], [0.78, -0.45], [0.62, -0.474], [0.46, -0.489], [0.3, -0.502],
+      [0.14, -0.513], [0, -0.523], [-0.121, -0.534], [-0.158, -0.542], [-0.192, -0.559], [-0.221, -0.583], [-0.303, -0.671],
+      [-0.402, -0.781, 0], [-0.5, -0.72, 0], [-0.88, -0.6], [-1.12, -0.3], [-1.18, 0.1]]),
+    neck: [[0.78, 1.07], [0.86, 1.15], [0.92, 1.22], [0.96, 1.275], [0.99, 1.315], [1.03, 1.34], [1.09, 1.32], [1.16, 1.24],
+      [1.13, 1.16, 0], [1.137, 1.111, 0], [1.115, 1.086], [1.094, 1.06], [1.074, 1.035], [1.055, 1.009], [1.036, 0.983], [1.019, 0.957],
+      [1.007, 0.937], [0.998, 0.922, 0], [0.9, 0.95], [0.82, 1]],
+    ear: guaraHead([[-0.37, 0], [-0.39, 0.25], [-0.42, 0.48], [-0.462, 0.66], [-0.505, 0.84], [-0.545, 1.01], [-0.585, 1.17], [-0.64, 1.36],
+      [-0.693, 1.59, 0.4], [-0.752, 1.475], [-0.85, 1.33], [-0.962, 1.183], [-1.06, 1.04], [-1.13, 0.92], [-1.185, 0.81], [-1.165, 0.69],
+      [-1.18, 0.55], [-1.2, 0.4], [-1.232, 0.235], [-1.256, 0.05], [-1.1, -0.08], [-0.6, -0.08]]),
+    crownFur: guaraHead([[-0.04, 0.485], [-0.115, 0.55], [-0.165, 0.645], [-0.215, 0.585], [-0.2, 0.505]]),
+    farEar: guaraHead([[-0.314, 0.01], [-0.234, 0.242], [-0.189, 0.457], [-0.146, 0.672], [-0.106, 0.889], [-0.092, 1.06], [-0.087, 1.22],
+      [-0.084, 1.38], [-0.08, 1.606, 0.5], [-0.168, 1.486], [-0.249, 1.376], [-0.33, 1.266], [-0.412, 1.156], [-0.493, 1.046],
+      [-0.574, 0.936], [-0.655, 0.826], [-0.736, 0.716], [-0.817, 0.606], [-0.898, 0.496], [-0.979, 0.386], [-0.98, 0.25], [-1, 0.08],
+      [-0.6, -0.05]]),
+    fold: [[0.48, 0.69], [0.4465, 0.6765], [0.4344, 0.6792], [0.4237, 0.6763], [0.4146, 0.6699], [0.4082, 0.6608], [0.4053, 0.6501], [0.4055, 0.64],
+      [0.395, 0.635], [0.38, 0.7], [0.43, 0.71]],
+    crest: [[1.015, 1.345], [0.97, 1.31], [0.915, 1.25], [0.865, 1.185], [0.825, 1.125], [0.78, 1.088], [0.745, 1.066], [0.715, 1.046],
+      [0.685, 1.026], [0.655, 1.006], [0.625, 0.99], [0.595, 0.981], [0.57, 0.975], [0.6, 0.955], [0.7, 0.97], [0.8, 1], [0.88, 1.06],
+      [0.95, 1.15], [1, 1.24], [1.03, 1.3]],
+    fore: [[0.735, 0.82], [0.885, 0.8], [0.905, 0.7], [0.892, 0.62], [0.881, 0.55], [0.874, 0.45], [0.868, 0.35], [0.862, 0.26], [0.859, 0.2],
+      [0.862, 0.15], [0.869, 0.1], [0.879, 0.06], [0.898, 0.04], [0.914, 0.022, 0.7], [0.905, 0.002], [0.86, 0], [0.82, 0.004], [0.808, 0.024],
+      [0.812, 0.06], [0.812, 0.11], [0.799, 0.15], [0.795, 0.178], [0.802, 0.21], [0.808, 0.26], [0.806, 0.36], [0.8, 0.46], [0.792, 0.55],
+      [0.777, 0.61], [0.745, 0.68]],
+    hind: [[0.12, 0.935], [0.22, 0.955], [0.29, 0.875], [0.325, 0.78], [0.343, 0.69], [0.352, 0.635], [0.345, 0.595], [0.322, 0.553], [0.29, 0.513],
+      [0.245, 0.462], [0.198, 0.413], [0.162, 0.372], [0.142, 0.343], [0.132, 0.3], [0.131, 0.25], [0.14, 0.15], [0.152, 0.075], [0.172, 0.045],
+      [0.192, 0.022, 0.7], [0.184, 0.002], [0.137, 0], [0.1, 0.004], [0.089, 0.025], [0.088, 0.07], [0.073, 0.16], [0.052, 0.25], [0.034, 0.288],
+      [0.012, 0.322, 0.5], [0.032, 0.364], [0.05, 0.404], [0.064, 0.448], [0.072, 0.492], [0.075, 0.555], [0.069, 0.635], [0.058, 0.715],
+      [0.045, 0.79], [0.038, 0.855], [0.06, 0.905]],
+    tail: [[0.09, 0.945], [0.04, 0.94], [-0.01, 0.915], [-0.05, 0.872], [-0.08, 0.815], [-0.1, 0.758], [-0.096, 0.702], [-0.112, 0.635],
+      [-0.106, 0.565], [-0.087, 0.495], [-0.07, 0.428], [-0.056, 0.38], [-0.04, 0.347], [-0.022, 0.336], [-0.006, 0.352], [0.012, 0.415], [0.03, 0.485],
+      [0.04, 0.555], [0.04, 0.625], [0.03, 0.695], [0.022, 0.75], [0.028, 0.8], [0.048, 0.86], [0.075, 0.91]],
+    // the upper side lies outside the figure, so the black always reaches the contour
+    mane: [[1.025, 1.4], [0.97, 1.34], [0.915, 1.27], [0.865, 1.2], [0.815, 1.14], [0.76, 1.105], [0.7, 1.088], [0.66, 1.082], [0.621, 1.076],
+      [0.627, 0.99], [0.676, 0.984], [0.724, 0.97], [0.777, 0.964], [0.831, 0.985], [0.875, 1.03], [0.915, 1.1], [0.95, 1.18], [0.98, 1.25],
+      [1, 1.3], [1.015, 1.34]],
+    // the lower side lies outside the head, so the black always reaches the contour
+    jaw: guaraHead([[1.2, -0.248], [1.06, -0.25], [0.95, -0.264], [0.8, -0.282], [0.62, -0.304], [0.45, -0.329], [0.32, -0.348],
+      [0.22, -0.355], [0.15, -0.347], [0.105, -0.33], [0.085, -0.345], [0.12, -0.43], [0.17, -0.49], [0.24, -0.535], [0.32, -0.565],
+      [0.6, -0.62], [0.95, -0.55], [1.15, -0.45], [1.22, -0.33]]),
+    mouth: guaraHead([[1.06, -0.258], [0.95, -0.272], [0.8, -0.29], [0.62, -0.312], [0.45, -0.337], [0.32, -0.356], [0.22, -0.363],
+      [0.15, -0.355], [0.105, -0.338], [0.095, -0.352], [0.15, -0.371], [0.22, -0.379], [0.32, -0.371], [0.45, -0.352], [0.62, -0.326],
+      [0.8, -0.303], [0.95, -0.285], [1.06, -0.271]]),
+    nose: guaraHead([[0.94, -0.052], [0.972, -0.036], [1.012, -0.026], [1.07, -0.034], [1.118, -0.064], [1.15, -0.1], [1.164, -0.14],
+      [1.15, -0.196], [1.112, -0.234], [1.055, -0.252], [0.995, -0.243], [0.958, -0.2], [0.942, -0.12]]),
+    nostril: guaraHead([[1.085, -0.156], [1.128, -0.145], [1.153, -0.167], [1.146, -0.202], [1.112, -0.207], [1.088, -0.186]]),
+    noseHi: guaraHead([[0.985, -0.044], [1.03, -0.032], [1.085, -0.042], [1.125, -0.07], [1.143, -0.1, 0.5], [1.108, -0.085],
+      [1.05, -0.064], [1, -0.064]]),
+    eye: guaraHead([[-0.128, 0.022, 0.4], [-0.03, 0.084], [0.09, 0.058], [0.143, -0.012, 0.3], [0.06, -0.058], [-0.06, -0.044]]),
+    iris: guaraHead([[0.071, 0.008], [0.052, 0.043], [0.005, 0.057], [-0.042, 0.043], [-0.061, 0.008], [-0.042, -0.027], [0.005, -0.041],
+      [0.052, -0.027]]),
+    pupil: guaraHead([[0.039, 0.008], [0.031, 0.029], [0.01, 0.037], [-0.011, 0.029], [-0.019, 0.008], [-0.011, -0.013], [0.01, -0.021],
+      [0.031, -0.013]]),
+    glint: guaraHead([[-0.007, 0.03], [-0.011, 0.038], [-0.022, 0.042], [-0.033, 0.038], [-0.037, 0.03], [-0.033, 0.022], [-0.022, 0.018],
+      [-0.011, 0.022]]),
+    tear: guaraHead([[0.1, -0.004], [0.18, -0.044], [0.26, -0.094], [0.34, -0.14], [0.39, -0.168], [0.352, -0.174], [0.258, -0.128],
+      [0.17, -0.08], [0.1, -0.046]]),
+    brow: guaraHead([[-0.22, 0.06], [-0.12, 0.135], [0, 0.165], [0.12, 0.142], [0.215, 0.07], [0.13, 0.092], [0.01, 0.098],
+      [-0.11, 0.086]]),
+    eyePatch: guaraHead([[-0.19, 0.026], [-0.07, 0.088], [0.09, 0.07], [0.2, 0.008], [0.3, -0.07], [0.26, -0.105], [0.14, -0.08],
+      [0, -0.078], [-0.13, -0.05]]),
+    cheek: guaraHead([[0.13, -0.11], [0.2, -0.2], [0.15, -0.3], [0, -0.38], [-0.2, -0.42], [-0.38, -0.45], [-0.5, -0.38], [-0.5, -0.2],
+      [-0.38, -0.1], [-0.18, -0.08], [0.02, -0.1]]),
+    face: guaraHead([[0.45, 0.45], [0.45, -0.25], [0.2, -0.4], [-0.2, -0.42], [-0.45, -0.3], [-0.6, -0.05], [-0.8, 0.25], [-1.05, 0.45],
+      [-1.2, 0.62], [-1, 0.9], [-0.3, 0.8]]),
+    ruff: guaraHead([[-0.86, 0.28], [-0.82, 0.02], [-0.74, -0.24], [-0.6, -0.46], [-0.46, -0.6], [-0.5, -0.7], [-0.68, -0.56],
+      [-0.86, -0.3], [-0.96, -0.02], [-0.98, 0.24]]),
+    throat: guaraHead([[0.2, -0.4], [0.12, -0.37], [0, -0.36], [-0.12, -0.37], [-0.26, -0.4], [-0.4, -0.46], [-0.5, -0.54], [-0.58, -0.64],
+      [-0.64, -0.75], [-0.64, -0.85, 0.7], [-0.57, -0.87], [-0.48, -0.79], [-0.42, -0.72], [-0.35, -0.627], [-0.27, -0.54], [-0.17, -0.48],
+      [-0.06, -0.462], [0.06, -0.452], [0.18, -0.45]]),
+    innerEar: guaraHead([[-0.44, 0.1], [-0.465, 0.44], [-0.498, 0.64], [-0.54, 0.82], [-0.582, 0.99], [-0.624, 1.15], [-0.66, 1.29],
+      [-0.687, 1.355], [-0.71, 1.38], [-0.733, 1.362], [-0.765, 1.3], [-0.822, 1.2], [-0.895, 1.075], [-0.97, 0.945], [-1.04, 0.815],
+      [-1.085, 0.69], [-1.125, 0.55], [-1.17, 0.4], [-1.19, 0.2], [-1.02, 0.06], [-0.75, 0.03], [-0.52, 0.04]]),
+    farInner: guaraHead([[-0.12, 0.66], [-0.075, 0.88], [-0.058, 1.06], [-0.052, 1.22], [-0.064, 1.37], [-0.092, 1.44], [-0.125, 1.47],
+      [-0.16, 1.42], [-0.178, 1.36], [-0.186, 1.22], [-0.196, 1.06], [-0.215, 0.88], [-0.26, 0.66]])
+  };
+  // where the far legs sit, as [dx, dy, rot, ox, oy]: moved by (dx, dy) after turning by rot about (ox, oy)
+  var GUARA_FAR = { fore: [-0.105, 0, -0.015, 0.815, 0.62], hind: [0.02, -0.004, 0.11, 0.17, 0.92] };
+  var GUARA_BOX = [-0.18, 1.466, 1.72];
+  // frame x ranges of the four paws, for grass that has to pass behind them
+  function guaraPaws(cx, s, dir) {
+    var xm = (GUARA_BOX[0] + GUARA_BOX[1]) / 2, out = [];
+    [[GUARA.fore], [GUARA.hind], [GUARA.fore, GUARA_FAR.fore], [GUARA.hind, GUARA_FAR.hind]].forEach(function (pt) {
+      var t = pt[1] || [0, 0, 0, 0, 0], a = Infinity, b = -Infinity, cs = Math.cos(t[2]), sn = Math.sin(t[2]);
+      pt[0].forEach(function (p) {
+        if (p[1] > 0.05) return;
+        var u = p[0] - t[3], v = p[1] - t[4], x = cx + (cs * u - sn * v + t[3] + t[0] - xm) * dir * s;
+        a = Math.min(a, x); b = Math.max(b, x);
+      });
+      out.push([a, b]);
+    });
+    return out;
+  }
+  // lx is the side of the frame the light comes from: -1 left, 1 right.
+  function guaraFigure(ctx, cx, gy, s, dir, P, lx) {
+    var X0 = GUARA_BOX[0], X1 = GUARA_BOX[1], Y1 = GUARA_BOX[2], xm = (X0 + X1) / 2, pad = Math.ceil(0.12 * s) + 4;
+    var lw = Math.ceil((X1 - X0) * s) + 2 * pad, lh = Math.ceil(Y1 * s) + 2 * pad, n = lw * lh, Gk = GUARA, TF = GUARA_FAR, i, k;
+    var M = mk(lw, lh), g = M.getContext('2d', { willReadFrequently: true });
+    // head units per pixel; fur finer than about three pixels fades out, so the phone-size bake never aliases
+    var hpx = 1 / (GUARA_HEAD.k * s);
+    function fine(sp) { return sstep(2.5 * hpx, 4.5 * hpx, sp); }
+    // -1 on a pale hair, 1 in the grey shadow between hairs
+    function earStreak(u, v) {
+      var du = u - GUARA_EAR_FAN[0], dv = v - GUARA_EAR_FAN[1], r = Math.sqrt(du * du + dv * dv), t = Math.atan2(dv, du);
+      var sp = 2 * Math.PI * r;
+      var s1 = Math.sin(19 * t + 1.6 * Math.sin(6 * r + 0.7)), s2 = Math.sin(33 * t + 2.2 * Math.sin(9 * r + 2.1) + 1.3);
+      var s3 = Math.sin(61 * t + 2.8 * Math.sin(13 * r + 0.4) + 0.5);
+      var w = 0.55 * s1 * fine(sp / 19) + 0.3 * s2 * fine(sp / 33) + 0.15 * s3 * fine(sp / 61);
+      return w * (0.7 + 0.3 * Math.sin(11 * r - 4 * t + 0.8)) * sstep(0.12, 0.4, r);
+    }
+    // n hairs round a fan at (ox, oy): 0 between hairs, up to 1 on a hair
+    function hairLines(u, v, ox, oy, n, ph) {
+      var du = u - ox, dv = v - oy, r = Math.sqrt(du * du + dv * dv), t = Math.atan2(dv, du), sp = 2 * Math.PI * r;
+      var h = 0.6 * Math.max(0, Math.sin(n * t + 2 * Math.sin(13 * r + ph))) * fine(sp / n);
+      return h + 0.4 * Math.max(0, Math.sin(1.7 * n * t + 3 * Math.sin(17 * r + ph) + 1)) * fine(sp / (1.7 * n));
+    }
+    // alpha of the hairs past the contour, from the near ear's mask blurred by 0.006 (eb) and the far ear's fringe
+    // blurred by 0.011 (fb)
+    function edgeHair(u, v, eb, fb, nb) {
+      var t = Math.atan2(v - GUARA_EAR_FAN[1], u - GUARA_EAR_FAN[0]);
+      var nh = 0.5 * sstep(0.12, 0.4, eb) * sstep(0.5, 0.66, v) * sstep(1.5, 1.3, t);
+      nh *= hairLines(u, v, GUARA_EAR_FAN[0], GUARA_EAR_FAN[1], 90, 0.3);
+      var du = u + 0.7, dv = v - 0.75, p = 75 * Math.atan2(dv, du), j = Math.floor(p), len = 0.3 + 0.7 * hash2(j, 2.9);
+      var strand = Math.max(0, 1 - 2 * Math.abs(p - j - 0.5)) * fine(0.012) * sstep(0.5 - 0.46 * len, 0.5 - 0.2 * len, fb);
+      var fh = sstep(0.5, 0.64, v) * sstep(1.4, 1.3, v) * Math.max(0.55 * sstep(0.15, 0.5, fb), strand) * sstep(0.04, 0.3, nb);
+      return 0.85 * Math.max(nh, fh);
+    }
+    // grown from a point inside the near ear rather than from its base, so the strands cross its rim; shorter on the back
+    // side, which keeps a solid rim there. ib is the opening's mask blurred by 0.011
+    function earFluff(u, v, ib) {
+      var du = u + 0.8, dv = v - 0.6, r = Math.sqrt(du * du + dv * dv), t = Math.atan2(dv, du), p = 30 * t, j = Math.floor(p);
+      var len = (0.3 + 0.7 * hash2(j, 4.3)) * (1 - 0.55 * sstep(1.6, 2, t));
+      return Math.max(0, 1 - 2 * Math.abs(p - j - 0.5)) * fine(r / 30) * sstep(0.5 - 0.46 * len, 0.5 - 0.2 * len, ib);
+    }
+    // a repeatable pseudo-random number in [0, 1) for the cell (x, y)
+    function hash2(x, y) { var h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return h - Math.floor(h); }
+    // 0 on the throat patch's upper side, 1 along its lower edge; its axis runs from (0.15, -0.4) back and down for 0.77
+    function bibLow(u, v) {
+      var x = u - 0.15, y = v + 0.4;
+      return sstep(-0.02, 0.1, 0.416 * x - 0.909 * y) * sstep(0.85, 0.55, (-0.909 * x - 0.416 * y) / 0.77);
+    }
+    function bibEnd(u, v) { return sstep(1.15, 0.7, (-0.909 * (u - 0.15) - 0.416 * (v + 0.4)) / 0.77); }
+    // the throat patch's alpha from its blurred mask d; only the coarser locks survive at phone size, as a broken edge
+    function bibFluff(u, v, d) {
+      var a = 0.85 * u - 0.5 * v, lo = bibLow(u, v), p = a / 0.016, i = Math.floor(p), p2 = a / 0.07, i2 = Math.floor(p2);
+      var st = (hash2(i, 1.7) - 0.35) * (0.5 + 0.5 * Math.cos(2 * Math.PI * (p - i - 0.5))) * fine(0.016);
+      var lk = (hash2(i2, 5.1) - 0.4) * (0.5 + 0.5 * Math.cos(2 * Math.PI * (p2 - i2 - 0.5))) * fine(0.07);
+      var w = (0.04 + 0.06 * lo) * st + 0.03 * lk;
+      return sstep(0.33 - w - 0.1 * (1 - lo), 0.6 - w + 0.06 * (1 - lo), d) * bibEnd(u, v);
+    }
+    // about -1 to 1
+    function cheekFur(u, v) {
+      var a = 0.85 * u - 0.5 * v, b = 0.5 * u + 0.85 * v;
+      return 0.65 * Math.sin(42 * a + 2.5 * Math.sin(6 * b + 1)) * fine(2 * Math.PI / 42) +
+        0.35 * Math.sin(75 * a + 3 * Math.sin(9 * b)) * fine(2 * Math.PI / 75);
+    }
+    // about -1 for a dark hair to 1 for a pale one
+    function grizzle(u, v) {
+      var p = (0.3 * u + 0.954 * v) / 0.024, i = Math.floor(p), fp = p - i;
+      var q = (-0.954 * u + 0.3 * v) / 0.1 + 3 * hash2(i, 7.3), j = Math.floor(q), fq = q - j;
+      return (2 * hash2(i, j) - 1) * Math.max(0, 1 - 2.2 * Math.abs(fp - 0.5)) * Math.sin(Math.PI * fq) * fine(0.024);
+    }
+    // alpha of whatever draw() fills, in figure units, optionally blurred by sg shoulder heights
+    function mask(draw, sg) {
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.clearRect(0, 0, lw, lh);
+      g.setTransform(dir * s, 0, 0, -s, lw / 2 - dir * s * xm, Y1 * s + pad);
+      g.fillStyle = '#FFFFFF';
+      draw();
+      var d = g.getImageData(0, 0, lw, lh).data, a = new Float32Array(n);
+      for (var j = 0; j < n; j++) a[j] = d[j * 4 + 3] / 255;
+      return sg ? guaraBlur(a, lw, lh, sg * s) : a;
+    }
+    function part(pts, t) {
+      t = t || [0, 0, 0, 0, 0];
+      g.save();
+      g.translate(t[0] + t[3], t[1] + t[4]);
+      g.rotate(t[2]);
+      g.translate(-t[3], -t[4]);
+      g.beginPath();
+      guaraLoop(g, pts);
+      g.fill();
+      g.restore();
+    }
+    function parts(list) { return function () { for (var j = 0; j < list.length; j++) part(list[j][0], list[j][1]); }; }
+    // blur then threshold: concave joints between parts fill in and every tip comes out rounded
+    function weld(a) {
+      var sg = Math.max(0.8, 0.012 * s), b = guaraBlur(a, lw, lh, sg), e = Math.min(0.3, 0.2 / sg);
+      for (var j = 0; j < n; j++) b[j] = sstep(0.5 - e, 0.5 + e, b[j]);
+      return b;
+    }
+    // a leg's own area, grown by about a blur radius so its colour reaches the welded edge
+    function grow(a) { for (var j = 0; j < n; j++) a[j] = Math.min(1, 2 * a[j]); return a; }
+    var nearParts = [[Gk.body], [Gk.neck], [Gk.head], [Gk.ear], [Gk.farEar], [Gk.crownFur], [Gk.crest], [Gk.fore], [Gk.hind], [Gk.tail]];
+    var farParts = [[Gk.fore, TF.fore], [Gk.hind, TF.hind]];
+    // the outer contour is welded over both, so joints between near and far parts fill in too
+    var all = weld(mask(parts(nearParts.concat(farParts, [[Gk.fold]])))), near = weld(mask(parts(nearParts))), far = weld(mask(parts(farParts)));
+    // below the body the legs keep their own contours, so the joint fill never closes the gaps between paws
+    for (k = 0; k < n; k++) all[k] = Math.max(near[k], far[k]) + (all[k] - Math.max(near[k], far[k])) * sstep(0.45, 0.55, (Y1 * s + pad - Math.floor(k / lw) - 0.5) / s);
+    // the ears' edge hairs go on after the weld, which would round them away
+    var earB = mask(parts([[Gk.ear]]), 0.006), farB = mask(parts([[Gk.farInner]]), 0.011), nearB = guaraBlur(near, lw, lh, 0.006 * s);
+    var hz = [0, 0], fz;
+    for (k = 0; k < n; k++) {
+      if (near[k] > 0.98 || nearB[k] < 0.02) continue;
+      var kx = k % lw, ky = (k - kx) / lw;
+      guaraHeadAt(xm + (kx + 0.5 - lw / 2) / (dir * s), (Y1 * s + pad - ky - 0.5) / s, hz);
+      fz = P.fuzzA * edgeHair(hz[0], hz[1], earB[k], farB[k], nearB[k]);
+      all[k] = Math.max(all[k], fz); near[k] = Math.max(near[k], fz);
+    }
+    var mF = grow(mask(parts([[Gk.fore]]), 0.01)), mH = grow(mask(parts([[Gk.hind]]), 0.01));
+    var mFF = grow(mask(parts([[Gk.fore, TF.fore]]), 0.01)), mFH = grow(mask(parts([[Gk.hind, TF.hind]]), 0.01)), mT = grow(mask(parts([[Gk.tail]]), 0.01));
+    var ear = mask(parts([[Gk.ear]])), earS = mask(parts([[Gk.ear]]), 0.003), fEar = mask(parts([[Gk.farEar]]));
+    var hn = mask(parts([[Gk.head], [Gk.neck], [Gk.crownFur]]), 0.002);
+    var hnS = mask(parts([[Gk.head], [Gk.neck], [Gk.crownFur]]), 0.012), fEarB = mask(parts([[Gk.farEar]]), 0.006);
+    var mane = mask(parts([[Gk.mane]]), 0.006), jaw = mask(parts([[Gk.jaw]]), 0.004), mouth = mask(parts([[Gk.mouth]]), 0.002);
+    // bibFluff's thresholds assume thrD's blur: about a tenth of a head unit either side of the patch's edge
+    var thr = mask(parts([[Gk.throat]]), 0.008), thrD = mask(parts([[Gk.throat]]), 0.014), thrW = mask(parts([[Gk.throat]]), 0.03);
+    var inner = mask(parts([[Gk.innerEar]]), 0.004), innF = mask(parts([[Gk.innerEar]]), 0.011);
+    var fIn = mask(parts([[Gk.farInner]]), 0.003);
+    var nose = mask(parts([[Gk.nose]]), 0.003), noseHi = mask(parts([[Gk.noseHi]]), 0.003), nostril = mask(parts([[Gk.nostril]]), 0.002);
+    var eye = mask(parts([[Gk.eye]]), 0.002), iris = mask(parts([[Gk.iris]]), 0.002), pupil = mask(parts([[Gk.pupil]]), 0.002);
+    var glint = mask(parts([[Gk.glint]]), 0.002), nearEarSh = mask(parts([[Gk.ear]]), 0.012);
+    var ruff = mask(parts([[Gk.ruff]]), 0.014);
+    var ePatch = mask(parts([[Gk.eyePatch]]), 0.008), tear = mask(parts([[Gk.tear]]), 0.003), brow = mask(parts([[Gk.brow]]), 0.004);
+    var cheek = mask(parts([[Gk.cheek]]), 0.015), faceM = mask(parts([[Gk.face]]), 0.025), both = all;
+    var belly = mask(parts([[Gk.body]]), 0.022), shade = mask(parts([[Gk.fore], [Gk.hind]]), 0.008);
+    // overlap edges between near and far parts are 2 px soft; the outer contour stays crisp
+    var nearS = guaraBlur(near, lw, lh, 0.8);
+    var rimB = guaraBlur(both, lw, lh, 0.025 * s), ux = Math.round(lx * 0.045 * s), uy = Math.round(-0.03 * s);
+    // how far each pixel lies inside the outer contour, in px, counted from the light's side and from above; an
+    // anti-aliased contour pixel counts by its coverage, so slanted contours give a smooth run
+    var runSide = new Float32Array(n), runUp = new Float32Array(n), rx0 = lx < 0 ? 0 : lw - 1, sx = lx < 0 ? 1 : -1;
+    for (var ry = 0; ry < lh; ry++) for (var rx = rx0, prev = 0; rx >= 0 && rx < lw; rx += sx) { i = ry * lw + rx; prev = runSide[i] = both[i] * (prev + 1); }
+    for (i = 0; i < n; i++) runUp[i] = both[i] * ((i >= lw ? runUp[i - lw] : 0) + 1);
+    var runDn = new Float32Array(n);
+    for (i = n - 1; i >= 0; i--) runDn[i] = both[i] * ((i + lw < n ? runDn[i + lw] : 0) + 1);
+    var dIn = P.edgeA ? guaraInDist(both, lw, lh) : null, noseB = P.edgeA ? mask(parts([[Gk.nose]]), 0.01) : null, rc = [0, 0, 0];
+    var L = mk(lw, lh), lg = L.getContext('2d'), id = lg.createImageData(lw, lh), D = id.data;
+    var coat = hx(P.coat), lo = hx(P.coatLo), cool = hx(P.coatCool), dark = hx(P.dark), tipC = hx(P.tip), earDeepC = hx(P.earDeep);
+    var rimC = hx(P.rim), noseC = hx(P.nose), eyeC = hx(P.eye), fCoat = hx(P.farCoat), fDark = hx(P.farDark), edgeC = hx(P.edge || P.rim);
+    var cheekC = hx(P.cheek), irisC = hx(P.iris), bibC = hx(P.bib), bibShC = hx(P.bibShade || P.bib), tanC = hx(P.tan), browC = hx(P.brow);
+    var ruffC = hx(P.ruff), glintC = hx(P.glint), mzC = hx(P.muzzle), mouthC = hx(P.mouth), noseHiC = hx(P.noseHi);
+    var streakC = hx(P.streak), hairC = hx(P.hair), earHairC = hx(P.earHair), browDkC = hx(P.browDark);
+    var faceC = hx(P.face), grizLtC = hx(P.grizLight), grizDkC = hx(P.grizDark);
+    var fEarC = hx(P.farEar), fInC = hx(P.farInner), fShC = hx(P.farEarShade), nostrilC = hx(P.nostril);
+    var snDarkC = hx(P.snoutDark || P.dark), snBrownC = hx(P.snoutBrown || P.muzzle), noseRimC = hx(P.noseRim || P.edge || P.rim);
+    var b0 = [0, 0, 0], c = [0, 0, 0], f = [0, 0, 0], q = [0, 0], hq = [0, 0];
+    function to(v, col, t) { if (t > 0) { v[0] += (col[0] - v[0]) * t; v[1] += (col[1] - v[1]) * t; v[2] += (col[2] - v[2]) * t; } }
+    // (x, y) in the unmoved frame of a part placed with t
+    function back(x, y, t) {
+      var u = x - t[0] - t[3], v = y - t[1] - t[4], cs = Math.cos(t[2]), sn = Math.sin(t[2]);
+      q[0] = cs * u + sn * v + t[3]; q[1] = -sn * u + cs * v + t[4];
+      return q;
+    }
+    function fur(x) { return 0.0025 * Math.sin(x * 230 + 1.3) + 0.0015 * Math.sin(x * 530 + 0.4); }
+    function foreDark(x, y) { var b = 0.585 + 0.4 * (0.825 - x) + fur(x); return sstep(b + 0.018, b - 0.018, y); }
+    function hindDark(x, y, d, kk) { var b = 0.455 - kk * (x - 0.138) - d + fur(x + 0.37); return sstep(b + 0.018, b - 0.018, y); }
+    function legRim(y) { return P.edgePaw + (1 - P.edgePaw) * sstep(0.03, 0.3, y); }
+    // the moonlit edge: full within edgeW of the outer contour, gone edgeF further in. Legs take it from the light's
+    // side, because the back of a leg faces up where it slants
+    function lit(run) { var w0 = P.edgeW * s; return sstep(w0 + P.edgeF * s, w0, run); }
+    // in head units
+    function muzzleBrown(u, v) {
+      return sstep(0.2, 0.46, u - 0.45 * v) * sstep(0.06, 0.18, u) * sstep(-0.62, -0.5, v - 0.15 * u);
+    }
+    // the top of the muzzle stays a shade lighter than the lips, so the black nose pad stands out against it
+    function muzzleBlack(u, v) {
+      return sstep(0.5, 0.84, u - 0.75 * (v + 0.05)) * sstep(0.06, 0.18, u) * (0.7 + 0.3 * sstep(-0.04, -0.16, v)) *
+        sstep(-0.62, -0.5, v - 0.15 * u);
+    }
+    function tailTip(x, y) {
+      var u = Math.max(-1, Math.min(1, (x + 0.028) / 0.045));
+      var b = 0.405 + 0.022 * (1 - u * u) + 0.01 * (u + 1) + 0.012 * Math.exp(-Math.pow((u - 0.45) / 0.22, 2)) + 0.009 * Math.exp(-Math.pow((u + 0.4) / 0.22, 2));
+      return sstep(b + 0.01, b - 0.01, y);
+    }
+    for (var y = 0; y < lh; y++) for (var x = 0; x < lw; x++) {
+      i = y * lw + x;
+      var a = all[i], an = Math.min(near[i], a), fa = far[i];
+      if (a < 0.002) continue;
+      var wN = Math.min(a, an + fa * (nearS[i] - an));
+      var fx = xm + (x + 0.5 - lw / 2) / (dir * s), fy = (Y1 * s + pad - y - 0.5) / s;
+      b0[0] = coat[0]; b0[1] = coat[1]; b0[2] = coat[2];
+      to(b0, lo, P.belly * sstep(0.8, 0.62, fy) * sstep(-0.05, 0.03, fx));
+      to(b0, cool, P.coolA * sstep(0.8, -0.15, xm + lx * dir * (fx - xm)));
+      if (wN > 0) {
+        c[0] = b0[0]; c[1] = b0[1]; c[2] = b0[2];
+        guaraHeadAt(fx, fy, hq);
+        var leg = Math.max(mF[i] * foreDark(fx, fy), mH[i] * hindDark(fx, fy, 0, 0.5)), mn = mane[i] * (1 - earS[i]);
+        var mB = muzzleBrown(hq[0], hq[1]), blk = Math.max(jaw[i], muzzleBlack(hq[0], hq[1])), dk = Math.max(leg, mn, blk);
+        var fe = fEar[i] * (1 - ear[i]) * (1 - hn[i]), feT = Math.max(fEar[i], fIn[i]) * (1 - ear[i]) * (1 - hn[i]);
+        // faded across the crown's contour, so the far ear's base blends into the crown
+        var feS = (fEar[i] * (1 - hn[i]) + fEarB[i] * hn[i]) * (1 - ear[i]) * (1 - hnS[i]);
+        to(c, faceC, P.faceA * faceM[i] * (1 - feS));
+        var gz = grizzle(hq[0], hq[1]) * faceM[i] * sstep(0.04, 0.3, hq[1]) * (1 - feS);
+        to(c, grizLtC, P.grizA * Math.max(0, gz));
+        to(c, grizDkC, P.grizA * Math.max(0, -gz));
+        to(c, fEarC, feS);
+        to(c, fShC, P.farEarShA * nearEarSh[i] * feS);
+        var fFluff = sstep(0.05, 0.3, farB[i]) * (1 - fEar[i]) * (1 - ear[i]) * (1 - hn[i]);
+        to(c, fInC, P.farInA * Math.max(fIn[i] * feT, fFluff) * sstep(0.4, 0.56, hq[1]));
+        // before the lips and jaw, so their black lies over the cheek and the throat patch; the tan border stays below
+        // the patch, so the patch meets the black jaw directly
+        var cf = cheekFur(hq[0], hq[1]);
+        to(c, ruffC, P.ruffA * ruff[i] * (0.85 + 0.3 * cf));
+        to(c, cheekC, P.cheekA * cheek[i] * (0.9 + 0.2 * cf));
+        to(c, tanC, P.tanA * Math.min(1, 1.6 * thrW[i]) * sstep(-0.36, -0.5, hq[1] + 0.25 * hq[0]));
+        var bib = bibFluff(hq[0], hq[1], thrD[i]);
+        to(c, bibC, bib);
+        to(c, bibShC, P.bibGradA * bib * sstep(-0.45, -0.75, hq[1] - 0.3 * hq[0]));
+        // the patch darkens a little where it faces down, under the jaw, so the jaw keeps an edge against a pale sky
+        to(c, bibShC, P.bibShA * bib * sstep(0.022 * s, 0.006 * s, runDn[i]));
+        if (P.snoutDark) {
+          // by night the whole snout stays a warm dark brown, so it reads as one form instead of sinking into the sky
+          to(c, snBrownC, P.muzzleA * mB);
+          to(c, dark, Math.max(leg, mn));
+          to(c, snDarkC, blk);
+        } else {
+          to(c, mzC, P.muzzleA * mB);
+          to(c, dark, dk);
+        }
+        to(c, mouthC, P.mouthA * mouth[i]);
+        to(c, noseC, P.noseA * nose[i]);
+        to(c, noseHiC, P.noseHiA * noseHi[i] * nose[i]);
+        to(c, nostrilC, P.nostrilA * nostril[i]);
+        to(c, mzC, P.eyePatchA * ePatch[i]);
+        // the brow lies over the eye's surround, so it stays paler than the forehead
+        to(c, browC, P.browA * brow[i]);
+        to(c, browDkC, P.browGrizA * brow[i] * Math.max(0, grizzle(hq[0], hq[1])));
+        to(c, eyeC, P.tearA * tear[i]);
+        // the iris stays a pixel inside the almond, so a dark rim always rings it
+        to(c, eyeC, eye[i]);
+        to(c, irisC, iris[i] * sstep(0.85, 1, eye[i]));
+        to(c, eyeC, pupil[i]);
+        to(c, glintC, P.glintA * glint[i]);
+        var st = earStreak(hq[0], hq[1]), op = inner[i] * ear[i] * sstep(0.1, 0.5, hq[1] + 0.12 * st);
+        var eUp = ear[i] * sstep(0.42, 0.6, hq[1]);
+        to(c, fEarC, eUp * (1 - op));
+        to(c, fInC, P.farInA * Math.max(op, 0.9 * earFluff(hq[0], hq[1], innF[i]) * eUp));
+        to(c, earDeepC, P.earDeepA * op * sstep(-0.02, -0.25, hq[0] + 0.8775 - 0.115 * hq[1]));
+        to(c, streakC, P.streakA * op * Math.max(0, st));
+        to(c, earHairC, P.hairA * op * Math.max(0, -st));
+        to(c, hairC, P.fringeA * Math.min(1, 1.5 * edgeHair(hq[0], hq[1], earB[i], farB[i], nearB[i])) * (1 - op));
+        to(c, tipC, P.paleA * mT[i] * tailTip(fx, fy));
+        var xs = x + ux, ys = y + uy, behind = xs >= 0 && xs < lw && ys >= 0 && ys < lh ? rimB[ys * lw + xs] : 0;
+        // the face from the forehead forward keeps most of its colour, so it stays rufous to the stop and over the bridge
+        var rimK = (1 - P.rimFace * sstep(-0.45, 0.05, hq[0])) * (1 - P.rimBib * thr[i]);
+        to(c, rimC, P.rimA * rimK * (1 - behind) * (1 - P.rimDk * Math.max(dk, mB)) * (1 - Math.max(eye[i], nose[i])) * sstep(0.6, 0.85, fy));
+        if (P.edgeA) {
+          var side = lit(runSide[i]), top = lit(runUp[i]);
+          to(c, edgeC, P.edgeA * Math.max(side * leg * legRim(fy), top * mn) * (1 - eye[i]));
+          // measured straight in from the contour, so the edge runs unbroken round the nose; below the mouth line
+          // it fades out before the jaw's black ends, so it never shows a cut end
+          var nw = Math.min(1, 2 * noseB[i]), ew = (P.edgeSnW + (P.edgeNoseW - P.edgeSnW) * nw) * s;
+          var ef = (P.edgeSnF + (P.edgeNoseF - P.edgeSnF) * nw) * s;
+          rc[0] = edgeC[0] + (noseRimC[0] - edgeC[0]) * nw; rc[1] = edgeC[1] + (noseRimC[1] - edgeC[1]) * nw;
+          rc[2] = edgeC[2] + (noseRimC[2] - edgeC[2]) * nw;
+          var under = sstep(-0.2, -0.3, hq[1]), along = sstep(0.18, 0.38, hq[0]);
+          to(c, rc, P.edgeA * sstep(ew + ef, ew, dIn[i]) * Math.max(blk, mB, nose[i]) * (1 - under * (1 - along)));
+        }
+      }
+      if (wN < a) {
+        f[0] = fCoat[0]; f[1] = fCoat[1]; f[2] = fCoat[2];
+        var kf = 0;
+        if (mFF[i] > 0) { back(fx, fy, TF.fore); kf = Math.max(kf, mFF[i] * foreDark(q[0], q[1])); }
+        if (mFH[i] > 0) { back(fx, fy, TF.hind); kf = Math.max(kf, mFH[i] * hindDark(q[0], q[1], P.farDrop, 0.2)); }
+        to(f, b0, sstep(0.04, 0.45, belly[i]) * (1 - kf));
+        to(f, fDark, kf);
+        var sh = 1 - P.farShade * Math.min(1, 2 * shade[i]);
+        f[0] *= sh; f[1] *= sh; f[2] *= sh;
+        if (P.edgeA) to(f, edgeC, P.edgeA * P.edgeFar * kf * legRim(fy) * lit(runSide[i]));
+      }
+      var k4 = i * 4;
+      D[k4] = (c[0] * wN + f[0] * (a - wN)) / a; D[k4 + 1] = (c[1] * wN + f[1] * (a - wN)) / a; D[k4 + 2] = (c[2] * wN + f[2] * (a - wN)) / a;
+      D[k4 + 3] = Math.round(255 * a);
+    }
+    lg.putImageData(id, 0, 0);
+    ctx.drawImage(L, cx - lw / 2, gy - Y1 * s - pad);
+  }
+  function guaraPalette(d) {
+    return d ? {
+      sky: [[0, '#040A08'], [0.26, '#07100D'], [0.58, '#0D1A16'], [1, '#12221C']],
+      star: '#DDE9E2', moon: '#E3EBE7', moonGlow: '#8DB8A4',
+      far: '#14261F', farLo: '#11211B', knoll: ['#11201A', '#0C1713'], hills: [['#0E1A16', '#0B1612'], ['#0C1814', '#091310'], ['#0A1511', '#08110E']],
+      crest: '#2A4D41', mist: '#10201A',
+      tree: '#060D0B', shadow: '#000000',
+      coat: '#6C4432', coatLo: '#543223', coatCool: '#553627', coolA: 0.75, belly: 0.3, dark: '#050706', tip: '#5E5B55',
+      earDeep: '#4A4640', earDeepA: 0.6, paleA: 1, farCoat: '#3E2A21', farDark: '#060A09', farShade: 0.15, rim: '#A9C9BE', rimA: 0.32, rimDk: 1,
+      nose: '#050706', noseA: 1, noseHi: '#050706', noseHiA: 0, eye: '#030404', iris: '#150E0A', tearA: 0.85, farDrop: 0.065,
+      muzzle: '#24160F', muzzleA: 0.9, mouth: '#000000', mouthA: 0.6, ruff: '#4A2D21', ruffA: 0.4,
+      streak: '#46423C', streakA: 0.5, hair: '#77726A', earHair: '#77726A', hairA: 0.45, fringeA: 0.6, fuzzA: 0.8,
+      face: '#664836', faceA: 0.7, grizLight: '#86766B', grizDark: '#3E2D24', grizA: 0.3, bibGradA: 0,
+      glint: '#030404', glintA: 0, farEar: '#4E3125', farEarShade: '#33211A', farEarShA: 0.5, farInner: '#5E5A53', farInA: 0.85,
+      nostril: '#000000', nostrilA: 0, eyePatchA: 0.45,
+      // the snout's browns stay lighter than the night sky behind the head
+      snoutDark: '#28211C', snoutBrown: '#3A2B22', edgeSnW: 0.007, edgeSnF: 0.01, noseRim: '#5F6F69', edgeNoseW: 0.0055, edgeNoseF: 0.004,
+      brow: '#7A746E', browA: 0.75, browDark: '#5A524C', browGrizA: 0.3,
+      // rimBib 0: by night the rim brightens the throat patch instead of greying it
+      cheek: '#7B6656', cheekA: 0.55, tan: '#77543F', tanA: 0.2, bib: '#8E8A80', bibShA: 0, rimFace: 0.7, rimBib: 0,
+      // the edge stays darker than the coat and covers about a quarter of a leg, so the legs still read black
+      edge: '#3B4944', edgeA: 1, edgeFar: 0.95, edgeW: 0.018, edgeF: 0.006, edgePaw: 0.7
+    } : {
+      sky: [[0, '#B9DAC8'], [0.45, '#C8E2D3'], [0.85, '#D5E9DC'], [1, '#DCEAD9']],
+      sun: '#FFF8E9', sunHalo: '#F5DFBC', horizon: '#EDE3CA',
+      far: '#C6DCCD', farLo: '#C0D8C6', knoll: ['#BCD6C2', '#B3CEBA'], hills: [['#C2DBC8', '#B8D3BE'], ['#BAD5C0', '#B0CDB7'], ['#B2CEB9', '#A8C7B0']],
+      crest: '#E2D8AE', mist: '#D6E8DC',
+      tree: '#9DBBA6', shadow: '#5E7A66',
+      coat: '#B8704A', coatLo: '#A65F3D', coatCool: '#A65F3D', coolA: 0.25, belly: 0.35, dark: '#2B2320', tip: '#F5EDE1',
+      earDeep: '#D8C4A8', earDeepA: 0.6, paleA: 0.95, farCoat: '#9A5838', farDark: '#3A312C', farShade: 0.1, rim: '#F8E3C6', rimA: 0.34, rimDk: 0.8,
+      nose: '#1A1716', noseA: 1, noseHi: '#A7A09B', noseHiA: 0.85, eye: '#140F0E', iris: '#3A2214', tearA: 0.7, farDrop: 0.065, edgeA: 0,
+      muzzle: '#4F3428', muzzleA: 0.92, mouth: '#100C0B', mouthA: 0.85, ruff: '#94502F', ruffA: 0.6,
+      streak: '#CDB69A', streakA: 0.5, hair: '#D2CBC0', earHair: '#FFFBF3', hairA: 0.5, fringeA: 0.85, fuzzA: 0.85,
+      face: '#A47F62', faceA: 0.85, grizLight: '#CFC3B6', grizDark: '#6E5847', grizA: 0.26, bibGradA: 0.25,
+      glint: '#E6DACC', glintA: 0.75, farEar: '#A15B3B', farEarShade: '#7E4429', farEarShA: 0.45, farInner: '#EFE5D6', farInA: 0.95,
+      nostril: '#000000', nostrilA: 0.9, eyePatchA: 0.55,
+      brow: '#A8A9AA', browA: 1, browDark: '#7E7B78', browGrizA: 0.35,
+      cheek: '#C2AFA0', cheekA: 0.6, tan: '#C29373', tanA: 0.2, bib: '#EFE1C8', bibShade: '#DECAAE', bibShA: 0.6,
+      // rimBib 1: by day a rim would pull the throat patch toward the pale sky
+      rimFace: 0.7, rimBib: 1
+    };
+  }
+
+  function broadleafTree(ctx, x, yb, H, seed, col) {
+    var r = rng(seed), tw = Math.max(0.9, H * 0.06), lean = (r() - 0.5) * H * 0.45, i;
+    var tx = x + lean, ty = yb - H * (0.36 + 0.08 * r()), kx = x - lean * 0.25 + (r() - 0.5) * H * 0.12, ky = yb - H * 0.18;
+    var ccx = tx + lean * 0.3 + (r() - 0.5) * H * 0.1, ccy = ty - H * (0.27 + 0.05 * r()), cw = H * (0.28 + 0.08 * r()), ch = H * (0.15 + 0.05 * r());
+    ctx.save();
+    ctx.fillStyle = css(col);
+    ctx.strokeStyle = css(col);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x - tw, yb);
+    ctx.quadraticCurveTo(kx - tw * 0.9, ky, tx - tw * 0.6, ty);
+    ctx.lineTo(tx + tw * 0.6, ty);
+    ctx.quadraticCurveTo(kx + tw * 0.9, ky, x + tw, yb);
+    ctx.closePath();
+    ctx.fill();
+    ctx.lineWidth = tw * 0.85;
+    ctx.beginPath();
+    for (i = -1; i <= 1; i++) {
+      var ex = ccx + (i + (r() - 0.5) * 0.4) * cw * 0.65, ey = ccy + ch * (0.35 - 0.25 * Math.abs(i));
+      ctx.moveTo(tx, ty + tw * 0.5);
+      ctx.quadraticCurveTo(tx + (ex - tx) * 0.5 + (r() - 0.5) * H * 0.12, ty + (ey - ty) * 0.25, ex, ey);
+    }
+    ctx.stroke();
+    ctx.beginPath();
+    var nb = 5 + Math.floor(r() * 3);
+    for (i = 0; i <= nb; i++) {
+      var th = i < nb ? Math.PI * (0.92 + 1.16 * i / (nb - 1)) + (r() - 0.5) * 0.3 : 0, rim = i < nb ? 1 : 0;
+      var rr = H * (0.12 + 0.07 * r()), ox = ccx + rim * cw * Math.cos(th), oy = ccy + rim * ch * Math.sin(th);
+      ctx.moveTo(ox + rr * 1.15, oy);
+      ctx.ellipse(ox, oy, rr * 1.15, rr * 0.95, 0, 0, Math.PI * 2);
+    }
+    ctx.fill();
+    ctx.restore();
+  }
+  // Fills with g's fillStyle; crownOnly draws the foliage alone, for the rim. The foliage draws from r and the rest
+  // from q, so both calls give the same crown.
+  function araucariaShape(g, x, yb, H, seed, crownOnly) {
+    var r = rng(seed), q = rng(seed + 977), i, k, s, u, t;
+    var Rs = [H * (0.318 + 0.04 * r()), H * (0.318 + 0.04 * r())], ph = [r() * 6.3, r() * 6.3, r() * 6.3, r() * 6.3, r() * 6.3];
+    // dr[side] is how far that side's rim tuft droops; one side always droops more than the other
+    var tilt = (r() - 0.5) * 0.016, lo = r() < 0.5 ? 0 : 1, dr = [0, 0];
+    dr[lo] = 0.7 + 0.3 * r();
+    dr[1 - lo] = 0.05 + 0.3 * r();
+    var dm = 0.006 + 0.014 * r(), hbb = 0.882 + 0.012 * r();
+    function R(u) { return Rs[u < 0 ? 0 : 1]; }
+    function X(u) { return x + u * R(u); }
+    function Y(v) { return yb - v * H; }
+    // ht and hb: the crown's top and underside, in units of H above the foot
+    function ht(u) { return 0.954 + tilt * u - dm * u * u - 0.008 * sstep(0.55, 1, Math.abs(u)) + 0.005 * Math.sin(7.3 * u + ph[0]) + 0.004 * Math.sin(12.9 * u + ph[1]) + 0.003 * Math.sin(19.3 * u + ph[2]); }
+    function hb(u) { return hbb + 0.005 * Math.sin(9.1 * u + ph[3]) + 0.004 * Math.sin(15.7 * u + ph[4]) - 0.018 * sstep(0.6, 1, Math.abs(u)); }
+    function poly(p) {
+      g.beginPath();
+      g.moveTo(p[0], p[1]);
+      for (var j = 2; j < p.length; j += 2) g.lineTo(p[j], p[j + 1]);
+      g.closePath();
+      g.fill();
+    }
+    // needles toward angle a (0 points up), spread to each side; the body and the needles fill apart, so their
+    // windings never cancel
+    function brush(rn, cx, cy, rr, a, spread) {
+      var n = 7 + Math.floor(rn() * 5), j;
+      g.beginPath();
+      g.ellipse(cx, cy, rr * 0.6, rr * 0.5, 0, 0, Math.PI * 2);
+      g.fill();
+      g.beginPath();
+      for (j = 0; j < n; j++) {
+        var an = a + (j / (n - 1) - 0.5) * 2 * spread + (rn() - 0.5) * 0.35, dx = Math.sin(an), dy = -Math.cos(an);
+        var ln = rr * (0.9 + 0.7 * rn()), bw = rr * 0.17, b0 = rr * 0.25;
+        g.moveTo(cx + dx * b0 - dy * bw, cy + dy * b0 + dx * bw);
+        g.lineTo(cx + dx * ln, cy + dy * ln);
+        g.lineTo(cx + dx * b0 + dy * bw, cy + dy * b0 - dx * bw);
+        g.closePath();
+      }
+      g.fill();
+    }
+    // brushes cover angles a0 to a1 (0 points up)
+    function clump(rn, cx, cy, rad, a0, a1) {
+      g.beginPath();
+      g.ellipse(cx, cy, rad * 0.8, rad * 0.66, 0, 0, Math.PI * 2);
+      g.fill();
+      var m = 4 + Math.floor(rad / H * 130), j;
+      for (j = 0; j < m; j++) {
+        var an = a0 + (a1 - a0) * (j + 0.6 * rn()) / m, br = Math.min(rad * (0.38 + 0.22 * rn()), H * 0.014);
+        brush(rn, cx + Math.sin(an) * rad * 0.75, cy - Math.cos(an) * rad * 0.62, br, an, 0.55);
+      }
+      for (j = 0; j < 4; j++) {
+        if (rn() < 0.25) continue;
+        var at = (rn() - 0.5) * 2.4;
+        brush(rn, cx + Math.sin(at) * rad * 0.7, cy - Math.cos(at) * rad * 0.75, H * (0.009 + 0.008 * rn()), at * 0.5, 0.4);
+      }
+    }
+    var body = [];
+    for (i = 0; i <= 40; i++) { u = -0.95 + 1.9 * i / 40; body.push(X(u), Y(ht(u) - 0.024)); }
+    for (i = 40; i >= 0; i--) { u = -0.95 + 1.9 * i / 40; body.push(X(u), Y(hb(u))); }
+    poly(body);
+    // every clump's lower edge stays inside the body, so none floats
+    for (u = -0.92 + 0.04 * r(); u <= 0.92;) {
+      var cr = H * (0.013 + 0.009 * r());
+      clump(r, X(u), Y(ht(u) - 0.023 + (r() - 0.5) * 0.012), cr, -1.7, 1.7);
+      u += H * (0.02 + 0.014 * r()) / R(u);
+    }
+    for (u = -0.84 + 0.1 * r(); u <= 0.84;) {
+      var bc = H * (0.026 + 0.016 * r()), by = Y(ht(u) - 0.016 + 0.03 * r()), b0 = Y(ht(u) - 0.034);
+      // a stem joins each big clump to the body, so no slit of sky runs under it
+      g.beginPath();
+      g.ellipse(X(u), 0.5 * (by + b0), 0.55 * bc, 0.5 * (b0 - by) + 0.2 * bc, 0, 0, Math.PI * 2);
+      g.fill();
+      clump(r, X(u), by, bc, -1.9, 1.9);
+      u += H * (0.085 + 0.06 * r()) / R(u);
+    }
+    for (u = -0.86; u <= 0.86;) {
+      var rb = H * (0.007 + 0.006 * r() * r() + 0.008 * sstep(0.4, 0.9, Math.abs(u))), s2 = u < 0 ? -1 : 1;
+      brush(r, X(u), Y(hb(u) + 0.004 - 0.004 * r() - 0.01 * sstep(0.45, 0.9, Math.abs(u))), rb, s2 * (2.2 + 0.5 * r()), 0.7);
+      u += H * (0.022 + 0.018 * r()) / R(u);
+    }
+    var tu = [], tv = [];
+    for (s = -1; s <= 1; s += 2) {
+      var sd = s < 0 ? 0 : 1, cu = s * (0.9 + 0.05 * r()), rk = H * (0.034 + 0.016 * dr[sd] + 0.006 * r());
+      var cv = 0.5 * (ht(cu) + hb(cu)) - 0.004 - 0.046 * dr[sd], mu = s * (0.78 + 0.04 * r());
+      clump(r, X(mu), Y(0.5 * (ht(mu) + hb(mu)) + 0.004), H * (0.026 + 0.006 * r()), s * -0.4, s * 2.9);
+      clump(r, X(cu), Y(cv), rk, s * -0.6, s * 3.0);
+      if (dr[sd] > 0.6) clump(r, X(s * (0.76 + 0.06 * r())), Y(cv - 0.012 - 0.008 * r()), H * (0.016 + 0.008 * r()), s * 0.8, s * 3.4);
+      tu.push(cu);
+      tv.push(cv);
+    }
+    if (crownOnly) return;
+    // every rib starts inside the hub, so the ribs fan out from one place instead of nesting
+    var hx = x + (q() - 0.5) * 0.02 * H, hw = H * (0.042 + 0.014 * q()), hy = 0.806 + 0.006 * q();
+    g.beginPath();
+    g.ellipse(hx, Y(hy + 0.045), hw, 0.055 * H, 0, 0, Math.PI * 2);
+    g.fill();
+    clump(q, hx, Y(hy), H * (0.026 + 0.006 * q()), -3.1, 3.1);
+    for (s = -1; s <= 1; s += 2) {
+      clump(q, hx + s * hw * (0.75 + 0.2 * q()), Y(hy + 0.03 + 0.02 * q()), H * (0.02 + 0.008 * q()), s * 0.6, s * 3.0);
+      clump(q, hx + s * hw * (0.3 + 0.2 * q()), Y(hy - 0.008 - 0.006 * q()), H * (0.014 + 0.006 * q()), s * 1.4, s * 3.1);
+    }
+    for (s = -1; s <= 1; s += 2) {
+      var n = 6 + Math.floor(q() * 3), sp = 0.46 + 0.16 * q();
+      sd = s < 0 ? 0 : 1;
+      // the lowest rib ends inside its side's rim tuft
+      for (k = 0; k < n; k++) {
+        var f = k ? Math.min(1, Math.max(0.15, (k + 0.6 * (q() - 0.5)) / (n - 1))) : 0;
+        var ue = k ? s * (0.92 - sp * Math.pow(f, 1.3) + 0.05 * (q() - 0.5)) : tu[sd], ve = k ? hb(ue) + 0.008 : tv[sd] - 0.014;
+        var sx = hx + s * hw * (0.1 + 0.3 * q()), sv = hy - 0.006 + 0.008 * q() + 0.006 * f, ex = X(ue);
+        var sag = (0.02 - 0.016 * f) * (0.7 + 0.6 * q()), kx = sx + (ex - sx) * (0.5 + 0.2 * (1 - f)), kv = sv + (ve - sv) * (0.12 + 0.12 * f) - sag;
+        var tk = 0.75 + 0.6 * q(), L = [], Rr = [];
+        for (t = 0; t <= 1.0001; t += 0.0625) {
+          var m0 = (1 - t) * (1 - t), m1 = 2 * t * (1 - t), m2 = t * t;
+          var px = m0 * sx + m1 * kx + m2 * ex, py = Y(m0 * sv + m1 * kv + m2 * ve);
+          var ddx = 2 * (1 - t) * (kx - sx) + 2 * t * (ex - kx), ddy = -H * (2 * (1 - t) * (kv - sv) + 2 * t * (ve - kv));
+          var dl = Math.hypot(ddx, ddy), hw2 = H * tk * (0.0045 - 0.0016 * t);
+          L.push(px - ddy / dl * hw2, py + ddx / dl * hw2);
+          Rr.unshift(px + ddy / dl * hw2, py - ddx / dl * hw2);
+        }
+        poly(L.concat(Rr));
+        if (k) brush(q, ex, Y(ve - 0.006), H * (0.008 + 0.006 * q()), s * (2.0 + 0.6 * q()), 0.8);
+      }
+    }
+    var tt = 0.02 * H, tb = 0.028 * H, top = hy;
+    var lean = (q() - 0.5) * 0.012 * H, w1 = q() * 6.3, w2 = q() * 6.3, w3 = q() * 6.3, TL = [], TR = [];
+    for (i = 0; i <= 24; i++) {
+      t = i / 24;
+      var cx0 = x - lean * (1 - t) + 0.002 * H * Math.sin(2.6 * Math.PI * t + w3) * Math.sin(Math.PI * t);
+      var hw0 = (tb + (tt - tb) * t) * (1 + 0.3 * (1 - sstep(0, 0.035, t))), ty = i ? Y(t * top) : yb + 1;
+      TL.push(cx0 - hw0 * (1 + 0.025 * Math.sin(9 * t + w1)), ty);
+      TR.unshift(cx0 + hw0 * (1 + 0.025 * Math.sin(7 * t + w2)), ty);
+    }
+    poly(TL.concat(TR));
+  }
+  // The rim, rw wide, faces the light at (lx, ly) and fades out below the crown's top, so it never lights
+  // the trunk or ribs.
+  function araucariaTree(ctx, x, yb, H, seed, col, rim, rimA, rw, lx, ly) {
+    var pad = Math.ceil(0.08 * H + rw) + 4, x0 = Math.floor(x - 0.56 * H) - pad, y0 = Math.floor(yb - 1.06 * H) - pad;
+    var lw = Math.ceil(1.12 * H) + 2 * pad, lh = Math.ceil(1.06 * H) + 2 * pad + 4;
+    var L = mk(lw, lh), g = L.getContext('2d');
+    g.translate(-x0, -y0);
+    // filled in black, then coloured in one pass: the many overlapping edges would leave rounding seams in the colour
+    g.fillStyle = '#000000';
+    araucariaShape(g, x, yb, H, seed, false);
+    g.globalCompositeOperation = 'source-in';
+    g.fillStyle = css(col);
+    g.fillRect(x0, y0, lw, lh);
+    if (rimA > 0) {
+      var E = mk(lw, lh), e = E.getContext('2d'), dx = lx - x, dy = ly - (yb - H), dl = Math.hypot(dx, dy), s = dx < 0 ? -1 : 1;
+      e.translate(-x0, -y0);
+      e.fillStyle = '#000000';
+      araucariaShape(e, x, yb, H, seed, true);
+      e.globalCompositeOperation = 'destination-out';
+      e.translate(-dx / dl * rw, -dy / dl * rw);
+      araucariaShape(e, x, yb, H, seed, false);
+      e.translate(dx / dl * rw, dy / dl * rw);
+      e.globalCompositeOperation = 'destination-in';
+      e.fillStyle = lin(e, x - s * 0.4 * H, 0, x + s * 0.4 * H, 0, [[0, '#000000', 0.25], [1, '#000000', 1]]);
+      e.fillRect(x0, y0, lw, lh);
+      e.fillStyle = vlin(e, yb - H, yb - 0.88 * H, [[0, '#000000', 1], [1, '#000000', 0]]);
+      e.fillRect(x0, y0, lw, lh);
+      e.globalCompositeOperation = 'source-in';
+      e.fillStyle = css(rim);
+      e.fillRect(x0, y0, lw, lh);
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.globalCompositeOperation = 'source-atop';
+      g.globalAlpha = rimA;
+      g.drawImage(E, 0, 0);
+    }
+    ctx.drawImage(L, x0, y0);
+  }
+  function crestLight(ctx, w, h, r, depth, col, a) {
+    var cc = hx(col);
+    var c = field(w, h, 240, function (uu, vv, out) {
+      var dy = vv * h - ridgeAt(r, uu);
+      out[0] = cc[0]; out[1] = cc[1]; out[2] = cc[2];
+      out[3] = dy < -depth ? 0 : 255 * a * Math.exp(-Math.max(0, dy) / depth);
+    });
+    ctx.save();
+    ridgePath(ctx, r);
+    ctx.clip();
+    blit(ctx, c, 0, 0, w, h);
+    ctx.restore();
+  }
+  // keep(x0, x1) picks blades by their horizontal extent.
+  function tufts(ctx, r, x0n, x1n, H, seed, keep) {
+    var rr = rng(seed), x = x0n * r.w;
+    while (x < x1n * r.w) {
+      var yb = ridgeAt(r, x / r.w) + H * 0.25, n = 2 + Math.floor(rr() * 3);
+      for (var i = 0; i < n; i++) {
+        var bx = x + (rr() - 0.5) * H * 0.6, bh = H * (0.5 + 0.6 * rr()), lean = (rr() - 0.5) * H * 0.5, bw = H * 0.06;
+        if (!keep(Math.min(bx - bw, bx + lean), Math.max(bx + bw, bx + lean))) continue;
+        ctx.moveTo(bx - bw, yb);
+        ctx.quadraticCurveTo(bx - bw * 0.5 + lean * 0.4, yb - bh * 0.6, bx + lean, yb - bh);
+        ctx.quadraticCurveTo(bx + bw * 0.5 + lean * 0.4, yb - bh * 0.6, bx + bw, yb);
+        ctx.closePath();
+      }
+      x += H * (0.8 + 1.6 * rr());
+    }
+  }
+  function guara(ctx, w, h, o) {
+    var d = !!o.dark, S = Math.min(w, h), hz = 0.47;
+    // the middle of the guará's box and its ground line as fractions of the frame; s is its shoulder height in units of h
+    var G = { x: 0.78, y: 0.258, s: 0.066, dir: -1 };
+    // the sun is a soft glow with no hard edge, so a chat bubble that cuts it leaves no sharp arc beside it; the moon
+    // has a crisp limb, so it sits a little higher, where the measured chat layouts cut it least
+    var O = { x: 0.66, y: 0.1 }, Mn = { x: 0.66, y: 0.078 };
+    var P = guaraPalette(d), k;
+    fillAll(ctx, w, h, vlin(ctx, 0, hz * h, P.sky));
+    if (d) {
+      var mx = Mn.x * w, my = Mn.y * h, mr = 0.03 * S;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.arc(mx, my, mr, 0, Math.PI * 2);
+      // no star shows through the moon's night side
+      ctx.clip('evenodd');
+      stars(ctx, w, h, S, 141, 130, 0, 0.4, P.star, 0.45);
+      ctx.restore();
+      glow(ctx, mx, my, 0.5 * S, P.moonGlow, 0.04);
+      glow(ctx, mx, my, 0.16 * S, P.moonGlow, 0.06);
+      glow(ctx, mx, my, 3 * mr, P.moonGlow, 0.09);
+      // as seen from southern Brazil: the moon's north points down, and a waxing moon is lit on its left
+      moonFace(ctx, mx, my, mr, P.moon, 0.3, 150, 0.03, 0.22);
+    } else {
+      glow(ctx, O.x * w, O.y * h, 0.9 * S, '#FFFFFF', 0.22);
+      glow(ctx, O.x * w, O.y * h, 0.28 * S, P.sunHalo, 0.5);
+      glow(ctx, O.x * w, O.y * h, 0.09 * S, P.sun, 0.95);
+      eglow(ctx, 0.5 * w, hz * h, 0.9 * w, 0.08 * h, P.horizon, 0.45);
+    }
+    var far = ridge(w, h, S, function (xs) { return hz - 0.026 - 0.02 * (0.5 + 0.5 * f1(xs * 1.4 + 3, 721, 3)); });
+    // xn in units of w, yb and H of h; the rim is about as wide as the guará's moonlit edge and fades with haze
+    function araucariaAt(xn, yb, H, seed, col, haze) {
+      var L = d ? Mn : O;
+      araucariaTree(ctx, xn * w, yb * h, H * h, seed, col, d ? P.edge : P.rim, (d ? 0.9 : 0.3) * (1 - 0.5 * haze), 0.0012 * h, L.x * w, L.y * h);
+    }
+    // a tree on the plain: haze 0 at the knoll's foot, 1 as pale as the far ridge's trees under the knoll's mist
+    function plain(haze) { return mix(d ? P.tree : mix(mix(P.tree, P.shadow, 0.55), P.mist, 0.3), mix(P.tree, P.mist, 0.3), haze); }
+    var tr = rng(723), x = 0.015 * w;
+    while (x < 0.62 * w) {
+      var th = (0.011 + 0.012 * tr() * tr()) * h;
+      if (tr() < 0.6) broadleafTree(ctx, x, ridgeAt(far, x / w) + th * 0.1, th, 724 + Math.floor(x), P.tree);
+      x += (0.035 + 0.05 * tr()) * w;
+    }
+    fillRidge(ctx, far, vlin(ctx, far.top, (hz + 0.08) * h, [[0, P.far], [1, P.farLo]]));
+    var lows = [{ y: 0.6, a: 0.05, f: 0.8, ph: 0.1 }, { y: 0.73, a: 0.06, f: 0.7, ph: 0.55 }, { y: 0.865, a: 0.05, f: 0.9, ph: 0.3 }];
+    // valley mist under a skyline: opaque below the lowest point of the crest, so the layer in front hides its edge
+    function mist(r, a) {
+      var bot = r.top;
+      for (var i = 0; i <= r.n; i++) if (r.y[i] > bot) bot = r.y[i];
+      var y0 = r.top - 0.05 * h;
+      ctx.fillStyle = vlin(ctx, y0, bot + 2, [[0, P.mist, 0], [(r.top - y0) / (bot + 2 - y0), P.mist, a], [1, P.mist, a]]);
+      ctx.fillRect(0, y0, w, bot + 2 - y0);
+    }
+    function low(k) {
+      var l = lows[k], c = P.hills[k];
+      var r = ridge(w, h, S, function (xs, xn) {
+        var y = l.y - l.a * (0.5 + 0.5 * Math.sin(2 * Math.PI * (xn * l.f + l.ph))) - 0.012 * f1(xs * 2.2 + k * 5, 741 + k, 3);
+        // a swell in front of the guará never rises over its feet, wherever G puts it
+        return Math.max(y, lerp(y, G.y + 0.03, Math.exp(-Math.pow((xn - G.x) / 0.16, 2))));
+      });
+      mist(r, d ? 0.2 : 0.3);
+      fillRidge(ctx, r, vlin(ctx, r.top, (l.y + 0.12) * h, [[0, c[0]], [1, c[1]]]));
+      crestLight(ctx, w, h, r, 0.014 * h, P.crest, d ? 0.22 : 0.35);
+    }
+    // swells higher on screen than the guará's ground lie behind its hill
+    for (k = 0; k < lows.length; k++) if (lows[k].y < G.y) low(k);
+    var kn = ridge(w, h, S, function (xs, xn) {
+      var t = (xn - G.x) / 0.5, at = Math.abs(t);
+      // the open side falls to half the frame's height, below the far ridge, wherever G puts the hilltop
+      return G.y + (t * G.dir > 0 ? 0.5 - G.y : 0.1) * sstep(0.09, 1.25, at) + 0.004 * f1(xs * 5, 731, 2) * sstep(0.08, 0.25, at);
+    });
+    mist(kn, 0.3);
+    araucariaAt(0.26, 0.466, 0.09, 771, plain(0), 0);
+    fillRidge(ctx, kn, vlin(ctx, kn.top, (G.y + 0.24) * h, [[0, P.knoll[0]], [1, P.knoll[1]]]));
+    crestLight(ctx, w, h, kn, 0.016 * h, P.crest, d ? 0.26 : 0.4);
+    var gx = G.x * w, gy = ridgeAt(kn, G.x), s = G.s * h, paws = guaraPaws(gx, s, G.dir);
+    // blades across the middle of a paw go behind the guará, so they never split it into toes
+    function onPaw(a, b) {
+      for (var j = 0; j < paws.length; j++) { var m = 0.15 * (paws[j][1] - paws[j][0]); if (b > paws[j][0] + m && a < paws[j][1] - m) return true; }
+      return false;
+    }
+    eglow(ctx, gx, gy, 0.6 * s, 0.05 * s, P.shadow, d ? 0.5 : 0.22);
+    ctx.fillStyle = css(mix(P.knoll[0], P.tree, 0.45));
+    ctx.beginPath();
+    tufts(ctx, kn, G.x - 0.16, G.x + 0.16, 0.1 * s, 761, onPaw);
+    ctx.fill();
+    guaraFigure(ctx, gx, gy + 0.012 * s, s, G.dir, P, -1);
+    ctx.beginPath();
+    tufts(ctx, kn, G.x - 0.16, G.x + 0.16, 0.1 * s, 761, function (a, b) { return !onPaw(a, b); });
+    ctx.fill();
+    for (k = 0; k < lows.length; k++) if (lows[k].y >= G.y) low(k);
+    grain(ctx, w, h, d ? 0.03 : 0.05, d);
+  }
+
   
 // ================================================================ registry
 
@@ -1846,5 +2740,6 @@
   reg({ id: 'nature.falls', name: 'Falls Mist', blurb: 'Jungle waterfalls in rising spray, with a rainbow by day and a moonbow by night.', bubble: { light: 'pink', dark: 'purple' }, render: falls });
   reg({ id: 'nature.polar', name: 'Polar Ice', blurb: 'Pack ice and tabular icebergs under a pastel Arctic sky, then the polar twilight.', bubble: { light: 'blue', dark: 'purple' }, render: polar });
   reg({ id: 'nature.tide', name: 'Moon Tide', blurb: 'Open sea with a sun path by day and a moon path by night.', bubble: { light: 'blue', dark: 'blue' }, render: moonTide });
+  reg({ id: 'nature.guara', name: 'Guará', blurb: 'A maned wolf on a grassy knoll above misty hills and an araucaria on the plain, under a hazy sun or a crescent moon.', bubble: { light: 'green', dark: 'green' }, render: guara });
 })(typeof window !== 'undefined' ? window : globalThis);
 
