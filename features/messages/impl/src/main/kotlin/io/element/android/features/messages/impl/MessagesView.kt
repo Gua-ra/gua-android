@@ -17,6 +17,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -26,6 +27,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -869,7 +871,12 @@ private fun MessagesViewComposerBottomSheetContents(
                     MessageComposerView(
                         state = state.composerState,
                         voiceMessageState = state.voiceMessageComposerState,
-                        modifier = Modifier.fillMaxWidth(),
+                        // GUA FORK: the composer fills any height the sheet gives it, which would leave the open panel below it none.
+                        modifier = if (expressionPanelState.isOpen) {
+                            Modifier.fillMaxWidth().height(IntrinsicSize.Min)
+                        } else {
+                            Modifier.fillMaxWidth()
+                        },
                         expressionButton = if (expressionPanelState.isEnabled) {
                             { expressionPanelRenderer.ToggleButton(expressionPanelState, onToggleExpressionPanel) }
                         } else {
