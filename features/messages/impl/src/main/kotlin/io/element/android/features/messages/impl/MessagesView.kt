@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
@@ -48,6 +49,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -177,7 +179,9 @@ import io.element.android.libraries.ui.utils.a11y.isTalkbackActive
 import io.element.android.wysiwyg.link.Link
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -231,6 +235,8 @@ fun MessagesView(
     val expressionPanelState = state.expressionPanelState
     val keyboardHeight = rememberLastKeyboardHeight()
     val expressionCoroutineScope = rememberCoroutineScope()
+    val imeInsets = WindowInsets.ime
+    val imeDensity = LocalDensity.current
     BackHandler(enabled = expressionPanelState.isOpen) {
         expressionPanelState.eventSink(ExpressionPanelEvent.Close)
     }
@@ -242,7 +248,11 @@ fun MessagesView(
             localView.showKeyboard()
         } else {
             localView.hideKeyboard()
-            expressionPanelState.eventSink(ExpressionPanelEvent.Open)
+            expressionCoroutineScope.launch {
+                // Opened over a keyboard still sliding away, the panel would squeeze out the top bar and the chat until it is gone.
+                withTimeoutOrNull(KEYBOARD_HIDE_TIMEOUT) { snapshotFlow { imeInsets.getBottom(imeDensity) }.first { it == 0 } }
+                expressionPanelState.eventSink(ExpressionPanelEvent.Open)
+            }
         }
     }
 
@@ -1053,3 +1063,6 @@ internal fun MessagesViewA11yPreview() = ElementPreview {
         customReactionBottomSheet = {},
     )
 }
+
+// Long enough for the keyboard's hide animation, short enough that a keyboard which never leaves cannot block the panel.
+private val KEYBOARD_HIDE_TIMEOUT = 1000.milliseconds
