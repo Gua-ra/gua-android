@@ -59,6 +59,7 @@ class ChatThemeSectionTest {
             "currents-live",
         ).inOrder()
         assertThat(ChatThemeSection.Nature.themes.map { it.artworkId() }).containsExactly(
+            "dune-lagoons",
             "palm-coast",
             "river-bends",
             "highland-mist",
