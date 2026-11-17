@@ -369,7 +369,7 @@ fun MessagesView(
         derivedStateOf {
             val top = chatArea.top
             val bottom = chatArea.bottom
-            top != null && bottom != null && bottom - top < with(density) { 1.dp.toPx() }
+            top != null && bottom != null && bottom - top < with(density) { 4.dp.toPx() }
         }
     }
     MessageMenuHost(

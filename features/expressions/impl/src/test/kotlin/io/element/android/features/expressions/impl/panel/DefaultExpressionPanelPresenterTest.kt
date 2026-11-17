@@ -184,6 +184,12 @@ class DefaultExpressionPanelPresenterTest {
             // It pulsed as it went out, as a text send's local echo appears before the send fails.
             assertThat(composer.stickerSentCount).isEqualTo(1)
             assertThat(composer.sentCount).isEqualTo(0)
+
+            message.action()
+            consumeItemsUntilPredicate { cat.url in it.asDefault().sendingStickerUrls }
+            consumeItemsUntilPredicate { it.asDefault().sendingStickerUrls.isEmpty() }
+            // The retry does not pulse again, like a text retry.
+            assertThat(composer.stickerSentCount).isEqualTo(1)
         }
     }
 
