@@ -9,7 +9,7 @@ package io.element.android.libraries.preferences.api.store
 
 import kotlinx.coroutines.flow.StateFlow
 
-/** The "Play GIFs automatically" setting. It stays on this device and is never synced. */
+/** The GIF autoplay switch in Media settings. It stays on this device and is never synced. */
 interface GifAutoplayStore {
     /** On by default. Holds the stored value from the start, so the first frame drawn already follows it. */
     val playGifsAutomatically: StateFlow<Boolean>

@@ -21,7 +21,7 @@ import coil3.request.ImageRequest
 import coil3.request.Options
 
 /**
- * The "Play GIFs automatically" setting: the one check for GIFs and animated stickers that play on their own,
+ * The GIF autoplay switch in Media settings: the one check for GIFs and animated stickers that play on their own,
  * whatever the system animation settings. A GIF the user opens plays either way.
  */
 val LocalPlayGifsAutomatically = compositionLocalOf { true }
