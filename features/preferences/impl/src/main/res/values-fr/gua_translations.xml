@@ -106,6 +106,6 @@
     <string name="gua_preferences_spaces_title">Espaces</string>
     <string name="gua_preferences_spaces_description">Regroupez les conversations et communautés liées en un seul endroit</string>
     <string name="gua_media_settings_title">Paramètres des médias</string>
-    <string name="gua_media_settings_play_gifs_title">Lire les GIF automatiquement</string>
-    <string name="gua_media_settings_play_gifs_description">Aussi les autocollants animés. Les GIF que vous ouvrez sont toujours lus.</string>
+    <string name="gua_media_settings_play_gifs_title">Lire automatiquement les GIF et autocollants animés dans les conversations</string>
+    <string name="gua_media_settings_play_gifs_description">Les GIF ouverts sont toujours lus.</string>
 </resources>

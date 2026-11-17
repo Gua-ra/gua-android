@@ -111,7 +111,7 @@ internal fun ExpressionOverlaysView(
 
 @Composable
 private fun LargeSticker(image: StickerImage) {
-    // Opening a sticker is a request to see it move, whatever "Play GIFs automatically" says.
+    // Opening a sticker is a request to see it move, whatever the GIF autoplay switch says.
     CompositionLocalProvider(LocalPlayGifsAutomatically provides true) {
         StickerImageView(
             image = image,
