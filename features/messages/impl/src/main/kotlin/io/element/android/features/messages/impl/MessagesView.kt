@@ -250,8 +250,17 @@ fun MessagesView(
             localView.hideKeyboard()
             expressionCoroutineScope.launch {
                 // Opened over a keyboard still sliding away, the panel would squeeze out the top bar and the chat until it is gone.
-                withTimeoutOrNull(KEYBOARD_HIDE_TIMEOUT) { snapshotFlow { imeInsets.getBottom(imeDensity) }.first { it == 0 } }
-                expressionPanelState.eventSink(ExpressionPanelEvent.Open)
+                // A keyboard that turns back means the user went back to typing; one that never moves (a toolbar strip) times out.
+                var lowest = Int.MAX_VALUE
+                var isKeyboardReturning = false
+                withTimeoutOrNull(KEYBOARD_HIDE_TIMEOUT) {
+                    snapshotFlow { imeInsets.getBottom(imeDensity) }.first { bottom ->
+                        isKeyboardReturning = bottom > lowest
+                        lowest = minOf(lowest, bottom)
+                        bottom == 0 || isKeyboardReturning
+                    }
+                }
+                if (!isKeyboardReturning) expressionPanelState.eventSink(ExpressionPanelEvent.Open)
             }
         }
     }
@@ -544,6 +553,7 @@ fun MessagesView(
                     state = state,
                     expressionPanelRenderer = expressionPanelRenderer,
                     keyboardHeight = keyboardHeight,
+                    maxComposerHeightWithPanel = (maxComposerHeightPx / 2).toDp(),
                     onToggleExpressionPanel = ::toggleExpressionPanel,
                     onLinkClick = { url, customTab -> onLinkClick(url, customTab) },
                     onRoomSuccessorClick = { roomId ->
@@ -552,7 +562,8 @@ fun MessagesView(
                 )
             },
             sheetDragHandle = @Composable { toggleAction ->
-                if (state.composerState.showTextFormatting) {
+                // GUA FORK: the open expression panel takes the room an expanded formatting composer would.
+                if (state.composerState.showTextFormatting && !expressionPanelState.isOpen) {
                     val expandA11yLabel = stringResource(CommonStrings.a11y_expand_message_text_field)
                     val collapseA11yLabel = stringResource(CommonStrings.a11y_collapse_message_text_field)
                     BottomSheetDragHandle(
@@ -578,7 +589,7 @@ fun MessagesView(
                     }
                 }
             },
-            isSwipeGestureEnabled = state.composerState.showTextFormatting,
+            isSwipeGestureEnabled = state.composerState.showTextFormatting && !expressionPanelState.isOpen,
             state = expandableState,
             sheetShape = if (state.composerState.showTextFormatting || state.composerState.suggestions.isNotEmpty()) {
                 MaterialTheme.shapes.large
@@ -842,6 +853,7 @@ private fun MessagesViewComposerBottomSheetContents(
     state: MessagesState,
     expressionPanelRenderer: ExpressionPanelRenderer,
     keyboardHeight: Dp,
+    maxComposerHeightWithPanel: Dp,
     onToggleExpressionPanel: () -> Unit,
     onRoomSuccessorClick: (RoomId) -> Unit,
     onLinkClick: (String, Boolean) -> Unit,
@@ -882,8 +894,9 @@ private fun MessagesViewComposerBottomSheetContents(
                         state = state.composerState,
                         voiceMessageState = state.voiceMessageComposerState,
                         // GUA FORK: the composer fills any height the sheet gives it, which would leave the open panel below it none.
+                        // A long draft scrolls inside the cap instead.
                         modifier = if (expressionPanelState.isOpen) {
-                            Modifier.fillMaxWidth().height(IntrinsicSize.Min)
+                            Modifier.fillMaxWidth().heightIn(max = maxComposerHeightWithPanel).height(IntrinsicSize.Min)
                         } else {
                             Modifier.fillMaxWidth()
                         },
