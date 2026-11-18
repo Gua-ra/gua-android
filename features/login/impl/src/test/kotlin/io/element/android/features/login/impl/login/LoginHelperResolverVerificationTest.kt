@@ -12,7 +12,6 @@ import io.element.android.features.login.impl.screens.phoneentry.PhoneEntryEvent
 import io.element.android.features.login.impl.screens.phoneentry.PhoneEntryNode
 import io.element.android.features.login.impl.screens.phoneentry.PhoneEntryPresenter
 import io.element.android.features.login.impl.screens.phoneentry.PhoneEntryState
-import io.element.android.features.login.impl.web.FakeWebClientUrlForAuthenticationRetriever
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
@@ -22,7 +21,6 @@ import io.element.android.libraries.matrix.api.auth.MatrixHomeServerDetails
 import io.element.android.libraries.matrix.test.auth.AN_OAUTH_DATA
 import io.element.android.libraries.matrix.test.auth.FakeMatrixAuthenticationService
 import io.element.android.libraries.matrix.test.auth.aMatrixHomeServerDetails
-import io.element.android.libraries.oauth.test.customtab.FakeOAuthActionFlow
 import io.element.android.libraries.phonenumberentry.FakeDeviceCountryProvider
 import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import io.element.android.tests.testutils.WarmUpRule
@@ -30,8 +28,6 @@ import io.element.android.tests.testutils.lambda.lambdaRecorder
 import io.element.android.tests.testutils.lambda.value
 import io.element.android.tests.testutils.test
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -122,21 +118,16 @@ class LoginHelperResolverVerificationTest {
             Result.success(aMatrixHomeServerDetails(supportsOAuthLogin = true))
         },
     ): PhoneEntryPresenter {
-        val loginHelper = LoginHelper(
-            oAuthActionFlow = FakeOAuthActionFlow(),
+        val loginHelper = createLoginHelper(
             authenticationService = FakeMatrixAuthenticationService(
                 setHomeserverResult = setHomeserverResult,
                 getOAuthUrlResult = { _, _ -> Result.success(AN_OAUTH_DATA) },
             ),
-            webClientUrlForAuthenticationRetriever = FakeWebClientUrlForAuthenticationRetriever(),
             resolverClient = FakeResolverClient(resolveResult = { Result.success(A_RESOLUTION) }),
             featureFlagService = FakeFeatureFlagService(
                 initialState = mapOf(FeatureFlags.ResolverVerification.key to verificationEnabled),
             ),
-            accountGenesisManager = FakeAccountGenesisManager(),
             resolverVerifier = verifier,
-            appCoroutineScope = CoroutineScope(Dispatchers.Unconfined),
-            deployment = FakeGuaDeployment(),
         )
         return PhoneEntryPresenter(
             params = PhoneEntryNode.Params(initialPhoneNumber = null),
