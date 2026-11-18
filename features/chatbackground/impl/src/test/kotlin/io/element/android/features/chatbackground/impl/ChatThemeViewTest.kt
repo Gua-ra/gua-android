@@ -487,10 +487,26 @@ class ChatThemeViewTest : RobolectricTest() {
     }
 
     @Test
+    fun `the bubble picker shows the credit of a photo wallpaper, which opens the photo credits`() = runAndroidComposeUiTest<ComponentActivity> {
+        val eventsRecorder = EventsRecorder<ChatThemeEvent>()
+        val lagoon = ChatArtwork.PhotoLencoisLagoon
+        setChatThemeView(
+            aChatThemeState(
+                current = lagoon.theme,
+                page = ChatThemePage.BubblePicker(selection = ChatBubbleColor.Blue),
+                eventSink = eventsRecorder,
+            )
+        )
+        onNode(hasText("Photo: Gerda Arendt · CC0 1.0") and hasClickAction()).performClick()
+        eventsRecorder.assertSingle(ChatThemeEvent.OpenPhotoCredits)
+    }
+
+    @Test
     fun `a member who cannot change a photo theme still reaches its credit`() = runAndroidComposeUiTest<ComponentActivity> {
         val eventsRecorder = EventsRecorder<ChatThemeEvent>()
         setChatThemeView(aChatThemeState(current = ChatArtwork.PhotoYukonSled.theme, hasPermission = false, eventSink = eventsRecorder))
-        onNode(hasText("Photo: Sarah Lacerda · CC BY 4.0") and hasClickAction()).assertIsEnabled().performClick()
+        val credit = requireNotNull(ChatArtwork.PhotoYukonSled.credit)
+        onNode(hasText("Photo: ${credit.author} · ${credit.licence.displayName}") and hasClickAction()).assertIsEnabled().performClick()
         onNode(hasText(activity!!.getString(R.string.gua_chat_theme_photo_credits)) and hasClickAction()).performScrollTo().performClick()
         eventsRecorder.assertList(listOf(ChatThemeEvent.OpenPhotoCredits, ChatThemeEvent.OpenPhotoCredits))
     }

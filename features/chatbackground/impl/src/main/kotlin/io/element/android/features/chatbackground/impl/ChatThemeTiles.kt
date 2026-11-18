@@ -84,7 +84,6 @@ internal fun ChatThemeSectionTitle(
             color = ElementTheme.colors.textPrimary,
         )
         if (action != null) {
-            // Centred on the title, which sits below its top padding.
             Box(modifier = Modifier.padding(top = 8.dp)) { action() }
         }
     }
@@ -180,14 +179,13 @@ internal fun ChatThemeTile(
             )
         }
         if (credit != null) {
+            // No line limit: the author's name must stay legible.
             Text(
                 text = credit,
                 modifier = Modifier.clearAndSetSemantics {},
                 style = ElementTheme.typography.fontBodyXsRegular,
                 color = ElementTheme.colors.textSecondary,
                 textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
             )
         }
     }

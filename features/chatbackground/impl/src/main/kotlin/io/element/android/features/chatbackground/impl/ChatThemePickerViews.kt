@@ -95,7 +95,15 @@ internal fun ChatBubblePickerView(
                 .consumeWindowInsets(padding)
                 .verticalScroll(rememberScrollState()),
         ) {
-            ChatThemePreviewCard(theme = state.shownTheme(saving = chosen), modifier = Modifier.padding(16.dp))
+            val shownTheme = state.shownTheme(saving = chosen)
+            ChatThemePreviewCard(theme = shownTheme, modifier = Modifier.padding(16.dp))
+            shownTheme.background.photoCredit?.let { credit ->
+                PhotoCreditLine(
+                    credit = credit,
+                    onClick = { state.eventSink(ChatThemeEvent.OpenPhotoCredits) },
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
+            }
             FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
