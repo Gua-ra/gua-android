@@ -575,7 +575,6 @@ enum class ChatArtwork(
 
     val isPhoto: Boolean get() = credit != null
 
-    // A photo is one image for both appearances, dimmed in dark mode.
     val lightFile: String get() = if (isPhoto) "$id.webp" else "$id-light.webp"
     val darkFile: String get() = if (isPhoto) "$id.webp" else "$id-dark.webp"
 

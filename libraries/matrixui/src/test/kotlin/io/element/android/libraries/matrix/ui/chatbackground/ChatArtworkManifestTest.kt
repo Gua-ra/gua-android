@@ -64,7 +64,6 @@ class ChatArtworkManifestTest {
                 message.that(credit.licence.displayName).isEqualTo(entryCredit.string("licence"))
                 message.that(credit.licence.deedUrl).isEqualTo(entryCredit.string("licence_url"))
                 message.that(credit.sourceUrl).isEqualTo(entryCredit.getValue("source_url").jsonPrimitive.contentOrNull)
-                // The credits screen says so for every photo.
                 message.that(entryCredit.string("modified")).isEqualTo("cropped and resized")
             }
         }

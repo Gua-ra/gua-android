@@ -70,4 +70,4 @@ node -e 'for (const p of require("./tools/wallpapers/photos.json").photos) if (p
   while read -r id url; do mkdir -p "originals/$id" && curl -fL -A '<tool name and contact>' -o "originals/$id/${url##*/}" "$url"; done
 ```
 
-Photos with no `original_url` come from the photographer's own files and are not published.
+Photos with no `original_url` come from the photographer's own files and are not published. cwebp cannot read HEIC, so a HEIC original is converted to PNG first and `original` pins that PNG.
