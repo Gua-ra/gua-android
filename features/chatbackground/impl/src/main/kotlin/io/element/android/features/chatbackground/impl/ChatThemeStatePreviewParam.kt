@@ -67,6 +67,13 @@ class ChatThemeStatePreviewParam : PreviewParameterProvider<ChatThemeState> {
             ),
             aChatThemeState(current = ChatArtwork.Azulejo.theme, page = ChatThemePage.WallpaperPicker),
             aChatThemeState(current = ChatArtwork.GlassDrops.theme, page = ChatThemePage.WallpaperPicker),
+            aChatThemeState(current = ChatArtwork.PhotoYukonSled.theme, hasPermission = false),
+            aChatThemeState(preview = ChatThemePreview(shown = ChatArtwork.PhotoPeytoLake.theme, saved = ChatArtwork.PhotoPeytoLake.theme)),
+            aChatThemeState(
+                preview = ChatThemePreview(shown = ChatArtwork.PhotoPeytoLake.theme, saved = ChatArtwork.PhotoPeytoLake.theme, isDarkPreview = true),
+            ),
+            aChatThemeState(current = ChatArtwork.PhotoGrutaAzul.theme, page = ChatThemePage.WallpaperPicker),
+            aChatThemeState(current = ChatArtwork.PhotoGrutaAzul.theme, showsPhotoCredits = true),
         )
 }
 
@@ -90,6 +97,7 @@ internal fun aChatThemeState(
     page: ChatThemePage = ChatThemePage.Gallery,
     preview: ChatThemePreview? = null,
     photoDraft: ChatBackgroundPhotoDraft? = null,
+    showsPhotoCredits: Boolean = false,
     operation: ChatThemeOperation = ChatThemeOperation.Save,
     action: AsyncAction<Unit> = AsyncAction.Uninitialized,
     eventSink: (ChatThemeEvent) -> Unit = {},
@@ -102,6 +110,7 @@ internal fun aChatThemeState(
     page = page,
     preview = preview,
     photoDraft = photoDraft,
+    showsPhotoCredits = showsPhotoCredits,
     operation = operation,
     action = action,
     eventSink = eventSink,

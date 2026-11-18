@@ -7,6 +7,7 @@
 
 package io.element.android.features.chatbackground.impl
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.bumble.appyx.core.modality.BuildContext
@@ -15,6 +16,8 @@ import com.bumble.appyx.core.plugin.Plugin
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
+import io.element.android.compound.theme.ElementTheme
+import io.element.android.libraries.androidutils.browser.openUrlInChromeCustomTab
 import io.element.android.libraries.di.SessionScope
 
 @ContributesNode(SessionScope::class)
@@ -29,9 +32,12 @@ class DefaultChatThemeNode(
 
     @Composable
     override fun View(modifier: Modifier) {
+        val activity = requireNotNull(LocalActivity.current)
+        val isDark = !ElementTheme.isLightTheme
         ChatThemeView(
             state = presenter.present(),
             onBackClick = ::navigateUp,
+            onOpenUrl = { activity.openUrlInChromeCustomTab(null, isDark, it) },
             modifier = modifier,
         )
     }

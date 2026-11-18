@@ -46,6 +46,7 @@ import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBubbleColor
 import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.chatbackground.api.nameRes
+import io.element.android.libraries.chatbackground.api.photoCredit
 import io.element.android.libraries.designsystem.components.button.BackButton
 import io.element.android.libraries.designsystem.components.list.ListItemContent
 import io.element.android.libraries.designsystem.theme.components.Button
@@ -197,7 +198,7 @@ internal fun ChatWallpaperPickerView(
                 onClick = { state.eventSink(ChatThemeEvent.SelectWallpaper(ChatBackground.None)) },
             )
             ChatThemeSection.wallpaperSections.forEach { section ->
-                ChatThemeSectionTitle(section.titleRes)
+                ChatThemeSectionTitle(section.titleRes, action = photoCreditsAction(section, state.eventSink))
                 ChatThemeTileRow {
                     items(section.themes.map { it.background }) { background ->
                         ChatThemeTile(
@@ -206,6 +207,7 @@ internal fun ChatWallpaperPickerView(
                             isSelected = background == state.baseTheme.background,
                             enabled = state.canChange,
                             showsBubbles = false,
+                            credit = background.photoCredit?.let { photoCreditText(it, withLicence = false) },
                             onClick = { state.eventSink(ChatThemeEvent.SelectWallpaper(background)) },
                         )
                     }

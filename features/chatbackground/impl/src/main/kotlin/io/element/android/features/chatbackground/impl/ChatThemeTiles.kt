@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -63,13 +64,30 @@ private val TILE_WIDTH = 88.dp
 private val TILE_SHAPE = RoundedCornerShape(10.dp)
 
 @Composable
-internal fun ChatThemeSectionTitle(@StringRes titleRes: Int, modifier: Modifier = Modifier) {
-    Text(
-        text = stringResource(titleRes),
-        modifier = modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
-        style = ElementTheme.typography.fontBodyLgMedium,
-        color = ElementTheme.colors.textPrimary,
-    )
+internal fun ChatThemeSectionTitle(
+    @StringRes titleRes: Int,
+    modifier: Modifier = Modifier,
+    action: (@Composable () -> Unit)? = null,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(end = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(titleRes),
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 8.dp),
+            style = ElementTheme.typography.fontBodyLgMedium,
+            color = ElementTheme.colors.textPrimary,
+        )
+        if (action != null) {
+            // Centred on the title, which sits below its top padding.
+            Box(modifier = Modifier.padding(top = 8.dp)) { action() }
+        }
+    }
 }
 
 @Composable
@@ -106,6 +124,7 @@ internal fun ChatThemeTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     showsLabel: Boolean = true,
+    credit: String? = null,
 ) {
     val bubbleDescription = if (showsBubbles) {
         val bubble = theme.outgoingBubble(ElementTheme.isLightTheme)
@@ -115,7 +134,7 @@ internal fun ChatThemeTile(
     }
     val isLive = (theme.background as? ChatBackground.Art)?.artwork?.isLive == true
     val liveDescription = if (isLive) stringResource(R.string.gua_chat_theme_live_badge) else null
-    val description = listOfNotNull(label, liveDescription, bubbleDescription).joinToString(", ")
+    val description = listOfNotNull(label, credit, liveDescription, bubbleDescription).joinToString(", ")
     Column(
         modifier = modifier
             .width(TILE_WIDTH)
@@ -157,6 +176,17 @@ internal fun ChatThemeTile(
                 color = if (enabled) ElementTheme.colors.textPrimary else ElementTheme.colors.textDisabled,
                 textAlign = TextAlign.Center,
                 maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (credit != null) {
+            Text(
+                text = credit,
+                modifier = Modifier.clearAndSetSemantics {},
+                style = ElementTheme.typography.fontBodyXsRegular,
+                color = ElementTheme.colors.textSecondary,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
         }

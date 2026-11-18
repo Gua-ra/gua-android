@@ -23,6 +23,8 @@ data class ChatThemeState(
     val page: ChatThemePage,
     val preview: ChatThemePreview?,
     val photoDraft: ChatBackgroundPhotoDraft?,
+    /** Shown over every other page; anyone who can open the screen can open it. */
+    val showsPhotoCredits: Boolean,
     val operation: ChatThemeOperation,
     val action: AsyncAction<Unit>,
     val eventSink: (ChatThemeEvent) -> Unit,

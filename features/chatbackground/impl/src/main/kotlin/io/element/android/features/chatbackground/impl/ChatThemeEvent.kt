@@ -22,6 +22,7 @@ sealed interface ChatThemeEvent {
     data class SetPhotoDim(val dim: Int) : ChatThemeEvent
     data class SetPhotoAlign(val x: Int, val y: Int) : ChatThemeEvent
     data class SetDarkPreview(val isDark: Boolean) : ChatThemeEvent
+    data object OpenPhotoCredits : ChatThemeEvent
     data object Save : ChatThemeEvent
     data object Cancel : ChatThemeEvent
     data object ClearError : ChatThemeEvent

@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.theme.Theme
 import io.element.android.libraries.chatbackground.api.ChatBackground
+import io.element.android.libraries.chatbackground.api.ChatPhotoCredit
+import io.element.android.libraries.chatbackground.api.photoCredit
 import io.element.android.libraries.designsystem.components.button.BackButton
 import io.element.android.libraries.designsystem.theme.components.Button
 import io.element.android.libraries.designsystem.theme.components.Scaffold
@@ -55,6 +57,7 @@ internal fun ChatThemePreviewView(
         },
         bottomBar = {
             PreviewControls(
+                credit = preview.shown.background.photoCredit,
                 isDarkPreview = isDarkPreview,
                 saveLabel = saveLabel,
                 canChange = canChange,
@@ -87,6 +90,7 @@ internal fun ChatThemePreviewView(
 
 @Composable
 private fun PreviewControls(
+    credit: ChatPhotoCredit?,
     isDarkPreview: Boolean,
     saveLabel: String,
     canChange: Boolean,
@@ -101,6 +105,13 @@ private fun PreviewControls(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        if (credit != null) {
+            PhotoCreditLine(
+                credit = credit,
+                onClick = { eventSink(ChatThemeEvent.OpenPhotoCredits) },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+        }
         LightDarkPreviewToggle(isDarkPreview = isDarkPreview, eventSink = eventSink)
         Button(
             text = saveLabel,
