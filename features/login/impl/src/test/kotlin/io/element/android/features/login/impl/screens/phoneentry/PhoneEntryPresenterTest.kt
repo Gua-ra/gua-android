@@ -1,7 +1,7 @@
 /*
  * Copyright 2026 Gua
  *
- * SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial.
+ * SPDX-License-Identifier: AGPL-3.0-only
  * Please see LICENSE files in the repository root for full details.
  */
 
@@ -14,7 +14,7 @@ import io.element.android.features.login.impl.login.FakeGuaDeployment
 import io.element.android.features.login.impl.login.FakeResolverClient
 import io.element.android.features.login.impl.login.LoginHelper
 import io.element.android.features.login.impl.login.LoginMode
-import io.element.android.features.login.impl.screens.onboarding.createLoginHelper
+import io.element.android.features.login.impl.login.createLoginHelper
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.guaresolver.HomeserverResolution
 import io.element.android.libraries.guaresolver.ResolvedHomeserver

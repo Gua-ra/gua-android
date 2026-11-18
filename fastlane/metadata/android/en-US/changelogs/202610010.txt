@@ -1,0 +1,1 @@
+Double tap a message to react, and press and hold for a simpler menu with Select text. Scrolling no longer selects messages. Settings has a new layout and a Moderation & safety screen. Spaces can be turned on in Settings. When you sign in somewhere else, this phone now asks you to confirm it. Thanks for helping us test Gua.

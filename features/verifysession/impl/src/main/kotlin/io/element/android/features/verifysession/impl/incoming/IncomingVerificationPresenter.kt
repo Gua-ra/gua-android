@@ -13,6 +13,7 @@ package io.element.android.features.verifysession.impl.incoming
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -22,17 +23,23 @@ import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.features.verifysession.impl.incoming.IncomingVerificationState.Step
+import io.element.android.features.verifysession.impl.newsignin.DismissedSignInStore
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.dateformatter.api.DateFormatter
 import io.element.android.libraries.dateformatter.api.DateFormatterMode
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
+import io.element.android.libraries.matrix.api.core.SessionId
+import io.element.android.libraries.matrix.api.user.MatrixUser
+import io.element.android.libraries.matrix.api.user.toMatrixUser
 import io.element.android.libraries.matrix.api.verification.SessionVerificationRequestDetails
 import io.element.android.libraries.matrix.api.verification.SessionVerificationService
 import io.element.android.libraries.matrix.api.verification.VerificationFlowState
 import io.element.android.libraries.matrix.api.verification.VerificationRequest
+import io.element.android.libraries.sessionstorage.api.SessionStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -45,8 +52,11 @@ class IncomingVerificationPresenter(
     @Assisted private val navigator: IncomingVerificationNavigator,
     @SessionCoroutineScope private val sessionCoroutineScope: CoroutineScope,
     private val sessionVerificationService: SessionVerificationService,
+    private val sessionId: SessionId,
+    private val sessionStore: SessionStore,
     private val stateMachine: IncomingVerificationStateMachine,
     private val dateFormatter: DateFormatter,
+    private val dismissedSignInStore: DismissedSignInStore,
 ) : Presenter<IncomingVerificationState> {
     @AssistedFactory
     fun interface Factory {
@@ -92,9 +102,15 @@ class IncomingVerificationPresenter(
                 mode = DateFormatterMode.TimeOrDate,
             )
         }
+        val currentUser by remember {
+            sessionStore.sessionsFlow().mapNotNull { sessions ->
+                sessions.find { it.userId == sessionId.value }?.toMatrixUser()
+            }
+        }.collectAsState(MatrixUser(sessionId))
         val step by remember {
             derivedStateOf {
                 stateAndDispatch.state.value.toVerificationStep(
+                    currentUser = currentUser,
                     sessionVerificationRequestDetails = verificationRequest.details,
                     formattedSignInTime = formattedSignInTime,
                 )
@@ -108,18 +124,22 @@ class IncomingVerificationPresenter(
             }
         }
 
-        fun handleEvent(event: IncomingVerificationViewEvents) {
+        fun handleEvent(event: IncomingVerificationViewEvent) {
             Timber.d("Verification user action: ${event::class.simpleName}")
             when (event) {
-                IncomingVerificationViewEvents.StartVerification ->
+                IncomingVerificationViewEvent.StartVerification ->
                     stateAndDispatch.dispatchAction(StateMachineEvent.AcceptIncomingRequest)
-                IncomingVerificationViewEvents.IgnoreVerification ->
+                IncomingVerificationViewEvent.IgnoreVerification -> {
+                    if (verificationRequest is VerificationRequest.Incoming.OtherSession) {
+                        sessionCoroutineScope.launch { dismissedSignInStore.dismiss(verificationRequest.details.deviceId) }
+                    }
                     navigator.onFinish()
-                IncomingVerificationViewEvents.ConfirmVerification ->
+                }
+                IncomingVerificationViewEvent.ConfirmVerification ->
                     stateAndDispatch.dispatchAction(StateMachineEvent.AcceptChallenge)
-                IncomingVerificationViewEvents.DeclineVerification ->
+                IncomingVerificationViewEvent.DeclineVerification ->
                     stateAndDispatch.dispatchAction(StateMachineEvent.DeclineChallenge)
-                IncomingVerificationViewEvents.GoBack -> {
+                IncomingVerificationViewEvent.GoBack -> {
                     when (val verificationStep = step) {
                         is Step.Initial -> if (verificationStep.isWaiting) {
                             stateAndDispatch.dispatchAction(StateMachineEvent.Cancel)
@@ -147,6 +167,7 @@ class IncomingVerificationPresenter(
     }
 
     private fun StateMachineState?.toVerificationStep(
+        currentUser: MatrixUser,
         sessionVerificationRequestDetails: SessionVerificationRequestDetails,
         formattedSignInTime: String,
     ): Step =
@@ -156,6 +177,7 @@ class IncomingVerificationPresenter(
             StateMachineState.RejectingIncomingVerification,
             null -> {
                 Step.Initial(
+                    currentUser = currentUser,
                     deviceDisplayName = sessionVerificationRequestDetails.deviceDisplayName,
                     deviceId = sessionVerificationRequestDetails.deviceId,
                     formattedSignInTime = formattedSignInTime,
@@ -190,8 +212,13 @@ class IncomingVerificationPresenter(
             .onEach { verificationAttemptState ->
                 when (verificationAttemptState) {
                     VerificationFlowState.Initial,
-                    VerificationFlowState.DidAcceptVerificationRequest,
                     VerificationFlowState.DidStartSasVerification -> Unit
+                    VerificationFlowState.DidAcceptVerificationRequest -> {
+                        // GUA FORK: for our own devices this side starts SAS, so the other device shows the emojis without another tap.
+                        if (verificationRequest is VerificationRequest.Incoming.OtherSession) {
+                            stateMachine.dispatch(StateMachineEvent.OwnDeviceRequestAccepted)
+                        }
+                    }
                     is VerificationFlowState.DidReceiveVerificationData -> {
                         stateMachine.dispatch(StateMachineEvent.DidReceiveChallenge(verificationAttemptState.data))
                     }

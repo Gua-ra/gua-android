@@ -5,6 +5,7 @@
   <string name="screen_link_new_device_desktop_step3">"Escanea el código QR con este dispositivo"</string>
   <string name="screen_link_new_device_desktop_submit">"Listo para escanear"</string>
   <string name="screen_link_new_device_desktop_title">"Abre %1$s en una computadora para obtener el código QR"</string>
+  <string name="screen_link_new_device_desktop_warning">"Solo escanea un código QR después de haber seguido los pasos anteriores en tu propio dispositivo. Nunca escanees un código que te haya enviado otra persona."</string>
   <string name="screen_link_new_device_enter_number_error_numbers_do_not_match">"Los números no coinciden"</string>
   <string name="screen_link_new_device_enter_number_notice">"Ingresa el código de 2 dígitos"</string>
   <string name="screen_link_new_device_enter_number_subtitle">"Esto verificará que la conexión con tu otro dispositivo sea segura."</string>

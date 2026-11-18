@@ -9,6 +9,7 @@
 
 package io.element.android.features.linknewdevice.impl.screens.scan
 
+import android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -28,8 +29,8 @@ import org.junit.Test
 import org.robolectric.annotation.Config
 
 class ScanQrCodeViewTest : RobolectricTest() {
-    @Config(qualifiers = "h1024dp")
     @Test
+    @Config(sdk = [UPSIDE_DOWN_CAKE], qualifiers = "h1024dp")
     fun `on back pressed - calls the expected callback`() = runAndroidComposeUiTest {
         val eventRecorder = EventsRecorder<ScanQrCodeEvent>(expectEvents = false)
         ensureCalledOnce { callback ->
@@ -43,8 +44,8 @@ class ScanQrCodeViewTest : RobolectricTest() {
         }
     }
 
-    @Config(qualifiers = "h1024dp")
     @Test
+    @Config(sdk = [UPSIDE_DOWN_CAKE], qualifiers = "h1024dp")
     fun `try again button clicked - emits the expected event`() = runAndroidComposeUiTest {
         val eventRecorder = EventsRecorder<ScanQrCodeEvent>()
         setView(

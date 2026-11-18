@@ -15,18 +15,23 @@ import io.element.android.features.messages.impl.actionlist.model.TimelineItemAc
 import io.element.android.features.messages.impl.crypto.sendfailure.VerifiedUserSendFailure
 import io.element.android.features.messages.impl.crypto.sendfailure.VerifiedUserSendFailureFactory
 import io.element.android.features.messages.impl.fixtures.aMessageEvent
+import io.element.android.features.messages.impl.messagemenu.MessageQuickReactions
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
 import io.element.android.features.messages.impl.timeline.model.TimelineItemThreadInfo
 import io.element.android.features.messages.impl.timeline.model.event.RtcNotificationState
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRedactedContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRtcNotificationContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemTextContent
+import io.element.android.features.messages.impl.timeline.model.event.aLiveLocationMode
+import io.element.android.features.messages.impl.timeline.model.event.aStaticLocationMode
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemImageContent
+import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemLocationContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemPollContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemStateEventContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemVoiceContent
 import io.element.android.features.poll.api.pollcontent.aPollAnswerItemList
 import io.element.android.libraries.dateformatter.test.FakeDateFormatter
+import io.element.android.libraries.emoji.api.recentemojis.GetRecentEmojis
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
 import io.element.android.libraries.matrix.api.notification.CallIntent
@@ -42,7 +47,6 @@ import io.element.android.libraries.matrix.test.A_USER_ID
 import io.element.android.libraries.matrix.test.room.FakeBaseRoom
 import io.element.android.libraries.matrix.test.room.aRoomInfo
 import io.element.android.libraries.preferences.test.InMemoryAppPreferencesStore
-import io.element.android.libraries.recentemojis.api.GetRecentEmojis
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.test
 import kotlinx.collections.immutable.persistentListOf
@@ -51,12 +55,11 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 
-@Suppress("LargeClass")
 class ActionListPresenterTest {
     @get:Rule
     val warmUpRule = WarmUpRule()
 
-    private val suggestedEmojis = persistentListOf("👍️", "👎️", "🔥", "❤️", "👏")
+    private val suggestedEmojis = MessageQuickReactions.defaults
 
     @Test
     fun `present - initial state`() = runTest {
@@ -598,6 +601,123 @@ class ActionListPresenterTest {
             )
             initialState.eventSink.invoke(ActionListEvent.Clear)
             assertThat(awaitItem().target).isEqualTo(ActionListState.Target.None)
+        }
+    }
+
+    @Test
+    fun `present - compute for a static location item`() = runTest {
+        val presenter = createActionListPresenter(isDeveloperModeEnabled = true)
+        presenter.test {
+            val initialState = awaitItem()
+            val messageEvent = aMessageEvent(
+                isMine = true,
+                isEditable = false,
+                content = aTimelineItemLocationContent(mode = aStaticLocationMode()),
+            )
+            initialState.eventSink.invoke(
+                ActionListEvent.ComputeForMessage(
+                    event = messageEvent,
+                    userEventPermissions = aUserEventPermissions(
+                        canRedactOwn = true,
+                        canRedactOther = false,
+                        canSendMessage = true,
+                        canSendReaction = true,
+                        canPinUnpin = true,
+                    ),
+                )
+            )
+            val successState = awaitItem()
+            assertThat(successState.target).isEqualTo(
+                ActionListState.Target.Success(
+                    event = messageEvent,
+                    sentTimeFull = "0 Full true",
+                    displayEmojiReactions = true,
+                    verifiedUserSendFailure = VerifiedUserSendFailure.None,
+                    actions = persistentListOf(
+                        TimelineItemAction.Reply,
+                        TimelineItemAction.Forward,
+                        TimelineItemAction.CopyLink,
+                        TimelineItemAction.Pin,
+                        TimelineItemAction.ViewSource,
+                        TimelineItemAction.Redact,
+                    ),
+                    recentEmojis = suggestedEmojis,
+                )
+            )
+            initialState.eventSink.invoke(ActionListEvent.Clear)
+            assertThat(awaitItem().target).isEqualTo(ActionListState.Target.None)
+        }
+    }
+
+    @Test
+    fun `present - compute for a live location item does not offer to forward it`() = runTest {
+        val presenter = createActionListPresenter(isDeveloperModeEnabled = true)
+        presenter.test {
+            val initialState = awaitItem()
+            val messageEvent = aMessageEvent(
+                isMine = true,
+                isEditable = false,
+                content = aTimelineItemLocationContent(mode = aLiveLocationMode(isActive = true)),
+            )
+            initialState.eventSink.invoke(
+                ActionListEvent.ComputeForMessage(
+                    event = messageEvent,
+                    userEventPermissions = aUserEventPermissions(
+                        canRedactOwn = true,
+                        canRedactOther = false,
+                        canSendMessage = true,
+                        canSendReaction = true,
+                        canPinUnpin = true,
+                    ),
+                )
+            )
+            val successState = awaitItem()
+            assertThat(successState.target).isEqualTo(
+                ActionListState.Target.Success(
+                    event = messageEvent,
+                    sentTimeFull = "0 Full true",
+                    displayEmojiReactions = true,
+                    verifiedUserSendFailure = VerifiedUserSendFailure.None,
+                    actions = persistentListOf(
+                        TimelineItemAction.Reply,
+                        TimelineItemAction.CopyLink,
+                        TimelineItemAction.Pin,
+                        TimelineItemAction.ViewSource,
+                        TimelineItemAction.Redact,
+                    ),
+                    recentEmojis = suggestedEmojis,
+                )
+            )
+            initialState.eventSink.invoke(ActionListEvent.Clear)
+            assertThat(awaitItem().target).isEqualTo(ActionListState.Target.None)
+        }
+    }
+
+    @Test
+    fun `present - compute for an ended live location item does not offer to forward it`() = runTest {
+        val presenter = createActionListPresenter(isDeveloperModeEnabled = true)
+        presenter.test {
+            val initialState = awaitItem()
+            val messageEvent = aMessageEvent(
+                isMine = true,
+                isEditable = false,
+                content = aTimelineItemLocationContent(mode = aLiveLocationMode(isActive = false)),
+            )
+            initialState.eventSink.invoke(
+                ActionListEvent.ComputeForMessage(
+                    event = messageEvent,
+                    userEventPermissions = aUserEventPermissions(
+                        canRedactOwn = true,
+                        canRedactOther = false,
+                        canSendMessage = true,
+                        canSendReaction = true,
+                        canPinUnpin = true,
+                    ),
+                )
+            )
+            val successState = awaitItem()
+            assertThat((successState.target as ActionListState.Target.Success).actions)
+                .doesNotContain(TimelineItemAction.Forward)
         }
     }
 
@@ -1430,7 +1550,6 @@ class ActionListPresenterTest {
 
     @Test
     fun `present - recentEmojis merges suggested and recent emojis`() = runTest {
-        val suggestedEmojis = persistentListOf("👍️", "👎️", "🔥", "❤️", "👏")
         val otherEmojis = (0..100).map { it.toString() }
 
         val presenter = createActionListPresenter(

@@ -59,7 +59,7 @@ body:
       label: Are you willing to provide a PR?
       description: It is fine to answer 'No'.
       options:
-        - 'Yes'
         - 'No'
+        - 'Yes'
     validations:
       required: false

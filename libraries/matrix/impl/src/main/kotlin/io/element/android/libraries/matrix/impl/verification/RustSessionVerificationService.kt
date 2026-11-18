@@ -247,6 +247,7 @@ class RustSessionVerificationService(
 
     fun destroy() {
         Timber.d("Destroying RustSessionVerificationService")
+        listener = null
         verificationStateListenerTaskHandle.cancelAndDestroy()
         recoveryStateListenerTaskHandle.cancelAndDestroy()
         if (this::verificationController.isInitialized) {
@@ -273,6 +274,9 @@ class RustSessionVerificationService(
                 val ready = awaitE2eeInitialization(E2EE_INITIALISATION_CEILING)
                 if (!ready) Timber.w("E2EE initialisation did not report ready within $E2EE_INITIALISATION_CEILING, continuing anyway")
                 isInitialized.set(true)
+                // Also update the state, because update may have been ignored by VerificationStateListener.onUpdate
+                // If we do not do that the FTUE is stuck on blank screen.
+                updateVerificationStatus()
             }
 
             if (!this::verificationController.isInitialized) {

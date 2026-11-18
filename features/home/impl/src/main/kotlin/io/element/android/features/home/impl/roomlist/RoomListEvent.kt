@@ -22,6 +22,7 @@ sealed interface RoomListEvent {
     /** GUA FORK: the view has acted on the reset verdict, so it must not fire again. */
     data object EncryptionResetNavigated : RoomListEvent
     data object DismissNewNotificationSoundBanner : RoomListEvent
+    data object DismissSwipeAvatarBanner : RoomListEvent
     data object ToggleSearchResults : RoomListEvent
     data class ShowContextMenu(val roomSummary: RoomListRoomSummary) : RoomListEvent
 
@@ -36,5 +37,4 @@ sealed interface RoomListEvent {
     data class MarkAsRead(val roomId: RoomId) : ContextMenuEvent
     data class MarkAsUnread(val roomId: RoomId) : ContextMenuEvent
     data class SetRoomIsFavorite(val roomId: RoomId, val isFavorite: Boolean) : ContextMenuEvent
-    data class ClearCacheOfRoom(val roomId: RoomId) : ContextMenuEvent
 }
