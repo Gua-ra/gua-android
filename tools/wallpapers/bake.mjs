@@ -506,7 +506,82 @@ export function photoXmp(photo) {
   ].join('\n');
 }
 
-// The photo cropped upright and resized, with only its ICC profile and the rights XMP, and its mean OKLab colour.
+// sRGB's colorants adapted to D50, the white of the ICC connection space (Bradford), as columns.
+const SRGB_D50 = [
+  [0.4360747, 0.3850649, 0.1430804],
+  [0.2225045, 0.7168786, 0.0606169],
+  [0.0139322, 0.0971045, 0.7141733],
+];
+const SRGB_ENCODE = Uint8Array.from({ length: 65536 }, (_, i) => {
+  const v = i / 65535;
+  return Math.round(255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055));
+});
+
+function iccTone(tag) {
+  const type = tag.toString('latin1', 0, 4);
+  if (type === 'curv') {
+    const n = tag.readUInt32BE(8);
+    if (n === 0) return (x) => x;
+    if (n === 1) return (x) => x ** (tag.readUInt16BE(12) / 256);
+    const t = Array.from({ length: n }, (_, i) => tag.readUInt16BE(12 + 2 * i) / 65535);
+    return (x) => {
+      const p = x * (n - 1), i = Math.min(Math.floor(p), n - 2);
+      return t[i] + (t[i + 1] - t[i]) * (p - i);
+    };
+  }
+  const fn = type === 'para' ? tag.readUInt16BE(8) : -1;
+  const count = [1, 3, 4, 5, 7][fn];
+  if (!count) throw new Error(`ICC tone curve ${type} ${fn} is not one the bake reads`);
+  const [g, a, b, c, d, e, f] = Array.from({ length: count }, (_, i) => tag.readInt32BE(12 + 4 * i) / 65536);
+  return [
+    (x) => x ** g,
+    (x) => (x >= -b / a ? (a * x + b) ** g : 0),
+    (x) => (x >= -b / a ? (a * x + b) ** g + c : c),
+    (x) => (x >= d ? (a * x + b) ** g : c * x),
+    (x) => (x >= d ? (a * x + b) ** g + e : c * x + f),
+  ][fn];
+}
+
+function inverse3(m) {
+  const [[a, b, c], [d, e, f], [g, h, i]] = m;
+  const det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+  return [
+    [(e * i - f * h) / det, (c * h - b * i) / det, (b * f - c * e) / det],
+    [(f * g - d * i) / det, (a * i - c * g) / det, (c * d - a * f) / det],
+    [(d * h - e * g) / det, (b * g - a * h) / det, (a * e - b * d) / det],
+  ];
+}
+
+// Only matrix/TRC RGB profiles are read. They are what cameras and phones embed, and they convert exactly.
+export function iccToSrgb(icc) {
+  const tags = new Map();
+  for (let i = 0, n = icc.readUInt32BE(128); i < n; i++) {
+    const p = 132 + 12 * i, at = icc.readUInt32BE(p + 4);
+    tags.set(icc.toString('latin1', p, p + 4), icc.subarray(at, at + icc.readUInt32BE(p + 8)));
+  }
+  if (icc.toString('latin1', 16, 20) !== 'RGB ') throw new Error('ICC profile is not RGB');
+  const missing = ['rXYZ', 'gXYZ', 'bXYZ', 'rTRC', 'gTRC', 'bTRC'].filter((t) => !tags.has(t));
+  if (missing.length) throw new Error(`ICC profile has no ${missing.join(', ')}; the bake reads matrix/TRC profiles only`);
+  const columns = ['r', 'g', 'b'].map((c) => [8, 12, 16].map((o) => tags.get(`${c}XYZ`).readInt32BE(o) / 65536));
+  const toSrgb = inverse3(SRGB_D50);
+  const matrix = toSrgb.map((row) => columns.map((col) => row[0] * col[0] + row[1] * col[1] + row[2] * col[2]));
+  const linear = ['r', 'g', 'b'].map((c) => Float64Array.from({ length: 256 }, (_, v) => iccTone(tags.get(`${c}TRC`))(v / 255)));
+  return { matrix, linear };
+}
+
+// Relative colorimetric, clipping colours outside sRGB, so every decoder shows the photo alike.
+export function convertToSrgb(rgb, { matrix: m, linear: [lr, lg, lb] }) {
+  for (let i = 0; i < rgb.length; i += 3) {
+    const r = lr[rgb[i]], g = lg[rgb[i + 1]], b = lb[rgb[i + 2]];
+    for (let k = 0; k < 3; k++) {
+      const v = m[k][0] * r + m[k][1] * g + m[k][2] * b;
+      rgb[i + k] = SRGB_ENCODE[Math.round(Math.min(1, Math.max(0, v)) * 65535)];
+    }
+  }
+  return rgb;
+}
+
+// The photo cropped upright, converted to sRGB and resized, with only the rights XMP, and its mean OKLab colour.
 export function bakePhoto(photo, originalsDir, tools, work, webpArgs = PHOTO_WEBP_ARGS) {
   const dir = path.join(originalsDir, photo.id);
   const found = fs.readdirSync(dir).filter((f) => !f.startsWith('.'));
@@ -529,17 +604,14 @@ export function bakePhoto(photo, originalsDir, tools, work, webpArgs = PHOTO_WEB
   const c = photo.crop;
   if (c.x < 0 || c.y < 0 || c.x + c.w > w || c.y + c.h > h) throw new Error(`${photo.id}: crop is outside the ${w}x${h} original`);
 
-  fs.writeFileSync(f('crop.ppm'), Buffer.concat([Buffer.from(`P6\n${c.w} ${c.h}\n255\n`), cropUpright(img, orientation, c)]));
+  const pixels = cropUpright(img, orientation, c);
+  // Untagged pixels are already sRGB.
+  if (icc) convertToSrgb(pixels, iccToSrgb(icc));
+  fs.writeFileSync(f('crop.ppm'), Buffer.concat([Buffer.from(`P6\n${c.w} ${c.h}\n255\n`), pixels]));
   run(tools.cwebp, [...webpArgs, '-resize', String(WIDTH), String(HEIGHT), '-metadata', 'none', '-quiet', f('crop.ppm'), '-o', f('lossy.webp')]);
   fs.rmSync(f('crop.ppm'));
-  let tagged = f('lossy.webp');
-  if (icc) {
-    fs.writeFileSync(f('icc'), icc);
-    run(tools.webpmux, ['-set', 'icc', f('icc'), tagged, '-o', f('icc.webp')]);
-    tagged = f('icc.webp');
-  }
   fs.writeFileSync(f('xmp'), photoXmp(photo));
-  run(tools.webpmux, ['-set', 'xmp', f('xmp'), tagged, '-o', f('webp')]);
+  run(tools.webpmux, ['-set', 'xmp', f('xmp'), f('lossy.webp'), '-o', f('webp')]);
   run(tools.dwebp, ['-pam', '-quiet', f('webp'), '-o', f('pam')]);
   const mean = meanOklab(readPam(fs.readFileSync(f('pam'))).data);
   fs.rmSync(f('pam'));

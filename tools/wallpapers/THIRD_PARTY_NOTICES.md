@@ -30,7 +30,7 @@ SOFTWARE.
 
 The photo wallpapers, `libraries/matrixui/src/main/assets/wallpapers/photo-*.webp` in gua-android and `ElementX/Resources/Wallpapers/photo-*.webp` in gua-ios, are not under the AGPL. Each keeps its own licence, listed below. The legal code is in `licenses/CC0-1.0.txt` and `licenses/CC-BY-4.0.txt`.
 
-Every photo was cropped to the 1290:2796 phone shape, resized to 1290x2796 where needed and re-encoded as WebP. Its metadata was removed apart from the ICC profile, and an XMP packet names the author, licence and source. `bake.mjs` bakes them from `photos.json`, which records each original's URL, sha256 and crop.
+Every photo was cropped to the 1290:2796 phone shape, resized to 1290x2796 where needed and re-encoded as WebP. Its colours were converted to sRGB and its metadata removed, and an XMP packet names the author, licence and source. `bake.mjs` bakes them from `photos.json`, which records each original's URL, sha256 and crop.
 
 | File | Name | Author | Licence | Source | Changes |
 |---|---|---|---|---|---|
