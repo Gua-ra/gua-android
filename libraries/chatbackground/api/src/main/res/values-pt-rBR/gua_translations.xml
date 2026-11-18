@@ -50,4 +50,23 @@
   <string name="gua_chat_theme_art_doodles_canada">Canadá</string>
   <string name="gua_chat_theme_art_paper">Papel</string>
   <string name="gua_chat_theme_art_paper_cut">Papel recortado</string>
+  <string name="gua_chat_theme_art_photo_lencois_lagoon">Lagoa dos Lençóis</string>
+  <string name="gua_chat_theme_art_photo_lencois_dunes">Entardecer nos Lençóis</string>
+  <string name="gua_chat_theme_art_photo_gruta_azul">Gruta Azul</string>
+  <string name="gua_chat_theme_art_photo_ipe">Ipê ao entardecer</string>
+  <string name="gua_chat_theme_art_photo_araucaria">Copa da araucária</string>
+  <string name="gua_chat_theme_art_photo_maned_wolf">Lobo-guará dormindo</string>
+  <string name="gua_chat_theme_art_photo_maned_wolf_standing">Lobo-guará</string>
+  <string name="gua_chat_theme_art_photo_yukon_trail">Trilha do Yukon</string>
+  <string name="gua_chat_theme_art_photo_yukon_sun">Sol do Yukon</string>
+  <string name="gua_chat_theme_art_photo_yukon_forest">Trilha boreal</string>
+  <string name="gua_chat_theme_art_photo_yukon_sled">Trenó no Yukon</string>
+  <string name="gua_chat_theme_art_photo_yukon_sled_2">Cães de trenó</string>
+  <string name="gua_chat_theme_art_photo_peyto_lake">Lago Peyto</string>
+  <string name="gua_chat_theme_art_photo_lone_canoe">Canoa solitária</string>
+  <string name="gua_chat_theme_art_photo_jasper_aurora">Aurora em Jasper</string>
+  <string name="gua_chat_theme_art_photo_nunavik_aurora">Aurora em Nunavik</string>
+  <string name="gua_chat_theme_art_photo_lac_delage">Lago ao luar</string>
+  <string name="gua_chat_theme_art_photo_quebec_ice">Cedro congelado</string>
+  <string name="gua_chat_theme_art_photo_quebec_leaves">Folhas de bordo</string>
 </resources>

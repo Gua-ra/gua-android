@@ -16,6 +16,8 @@ import coil3.compose.useExistingImageAsPlaceholder
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import io.element.android.libraries.chatbackground.api.ChatArtwork
+import io.element.android.libraries.chatbackground.api.ChatArtworkSection
+import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.Test
 import org.robolectric.annotation.GraphicsMode
@@ -53,6 +55,15 @@ class ChatBackgroundArtTest : RobolectricTest() {
     @Test
     fun `a new size or appearance keeps the previous still on screen while its own loads`() {
         assertThat(wallpaperStillRequest(context, ChatArtwork.Silk.darkFile, widthPx = 231, heightPx = 410).useExistingImageAsPlaceholder).isTrue()
+    }
+
+    @Test
+    fun `a photo wallpaper gets a user photo's default dim in dark mode, other art none`() {
+        ChatArtwork.entries.forEach { artwork ->
+            val expected = if (artwork.section == ChatArtworkSection.Photos) ChatBackground.Photo.DEFAULT_DIM else null
+            assertWithMessage(artwork.id).that(artwork.darkDim).isEqualTo(expected)
+        }
+        assertThat(ChatArtwork.PhotoIpe.darkDim).isEqualTo(35)
     }
 
     @Test

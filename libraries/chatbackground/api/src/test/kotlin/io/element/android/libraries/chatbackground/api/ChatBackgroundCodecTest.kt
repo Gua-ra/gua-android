@@ -118,7 +118,7 @@ class ChatBackgroundCodecTest {
     fun `artwork ids are unique, valid and never a reserved word`() {
         val ids = ChatArtwork.entries.map { it.id }
 
-        assertThat(ids).hasSize(26)
+        assertThat(ids).hasSize(45)
         assertThat(ids).containsNoDuplicates()
         assertThat(ids).containsNoneOf("rainbow", "pattern", "video", "Blue")
         ids.forEach { assertThat(ChatArtwork.fromId(it)?.id).isEqualTo(it) }
@@ -129,6 +129,34 @@ class ChatBackgroundCodecTest {
     fun `an artwork's fallback is one of the original ten presets`() {
         val originalTen = ChatBackgroundPreset.entries.take(10)
         ChatArtwork.entries.forEach { assertWithMessage(it.id).that(it.fallbackPreset).isIn(originalTen) }
+    }
+
+    @Test
+    fun `exactly the Photos section holds the photos, each with a credit and one image for both appearances`() {
+        ChatArtwork.entries.forEach { artwork ->
+            val message = assertWithMessage(artwork.id)
+            message.that(artwork.isPhoto).isEqualTo(artwork.section == ChatArtworkSection.Photos)
+            message.that(artwork.isPhoto).isEqualTo(artwork.id.startsWith("photo-"))
+            if (artwork.isPhoto) {
+                message.that(artwork.isLive).isFalse()
+                message.that(artwork.lightFile).isEqualTo("${artwork.id}.webp")
+                message.that(artwork.darkFile).isEqualTo("${artwork.id}.webp")
+            } else {
+                message.that(artwork.lightFile).isEqualTo("${artwork.id}-light.webp")
+            }
+        }
+        assertThat(ChatArtwork.photos).isEqualTo(ChatArtwork.entries.filter { it.section == ChatArtworkSection.Photos })
+        assertThat(ChatBackground.Art(ChatArtwork.PhotoIpe).photoCredit).isEqualTo(ChatArtwork.PhotoIpe.credit)
+        assertThat(ChatBackground.Art(ChatArtwork.Ipe).photoCredit).isNull()
+        assertThat(ChatBackground.Preset(ChatBackgroundPreset.Sky).photoCredit).isNull()
+    }
+
+    @Test
+    fun `the photo licences carry their own names and deed links`() {
+        assertThat(ChatPhotoLicence.entries.map { it.displayName to it.deedUrl }).containsExactly(
+            "CC0 1.0" to "https://creativecommons.org/publicdomain/zero/1.0/",
+            "CC BY 4.0" to "https://creativecommons.org/licenses/by/4.0/",
+        ).inOrder()
     }
 
     @Test

@@ -36,6 +36,7 @@ import coil3.compose.useExistingImageAsPlaceholder
 import coil3.request.ImageRequest
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.chatbackground.api.ChatArtwork
+import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.core.extensions.runCatchingExceptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -63,9 +64,13 @@ internal fun ArtBackground(
         } else {
             LoadedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
         }
-        ChatBackgroundScrim(photoDim = null)
+        ChatBackgroundScrim(photoDim = artwork.darkDim)
     }
 }
+
+/** A built-in photo is dimmed in dark mode like a user's own photo at its default; other art is drawn for each appearance. */
+internal val ChatArtwork.darkDim: Int?
+    get() = if (isPhoto) ChatBackground.Photo.DEFAULT_DIM else null
 
 @Composable
 private fun LoadedArtStill(artwork: ChatArtwork, widthPx: Int, heightPx: Int) {

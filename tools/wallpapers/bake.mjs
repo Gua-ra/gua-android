@@ -6,7 +6,8 @@
  * Please see LICENSE files in the repository root for full details.
  */
 
-// Bakes the chat wallpaper stills, the grain tile and manifest.json from the Lab modules in lab/.
+// Bakes the chat wallpaper stills, the grain tile and manifest.json from the Lab modules in lab/,
+// and with --photos the photo wallpapers listed in photos.json.
 // Usage and pinned tool versions: README.md.
 
 import crypto from 'node:crypto';
@@ -30,6 +31,10 @@ const BUDGET_TARGET = 4_000_000;
 const BUDGET_LIMIT = 5_000_000;
 const PINNED = { node: 22, chromium: '139.0.7258.5', cwebp: '1.6.0' };
 const WEBP_ARGS = ['-q', '80', '-m', '6'];
+const PHOTO_WEBP_ARGS = ['-q', '82', '-m', '6'];
+const PHOTO_BUDGET_LIMIT = 8_000_000;
+const PHOTOS_SECTION = 'photos';
+const PHOTO_MODIFIED = 'cropped and resized';
 const LAB_FILES = ['lab/1-live.js', 'lab/2-nature.js', 'lab/3-minimal-patterns.js'];
 // Asset folders inside each checkout; the files keep the same names on both platforms.
 const IOS_DIR = 'ElementX/Resources/Wallpapers';
@@ -396,13 +401,235 @@ function cwebpVersion(bin) {
   return execFileSync(bin, ['-version'], { encoding: 'utf8' }).split('\n')[0].trim();
 }
 
+function serializeManifest(manifest) {
+  return JSON.stringify(manifest, null, 2) + '\n';
+}
+
+// Photos sit right after Nature, as in the gallery.
+function withPhotos(artworks, photoEntries) {
+  const art = artworks.filter((e) => e.section !== PHOTOS_SECTION);
+  const at = art.findLastIndex((e) => e.section === 'nature') + 1;
+  return [...art.slice(0, at), ...photoEntries, ...art.slice(at)];
+}
+
+// webpmux reports every save on stderr, so stderr shows only when a tool fails.
+function run(bin, args) {
+  execFileSync(bin, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+}
+
+// The EXIF orientation of a JPEG, or 1. cwebp ignores it, so the bake applies it.
+export function jpegOrientation(buf) {
+  if (buf.length < 4 || buf.readUInt16BE(0) !== 0xffd8) return 1;
+  for (let p = 2; p + 4 <= buf.length && buf[p] === 0xff && buf[p + 1] !== 0xda; p += 2 + buf.readUInt16BE(p + 2)) {
+    if (buf[p + 1] !== 0xe1 || buf.toString('latin1', p + 4, p + 10) !== 'Exif\0\0') continue;
+    const t = p + 10, le = buf.toString('latin1', t, t + 2) === 'II';
+    const u16 = (o) => (le ? buf.readUInt16LE(o) : buf.readUInt16BE(o));
+    const ifd = t + (le ? buf.readUInt32LE(t + 4) : buf.readUInt32BE(t + 4));
+    for (let i = 0, n = u16(ifd); i < n; i++) if (u16(ifd + 2 + i * 12) === 0x0112) return u16(ifd + 10 + i * 12);
+    return 1;
+  }
+  return 1;
+}
+
+// Upright pixel (x, y) is stored pixel (ax x + bx y + cx, ay x + by y + cy) for each EXIF orientation.
+function orientationMap(orientation, w, h) {
+  const W = w - 1, H = h - 1;
+  return {
+    1: [1, 0, 0, 0, 1, 0],
+    2: [-1, 0, W, 0, 1, 0],
+    3: [-1, 0, W, 0, -1, H],
+    4: [1, 0, 0, 0, -1, H],
+    5: [0, 1, 0, 1, 0, 0],
+    6: [0, 1, 0, -1, 0, H],
+    7: [0, -1, W, -1, 0, H],
+    8: [0, -1, W, 1, 0, 0],
+  }[orientation];
+}
+
+function cropUpright(img, orientation, crop) {
+  const [ax, bx, cx, ay, by, cy] = orientationMap(orientation, img.width, img.height);
+  const out = Buffer.alloc(crop.w * crop.h * 3);
+  let o = 0;
+  for (let y = crop.y; y < crop.y + crop.h; y++) {
+    for (let x = crop.x; x < crop.x + crop.w; x++) {
+      const i = ((ay * x + by * y + cy) * img.width + ax * x + bx * y + cx) * 4;
+      out[o++] = img.data[i];
+      out[o++] = img.data[i + 1];
+      out[o++] = img.data[i + 2];
+    }
+  }
+  return out;
+}
+
+function readPam(buf) {
+  const end = buf.indexOf('ENDHDR\n') + 'ENDHDR\n'.length;
+  const header = Object.fromEntries(buf.toString('latin1', 0, end).split('\n').map((l) => l.split(' ')));
+  if (header.DEPTH !== '4' || header.MAXVAL !== '255') throw new Error('dwebp wrote a PAM header the bake does not read');
+  return { width: Number(header.WIDTH), height: Number(header.HEIGHT), data: buf.subarray(end) };
+}
+
+function meanOklab(rgba) {
+  const acc = [0, 0, 0];
+  for (let i = 0; i < rgba.length; i += 4) {
+    const o = oklab(rgba[i], rgba[i + 1], rgba[i + 2]);
+    acc[0] += o[0]; acc[1] += o[1]; acc[2] += o[2];
+  }
+  return acc.map((v) => v / (rgba.length / 4));
+}
+
+function webpChunk(buf, fourcc) {
+  for (let p = 12; p + 8 <= buf.length; p += 8 + buf.readUInt32LE(p + 4) + (buf.readUInt32LE(p + 4) & 1)) {
+    if (buf.toString('latin1', p, p + 4) === fourcc) return buf.subarray(p + 8, p + 8 + buf.readUInt32LE(p + 4));
+  }
+  return null;
+}
+
+function xmlText(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+export function photoXmp(photo) {
+  const rights = `Photo: ${photo.author}. ${photo.licence}, ${photo.licence_url}. Cropped and resized.`;
+  return [
+    '<?xpacket begin="\uFEFF" id="W5M0MpCehiHzreSzNTczkc9d"?>',
+    '<x:xmpmeta xmlns:x="adobe:ns:meta/">',
+    ' <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">',
+    '  <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xmpRights="http://ns.adobe.com/xap/1.0/rights/">',
+    `   <dc:creator><rdf:Seq><rdf:li>${xmlText(photo.author)}</rdf:li></rdf:Seq></dc:creator>`,
+    `   <dc:rights><rdf:Alt><rdf:li xml:lang="x-default">${xmlText(rights)}</rdf:li></rdf:Alt></dc:rights>`,
+    `   <xmpRights:WebStatement>${xmlText(photo.licence_url)}</xmpRights:WebStatement>`,
+    ...(photo.source_url ? [`   <dc:source>${xmlText(photo.source_url)}</dc:source>`] : []),
+    '  </rdf:Description>',
+    ' </rdf:RDF>',
+    '</x:xmpmeta>',
+    '<?xpacket end="r"?>',
+  ].join('\n');
+}
+
+// The photo cropped upright and resized, with only its ICC profile and the rights XMP, and its mean OKLab colour.
+export function bakePhoto(photo, originalsDir, tools, work, webpArgs = PHOTO_WEBP_ARGS) {
+  const dir = path.join(originalsDir, photo.id);
+  const found = fs.readdirSync(dir).filter((f) => !f.startsWith('.'));
+  if (found.length !== 1) throw new Error(`${dir} must hold exactly one file, the original of ${photo.id}`);
+  const original = path.join(dir, found[0]);
+  const bytes = fs.readFileSync(original);
+  if (sha256(bytes) !== photo.original.sha256) throw new Error(`${original}: sha256 ${sha256(bytes)}, photos.json pins ${photo.original.sha256}`);
+  const orientation = jpegOrientation(bytes);
+  if (!orientationMap(orientation, 1, 1)) throw new Error(`${original}: EXIF orientation ${orientation}`);
+  const f = (name) => path.join(work, `${photo.id}.${name}`);
+
+  run(tools.cwebp, ['-lossless', '-z', '0', '-metadata', 'icc', '-quiet', original, '-o', f('full.webp')]);
+  const icc = webpChunk(fs.readFileSync(f('full.webp')), 'ICCP');
+  run(tools.dwebp, ['-pam', '-quiet', f('full.webp'), '-o', f('full.pam')]);
+  const img = readPam(fs.readFileSync(f('full.pam')));
+  fs.rmSync(f('full.webp'));
+  fs.rmSync(f('full.pam'));
+  const [w, h] = orientation >= 5 ? [img.height, img.width] : [img.width, img.height];
+  if (w !== photo.original.width || h !== photo.original.height) throw new Error(`${photo.id}: upright size ${w}x${h}, photos.json says ${photo.original.width}x${photo.original.height}`);
+  const c = photo.crop;
+  if (c.x < 0 || c.y < 0 || c.x + c.w > w || c.y + c.h > h) throw new Error(`${photo.id}: crop is outside the ${w}x${h} original`);
+
+  fs.writeFileSync(f('crop.ppm'), Buffer.concat([Buffer.from(`P6\n${c.w} ${c.h}\n255\n`), cropUpright(img, orientation, c)]));
+  run(tools.cwebp, [...webpArgs, '-resize', String(WIDTH), String(HEIGHT), '-metadata', 'none', '-quiet', f('crop.ppm'), '-o', f('lossy.webp')]);
+  fs.rmSync(f('crop.ppm'));
+  let tagged = f('lossy.webp');
+  if (icc) {
+    fs.writeFileSync(f('icc'), icc);
+    run(tools.webpmux, ['-set', 'icc', f('icc'), tagged, '-o', f('icc.webp')]);
+    tagged = f('icc.webp');
+  }
+  fs.writeFileSync(f('xmp'), photoXmp(photo));
+  run(tools.webpmux, ['-set', 'xmp', f('xmp'), tagged, '-o', f('webp')]);
+  run(tools.dwebp, ['-pam', '-quiet', f('webp'), '-o', f('pam')]);
+  const mean = meanOklab(readPam(fs.readFileSync(f('pam'))).data);
+  fs.rmSync(f('pam'));
+  return { webp: fs.readFileSync(f('webp')), mean };
+}
+
+export function photoEntry(photo, webp, fallback) {
+  const file = `${photo.id}.webp`;
+  return {
+    id: photo.id,
+    section: PHOTOS_SECTION,
+    live: false,
+    files: { light: file, dark: file },
+    sha256: { [file]: sha256(webp) },
+    anchor: photo.anchor,
+    fallback_preset: fallback,
+    bubble: photo.bubble,
+    credit: {
+      author: photo.author,
+      licence: photo.licence,
+      licence_url: photo.licence_url,
+      source_url: photo.source_url,
+      modified: PHOTO_MODIFIED,
+    },
+  };
+}
+
+// Rewrites only the photo entries of manifest.json; every other byte of it stays as the art bake wrote it.
+async function bakePhotos(args) {
+  const { photos } = JSON.parse(fs.readFileSync(path.join(HERE, 'photos.json'), 'utf8'));
+  const sibling = (name) => (args.cwebp.includes('/') ? path.join(path.dirname(args.cwebp), name) : name);
+  const tools = { cwebp: args.cwebp, dwebp: sibling('dwebp'), webpmux: sibling('webpmux') };
+  for (const [name, bin] of Object.entries(tools)) {
+    const version = cwebpVersion(bin);
+    if (version !== PINNED.cwebp) throw new Error(`${name} ${version}; the outputs are pinned to libwebp ${PINNED.cwebp}`);
+  }
+  const dirs = [path.join(args.ios, IOS_DIR), path.join(args.android, ANDROID_DIR)];
+  const [iosText, androidText] = dirs.map((d) => fs.readFileSync(path.join(d, 'manifest.json'), 'utf8'));
+  if (iosText !== androidText) throw new Error('manifest.json differs between the platforms');
+  const manifest = JSON.parse(androidText);
+  if (serializeManifest(manifest) !== androidText) throw new Error('manifest.json is not in the format the bake writes');
+
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'gua-photos-'));
+  const files = new Map();
+  const baked = [];
+  try {
+    for (const photo of photos) {
+      const started = Date.now();
+      const { webp, mean } = bakePhoto(photo, args.photos, tools, work);
+      const nearest = nearestPreset(mean);
+      const fallback = photo.fallback_preset || nearest.id;
+      if (fallback !== nearest.id) console.warn(`note: ${photo.id} keeps fallback ${fallback}; the nearest preset now is ${nearest.id}`);
+      files.set(`${photo.id}.webp`, webp);
+      baked.push({ entry: photoEntry(photo, webp, fallback), nearest });
+      process.stderr.write(`${photo.id}.webp ${Date.now() - started} ms\n`);
+    }
+  } finally {
+    fs.rmSync(work, { recursive: true, force: true });
+  }
+  manifest.artworks = withPhotos(manifest.artworks, baked.map((b) => b.entry));
+  const manifestBytes = Buffer.from(serializeManifest(manifest));
+
+  console.log(`\n${'photo'.padEnd(26)} ${'KB'.padStart(7)}  ${'fallback'.padEnd(9)} nearest by hue`);
+  for (const { entry, nearest } of baked) {
+    console.log(`${entry.id.padEnd(26)} ${kb(files.get(entry.files.light).length)}  ${entry.fallback_preset.padEnd(9)} ${describeNearest(nearest)}`);
+  }
+  const total = [...files.values()].reduce((s, b) => s + b.length, 0);
+  console.log(`\nPhotos ${(total / 1e6).toFixed(2)} MB (${total} bytes) per platform, limit ${PHOTO_BUDGET_LIMIT / 1e6} MB`);
+  if (total > PHOTO_BUDGET_LIMIT) {
+    console.error('Over the photo budget; nothing written.');
+    process.exit(1);
+  }
+
+  const listed = new Set([manifest.noise.file, ...manifest.artworks.flatMap((e) => Object.values(e.files))]);
+  for (const dir of dirs) {
+    for (const [name, buf] of files) fs.writeFileSync(path.join(dir, name), buf);
+    fs.writeFileSync(path.join(dir, 'manifest.json'), manifestBytes);
+    const extra = fs.readdirSync(dir).filter((f) => !listed.has(f) && f !== 'manifest.json');
+    if (extra.length) console.warn(`warning: ${dir} also holds ${extra.join(', ')}, which manifest.json does not list`);
+  }
+}
+
 // ---------------------------------------------------------------- main
 
 function parseArgs(argv) {
-  const a = { android: null, ios: null, playwrightCore: null, cwebp: 'cwebp', png: null, only: null, imagesOnly: false };
+  const a = { android: null, ios: null, playwrightCore: null, cwebp: 'cwebp', png: null, only: null, imagesOnly: false, photos: null };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i], v = argv[i + 1];
     if (k === '--android') { a.android = v; i++; }
+    else if (k === '--photos') { a.photos = v; i++; }
     else if (k === '--ios') { a.ios = v; i++; }
     else if (k === '--playwright-core') { a.playwrightCore = v; i++; }
     else if (k === '--cwebp') { a.cwebp = v; i++; }
@@ -413,6 +640,7 @@ function parseArgs(argv) {
   }
   if (!a.only && (!a.android || !a.ios)) throw new Error('Pass --android <gua-android checkout> and --ios <gua-ios checkout>. See README.md.');
   if (a.only && !a.png) throw new Error('--only renders a subset for review and needs --png <dir>; it writes nothing else.');
+  if (a.photos && (a.only || a.png || a.imagesOnly)) throw new Error('--photos bakes only the photos and takes no art options.');
   return a;
 }
 
@@ -454,6 +682,7 @@ async function main() {
 
   const nodeMajor = Number(process.versions.node.split('.')[0]);
   if (nodeMajor !== PINNED.node) console.warn(`warning: Node ${process.versions.node}, pinned major is ${PINNED.node}`);
+  if (args.photos) return bakePhotos(args);
   const cwebpVer = cwebpVersion(args.cwebp);
   if (cwebpVer !== PINNED.cwebp) throw new Error(`cwebp ${cwebpVer}; the outputs are pinned to cwebp ${PINNED.cwebp}`);
   const ports = args.only ? null : await shaderPorts(args.imagesOnly);
@@ -520,12 +749,16 @@ async function main() {
   shared.set('noise.webp', noise);
   fs.rmSync(work, { recursive: true, force: true });
 
+  // The photo entries come from the last --photos run and are kept as they are.
+  const previous = path.join(args.android, ANDROID_DIR, 'manifest.json');
+  const photoEntries = fs.existsSync(previous) ? JSON.parse(fs.readFileSync(previous, 'utf8')).artworks.filter((e) => e.section === PHOTOS_SECTION) : [];
+  const photoFiles = new Set(photoEntries.flatMap((e) => Object.values(e.files)));
   const manifest = {
     generator: { script: 'gua-android tools/wallpapers/bake.mjs', version: GENERATOR_VERSION, chromium: lab.chromiumVersion, cwebp: cwebpVer },
     noise: { file: 'noise.webp', sha256: sha256(noise), width: NOISE_SIZE, height: NOISE_SIZE },
-    artworks: entries.map(({ nearest, ...e }) => e),
+    artworks: withPhotos(entries.map(({ nearest, ...e }) => e), photoEntries),
   };
-  shared.set('manifest.json', Buffer.from(JSON.stringify(manifest, null, 2) + '\n'));
+  shared.set('manifest.json', Buffer.from(serializeManifest(manifest)));
 
   const platforms = [
     { name: 'iOS', dir: path.join(args.ios, IOS_DIR), files: new Map([...shared, ...ios]) },
@@ -555,7 +788,7 @@ async function main() {
   for (const p of platforms) {
     fs.mkdirSync(p.dir, { recursive: true });
     for (const [name, buf] of p.files) fs.writeFileSync(path.join(p.dir, name), buf);
-    const extra = fs.readdirSync(p.dir).filter((f) => !p.files.has(f));
+    const extra = fs.readdirSync(p.dir).filter((f) => !p.files.has(f) && !photoFiles.has(f));
     if (extra.length) {
       const why = args.imagesOnly ? '; --images-only leaves shader ports out, so do not commit them with this manifest' : '';
       console.warn(`warning: ${p.dir} also holds ${extra.join(', ')}, which manifest.json does not list${why}`);
