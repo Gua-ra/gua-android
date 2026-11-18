@@ -55,14 +55,16 @@ internal fun ArtBackground(
     artwork: ChatArtwork,
     modifier: Modifier = Modifier,
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxSize().wallpaperGrain(rememberWallpaperGrain())) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val widthPx = with(density) { maxWidth.toPx() }.roundToInt().coerceIn(1, MAX_DECODED_EDGE_PX)
         val heightPx = with(density) { maxHeight.toPx() }.roundToInt().coerceIn(1, MAX_DECODED_EDGE_PX)
-        if (LocalInspectionMode.current) {
-            InspectedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
-        } else {
-            LoadedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
+        Box(Modifier.fillMaxSize().wallpaperGrain(rememberWallpaperGrain())) {
+            if (LocalInspectionMode.current) {
+                InspectedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
+            } else {
+                LoadedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
+            }
         }
         ChatBackgroundScrim(photoDim = artwork.darkDim)
     }
