@@ -344,15 +344,18 @@ class RoomDetailsViewTest : RobolectricTest() {
 
     @Config(qualifiers = "h1500dp")
     @Test
-    fun `the chat theme row is disabled without permission`() = runAndroidComposeUiTest<ComponentActivity> {
-        setRoomDetailView(
-            state = aRoomDetailsState(
-                eventSink = EventsRecorder(expectEvents = false),
-                chatBackgroundRow = ChatBackgroundRowState(ChatTheme.STOCK, canChange = false),
-            ),
-        )
-        onNodeWithText(activity!!.getString(R.string.gua_chat_background_row_no_permission)).assertExists()
-        onNodeWithText(activity!!.getString(R.string.gua_chat_theme_row_title)).performClick()
+    fun `the chat theme row still opens the theme without permission`() = runAndroidComposeUiTest<ComponentActivity> {
+        ensureCalledOnce { callback ->
+            setRoomDetailView(
+                state = aRoomDetailsState(
+                    eventSink = EventsRecorder(expectEvents = false),
+                    chatBackgroundRow = ChatBackgroundRowState(ChatTheme.STOCK, canChange = false),
+                ),
+                onChatBackgroundClick = callback,
+            )
+            onNodeWithText(activity!!.getString(R.string.gua_chat_background_row_no_permission)).assertExists()
+            clickOn(R.string.gua_chat_theme_row_title)
+        }
     }
 
     @Config(qualifiers = "h1500dp")
