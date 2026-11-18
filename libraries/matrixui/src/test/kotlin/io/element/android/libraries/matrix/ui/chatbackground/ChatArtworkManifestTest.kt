@@ -13,12 +13,15 @@ import io.element.android.libraries.chatbackground.api.ChatArtwork
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.float
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Test
 import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.security.MessageDigest
 
 class ChatArtworkManifestTest {
@@ -49,6 +52,43 @@ class ChatArtworkManifestTest {
     }
 
     @Test
+    fun `every photo has the manifest's credit and no other artwork has one`() {
+        ChatArtwork.entries.zip(artworks).forEach { (artwork, entry) ->
+            val message = assertWithMessage(artwork.id)
+            val credit = artwork.credit
+            if (credit == null) {
+                message.that(entry.containsKey("credit")).isFalse()
+            } else {
+                val entryCredit = entry.obj("credit")
+                message.that(credit.author).isEqualTo(entryCredit.string("author"))
+                message.that(credit.licence.displayName).isEqualTo(entryCredit.string("licence"))
+                message.that(credit.licence.deedUrl).isEqualTo(entryCredit.string("licence_url"))
+                message.that(credit.sourceUrl).isEqualTo(entryCredit.getValue("source_url").jsonPrimitive.contentOrNull)
+                message.that(entryCredit.string("modified")).isEqualTo("cropped and resized")
+            }
+        }
+    }
+
+    @Test
+    fun `every photo carries its credit in XMP and no EXIF`() {
+        ChatArtwork.photos.forEach { photo ->
+            val credit = requireNotNull(photo.credit)
+            val chunks = webpChunks(File(assets, photo.lightFile))
+            val message = assertWithMessage(photo.id)
+            message.that(chunks.keys).doesNotContain("EXIF")
+            val xmp = chunks.getValue("XMP ").decodeToString()
+            message.that(xmp).contains("<dc:creator><rdf:Seq><rdf:li>${xmlEscaped(credit.author)}</rdf:li></rdf:Seq></dc:creator>")
+            message.that(xmp).contains("<xmpRights:WebStatement>${credit.licence.deedUrl}</xmpRights:WebStatement>")
+            val source = credit.sourceUrl
+            if (source == null) {
+                message.that(xmp).doesNotContain("<dc:source>")
+            } else {
+                message.that(xmp).contains("<dc:source>${xmlEscaped(source)}</dc:source>")
+            }
+        }
+    }
+
+    @Test
     fun `every artwork's images are in the assets with the manifest's checksums`() {
         ChatArtwork.entries.zip(artworks).forEach { (artwork, entry) ->
             val checksums = entry.obj("sha256")
@@ -70,5 +110,20 @@ class ChatArtworkManifestTest {
 private fun JsonObject.string(key: String) = getValue(key).jsonPrimitive.content
 
 private fun JsonObject.obj(key: String) = getValue(key).jsonObject
+
+private fun webpChunks(file: File): Map<String, ByteArray> {
+    val bytes = file.readBytes()
+    check(bytes.decodeToString(0, 4) == "RIFF" && bytes.decodeToString(8, 12) == "WEBP") { "${file.name} is not a WebP file" }
+    val chunks = mutableMapOf<String, ByteArray>()
+    var offset = 12
+    while (offset + 8 <= bytes.size) {
+        val size = ByteBuffer.wrap(bytes, offset + 4, 4).order(ByteOrder.LITTLE_ENDIAN).int
+        chunks[bytes.decodeToString(offset, offset + 4)] = bytes.copyOfRange(offset + 8, offset + 8 + size)
+        offset += 8 + size + size % 2
+    }
+    return chunks
+}
+
+private fun xmlEscaped(text: String) = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 private fun sha256(file: File): String = MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it) }

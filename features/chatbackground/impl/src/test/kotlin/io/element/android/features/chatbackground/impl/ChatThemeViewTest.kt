@@ -20,15 +20,19 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsEqualTo
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyChild
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasParent
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasStateDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -40,6 +44,7 @@ import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import androidx.compose.ui.unit.height
+import com.google.common.truth.Truth.assertThat
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.theme.Theme
 import io.element.android.libraries.architecture.AsyncAction
@@ -51,6 +56,7 @@ import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.matrix.ui.chatbackground.aChatBackgroundPhoto
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureNeverCalled
+import io.element.android.tests.testutils.EnsureNeverCalledWithParam
 import io.element.android.tests.testutils.EventsRecorder
 import io.element.android.tests.testutils.clickOn
 import io.element.android.tests.testutils.ensureCalledOnce
@@ -120,7 +126,7 @@ class ChatThemeViewTest : RobolectricTest() {
     @Test
     fun `a tile is selected only while the theme has its wallpaper and its bubble pair`() = runAndroidComposeUiTest<ComponentActivity> {
         var current by mutableStateOf(ChatArtwork.GlassDrops.theme)
-        setContent { ChatThemeView(state = aChatThemeState(current = current), onBackClick = EnsureNeverCalled()) }
+        setContent { ChatThemeView(state = aChatThemeState(current = current), onBackClick = EnsureNeverCalled(), onOpenUrl = EnsureNeverCalledWithParam()) }
         val glassDrops = activity!!.getString(ChatArtwork.GlassDrops.nameRes)
         val tiles = onAllNodesWithContentDescription("$glassDrops,", substring = true)
         tiles.assertCountEquals(2)
@@ -148,7 +154,9 @@ class ChatThemeViewTest : RobolectricTest() {
         val citrus = hasContentDescription("${context.getString(ChatBackgroundPreset.Citrus.nameRes)},", substring = true)
         onNode(citrus).assertDoesNotExist()
         // The gradients, the last row, end with Citrus.
-        onAllNodes(hasScrollToIndexAction()).onLast().performScrollToNode(citrus)
+        val gradients = onAllNodes(hasScrollToIndexAction()).onLast()
+        gradients.performScrollTo()
+        gradients.performScrollToNode(citrus)
         onNode(citrus).performClick()
         eventsRecorder.assertSingle(ChatThemeEvent.SelectTheme(ChatTheme(ChatBackground.Preset(ChatBackgroundPreset.Citrus), ChatBubbleColor.Green)))
     }
@@ -287,6 +295,7 @@ class ChatThemeViewTest : RobolectricTest() {
                         eventSink = EventsRecorder(expectEvents = false),
                     ),
                     onBackClick = EnsureNeverCalled(),
+                    onOpenUrl = EnsureNeverCalledWithParam(),
                 )
             }
         }
@@ -429,6 +438,127 @@ class ChatThemeViewTest : RobolectricTest() {
     }
 
     @Test
+    fun `a photo tile shows its name and credit, and reads them before its bubble`() = runAndroidComposeUiTest<ComponentActivity> {
+        val eventsRecorder = EventsRecorder<ChatThemeEvent>()
+        setChatThemeView(aChatThemeState(eventSink = eventsRecorder))
+        val context: Context = activity!!
+        val name = context.getString(ChatArtwork.PhotoLencoisLagoon.nameRes)
+        val bubble = context.getString(R.string.gua_chat_theme_bubble_a11y, context.getString(ChatBubbleColor.Teal.nameRes))
+        onNodeWithContentDescription("$name, Photo: Gerda Arendt, $bubble").performScrollTo().performClick()
+        eventsRecorder.assertSingle(ChatThemeEvent.SelectTheme(ChatArtwork.PhotoLencoisLagoon.theme))
+    }
+
+    @Test
+    fun `a photo in the wallpaper picker is read by its name, then its credit`() = runAndroidComposeUiTest<ComponentActivity> {
+        val eventsRecorder = EventsRecorder<ChatThemeEvent>()
+        setChatThemeView(aChatThemeState(current = ChatArtwork.PhotoLencoisLagoon.theme, page = ChatThemePage.WallpaperPicker, eventSink = eventsRecorder))
+        val name = activity!!.getString(ChatArtwork.PhotoLencoisLagoon.nameRes)
+        onNodeWithContentDescription("$name, Photo: Gerda Arendt").assertIsSelected()
+        val dunes = activity!!.getString(ChatArtwork.PhotoLencoisDunes.nameRes)
+        onNodeWithContentDescription("$dunes, Photo: Gerda Arendt").performScrollTo().performClick()
+        eventsRecorder.assertSingle(ChatThemeEvent.SelectWallpaper(ChatBackground.Art(ChatArtwork.PhotoLencoisDunes)))
+    }
+
+    @Test
+    fun `the Photos header opens the photo credits from the gallery and the wallpaper picker`() = runAndroidComposeUiTest<ComponentActivity> {
+        val eventsRecorder = EventsRecorder<ChatThemeEvent>()
+        var page: ChatThemePage by mutableStateOf(ChatThemePage.Gallery)
+        setContent {
+            ChatThemeView(
+                state = aChatThemeState(page = page, eventSink = eventsRecorder),
+                onBackClick = EnsureNeverCalled(),
+                onOpenUrl = EnsureNeverCalledWithParam(),
+            )
+        }
+        val photoCredits = hasText(activity!!.getString(R.string.gua_chat_theme_photo_credits)) and hasClickAction()
+        onNode(photoCredits).performScrollTo().performClick()
+        page = ChatThemePage.WallpaperPicker
+        onNode(photoCredits).performScrollTo().performClick()
+        eventsRecorder.assertList(listOf(ChatThemeEvent.OpenPhotoCredits, ChatThemeEvent.OpenPhotoCredits))
+    }
+
+    @Test
+    fun `the preview of a photo shows its credit and licence, which open the photo credits`() = runAndroidComposeUiTest<ComponentActivity> {
+        val eventsRecorder = EventsRecorder<ChatThemeEvent>()
+        val peytoLake = ChatArtwork.PhotoPeytoLake.theme
+        setChatThemeView(aChatThemeState(preview = ChatThemePreview(peytoLake, peytoLake), eventSink = eventsRecorder))
+        onNode(hasText("Photo: Ezra Jeffrey-Comeau · CC0 1.0") and hasClickAction()).performClick()
+        eventsRecorder.assertSingle(ChatThemeEvent.OpenPhotoCredits)
+    }
+
+    @Test
+    fun `the bubble picker shows the credit of a photo wallpaper, which opens the photo credits`() = runAndroidComposeUiTest<ComponentActivity> {
+        val eventsRecorder = EventsRecorder<ChatThemeEvent>()
+        val lagoon = ChatArtwork.PhotoLencoisLagoon
+        setChatThemeView(
+            aChatThemeState(
+                current = lagoon.theme,
+                page = ChatThemePage.BubblePicker(selection = ChatBubbleColor.Blue),
+                eventSink = eventsRecorder,
+            )
+        )
+        onNode(hasText("Photo: Gerda Arendt · CC0 1.0") and hasClickAction()).performClick()
+        eventsRecorder.assertSingle(ChatThemeEvent.OpenPhotoCredits)
+    }
+
+    @Test
+    fun `a member who cannot change a photo theme still reaches its credit`() = runAndroidComposeUiTest<ComponentActivity> {
+        val eventsRecorder = EventsRecorder<ChatThemeEvent>()
+        setChatThemeView(aChatThemeState(current = ChatArtwork.PhotoYukonSled.theme, hasPermission = false, eventSink = eventsRecorder))
+        val credit = requireNotNull(ChatArtwork.PhotoYukonSled.credit)
+        onNode(hasText("Photo: ${credit.author} · ${credit.licence.displayName}") and hasClickAction()).assertIsEnabled().performClick()
+        onNode(hasText(activity!!.getString(R.string.gua_chat_theme_photo_credits)) and hasClickAction()).performScrollTo().performClick()
+        eventsRecorder.assertList(listOf(ChatThemeEvent.OpenPhotoCredits, ChatThemeEvent.OpenPhotoCredits))
+    }
+
+    @Test
+    fun `no credit line shows while the theme is not a photo`() = runAndroidComposeUiTest<ComponentActivity> {
+        var preview: ChatThemePreview? by mutableStateOf(null)
+        setContent {
+            ChatThemeView(
+                state = aChatThemeState(current = ChatArtwork.Silk.theme, preview = preview),
+                onBackClick = EnsureNeverCalled(),
+                onOpenUrl = EnsureNeverCalledWithParam(),
+            )
+        }
+        onNode(hasText("Photo:", substring = true)).assertDoesNotExist()
+        preview = ChatThemePreview(oceanTeal, oceanTeal)
+        onNode(hasText("Photo:", substring = true)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the photo credits list every photo with its author, licence, source and changes`() = runAndroidComposeUiTest<ComponentActivity> {
+        setChatThemeView(aChatThemeState(showsPhotoCredits = true))
+        val context: Context = activity!!
+        val list = onNode(hasScrollToIndexAction())
+        ChatArtwork.photos.forEachIndexed { index, photo ->
+            val credit = requireNotNull(photo.credit)
+            list.performScrollToIndex(index)
+            val inRow = hasParent(hasAnyChild(hasText(context.getString(photo.nameRes))))
+            onNode(hasText("Photo: ${credit.author}") and inRow).assertExists()
+            onNode(hasText(credit.licence.displayName) and inRow).assertExists()
+            onNode(hasText(context.getString(R.string.gua_chat_theme_photo_changes)) and inRow).assertExists()
+            val source = onNode(hasText(context.getString(R.string.gua_chat_theme_photo_source)) and inRow)
+            if (credit.sourceUrl == null) source.assertDoesNotExist() else source.assertExists()
+        }
+    }
+
+    @Test
+    fun `the photo credits open the licence and the source, and back cancels`() = runAndroidComposeUiTest<ComponentActivity> {
+        val eventsRecorder = EventsRecorder<ChatThemeEvent>()
+        val openedUrls = mutableListOf<String>()
+        setChatThemeView(aChatThemeState(showsPhotoCredits = true, eventSink = eventsRecorder), onOpenUrl = { openedUrls += it })
+        onAllNodesWithText("CC0 1.0").onFirst().performClick()
+        onAllNodesWithText(activity!!.getString(R.string.gua_chat_theme_photo_source)).onFirst().performClick()
+        pressBack()
+        assertThat(openedUrls).containsExactly(
+            "https://creativecommons.org/publicdomain/zero/1.0/",
+            "https://commons.wikimedia.org/wiki/File:Lagoon_in_curved_sanddunes%2C_Len%C3%A7%C3%B3is_Maranhenses.jpg",
+        ).inOrder()
+        eventsRecorder.assertSingle(ChatThemeEvent.Cancel)
+    }
+
+    @Test
     fun `a failed save shows the existing error and dismissing it clears it`() = runAndroidComposeUiTest<ComponentActivity> {
         val eventsRecorder = EventsRecorder<ChatThemeEvent>()
         setChatThemeView(aChatThemeState(action = AsyncAction.Failure(IllegalStateException("403")), eventSink = eventsRecorder))
@@ -445,6 +575,7 @@ private fun AndroidComposeUiTest<ComponentActivity>.scrollToAndClickTile(@String
 private fun AndroidComposeUiTest<ComponentActivity>.setChatThemeView(
     state: ChatThemeState,
     onBackClick: () -> Unit = EnsureNeverCalled(),
+    onOpenUrl: (String) -> Unit = EnsureNeverCalledWithParam(),
     isDark: Boolean = false,
 ) {
     setContent {
@@ -452,6 +583,7 @@ private fun AndroidComposeUiTest<ComponentActivity>.setChatThemeView(
             ChatThemeView(
                 state = state,
                 onBackClick = onBackClick,
+                onOpenUrl = onOpenUrl,
             )
         }
     }

@@ -61,7 +61,9 @@ fr:gua_chat_theme_art_pantanal
 fr:gua_chat_theme_bubble_graphite
 fr:gua_chat_theme_bubble_orange
 fr:gua_chat_theme_bubble_standard
+fr:gua_chat_theme_photo_source
 fr:gua_chat_theme_section_nature
+fr:gua_chat_theme_section_photos
 fr:gua_duration_minutes
 fr:gua_retry_wait_minutes
 fr:notification_compat_summary_title

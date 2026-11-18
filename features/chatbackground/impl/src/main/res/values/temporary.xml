@@ -37,4 +37,10 @@
   <string name="gua_chat_theme_bubble_standard">Standard</string>
   <string name="gua_chat_theme_bubble_a11y">%1$s bubble</string>
   <string name="gua_chat_theme_live_badge">Live</string>
+  <string name="gua_chat_theme_section_photos">Photos</string>
+  <string name="gua_chat_theme_photo_credit">Photo: %1$s</string>
+  <string name="gua_chat_theme_photo_credit_licence">Photo: %1$s · %2$s</string>
+  <string name="gua_chat_theme_photo_credits">Photo credits</string>
+  <string name="gua_chat_theme_photo_source">Source</string>
+  <string name="gua_chat_theme_photo_changes">Cropped and resized for phones.</string>
 </resources>
