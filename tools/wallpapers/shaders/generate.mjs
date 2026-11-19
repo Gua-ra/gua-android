@@ -145,8 +145,10 @@ export function parseGlsl(src) {
   if (got !== want) throw new Error(`uniforms differ from the contract: ${got}`);
   const main = functions.find((f) => f.name === 'main');
   if (!main || main.ret !== 'void' || main.params !== '') throw new Error('missing void main()');
+  // Comments are prose and may use these words ("while it turns").
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, '');
   for (const t of ['mat3', 'mat4', 'ivec2', 'ivec3', 'ivec4', 'bvec2', 'bvec3', 'bvec4', 'sampler2D', 'texture2D', 'while', 'discard', 'dFdx', 'dFdy', 'fwidth']) {
-    if (new RegExp(`\\b${t}\\b`).test(src)) throw new Error(`${t} is not handled by the port`);
+    if (new RegExp(`\\b${t}\\b`).test(code)) throw new Error(`${t} is not handled by the port`);
   }
   return functions;
 }
