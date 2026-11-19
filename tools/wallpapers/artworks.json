@@ -82,6 +82,48 @@
       "fallback_preset": "lavender"
     },
     {
+      "id": "boreal",
+      "lab": "live-boreal",
+      "section": "live",
+      "live": true,
+      "bubble": { "light": "blue", "dark": "green" },
+      "anchor": { "x": 0.5, "y": 0.3 },
+      "still_time": 151,
+      "fallback_preset": "graphite",
+      "lab_size": true
+    },
+    {
+      "id": "lagoon",
+      "lab": "live-lagoon",
+      "section": "live",
+      "live": true,
+      "bubble": { "light": "blue", "dark": "teal" },
+      "anchor": { "x": 0.5, "y": 0.5 },
+      "still_time": 36,
+      "fallback_preset": "mint"
+    },
+    {
+      "id": "sea-sparks",
+      "lab": "live-sea-sparks",
+      "section": "live",
+      "live": true,
+      "bubble": { "light": "blue", "dark": "teal" },
+      "anchor": { "x": 0.5, "y": 0.3 },
+      "still_time": 0,
+      "fallback_preset": "aurora",
+      "lab_size": true
+    },
+    {
+      "id": "tropic-dusk",
+      "lab": "live-tropic-dusk",
+      "section": "live",
+      "live": true,
+      "bubble": { "light": "pink", "dark": "orange" },
+      "anchor": { "x": 0.5, "y": 0.35 },
+      "still_time": 24,
+      "fallback_preset": "sunset"
+    },
+    {
       "id": "dune-lagoons",
       "lab": "nature.dunes",
       "section": "nature",

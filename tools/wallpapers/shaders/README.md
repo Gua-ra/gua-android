@@ -90,9 +90,18 @@ Two shaders have an allowance, the same in `harness.mjs` and `validate-msl.swift
 - Molten Pearl: 4 or 5 single pixels on the thin specular crests, whose position comes from a finite-difference gradient. It reaches 10 even with fast math off.
 - Ipê: the rim of one bokeh disc, whose radius comes from `hash22` of a constant. The hash's last bits depend on how the GPU rounds, so on GPUs that fuse multiply-adds the rim moves and reaches 13.
 
+A value that switches a whole feature on or off, picks one of several discrete choices or places a feature must not come from `hash12` or `hash22`. Their output is the `fract` of a large product, so the one-ulp difference of a fused multiply-add can flip a threshold or wrap the value between 0 and 1, and the live view then pops against the still. Metal fuses even with fast math off, and AGSL cannot turn fusion off.
+
+Sea Sparks and Boreal take every such value from `ih`, `ih1` and `iv`, in which every value is a whole number below 2^20: in Sea Sparks the night sparks, the send flare, the daytime glints and the noise that breaks the swell; in Boreal the stars, snowflakes, spruces, the snow on their tiers, the aurora's ray noise and the mask that dims parts of the band. fp32 holds those numbers exactly, so fused and unfused multiply-adds agree and both shaders get the normal limits on every GPU.
+
+- `floor((x+0.5)*(1.0/1019.0))` is exact: the product is within 1e-4 of a quotient that is at least 1/2038 from a whole number.
+- Decisions read from `h = n/1019` (on or off, the stars' twinkle rate and size) sit at least 2e-4 from their boundary, and positions are `fract(n*K)` with each `K` keeping the product at least 9e-4 from a whole number, so neither can flip or wrap.
+- Boreal's ray noise reduces its lattice index with a half-cell margin, so a division a few ulps off cannot pick the wrong cell.
+- A contour that depends on position, such as Sea Sparks' daytime glint threshold or the hard edge between two of a spruce's tiers, can still move by under a pixel.
+
 ## Checks run
 
-- MSL on this Mac's GPU (fast math off): all cases within the limits; Molten Pearl max 10, every other shader max 2 or less, means 0.015 or less.
+- MSL on this Mac's GPU (fast math off): all cases within the limits; Molten Pearl max 10, every other shader max 2 or less, means 0.014 or less.
 - AGSL through Android's `RuntimeShader` on the API 35 emulator (`check-agsl-device.mjs`): every file compiles, all six uniforms are accepted (including `u_tilt` in Rain on Glass, which never reads it) and every case draws. With the emulator's SwiftShader GPU the drawings equal the goldens (max 0). With the Mac's GPU under the emulator: Ipê max 13 (allowance), Molten Pearl 10, Rain on Glass 7, the rest 2 or less, means 0.052 or less.
 
 ## What is not verified

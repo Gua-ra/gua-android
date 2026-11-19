@@ -43,4 +43,4 @@ Pinned tools, so a re-bake is byte-identical: Node 22, playwright-core 1.54.2 wi
 - Grain: the Lab's film grain is left out, since lossy WebP smears it and the apps draw `noise.webp` at runtime. Nature scenes keep the slight lift their grain gives dark skies. Paper keeps its tooth (`lab_texture`), which is part of the paper and survives q80.
 - Stars: Nature counts stars by the canvas's pixel area, so the bake counts them as the Lab's preview does.
 - Crescent moons: the Lab cuts the shadow out of the whole canvas, which leaves a hole. The bake paints the sky through the shadow instead.
-- Pantanal (`lab_size`): its fireflies are sized in device pixels, so it is drawn at the Lab's preview size and scaled up.
+- Pantanal, Sea Sparks and Boreal (`lab_size`): Pantanal's fireflies, Sea Sparks' daytime glints and Boreal's stars and snowflakes are sized in device pixels, so these are drawn at the Lab's preview size and scaled up.
