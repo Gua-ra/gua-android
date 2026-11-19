@@ -35,7 +35,7 @@ interface GuaDeployment {
      */
     val identityServiceBaseUrl: String?
 
-    /** The resolver verification keys in the form `ResolverTrustRoots.parse` reads; null leaves the verifier inert. */
+    /** The resolver verification keys in the form `ResolverTrustRoots.parse` reads. Without a usable authority key every check is no_trust_roots. */
     val resolverTrustRoots: String?
 
     data object Production : GuaDeployment {
