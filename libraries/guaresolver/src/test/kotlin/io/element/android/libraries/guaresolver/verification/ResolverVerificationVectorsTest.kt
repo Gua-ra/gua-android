@@ -219,11 +219,14 @@ class ResolverVerificationVectorsTest {
             }
             val evaluatedAt = vector.string("evaluatedAt").toEpochMillis()
             val decision = PlacementEngine.decide(context, roster, policy, zones, evaluatedAt)
-            assertWithName(
-                name,
-                decision,
-                PlacementDecision(vector.string("expectedHomeserverId"), vector.string("expectedRule"), vector.string("expectedRuleId")),
-            )
+            val expectedHomeserverId = vector.stringOrNull("expectedHomeserverId")
+            if (expectedHomeserverId == null) {
+                assertWithMessage(name).that(decision).isNull()
+                assertWithMessage(name).that(vector.stringOrNull("expectedRule")).isNull()
+                assertWithMessage(name).that(vector.stringOrNull("expectedRuleId")).isNull()
+            } else {
+                assertWithName(name, decision, PlacementDecision(expectedHomeserverId, vector.string("expectedRule"), vector.string("expectedRuleId")))
+            }
             val unsignedRuleAbove = policy?.let { PlacementEngine.unsignedRuleOutranks(context, it, zones, decision, evaluatedAt) } ?: false
             assertWithName(name, unsignedRuleAbove, vector.bool("unsignedRuleAbove"))
 
@@ -234,7 +237,8 @@ class ResolverVerificationVectorsTest {
                 val accepting = roster.entries.filter { it.isActive && it.homeserver.acceptsNew }
                 val candidates = accepting.map { it.homeserver }.sortedBy { it.id }
                 val expectedCandidates = fallback["candidates"]!!.jsonArray.map { it.jsonObject }.map { it.string("id") to it.int("weight") }
-                assertWithName(name, candidates.map { it.id to it.weight }, expectedCandidates)
+                assertWithName(name, candidates.map { it.id to maxOf(0, it.weight) }, expectedCandidates)
+                assertWithName(name, PlacementEngine.totalWeight(candidates), fallback.long("totalWeight"))
                 assertWithName(name, PlacementEngine.stableHash(placed, roster.version, candidates), fallback.int("stableHash"))
             }
         }

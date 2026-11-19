@@ -8,6 +8,7 @@
 package io.element.android.libraries.guaresolver.verification
 
 import com.google.common.truth.Truth.assertThat
+import io.element.android.libraries.guaresolver.ResolvedHomeserver
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -319,6 +320,38 @@ class DefaultResolverVerifierPolicyTest {
         val report = verify(createVerifier(server), answer(hsCa(), rosterVersion = 6))
 
         assertThat(report.placement).isEqualTo(PlacementOutcome.Indeterminate(VerificationReason.UNATTRIBUTED))
+        server.shutdown()
+    }
+
+    @Test
+    fun `no decision past the fallback limit is a mismatch, unattributed or unsigned_rule`() = runTest {
+        // Under r9 no rule matches this number, and without the limit the fallback would place it on hs-over.
+        val fallbackPhone = "+5521990000000"
+        val hsOver = ResolvedHomeserver(
+            serverName = "over.gua.test",
+            baseUrl = "https://matrix.over.gua.test",
+            masIssuer = "https://account.over.gua.test",
+            region = null,
+        )
+        val resolver = ScriptedResolver().apply {
+            roster = { ok(servedRoster("r9").toString()) }
+            policy = { ok(servedPolicy(BR_POLICY).toString()) }
+            log = { ok(logJson()) }
+        }
+        val server = resolver.start()
+        val verifier = createVerifier(server)
+
+        val attributed = verify(verifier, answer(hsOver, rosterVersion = 7), phone = fallbackPhone)
+        assertThat(attributed.policy).isEqualTo(PolicyOutcome.Valid)
+        assertThat(attributed.placement).isEqualTo(PlacementOutcome.Mismatch)
+
+        val unattributed = verify(verifier, answer(hsOver), phone = fallbackPhone)
+        assertThat(unattributed.placement).isEqualTo(PlacementOutcome.Indeterminate(VerificationReason.UNATTRIBUTED))
+
+        resolver.policy = { ok(servedPolicy("br-policy v3 without the sp-zone delegate signature").toString()) }
+        val unsigned = verify(verifier, answer(hsOver, rosterVersion = 7), phone = A_PHONE)
+        assertThat(unsigned.policy).isEqualTo(PolicyOutcome.Valid)
+        assertThat(unsigned.placement).isEqualTo(PlacementOutcome.Indeterminate(VerificationReason.UNSIGNED_RULE))
         server.shutdown()
     }
 }

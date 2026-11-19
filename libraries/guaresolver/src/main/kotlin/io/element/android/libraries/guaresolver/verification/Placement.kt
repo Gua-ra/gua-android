@@ -139,11 +139,14 @@ internal object PlacementEngine {
         return true
     }
 
-    /** Weights are summed in 64 bits, as the resolver does, so a total past 2^31 does not wrap. */
+    /** Weights are summed in 64 bits, as the resolver does, so a total past 2^31 cannot wrap back under the fallback limit. */
+    fun totalWeight(candidates: List<RosterHomeserver>): Long = candidates.sumOf { maxOf(0, it.weight).toLong() }
+
     private fun weightedFallback(context: PlacementContext, rosterVersion: Long, accepting: List<RosterHomeserver>): PlacementDecision? {
         val candidates = accepting.sortedBy { it.id }
         if (candidates.isEmpty()) return null
-        val totalWeight = candidates.sumOf { maxOf(0, it.weight).toLong() }
+        val totalWeight = totalWeight(candidates)
+        if (totalWeight > MAX_TOTAL_WEIGHT) return null
         val hash = stableHash(context, rosterVersion, candidates)
         if (totalWeight == 0L) return fallbackDecision(candidates[Math.floorMod(hash, candidates.size)])
         val target = Math.floorMod(hash.toLong(), totalWeight)
@@ -158,4 +161,7 @@ internal object PlacementEngine {
     private fun fallbackDecision(homeserver: RosterHomeserver) = PlacementDecision(homeserver.id, "WeightedFallbackRule", "weighted-fallback")
 
     private const val POLICY_RULE = "PolicyRoutingRule"
+
+    // Part of weighted-fallback.v1: above it the signed 32-bit hash skews the split, so the fallback decides nothing.
+    private const val MAX_TOTAL_WEIGHT = 1L shl 24
 }
