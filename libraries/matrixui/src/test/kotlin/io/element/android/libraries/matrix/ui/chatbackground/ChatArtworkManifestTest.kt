@@ -45,17 +45,39 @@ class ChatArtworkManifestTest {
             message.that(artwork.anchor.x).isEqualTo(entry.obj("anchor").getValue("x").jsonPrimitive.float)
             message.that(artwork.anchor.y).isEqualTo(entry.obj("anchor").getValue("y").jsonPrimitive.float)
             message.that(artwork.fallbackPreset.id).isEqualTo(entry.string("fallback_preset"))
+            message.that(artwork.shaderFile).isEqualTo(entry.obj("files")["agsl"]?.jsonPrimitive?.content)
+            if (artwork.isLive) {
+                message.that(artwork.stillTime).isEqualTo(entry.getValue("still_time").jsonPrimitive.float)
+            } else {
+                message.that(entry["still_time"]).isNull()
+            }
         }
     }
 
     @Test
-    fun `every artwork's images are in the assets with the manifest's checksums`() {
+    fun `every artwork's images and Android shader are in the assets with the manifest's checksums`() {
         ChatArtwork.entries.zip(artworks).forEach { (artwork, entry) ->
             val checksums = entry.obj("sha256")
-            listOf(artwork.lightFile, artwork.darkFile).forEach { file ->
+            listOfNotNull(artwork.lightFile, artwork.darkFile, artwork.shaderFile).forEach { file ->
                 assertWithMessage(file).that(File(assets, file).exists()).isTrue()
                 assertWithMessage(file).that(sha256(File(assets, file))).isEqualTo(checksums.string(file))
             }
+        }
+    }
+
+    @Test
+    fun `the assets hold no iOS shaders`() {
+        assertThat(assets.list().orEmpty().filter { it.endsWith(".msl") }).isEmpty()
+    }
+
+    @Test
+    fun `every Android shader declares the uniforms the renderer sets`() {
+        val uniform = Regex("""^uniform float(\d?) (\w+);$""", RegexOption.MULTILINE)
+        ChatArtwork.entries.mapNotNull { it.shaderFile }.forEach { file ->
+            val declared = uniform.findAll(File(assets, file).readText()).associate { match ->
+                match.groupValues[2] to (match.groupValues[1].toIntOrNull() ?: 1)
+            }
+            assertWithMessage(file).that(declared).isEqualTo(LIVE_WALLPAPER_UNIFORMS)
         }
     }
 

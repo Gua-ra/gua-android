@@ -240,7 +240,8 @@ void main(){
   });
 
   // ---------------------------------------------------------------- Boreal
-  // Dark: northern lights over a spruce ridge (unchanged from v1 apart from the send bloom).
+  // Dark: broad, soft aurora bands that curl and fan across the sky over a spruce ridge; the send
+  // brightens the band near the sent bubble.
   // Light: the same ridge on a winter afternoon with snow drifting down; the send blows a
   // puff of snow off the branches around the sent bubble.
   add({
@@ -249,6 +250,25 @@ void main(){
     blurb: 'Spruce forest in falling snow by day and under the northern lights by night; a message shakes snow from the branches.',
     bubble: { light: 'blue', dark: 'green' },
     frag: `
+// Exact cell hash: every value is a whole number below 2^20, which fp32 holds exactly, so a fused
+// multiply-add cannot change it and what the baked still shows is what every GPU draws.
+// (x+0.5)/1019 is at least 1/2038 from a whole number and the product below is within 1e-4 of it,
+// so floor() is exact.
+float ihm(float x){return x-1019.0*floor((x+0.5)*(1.0/1019.0));}
+float icube(float n){return ihm(ihm(n*n)*n);}
+// c: whole-number cell within +-4096, s: whole-number salt; returns a whole number in 0..1018.
+float ih(vec2 c,float s){return icube(ihm(icube(ihm(c.x*19.0+c.y*56.0+s*211.0+101.0))+c.x*233.0+s*331.0+13.0));}
+// For whole n in 1..1018, n*K stays at least 9e-4 from a whole number (n = 0 gives exactly 0), so fract() cannot wrap.
+vec2 ih2(float n){return fract(n*vec2(0.3271483,0.9194175));}
+// One cube per point of a 1D lattice: x whole within +-4096, y a whole row. Neighbours along x stay nearly
+// uncorrelated and each row is a different stretch of the sequence. Returns a whole number in 0..1018.
+float ih1(float x,float y){return icube(ihm(x*56.0+y*7.0+97.0));}
+// 2D lattice value for a reduced x (ihm) and y within +-50; the cross term gives each row its own stride.
+float ivx(float x,float y){return icube(ihm(x*13.0+y*56.0+x*y*19.0+1156.0));}
+float iv(vec2 c){return ivx(ihm(c.x),c.y);}
+// vnoise on the exact hash, so no lattice value can jump between 0 and 1 where the GPU fuses.
+float ivnoise(vec2 p){vec2 i=floor(p);vec2 f=fract(p);f=f*f*(3.0-2.0*f);float a=ihm(i.x);float b=ihm(i.x+1.0);
+  return mix(mix(ivx(a,i.y),ivx(b,i.y),f.x),mix(ivx(a,i.y+1.0),ivx(b,i.y+1.0),f.x),f.y)/1019.0;}
 float flakes(vec2 q,vec2 o,float t,float asp){
   float acc=0.0;
   for(int i=0;i<3;i++){
@@ -261,14 +281,138 @@ float flakes(vec2 q,vec2 o,float t,float asp){
     p.x+=0.02*sin(p.y*3.0+t*0.2+fi*2.0)+u_tilt.x*(0.004+fi*0.006);
     p*=sc;
     vec2 id=floor(p); vec2 f=fract(p)-0.5;
-    float h=hash12(id+fi*17.0);
-    vec2 jo=(hash22(id+fi*7.0)-0.5)*0.6;
+    // Rows fold into 64 (exact: a power of two) to keep iv's row small; the snow repeats only after 64 rows.
+    float n=iv(vec2(id.x+fi*307.0,id.y-64.0*floor(id.y*0.015625)-32.0));
+    float h=n/1019.0;
+    vec2 jo=(ih2(n)-0.5)*0.6;
     float rpx=mix(3.4,1.4,fi*0.5)*(0.7+0.6*h);
     float r=length(f-jo)*u_res.y/sc;
     float on=step(0.62-0.55*exp(-od*6.0)*u_pulse,h);
     acc+=on*smoothstep(rpx,rpx*0.2,r)*(1.0-fi*0.22);
   }
   return acc;
+}
+// 1D value noise along x that repeats every n cells, so a drift of n cells per 1800 s wraps
+// without a jump; y selects an independent row. The lattice index is reduced with a half-cell margin, so a
+// division a few ulps off cannot pick the wrong cell.
+float vn1(float x,float y,float n){
+  float i=floor(x); float f=x-i;
+  float a=i-n*floor((i+0.5)/n);
+  float b=a+1.0; b-=n*step(n-0.5,b);
+  return mix(ih1(a,y+20.0),ih1(b,y+20.0),f*f*(3.0-2.0*f))/1019.0;
+}
+// Send surge at distance dA along the band from the sent bubble: a brightening there and a front
+// that runs outward as the envelope decays. Zero at p = 0.
+float surgeAt(float dA,float p){
+  float fr=0.04+0.56*pow(max(1.0-p,0.0),0.8);
+  return p*(exp(-dA/0.22)+1.5*exp(-sq((dA-fr)/0.13)));
+}
+// The aurora band at p. c is the 1800 s cycle angle and tc the cycle fraction: every slow motion
+// runs a whole number of cycles per 1800 s. pz is the eased send pulse and ox the sent bubble's x.
+vec3 aurora(vec2 p,float asp,float c,float tc,float pz,float ox){
+  // Every slow layout motion is a whole number of turns per loop, taken from powers of one unit phasor,
+  // so they cost two trig calls.
+  vec2 z1=vec2(cos(c),sin(c));
+  vec2 z2=vec2(z1.x*z1.x-z1.y*z1.y,2.0*z1.x*z1.y);
+  vec2 z3=vec2(z2.x*z1.x-z2.y*z1.y,z2.x*z1.y+z2.y*z1.x);
+  vec2 z4=vec2(z2.x*z2.x-z2.y*z2.y,2.0*z2.x*z2.y);
+  vec2 z5=vec2(z4.x*z1.x-z4.y*z1.y,z4.x*z1.y+z4.y*z1.x);
+  vec2 z6=vec2(z3.x*z3.x-z3.y*z3.y,2.0*z3.x*z3.y);
+  vec2 z7=vec2(z6.x*z1.x-z6.y*z1.y,z6.x*z1.y+z6.y*z1.x);
+  // The band's lower edge is a wide V with a rounded tip and asymmetric arms; a vortex warp curls one
+  // arm over a dark gap. m turns the layout over once per loop, and while it turns the band is a
+  // broad, even U.
+  float m=clamp(0.8+2.4*dot(z1,vec2(0.8085,-0.5885)),-1.0,1.0);
+  float hm=0.5+0.5*m;
+  float xf=asp*(0.5-0.12*m+0.09*dot(z2,vec2(0.3894,0.9211))+0.04*dot(z5,vec2(0.8912,0.4536)));
+  float yf=0.655+0.018*dot(z3,vec2(0.9093,-0.4161))+0.01*z7.y;
+  // The fold never closes tighter than this, so its tip stays round instead of a chevron.
+  float ef=0.078+0.015*dot(z4,vec2(0.7174,0.6967));
+  float ka=0.95+0.12*dot(z3,vec2(0.9917,-0.1288));
+  float kb=(-0.05+0.1*dot(z2,vec2(0.2392,-0.971)))*m;
+  // The vortex sits a little above the curled arm, so the arm wraps part way round a dark gap instead of
+  // knotting on itself. Its turn has the sign of m, so it fades out as the layout turns over and it
+  // jumps to the other side only at m = 0, where it has no effect.
+  float vx=asp*(0.5+sign(m)*(0.07*dot(z3,vec2(0.8415,0.5403))-0.36));
+  vec2 v1=vec2(vx,min(yf+ka*(sqrt(sq(vx-xf)+ef*ef)-ef)+kb*(vx-xf)+0.075+0.02*dot(z4,vec2(0.5985,-0.8011)),0.86));
+  float S1=(1.45+0.3*dot(z6,vec2(0.2955,0.9553)))*m;
+  float R1=0.14;
+  vec2 d1=p-v1;
+  float th=S1*exp(-dot(d1,d1)/(R1*R1));
+  float cs=cos(th); float sn=sin(th);
+  vec2 e1=vec2(cs*d1.x-sn*d1.y,sn*d1.x+cs*d1.y);
+  vec2 w=v1+e1;
+  float dx=w.x-xf;
+  float far=smoothstep(0.06,0.35,abs(dx));
+  float ph=11.0*w.x-38.0*c+1.0;
+  float fa=0.02+0.016*far;
+  w.y+=fa*sin(ph);
+  float hy=sqrt(dx*dx+ef*ef);
+  float ph2=17.0*w.x+23.0*c+2.0;
+  // The arms bow upward as they leave the fold, so neither runs as a straight ruler edge.
+  float yl=yf+ka*(hy-ef)+kb*dx+0.6*dx*dx+0.012*sin(ph2);
+  float F=w.y-yl;
+  // Slope for the distance estimate, taken from a fold rounded by the distance |F|, so the glow's
+  // contours round off below the tight fold instead of creasing straight down from it.
+  float dyl=ka*dx/sqrt(dx*dx+sq(ef+0.7*abs(F)))+kb+1.2*dx+0.204*cos(ph2);
+  // Screen gradient of F = w.y - yl, chained back through the fold wave and the vortex, so f is a
+  // screen distance and g tells how much the band is squeezed on screen.
+  vec2 g=vec2(-dyl,1.0);
+  g.x+=11.0*fa*cos(ph)*g.y;
+  vec2 gr=vec2(cs*g.x+sn*g.y,-sn*g.x+cs*g.y);
+  g=gr-2.0*th/(R1*R1)*d1*dot(vec2(-e1.y,e1.x),g);
+  float G=length(g);
+  float f=F/G;
+  // Rays converge on a point high overhead.
+  vec2 V=vec2(asp*(0.5+0.1*dot(z2,vec2(0.9636,0.2675))),1.8);
+  float ra=(p.x-V.x)/(V.y-p.y);
+  float r1=vn1(ra*170.0+tc*900.0,1.0,900.0);
+  float r2=vn1(ra*65.0-tc*120.0,2.0,120.0);
+  float r3=vn1(ra*20.0+tc*60.0,3.0,60.0);
+  float rt=smoothstep(0.15,0.95,0.5*r1+0.5*r2);
+  float lf=mix(smoothstep(0.0,0.25,dx),smoothstep(0.0,-0.25,dx),hm);
+  float rg=mix(smoothstep(0.0,-0.3,dx),smoothstep(0.0,0.3,dx),hm);
+  float fold=exp(-dx*dx/0.004);
+  float al=0.5+0.5*sin(6.0*w.x+29.0*c+0.4);
+  // Long stretches of the band dim, the lower margin most, so the bright edge never runs as one even
+  // stroke.
+  float gm=smoothstep(0.1,0.75,vn1(w.x*4.0-tc*60.0,7.0,60.0));
+  // Higher parts of the band are nearer the zenith, so they are thicker and softer.
+  float so=(0.026*(r3-0.5)+0.005*(r2-0.5))*(1.0-0.7*fold);
+  float top=(0.085+0.04*lf+0.025*rg+0.2*clamp(p.y-0.62,0.0,0.35))*(0.7+0.6*r3)*(0.9+0.2*r2)*(0.8+0.4*al);
+  float es=0.014+0.03*lf+0.045*rg*far;
+  float fe=f-so;
+  float up=max(fe,0.0);
+  float inside=smoothstep(-es,es,fe);
+  float gp=ivnoise(w*vec2(5.0,6.0)+3.0*z1+vec2(0.6*z5.x,0.0));
+  float bm=0.5+0.5*smoothstep(0.2,0.7,gp);
+  float sk=smoothstep(0.25,0.8,gp);
+  float u=up/top;
+  float body=inside*exp(-u*u)*mix(1.0,0.35+0.65*rt,smoothstep(0.0,0.05,up)*(0.45+0.55*(1.0-lf)))*bm;
+  body+=inside*0.55*exp(-up/0.03)*(1.0-0.5*lf)*(0.55+0.45*gm)*(0.75+0.25*rt);
+  body+=(0.5*rt+0.12)*r3*(0.2+0.8*rg*rg)*exp(-max(F,0.0)/(0.05+0.26*rg*rg))*smoothstep(-0.01,0.02,F);
+  float below=(1.0-inside)*exp(fe/(0.03+0.02*lf+0.05*rg*far))*0.5*(0.6+0.4*gm);
+  float glow=exp(-abs(f)/0.08)*0.2;
+  float halo=(0.3+0.9*sk)/(1.0+sq(f/0.13));
+  float lo=(1.0-inside)*exp(f/0.125);
+  float veil=lo*0.17*smoothstep(-0.3,1.0,sin(5.0*w.x-17.0*c+1.0));
+  float rip=smoothstep(0.2,1.0,sin(9.0*w.x-47.0*c+0.7));
+  float inten=(0.65+0.55*fold+0.35*rip+0.3*al+0.15*lf)*clamp(G,0.7,1.6);
+  // The send surge brightens the band itself and the glow just under it, not the sky far below.
+  float sv=0.0;
+  if(pz>0.0) sv=surgeAt(abs(p.x-ox),pz);
+  vec3 cl=mix(hex(0x34F27F.0),hex(0xC4FF4A.0),max(fold,0.3*rip)*exp(-up/0.045));
+  vec3 cb=mix(cl,hex(0x22CC8A.0),smoothstep(0.5,1.2,u));
+  cb=mix(cb,hex(0x7A4FD0.0),smoothstep(1.1,2.2,u)*0.6);
+  float endm=smoothstep(0.12,0.3,abs(dx));
+  vec3 ac=(cb*body*1.65+mix(hex(0x2EE88A.0),hex(0xA040C8.0),lf*0.8)*below)*(1.0+1.3*sv)+hex(0x2EE88A.0)*(glow+veil);
+  ac=mix(ac,ac.g*0.75*hex(0xA23CC8.0),endm*0.35*smoothstep(0.0,0.08,up+0.04));
+  ac+=hex(0x7A2CA8.0)*lf*lo*0.3;
+  ac*=inten;
+  vec3 hc=mix(hex(0x1E9E70.0),hex(0x2A3290.0),smoothstep(0.12,0.35,f));
+  hc=mix(hc,hex(0x522A88.0),max(endm,lf*0.6)*smoothstep(0.0,-0.2,f));
+  ac+=hc*halo*0.16;
+  return ac;
 }
 void main(){
   float asp=u_res.x/u_res.y;
@@ -279,7 +423,7 @@ void main(){
   float hz=0.15;
   float s=clamp((q.y-hz)/(1.0-hz),0.0,1.0);
   vec3 col;
-  if(dk) col=mix(mix(hex(0x123A44.0),hex(0x0A1A33.0),smoothstep(0.0,0.35,s)),hex(0x05071A.0),smoothstep(0.3,1.0,s));
+  if(dk) col=mix(mix(hex(0x0E2733.0),hex(0x061024.0),smoothstep(0.0,0.25,s)),hex(0x050A1C.0),smoothstep(0.25,0.6,s));
   else {
     col=mix(hex(0xF7EFEA.0),hex(0xEAF1F7.0),smoothstep(0.0,0.75,s));
     col=mix(col,hex(0xDCE7F1.0),smoothstep(0.55,1.0,s)*0.6);
@@ -291,30 +435,30 @@ void main(){
     col=mix(col,hex(0xD6E0EA.0),smoothstep(fh+0.002,fh-0.002,q.y)*0.8);
   }
   if(dk){
-    vec2 sp=q*70.0; vec2 id=floor(sp); vec2 f=fract(sp)-0.5;
-    float h=hash12(id);
-    vec2 jo=hash22(id)-0.5;
-    float tw=0.6+0.4*sin(t*(0.8+h*1.5)+h*40.0);
-    float st=step(0.93,h)*smoothstep(0.10,0.0,length(f-jo*0.7))*tw;
-    col+=st*0.5*smoothstep(0.25,0.6,q.y)*(1.0+u_pulse*0.6);
-    // Aurora curtains: bright lower hem, soft fade upward, fine vertical rays.
-    vec2 ap=q+u_tilt*0.012;
-    vec3 acc=vec3(0.0);
-    float tt=t*0.06;
-    for(int i=0;i<5;i++){
-      float fi=float(i);
-      float x=ap.x*1.3+fi*0.53;
-      float hem=0.60+fi*0.05+0.09*sin(x*2.0+tt*3.1+fi*1.3)+0.035*sin(x*5.3-tt*4.3+fi);
-      float dy=ap.y-hem;
-      float cur=smoothstep(-0.008,0.015,dy)*exp(-max(dy,0.0)*mix(6.0,3.5,fi*0.25));
-      cur*=1.0+1.4*exp(-max(dy,0.0)*45.0);
-      float rays=0.55+0.45*sin(x*95.0+5.0*sin(x*7.0+tt*2.0+fi*2.0));
-      float fold=0.25+0.75*smoothstep(-0.5,0.9,sin(x*2.6-tt*2.0+fi*2.1));
-      vec3 c=mix(hex(0x3DF5A6.0),hex(0x2BC0C9.0),fi*0.25);
-      c=mix(c,hex(0x9A62F0.0),smoothstep(0.04,0.24,dy));
-      acc+=c*cur*rays*fold*(0.30-fi*0.03);
-    }
-    col+=acc*1.15*(1.0+0.9*u_pulse);
+    // One 2 pi cycle per 1800 s.
+    float cyc=u_time*0.0034906585;
+    float tc=u_time/1800.0;
+    float pz=u_pulse*smoothstep(0.0,0.08,u_pulse);
+    // Low in the sky the aurora adds only a few LSB, so it fades out there and is skipped below.
+    vec3 ac=vec3(0.0);
+    if(q.y>0.2) ac=aurora(q+u_tilt*vec2(0.012,0.008),asp,cyc,tc,pz,o.x)*smoothstep(0.2,0.4,q.y);
+    // Hue-preserving roll-off, then a whitish lime core where it saturates.
+    float mx=max(ac.g,max(ac.r,ac.b));
+    vec3 tm=ac*(1.0-exp(-mx))/max(mx,0.0001);
+    tm+=(hex(0xF0FFD8.0)-tm)*smoothstep(2.4,4.2,mx)*0.25;
+    tm*=1.0-0.6*bubbleBand(q.y);
+    float lum=dot(tm,vec3(0.3,0.5,0.2));
+    // Stars with a radius in device pixels, twinkling at whole cycles per 1800 s, fading behind the aurora.
+    vec2 sp=(q+u_tilt*vec2(0.02,0.0133))*70.0; vec2 id=floor(sp); vec2 f=fract(sp)-0.5;
+    float ns=ih(id,0.0);
+    float h=ns/1019.0;
+    vec2 jo=ih2(ns)-0.5;
+    float tw=0.6+0.4*sin(6.2831853*fract(tc*floor(229.0+430.0*h))+h*40.0);
+    float sb=fract(h*13.0);
+    float sr=length(f-jo*0.7)*u_res.y/70.0;
+    float st=step(0.925,h)*smoothstep(1.1+1.3*sb,0.3,sr)*tw*(0.45+0.55*sb);
+    col+=st*0.55*smoothstep(0.2,0.42,q.y)*exp(-1.3*lum);
+    col+=tm;
   }
   // Two spruce ridges with parallax; each cell holds one narrow tiered spruce.
   for(int l=0;l<2;l++){
@@ -323,8 +467,8 @@ void main(){
     float n=mix(44.0,27.0,fl);
     float cx=x*n;
     float idx=floor(cx);
-    float hh=hash12(vec2(idx,fl*7.0+1.0));
-    float fx=fract(cx)-0.5-(hash12(vec2(idx,fl*3.0+5.0))-0.5)*0.25;
+    float hh=ih1(idx,fl*7.0+1.0)/1019.0;
+    float fx=fract(cx)-0.5-(ih1(idx,fl*3.0+5.0)/1019.0-0.5)*0.25;
     float base=hz-0.02-fl*0.05+0.014*sin(x*7.0+fl*3.0)+0.006*sin(x*19.0+fl);
     float ht=mix(0.035,0.085,hh*hh)*mix(0.85,1.3,fl);
     float vrel=(base+ht-q.y)/ht;
@@ -340,7 +484,7 @@ void main(){
     } else {
       tc=mix(hex(0xA9B8C8.0),hex(0x6F8499.0),fl);
       tc=mix(tc,hex(0x8FA3B8.0),(1.0-fl)*smoothstep(0.5,1.0,vrel)*0.6);
-      float sn=hash12(vec2(idx,floor(vrel*4.5+hh)+fl*9.0));
+      float sn=ih1(idx,floor(vrel*4.5+hh)+fl*9.0+40.0)/1019.0;
       tc=mix(tc,hex(0xF2F6FA.0),smoothstep(0.22,0.04,tier)*step(0.70,sn)*0.45*smoothstep(0.0,0.2,abs(fx)*2.0/max(w,0.001)-0.3));
       col=mix(col,tc,tree*(1.0-ground));
       col=mix(col,mix(hex(0xFFFFFF.0),hex(0xEDF2F7.0),fl*0.6+(base-q.y)*3.0),ground);
@@ -348,7 +492,7 @@ void main(){
   }
   float sg=sendGlow(q,o,asp);
   if(dk){
-    col+=hex(0x3DF5A6.0)*0.20*sg;
+    col+=hex(0x3DF5A6.0)*0.12*sg;
   } else {
     float fk=flakes(q,o,t,asp);
     col=mix(col,vec3(1.0),clamp(fk,0.0,1.0));
@@ -475,6 +619,21 @@ void main(){
     blurb: 'Sun glints on shallow water by day, glowing plankton on the night tide; your message lights up the water around it.',
     bubble: { light: 'blue', dark: 'teal' },
     frag: `
+// Exact cell hash: every value is a whole number below 2^20, which fp32 holds exactly, so a fused
+// multiply-add cannot change it and a spark lit in the baked still is lit on every GPU.
+// (x+0.5)/1019 is at least 1/2038 from a whole number and the product below is within 1e-4 of it,
+// so floor() is exact.
+float ihm(float x){return x-1019.0*floor((x+0.5)*(1.0/1019.0));}
+float icube(float n){return ihm(ihm(n*n)*n);}
+// c: whole-number cell within +-4096, s: whole-number salt; returns a whole number in 0..1018.
+float ih(vec2 c,float s){return icube(ihm(icube(ihm(c.x*19.0+c.y*56.0+s*211.0+101.0))+c.x*233.0+s*331.0+13.0));}
+// For whole n in 1..1018, n*K stays at least 9e-4 from a whole number (n = 0 gives exactly 0), so fract() cannot wrap.
+vec2 ih2(float n){return fract(n*vec2(0.3271483,0.9194175));}
+// Swell-noise lattice value for c.y within +-50 (3..16 here); the cross term gives each row its own stride.
+float iv(vec2 c){float x=ihm(c.x);return icube(ihm(x*13.0+c.y*56.0+x*c.y*19.0+1156.0));}
+// vnoise on the exact hash, so no lattice value can jump between 0 and 1 where the GPU fuses.
+float ivnoise(vec2 p){vec2 i=floor(p);vec2 f=fract(p);f=f*f*(3.0-2.0*f);
+  return mix(mix(iv(i),iv(i+vec2(1.0,0.0)),f.x),mix(iv(i+vec2(0.0,1.0)),iv(i+vec2(1.0,1.0)),f.x),f.y)/1019.0;}
 void main(){
   float asp=u_res.x/u_res.y;
   vec2 q=gl_FragCoord.xy/u_res.y;
@@ -498,8 +657,9 @@ void main(){
       p*=sc;
       vec2 id=floor(p);
       vec2 f=fract(p)-0.5;
-      vec2 h=hash22(id+fi*31.0);
-      float on=step(0.5,hash12(id*1.37+fi*11.0))*clamp(stream*0.9,0.2,1.0);
+      float n=ih(id,fi);
+      vec2 h=ih2(n);
+      float on=step(509.5,n)*clamp(stream*0.9,0.2,1.0);
       vec2 jo=(h-0.5)*0.32+0.05*vec2(sin(t*0.4+h.x*6.28),cos(t*0.33+h.y*6.28));
       vec2 v=f-jo;
       float r2=dot(v,v);
@@ -516,9 +676,10 @@ void main(){
     // Send flare: about 40 sparks around the bubble flare to pale cyan and fade.
     vec2 fp=(q-o)*30.0;
     vec2 fid=floor(fp); vec2 ff=fract(fp)-0.5;
-    vec2 fh=hash22(fid+3.7);
+    float fn=ih(fid,6.0);
+    vec2 fh=ih2(fn);
     vec2 fv=ff-(fh-0.5)*0.6;
-    float fon=step(0.45,hash12(fid*2.13+1.0));
+    float fon=step(458.5,fn);
     float fl=(exp(-dot(fv,fv)*70.0)+0.25*exp(-dot(fv,fv)*9.0))*fon*exp(-sq(od/(0.26*asp+0.05)))*u_pulse*(0.75+0.25*sin(u_time*9.0+fh.x*6.28));
     col+=hex(0x9FF4FF.0)*(fl*1.5+sg*0.18);
   } else {
@@ -529,7 +690,7 @@ void main(){
     // Swell crests: thin bright lines that compress towards the top (perspective).
     float zy=1.0/(1.25-q.y);
     float cr=sin(zy*26.0+2.0*sin(q.x*5.0*zy*0.5+t*0.20)+1.2*sin(q.x*13.0-t*0.25)-t*0.55);
-    float brk=smoothstep(0.45,0.80,vnoise(vec2(q.x*9.0*sqrt(zy),zy*4.0)+vec2(t*0.06,0.0)));
+    float brk=smoothstep(0.45,0.80,ivnoise(vec2(q.x*9.0*sqrt(zy),zy*4.0)+vec2(t*0.06,0.0)));
     float crest=pow(max(cr,0.0),12.0)*brk;
     float trough=pow(max(-cr,0.0),3.0);
     float topk=smoothstep(0.35,0.85,q.y);
@@ -542,8 +703,9 @@ void main(){
       float sc=16.0+fi*11.0;
       vec2 p=(q+u_tilt*0.006*(fi+1.0))*sc;
       vec2 id=floor(p); vec2 f=fract(p)-0.5;
-      float h=hash12(id+fi*13.0);
-      vec2 jo=(hash22(id+fi*5.0)-0.5)*0.6;
+      float n=ih(id,fi+3.0);
+      float h=n/1019.0;
+      vec2 jo=(ih2(n)-0.5)*0.6;
       vec2 v=(f-jo)*u_res.y/sc;
       float boost=exp(-sq(od/(0.25*asp+0.04)))*u_pulse;
       float on=step(mix(0.90,0.55,topk)-0.45*boost,h)*(1.0-0.6*bb);

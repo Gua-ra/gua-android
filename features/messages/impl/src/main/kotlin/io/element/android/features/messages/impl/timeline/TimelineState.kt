@@ -43,6 +43,8 @@ data class TimelineState(
     val selectionState: SelectionState,
     // When true, formatted message bodies are rendered with the native Compose renderer.
     val useNewTimelineEventRenderer: Boolean,
+    // GUA FORK: grows with each event the user sends from this device while the timeline is open; the live wallpaper pulses on it.
+    val ownNewEventCount: Int,
     val eventSink: (TimelineEvent) -> Unit,
 ) {
     private val lastTimelineEvent = timelineItems.firstOrNull { it is TimelineItem.Event } as? TimelineItem.Event

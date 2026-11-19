@@ -37,4 +37,5 @@
   <string name="gua_chat_theme_bubble_standard">Standard</string>
   <string name="gua_chat_theme_bubble_a11y">%1$s bubble</string>
   <string name="gua_chat_theme_live_badge">Live</string>
+  <string name="gua_chat_theme_preview_send_a11y">Preview the send effect</string>
 </resources>
