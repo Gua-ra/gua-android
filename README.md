@@ -2,7 +2,7 @@
 
 <div align="center">
 
-  <img src="./docs/images/gua-logo.png" width="140" alt="Gua logo" />
+  <img src="./docs/images/gua-logo.png" width="250" alt="Gua logo" />
 
   <h1>Gua for Android</h1>
 
