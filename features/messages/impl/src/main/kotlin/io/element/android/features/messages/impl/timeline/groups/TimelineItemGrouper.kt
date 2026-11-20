@@ -27,13 +27,17 @@ class TimelineItemGrouper {
      */
     private val groupIds = HashMap<String, String>()
 
+    private val mediaStackIds = HashMap<String, String>()
+
     /**
      * Create a new list of [TimelineItem] by grouping some of them into [TimelineItem.GroupedEvents].
+     * GUA FORK: with a [mediaStackGrouper], the photos and videos of one batch are first turned into a media stack.
      */
-    fun group(from: List<TimelineItem>): List<TimelineItem> {
+    fun group(from: List<TimelineItem>, mediaStackGrouper: MediaStackGrouper? = null): List<TimelineItem> {
         val result = mutableListOf<TimelineItem>()
         val currentGroup = mutableListOf<TimelineItem.Event>()
-        from.forEach { timelineItem ->
+        val items = mediaStackGrouper?.group(from, mediaStackIds) ?: from
+        items.forEach { timelineItem ->
             if (timelineItem is TimelineItem.Event && timelineItem.canBeGrouped()) {
                 currentGroup.add(0, timelineItem)
             } else {

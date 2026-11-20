@@ -20,6 +20,7 @@ import io.element.android.features.messages.impl.timeline.model.event.TimelineIt
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemImageContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemLegacyCallInviteContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemLocationContent
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemPollContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemProfileChangeContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRedactedContent
@@ -59,6 +60,7 @@ class DefaultMessageSummaryFormatter(
             is TimelineItemFileContent -> context.getString(CommonStrings.common_file)
             is TimelineItemAudioContent -> context.getString(CommonStrings.common_audio)
             is TimelineItemGalleryContent -> context.getString(CommonStrings.common_gallery)
+            is TimelineItemMediaStackContent -> context.resources.getQuantityString(content.kind.headerPlural, content.members.size, content.members.size)
             is TimelineItemAttachmentsContent -> {
                 val count = content.attachments.size
                 val extensions = content.attachments.take(3).joinToString { it.fileExtension }

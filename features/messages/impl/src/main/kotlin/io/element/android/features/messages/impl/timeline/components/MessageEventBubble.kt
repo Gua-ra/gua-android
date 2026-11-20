@@ -70,6 +70,7 @@ fun MessageEventBubble(
     borderColor: Color? = null,
     onDoubleClick: (() -> Unit)? = null,
     isLifted: () -> Boolean = { false },
+    drawsBubble: Boolean = true,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val clickableModifier = if (isTalkbackActive()) {
@@ -95,6 +96,8 @@ fun MessageEventBubble(
     BoxWithConstraints(
         modifier = modifier
             .drawWithCache {
+                // GUA FORK: a media stack has no bubble, and its cards are not clipped so a dragged card can leave the stack.
+                if (!drawsBubble) return@drawWithCache onDrawWithContent { drawContent() }
                 // GUA FORK: the bubble lifted into the message menu leaves its sender avatar behind, so it is drawn whole.
                 val cutTopStart = state.cutTopStart && !isLifted()
                 // Calculate the outline of the background and cache it

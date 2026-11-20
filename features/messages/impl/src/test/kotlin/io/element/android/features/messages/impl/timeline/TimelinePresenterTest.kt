@@ -46,6 +46,7 @@ import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.ThreadId
 import io.element.android.libraries.matrix.api.core.UniqueId
 import io.element.android.libraries.matrix.api.core.asEventId
+import io.element.android.libraries.matrix.api.media.MediaSource
 import io.element.android.libraries.matrix.api.room.MessageEventType
 import io.element.android.libraries.matrix.api.room.RoomMembersState
 import io.element.android.libraries.matrix.api.room.tombstone.PredecessorRoom
@@ -53,6 +54,7 @@ import io.element.android.libraries.matrix.api.timeline.MatrixTimelineItem
 import io.element.android.libraries.matrix.api.timeline.ReceiptType
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.timeline.item.event.EventReaction
+import io.element.android.libraries.matrix.api.timeline.item.event.ImageMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSendState
 import io.element.android.libraries.matrix.api.timeline.item.event.ReactionSender
 import io.element.android.libraries.matrix.api.timeline.item.event.Receipt
@@ -483,6 +485,46 @@ class TimelinePresenterTest {
             consumeItemsUntilPredicate { it.newEventState == NewEventState.FromOther }.last().also { state ->
                 assertThat(state.newEventState).isEqualTo(NewEventState.FromOther)
             }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - newEventState becomes FromOther when a photo joins a media stack`() = runTest {
+        val timelineItems = MutableStateFlow(emptyList<MatrixTimelineItem>())
+        val timeline = FakeTimeline(timelineItems = timelineItems)
+        val presenter = createTimelinePresenter(timeline)
+        presenter.test {
+            awaitFirstItem()
+            timelineItems.emit(listOf(aBatchedPhoto(0), aBatchedPhoto(1)))
+            consumeItemsUntilPredicate { it.timelineItems.size == 1 }
+            timelineItems.getAndUpdate { items -> items + aBatchedPhoto(2) }
+            consumeItemsUntilPredicate { it.newEventState == NewEventState.FromOther }.last().also { state ->
+                assertThat(state.timelineItems).hasSize(1)
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - on scroll finished send the read receipt of a media stack to its newest photo`() = runTest {
+        val sendReadReceiptsLambda = lambdaRecorder { _: EventId, _: ReceiptType -> Result.success(Unit) }
+        val timeline = FakeTimeline(
+            timelineItems = flowOf(
+                listOf(
+                    aBatchedPhoto(0),
+                    aBatchedPhoto(1),
+                    MatrixTimelineItem.Event(A_UNIQUE_ID_2, anEventTimelineItem(eventId = AN_EVENT_ID_2, content = aMessageContent())),
+                )
+            )
+        ).apply {
+            this.sendReadReceiptLambda = sendReadReceiptsLambda
+        }
+        val presenter = createTimelinePresenter(timeline)
+        presenter.test {
+            consumeItemsUntilPredicate { it.timelineItems.size == 2 }.last().eventSink(TimelineEvent.OnScrollFinished(1))
+            advanceUntilIdle()
+            assert(sendReadReceiptsLambda).isCalledOnce().with(value(EventId("\$photo1")), any())
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -2061,6 +2103,17 @@ class TimelinePresenterTest {
         canRedactOther = canRedactOther,
         canRedactOwn = canRedactOwn,
         canPinUnpin = canPinUnpin,
+    )
+
+    private fun aBatchedPhoto(index: Int) = MatrixTimelineItem.Event(
+        UniqueId("photo$index"),
+        anEventTimelineItem(
+            eventId = EventId("\$photo$index"),
+            content = aMessageContent(messageType = ImageMessageType("a.jpg", null, null, MediaSource("url"), null)),
+            latestJsonProvider = {
+                """{"content":{"msgtype":"m.image","body":"a.jpg","global.gua.batch":{"v":1,"id":"b","index":$index,"count":3}}}"""
+            },
+        ),
     )
 
     private fun TestScope.createTimelinePresenter(

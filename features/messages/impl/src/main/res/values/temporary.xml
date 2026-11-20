@@ -11,4 +11,38 @@
   <string name="gua_action_more">"More"</string>
   <string name="gua_action_select">"Select"</string>
   <string name="gua_message_text_selection_title">"Select text"</string>
+  <plurals name="gua_media_stack_photos">
+    <item quantity="one">%1$d Photo</item>
+    <item quantity="other">%1$d Photos</item>
+  </plurals>
+  <plurals name="gua_media_stack_videos">
+    <item quantity="one">%1$d Video</item>
+    <item quantity="other">%1$d Videos</item>
+  </plurals>
+  <plurals name="gua_media_stack_items">
+    <item quantity="one">%1$d Item</item>
+    <item quantity="other">%1$d Items</item>
+  </plurals>
+  <plurals name="gua_media_stack_remove_photos_title">
+    <item quantity="one">Remove %1$d photo?</item>
+    <item quantity="other">Remove %1$d photos?</item>
+  </plurals>
+  <plurals name="gua_media_stack_remove_videos_title">
+    <item quantity="one">Remove %1$d video?</item>
+    <item quantity="other">Remove %1$d videos?</item>
+  </plurals>
+  <plurals name="gua_media_stack_remove_items_title">
+    <item quantity="one">Remove %1$d item?</item>
+    <item quantity="other">Remove %1$d items?</item>
+  </plurals>
+  <plurals name="gua_media_stack_saved">
+    <item quantity="one">%1$d item saved</item>
+    <item quantity="other">%1$d items saved</item>
+  </plurals>
+  <string name="gua_media_stack_remove_subtitle">They will be removed for everyone in this chat.</string>
+  <string name="gua_media_stack_a11y_photo_position">Photo %1$d of %2$d</string>
+  <string name="gua_media_stack_a11y_video_position">Video %1$d of %2$d, %3$s</string>
+  <string name="gua_media_stack_a11y_next">Next</string>
+  <string name="gua_media_stack_a11y_previous">Previous</string>
+  <string name="gua_media_stack_show_all">Show all</string>
 </resources>

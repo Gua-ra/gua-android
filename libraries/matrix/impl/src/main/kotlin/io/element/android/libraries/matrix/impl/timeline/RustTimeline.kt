@@ -24,6 +24,7 @@ import io.element.android.libraries.matrix.api.room.IntentionalMention
 import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.room.join.JoinRule
 import io.element.android.libraries.matrix.api.room.location.AssetType
+import io.element.android.libraries.matrix.api.timeline.ForwardProgress
 import io.element.android.libraries.matrix.api.timeline.MatrixTimelineItem
 import io.element.android.libraries.matrix.api.timeline.MsgType
 import io.element.android.libraries.matrix.api.timeline.ReceiptType
@@ -388,6 +389,7 @@ class RustTimeline(
         caption: String?,
         formattedCaption: String?,
         inReplyToEventId: EventId?,
+        extraContentJson: String?,
     ): Result<MediaUploadHandler> {
         Timber.tag(loggerTag).d("Sending image ${file.path.hash()}")
         return sendAttachment(listOfNotNull(file, thumbnailFile)) {
@@ -400,6 +402,7 @@ class RustTimeline(
                     },
                     mentions = null,
                     inReplyTo = inReplyToEventId?.value,
+                    extraContentJson = extraContentJson,
                 ),
                 thumbnailSource = thumbnailFile?.path?.let(UploadSource::File),
                 imageInfo = imageInfo.map(),
@@ -414,6 +417,7 @@ class RustTimeline(
         caption: String?,
         formattedCaption: String?,
         inReplyToEventId: EventId?,
+        extraContentJson: String?,
     ): Result<MediaUploadHandler> {
         Timber.tag(loggerTag).d("Sending video ${file.path.hash()}")
         return sendAttachment(listOfNotNull(file, thumbnailFile)) {
@@ -426,6 +430,7 @@ class RustTimeline(
                     },
                     mentions = null,
                     inReplyTo = inReplyToEventId?.value,
+                    extraContentJson = extraContentJson,
                 ),
                 thumbnailSource = thumbnailFile?.path?.let(UploadSource::File),
                 videoInfo = videoInfo.map(),
@@ -490,9 +495,13 @@ class RustTimeline(
         }
     }
 
-    override suspend fun forwardEvents(eventIds: List<EventId>, roomIds: List<RoomId>): Result<Unit> = withContext(dispatcher) {
+    override suspend fun forwardEvents(
+        eventIds: List<EventId>,
+        roomIds: List<RoomId>,
+        progress: ForwardProgress,
+    ): Result<Unit> = withContext(dispatcher) {
         runCatchingExceptions {
-            roomContentForwarder.forward(fromTimeline = inner, eventIds = eventIds, toRoomIds = roomIds)
+            roomContentForwarder.forward(fromTimeline = inner, eventIds = eventIds, toRoomIds = roomIds, progress = progress)
         }.onFailure {
             Timber.tag(loggerTag).e(it)
         }

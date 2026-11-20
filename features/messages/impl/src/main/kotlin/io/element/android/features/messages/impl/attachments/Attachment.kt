@@ -23,5 +23,7 @@ sealed interface Attachment : Parcelable {
         // / best-fit preset rather than an additional size-reduction optimization pass.
         // See https://github.com/element-hq/element-x-android/issues/6365
         val sendAsFile: Boolean = false,
+        // GUA FORK: only photos and videos picked together from the photo library are sent as a media stack.
+        val isFromPhotoLibrary: Boolean = false,
     ) : Attachment
 }

@@ -10,16 +10,11 @@ package io.element.android.libraries.mediaviewer.impl.local
 
 import androidx.compose.runtime.Composable
 import io.element.android.libraries.mediaviewer.api.local.LocalMedia
+import io.element.android.libraries.mediaviewer.api.local.LocalMediaSaver
 
-interface LocalMediaActions {
+interface LocalMediaActions : LocalMediaSaver {
     @Composable
     fun Configure()
-
-    /**
-     * Will save the current media to the Downloads directory.
-     * The [LocalMedia.uri] needs to have a file scheme.
-     */
-    suspend fun saveOnDisk(localMedia: LocalMedia): Result<Unit>
 
     /**
      * Will try to find a suitable application to share the media with.

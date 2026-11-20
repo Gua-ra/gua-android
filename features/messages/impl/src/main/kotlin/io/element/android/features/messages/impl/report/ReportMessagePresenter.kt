@@ -22,6 +22,7 @@ import dev.zacsweers.metro.AssistedInject
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.architecture.runUpdatingState
+import io.element.android.libraries.core.extensions.flatMap
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.matrix.api.core.EventId
@@ -38,7 +39,7 @@ class ReportMessagePresenter(
     private val snackbarDispatcher: SnackbarDispatcher,
 ) : Presenter<ReportMessageState> {
     data class Inputs(
-        val eventId: EventId,
+        val eventIds: List<EventId>,
         val senderId: UserId,
     )
 
@@ -58,7 +59,7 @@ class ReportMessagePresenter(
             when (event) {
                 is ReportMessageEvent.UpdateReason -> reason = event.reason
                 ReportMessageEvent.ToggleBlockUser -> blockUser = !blockUser
-                ReportMessageEvent.Report -> coroutineScope.report(inputs.eventId, inputs.senderId, reason, blockUser, result)
+                ReportMessageEvent.Report -> coroutineScope.report(inputs.eventIds, inputs.senderId, reason, blockUser, result)
                 ReportMessageEvent.ClearError -> result.value = AsyncAction.Uninitialized
             }
         }
@@ -72,7 +73,7 @@ class ReportMessagePresenter(
     }
 
     private fun CoroutineScope.report(
-        eventId: EventId,
+        eventIds: List<EventId>,
         userId: UserId,
         reason: String,
         blockUser: Boolean,
@@ -80,7 +81,10 @@ class ReportMessagePresenter(
     ) = launch {
         result.runUpdatingState {
             val userIdToBlock = userId.takeIf { blockUser }
-            room.reportContent(eventId, reason, userIdToBlock)
+            // GUA FORK: a media stack is reported as all its photos and videos, with one reason; the sender is blocked once.
+            eventIds.foldIndexed(Result.success(Unit)) { index, previous, eventId ->
+                previous.flatMap { room.reportContent(eventId, reason, userIdToBlock.takeIf { index == 0 }) }
+            }
                 .onSuccess {
                     snackbarDispatcher.post(SnackbarMessage(CommonStrings.common_report_submitted))
                 }

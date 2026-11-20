@@ -36,6 +36,7 @@ import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.IntSize
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemTextBasedContent
 import io.element.android.features.messages.impl.timeline.model.event.canReact
 import io.element.android.libraries.matrix.api.core.UniqueId
@@ -47,7 +48,10 @@ private const val LIFT_DELAY_MILLIS = 250L
 private const val LIFTED_SCALE = 1.05f
 
 fun TimelineItem.Event.canDoubleTapToReact(canSendReaction: Boolean): Boolean {
-    return canSendReaction && !failedToSend && content is TimelineItemTextBasedContent && content.canReact()
+    // A stack is reacted to through its first member, whatever the state of the other members.
+    val target = (content as? TimelineItemMediaStackContent)?.first ?: this
+    val isDoubleTappable = content is TimelineItemTextBasedContent || content is TimelineItemMediaStackContent
+    return canSendReaction && isDoubleTappable && !target.failedToSend && target.content.canReact()
 }
 
 // onKeyboardMenu takes Shift+F10 from the bubble and its content, because the overlay cannot take keyboard focus.

@@ -30,6 +30,9 @@ import io.element.android.features.messages.impl.attachments.preview.imageeditor
 import io.element.android.features.messages.impl.attachments.video.MediaOptimizationSelectorPresenter
 import io.element.android.features.messages.impl.attachments.video.MediaOptimizationSelectorState
 import io.element.android.features.messages.impl.attachments.video.VideoCompressionPresetSelector
+import io.element.android.features.messages.impl.mediastack.MediaBatch
+import io.element.android.features.messages.impl.mediastack.PendingMediaBatches
+import io.element.android.features.messages.impl.mediastack.pendingMedia
 import io.element.android.libraries.androidutils.file.TemporaryUriDeleter
 import io.element.android.libraries.androidutils.file.safeDelete
 import io.element.android.libraries.androidutils.hash.hash
@@ -39,8 +42,11 @@ import io.element.android.libraries.core.coroutine.firstInstanceOf
 import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.core.mimetype.MimeTypes.isMimeTypeVideo
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
+import io.element.android.libraries.featureflag.api.FeatureFlagService
+import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.permalink.PermalinkBuilder
+import io.element.android.libraries.matrix.api.room.BaseRoom
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfig
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfigProvider
@@ -59,6 +65,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 
 @AssistedInject
 class AttachmentsPreviewPresenter(
@@ -75,6 +82,9 @@ class AttachmentsPreviewPresenter(
     @SessionCoroutineScope private val sessionCoroutineScope: CoroutineScope,
     private val dispatchers: CoroutineDispatchers,
     private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
+    private val room: BaseRoom,
+    private val featureFlagService: FeatureFlagService,
+    private val pendingMediaBatches: PendingMediaBatches,
 ) : Presenter<AttachmentsPreviewState> {
     @AssistedFactory
     interface Factory {
@@ -92,6 +102,17 @@ class AttachmentsPreviewPresenter(
     )
 
     private val mediaSender = mediaSenderFactory.create(timelineMode)
+
+    // GUA FORK: a send that fails part way keeps the media not sent yet, so a retry neither repeats the others nor splits their batch.
+    @Volatile
+    private var unsentMedia = emptyList<MediaSend>()
+    private val isSendingMedia = AtomicBoolean(false)
+
+    // The caption went out with the first media, so anything typed afterwards would be dropped.
+    private var hasSentFirstMedia by mutableStateOf(false)
+
+    // The media a send that failed part way already sent leave the preview, as an edit to them could only be dropped.
+    private var sentMediaCount by mutableIntStateOf(0)
 
     @Composable
     override fun present(): AttachmentsPreviewState {
@@ -128,6 +149,15 @@ class AttachmentsPreviewPresenter(
                 attachmentsAndEdits.map { it.attachment }.toImmutableList()
             }
         }
+
+        // GUA FORK: the carousel shows only the media still to send, so its index counts from the first of them.
+        val shownAttachments by remember {
+            derivedStateOf { editedAttachments.drop(sentMediaCount).toImmutableList() }
+        }
+
+        fun shownIndex() = currentIndex.coerceAtMost(attachments.lastIndex - sentMediaCount)
+
+        fun attachmentIndex() = sentMediaCount + shownIndex()
 
         var preprocessMediaJob by remember { mutableStateOf<Job?>(null) }
 
@@ -185,8 +215,13 @@ class AttachmentsPreviewPresenter(
             }
         }
 
-        LaunchedEffect(currentIndex) {
-            val currentMedia = (attachments.getOrNull(currentIndex) as? Attachment.Media)?.localMedia
+        LaunchedEffect(hasSentFirstMedia) {
+            if (hasSentFirstMedia) textEditorState.reset()
+        }
+
+        val currentAttachmentIndex = attachmentIndex()
+        LaunchedEffect(currentAttachmentIndex) {
+            val currentMedia = (attachments.getOrNull(currentAttachmentIndex) as? Attachment.Media)?.localMedia
             if (currentMedia != null) {
                 canEditImage = currentMedia.info.canEditImage() || attachmentImageEditor.canEdit(currentMedia)
             }
@@ -260,21 +295,36 @@ class AttachmentsPreviewPresenter(
                         val caption = markdownTextEditorState.getMessageMarkdown(permalinkBuilder)
                             .takeIf { it.isNotEmpty() }
 
+                        // GUA FORK: a send started while another is still going out would send its media twice, so the tap only shows its progress again.
+                        if (!isSendingMedia.compareAndSet(false, true)) {
+                            sendActionState.value = SendActionState.Sending.Uploading(allMediaUploadInfos)
+                            return@launch
+                        }
+
                         val editedTempFilesToDelete = editedTempFiles
                         editedTempFiles = emptyMap()
 
                         // Send the media using the session coroutine scope so it doesn't matter if this screen or the chat one are closed
                         sessionCoroutineScope.launch(dispatchers.io) {
-                            sendMedia(
-                                mediaUploadInfos = allMediaUploadInfos,
-                                caption = caption,
-                                sendActionState = sendActionState,
-                                inReplyToEventId = inReplyToEventId,
-                            )
+                            try {
+                                val isSent = sendMedia(
+                                    mediaUploadInfos = allMediaUploadInfos,
+                                    caption = caption,
+                                    sendActionState = sendActionState,
+                                    inReplyToEventId = inReplyToEventId,
+                                )
 
-                            // Clean up the pre-processed media after it's been sent
-                            mediaSender.cleanUp()
-                            editedTempFilesToDelete.values.forEach { it.safeDelete() }
+                                if (isSent) {
+                                    // Clean up the pre-processed media after it's been sent
+                                    mediaSender.cleanUp()
+                                    editedTempFilesToDelete.values.forEach { it.safeDelete() }
+                                } else {
+                                    // GUA FORK: the media not sent yet stay prepared for a retry, and dismissing the screen deletes them.
+                                    editedTempFiles = editedTempFilesToDelete + editedTempFiles
+                                }
+                            } finally {
+                                isSendingMedia.set(false)
+                            }
                         }
                     }
                 }
@@ -304,7 +354,8 @@ class AttachmentsPreviewPresenter(
                         ongoingSendAttachmentJob.value = null
                     }
 
-                    val mediaUploadInfoList = sendActionState.value.mediaUploadInfoList()
+                    // GUA FORK: media that failed to prepare are prepared again on the next send, as sending none would close the preview as if sent.
+                    val mediaUploadInfoList = sendActionState.value.mediaUploadInfoList()?.takeIf { it.isNotEmpty() }
                     sendActionState.value = if (mediaUploadInfoList != null) {
                         SendActionState.Sending.ReadyToUpload(mediaUploadInfoList)
                     } else {
@@ -312,7 +363,8 @@ class AttachmentsPreviewPresenter(
                     }
                 }
                 AttachmentsPreviewEvent.OpenImageEditor -> {
-                    val currentLocalMedia = (attachments.getOrNull(currentIndex) as? Attachment.Media)?.localMedia ?: return
+                    val index = attachmentIndex()
+                    val currentLocalMedia = (attachments.getOrNull(index) as? Attachment.Media)?.localMedia ?: return
                     val resolvedCanEditImage = canEditImage || currentLocalMedia.info.canEditImage()
                     if (resolvedCanEditImage) {
                         preprocessMediaJob?.cancel()
@@ -320,7 +372,7 @@ class AttachmentsPreviewPresenter(
                         resetPreparedMedia(sendActionState)
                         imageEditorState = AttachmentImageEditorState(
                             localMedia = currentLocalMedia,
-                            edits = attachmentsAndEdits.get(currentIndex).edits,
+                            edits = attachmentsAndEdits.get(index).edits,
                             previewDebug = false,
                         )
                     }
@@ -359,12 +411,13 @@ class AttachmentsPreviewPresenter(
                 }
                 AttachmentsPreviewEvent.ApplyImageEdits -> {
                     val pendingState = imageEditorState ?: return
+                    val index = attachmentIndex()
                     if (!pendingState.edits.hasChanges) {
-                        editedTempFiles[currentIndex]?.safeDelete()
-                        editedTempFiles = editedTempFiles - currentIndex
-                        val currentAttachment = attachmentsAndEdits[currentIndex].attachment
+                        editedTempFiles[index]?.safeDelete()
+                        editedTempFiles = editedTempFiles - index
+                        val currentAttachment = attachmentsAndEdits[index].attachment
                         attachmentsAndEdits = attachmentsAndEdits.toMutableList().also {
-                            it[currentIndex] = AttachmentAndEdits(
+                            it[index] = AttachmentAndEdits(
                                 currentAttachment,
                                 pendingState.edits,
                             )
@@ -384,11 +437,11 @@ class AttachmentsPreviewPresenter(
                         }
                         result.fold(
                             onSuccess = { editedMedia ->
-                                editedTempFiles[currentIndex]?.safeDelete()
-                                editedTempFiles = editedTempFiles + (currentIndex to editedMedia.file)
+                                editedTempFiles[index]?.safeDelete()
+                                editedTempFiles = editedTempFiles + (index to editedMedia.file)
                                 val currentAttachment = Attachment.Media(editedMedia.localMedia)
                                 attachmentsAndEdits = attachmentsAndEdits.toMutableList().also {
-                                    it[currentIndex] = AttachmentAndEdits(
+                                    it[index] = AttachmentAndEdits(
                                         currentAttachment,
                                         pendingState.edits,
                                     )
@@ -414,16 +467,17 @@ class AttachmentsPreviewPresenter(
         }
 
         return AttachmentsPreviewState(
-            attachments = editedAttachments,
+            attachments = shownAttachments,
             imageEditorState = imageEditorState,
             canEditImage = canEditImage,
             isApplyingImageEdits = isApplyingImageEdits,
             displayImageEditError = displayImageEditError,
             sendActionState = sendActionState.value,
             textEditorState = textEditorState,
-            mediaOptimizationSelectorState = mediaOptimizationSelectorStates[currentIndex],
+            canEditCaption = !hasSentFirstMedia,
+            mediaOptimizationSelectorState = mediaOptimizationSelectorStates[currentAttachmentIndex],
             displayFileTooLargeError = displayFileTooLargeError,
-            currentIndex = currentIndex,
+            currentIndex = shownIndex(),
             eventSink = ::handleEvent,
         )
     }
@@ -463,6 +517,8 @@ class AttachmentsPreviewPresenter(
         sendActionState.value = SendActionState.Sending.Processing(displayProgress = displayProgress)
         val mediaUploadInfos = mutableListOf<MediaUploadInfo>()
         attachments.forEachIndexed { index, attachment ->
+            // GUA FORK: once a send has failed part way, only the media still to send are prepared again.
+            if (unsentMedia.isNotEmpty() && unsentMedia.none { it.attachmentIndex == index }) return@forEachIndexed
             when (attachment) {
                 is Attachment.Media -> {
                     mediaSender.preProcessMedia(
@@ -509,6 +565,42 @@ class AttachmentsPreviewPresenter(
         onDoneListener()
     }
 
+    // GUA FORK: several media go out as separate events, never as a gallery, so every client shows each of them.
+    private suspend fun planSends(mediaUploadInfos: List<MediaUploadInfo>): List<MediaSend> {
+        val sendsAsMediaStack = attachments.all { it is Attachment.Media && it.isFromPhotoLibrary } &&
+            featureFlagService.isFeatureEnabled(FeatureFlags.GuaMediaStacks)
+        // The fallback picker of devices without the system photo picker ignores the limit.
+        val batches = if (sendsAsMediaStack) MediaBatch.makeBatches(mediaUploadInfos.size) else List(mediaUploadInfos.size) { null }
+        return mediaUploadInfos.mapIndexed { index, mediaUploadInfo ->
+            MediaSend(mediaUploadInfo = mediaUploadInfo, attachmentIndex = index, batch = batches[index])
+        }
+    }
+
+    // Media prepared again for a retry come in the order of those still to send, and keep their place in the batch.
+    private fun List<MediaSend>.preparedAgain(mediaUploadInfos: List<MediaUploadInfo>): List<MediaSend> {
+        check(size == mediaUploadInfos.size) { "Prepared ${mediaUploadInfos.size} media for $size still to send" }
+        return zip(mediaUploadInfos) { send, mediaUploadInfo -> send.copy(mediaUploadInfo = mediaUploadInfo) }
+    }
+
+    private suspend fun sendSeparately(caption: String?, inReplyToEventId: EventId?) {
+        while (unsentMedia.isNotEmpty()) {
+            val send = unsentMedia.first()
+            // Registered one at a time, so a send that stops or is abandoned leaves no entry a later echo of the same file could bind to.
+            send.batch?.let { pendingMediaBatches.register(room.roomId, listOf(send.mediaUploadInfo.pendingMedia() to it)) }
+            mediaSender.sendPreProcessedMedia(
+                mediaUploadInfo = send.mediaUploadInfo,
+                caption = caption.takeIf { send.isFirst },
+                formattedCaption = null,
+                inReplyToEventId = inReplyToEventId.takeIf { send.isFirst },
+                extraContentJson = send.batch?.extraContentJson(),
+            )
+                .onFailure { send.batch?.let { pendingMediaBatches.unregister(room.roomId, listOf(it)) } }
+                .getOrThrow()
+            unsentMedia = unsentMedia.drop(1)
+            if (send.isFirst) hasSentFirstMedia = true
+        }
+    }
+
     private fun cleanUp(
         mediaUploadInfo: MediaUploadInfo,
     ) {
@@ -528,36 +620,46 @@ class AttachmentsPreviewPresenter(
         caption: String?,
         sendActionState: MutableState<SendActionState>,
         inReplyToEventId: EventId?,
-    ) = runCatchingExceptions {
-        if (mediaUploadInfos.size == 1) {
-            sendActionState.value = SendActionState.Sending.Uploading(mediaUploadInfos)
+    ): Boolean = runCatchingExceptions {
+        unsentMedia = if (unsentMedia.isEmpty()) planSends(mediaUploadInfos) else unsentMedia.preparedAgain(mediaUploadInfos)
+        sendActionState.value = SendActionState.Sending.Uploading(mediaUploadInfos)
+        if (unsentMedia.singleOrNull()?.isFirst == true) {
             mediaSender.sendPreProcessedMedia(
                 mediaUploadInfo = mediaUploadInfos.first(),
                 caption = caption,
                 formattedCaption = null,
                 inReplyToEventId = inReplyToEventId,
+                extraContentJson = null,
             ).getOrThrow()
         } else {
-            mediaSender.sendGallery(
-                mediaUploadInfos = mediaUploadInfos,
-                caption = caption,
-                formattedCaption = null,
-                inReplyToEventId = inReplyToEventId,
-            ).getOrThrow()
+            sendSeparately(caption, inReplyToEventId)
         }
     }.fold(
         onSuccess = {
+            unsentMedia = emptyList()
             mediaUploadInfos.forEach { cleanUp(it) }
             sendActionState.value = SendActionState.Done
             onDoneListener()
+            true
         },
         onFailure = { error ->
             Timber.e(error, "Failed to send attachment")
             if (error is CancellationException) {
                 throw error
             } else {
-                sendActionState.value = SendActionState.Failure(error, mediaUploadInfos)
+                unsentMedia.firstOrNull()?.let { sentMediaCount = it.attachmentIndex }
+                sendActionState.value = SendActionState.Failure(error, unsentMedia.map { it.mediaUploadInfo })
             }
+            false
         }
     )
+}
+
+private data class MediaSend(
+    val mediaUploadInfo: MediaUploadInfo,
+    val attachmentIndex: Int,
+    val batch: MediaBatch?,
+) {
+    // The caption and the reply belong to the first media picked, whichever attempt sends it.
+    val isFirst: Boolean get() = attachmentIndex == 0
 }

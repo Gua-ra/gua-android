@@ -81,6 +81,10 @@ import androidx.compose.ui.window.PopupProperties
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.messages.impl.crypto.sendfailure.resolve.ResolveVerifiedUserSendFailureView
+import io.element.android.features.messages.impl.mediastack.BringFocusedMemberToFrontEffect
+import io.element.android.features.messages.impl.mediastack.LocalMediaStackPositions
+import io.element.android.features.messages.impl.mediastack.onStackClick
+import io.element.android.features.messages.impl.mediastack.rememberMediaStackPositions
 import io.element.android.features.messages.impl.timeline.components.FloatingDateBadgeOverlay
 import io.element.android.features.messages.impl.timeline.components.TimelineItemRow
 import io.element.android.features.messages.impl.timeline.components.toText
@@ -92,6 +96,7 @@ import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.TimelineItemSelectionData
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEventContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEventContentPreviewParam
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemTextContent
 import io.element.android.features.messages.impl.timeline.protection.TimelineProtectionState
 import io.element.android.features.messages.impl.timeline.protection.aTimelineProtectionState
@@ -200,6 +205,9 @@ fun TimelineView(
         state.eventSink(TimelineEvent.ToggleSelection(eventId))
     }
 
+    val mediaStackPositions = rememberMediaStackPositions()
+    BringFocusedMemberToFrontEffect(state.focusRequestState, state.timelineItems, mediaStackPositions)
+
     // Animate alpha when timeline is first displayed, to avoid flashes or glitching when viewing rooms
     AnimatedVisibility(visible = true, enter = fadeIn()) {
         val composeLocalTimelineEventRendererConfig = remember(state.useNewTimelineEventRenderer, state.timelineRoomInfo.currentUserId) {
@@ -208,7 +216,10 @@ fun TimelineView(
                 currentUserId = state.timelineRoomInfo.currentUserId,
             )
         }
-        CompositionLocalProvider(LocalTimelineEventRendererConfig provides composeLocalTimelineEventRendererConfig) {
+        CompositionLocalProvider(
+            LocalTimelineEventRendererConfig provides composeLocalTimelineEventRendererConfig,
+            LocalMediaStackPositions provides mediaStackPositions,
+        ) {
             Box(modifier) {
                 LazyColumn(
                     modifier = Modifier
@@ -242,7 +253,19 @@ fun TimelineView(
                             onLinkClick = onLinkClick,
                             onLinkLongClick = ::onLinkLongClick,
                             onContentClick = { event ->
-                                if (state.canSelect(event)) onToggleSelection(event) else onContentClick(event)
+                                val mediaStack = event.content as? TimelineItemMediaStackContent
+                                when {
+                                    state.canSelect(event) -> onToggleSelection(event)
+                                    mediaStack == null -> onContentClick(event)
+                                    // GUA FORK: a stack takes no part in a selection.
+                                    !isSelectionModeActive -> mediaStackPositions.onStackClick(
+                                        stackEvent = event,
+                                        stack = mediaStack,
+                                        timelineProtectionState = timelineProtectionState,
+                                        onSendFailureClick = { member -> state.eventSink(TimelineEvent.ShowSendFailureDialog(member)) },
+                                        openMember = onGalleryItemClick,
+                                    )
+                                }
                             },
                             onGalleryItemClick = onGalleryItemClick,
                             onLongClick = { event ->

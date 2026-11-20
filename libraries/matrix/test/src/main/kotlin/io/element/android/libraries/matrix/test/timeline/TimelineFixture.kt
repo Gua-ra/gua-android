@@ -21,6 +21,7 @@ import io.element.android.libraries.matrix.api.timeline.item.event.EventContent
 import io.element.android.libraries.matrix.api.timeline.item.event.EventReaction
 import io.element.android.libraries.matrix.api.timeline.item.event.EventTimelineItem
 import io.element.android.libraries.matrix.api.timeline.item.event.InReplyTo
+import io.element.android.libraries.matrix.api.timeline.item.event.LatestJsonProvider
 import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSendState
 import io.element.android.libraries.matrix.api.timeline.item.event.MessageContent
 import io.element.android.libraries.matrix.api.timeline.item.event.MessageShieldProvider
@@ -62,7 +63,8 @@ fun anEventTimelineItem(
     content: EventContent = aProfileChangeMessageContent(),
     debugInfoProvider: TimelineItemDebugInfoProvider = TimelineItemDebugInfoProvider { aTimelineItemDebugInfo() },
     messageShieldProvider: MessageShieldProvider = MessageShieldProvider { null },
-    sendHandleProvider: SendHandleProvider = SendHandleProvider { FakeSendHandle() }
+    sendHandleProvider: SendHandleProvider = SendHandleProvider { FakeSendHandle() },
+    latestJsonProvider: LatestJsonProvider = LatestJsonProvider { null },
 ) = EventTimelineItem(
     eventId = eventId,
     transactionId = transactionId,
@@ -85,6 +87,7 @@ fun anEventTimelineItem(
     sendHandleProvider = sendHandleProvider,
     forwarder = null,
     forwarderProfile = null,
+    latestJsonProvider = latestJsonProvider,
 )
 
 fun aProfileDetails(

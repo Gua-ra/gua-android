@@ -33,6 +33,7 @@ import io.element.android.features.knockrequests.api.banner.KnockRequestsBannerR
 import io.element.android.features.messages.impl.actionlist.ActionListPresenter
 import io.element.android.features.messages.impl.actionlist.model.TimelineItemActionPostProcessor
 import io.element.android.features.messages.impl.attachments.Attachment
+import io.element.android.features.messages.impl.mediastack.PendingMediaBatches
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerEvent
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerPresenter
 import io.element.android.features.messages.impl.timeline.TimelineController
@@ -43,6 +44,7 @@ import io.element.android.features.messages.impl.timeline.components.customreact
 import io.element.android.features.messages.impl.timeline.di.LocalTimelineItemPresenterFactories
 import io.element.android.features.messages.impl.timeline.di.TimelineItemPresenterFactories
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.roommembermoderation.api.ModerationAction
 import io.element.android.features.roommembermoderation.api.RoomMemberModerationEvent
 import io.element.android.features.roommembermoderation.api.RoomMemberModerationRenderer
@@ -140,8 +142,9 @@ class MessagesNode(
         fun navigateToRoomMemberDetails(userId: UserId)
         fun handlePermalinkClick(data: PermalinkData)
         fun navigateToEventDebugInfo(eventId: EventId?, debugInfo: TimelineItemDebugInfo)
-        fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider)
-        fun navigateToReportMessage(eventId: EventId, senderId: UserId)
+        fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider, mediaStackFiles: List<PendingMediaBatches.Media>?)
+        fun navigateToReportMessage(eventIds: List<EventId>, senderId: UserId)
+        fun navigateToMediaStackGrid(timelineMode: Timeline.Mode, stack: TimelineItemMediaStackContent)
         fun navigateToSendLocation()
         fun navigateToCreatePoll()
         fun navigateToEditPoll(eventId: EventId)
@@ -223,16 +226,20 @@ class MessagesNode(
         callback.navigateToEventDebugInfo(eventId, debugInfo)
     }
 
-    override fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider) {
-        callback.forwardEvents(eventIds, timelineProvider)
+    override fun forwardEvents(eventIds: List<EventId>, timelineProvider: TimelineProvider, mediaStackFiles: List<PendingMediaBatches.Media>?) {
+        callback.forwardEvents(eventIds, timelineProvider, mediaStackFiles)
     }
 
     override fun exitTimelineSelection() {
         timelinePresenter.exitSelectionMode()
     }
 
-    override fun navigateToReportMessage(eventId: EventId, senderId: UserId) {
-        callback.navigateToReportMessage(eventId, senderId)
+    override fun navigateToReportMessage(eventIds: List<EventId>, senderId: UserId) {
+        callback.navigateToReportMessage(eventIds, senderId)
+    }
+
+    override fun navigateToMediaStackGrid(timelineMode: Timeline.Mode, stack: TimelineItemMediaStackContent) {
+        callback.navigateToMediaStackGrid(timelineMode, stack)
     }
 
     override fun navigateToEditPoll(eventId: EventId) {

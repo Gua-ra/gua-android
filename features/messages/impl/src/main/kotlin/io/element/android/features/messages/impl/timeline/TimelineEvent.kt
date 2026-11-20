@@ -10,6 +10,7 @@ package io.element.android.features.messages.impl.timeline
 
 import io.element.android.features.messages.impl.timeline.components.MessageShieldData
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.core.ThreadId
@@ -70,6 +71,8 @@ sealed interface TimelineEvent {
     ) : TimelineItemPollEvent
 
     data object StopLiveLocationShare : TimelineItemEvent
+
+    data class OpenMediaStackGrid(val stack: TimelineItemMediaStackContent) : TimelineItemEvent
 
     data class ValidateMedia(
         val eventId: EventId,
