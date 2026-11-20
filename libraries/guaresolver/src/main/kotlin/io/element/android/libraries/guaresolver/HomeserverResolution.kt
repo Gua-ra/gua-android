@@ -32,4 +32,6 @@ data class HomeserverResolution(
     val exists: Boolean,
     /** The homeserver to authenticate against (login) or create the account on (register). */
     val homeserver: ResolvedHomeserver,
+    /** The roster version the resolver answered from, when it says; what a verifier attributes a placement to. */
+    val rosterVersion: Long? = null,
 )

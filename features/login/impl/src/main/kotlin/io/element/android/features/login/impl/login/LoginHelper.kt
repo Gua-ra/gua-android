@@ -17,19 +17,26 @@ import dev.zacsweers.metro.Inject
 import io.element.android.features.login.impl.error.ChangeServerError
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.runCatchingUpdatingState
+import io.element.android.libraries.di.annotations.AppCoroutineScope
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.guaresolver.GuaDeployment
 import io.element.android.libraries.guaresolver.GuaResolverConfig
+import io.element.android.libraries.guaresolver.HomeserverResolution
 import io.element.android.libraries.guaresolver.ResolverClient
 import io.element.android.libraries.guaresolver.genesis.AccountGenesisManager
 import io.element.android.libraries.guaresolver.genesis.GenesisRegistration
 import io.element.android.libraries.guaresolver.genesis.GuaLoginHint
+import io.element.android.libraries.guaresolver.verification.ResolverVerifier
 import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
 import io.element.android.libraries.matrix.api.auth.OAuthPrompt
 import io.element.android.libraries.oauth.api.OAuthAction
 import io.element.android.libraries.oauth.api.OAuthActionFlow
 import io.element.android.libraries.ui.strings.CommonStrings
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import timber.log.Timber
+import kotlin.coroutines.cancellation.CancellationException
 
 /** GUA FORK: phone and passkey sign-in for the phone entry screen. The account provider screens use [LoginModePresenter]. */
 @Inject
@@ -39,6 +46,8 @@ class LoginHelper(
     private val resolverClient: ResolverClient,
     private val featureFlagService: FeatureFlagService,
     private val accountGenesisManager: AccountGenesisManager,
+    private val resolverVerifier: ResolverVerifier,
+    @AppCoroutineScope private val appCoroutineScope: CoroutineScope,
     private val deployment: GuaDeployment = GuaResolverConfig.current,
 ) {
     private val loginModeState: MutableState<AsyncData<LoginMode>> = mutableStateOf(AsyncData.Uninitialized)
@@ -72,6 +81,7 @@ class LoginHelper(
     suspend fun submitPhone(e164Phone: String) {
         suspend {
             val resolution = resolverClient.resolve(e164Phone).getOrThrow()
+            appCoroutineScope.launch { verifyResolution(e164Phone, resolution) }
             val homeserverUrl = resolution.homeserver.baseUrl
             val isAccountCreation = !resolution.exists
             // GUA FORK: ADM-008 Phase 3. A brand-new account registers its on-device genesis BEFORE the
@@ -120,6 +130,20 @@ class LoginHelper(
             // The deployment does not do genesis. Continue with today's signup, showing nothing.
             GenesisRegistration.Unavailable -> e164Phone
             is GenesisRegistration.Failed -> throw AccountGenesisSignupError.SetupFailed
+        }
+    }
+
+    /** GUA FORK: report-only verification of the resolver's answer. It runs detached and never delays sign-in. */
+    private suspend fun verifyResolution(e164Phone: String, resolution: HomeserverResolution) {
+        try {
+            if (featureFlagService.isFeatureEnabled(FeatureFlags.ResolverVerification)) {
+                resolverVerifier.verify(e164Phone, resolution)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            // Errors too: nothing above this job handles them, so one that escaped would end the app.
+            Timber.w("Resolver verification did not complete")
         }
     }
 

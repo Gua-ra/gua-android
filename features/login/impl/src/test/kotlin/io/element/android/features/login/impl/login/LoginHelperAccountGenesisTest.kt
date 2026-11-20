@@ -29,6 +29,8 @@ import io.element.android.libraries.phonenumberentry.SelectedCountryStore
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.lambda.lambdaRecorder
 import io.element.android.tests.testutils.test
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -201,6 +203,8 @@ class LoginHelperAccountGenesisTest {
                 initialState = mapOf(FeatureFlags.AccountGenesis.key to accountGenesisEnabled),
             ),
             accountGenesisManager = genesisManager,
+            resolverVerifier = FakeResolverVerifier(),
+            appCoroutineScope = CoroutineScope(Dispatchers.Unconfined),
             deployment = FakeGuaDeployment(),
         )
         return PhoneEntryPresenter(

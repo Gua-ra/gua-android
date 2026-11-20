@@ -23,14 +23,17 @@ internal object Ed25519PublicKeys {
     const val RAW_PUBLIC_KEY_LENGTH = 32
     const val SIGNATURE_LENGTH = 64
 
+    // Not BigInteger.TWO: that field is API 33, above this module's minSdk.
+    private val TWO: BigInteger = BigInteger.valueOf(2)
+
     /** The field prime, 2^255 - 19. */
-    private val P: BigInteger = BigInteger.TWO.pow(255) - BigInteger.valueOf(19)
+    private val P: BigInteger = TWO.pow(255) - BigInteger.valueOf(19)
 
     /** The curve constant d = -121665/121666 mod p. */
     private val D: BigInteger = BigInteger("37095705934669439343138083508754565189542113879843219016388785533085940283555")
 
     /** A square root of -1 mod p, used to recover the other root. */
-    private val SQRT_MINUS_ONE: BigInteger = BigInteger.TWO.modPow((P - BigInteger.ONE) / BigInteger.valueOf(4), P)
+    private val SQRT_MINUS_ONE: BigInteger = TWO.modPow((P - BigInteger.ONE) / BigInteger.valueOf(4), P)
 
     /** True when every byte is zero. ADM-008 decision 1 refuses such a key even though it decodes. */
     fun isAllZero(value: ByteArray): Boolean {
