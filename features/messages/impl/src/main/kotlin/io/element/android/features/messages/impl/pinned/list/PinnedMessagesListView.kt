@@ -329,6 +329,7 @@ private fun TimelineItemEventContentViewWrapper(
     } else {
         TimelineItemEventContentView(
             eventId = event.eventId,
+            isMine = event.isMine,
             content = event.content,
             timelineProtectionState = timelineProtectionState,
             onGalleryItemClick = onGalleryItemClick,

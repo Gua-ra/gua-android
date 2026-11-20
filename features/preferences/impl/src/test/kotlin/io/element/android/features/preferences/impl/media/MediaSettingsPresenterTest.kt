@@ -12,6 +12,7 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
 import io.element.android.libraries.preferences.api.store.VideoCompressionPreset
+import io.element.android.libraries.preferences.test.InMemoryGifAutoplayStore
 import io.element.android.libraries.preferences.test.InMemorySessionPreferencesStore
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.test
@@ -103,12 +104,51 @@ class MediaSettingsPresenterTest {
         }
     }
 
+    @Test
+    fun `present - GIFs play automatically by default`() = runTest {
+        createMediaSettingsPresenter().test {
+            assertThat(awaitItem().playGifsAutomatically).isTrue()
+            assertThat(awaitItem().playGifsAutomatically).isTrue()
+        }
+    }
+
+    @Test
+    fun `present - turning off play GIFs automatically is stored`() = runTest {
+        val gifAutoplayStore = InMemoryGifAutoplayStore()
+        createMediaSettingsPresenter(gifAutoplayStore = gifAutoplayStore).test {
+            skipItems(1)
+            awaitItem().eventSink(MediaSettingsEvent.SetPlayGifsAutomatically(false))
+            assertThat(awaitItem().playGifsAutomatically).isFalse()
+            assertThat(gifAutoplayStore.playGifsAutomatically.value).isFalse()
+        }
+        createMediaSettingsPresenter(gifAutoplayStore = gifAutoplayStore).test {
+            assertThat(awaitItem().playGifsAutomatically).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `present - turning play GIFs automatically back on is stored`() = runTest {
+        val gifAutoplayStore = InMemoryGifAutoplayStore(playGifsAutomatically = false)
+        createMediaSettingsPresenter(gifAutoplayStore = gifAutoplayStore).test {
+            skipItems(1)
+            with(awaitItem()) {
+                assertThat(playGifsAutomatically).isFalse()
+                eventSink(MediaSettingsEvent.SetPlayGifsAutomatically(true))
+            }
+            assertThat(awaitItem().playGifsAutomatically).isTrue()
+            assertThat(gifAutoplayStore.playGifsAutomatically.value).isTrue()
+        }
+    }
+
     private fun CoroutineScope.createMediaSettingsPresenter(
         sessionPreferencesStore: InMemorySessionPreferencesStore = InMemorySessionPreferencesStore(),
         featureFlagService: FakeFeatureFlagService = FakeFeatureFlagService(),
+        gifAutoplayStore: InMemoryGifAutoplayStore = InMemoryGifAutoplayStore(),
     ) = MediaSettingsPresenter(
         sessionPreferencesStore = sessionPreferencesStore,
         featureFlagService = featureFlagService,
         sessionCoroutineScope = this,
+        gifAutoplayStore = gifAutoplayStore,
     )
 }

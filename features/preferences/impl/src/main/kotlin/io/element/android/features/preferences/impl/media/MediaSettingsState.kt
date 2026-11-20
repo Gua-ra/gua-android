@@ -12,6 +12,7 @@ import io.element.android.libraries.preferences.api.store.VideoCompressionPreset
 
 data class MediaSettingsState(
     val mediaOptimizationState: MediaOptimizationState?,
+    val playGifsAutomatically: Boolean,
     val eventSink: (MediaSettingsEvent) -> Unit
 )
 

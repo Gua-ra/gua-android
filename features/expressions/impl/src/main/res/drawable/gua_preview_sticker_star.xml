@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright 2026 Gua
+  ~
+  ~ SPDX-License-Identifier: AGPL-3.0-only
+  ~ Please see LICENSE files in the repository root for full details.
+  -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <path android:fillColor="#FFFFFF" android:pathData="M48,2l13,29l32,3l-24,21l7,32l-28,-17l-28,17l7,-32l-24,-21l32,-3z" />
+    <path android:fillColor="#3D7BFF" android:pathData="M48,12l10,22l24,2l-18,16l5,24l-21,-13l-21,13l5,-24l-18,-16l24,-2z" />
+</vector>

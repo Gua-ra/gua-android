@@ -14,6 +14,8 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import com.google.common.truth.Truth.assertThat
 import im.vector.app.features.analytics.plan.Interaction
@@ -58,6 +60,47 @@ class MediaSettingsViewTest : RobolectricTest() {
         )
         assertNoNodeWithText(R.string.screen_advanced_settings_media_compression_title)
         assertNoNodeWithText(R.string.screen_advanced_settings_optimise_image_upload_quality_title)
+        assertNoNodeWithText(R.string.gua_media_settings_play_gifs_title)
+    }
+
+    @Test
+    fun `the screen is titled Media settings`() = runAndroidComposeUiTest {
+        setMediaSettingsView(
+            state = aMediaSettingsState(
+                eventSink = EventsRecorder(expectEvents = false),
+            ),
+        )
+        onNodeWithText(activity!!.getString(R.string.gua_media_settings_title)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `clicking on play GIFs automatically turns it off`() = runAndroidComposeUiTest {
+        val eventsRecorder = EventsRecorder<MediaSettingsEvent>()
+        setMediaSettingsView(
+            state = aMediaSettingsState(
+                playGifsAutomatically = true,
+                eventSink = eventsRecorder,
+            ),
+        )
+        clickOn(R.string.gua_media_settings_play_gifs_title)
+        eventsRecorder.assertSingle(MediaSettingsEvent.SetPlayGifsAutomatically(false))
+    }
+
+    @Test
+    fun `clicking on play GIFs automatically turns it back on`() = runAndroidComposeUiTest {
+        val eventsRecorder = EventsRecorder<MediaSettingsEvent>()
+        setMediaSettingsView(
+            state = aMediaSettingsState(
+                mediaOptimizationState = MediaOptimizationState.Split(
+                    compressImages = true,
+                    videoPreset = VideoCompressionPreset.STANDARD,
+                ),
+                playGifsAutomatically = false,
+                eventSink = eventsRecorder,
+            ),
+        )
+        clickOn(R.string.gua_media_settings_play_gifs_description)
+        eventsRecorder.assertSingle(MediaSettingsEvent.SetPlayGifsAutomatically(true))
     }
 
     @Test

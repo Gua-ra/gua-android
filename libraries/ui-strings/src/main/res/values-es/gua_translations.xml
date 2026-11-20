@@ -19,7 +19,6 @@
     <string name="common_forward_to">Reenviar a</string>
     <string name="common_header_rooms">Salas</string>
     <string name="common_location_sharing">Compartir ubicación</string>
-    <string name="common_media_upload_quality">Calidad de subida de multimedia</string>
     <string name="common_moderation_and_safety">Moderación y seguridad</string>
     <string name="common_no_results_for">No hay resultados para “%1$s”. Prueba con otro término de búsqueda.</string>
     <string name="common_results_for">Resultados para “%1$s”</string>

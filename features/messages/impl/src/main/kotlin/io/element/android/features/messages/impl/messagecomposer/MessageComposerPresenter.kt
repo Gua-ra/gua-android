@@ -267,6 +267,11 @@ class MessageComposerPresenter(
         fun handleEvent(event: MessageComposerEvent) {
             when (event) {
                 MessageComposerEvent.ToggleFullScreenState -> isFullScreen.value = !isFullScreen.value
+                is MessageComposerEvent.InsertText -> if (showTextFormatting) {
+                    localCoroutineScope.launch { richTextEditorState.setMarkdown(richTextEditorState.messageMarkdown + event.text) }
+                } else {
+                    markdownTextEditorState.insertText(event.text)
+                }
                 MessageComposerEvent.CloseSpecialMode -> {
                     if (messageComposerContext.composerMode.isEditing) {
                         localCoroutineScope.launch {

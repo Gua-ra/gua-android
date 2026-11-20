@@ -28,6 +28,7 @@ import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
 import io.element.android.compound.theme.ElementTheme
+import io.element.android.features.expressions.api.panel.ExpressionPanelRenderer
 import io.element.android.features.messages.impl.MessagesEvent
 import io.element.android.features.messages.impl.MessagesNavigator
 import io.element.android.features.messages.impl.MessagesPresenter
@@ -98,6 +99,7 @@ class ThreadedMessagesNode(
     private val appNavigationStateService: AppNavigationStateService,
     private val roomMemberModerationRenderer: RoomMemberModerationRenderer,
     private val emojiPickerRenderer: EmojiPickerRenderer,
+    private val expressionPanelRenderer: ExpressionPanelRenderer,
     private val dispatchers: CoroutineDispatchers,
 ) : Node(buildContext, plugins = plugins), MessagesNavigator, TimelineSelectionOwner {
     data class Inputs(
@@ -351,6 +353,7 @@ class ThreadedMessagesNode(
                             emojiPickerRenderer = emojiPickerRenderer,
                         )
                     },
+                    expressionPanelRenderer = expressionPanelRenderer,
                     onThreadsListClick = {},
                 )
 

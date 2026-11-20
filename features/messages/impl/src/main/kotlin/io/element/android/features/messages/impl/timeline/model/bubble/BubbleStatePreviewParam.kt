@@ -34,9 +34,11 @@ open class BubbleStatePreviewParam : PreviewParameterProvider<BubbleState> {
 internal fun aBubbleState(
     groupPosition: TimelineItemGroupPosition = TimelineItemGroupPosition.First,
     isMine: Boolean = false,
+    displayBackground: Boolean = true,
     timelineRoomInfo: TimelineRoomInfo = aTimelineRoomInfo(),
 ) = BubbleState(
     groupPosition = groupPosition,
     isMine = isMine,
+    displayBackground = displayBackground,
     timelineRoomInfo = timelineRoomInfo,
 )
