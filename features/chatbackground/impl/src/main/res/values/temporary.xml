@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+  <string name="gua_chat_background_screen_title">Chat background</string>
+  <string name="gua_chat_background_choose_photo">Choose photo</string>
+  <string name="gua_chat_background_shared_note">Everyone in this chat, including people who join later, will see the background.</string>
+  <string name="gua_chat_background_photo_note">Background photos are not end-to-end encrypted.</string>
+  <string name="gua_chat_background_dim">Dim in dark mode</string>
+  <string name="gua_chat_background_preview_light">Light</string>
+  <string name="gua_chat_background_preview_dark">Dark</string>
+  <string name="gua_chat_background_position_hint">Drag to position the photo</string>
+  <string name="gua_chat_background_action_set">Set background</string>
+  <string name="gua_chat_background_action_remove">Remove background</string>
+  <string name="gua_chat_background_progress">Setting background…</string>
+  <string name="gua_chat_background_progress_remove">Removing background…</string>
+  <string name="gua_chat_background_error_generic">Couldn’t change the background. Try again.</string>
+  <string name="gua_chat_background_error_too_large">This photo is too large. Choose another one.</string>
+  <string name="gua_chat_background_preview_a11y">Background preview</string>
+  <string name="gua_chat_background_sample_incoming">How does it look?</string>
+  <string name="gua_chat_background_sample_outgoing">Looks great!</string>
+  <string name="gua_chat_background_sample_today">Today</string>
+  <string name="gua_chat_background_a11y_move_left">Move the photo left</string>
+  <string name="gua_chat_background_a11y_move_right">Move the photo right</string>
+  <string name="gua_chat_background_a11y_move_up">Move the photo up</string>
+  <string name="gua_chat_background_a11y_move_down">Move the photo down</string>
+</resources>

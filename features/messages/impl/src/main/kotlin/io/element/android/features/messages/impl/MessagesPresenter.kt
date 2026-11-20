@@ -32,6 +32,7 @@ import io.element.android.features.messages.api.timeline.HtmlConverterProvider
 import io.element.android.features.messages.impl.MessagesState.Threads
 import io.element.android.features.messages.impl.actionlist.ActionListState
 import io.element.android.features.messages.impl.actionlist.model.TimelineItemAction
+import io.element.android.features.messages.impl.chatbackground.MessagesChatBackgroundPresenter
 import io.element.android.features.messages.impl.crypto.identity.IdentityChangeState
 import io.element.android.features.messages.impl.link.LinkState
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerEvent
@@ -54,6 +55,7 @@ import io.element.android.features.messages.impl.timeline.model.event.TimelineIt
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemTextBasedContent
 import io.element.android.features.messages.impl.timeline.model.event.captionOrNull
 import io.element.android.features.messages.impl.timeline.model.event.htmlCaptionOrNull
+import io.element.android.features.messages.impl.timeline.protection.ProtectionState
 import io.element.android.features.messages.impl.timeline.protection.TimelineProtectionState
 import io.element.android.features.messages.impl.timeline.selectedEventIdsInTimelineOrder
 import io.element.android.features.messages.impl.voicemessages.composer.DefaultVoiceMessageComposerPresenter
@@ -64,6 +66,7 @@ import io.element.android.libraries.androidutils.clipboard.ClipboardHelper
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.core.extensions.flatMap
 import io.element.android.libraries.core.extensions.runCatchingExceptions
@@ -139,6 +142,7 @@ class MessagesPresenter(
     private val markAsFullyRead: MarkAsFullyRead,
     private val liveLocationShareManager: ActiveLiveLocationShareManager,
     @SessionCoroutineScope private val sessionCoroutineScope: CoroutineScope,
+    chatBackgroundPresenterFactory: MessagesChatBackgroundPresenter.Factory,
 ) : Presenter<MessagesState> {
     @AssistedFactory
     interface Factory {
@@ -159,6 +163,8 @@ class MessagesPresenter(
         timelineMode = timelineController.mainTimelineMode()
     )
 
+    private val chatBackgroundPresenter = chatBackgroundPresenterFactory.create(timelineController)
+
     private val markingAsReadAndExiting = AtomicBoolean(false)
 
     @Composable
@@ -172,6 +178,7 @@ class MessagesPresenter(
         val voiceMessageComposerState = voiceMessageComposerPresenter.present()
         val timelineState = timelinePresenter.present()
         val timelineProtectionState = timelineProtectionPresenter.present()
+        val chatBackground = chatBackgroundPresenter.present()
         val identityChangeState = identityChangeStatePresenter.present()
         val actionListState = actionListPresenter.present()
         val linkState = linkPresenter.present()
@@ -370,6 +377,9 @@ class MessagesPresenter(
             ),
             showLiveLocationShareBanner = isCurrentlySharingLiveLocationInRoom && timelineState.timelineMode !is Timeline.Mode.Thread,
             redactEventAction = redactEventAction.value,
+            // A photo is media, so it follows the chat's media previews setting; presets always show.
+            chatBackground = chatBackground.takeUnless { it is ChatBackground.Photo && timelineProtectionState.protectionState !is ProtectionState.RenderAll }
+                ?: ChatBackground.None,
             eventSink = ::handleEvent,
         )
     }

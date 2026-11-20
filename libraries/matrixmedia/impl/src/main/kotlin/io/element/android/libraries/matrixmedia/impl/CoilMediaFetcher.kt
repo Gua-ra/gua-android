@@ -61,6 +61,11 @@ internal class CoilMediaFetcher(
         return mediaLoader.downloadMediaFile(mediaSource, kind.mimeType, kind.fileName)
             .map { mediaFile ->
                 val file = mediaFile.toFile()
+                val maxBytes = kind.maxBytes
+                if (maxBytes != null && file.length() > maxBytes) {
+                    mediaFile.close()
+                    throw MediaTooLargeException(file.length(), maxBytes)
+                }
                 SourceFetchResult(
                     source = ImageSource(
                         file = file.toOkioPath(),
@@ -116,3 +121,5 @@ internal class CoilMediaFetcher(
         )
     }
 }
+
+internal class MediaTooLargeException(size: Long, maxBytes: Long) : IllegalStateException("The media is $size bytes, over the $maxBytes allowed")

@@ -24,6 +24,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.features.roomdetails.impl.members.aRoomMember
 import io.element.android.features.userprofile.shared.aUserProfileState
+import io.element.android.libraries.chatbackground.api.ChatBackground
+import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.notification.CallIntent
@@ -308,6 +310,35 @@ class RoomDetailsViewTest : RobolectricTest() {
 
     @Config(qualifiers = "h1500dp")
     @Test
+    fun `click on the background row invokes expected callback`() = runAndroidComposeUiTest {
+        ensureCalledOnce { callback ->
+            setRoomDetailView(
+                state = aRoomDetailsState(
+                    eventSink = EventsRecorder(expectEvents = false),
+                    chatBackgroundRow = ChatBackgroundRowState(ChatBackground.Preset(ChatBackgroundPreset.Mint), canChange = true),
+                ),
+                onChatBackgroundClick = callback,
+            )
+            onNodeWithText(activity!!.getString(ChatBackgroundPreset.Mint.nameRes)).assertExists()
+            clickOn(R.string.gua_chat_background_row_title)
+        }
+    }
+
+    @Config(qualifiers = "h1500dp")
+    @Test
+    fun `the background row is disabled without permission`() = runAndroidComposeUiTest<ComponentActivity> {
+        setRoomDetailView(
+            state = aRoomDetailsState(
+                eventSink = EventsRecorder(expectEvents = false),
+                chatBackgroundRow = ChatBackgroundRowState(ChatBackground.None, canChange = false),
+            ),
+        )
+        onNodeWithText(activity!!.getString(R.string.gua_chat_background_row_no_permission)).assertExists()
+        onNodeWithText(activity!!.getString(R.string.gua_chat_background_row_title)).performClick()
+    }
+
+    @Config(qualifiers = "h1500dp")
+    @Test
     fun `click on report room  invokes expected callback`() = runAndroidComposeUiTest {
         ensureCalledOnce { callback ->
             setRoomDetailView(
@@ -391,6 +422,7 @@ private fun AndroidComposeUiTest<ComponentActivity>.setRoomDetailView(
     onSecurityAndPrivacyClick: () -> Unit = EnsureNeverCalled(),
     onProfileClick: (UserId) -> Unit = EnsureNeverCalledWithParam(),
     onReportRoomClick: () -> Unit = EnsureNeverCalled(),
+    onChatBackgroundClick: () -> Unit = EnsureNeverCalled(),
     additionalSections: @Composable ColumnScope.() -> Unit = {},
 ) {
     setContent {
@@ -412,6 +444,7 @@ private fun AndroidComposeUiTest<ComponentActivity>.setRoomDetailView(
             onSecurityAndPrivacyClick = onSecurityAndPrivacyClick,
             onProfileClick = onProfileClick,
             onReportRoomClick = onReportRoomClick,
+            onChatBackgroundClick = onChatBackgroundClick,
             leaveRoomView = {},
             additionalSections = additionalSections,
         )

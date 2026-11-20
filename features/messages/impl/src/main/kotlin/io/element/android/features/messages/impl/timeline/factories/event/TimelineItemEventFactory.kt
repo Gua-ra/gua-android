@@ -34,6 +34,7 @@ import io.element.android.libraries.matrix.api.room.RoomMember
 import io.element.android.libraries.matrix.api.timeline.MatrixTimelineItem
 import io.element.android.libraries.matrix.api.timeline.item.EventThreadInfo
 import io.element.android.libraries.matrix.api.timeline.item.event.EventContent
+import io.element.android.libraries.matrix.api.timeline.item.event.OtherState
 import io.element.android.libraries.matrix.api.timeline.item.event.ProfileChangeContent
 import io.element.android.libraries.matrix.api.timeline.item.event.ProfileDetails
 import io.element.android.libraries.matrix.api.timeline.item.event.RoomMembershipContent
@@ -77,6 +78,10 @@ class TimelineItemEventFactory(
         renderReadReceipts: Boolean,
     ): TimelineItem.Event? {
         if (config.isDirectOneToOneRoom && currentTimelineItem.event.content.isSuppressedInDirectOneToOneRoom()) {
+            return null
+        }
+        // GUA FORK: the SDK filter lets custom state through for the chat background notice, so the rest is dropped here.
+        if ((currentTimelineItem.event.content as? StateContent)?.content is OtherState.Custom) {
             return null
         }
         val currentSender = currentTimelineItem.event.sender
@@ -316,7 +321,8 @@ class TimelineItemEventFactory(
  * Mirrors the `isDM` guards in Element X iOS `RoomTimelineItemFactory`.
  */
 private fun EventContent.isSuppressedInDirectOneToOneRoom(): Boolean = when (this) {
-    is StateContent,
+    // The chat background is chat content people see, not room plumbing.
+    is StateContent -> content !is OtherState.ChatBackground
     is RoomMembershipContent,
     is ProfileChangeContent -> true
     else -> false

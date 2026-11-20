@@ -31,6 +31,8 @@ data class MediaRequestData(
         data class File(
             val fileName: String,
             val mimeType: String,
+            /** A downloaded file larger than this fails to load instead of being decoded. */
+            val maxBytes: Long? = null,
         ) : Kind
 
         data class Thumbnail(val width: Long, val height: Long) : Kind {

@@ -17,6 +17,8 @@ import io.element.android.features.userprofile.api.UserProfileState
 import io.element.android.features.userprofile.api.UserProfileVerificationState
 import io.element.android.features.userprofile.shared.aUserProfileState
 import io.element.android.libraries.architecture.AsyncData
+import io.element.android.libraries.chatbackground.api.ChatBackground
+import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.matrix.api.core.RoomAlias
 import io.element.android.libraries.matrix.api.core.RoomId
@@ -28,6 +30,7 @@ import io.element.android.libraries.matrix.api.room.RoomNotificationSettings
 import io.element.android.libraries.matrix.api.room.history.RoomHistoryVisibility
 import io.element.android.libraries.matrix.api.user.DisplayedStatus
 import io.element.android.libraries.matrix.api.user.MatrixUser
+import io.element.android.libraries.matrix.ui.chatbackground.aChatBackgroundPhoto
 import io.element.android.libraries.matrix.ui.components.aMatrixUserList
 import kotlinx.collections.immutable.toImmutableList
 
@@ -61,6 +64,9 @@ open class RoomDetailsStatePreviewParam : PreviewParameterProvider<RoomDetailsSt
             aSharedHistoryRoomDetailsState(roomHistoryVisibility = RoomHistoryVisibility.Joined),
             aSharedHistoryRoomDetailsState(roomHistoryVisibility = RoomHistoryVisibility.Shared),
             aSharedHistoryRoomDetailsState(roomHistoryVisibility = RoomHistoryVisibility.WorldReadable),
+            aRoomDetailsState(chatBackgroundRow = ChatBackgroundRowState(ChatBackground.None, canChange = true)),
+            aRoomDetailsState(chatBackgroundRow = ChatBackgroundRowState(ChatBackground.Preset(ChatBackgroundPreset.Aurora), canChange = true)),
+            aDmRoomDetailsState().copy(chatBackgroundRow = ChatBackgroundRowState(aChatBackgroundPhoto(), canChange = false)),
             // Add other state here
         )
 }
@@ -127,6 +133,7 @@ fun aRoomDetailsState(
     showDebugInfo: Boolean = false,
     roomHistoryVisibility: RoomHistoryVisibility = RoomHistoryVisibility.Shared,
     hasNewContent: Boolean = false,
+    chatBackgroundRow: ChatBackgroundRowState? = null,
     eventSink: (RoomDetailsEvent) -> Unit = {},
 ) = RoomDetailsState(
     roomId = roomId,
@@ -159,6 +166,7 @@ fun aRoomDetailsState(
     roomVersion = "12",
     roomHistoryVisibility = roomHistoryVisibility,
     hasNewContent = hasNewContent,
+    chatBackgroundRow = chatBackgroundRow,
     eventSink = eventSink,
 )
 

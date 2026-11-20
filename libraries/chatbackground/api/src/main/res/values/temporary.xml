@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+  <string name="gua_chat_background_preset_aurora">Aurora</string>
+  <string name="gua_chat_background_preset_mint">Mint</string>
+  <string name="gua_chat_background_preset_sky">Sky</string>
+  <string name="gua_chat_background_preset_sand">Sand</string>
+  <string name="gua_chat_background_preset_blush">Blush</string>
+  <string name="gua_chat_background_preset_lavender">Lavender</string>
+  <string name="gua_chat_background_preset_graphite">Graphite</string>
+  <string name="gua_chat_background_preset_sunset">Sunset</string>
+  <string name="gua_chat_background_preset_ocean">Ocean</string>
+  <string name="gua_chat_background_preset_night">Night</string>
+  <string name="gua_chat_background_value_default">Default</string>
+  <string name="gua_chat_background_value_photo">Photo</string>
+</resources>

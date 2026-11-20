@@ -30,6 +30,7 @@ dependencies {
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.androidutils)
     implementation(projects.libraries.matrix.api)
+    api(projects.libraries.chatbackground.api)
     implementation(projects.libraries.matrixmedia.api)
     implementation(projects.libraries.designsystem)
     implementation(projects.libraries.core)

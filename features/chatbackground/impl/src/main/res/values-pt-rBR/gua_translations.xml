@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+  <string name="gua_chat_background_screen_title">Fundo da conversa</string>
+  <string name="gua_chat_background_choose_photo">Escolher foto</string>
+  <string name="gua_chat_background_shared_note">Todos nesta conversa, inclusive quem entrar depois, verão o fundo.</string>
+  <string name="gua_chat_background_photo_note">As fotos de fundo não são criptografadas de ponta a ponta.</string>
+  <string name="gua_chat_background_dim">Escurecer no modo escuro</string>
+  <string name="gua_chat_background_preview_light">Claro</string>
+  <string name="gua_chat_background_preview_dark">Escuro</string>
+  <string name="gua_chat_background_position_hint">Arraste para posicionar a foto</string>
+  <string name="gua_chat_background_action_set">Definir fundo</string>
+  <string name="gua_chat_background_action_remove">Remover fundo</string>
+  <string name="gua_chat_background_progress">Definindo fundo…</string>
+  <string name="gua_chat_background_progress_remove">Removendo fundo…</string>
+  <string name="gua_chat_background_error_generic">Não foi possível alterar o fundo. Tente novamente.</string>
+  <string name="gua_chat_background_error_too_large">Esta foto é grande demais. Escolha outra.</string>
+  <string name="gua_chat_background_preview_a11y">Prévia do fundo</string>
+  <string name="gua_chat_background_sample_incoming">Como ficou?</string>
+  <string name="gua_chat_background_sample_outgoing">Ficou ótimo!</string>
+  <string name="gua_chat_background_sample_today">Hoje</string>
+  <string name="gua_chat_background_a11y_move_left">Mover a foto para a esquerda</string>
+  <string name="gua_chat_background_a11y_move_right">Mover a foto para a direita</string>
+  <string name="gua_chat_background_a11y_move_up">Mover a foto para cima</string>
+  <string name="gua_chat_background_a11y_move_down">Mover a foto para baixo</string>
+</resources>

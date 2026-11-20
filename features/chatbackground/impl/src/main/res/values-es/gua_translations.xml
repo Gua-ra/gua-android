@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+  <string name="gua_chat_background_screen_title">Fondo del chat</string>
+  <string name="gua_chat_background_choose_photo">Elegir foto</string>
+  <string name="gua_chat_background_shared_note">Todos en este chat, incluidas las personas que se unan después, verán el fondo.</string>
+  <string name="gua_chat_background_photo_note">Las fotos de fondo no tienen cifrado de extremo a extremo.</string>
+  <string name="gua_chat_background_dim">Oscurecer en modo oscuro</string>
+  <string name="gua_chat_background_preview_light">Claro</string>
+  <string name="gua_chat_background_preview_dark">Oscuro</string>
+  <string name="gua_chat_background_position_hint">Arrastra para colocar la foto</string>
+  <string name="gua_chat_background_action_set">Establecer fondo</string>
+  <string name="gua_chat_background_action_remove">Quitar fondo</string>
+  <string name="gua_chat_background_progress">Estableciendo fondo…</string>
+  <string name="gua_chat_background_progress_remove">Quitando fondo…</string>
+  <string name="gua_chat_background_error_generic">No se pudo cambiar el fondo. Inténtalo de nuevo.</string>
+  <string name="gua_chat_background_error_too_large">Esta foto es demasiado grande. Elige otra.</string>
+  <string name="gua_chat_background_preview_a11y">Vista previa del fondo</string>
+  <string name="gua_chat_background_sample_incoming">¿Qué tal se ve?</string>
+  <string name="gua_chat_background_sample_outgoing">¡Se ve genial!</string>
+  <string name="gua_chat_background_sample_today">Hoy</string>
+  <string name="gua_chat_background_a11y_move_left">Mover la foto a la izquierda</string>
+  <string name="gua_chat_background_a11y_move_right">Mover la foto a la derecha</string>
+  <string name="gua_chat_background_a11y_move_up">Mover la foto hacia arriba</string>
+  <string name="gua_chat_background_a11y_move_down">Mover la foto hacia abajo</string>
+</resources>

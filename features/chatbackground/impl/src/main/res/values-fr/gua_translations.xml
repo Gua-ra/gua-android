@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+  <string name="gua_chat_background_screen_title">Arrière-plan de la conversation</string>
+  <string name="gua_chat_background_choose_photo">Choisir une photo</string>
+  <string name="gua_chat_background_shared_note">Tous les participants de cette conversation, y compris ceux qui la rejoindront plus tard, verront l’arrière-plan.</string>
+  <string name="gua_chat_background_photo_note">Les photos d’arrière-plan ne sont pas chiffrées de bout en bout.</string>
+  <string name="gua_chat_background_dim">Assombrir en mode sombre</string>
+  <string name="gua_chat_background_preview_light">Clair</string>
+  <string name="gua_chat_background_preview_dark">Sombre</string>
+  <string name="gua_chat_background_position_hint">Faites glisser pour placer la photo</string>
+  <string name="gua_chat_background_action_set">Définir l’arrière-plan</string>
+  <string name="gua_chat_background_action_remove">Supprimer l’arrière-plan</string>
+  <string name="gua_chat_background_progress">Définition de l’arrière-plan…</string>
+  <string name="gua_chat_background_progress_remove">Suppression de l’arrière-plan…</string>
+  <string name="gua_chat_background_error_generic">Impossible de modifier l’arrière-plan. Veuillez réessayer.</string>
+  <string name="gua_chat_background_error_too_large">Cette photo est trop volumineuse. Choisissez-en une autre.</string>
+  <string name="gua_chat_background_preview_a11y">Aperçu de l’arrière-plan</string>
+  <string name="gua_chat_background_sample_incoming">Qu’en pensez-vous ?</string>
+  <string name="gua_chat_background_sample_outgoing">C’est très réussi !</string>
+  <string name="gua_chat_background_sample_today">Aujourd’hui</string>
+  <string name="gua_chat_background_a11y_move_left">Déplacer la photo vers la gauche</string>
+  <string name="gua_chat_background_a11y_move_right">Déplacer la photo vers la droite</string>
+  <string name="gua_chat_background_a11y_move_up">Déplacer la photo vers le haut</string>
+  <string name="gua_chat_background_a11y_move_down">Déplacer la photo vers le bas</string>
+</resources>

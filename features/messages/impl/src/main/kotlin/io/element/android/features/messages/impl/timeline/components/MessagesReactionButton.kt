@@ -43,6 +43,7 @@ import io.element.android.features.messages.impl.timeline.a11y.a11yReactionDetai
 import io.element.android.features.messages.impl.timeline.model.AggregatedReaction
 import io.element.android.features.messages.impl.timeline.model.AggregatedReactionPreviewParam
 import io.element.android.features.messages.impl.timeline.model.aTimelineItemReactions
+import io.element.android.libraries.designsystem.chatbackground.LocalChatBackgroundActive
 import io.element.android.libraries.designsystem.icons.CompoundDrawables
 import io.element.android.libraries.designsystem.modifiers.onKeyboardContextMenuAction
 import io.element.android.libraries.designsystem.preview.ElementPreview
@@ -90,9 +91,9 @@ fun MessagesReactionButton(
     Surface(
         modifier = modifier
             .background(Color.Transparent)
-            // Outer border, same colour as background
+            // Outer border, same colour as background; with a chat background there is no single colour to match.
             .border(
-                BorderStroke(2.dp, ElementTheme.colors.bgCanvasDefault),
+                BorderStroke(2.dp, if (LocalChatBackgroundActive.current) Color.Transparent else ElementTheme.colors.bgCanvasDefault),
                 shape = RoundedCornerShape(corner = CornerSize(14.dp))
             )
             .padding(vertical = 2.dp, horizontal = 2.dp)

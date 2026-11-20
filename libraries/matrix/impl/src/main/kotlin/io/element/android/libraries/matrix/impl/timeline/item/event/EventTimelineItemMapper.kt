@@ -8,18 +8,23 @@
 
 package io.element.android.libraries.matrix.impl.timeline.item.event
 
+import io.element.android.libraries.core.data.tryOrNull
 import io.element.android.libraries.matrix.api.core.DeviceId
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.TransactionId
 import io.element.android.libraries.matrix.api.core.UserId
+import io.element.android.libraries.matrix.api.room.CHAT_BACKGROUND_EVENT_TYPE
 import io.element.android.libraries.matrix.api.timeline.item.TimelineItemDebugInfo
+import io.element.android.libraries.matrix.api.timeline.item.event.EventContent
 import io.element.android.libraries.matrix.api.timeline.item.event.EventReaction
 import io.element.android.libraries.matrix.api.timeline.item.event.EventTimelineItem
 import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSendState
 import io.element.android.libraries.matrix.api.timeline.item.event.MessageShield
+import io.element.android.libraries.matrix.api.timeline.item.event.OtherState
 import io.element.android.libraries.matrix.api.timeline.item.event.ProfileDetails
 import io.element.android.libraries.matrix.api.timeline.item.event.ReactionSender
 import io.element.android.libraries.matrix.api.timeline.item.event.Receipt
+import io.element.android.libraries.matrix.api.timeline.item.event.StateContent
 import io.element.android.libraries.matrix.api.timeline.item.event.TimelineItemEventOrigin
 import io.element.android.libraries.matrix.api.user.DisplayedStatus
 import io.element.android.libraries.matrix.impl.core.RustSendHandle
@@ -27,6 +32,8 @@ import io.element.android.libraries.matrix.impl.user.from
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import org.matrix.rustcomponents.sdk.EventOrTransactionId
 import org.matrix.rustcomponents.sdk.QueueWedgeError
 import org.matrix.rustcomponents.sdk.Reaction
@@ -58,7 +65,7 @@ class EventTimelineItemMapper(
             sender = UserId(sender),
             senderProfile = senderProfile.map(),
             timestamp = timestamp.toLong(),
-            content = contentMapper.map(content),
+            content = contentMapper.map(content).withChatBackgroundContent { lazyProvider.debugInfo().originalJson },
             origin = origin?.map(),
             timelineItemDebugInfoProvider = { lazyProvider.debugInfo().map() },
             messageShieldProvider = { strict -> lazyProvider.getShields(strict).map() },
@@ -67,6 +74,15 @@ class EventTimelineItemMapper(
             forwarderProfile = forwarderProfile?.map(),
         )
     }
+}
+
+// The SDK sees Gua's background as an opaque custom state event, so its content comes from the event JSON.
+internal fun EventContent.withChatBackgroundContent(originalJson: () -> String?): EventContent {
+    val stateContent = this as? StateContent ?: return this
+    val custom = stateContent.content as? OtherState.Custom ?: return this
+    if (custom.eventType != CHAT_BACKGROUND_EVENT_TYPE || stateContent.stateKey.isNotEmpty()) return this
+    val contentJson = tryOrNull { Json.parseToJsonElement(originalJson().orEmpty()).jsonObject["content"]?.jsonObject?.toString() }
+    return stateContent.copy(content = OtherState.ChatBackground(contentJson))
 }
 
 fun RustProfileDetails.map(): ProfileDetails {

@@ -27,7 +27,9 @@ import io.element.android.libraries.matrix.api.room.CreateTimelineParams
 import io.element.android.libraries.matrix.api.room.IntentionalMention
 import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.room.RoomNotificationSettingsState
+import io.element.android.libraries.matrix.api.room.RoomStateEvent
 import io.element.android.libraries.matrix.api.room.SendQueueUpdate
+import io.element.android.libraries.matrix.api.room.StateEventType
 import io.element.android.libraries.matrix.api.room.history.RoomHistoryVisibility
 import io.element.android.libraries.matrix.api.room.join.JoinRule
 import io.element.android.libraries.matrix.api.room.knock.KnockRequest
@@ -78,6 +80,7 @@ import org.matrix.rustcomponents.sdk.KnockRequestsListener
 import org.matrix.rustcomponents.sdk.LiveLocationException
 import org.matrix.rustcomponents.sdk.RoomMessageEventMessageType
 import org.matrix.rustcomponents.sdk.RoomSendQueueUpdate
+import org.matrix.rustcomponents.sdk.RoomStateEventsListener
 import org.matrix.rustcomponents.sdk.SendQueueListener
 import org.matrix.rustcomponents.sdk.TimelineConfiguration
 import org.matrix.rustcomponents.sdk.TimelineFilter
@@ -95,6 +98,7 @@ import uniffi.matrix_sdk_ui.TimelineReadReceiptTracking
 import kotlin.coroutines.cancellation.CancellationException
 import org.matrix.rustcomponents.sdk.IdentityStatusChange as RustIdentityStateChange
 import org.matrix.rustcomponents.sdk.KnockRequest as InnerKnockRequest
+import org.matrix.rustcomponents.sdk.RoomStateEvent as RustRoomStateEvent
 import org.matrix.rustcomponents.sdk.Timeline as InnerTimeline
 
 class JoinedRustRoom(
@@ -564,6 +568,20 @@ class JoinedRustRoom(
         }
     }
 
+    override suspend fun sendStateEventRaw(eventType: String, stateKey: String, content: String): Result<EventId> = withContext(roomDispatcher) {
+        runCatchingExceptions {
+            EventId(innerRoom.sendStateEventRaw(eventType, stateKey, content, null))
+        }
+    }
+
+    override fun stateEventsFlow(type: StateEventType): Flow<List<RoomStateEvent>> = mxCallbackFlow {
+        innerRoom.subscribeToStateEvents(type.map(), object : RoomStateEventsListener {
+            override fun onUpdate(events: List<RustRoomStateEvent>) {
+                channel.trySend(events.map { it.map() })
+            }
+        })
+    }
+
     override fun close() = destroy()
 
     override fun destroy() {
@@ -588,3 +606,10 @@ class JoinedRustRoom(
         )
     }
 }
+
+private fun RustRoomStateEvent.map(): RoomStateEvent = RoomStateEvent(
+    stateKey = stateKey,
+    contentJson = contentJson,
+    eventId = eventId?.let(::EventId),
+    timestamp = timestamp?.toLong(),
+)

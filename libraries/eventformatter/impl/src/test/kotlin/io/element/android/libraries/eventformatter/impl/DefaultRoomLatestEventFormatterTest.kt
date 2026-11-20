@@ -786,7 +786,8 @@ class DefaultRoomLatestEventFormatterTest : RobolectricTest() {
             OtherState.RoomTombstone,
             OtherState.SpaceChild,
             OtherState.SpaceParent,
-            OtherState.Custom("custom_event_type")
+            OtherState.Custom("custom_event_type"),
+            OtherState.ChatBackground("{}"),
         )
 
         val results = otherStates.map { state ->
