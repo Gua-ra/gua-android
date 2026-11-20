@@ -15,6 +15,7 @@ import dev.zacsweers.metro.Inject
 import io.element.android.features.location.api.Location
 import io.element.android.features.messages.api.timeline.HtmlConverterProvider
 import io.element.android.features.messages.api.timeline.TextPillificator
+import io.element.android.features.messages.impl.timeline.actions.MessageActions
 import io.element.android.features.messages.impl.timeline.model.event.AttachmentItem
 import io.element.android.features.messages.impl.timeline.model.event.GalleryItem
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemAttachmentsContent
@@ -45,6 +46,7 @@ import io.element.android.libraries.matrix.api.timeline.item.event.FileMessageTy
 import io.element.android.libraries.matrix.api.timeline.item.event.GalleryItemType
 import io.element.android.libraries.matrix.api.timeline.item.event.GalleryMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.ImageMessageType
+import io.element.android.libraries.matrix.api.timeline.item.event.LatestJsonProvider
 import io.element.android.libraries.matrix.api.timeline.item.event.LocationMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.MessageContent
 import io.element.android.libraries.matrix.api.timeline.item.event.MessageFormat
@@ -57,6 +59,7 @@ import io.element.android.libraries.matrix.api.timeline.item.event.VideoMessageT
 import io.element.android.libraries.matrix.api.timeline.item.event.VoiceMessageType
 import io.element.android.libraries.matrix.api.timeline.item.event.getDisambiguatedDisplayName
 import io.element.android.libraries.matrix.ui.messages.toHtmlDocument
+import io.element.android.libraries.matrix.ui.messages.toPlainText
 import io.element.android.libraries.mediaviewer.api.util.FileExtensionExtractor
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -83,6 +86,7 @@ class TimelineItemContentMessageFactory(
         senderId: UserId,
         senderProfile: ProfileDetails,
         eventId: EventId?,
+        latestJsonProvider: LatestJsonProvider? = null,
     ): TimelineItemEventContent {
         return when (val messageType = content.type) {
             is EmoteMessageType -> {
@@ -109,11 +113,17 @@ class TimelineItemContentMessageFactory(
             is TextMessageType -> {
                 val body = messageType.body.trimEnd()
                 val htmlDocument = messageType.formatted?.toHtmlDocument(permalinkParser = permalinkParser)
+                // GUA FORK: this hides the actions' fallback link in htmlDocument, so it runs before anything displayed is derived from it.
+                val extractedActions = MessageActions.extract(messageType.formatted, htmlDocument, latestJsonProvider)
                 val formattedBody = htmlDocument?.let(::parseHtml)
                     ?: textPillificator.pillify(body).safeLinkify()
                 TimelineItemTextContent(
                     body = body,
                     htmlDocument = htmlDocument,
+                    actions = extractedActions.actions,
+                    sourceHtmlBody = extractedActions.sourceDocument?.body()?.html(),
+                    sourceFormattedBody = extractedActions.sourceDocument?.let(::parseHtml),
+                    sourcePlainText = extractedActions.sourceDocument?.toPlainText(),
                     formattedBody = formattedBody,
                     isEdited = content.isEdited,
                     messageTree = if (featureFlagService.isFeatureEnabled(FeatureFlags.NewTimelineEventRenderer)) {
@@ -280,11 +290,17 @@ class TimelineItemContentMessageFactory(
             is NoticeMessageType -> {
                 val body = messageType.body.trimEnd()
                 val htmlDocument = messageType.formatted?.toHtmlDocument(permalinkParser = permalinkParser)
+                // GUA FORK: this hides the actions' fallback link in htmlDocument, so it runs before anything displayed is derived from it.
+                val extractedActions = MessageActions.extract(messageType.formatted, htmlDocument, latestJsonProvider)
                 val formattedBody = htmlDocument?.let(::parseHtml)
                     ?: textPillificator.pillify(body).safeLinkify()
                 TimelineItemNoticeContent(
                     body = body,
                     htmlDocument = htmlDocument,
+                    actions = extractedActions.actions,
+                    sourceHtmlBody = extractedActions.sourceDocument?.body()?.html(),
+                    sourceFormattedBody = extractedActions.sourceDocument?.let(::parseHtml),
+                    sourcePlainText = extractedActions.sourceDocument?.toPlainText(),
                     formattedBody = formattedBody,
                     isEdited = content.isEdited,
                     messageTree = htmlDocument?.let(htmlMessageParser::parse),

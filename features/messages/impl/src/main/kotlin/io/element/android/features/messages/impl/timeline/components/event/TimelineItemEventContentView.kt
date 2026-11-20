@@ -21,9 +21,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.messages.impl.timeline.TimelineEvent
+import io.element.android.features.messages.impl.timeline.actions.displaysBody
+import io.element.android.features.messages.impl.timeline.actions.messageActions
 import io.element.android.features.messages.impl.timeline.di.LocalTimelineItemPresenterFactories
 import io.element.android.features.messages.impl.timeline.di.rememberPresenter
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemAttachmentsContent
@@ -77,6 +81,8 @@ fun TimelineItemEventContentView(
     eventSink: (TimelineEvent.TimelineItemEvent) -> Unit,
     modifier: Modifier = Modifier,
     onContentLayoutChange: (ContentAvoidingLayoutData) -> Unit = {},
+    // GUA FORK: true while the row is a selection toggle; the action buttons are then hidden from screen readers, as the thread summary is.
+    hideActionsFromAccessibility: Boolean = false,
 ) {
     val hideMediaContent = remember(eventId, timelineProtectionState.protectionState) {
         timelineProtectionState.hideMediaContent(eventId)
@@ -139,12 +145,27 @@ fun TimelineItemEventContentView(
                     content = content,
                     onContentLayoutChange = calculatedOnContentLayoutChange,
                 )
-                is TimelineItemTextBasedContent -> TimelineItemTextView(
-                    content = content,
-                    onLinkClick = onLinkClick,
-                    onLinkLongClick = onLinkLongClick,
-                    onContentLayoutChange = calculatedOnContentLayoutChange,
-                )
+                is TimelineItemTextBasedContent -> {
+                    // GUA FORK: the actions are siblings of the text so the bubble column gives both one width.
+                    val actions = content.messageActions
+                    if (content.displaysBody) {
+                        TimelineItemTextView(
+                            content = content,
+                            onLinkClick = onLinkClick,
+                            onLinkLongClick = onLinkLongClick,
+                            onContentLayoutChange = calculatedOnContentLayoutChange,
+                        )
+                    }
+                    if (actions.isNotEmpty()) {
+                        TimelineItemMessageActionsView(
+                            actions = actions,
+                            onLinkClick = onLinkClick,
+                            modifier = Modifier
+                                .padding(top = 4.dp)
+                                .then(if (hideActionsFromAccessibility) Modifier.semantics { hideFromAccessibility() } else Modifier),
+                        )
+                    }
+                }
                 is TimelineItemUnknownContent -> TimelineItemUnknownView(
                     content = content,
                     onContentLayoutChange = calculatedOnContentLayoutChange,

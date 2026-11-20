@@ -76,6 +76,7 @@ import io.element.android.features.messages.impl.messagemenu.messageMenuBubble
 import io.element.android.features.messages.impl.timeline.TimelineEvent
 import io.element.android.features.messages.impl.timeline.TimelineRoomInfo
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
+import io.element.android.features.messages.impl.timeline.actions.messageActions
 import io.element.android.features.messages.impl.timeline.components.event.TimelineItemEventContentView
 import io.element.android.features.messages.impl.timeline.components.receipt.ReadReceiptViewState
 import io.element.android.features.messages.impl.timeline.components.receipt.TimelineItemReadReceiptView
@@ -206,6 +207,7 @@ fun TimelineItemEventRow(
             eventSink = eventSink,
             modifier = contentModifier,
             onContentLayoutChange = onContentLayoutChange,
+            hideActionsFromAccessibility = selectionData.isSelectionModeActive && selectionData.canBeSelected,
         )
     },
 ) {
@@ -1002,6 +1004,9 @@ private fun MessageEventBubbleContent(
     val timestampPosition = if (needsInvalidContentLayout) {
         // The invalid content view will be displayed in all these cases, independent of the event content
         TimestampPosition.Aligned
+    } else if (event.content.messageActions.isNotEmpty()) {
+        // GUA FORK: like a poll, a message with actions ends with buttons, so its timestamp goes below them.
+        TimestampPosition.Below
     } else {
         when (val content = event.content) {
             is TimelineItemImageContent -> if (content.showCaption) TimestampPosition.Aligned else TimestampPosition.Overlay

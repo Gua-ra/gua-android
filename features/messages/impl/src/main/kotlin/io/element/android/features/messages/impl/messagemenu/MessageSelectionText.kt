@@ -9,6 +9,7 @@ package io.element.android.features.messages.impl.messagemenu
 
 import android.text.Spanned
 import androidx.core.text.getSpans
+import io.element.android.features.messages.impl.timeline.actions.formattedBodyWithFallback
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemTextBasedContent
 import io.element.android.libraries.textcomposer.mentions.MentionSpan
 import io.element.android.libraries.textcomposer.mentions.MentionSpanUpdater
@@ -16,7 +17,7 @@ import io.element.android.libraries.textcomposer.mentions.MentionType
 import io.element.android.wysiwyg.view.spans.CustomMentionSpan
 
 fun TimelineItemTextBasedContent.selectableText(mentionSpanUpdater: MentionSpanUpdater): String {
-    val text = mentionSpanUpdater.updateMentionSpans(formattedBody)
+    val text = mentionSpanUpdater.updateMentionSpans(formattedBodyWithFallback)
     if (text !is Spanned) return text.toString().trim()
     val mentions = buildList {
         text.getSpans<CustomMentionSpan>().forEach { span ->
