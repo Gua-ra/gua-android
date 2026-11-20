@@ -224,17 +224,18 @@ jobs:
       # versionCode it has already accepted, and the CalVer code in Versions.kt only moves when the
       # release script bumps it. The run number is unique and always increasing, so every QA upload
       # is accepted and they sort in the order they were built.
+      # Kotlin compiles in its own Gradle call, so the Kotlin daemons have exited before R8 and lint-vital
+      # need the runner's memory. Both calls need the same env and flags, or the bundle compiles again.
       - name: Build release-signed App Bundle (QA)
         env:
           GUA_RELEASE_KEYSTORE: ${{ runner.temp }}/gua-upload.jks
           GUA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.GUA_RELEASE_KEYSTORE_PASSWORD }}
           GUA_RELEASE_KEY_ALIAS: ${{ secrets.GUA_RELEASE_KEY_ALIAS }}
           GUA_RELEASE_KEY_PASSWORD: ${{ secrets.GUA_RELEASE_KEY_PASSWORD }}
-        run: >-
-          ./gradlew bundleGplayRelease
-          -Pgua.deployment=dev
-          -Pgua.versionCodeOffset=${{ github.run_number }}
-          $CI_GRADLE_ARG_PROPERTIES
+        run: |
+          args="-Pgua.deployment=dev -Pgua.versionCodeOffset=${{ github.run_number }} $CI_GRADLE_ARG_PROPERTIES"
+          ./gradlew :app:compileGplayReleaseKotlin $args
+          ./gradlew bundleGplayRelease $args
       # Pin to a commit SHA before relying on this in production.
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@935ef9c68bb393a8e6116b1575626a7f5be3a7fb # v1.1.3
@@ -384,13 +385,16 @@ jobs:
       # No versionCode offset and no dev hosts: a production build is exactly the CalVer version in
       # Versions.kt, pointing at gua.global. If Play rejects the versionCode as already used, the
       # release number in Versions.kt needs bumping; that is the intended signal, not a CI bug.
+      # Two Gradle calls, for the same memory reason as the QA build.
       - name: Build release-signed App Bundle (prod)
         env:
           GUA_RELEASE_KEYSTORE: ${{ runner.temp }}/gua-upload.jks
           GUA_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.GUA_RELEASE_KEYSTORE_PASSWORD }}
           GUA_RELEASE_KEY_ALIAS: ${{ secrets.GUA_RELEASE_KEY_ALIAS }}
           GUA_RELEASE_KEY_PASSWORD: ${{ secrets.GUA_RELEASE_KEY_PASSWORD }}
-        run: ./gradlew bundleGplayRelease $CI_GRADLE_ARG_PROPERTIES
+        run: |
+          ./gradlew :app:compileGplayReleaseKotlin $CI_GRADLE_ARG_PROPERTIES
+          ./gradlew bundleGplayRelease $CI_GRADLE_ARG_PROPERTIES
       # Pin to a commit SHA before relying on this in production.
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@935ef9c68bb393a8e6116b1575626a7f5be3a7fb # v1.1.3
