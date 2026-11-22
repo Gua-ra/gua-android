@@ -565,7 +565,10 @@ export function iccToSrgb(icc) {
   const columns = ['r', 'g', 'b'].map((c) => [8, 12, 16].map((o) => tags.get(`${c}XYZ`).readInt32BE(o) / 65536));
   const toSrgb = inverse3(SRGB_D50);
   const matrix = toSrgb.map((row) => columns.map((col) => row[0] * col[0] + row[1] * col[1] + row[2] * col[2]));
-  const linear = ['r', 'g', 'b'].map((c) => Float64Array.from({ length: 256 }, (_, v) => iccTone(tags.get(`${c}TRC`))(v / 255)));
+  const linear = ['r', 'g', 'b'].map((c) => {
+    const tone = iccTone(tags.get(`${c}TRC`));
+    return Float64Array.from({ length: 256 }, (_, v) => tone(v / 255));
+  });
   return { matrix, linear };
 }
 
@@ -582,7 +585,7 @@ export function convertToSrgb(rgb, { matrix: m, linear: [lr, lg, lb] }) {
 }
 
 // The WebP keeps no metadata from the original (EXIF, GPS, ICC), only the rights XMP.
-export function bakePhoto(photo, originalsDir, tools, work, webpArgs = PHOTO_WEBP_ARGS) {
+export function bakePhoto(photo, originalsDir, tools, work) {
   const dir = path.join(originalsDir, photo.id);
   const found = fs.readdirSync(dir).filter((f) => !f.startsWith('.'));
   if (found.length !== 1) throw new Error(`${dir} must hold exactly one file, the original of ${photo.id}`);
@@ -608,7 +611,7 @@ export function bakePhoto(photo, originalsDir, tools, work, webpArgs = PHOTO_WEB
   // Untagged pixels are already sRGB.
   if (icc) convertToSrgb(pixels, iccToSrgb(icc));
   fs.writeFileSync(f('crop.ppm'), Buffer.concat([Buffer.from(`P6\n${c.w} ${c.h}\n255\n`), pixels]));
-  run(tools.cwebp, [...webpArgs, '-resize', String(WIDTH), String(HEIGHT), '-metadata', 'none', '-quiet', f('crop.ppm'), '-o', f('lossy.webp')]);
+  run(tools.cwebp, [...PHOTO_WEBP_ARGS, '-resize', String(WIDTH), String(HEIGHT), '-metadata', 'none', '-quiet', f('crop.ppm'), '-o', f('lossy.webp')]);
   fs.rmSync(f('crop.ppm'));
   fs.writeFileSync(f('xmp'), photoXmp(photo));
   run(tools.webpmux, ['-set', 'xmp', f('xmp'), f('lossy.webp'), '-o', f('webp')]);
@@ -640,7 +643,7 @@ export function photoEntry(photo, webp, fallback) {
 }
 
 // Rewrites only the photo entries; the rest of manifest.json stays byte-identical.
-async function bakePhotos(args) {
+function bakePhotos(args) {
   const { photos } = JSON.parse(fs.readFileSync(path.join(HERE, 'photos.json'), 'utf8'));
   const sibling = (name) => (args.cwebp.includes('/') ? path.join(path.dirname(args.cwebp), name) : name);
   const tools = { cwebp: args.cwebp, dwebp: sibling('dwebp'), webpmux: sibling('webpmux') };
