@@ -66,7 +66,7 @@ internal fun baseChatTheme(mode: ChatThemeMode, current: ChatTheme, defaultTheme
 sealed interface ChatThemePage {
     data object Gallery : ChatThemePage
 
-    /** Opens on the theme's bubble pair; choosing a swatch picks one colour for both appearances. */
+    /** Choosing a swatch sets one colour for both appearances, dropping [selectionDark]. */
     data class BubblePicker(
         val selection: ChatBubbleColor?,
         val selectionDark: ChatBubbleColor? = null,

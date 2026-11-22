@@ -189,7 +189,7 @@ fun chatBackgroundPhotoAlignment(alignX: Int, alignY: Int) = chatBackgroundAlign
     UnitPoint(alignX.toFloat() / ChatBackground.Photo.MAX_ALIGN, alignY.toFloat() / ChatBackground.Photo.MAX_ALIGN)
 )
 
-/** With [ContentScale.Crop], the image's point at [anchor] lands on the same point of the frame, so it always stays on screen. */
+/** With [ContentScale.Crop], the image's [anchor] lands on the same point of the frame, so it stays on screen. */
 fun chatBackgroundAlignment(anchor: UnitPoint) = BiasAbsoluteAlignment(
     horizontalBias = anchor.x * 2 - 1,
     verticalBias = anchor.y * 2 - 1,

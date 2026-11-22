@@ -15,10 +15,10 @@ data class ChatTheme(
     val bubble: ChatBubbleColor? = null,
     val bubbleDark: ChatBubbleColor? = null,
 ) {
-    /** The outgoing bubble in the given appearance, null for the stock one. [bubbleDark] counts only next to a palette [bubble]. */
+    /** [bubbleDark] counts only next to a [bubble]. */
     fun outgoingBubble(isLight: Boolean): ChatBubbleColor? = if (isLight) bubble else bubble?.let { bubbleDark ?: it }
 
-    /** The same theme with [bubbleDark] kept only where it changes the dark appearance, as the wire holds it. */
+    /** Drops a [bubbleDark] that would not change the dark appearance, the form the wire holds. */
     fun normalized(): ChatTheme = if (bubbleDark != null && (bubble == null || bubbleDark == bubble)) copy(bubbleDark = null) else this
 
     companion object {
@@ -27,7 +27,6 @@ data class ChatTheme(
     }
 }
 
-/** A theme with no wallpaper is named after the bubble shown in the given appearance. */
 @StringRes
 fun ChatTheme.nameRes(isLight: Boolean): Int = when (background) {
     ChatBackground.None -> outgoingBubble(isLight)?.nameRes ?: background.nameRes
