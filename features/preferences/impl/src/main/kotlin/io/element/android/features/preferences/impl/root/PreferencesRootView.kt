@@ -94,6 +94,7 @@ fun PreferencesRootView(
     onOpenMediaSettings: () -> Unit,
     onOpenLocationSettings: () -> Unit,
     onOpenLabs: () -> Unit,
+    onOpenChatTheme: () -> Unit,
     onEditProfileClick: (MatrixUser) -> Unit,
     onSecureBackupClick: () -> Unit,
     onManageAccountClick: (url: String) -> Unit,
@@ -159,6 +160,7 @@ fun PreferencesRootView(
                 onOpenLockScreenSettings = onOpenLockScreenSettings,
                 onOpenMediaSettings = onOpenMediaSettings,
                 onOpenLocationSettings = onOpenLocationSettings,
+                onOpenChatTheme = onOpenChatTheme,
             )
             // General section
             GeneralSection(
@@ -344,6 +346,7 @@ private fun AppSettingsSection(
     onOpenLockScreenSettings: () -> Unit,
     onOpenLocationSettings: () -> Unit,
     onOpenMediaSettings: () -> Unit,
+    onOpenChatTheme: () -> Unit,
 ) {
     PreferenceCategory(
         title = stringResource(CommonStrings.common_app_settings),
@@ -378,6 +381,13 @@ private fun AppSettingsSection(
                 state.eventSink(PreferencesRootEvent.SetTheme(themeOption))
             }
         )
+        if (state.showChatThemeItem) {
+            ListItem(
+                content = { Text(stringResource(id = R.string.gua_chat_theme_settings_row_title)) },
+                leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Theme())),
+                onClick = onOpenChatTheme,
+            )
+        }
         if (state.showLocationSettings) {
             ListItem(
                 content = { Text(stringResource(id = CommonStrings.common_location_sharing)) },
@@ -517,6 +527,7 @@ private fun ContentToPreview(state: PreferencesRootState) {
         onOpenLocationSettings = {},
         onOpenMediaSettings = {},
         onOpenLabs = {},
+        onOpenChatTheme = {},
         onOpenAbout = {},
         onOpenLockScreenSettings = {},
         onSetupTwoStepVerification = {},

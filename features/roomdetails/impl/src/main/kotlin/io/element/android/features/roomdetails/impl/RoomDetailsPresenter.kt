@@ -53,7 +53,7 @@ import io.element.android.libraries.matrix.api.room.powerlevels.canEditRolesAndP
 import io.element.android.libraries.matrix.api.room.powerlevels.permissionsAsState
 import io.element.android.libraries.matrix.api.room.roomNotificationSettings
 import io.element.android.libraries.matrix.api.timeline.ReceiptType
-import io.element.android.libraries.matrix.ui.chatbackground.collectBackgroundAsState
+import io.element.android.libraries.matrix.ui.chatbackground.collectThemeAsState
 import io.element.android.libraries.matrix.ui.room.getDirectRoomMember
 import io.element.android.libraries.matrix.ui.room.roomMemberIdentityStateChange
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
@@ -242,9 +242,9 @@ class RoomDetailsPresenter(
     private fun chatBackgroundRowState(isSpace: Boolean): ChatBackgroundRowState? {
         val isEnabled by remember { featureFlagService.isFeatureEnabledFlow(FeatureFlags.ChatBackgrounds) }.collectAsState(initial = false)
         if (!isEnabled || isSpace) return null
-        val background by chatBackgroundService.collectBackgroundAsState(room)
+        val theme by chatBackgroundService.collectThemeAsState(room)
         val canChange by room.permissionsAsState<Boolean?>(null) { it.canChangeChatBackground() }
-        return ChatBackgroundRowState(background = background, canChange = canChange)
+        return ChatBackgroundRowState(theme = theme, canChange = canChange)
     }
 
     @Composable

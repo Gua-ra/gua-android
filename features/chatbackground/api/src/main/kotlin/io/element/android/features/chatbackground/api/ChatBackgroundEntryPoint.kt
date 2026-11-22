@@ -9,17 +9,18 @@ package io.element.android.features.chatbackground.api
 
 import com.bumble.appyx.core.modality.BuildContext
 import com.bumble.appyx.core.node.Node
-import com.bumble.appyx.core.plugin.Plugin
 import io.element.android.libraries.architecture.FeatureEntryPoint
 
-fun interface ChatBackgroundEntryPoint : FeatureEntryPoint {
-    interface Callback : Plugin {
-        fun onDone()
-    }
-
+interface ChatBackgroundEntryPoint : FeatureEntryPoint {
+    /** Edits the chat's own theme; [parentNode] must belong to a room. */
     fun createNode(
         parentNode: Node,
         buildContext: BuildContext,
-        callback: Callback,
+    ): Node
+
+    /** Edits the personal default theme; [parentNode] only needs to belong to a session. */
+    fun createDefaultNode(
+        parentNode: Node,
+        buildContext: BuildContext,
     ): Node
 }

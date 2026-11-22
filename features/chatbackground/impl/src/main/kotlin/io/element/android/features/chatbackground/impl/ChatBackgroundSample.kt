@@ -23,15 +23,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
+import io.element.android.libraries.chatbackground.api.ChatBubbleColor
 import io.element.android.libraries.designsystem.chatbackground.LocalChatBackgroundActive
 import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
 import io.element.android.libraries.designsystem.theme.components.Text
-import io.element.android.libraries.designsystem.theme.messageFromMeBackground
 import io.element.android.libraries.designsystem.theme.messageFromOtherBackground
+import io.element.android.libraries.matrix.ui.chatbackground.outgoingBubbleColor
 
 @Composable
 internal fun ChatBackgroundSampleMessages(
     isOnBackground: Boolean,
+    bubble: ChatBubbleColor?,
     modifier: Modifier = Modifier,
 ) {
     CompositionLocalProvider(LocalChatBackgroundActive provides isOnBackground) {
@@ -56,7 +58,7 @@ internal fun ChatBackgroundSampleMessages(
             )
             SampleBubble(
                 text = stringResource(R.string.gua_chat_background_sample_outgoing),
-                color = ElementTheme.colors.messageFromMeBackground,
+                color = bubble.outgoingBubbleColor(),
                 modifier = Modifier.align(Alignment.End),
             )
         }

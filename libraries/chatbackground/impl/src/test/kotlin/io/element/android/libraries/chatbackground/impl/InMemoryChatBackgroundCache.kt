@@ -9,12 +9,21 @@ package io.element.android.libraries.chatbackground.impl
 
 import io.element.android.libraries.matrix.api.core.RoomId
 
-class InMemoryChatBackgroundCache(initial: Map<RoomId, StoredChatBackground> = emptyMap()) : ChatBackgroundCache {
+class InMemoryChatBackgroundCache(
+    initial: Map<RoomId, StoredChatBackground> = emptyMap(),
+    var defaultTheme: String? = null,
+) : ChatBackgroundCache {
     val entries = LinkedHashMap(initial)
 
     override suspend fun load(): Map<RoomId, StoredChatBackground> = LinkedHashMap(entries)
 
     override suspend fun save(roomId: RoomId, stored: StoredChatBackground) {
         entries[roomId] = stored
+    }
+
+    override suspend fun loadDefaultTheme(): String? = defaultTheme
+
+    override suspend fun saveDefaultTheme(contentJson: String) {
+        defaultTheme = contentJson
     }
 }

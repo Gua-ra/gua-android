@@ -49,6 +49,8 @@ import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
+import io.element.android.libraries.chatbackground.api.ChatBubbleColor
+import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.designsystem.components.avatar.AvatarData
 import io.element.android.libraries.designsystem.components.avatar.AvatarSize
 import io.element.android.libraries.designsystem.preview.ROOM_NAME
@@ -103,11 +105,19 @@ open class MessagesStatePreviewParam : PreviewParameterProvider<MessagesState> {
             ),
             aMessagesState(redactEventAction = MessagesState.ConfirmingRedaction(EventId("\$anEventId"))),
             aMessagesState(
-                chatBackground = ChatBackground.Preset(ChatBackgroundPreset.Aurora),
+                chatTheme = ChatTheme(ChatBackground.Preset(ChatBackgroundPreset.Aurora)),
                 timelineState = aTimelineState(timelineItems = aChatBackgroundTimelineItems(), timelineRoomInfo = aChatBackgroundTimelineRoomInfo()),
             ),
             aMessagesState(
-                chatBackground = aChatBackgroundPhoto(dim = 50),
+                chatTheme = ChatTheme(aChatBackgroundPhoto(dim = 50)),
+                timelineState = aTimelineState(timelineItems = aChatBackgroundTimelineItems(), timelineRoomInfo = aChatBackgroundTimelineRoomInfo()),
+            ),
+            aMessagesState(
+                chatTheme = ChatTheme(ChatBackground.Preset(ChatBackgroundPreset.Ocean), ChatBubbleColor.Teal),
+                timelineState = aTimelineState(timelineItems = aChatBackgroundTimelineItems(), timelineRoomInfo = aChatBackgroundTimelineRoomInfo()),
+            ),
+            aMessagesState(
+                chatTheme = ChatTheme(bubble = ChatBubbleColor.Purple),
                 timelineState = aTimelineState(timelineItems = aChatBackgroundTimelineItems(), timelineRoomInfo = aChatBackgroundTimelineRoomInfo()),
             ),
         )
@@ -151,7 +161,7 @@ fun aMessagesState(
     dmUserStatus: DisplayedStatus? = null,
     eventSink: (MessagesEvent) -> Unit = {},
     redactEventAction: AsyncAction<Unit> = AsyncAction.Uninitialized,
-    chatBackground: ChatBackground = ChatBackground.None,
+    chatTheme: ChatTheme = ChatTheme.STOCK,
 ) = MessagesState(
     roomId = RoomId("!id:domain"),
     roomName = roomName,
@@ -184,7 +194,7 @@ fun aMessagesState(
     showLiveLocationShareBanner = isCurrentlySharingLiveLocationInRoom,
     dmUserStatus = dmUserStatus,
     redactEventAction = redactEventAction,
-    chatBackground = chatBackground,
+    chatTheme = chatTheme,
     eventSink = eventSink,
 )
 

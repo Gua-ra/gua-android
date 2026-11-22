@@ -45,7 +45,6 @@ import io.element.android.features.messages.impl.timeline.model.event.TimelineIt
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemImageContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemPollContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemTextContent
-import io.element.android.features.messages.impl.timeline.protection.ProtectionState
 import io.element.android.features.messages.impl.timeline.protection.aTimelineProtectionState
 import io.element.android.features.messages.test.timeline.FakeHtmlConverterProvider
 import io.element.android.features.messages.test.timeline.voicemessages.composer.FakeDefaultVoiceMessageComposerPresenterFactory
@@ -57,6 +56,8 @@ import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
+import io.element.android.libraries.chatbackground.api.ChatBubbleColor
+import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.core.mimetype.MimeTypes
 import io.element.android.libraries.designsystem.components.avatar.AvatarData
@@ -109,7 +110,6 @@ import io.element.android.libraries.matrix.test.room.powerlevels.FakeRoomPermiss
 import io.element.android.libraries.matrix.test.room.threads.FakeThreadsListService
 import io.element.android.libraries.matrix.test.timeline.FakeTimeline
 import io.element.android.libraries.matrix.test.timeline.aTimelineItemDebugInfo
-import io.element.android.libraries.matrix.ui.chatbackground.aChatBackgroundPhoto
 import io.element.android.libraries.matrix.ui.messages.reply.InReplyToDetails
 import io.element.android.libraries.textcomposer.model.MessageComposerMode
 import io.element.android.libraries.textcomposer.model.TextEditorState
@@ -1573,22 +1573,10 @@ class MessagesPresenterTest {
     }
 
     @Test
-    fun `present - a photo background is hidden while the chat hides media, and a preset still shows`() = runTest {
-        val hidingMedia = ProtectionState.RenderOnly(persistentSetOf())
-        createMessagesPresenter(protectionState = hidingMedia, chatBackground = aChatBackgroundPhoto()).testWithLifecycleOwner {
-            assertThat(consumeItemsUntilTimeout().last().chatBackground).isEqualTo(ChatBackground.None)
-        }
-        val preset = ChatBackground.Preset(ChatBackgroundPreset.Aurora)
-        createMessagesPresenter(protectionState = hidingMedia, chatBackground = preset).testWithLifecycleOwner {
-            assertThat(consumeItemsUntilTimeout().last().chatBackground).isEqualTo(preset)
-        }
-    }
-
-    @Test
-    fun `present - a photo background shows while the chat shows media`() = runTest {
-        val photo = aChatBackgroundPhoto()
-        createMessagesPresenter(protectionState = ProtectionState.RenderAll, chatBackground = photo).testWithLifecycleOwner {
-            assertThat(consumeItemsUntilTimeout().last().chatBackground).isEqualTo(photo)
+    fun `present - the chat shows the theme its chat theme presenter gives`() = runTest {
+        val theme = ChatTheme(ChatBackground.Preset(ChatBackgroundPreset.Aurora), ChatBubbleColor.Green)
+        createMessagesPresenter(chatTheme = theme).testWithLifecycleOwner {
+            assertThat(consumeItemsUntilTimeout().last().chatTheme).isEqualTo(theme)
         }
     }
 
@@ -1631,8 +1619,7 @@ class MessagesPresenterTest {
         addRecentEmoji: AddRecentEmoji = AddRecentEmoji { _ -> lambdaError() },
         markAsFullyRead: MarkAsFullyRead = FakeMarkAsFullyRead(),
         liveLocationShareManager: FakeActiveLiveLocationShareManager = FakeActiveLiveLocationShareManager(),
-        protectionState: ProtectionState = ProtectionState.RenderAll,
-        chatBackground: ChatBackground = ChatBackground.None,
+        chatTheme: ChatTheme = ChatTheme.STOCK,
     ): MessagesPresenter {
         return MessagesPresenter(
             navigator = navigator,
@@ -1640,7 +1627,7 @@ class MessagesPresenterTest {
             composerPresenter = messageComposerPresenter,
             voiceMessageComposerPresenterFactory = FakeDefaultVoiceMessageComposerPresenterFactory(backgroundScope),
             timelinePresenter = { timelineState },
-            timelineProtectionPresenter = { aTimelineProtectionState(protectionState = protectionState) },
+            timelineProtectionPresenter = { aTimelineProtectionState() },
             identityChangeStatePresenter = { anIdentityChangeState() },
             linkPresenter = { aLinkState() },
             actionListPresenter = { anActionListState(eventSink = actionListEventSink) },
@@ -1670,7 +1657,7 @@ class MessagesPresenterTest {
             markAsFullyRead = markAsFullyRead,
             liveLocationShareManager = liveLocationShareManager,
             sessionCoroutineScope = backgroundScope,
-            chatBackgroundPresenterFactory = { MessagesChatBackgroundPresenter { chatBackground } },
+            chatBackgroundPresenterFactory = { MessagesChatBackgroundPresenter { chatTheme } },
         )
     }
 }

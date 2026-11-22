@@ -16,11 +16,11 @@ import io.element.android.libraries.architecture.createNode
 
 @ContributesBinding(AppScope::class)
 class DefaultChatBackgroundEntryPoint : ChatBackgroundEntryPoint {
-    override fun createNode(
-        parentNode: Node,
-        buildContext: BuildContext,
-        callback: ChatBackgroundEntryPoint.Callback,
-    ): Node {
-        return parentNode.createNode<ChatBackgroundNode>(buildContext, listOf(callback))
+    override fun createNode(parentNode: Node, buildContext: BuildContext): Node {
+        return parentNode.createNode<ChatThemeNode>(buildContext)
+    }
+
+    override fun createDefaultNode(parentNode: Node, buildContext: BuildContext): Node {
+        return parentNode.createNode<DefaultChatThemeNode>(buildContext)
     }
 }

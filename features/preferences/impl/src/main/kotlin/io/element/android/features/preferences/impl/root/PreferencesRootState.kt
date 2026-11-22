@@ -40,6 +40,7 @@ data class PreferencesRootState(
     val hasAccountStrongFactor: Boolean?,
     val showLocationSettings: Boolean,
     val isSpacesEnabled: Boolean,
+    val showChatThemeItem: Boolean,
     val snackbarMessage: SnackbarMessage?,
     val eventSink: (PreferencesRootEvent) -> Unit,
 )

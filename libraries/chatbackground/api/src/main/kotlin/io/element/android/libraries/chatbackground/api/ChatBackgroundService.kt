@@ -15,15 +15,15 @@ import kotlinx.coroutines.flow.Flow
 interface ChatBackgroundService {
     fun preload()
 
-    /** The background last known for [roomId], without waiting: the default until the cache has loaded. */
-    fun currentBackground(roomId: RoomId): ChatBackground
+    /** The chat's own theme last known for [roomId], without waiting: no theme until the cache has loaded. */
+    fun currentTheme(roomId: RoomId): ChatTheme
 
-    /** The cached background first, then the server's, then every newer local change; the server is read again on each return to the foreground. */
-    fun backgroundFlow(room: JoinedRoom): Flow<ChatBackground>
+    /** The cached theme first, then the server's, then every newer local change; the server is read again on each return to the foreground. */
+    fun themeFlow(room: JoinedRoom): Flow<ChatTheme>
 
-    /** Applies only if newer than the current background, so old events reached by scrolling back are ignored. */
+    /** Applies only if newer than the current theme, so old events reached by scrolling back are ignored. */
     fun onTimelineEvent(roomId: RoomId, eventId: EventId, timestamp: Long, contentJson: String?)
 
-    /** Applies [background] locally as soon as the server accepts it. A photo must be uploaded first. */
-    suspend fun set(room: JoinedRoom, background: ChatBackground): Result<Unit>
+    /** Applies [theme] locally as soon as the server accepts it. A photo must be uploaded first. */
+    suspend fun set(room: JoinedRoom, theme: ChatTheme): Result<Unit>
 }

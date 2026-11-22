@@ -85,6 +85,9 @@ open class PreferencesRootStatePreviewParam : PreviewParameterProvider<Preferenc
             aPreferencesRootState(
                 hasAccountStrongFactor = false,
             ),
+            aPreferencesRootState(
+                showChatThemeItem = true,
+            ),
         )
 }
 
@@ -104,6 +107,7 @@ fun aPreferencesRootState(
     isLockScreenPinSetup: Boolean = true,
     hasAccountStrongFactor: Boolean? = true,
     isSpacesEnabled: Boolean = false,
+    showChatThemeItem: Boolean = false,
     userStatusState: UserStatusState? = aUserStatusState(),
     snackbarMessage: SnackbarMessage? = null,
     eventSink: (PreferencesRootEvent) -> Unit = {},
@@ -123,6 +127,7 @@ fun aPreferencesRootState(
     isLockScreenPinSetup = isLockScreenPinSetup,
     hasAccountStrongFactor = hasAccountStrongFactor,
     isSpacesEnabled = isSpacesEnabled,
+    showChatThemeItem = showChatThemeItem,
     userStatusState = userStatusState,
     snackbarMessage = snackbarMessage,
     eventSink = eventSink,

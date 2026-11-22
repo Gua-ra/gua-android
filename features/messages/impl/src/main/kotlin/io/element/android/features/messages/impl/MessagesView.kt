@@ -123,6 +123,7 @@ import io.element.android.libraries.androidutils.ui.hideKeyboard
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.designsystem.atomic.molecules.ComposerAlertMolecule
 import io.element.android.libraries.designsystem.chatbackground.LocalChatBackgroundActive
+import io.element.android.libraries.designsystem.chatbackground.LocalOutgoingBubbleColor
 import io.element.android.libraries.designsystem.components.ExpandableBottomSheetLayout
 import io.element.android.libraries.designsystem.components.ExpandableBottomSheetLayoutState
 import io.element.android.libraries.designsystem.components.dialogs.ConfirmationDialog
@@ -153,6 +154,7 @@ import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundCanvas
 import io.element.android.libraries.matrix.ui.chatbackground.isShowingBackground
 import io.element.android.libraries.matrix.ui.chatbackground.rememberChatBackgroundTransition
+import io.element.android.libraries.matrix.ui.chatbackground.toColor
 import io.element.android.libraries.matrix.ui.media.contentvalidation.ContentValidationValue
 import io.element.android.libraries.matrix.ui.media.contentvalidation.LocalEventContentValidationState
 import io.element.android.libraries.textcomposer.model.TextEditorState
@@ -295,7 +297,7 @@ fun MessagesView(
     var endPollConfirmingEvent: TimelineItem.Event? by remember { mutableStateOf(null) }
 
     val expandableState = rememberExpandableBottomSheetLayoutState()
-    val chatBackgroundTransition = rememberChatBackgroundTransition(state.chatBackground)
+    val chatBackgroundTransition = rememberChatBackgroundTransition(state.chatTheme.background)
     val isShowingChatBackground = chatBackgroundTransition.isShowingBackground
     var topBarHeight by remember { mutableStateOf(0.dp) }
     MessageMenuHost(
@@ -703,7 +705,10 @@ private fun MessagesViewContent(
             // date badge offset so the badge sits below whichever banners are currently showing.
             var topBannersHeightDp by remember { mutableStateOf(0.dp) }
 
-            CompositionLocalProvider(LocalChatBackgroundActive provides (state.chatBackground != ChatBackground.None)) {
+            CompositionLocalProvider(
+                LocalChatBackgroundActive provides (state.chatTheme.background != ChatBackground.None),
+                LocalOutgoingBubbleColor provides state.chatTheme.bubble?.toColor(),
+            ) {
                 TimelineView(
                     state = state.timelineState,
                     timelineProtectionState = state.timelineProtectionState,

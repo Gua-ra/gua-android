@@ -258,6 +258,28 @@ class PreferencesRootViewTest : RobolectricTest() {
     }
 
     @Test
+    fun `click on Chat theme invokes the expected callback`() = runAndroidComposeUiTest {
+        val eventsRecorder = EventsRecorder<PreferencesRootEvent>(expectEvents = false)
+        ensureCalledOnce { callback ->
+            setView(
+                aPreferencesRootState(
+                    showChatThemeItem = true,
+                    eventSink = eventsRecorder,
+                ),
+                onOpenChatTheme = callback,
+            )
+            val text = activity!!.getString(R.string.gua_chat_theme_settings_row_title)
+            onNode(hasText(text) and hasClickAction()).performScrollTo().performClick()
+        }
+    }
+
+    @Test
+    fun `when showChatThemeItem is false, Chat theme is not shown`() = runAndroidComposeUiTest {
+        setView(aPreferencesRootState(showChatThemeItem = false))
+        assertNoNodeWithText(R.string.gua_chat_theme_settings_row_title)
+    }
+
+    @Test
     fun `click on Media upload quality invokes the expected callback`() = runAndroidComposeUiTest {
         val eventsRecorder = EventsRecorder<PreferencesRootEvent>(expectEvents = false)
         ensureCalledOnce { callback ->
@@ -523,6 +545,7 @@ private fun AndroidComposeUiTest<ComponentActivity>.setView(
     onOpenMediaSettings: () -> Unit = EnsureNeverCalled(),
     onOpenLocationSettings: () -> Unit = EnsureNeverCalled(),
     onOpenLabs: () -> Unit = EnsureNeverCalled(),
+    onOpenChatTheme: () -> Unit = EnsureNeverCalled(),
     onEditProfileClick: (MatrixUser) -> Unit = EnsureNeverCalledWithParam(),
     onSecureBackupClick: () -> Unit = EnsureNeverCalled(),
     onManageAccountClick: (url: String) -> Unit = EnsureNeverCalledWithParam(),
@@ -549,6 +572,7 @@ private fun AndroidComposeUiTest<ComponentActivity>.setView(
             onOpenMediaSettings = onOpenMediaSettings,
             onOpenLocationSettings = onOpenLocationSettings,
             onOpenLabs = onOpenLabs,
+            onOpenChatTheme = onOpenChatTheme,
             onEditProfileClick = onEditProfileClick,
             onSecureBackupClick = onSecureBackupClick,
             onManageAccountClick = onManageAccountClick,

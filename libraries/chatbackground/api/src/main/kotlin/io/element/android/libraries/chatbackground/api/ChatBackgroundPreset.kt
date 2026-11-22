@@ -75,6 +75,30 @@ enum class ChatBackgroundPreset(
         nameRes = R.string.gua_chat_background_preset_night,
         light = ChatBackgroundFill.LinearGradient.vertical(0xFFC1C6EC at 0f, 0xFFD4C0E6 at 1f),
         dark = ChatBackgroundFill.LinearGradient.vertical(0xFF0A0D20 at 0f, 0xFF170C22 at 1f),
+    ),
+    Dawn(
+        id = "dawn",
+        nameRes = R.string.gua_chat_theme_preset_dawn,
+        light = ChatBackgroundFill.LinearGradient.vertical(0xFFF6D9BF at 0f, 0xFFC9DDF0 at 1f),
+        dark = ChatBackgroundFill.LinearGradient.vertical(0xFF1E140C at 0f, 0xFF0B1626 at 1f),
+    ),
+    Forest(
+        id = "forest",
+        nameRes = R.string.gua_chat_theme_preset_forest,
+        light = ChatBackgroundFill.LinearGradient.diagonal(0xFFB9D8B0 at 0f, 0xFF9CC7B4 at 1f),
+        dark = ChatBackgroundFill.LinearGradient.diagonal(0xFF07140A at 0f, 0xFF0A1A14 at 1f),
+    ),
+    Dusk(
+        id = "dusk",
+        nameRes = R.string.gua_chat_theme_preset_dusk,
+        light = ChatBackgroundFill.LinearGradient.vertical(0xFFD9C2EA at 0f, 0xFFF1C9B8 at 1f),
+        dark = ChatBackgroundFill.LinearGradient.vertical(0xFF140C22 at 0f, 0xFF21120C at 1f),
+    ),
+    Citrus(
+        id = "citrus",
+        nameRes = R.string.gua_chat_theme_preset_citrus,
+        light = ChatBackgroundFill.LinearGradient.diagonal(0xFFF2E6A8 at 0f, 0xFFBFE3B4 at 1f),
+        dark = ChatBackgroundFill.LinearGradient.diagonal(0xFF1A1606 at 0f, 0xFF0B1A0C at 1f),
     );
 
     fun fill(isLight: Boolean): ChatBackgroundFill = if (isLight) light else dark

@@ -12,6 +12,8 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundCodec
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
+import io.element.android.libraries.chatbackground.api.ChatBubbleColor
+import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
 import io.element.android.libraries.matrix.api.room.RoomStateEvent
@@ -30,7 +32,7 @@ class DefaultChatBackgroundServiceTest {
         val cache = InMemoryChatBackgroundCache(mapOf(A_ROOM_ID to stored("mint", "\$cached", 2_000)))
         val service = createService(roomStateClient = FakeRoomStateClient(RoomStateResult.Found(stored("sky", "\$server", 10))), cache = cache)
 
-        service.backgroundFlow(FakeJoinedRoom()).test {
+        service.themeFlow(FakeJoinedRoom()).test {
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Mint))
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Sky))
         }
@@ -44,9 +46,9 @@ class DefaultChatBackgroundServiceTest {
             cache = InMemoryChatBackgroundCache(mapOf(A_ROOM_ID to stored("mint", "\$cached", 2_000))),
         )
 
-        service.backgroundFlow(FakeJoinedRoom()).test {
+        service.themeFlow(FakeJoinedRoom()).test {
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Mint))
-            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+            assertThat(awaitItem()).isEqualTo(ChatTheme.STOCK)
         }
     }
 
@@ -63,7 +65,7 @@ class DefaultChatBackgroundServiceTest {
             foreground = foreground,
         )
 
-        service.backgroundFlow(FakeJoinedRoom()).test {
+        service.themeFlow(FakeJoinedRoom()).test {
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Mint))
             yield()
             foreground.givenIsInForeground(false)
@@ -81,8 +83,8 @@ class DefaultChatBackgroundServiceTest {
         val foreground = FakeAppForegroundStateService()
         val service = createService(roomStateClient = FakeRoomStateClient { RoomStateResult.Found(replies.removeFirst()) }, foreground = foreground)
 
-        service.backgroundFlow(FakeJoinedRoom()).test {
-            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+        service.themeFlow(FakeJoinedRoom()).test {
+            assertThat(awaitItem()).isEqualTo(ChatTheme.STOCK)
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Mint))
             foreground.givenIsInForeground(false)
             yield()
@@ -96,15 +98,15 @@ class DefaultChatBackgroundServiceTest {
         val roomStateClient = FakeRoomStateClient(RoomStateResult.Found(stored("mint", "\$server", 1_000)))
         val service = createService(roomStateClient = roomStateClient)
 
-        service.backgroundFlow(FakeJoinedRoom()).test {
-            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+        service.themeFlow(FakeJoinedRoom()).test {
+            assertThat(awaitItem()).isEqualTo(ChatTheme.STOCK)
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Mint))
             service.onTimelineEvent(A_ROOM_ID, EventId("\$old"), 500, contentOf("sand"))
             service.onTimelineEvent(A_ROOM_ID, EventId("\$unreadable"), 3_000, null)
             service.onTimelineEvent(A_ROOM_ID, EventId("\$new"), 2_000, contentOf("ocean"))
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Ocean))
             service.onTimelineEvent(A_ROOM_ID, EventId("\$removed"), 2_500, "{}")
-            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+            assertThat(awaitItem()).isEqualTo(ChatTheme.STOCK)
         }
     }
 
@@ -113,8 +115,8 @@ class DefaultChatBackgroundServiceTest {
         val room = FakeJoinedRoom()
         val service = createService(roomStateClient = FakeRoomStateClient(RoomStateResult.Found(stored("mint", "\$server", 1_000))))
 
-        service.backgroundFlow(room).test {
-            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+        service.themeFlow(room).test {
+            assertThat(awaitItem()).isEqualTo(ChatTheme.STOCK)
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Mint))
             room.stateEvents.value = emptyList()
             testScheduler.runCurrent()
@@ -133,8 +135,8 @@ class DefaultChatBackgroundServiceTest {
         val room = FakeJoinedRoom(sendStateEventRawResult = { _, _, _ -> Result.success(EventId("\$sent")) })
         val service = createService(roomStateClient = FakeRoomStateClient(RoomStateResult.Found(stored("mint", "\$server", 1_000))), cache = cache)
 
-        service.backgroundFlow(room).test {
-            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+        service.themeFlow(room).test {
+            assertThat(awaitItem()).isEqualTo(ChatTheme.STOCK)
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Mint))
 
             assertThat(service.set(room, preset(ChatBackgroundPreset.Night)).isSuccess).isTrue()
@@ -163,7 +165,7 @@ class DefaultChatBackgroundServiceTest {
         val service = createService(roomStateClient = FakeRoomStateClient(RoomStateResult.NotFound))
 
         service.set(room, preset(ChatBackgroundPreset.Aurora))
-        service.set(room, ChatBackground.None)
+        service.set(room, ChatTheme.STOCK)
 
         assertThat(sent).containsExactly(
             Triple("global.gua.room.background", "", """{"kind":"preset","preset":"aurora","v":1}"""),
@@ -172,14 +174,34 @@ class DefaultChatBackgroundServiceTest {
     }
 
     @Test
+    fun `a bubble colour is sent with the wallpaper and shows once the server accepts it`() = runTest {
+        val sent = mutableListOf<String>()
+        val room = FakeJoinedRoom(
+            sendStateEventRawResult = { _, _, content ->
+                sent += content
+                Result.success(EventId("\$sent"))
+            },
+        )
+        val service = createService(roomStateClient = FakeRoomStateClient(RoomStateResult.NotFound))
+        val theme = ChatTheme(ChatBackground.Preset(ChatBackgroundPreset.Dusk), ChatBubbleColor.Orange)
+
+        service.themeFlow(room).test {
+            assertThat(awaitItem()).isEqualTo(ChatTheme.STOCK)
+            assertThat(service.set(room, theme).isSuccess).isTrue()
+            assertThat(awaitItem()).isEqualTo(theme)
+        }
+        assertThat(sent).containsExactly("""{"bubble":"orange","kind":"preset","preset":"dusk","v":1}""")
+    }
+
+    @Test
     fun `an older copy of an event does not undo its redaction`() = runTest {
         val redacted = StoredChatBackground(ChatBackgroundCodec.REMOVED_CONTENT, "\$event", 1_000)
         val cache = InMemoryChatBackgroundCache(mapOf(A_ROOM_ID to stored("sky", "\$event", 1_000)))
         val service = createService(roomStateClient = FakeRoomStateClient(RoomStateResult.Found(redacted)), cache = cache)
 
-        service.backgroundFlow(FakeJoinedRoom()).test {
+        service.themeFlow(FakeJoinedRoom()).test {
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Sky))
-            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+            assertThat(awaitItem()).isEqualTo(ChatTheme.STOCK)
             service.onTimelineEvent(A_ROOM_ID, EventId("\$event"), 1_000, contentOf("sky"))
             testScheduler.runCurrent()
             expectNoEvents()
@@ -192,8 +214,8 @@ class DefaultChatBackgroundServiceTest {
         val room = FakeJoinedRoom(sendStateEventRawResult = { _, _, _ -> Result.failure(IllegalStateException("403")) })
         val service = createService(roomStateClient = FakeRoomStateClient(RoomStateResult.Found(stored("mint", "\$server", 1_000))))
 
-        service.backgroundFlow(room).test {
-            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+        service.themeFlow(room).test {
+            assertThat(awaitItem()).isEqualTo(ChatTheme.STOCK)
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Mint))
             assertThat(service.set(room, preset(ChatBackgroundPreset.Night)).isFailure).isTrue()
             expectNoEvents()
@@ -205,8 +227,8 @@ class DefaultChatBackgroundServiceTest {
         val reply = CompletableDeferred<RoomStateResult>()
         val service = createService(roomStateClient = FakeRoomStateClient { reply.await() })
 
-        service.backgroundFlow(FakeJoinedRoom()).test {
-            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+        service.themeFlow(FakeJoinedRoom()).test {
+            assertThat(awaitItem()).isEqualTo(ChatTheme.STOCK)
             service.onTimelineEvent(A_ROOM_ID, EventId("\$stale"), 10, contentOf("sky"))
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Sky))
             reply.complete(RoomStateResult.Found(stored("mint", "\$server", 1_000)))
@@ -219,8 +241,8 @@ class DefaultChatBackgroundServiceTest {
         val reply = CompletableDeferred<RoomStateResult>()
         val service = createService(roomStateClient = FakeRoomStateClient { reply.await() })
 
-        service.backgroundFlow(FakeJoinedRoom()).test {
-            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+        service.themeFlow(FakeJoinedRoom()).test {
+            assertThat(awaitItem()).isEqualTo(ChatTheme.STOCK)
             service.onTimelineEvent(A_ROOM_ID, EventId("\$live"), 2_000, contentOf("sky"))
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Sky))
             reply.complete(RoomStateResult.Found(stored("mint", "\$server", 1_000)))
@@ -235,8 +257,8 @@ class DefaultChatBackgroundServiceTest {
         val room = FakeJoinedRoom().apply { stateEvents.value = listOf(aStateEvent("sand", eventId = "\$old", timestamp = 10)) }
         val service = createService(roomStateClient = FakeRoomStateClient { reply.await() })
 
-        service.backgroundFlow(room).test {
-            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+        service.themeFlow(room).test {
+            assertThat(awaitItem()).isEqualTo(ChatTheme.STOCK)
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Sand))
             reply.complete(RoomStateResult.Found(stored("ocean", "\$server", 1_000)))
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Ocean))
@@ -249,8 +271,8 @@ class DefaultChatBackgroundServiceTest {
         val room = FakeJoinedRoom(sendStateEventRawResult = { _, _, _ -> Result.success(EventId("\$sent")) })
         val service = createService(roomStateClient = FakeRoomStateClient { reply.await() })
 
-        service.backgroundFlow(room).test {
-            assertThat(awaitItem()).isEqualTo(ChatBackground.None)
+        service.themeFlow(room).test {
+            assertThat(awaitItem()).isEqualTo(ChatTheme.STOCK)
             assertThat(service.set(room, preset(ChatBackgroundPreset.Night)).isSuccess).isTrue()
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Night))
             reply.complete(RoomStateResult.Found(stored("mint", "\$server", 1_000)))
@@ -264,16 +286,16 @@ class DefaultChatBackgroundServiceTest {
         val cache = InMemoryChatBackgroundCache(mapOf(A_ROOM_ID to stored("mint", "\$cached", 2_000)))
         val service = createService(roomStateClient = FakeRoomStateClient(RoomStateResult.Found(stored("sky", "\$server", 3_000))), cache = cache)
 
-        assertThat(service.currentBackground(A_ROOM_ID)).isEqualTo(ChatBackground.None)
+        assertThat(service.currentTheme(A_ROOM_ID)).isEqualTo(ChatTheme.STOCK)
         service.preload()
         testScheduler.runCurrent()
-        assertThat(service.currentBackground(A_ROOM_ID)).isEqualTo(preset(ChatBackgroundPreset.Mint))
+        assertThat(service.currentTheme(A_ROOM_ID)).isEqualTo(preset(ChatBackgroundPreset.Mint))
 
-        service.backgroundFlow(FakeJoinedRoom()).test {
+        service.themeFlow(FakeJoinedRoom()).test {
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Mint))
             assertThat(awaitItem()).isEqualTo(preset(ChatBackgroundPreset.Sky))
         }
-        assertThat(service.currentBackground(A_ROOM_ID)).isEqualTo(preset(ChatBackgroundPreset.Sky))
+        assertThat(service.currentTheme(A_ROOM_ID)).isEqualTo(preset(ChatBackgroundPreset.Sky))
     }
 
     private fun TestScope.createService(
@@ -294,7 +316,7 @@ private class FakeRoomStateClient(private val result: suspend (RoomId) -> RoomSt
     override suspend fun chatBackground(roomId: RoomId): RoomStateResult = result(roomId)
 }
 
-private fun preset(preset: ChatBackgroundPreset) = ChatBackground.Preset(preset)
+private fun preset(preset: ChatBackgroundPreset) = ChatTheme(ChatBackground.Preset(preset))
 
 private fun contentOf(preset: String) = """{"kind":"preset","preset":"$preset","v":1}"""
 
