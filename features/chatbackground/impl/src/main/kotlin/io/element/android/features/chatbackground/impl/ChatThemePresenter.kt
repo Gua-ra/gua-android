@@ -69,8 +69,8 @@ class ChatThemePresenter(
 
         fun save() {
             val draft = photoDraft
-            val previewed = preview
-            val picker = page as? ChatThemePage.BubblePicker
+            val theme = preview?.saved ?: (page as? ChatThemePage.BubblePicker)?.let { base.copy(bubble = it.selection) }
+            val isPickerChoice = preview == null || page == ChatThemePage.WallpaperPicker
             val write: suspend () -> Result<Unit> = when {
                 draft != null -> {
                     {
@@ -78,18 +78,8 @@ class ChatThemePresenter(
                             .flatMap { url -> target.set(base.copy(background = draft.toPhoto(url))) }
                     }
                 }
-                previewed != null -> if (!isChange(previewed.saved, current, base, isPickerChoice = page == ChatThemePage.WallpaperPicker)) {
-                    return
-                } else {
-                    { target.set(previewed.saved) }
-                }
-                picker != null -> {
-                    val theme = base.copy(bubble = picker.selection)
-                    if (!isChange(theme, current, base, isPickerChoice = true)) {
-                        return
-                    } else {
-                        { target.set(theme) }
-                    }
+                theme != null && isChange(theme, current, base, isPickerChoice) -> {
+                    { target.set(theme) }
                 }
                 else -> return
             }
@@ -97,21 +87,19 @@ class ChatThemePresenter(
             coroutineScope.save(action, ::onSaved, write)
         }
 
+        fun previewOf(theme: ChatTheme): ChatThemePreview {
+            val shown = if (theme == ChatTheme.STOCK && target.mode == ChatThemeMode.Chat) targetState.defaultTheme else theme
+            return ChatThemePreview(shown = shown, saved = theme)
+        }
+
         fun handleEvent(event: ChatThemeEvent) {
             when (event) {
-                is ChatThemeEvent.SelectTheme -> if (canChange) preview = ChatThemePreview(shown = event.theme, saved = event.theme)
-                ChatThemeEvent.SelectDefault -> if (canChange) {
-                    val shown = if (target.mode == ChatThemeMode.Chat) targetState.defaultTheme else ChatTheme.STOCK
-                    preview = ChatThemePreview(shown = shown, saved = ChatTheme.STOCK)
-                }
+                is ChatThemeEvent.SelectTheme -> if (canChange) preview = previewOf(event.theme)
+                ChatThemeEvent.SelectDefault -> if (canChange) preview = previewOf(ChatTheme.STOCK)
                 ChatThemeEvent.OpenBubblePicker -> if (canChange) page = ChatThemePage.BubblePicker(base.bubble)
                 is ChatThemeEvent.SelectBubble -> (page as? ChatThemePage.BubblePicker)?.let { page = it.copy(selection = event.bubble) }
                 ChatThemeEvent.OpenWallpaperPicker -> if (canChange) page = ChatThemePage.WallpaperPicker
-                is ChatThemeEvent.SelectWallpaper -> if (canChange) {
-                    val theme = base.copy(background = event.background)
-                    val shown = if (theme == ChatTheme.STOCK && target.mode == ChatThemeMode.Chat) targetState.defaultTheme else theme
-                    preview = ChatThemePreview(shown = shown, saved = theme)
-                }
+                is ChatThemeEvent.SelectWallpaper -> if (canChange) preview = previewOf(base.copy(background = event.background))
                 ChatThemeEvent.ChoosePhoto -> if (canChange) photoPicker.launch()
                 is ChatThemeEvent.SetPhotoDim -> photoDraft = photoDraft?.copy(
                     dim = event.dim.coerceIn(0, ChatBackground.Photo.MAX_DIM),
