@@ -54,6 +54,11 @@ class MessagesLiveWallpaperTest {
     }
 
     @Test
+    fun `a chat squeezed to nothing covers the wallpaper`() {
+        assertThat(aMessagesState().liveWallpaperCues(isChatHidden = true)).isEqualTo(LiveWallpaperCues(isCovered = true, sendCount = 0))
+    }
+
+    @Test
     fun `the message menu and its text selection cover the timeline`() {
         val shown = MessageMenuState.Target.Shown(
             event = event,

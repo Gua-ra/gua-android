@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -304,6 +305,14 @@ fun MessagesView(
     val isShowingChatBackground = chatBackgroundTransition.isShowingBackground
     var topBarHeight by remember { mutableStateOf(0.dp) }
     val chatArea = rememberLiveWallpaperVisibleArea()
+    val density = LocalDensity.current
+    val isChatHidden by remember(density) {
+        derivedStateOf {
+            val top = chatArea.top
+            val bottom = chatArea.bottom
+            top != null && bottom != null && bottom - top < with(density) { 4.dp.toPx() }
+        }
+    }
     MessageMenuHost(
         controller = messageMenuController,
         modifier = modifier,
@@ -333,7 +342,7 @@ fun MessagesView(
                     .messageMenuBackdrop(messageMenuController, isMenuShown = state.messageMenuState.target is MessageMenuState.Target.Shown)
                     .systemBarsPadding()
                     .padding(top = topBarHeight),
-                live = state.liveWallpaperCues(),
+                live = state.liveWallpaperCues(isChatHidden = isChatHidden),
                 visibleArea = chatArea,
             )
         }

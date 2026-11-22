@@ -24,8 +24,8 @@ import io.element.android.libraries.architecture.overlay.Overlay
 import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperCues
 import io.element.android.libraries.matrix.ui.chatbackground.LocalLiveWallpaperHidden
 
-internal fun MessagesState.liveWallpaperCues() = LiveWallpaperCues(
-    isCovered = isTimelineCovered(),
+internal fun MessagesState.liveWallpaperCues(isChatHidden: Boolean = false) = LiveWallpaperCues(
+    isCovered = isChatHidden || isTimelineCovered(),
     sendCount = timelineState.ownNewEventCount,
 )
 

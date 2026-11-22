@@ -10,7 +10,9 @@
 package io.element.android.features.messages.impl.chatbackground
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -63,6 +65,13 @@ class MessagesViewLiveWallpaperTest : RobolectricTest() {
     }
 
     @Test
+    fun `the timeline's wallpaper is covered while the top bar and the composer leave no room for the chat`() = runAndroidComposeUiTest<ComponentActivity> {
+        setMessagesView(aMessagesState(chatTheme = ChatArtwork.GlassDrops.theme), modifier = Modifier.height(100.dp))
+        onNode(SemanticsMatcher.keyIsDefined(LiveWallpaperCuesKey))
+            .assert(SemanticsMatcher.expectValue(LiveWallpaperCuesKey, LiveWallpaperCues(isCovered = true, sendCount = 0)))
+    }
+
+    @Test
     fun `the timeline's wallpaper starts its send pulse in the chat between the top bar and the composer`() = runAndroidComposeUiTest<ComponentActivity> {
         setMessagesView(aMessagesState(chatTheme = ChatArtwork.GlassDrops.theme))
         val wallpaper = onNode(SemanticsMatcher.keyIsDefined(LiveWallpaperVisibleAreaKey)).fetchSemanticsNode()
@@ -106,7 +115,7 @@ class MessagesViewLiveWallpaperTest : RobolectricTest() {
     }
 }
 
-private fun AndroidComposeUiTest<ComponentActivity>.setMessagesView(state: MessagesState) {
+private fun AndroidComposeUiTest<ComponentActivity>.setMessagesView(state: MessagesState, modifier: Modifier = Modifier) {
     setSafeContent {
         // The rich text editor cannot run here.
         CompositionLocalProvider(LocalInspectionMode provides true) {
@@ -124,6 +133,7 @@ private fun AndroidComposeUiTest<ComponentActivity>.setMessagesView(state: Messa
                 onViewAllPinnedMessagesClick = {},
                 onThreadsListClick = {},
                 knockRequestsBannerView = {},
+                modifier = modifier,
                 customReactionBottomSheet = {},
             )
         }
