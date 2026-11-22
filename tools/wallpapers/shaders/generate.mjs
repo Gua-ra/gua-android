@@ -54,8 +54,6 @@ const HOSKINS_MIT = [
 const HASH_FUNCTIONS = new Set(['hash12', 'hash22']);
 const HOSKINS_BLOCK = `/*\n${HOSKINS_MIT.map((l) => (l ? ` * ${l}` : ' *')).join('\n')}\n */`;
 
-// ---------------------------------------------------------------- Lab source
-
 function labScripts(labPath) {
   const stat = fs.statSync(labPath);
   if (stat.isDirectory()) {
@@ -97,8 +95,6 @@ export function defaultLabPath() {
   const dir = path.resolve(HERE, '..', 'lab');
   return fs.existsSync(dir) ? dir : null;
 }
-
-// ---------------------------------------------------------------- GLSL parsing
 
 // Top level of a Lab shader: a precision statement, the uniform block, then functions.
 export function parseGlsl(src) {
@@ -179,8 +175,6 @@ function bodyText(body) {
   const pad = Math.min(...lines.filter((l) => l.trim()).map((l) => l.match(/^ */)[0].length));
   return lines.map((l) => l.slice(pad)).join('\n');
 }
-
-// ---------------------------------------------------------------- MSL
 
 export function toMsl(art, glsl) {
   const fns = parseGlsl(glsl);
@@ -269,8 +263,6 @@ fragment float4 gua_wallpaper_fragment(GuaWallpaperVertexOut in [[stage_in]],
 `;
 }
 
-// ---------------------------------------------------------------- AGSL
-
 const AGSL_TYPES = [['vec2', 'float2'], ['vec3', 'float3'], ['vec4', 'float4'], ['mat2', 'float2x2']];
 
 function agslRewrite(text) {
@@ -347,8 +339,6 @@ ${indent(agslRewrite(bodyText(threadCalls(main.body))), '    ')}
 }
 `;
 }
-
-// ---------------------------------------------------------------- CLI
 
 function parseArgs(argv) {
   const args = {};

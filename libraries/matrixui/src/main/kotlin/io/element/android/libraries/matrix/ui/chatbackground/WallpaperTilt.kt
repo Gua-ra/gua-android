@@ -32,8 +32,8 @@ internal data class WallpaperTiltVector(val x: Double, val y: Double) {
 }
 
 /**
- * The device's tilt from its gyroscope, in its own frame. The viewer's direction starts on the screen's normal and stays still in the world
- * while the device turns, then slowly comes back to the normal, so the picture recentres on however the phone is held.
+ * The gyroscope's tilt in the device's frame. The viewer's direction stays still in the world while the device turns, then drifts back
+ * to the screen's normal, so the picture recentres on however the phone is held.
  */
 internal class WallpaperTiltTracker {
     var tilt = WallpaperTiltVector.Zero
@@ -45,8 +45,8 @@ internal class WallpaperTiltTracker {
     private var lastSeconds: Double? = null
 
     /**
-     * One gyroscope sample at [timeSeconds]: the rotation rate in rad/s around the device's x (right), y (top) and z (out of the screen)
-     * axes, right-hand rule. The first sample after a start or a [stop] only sets the clock.
+     * Rates are in rad/s around the device's x (right), y (top) and z (out of the screen) axes, right-hand rule. The first sample after a
+     * [stop] only sets the clock.
      */
     fun sample(timeSeconds: Double, rateX: Double, rateY: Double, rateZ: Double) {
         val last = lastSeconds
@@ -67,17 +67,16 @@ internal class WallpaperTiltTracker {
         tilt = WallpaperTiltVector(x = tilt.x + (targetX - tilt.x) * smoothing, y = tilt.y + (targetY - tilt.y) * smoothing)
     }
 
-    /** Keeps the tilt, as a pause does; the next sample only sets the clock. */
+    /** Keeps the tilt; the next sample only sets the clock. */
     fun stop() {
         lastSeconds = null
     }
 
-    /** Puts the smoothed tilt, in the device's frame, at [tilt]; the viewer and the clock are kept. */
+    /** Sets the smoothed tilt, in the device's frame, keeping the viewer and the clock. */
     fun continueFrom(tilt: WallpaperTiltVector) {
         this.tilt = tilt
     }
 
-    /** Back to rest: the viewer on the screen's normal and no tilt. */
     fun reset() {
         stop()
         setViewer(0.0, 0.0, 1.0)
@@ -92,7 +91,7 @@ internal class WallpaperTiltTracker {
     }
 }
 
-/** [tilt], in the device's frame, in the interface's frame on a screen turned by [surfaceRotation], a `Surface.ROTATION_*` value. */
+/** Turns a device-frame [tilt] into the interface's frame; [surfaceRotation] is a `Surface.ROTATION_*` value. */
 internal fun wallpaperTiltInInterface(surfaceRotation: Int, tilt: WallpaperTiltVector): WallpaperTiltVector = when (surfaceRotation) {
     Surface.ROTATION_90 -> WallpaperTiltVector(x = -tilt.y, y = tilt.x)
     Surface.ROTATION_180 -> WallpaperTiltVector(x = -tilt.x, y = -tilt.y)
@@ -100,15 +99,14 @@ internal fun wallpaperTiltInInterface(surfaceRotation: Int, tilt: WallpaperTiltV
     else -> tilt
 }
 
-/** S: how far a still moves at full tilt over a view of [viewWidth] x [viewHeight], and how much larger than the view it is on every side. */
+/** How far a still moves at full tilt, and so how far it overscans the view on every side. */
 internal fun wallpaperParallaxShift(viewWidth: Double, viewHeight: Double): Double = PARALLAX_SHIFT_SHARE * max(viewWidth, viewHeight)
 
-/** Where a still lands over its view, in the view's coordinates. */
 internal data class WallpaperStillRect(val left: Double, val top: Double, val width: Double, val height: Double)
 
 /**
- * The still over a view of [viewWidth] x [viewHeight]: aspect-filled into the view grown by [shift] on every side and cropped around the
- * anchor ([anchorX], [anchorY]), then moved by [tilt]: (-x × shift, y × shift), y down.
+ * The still aspect-filled into the view grown by [shift] on every side and cropped around the anchor, then moved by
+ * (-x × shift, y × shift) for [tilt], y down.
  */
 internal fun wallpaperStillRect(
     viewWidth: Double,

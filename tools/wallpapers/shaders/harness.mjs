@@ -39,8 +39,6 @@ export function goldenName(id, c) {
   return `${id}-${c.dark ? 'dark' : 'light'}-t${c.t}-p${Math.round(c.pulse * 100)}.png`;
 }
 
-// ---------------------------------------------------------------- Playwright
-
 // No dependency is installed for this folder: point --playwright (or GUA_PLAYWRIGHT) at an existing
 // playwright-core or playwright package, or a node_modules folder that holds one.
 export function loadPlaywright(where) {
@@ -138,8 +136,6 @@ export async function openRenderer({ playwright, backend = 'swiftshader' }) {
 
   return { renderer, render, close: () => browser.close() };
 }
-
-// ---------------------------------------------------------------- PNG (8-bit RGB, no colour chunks)
 
 function chunk(type, data) {
   const len = Buffer.alloc(4);
@@ -247,8 +243,6 @@ export function decodePng(buf) {
   }
   return { w, h, rgba };
 }
-
-// ---------------------------------------------------------------- comparison
 
 // 2x box downsample of RGBA rows, each channel rounded half up; Swift's validate-msl.swift does the same.
 export function downsample2x(rgba, w = WIDTH, h = HEIGHT) {

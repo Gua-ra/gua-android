@@ -149,7 +149,7 @@ class WallpaperMotionObserversTest : RobolectricTest() {
         }
     }
 
-    // ValueAnimator.setDurationScale is a hidden API that Robolectric implements; the system sets it from the developer options.
+    // setDurationScale is a hidden API that Robolectric implements.
     private fun setAnimatorDurationScale(scale: Float) {
         ValueAnimator::class.java.getMethod("setDurationScale", Float::class.javaPrimitiveType).invoke(null, scale)
     }

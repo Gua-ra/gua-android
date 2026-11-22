@@ -24,10 +24,6 @@ import io.element.android.libraries.architecture.overlay.Overlay
 import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperCues
 import io.element.android.libraries.matrix.ui.chatbackground.LocalLiveWallpaperHidden
 
-/**
- * What the timeline's live wallpaper needs: whether a sheet, a dialog or the message menu covers it, and the user's sends from this
- * device.
- */
 internal fun MessagesState.liveWallpaperCues() = LiveWallpaperCues(
     isCovered = isTimelineCovered(),
     sendCount = timelineState.ownNewEventCount,
@@ -45,10 +41,7 @@ internal fun MessagesState.isTimelineCovered(): Boolean {
         isDialogShown()
 }
 
-/**
- * The end-poll confirmation is the view's own state, and the member moderation sheet keeps its target out of [MessagesState], so the
- * wallpaper keeps going under them.
- */
+/** Misses the end-poll confirmation and the member moderation sheet, whose state is not in [MessagesState]. */
 private fun MessagesState.isDialogShown(): Boolean {
     return redactEventAction is MessagesState.ConfirmingRedaction ||
         showReinvitePrompt ||
@@ -59,15 +52,12 @@ private fun MessagesState.isDialogShown(): Boolean {
         voiceMessageComposerState.showSendFailureDialog
 }
 
-/**
- * The screens of [content] with their live wallpapers paused while [overlay] shows a screen over them. The media viewer, the gallery
- * and the avatar preview open there, and leave the chat under them resumed.
- */
+/** Pauses live wallpapers in [content] while [overlay] shows a screen, such as the media viewer, that leaves the chat under it resumed. */
 @Composable
 internal fun <T : Any> PauseLiveWallpapersUnder(overlay: Overlay<T>, content: @Composable () -> Unit) {
     val elements by overlay.elements.collectAsState()
     CompositionLocalProvider(LocalLiveWallpaperHidden provides elements.isOverlayShown(), content = content)
 }
 
-/** Whether an overlay screen is showing or on its way in; one on its way out no longer hides the screen under it. */
+/** A screen on its way out of the overlay no longer hides the chat. */
 internal fun <T> NavElements<T, BackStack.State>.isOverlayShown(): Boolean = any { it.targetState == BackStack.State.ACTIVE }

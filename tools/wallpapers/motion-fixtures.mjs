@@ -17,8 +17,6 @@ const PULSE = { rise: 0.25, decay: 0.9, end: 4.2 };
 
 const round = (x) => Number(x.toFixed(12)) + 0;
 
-// ---------------------------------------------------------------- tilt
-
 function cross(a, b) {
   return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 }
@@ -108,8 +106,6 @@ const tiltCases = [
   ]),
 ];
 
-// ---------------------------------------------------------------- interface orientation
-
 // rotation: the screen's rotation from the device's natural portrait, Android's Surface rotation (90 when the device is turned a quarter
 // turn counter-clockwise; iOS's landscapeRight).
 function toInterface(rotation, d) {
@@ -123,8 +119,6 @@ function toInterface(rotation, d) {
 }
 
 const interfaceCases = [0, 90, 180, 270].map((rotation) => ({ rotation, device: [0.3, -0.2], expected: toInterface(rotation, [0.3, -0.2]).map((x) => round(x)) }));
-
-// ---------------------------------------------------------------- still parallax rect
 
 function stillRect(view, anchor, tilt) {
   const shift = STILL.shiftShare * Math.max(view[0], view[1]);
@@ -144,8 +138,6 @@ for (const view of [[393, 852], [852, 393], [1024, 1366]]) {
     }
   }
 }
-
-// ---------------------------------------------------------------- send pulse
 
 function envelope(seconds) {
   if (seconds < 0 || seconds > PULSE.end) return 0;

@@ -990,7 +990,6 @@ class MessagesFlowNode(
             LocalMentionSpanUpdater provides mentionSpanUpdater
         ) {
             Box(modifier = modifier) {
-                // GUA FORK: live chat wallpapers pause while the media viewer, the gallery or the avatar preview shows over the chat.
                 PauseLiveWallpapersUnder(overlay) { BackstackView() }
                 OverlayView()
                 AsyncIndicatorHost(modifier = Modifier.statusBarsPadding(), state = asyncIndicatorState)

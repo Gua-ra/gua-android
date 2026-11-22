@@ -47,7 +47,6 @@ class LiveWallpaperVisibleAreaTest : RobolectricTest() {
             var canvas = Rect.Zero
             setContent {
                 Box(Modifier.fillMaxSize()) {
-                    // Like the timeline's: below the top bar, outside the keyboard padding.
                     Box(Modifier.fillMaxSize().padding(top = TOP_BAR).onGloballyPositioned { canvas = it.boundsInRoot() })
                     Column(Modifier.fillMaxSize().padding(bottom = keyboardHeight)) {
                         Spacer(Modifier.height(TOP_BAR))
@@ -121,7 +120,6 @@ class LiveWallpaperVisibleAreaTest : RobolectricTest() {
         }
         assertThat(canvasArea(canvasRootTop = 0f, area)).isEqualTo(LiveWallpaperCanvasArea(top = 240f, bottom = 1900f, bottomInset = 0f))
         assertThat(canvasArea(canvasRootTop = 240f, area)).isEqualTo(LiveWallpaperCanvasArea(top = 0f, bottom = 1660f, bottomInset = 0f))
-        // A canvas that starts below the chat, such as one under a taller top bar.
         assertThat(canvasArea(canvasRootTop = 300f, area)).isEqualTo(LiveWallpaperCanvasArea(top = -60f, bottom = 1600f, bottomInset = 0f))
     }
 
@@ -140,9 +138,7 @@ class LiveWallpaperVisibleAreaTest : RobolectricTest() {
 
     @Test
     fun `the fallback inset is the part of the system bottom inset the canvas reaches into`() {
-        // Reaching the window's bottom, under the navigation bar.
         assertThat(canvasArea(canvasRootTop = 180f, area = null, systemBottomInset = 63f, spaceBelowCanvas = 0f).bottomInset).isEqualTo(63f)
-        // Padded for the navigation bar, as the chat screen's canvas is.
         assertThat(canvasArea(canvasRootTop = 180f, area = null, systemBottomInset = 63f, spaceBelowCanvas = 63f).bottomInset).isEqualTo(0f)
         assertThat(canvasArea(canvasRootTop = 180f, area = null, systemBottomInset = 63f, spaceBelowCanvas = 20f).bottomInset).isEqualTo(43f)
         assertThat(canvasArea(canvasRootTop = 180f, area = null, systemBottomInset = 63f, spaceBelowCanvas = 400f).bottomInset).isEqualTo(0f)

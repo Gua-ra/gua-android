@@ -27,7 +27,7 @@ class LiveWallpaperPulseOriginTest {
 
     @Test
     fun `the spot is taken on the chat above the composer, in the frame's pixels from its bottom`() {
-        // The frame reaches 145.42 px past the canvas at the top and at the bottom, so its bottom is at 2195.42.
+        // The frame overhangs the canvas by 145.42 px at the top and the bottom, so its bottom is at 2195.42.
         assertOrigin(phone, centre, visibleTop = 0f, visibleBottom = 1900f, expected = Offset(896.4f, 2195.42f - 1685.3f))
         assertSpot(phone, centre, visibleTop = 0f, visibleBottom = 1900f, expected = Offset(896.4f, 1685.3f))
     }
@@ -54,7 +54,6 @@ class LiveWallpaperPulseOriginTest {
     fun `a taller composer lifts the spot`() {
         assertSpot(phone, centre, visibleTop = 0f, visibleBottom = 1900f, expected = Offset(896.4f, 1685.3f))
         assertSpot(phone, centre, visibleTop = 0f, visibleBottom = 1720f, expected = Offset(896.4f, 1525.64f))
-        // With the keyboard open as well.
         assertSpot(phone, centre, visibleTop = 0f, visibleBottom = 970f, expected = Offset(896.4f, 860.39f))
     }
 
@@ -80,11 +79,8 @@ class LiveWallpaperPulseOriginTest {
 
     @Test
     fun `a chat area reported past the canvas only counts where the canvas is`() {
-        // Starting under the top bar, above the canvas.
         assertSpot(phone, centre, visibleTop = -150f, visibleBottom = 1900f, expected = Offset(896.4f, 1685.3f))
-        // Reaching below the canvas.
         assertSpot(phone, centre, visibleTop = 0f, visibleBottom = 2200f, expected = Offset(896.4f, 1818.35f))
-        // Starting below the canvas's top.
         assertSpot(phone, centre, visibleTop = 100f, visibleBottom = 1900f, expected = Offset(896.4f, 1696.6f))
     }
 

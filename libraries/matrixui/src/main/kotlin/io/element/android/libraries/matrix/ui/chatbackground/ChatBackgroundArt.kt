@@ -53,8 +53,8 @@ private val GRAIN_STYLE = wallpaperGrainStyle()
  * An artwork's still image, decoded by Coil off the main thread at the frame's size and cropped around its anchor.
  * Its fallback preset shows until the first image has loaded, and if it never does; a new size or appearance keeps the previous image until
  * its own has loaded.
- * With [live] cues, as in the chat and the theme preview, the artwork moves on Android 13 and up: it tilts with the device and a live one
- * animates over its still, with its send pulse in [visibleArea]. Previews and UI tests always show the still, unmoved.
+ * With [live] cues, on Android 13 and up, the artwork tilts with the device and a live one animates. Previews and UI tests always show
+ * the still, unmoved.
  */
 @Composable
 internal fun ArtBackground(
@@ -77,10 +77,6 @@ internal fun ArtBackground(
     }
 }
 
-/**
- * An artwork that tilts with the device, and animates if it is live, whenever the motion policy lets a live wallpaper animate. Without a
- * gyroscope it never tilts and keeps its plain framing.
- */
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 private fun MovingArt(
@@ -107,7 +103,7 @@ private fun MovingArt(
     }
 }
 
-/** The still under its grain. With a [parallax] both are cropped from a frame larger than the view and move with the tilt. */
+/** With a [parallax] the still and its grain overscan the view and move with the tilt. */
 @Composable
 private fun ArtStill(artwork: ChatArtwork, viewWidthPx: Int, viewHeightPx: Int, parallax: WallpaperParallax?) {
     val shift = parallax?.shift ?: 0

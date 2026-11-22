@@ -13,10 +13,10 @@ import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 
 /**
- * What a screen tells its live artwork. A chat background drawn without cues shows the still, as tiles and pickers do.
+ * A chat background drawn without cues shows its still, as tiles and pickers do.
  *
  * @property isCovered a sheet, a dialog or the message menu covers the wallpaper, so it pauses.
- * @property sendCount the user's sends; each increase plays the send pulse.
+ * @property sendCount each increase plays the send pulse.
  */
 @Immutable
 data class LiveWallpaperCues(
@@ -24,13 +24,10 @@ data class LiveWallpaperCues(
     val sendCount: Int = 0,
 )
 
-/**
- * True while something hides the whole screen without taking it out of the resumed lifecycle, such as the media viewer, which the
- * messages flow shows as an overlay over the chat. A live wallpaper under it pauses, as when its screen is not on screen.
- */
+/** True while an overlay such as the media viewer hides the screen but leaves it resumed, so live wallpapers under it pause. */
 val LocalLiveWallpaperHidden = compositionLocalOf { false }
 
-/** The cues a chat background was drawn with. Not read by accessibility services; tests use it to check what a screen passes. */
+/** Lets tests read the cues a chat background was drawn with; accessibility services ignore it. */
 val LiveWallpaperCuesKey = SemanticsPropertyKey<LiveWallpaperCues>("LiveWallpaperCues")
 
 internal var SemanticsPropertyReceiver.liveWallpaperCues by LiveWallpaperCuesKey

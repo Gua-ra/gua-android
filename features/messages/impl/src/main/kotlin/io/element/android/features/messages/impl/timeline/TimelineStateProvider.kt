@@ -65,7 +65,6 @@ fun aTimelineState(
     newEventState: NewEventState = NewEventState.None,
     selectionState: SelectionState = SelectionState.Disabled,
     useNewTimelineEventRenderer: Boolean = false,
-    // GUA FORK: the user's sends from this device, for the live wallpaper's send pulse.
     ownNewEventCount: Int = 0,
     eventSink: (TimelineEvent) -> Unit = {},
 ): TimelineState {
@@ -90,7 +89,6 @@ fun aTimelineState(
         jumpToUnread = jumpToUnread,
         selectionState = selectionState,
         useNewTimelineEventRenderer = useNewTimelineEventRenderer,
-        // GUA FORK: the user's sends from this device, for the live wallpaper's send pulse.
         ownNewEventCount = ownNewEventCount,
         eventSink = eventSink,
     )

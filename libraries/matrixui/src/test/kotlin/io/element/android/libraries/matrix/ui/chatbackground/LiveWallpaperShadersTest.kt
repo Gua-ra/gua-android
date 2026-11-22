@@ -56,12 +56,9 @@ class LiveWallpaperShadersTest : RobolectricTest() {
 
     @Test
     fun `the shader's frame covers the view and is cropped around the anchor like the still`() {
-        // Narrower than the still: the frame fits the height and the anchor picks which side is cut.
         assertFrame(liveWallpaperFrame(Size(1000f, 2796f), UnitPoint(0.5f, 0.5f)), Rect(-145f, 0f, 1145f, 2796f))
         assertFrame(liveWallpaperFrame(Size(1000f, 2796f), UnitPoint(1f, 0f)), Rect(-290f, 0f, 1000f, 2796f))
-        // Wider than the still: the frame fits the width.
         assertFrame(liveWallpaperFrame(Size(645f, 1000f), UnitPoint(0.5f, 0.08f)), Rect(0f, -31.84f, 645f, 1366.16f))
-        // The same shape as the still: nothing is cropped.
         assertFrame(liveWallpaperFrame(Size(645f, 1398f), UnitPoint(0.5f, 0f)), Rect(0f, 0f, 645f, 1398f))
     }
 
@@ -88,7 +85,6 @@ class LiveWallpaperShadersTest : RobolectricTest() {
             val stillOffset = chatBackgroundAlignment(artwork.anchor).align(stillSize, overscanned, LayoutDirection.Ltr)
             assertWithMessage(artwork.id).that(frame.left).isWithin(1f).of(stillOffset.x.toFloat() - shift)
             assertWithMessage(artwork.id).that(frame.top).isWithin(1f).of(stillOffset.y.toFloat() - shift)
-            // It covers the view grown by the shift, so the still moved by a full tilt still covers the view.
             assertWithMessage(artwork.id).that(frame.left).isAtMost(0.01f - shift)
             assertWithMessage(artwork.id).that(frame.top).isAtMost(0.01f - shift)
             assertWithMessage(artwork.id).that(frame.right).isAtLeast(view.width + shift - 0.01f)

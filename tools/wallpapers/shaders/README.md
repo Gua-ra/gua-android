@@ -27,15 +27,15 @@ node tools/wallpapers/shaders/check-agsl-device.mjs [--serial <adb serial>]
 
 ## Uniforms
 
-The Lab contract (spec 6.1). The shaders work in GL coordinates: origin bottom-left, y up.
+The shaders work in GL coordinates: origin bottom-left, y up.
 
 | Name | Type | Meaning |
 |---|---|---|
 | `u_res` | float2 | Render target size in pixels. |
-| `u_time` | float | `(still_time + seconds since the wallpaper appeared) mod 1800`, with the artwork's `still_time` from `manifest.json`. Starting at the still's time rather than 0 refines the shared spec (6.1) so the first live frame is the still it replaces. Previews with frozen time use `still_time`. |
+| `u_time` | float | `(still_time + seconds since the wallpaper appeared) mod 1800`, with the artwork's `still_time` from `manifest.json`. Starting at the still's time makes the first live frame match the still it replaces. Previews with frozen time use `still_time`. |
 | `u_dark` | float | 1 for the dark variant, 0 for light. |
-| `u_pulse` | float | Send envelope, 0 when idle. For `dt` seconds after the pulse starts: `a = min(1, dt/0.25)`, `pulse = a*a*(3-2a) * exp(-max(0, dt-0.25)/0.9)`, and 0 from `dt > 4.2`. A send starts it at `now - 0.25*(0.5 - sin(asin(1 - 2v)/3))`, `v` the current value, so a send while it plays never makes it jump (spec 6.5). |
-| `u_tilt` | float2 | Device tilt in the interface's frame, each component in -1..1: (1,0) is the viewer to the right of the screen, (0,1) above it (spec 6.6). (0,0) wherever tilt does not run. |
+| `u_pulse` | float | Send envelope, 0 when idle. For `dt` seconds after the pulse starts: `a = min(1, dt/0.25)`, `pulse = a*a*(3-2a) * exp(-max(0, dt-0.25)/0.9)`, and 0 from `dt > 4.2`. A send starts it at `now - 0.25*(0.5 - sin(asin(1 - 2v)/3))`, `v` the current value, so a send while it plays never makes it jump. |
+| `u_tilt` | float2 | Device tilt in the interface's frame, each component in -1..1: (1,0) is the viewer to the right of the screen, (0,1) above it. (0,0) wherever tilt does not run. |
 | `u_origin` | float2 | Centre of the sent bubble in render-target pixels: the same space as `u_res` and `gl_FragCoord`/`fragCoord` (on iOS the half-size drawable, not points or view pixels), with y measured from the bottom, so `y = height - y_top_left`. (0,0) means each shader's default spot near the newest outgoing bubble. |
 
 ## iOS (MSL)
@@ -74,7 +74,7 @@ How the port works: every Lab function becomes a member of one struct, together 
 ## Android (AGSL)
 
 - `RuntimeShader(source)` on API 33 and up, source read from `assets/wallpapers/<id>.agsl`.
-- Uniforms, set with `setFloatUniform`: `u_res` (float2), `u_time` (float), `u_dark` (float), `u_pulse` (float), `u_tilt` (float2), `u_origin` (float2). No child shaders.
+- Uniforms, set with `setFloatUniform`: `u_res` (float2), `u_time` (float), `u_dark` (float), `u_pulse` (float), `u_tilt` (float2), `u_origin` (float2). No child shaders. `RuntimeShader` accepts all six even in a shader that never reads one, such as `u_tilt` in Rain on Glass.
 - `half4 main(float2 fragCoord)`: `fragCoord` must be in the same pixel space as `u_res`, origin top-left, so set `u_res` to the size of the area the shader brush is drawn over. `main` flips y itself.
 
 How the port works: type names become `float2`/`float3`/`float4`/`float2x2`, `smoothstep` becomes `gua_smoothstep` (explicit formula, so reversed edges behave the same on every GPU), helpers that read `gl_FragCoord` take it as their first parameter, and the Lab `main` body is inlined into `main(fragCoord)`.
@@ -99,12 +99,7 @@ Sea Sparks and Boreal take every such value from `ih`, `ih1` and `iv`, in which 
 - Boreal's ray noise reduces its lattice index with a half-cell margin, so a division a few ulps off cannot pick the wrong cell.
 - A contour that depends on position, such as Sea Sparks' daytime glint threshold or the hard edge between two of a spruce's tiers, can still move by under a pixel.
 
-## Checks run
+## Not yet verified
 
-- MSL on this Mac's GPU (fast math off): all cases within the limits; Molten Pearl max 10, every other shader max 2 or less, means 0.014 or less.
-- AGSL through Android's `RuntimeShader` on the API 35 emulator (`check-agsl-device.mjs`): every file compiles, all six uniforms are accepted (including `u_tilt` in Rain on Glass, which never reads it) and every case draws. With the emulator's SwiftShader GPU the drawings equal the goldens (max 0). With the Mac's GPU under the emulator: Ipê max 13 (allowance), Molten Pearl 10, Rain on Glass 7, the rest 2 or less, means 0.052 or less.
-
-## What is not verified
-
-- No physical Android GPU (Mali, Adreno and others) has drawn the AGSL files. Expect differences like the Mac GPU's above, in the same small areas.
-- Metal results come from this Mac's GPU. iPhone GPUs may round differently; the golden comparison on the simulator or a device will show it.
+- No physical Android GPU (Mali, Adreno and others) has drawn the AGSL files. Expect differences like those under Goldens, in the same small areas.
+- Metal results come from a Mac GPU. iPhone GPUs may round differently.

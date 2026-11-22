@@ -24,7 +24,7 @@ enum class ChatArtwork(
     val anchor: UnitPoint,
     /** What builds without this artwork show instead. It never changes once shipped. */
     val fallbackPreset: ChatBackgroundPreset,
-    /** A live artwork's shader time in its still images, where its animation starts. */
+    /** The shader time the stills show, where a live artwork's animation starts. */
     val stillTime: Float = 0f,
 ) {
     GlassDrops(
@@ -345,7 +345,6 @@ enum class ChatArtwork(
 
     fun file(isLight: Boolean): String = if (isLight) lightFile else darkFile
 
-    /** The AGSL source a live artwork animates with on Android 13 and up. */
     val shaderFile: String? get() = if (isLive) "$id.agsl" else null
 
     /** The artwork with its paired bubbles, as the gallery offers it. */

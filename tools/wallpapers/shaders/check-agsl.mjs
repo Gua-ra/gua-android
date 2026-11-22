@@ -21,8 +21,6 @@ import { CASES, compare, goldenName, limitsFor, openRenderer, readGolden } from 
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
-// ---------------------------------------------------------------- lint
-
 const TYPES = new Set([
   'void', 'bool', 'int', 'float', 'half',
   'bool2', 'bool3', 'bool4', 'int2', 'int3', 'int4',
@@ -223,8 +221,6 @@ function lintBody(fn, params, body, uniforms, functions, err) {
   }
 }
 
-// ---------------------------------------------------------------- GLSL shim
-
 // AGSL types spelled as GLSL ES 1.00, and AGSL's main(fragCoord) driven from gl_FragCoord the way
 // Android passes it (pixel centres, origin top-left).
 export function agslAsGlsl(src) {
@@ -245,8 +241,6 @@ void main() {
 }
 `;
 }
-
-// ---------------------------------------------------------------- CLI
 
 if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
   const args = {};

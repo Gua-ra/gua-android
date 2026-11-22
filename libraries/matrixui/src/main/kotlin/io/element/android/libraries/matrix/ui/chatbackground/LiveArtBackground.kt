@@ -54,18 +54,14 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.concurrent.ConcurrentHashMap
 
-/** The size the stills are rendered at. */
 internal const val LIVE_STILL_WIDTH = 1290f
 internal const val LIVE_STILL_HEIGHT = 2796f
 
-/**
- * The shaders' default send-pulse spot, as shares of the width from the leading edge and of the height from the bottom of the area it is
- * taken on.
- */
+/** The shaders' default send-pulse spot: a share of the width from the leading edge and of the height from the bottom. */
 private const val PULSE_SPOT_X = 0.83f
 private const val PULSE_SPOT_Y = 0.113f
 
-/** The uniforms every live wallpaper shader declares, with their number of floats. */
+/** Every live shader's uniforms, with their float counts. */
 internal val LIVE_WALLPAPER_UNIFORMS = mapOf(
     "u_res" to 2,
     "u_time" to 1,
@@ -76,10 +72,8 @@ internal val LIVE_WALLPAPER_UNIFORMS = mapOf(
 )
 
 /**
- * A live artwork over its [still]. The still shows until the shader has drawn its first frame, and whenever [motion] asks for it.
- * Under a test harness that stops infinite animations the shader is never created, so tests always see the still.
- * Its send pulse starts in the screen's [visibleArea]. With a [parallax] it draws over the still's overscanned frame and passes the tilt
- * to the shader, which holds the parallax, so the live view itself never moves.
+ * Shows [still] until the shader has drawn its first frame, and whenever [motion] asks for it.
+ * With a [parallax] the shader applies the tilt itself, so the live view never moves.
  */
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
@@ -92,11 +86,11 @@ internal fun LiveArt(
     still: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
-    // Here rather than in the layer, so the count the screen opened with is the baseline even when the shader or the motion
-    // replaces the layer later.
+    // Remembered here rather than in the layer, so the count the screen opened with stays the baseline when the layer is replaced.
     val sends = rememberSaveable(saver = LiveWallpaperSendPulse.Saver) { LiveWallpaperSendPulse(seenCount = cues.sendCount) }
     SideEffect { sends.onSendCount(cues.sendCount, System.nanoTime()) }
     val shader by produceState<LiveWallpaperShader?>(initialValue = null, artwork) {
+        // Test harnesses that stop infinite animations never get the shader, so tests see the still.
         if (coroutineContext[InfiniteAnimationPolicy] != null) return@produceState
         value = withContext(Dispatchers.Default) { LiveWallpaperShaders.get(context, artwork) }
     }
@@ -116,7 +110,6 @@ internal fun LiveArt(
     }
 }
 
-/** Whether a live artwork shows its still: whenever the policy asks for it, and until the shader has drawn its first frame. */
 internal fun liveArtShowsStill(motion: WallpaperMotion, hasDrawn: Boolean): Boolean {
     return motion == WallpaperMotion.Still || !hasDrawn
 }
@@ -201,16 +194,15 @@ private fun LiveArtLayer(
                 canvasTop = coordinates.positionInRoot().y
                 spaceBelowCanvas = coordinates.findRootCoordinates().size.height - canvasTop - coordinates.size.height
             }
-            // Its own grain, which stays put as the live view does; the still's moves with the still.
+            // The live view's own grain, which stays put; the still's grain moves with the still.
             .wallpaperGrain(rememberWallpaperGrain())
-            // An offscreen layer keeps the rendered frame, so the shader runs once per wallpaper frame rather than each time the
-            // window redraws over it, such as while the timeline scrolls.
+            // An offscreen layer caches the frame, so the shader runs once per wallpaper frame, not on every redraw while the timeline scrolls.
             .graphicsLayer {
                 clip = true
                 compositingStrategy = CompositingStrategy.Offscreen
             }
             .drawBehind {
-                // The frame depends on the canvas alone, so the composer and the keyboard only ever move the pulse's spot.
+                // The frame depends only on the canvas; the composer and the keyboard move only the pulse's spot.
                 val frame = liveWallpaperFrame(size, anchor, shift)
                 val chat = liveWallpaperCanvasArea(
                     canvasRootTop = canvasTop,
@@ -257,9 +249,8 @@ private fun DrawScope.drawLiveWallpaper(
 }
 
 /**
- * The still's whole frame over a view of [viewSize], cropped around [anchor] exactly as the still is, from the view grown by the parallax
- * [shift] on every side. The shaders scale with `u_res`, so drawing over this frame rather than the view keeps the first live frame
- * identical to the still on any screen shape.
+ * The still's full frame over [viewSize] grown by [shift] on every side, cropped around [anchor] as the still is. The shaders scale with
+ * `u_res`, so drawing over this frame rather than the view keeps the first live frame identical to the still on any screen shape.
  */
 internal fun liveWallpaperFrame(viewSize: Size, anchor: UnitPoint, shift: Float = 0f): Rect {
     val frame = wallpaperStillRect(
@@ -273,11 +264,9 @@ internal fun liveWallpaperFrame(viewSize: Size, anchor: UnitPoint, shift: Float 
 }
 
 /**
- * The shader's `u_origin` for a canvas of [canvasSize] drawing [frame]: the shaders' default send-pulse spot taken on the visible chat area
- * rather than on the frame, which reaches past it, in the frame's pixels with y measured from its bottom.
- * The visible area spans the canvas's width, from [visibleTop] (else the canvas's top) down to [visibleBottom], in the canvas's pixels
- * measured from its top. Without a [visibleBottom], such as when no composer shows, it ends [bottomInset] above the canvas's bottom.
- * Under [isRtl] the spot is mirrored, as the newest outgoing bubble and the send button are.
+ * The shader's `u_origin`: the default send-pulse spot taken on the visible chat area rather than on [frame], in frame pixels with y
+ * measured from the frame's bottom. [visibleTop] and [visibleBottom] are canvas pixels from its top; without them the area starts at the
+ * canvas's top and ends [bottomInset] above its bottom. Under [isRtl] the spot is mirrored, as outgoing bubbles are.
  */
 internal fun liveWallpaperPulseOrigin(
     canvasSize: Size,
@@ -287,7 +276,7 @@ internal fun liveWallpaperPulseOrigin(
     bottomInset: Float,
     isRtl: Boolean = false,
 ): Offset {
-    // The chat only shows where the canvas does, so an area reported past it, such as one that starts under the top bar, is cut to it.
+    // An area reported past the canvas, such as one starting under the top bar, is cut to the canvas.
     val top = (visibleTop ?: 0f).coerceIn(0f, canvasSize.height)
     val bottom = (visibleBottom ?: canvasSize.height - bottomInset).coerceIn(top, canvasSize.height)
     return Offset(
@@ -296,7 +285,7 @@ internal fun liveWallpaperPulseOrigin(
     )
 }
 
-/** One shader per artwork, wrapped once in its brush. Each draw sets its uniforms just before drawing, so screens can share it. */
+/** Each draw sets the uniforms just before drawing, so screens can share one shader. */
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal data class LiveWallpaperShader(val runtimeShader: RuntimeShader, val brush: ShaderBrush)
 
@@ -304,10 +293,7 @@ internal data class LiveWallpaperShader(val runtimeShader: RuntimeShader, val br
 internal object LiveWallpaperShaders {
     private val shaders = ConcurrentHashMap<ChatArtwork, LiveWallpaperShader>()
 
-    /**
-     * The artwork's shader, read and compiled on first use. Null if that failed, which is logged once, never retried and recorded in
-     * [LiveWallpaperSession].
-     */
+    /** Compiled on first use. Null if that fails; a failure is logged once and never retried. */
     fun get(context: Context, artwork: ChatArtwork): LiveWallpaperShader? {
         shaders[artwork]?.let { return it }
         val file = artwork.shaderFile ?: return null

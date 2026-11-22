@@ -39,14 +39,10 @@ import androidx.compose.ui.unit.Constraints
 private const val SETTLE_MILLIS = 300
 private const val NANOS_PER_SECOND = 1_000_000_000.0
 
-// Smaller changes move the picture by hundredths of a pixel; skipping them keeps a phone at rest, whose gyroscope noise nudges the tilt
-// on every sample, from redrawing the chat at the sensor's rate.
+// Skips gyroscope noise that moves the picture by hundredths of a pixel, so a phone at rest does not redraw the chat at the sensor's rate.
 private const val MIN_TILT_CHANGE = 0.001f
 
-/**
- * The device's tilt from its gyroscope, in the interface's frame, for a wallpaper's parallax. Read [value] only while drawing, so a new tilt
- * redraws without recomposing.
- */
+/** The gyroscope's tilt in the interface's frame. Read [value] only while drawing, so a new tilt redraws without recomposing. */
 @Stable
 internal class WallpaperTiltSensor(
     private val sensorManager: SensorManager,
@@ -59,19 +55,17 @@ internal class WallpaperTiltSensor(
     private val tracker = WallpaperTiltTracker()
 
     fun start() {
-        // A settle cut short leaves the picture partway; the tilt eases on from there instead of jumping to rest.
+        // Continues from wherever a cut-short settle left the picture, turned back into the device's frame, instead of jumping to rest.
         val rotation = view.display?.rotation ?: Surface.ROTATION_0
         tracker.continueFrom(wallpaperTiltInInterface((4 - rotation) % 4, WallpaperTiltVector(value.x.toDouble(), value.y.toDouble())))
         sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_GAME)
     }
 
-    /** Holds the tilt where it is. */
     fun stop() {
         sensorManager.unregisterListener(this)
         tracker.stop()
     }
 
-    /** Brings the picture back to rest, easing it there when [animates]. */
     suspend fun settle(animates: Boolean) {
         tracker.reset()
         val from = value
@@ -95,7 +89,7 @@ internal class WallpaperTiltSensor(
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
 }
 
-/** The device's gyroscope as a wallpaper tilt; null without one, so the wallpaper never tilts and keeps its plain framing. */
+/** Null without a gyroscope, so the wallpaper never tilts and keeps its plain framing. */
 @Composable
 internal fun rememberWallpaperTiltSensor(): WallpaperTiltSensor? {
     val context = LocalContext.current
@@ -107,8 +101,8 @@ internal fun rememberWallpaperTiltSensor(): WallpaperTiltSensor? {
 }
 
 /**
- * Listens to [sensor] only while [motion] animates. A pause holds the tilt; a still condition brings the picture back to rest over 0.3 s,
- * or at once when animations are off.
+ * Listens to [sensor] only while [motion] animates. A pause holds the tilt; a still condition brings the picture back to rest, at once
+ * when animations are off.
  */
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
@@ -126,10 +120,9 @@ internal fun WallpaperTiltEffect(sensor: WallpaperTiltSensor, motion: WallpaperM
     }
 }
 
-/** A wallpaper's parallax: [sensor] moves it by up to [shift] px each way, so it is laid out [shift] px larger than its view on every side. */
+/** [sensor] moves the wallpaper up to [shift] px each way, so it is laid out [shift] px larger than its view on every side. */
 internal data class WallpaperParallax(val sensor: WallpaperTiltSensor, val shift: Int)
 
-/** Lays the content out [WallpaperParallax.shift] px larger than this element on every side, centred on it, and moves it with the tilt. */
 internal fun Modifier.wallpaperParallax(parallax: WallpaperParallax): Modifier = this
     .fillMaxSize()
     .clipToBounds()

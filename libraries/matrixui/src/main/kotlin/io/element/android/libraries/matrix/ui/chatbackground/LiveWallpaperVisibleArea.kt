@@ -20,9 +20,8 @@ import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 
 /**
- * The part of a screen where its chat shows over the live wallpaper, in root coordinates. The send pulse starts in it, where the newest
- * outgoing bubble sits. A screen reports it with [liveWallpaperChatArea] or [liveWallpaperChatAreaEnd] and hands it to its
- * [ChatBackgroundCanvas]. An edge the screen never reports is the canvas's own, less the system bottom inset at the bottom.
+ * Where a screen's chat shows over the live wallpaper, in root coordinates; the send pulse starts in it. An edge the screen does not
+ * report is the canvas's own, less the system bottom inset at the bottom.
  */
 @Stable
 class LiveWallpaperVisibleArea {
@@ -35,28 +34,21 @@ class LiveWallpaperVisibleArea {
 @Composable
 fun rememberLiveWallpaperVisibleArea(): LiveWallpaperVisibleArea = remember { LiveWallpaperVisibleArea() }
 
-/** This element is where the chat shows, such as a chat screen's content between its top bar and its composer. */
 fun Modifier.liveWallpaperChatArea(area: LiveWallpaperVisibleArea): Modifier = onGloballyPositioned { coordinates ->
     val top = coordinates.positionInRoot().y
     area.top = top
     area.bottom = top + coordinates.size.height
 }
 
-/** This element covers the bottom of the chat, such as a preview's controls, so the chat shows down to its top edge. */
+/** Ends the chat area at this element's top, as a preview's controls do. */
 fun Modifier.liveWallpaperChatAreaEnd(area: LiveWallpaperVisibleArea): Modifier = onGloballyPositioned { coordinates ->
     area.bottom = coordinates.positionInRoot().y
 }
 
-/**
- * A chat area as a canvas takes it: its [top] and [bottom] in the canvas's pixels measured from its top, null where the screen reports
- * none, and the [bottomInset] the chat ends above when the screen reports no bottom.
- */
+/** A chat area in canvas pixels from the canvas's top. [bottomInset] applies when there is no [bottom]. */
 internal data class LiveWallpaperCanvasArea(val top: Float?, val bottom: Float?, val bottomInset: Float)
 
-/**
- * The [area] a screen reported in root coordinates, taken on a canvas whose top is at [canvasRootTop] in root coordinates and whose
- * bottom is [spaceBelowCanvas] above the root's. The bottom inset is the part of [systemBottomInset] the canvas reaches into.
- */
+/** [area] on a canvas whose top is at [canvasRootTop] in root coordinates and whose bottom is [spaceBelowCanvas] above the root's. */
 internal fun liveWallpaperCanvasArea(
     canvasRootTop: Float,
     area: LiveWallpaperVisibleArea?,
@@ -65,11 +57,11 @@ internal fun liveWallpaperCanvasArea(
 ): LiveWallpaperCanvasArea = LiveWallpaperCanvasArea(
     top = area?.top?.minus(canvasRootTop),
     bottom = area?.bottom?.minus(canvasRootTop),
-    // A canvas that already stops above the system bar, such as one padded for it, has none of the inset to leave.
+    // Only the part of the inset the canvas reaches into, so a canvas padded for the navigation bar has none.
     bottomInset = (systemBottomInset - spaceBelowCanvas).coerceAtLeast(0f),
 )
 
-/** The visible area a chat background was drawn with. Not read by accessibility services; tests use it to check what a screen reports. */
+/** Lets tests read the visible area a chat background was drawn with; accessibility services ignore it. */
 val LiveWallpaperVisibleAreaKey = SemanticsPropertyKey<LiveWallpaperVisibleArea>("LiveWallpaperVisibleArea")
 
 internal var SemanticsPropertyReceiver.liveWallpaperVisibleArea by LiveWallpaperVisibleAreaKey

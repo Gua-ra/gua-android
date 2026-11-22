@@ -86,7 +86,6 @@ class TimelinePresenterOwnNewEventCountTest {
             consumeItemsUntilPredicate { it.timelineItems.size == 1 }
             timelineItems.getAndUpdate { items -> listOf(aLocalEcho("first", sentAt)) + items }
             assertThat(consumeItemsUntilPredicate { it.ownNewEventCount == 1 }.last().ownNewEventCount).isEqualTo(1)
-            // The echo becomes the remote event and gets a reaction: still one send.
             timelineItems.getAndUpdate { items ->
                 listOf(aRemoteEcho("first", sentAt, reactions = persistentListOf(aReaction()))) + items.drop(1)
             }

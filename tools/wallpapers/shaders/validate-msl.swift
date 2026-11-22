@@ -17,7 +17,7 @@ import ImageIO
 import Metal
 import UniformTypeIdentifiers
 
-// Must match GuaWallpaperUniforms in the .msl files (README.md, "Uniform buffer").
+// Must match GuaWallpaperUniforms in the .msl files.
 struct Uniforms {
     var res: SIMD2<Float>
     var tilt: SIMD2<Float>

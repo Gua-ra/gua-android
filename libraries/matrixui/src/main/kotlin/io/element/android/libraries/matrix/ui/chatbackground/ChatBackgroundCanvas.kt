@@ -76,10 +76,7 @@ fun rememberChatBackgroundTransition(background: ChatBackground): Transition<Cha
 val Transition<ChatBackground>.isShowingBackground: Boolean
     get() = currentState != ChatBackground.None || targetState != ChatBackground.None
 
-/**
- * With [live] cues a live artwork animates; without them, as on tiles and pickers, it shows its still. Its send pulse starts in
- * [visibleArea], the part of the screen where the chat shows.
- */
+/** Without [live] cues, as on tiles and pickers, a live artwork shows its still. Its send pulse starts in [visibleArea]. */
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ChatBackgroundCanvas(

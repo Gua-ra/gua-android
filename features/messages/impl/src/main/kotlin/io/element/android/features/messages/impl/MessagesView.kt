@@ -303,7 +303,6 @@ fun MessagesView(
     val chatBackgroundTransition = rememberChatBackgroundTransition(state.chatTheme.background)
     val isShowingChatBackground = chatBackgroundTransition.isShowingBackground
     var topBarHeight by remember { mutableStateOf(0.dp) }
-    // GUA FORK: where the chat shows over a live wallpaper, so its send pulse starts above the composer.
     val chatArea = rememberLiveWallpaperVisibleArea()
     MessageMenuHost(
         controller = messageMenuController,
@@ -334,7 +333,6 @@ fun MessagesView(
                     .messageMenuBackdrop(messageMenuController, isMenuShown = state.messageMenuState.target is MessageMenuState.Target.Shown)
                     .systemBarsPadding()
                     .padding(top = topBarHeight),
-                // GUA FORK: a live artwork animates behind the timeline and pulses when the user sends.
                 live = state.liveWallpaperCues(),
                 visibleArea = chatArea,
             )
@@ -409,7 +407,6 @@ fun MessagesView(
                             modifier = Modifier
                                 .padding(padding)
                                 .consumeWindowInsets(padding)
-                                // GUA FORK: the chat shows between the top bar and the composer, which rides on the keyboard.
                                 .liveWallpaperChatArea(chatArea)
                         ) {
                             MessagesViewContent(

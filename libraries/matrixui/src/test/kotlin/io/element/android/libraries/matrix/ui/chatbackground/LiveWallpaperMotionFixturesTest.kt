@@ -24,7 +24,7 @@ import kotlin.math.roundToLong
 
 private const val NANOS_PER_SECOND = 1_000_000_000.0
 
-/** The reference written by tools/wallpapers/motion-fixtures.mjs, which the iOS app is tested against too. */
+/** Fixtures from tools/wallpapers/motion-fixtures.mjs, shared with iOS. */
 class LiveWallpaperMotionFixturesTest {
     private val fixtures = Json.parseToJsonElement(
         LiveWallpaperMotionFixturesTest::class.java.classLoader!!.getResource("live-wallpaper-motion-fixtures.json")!!.readText()
@@ -102,7 +102,7 @@ class LiveWallpaperMotionFixturesTest {
                     recorded.onSendCount(seen, nowNanos = (send * NANOS_PER_SECOND).roundToLong())
                 }
                 assertWithMessage("$name at $time").that(start?.let { sendPulse(time - it) } ?: 0.0).isWithin(1e-9).of(expected)
-                // The recorded pulse starts on a whole nanosecond and is a float for the shader.
+                // Looser: the recorded pulse starts on a whole nanosecond and is a float.
                 val recordedPulse = recorded.at((time * NANOS_PER_SECOND).roundToLong()).toDouble()
                 assertWithMessage("$name at $time, recorded").that(recordedPulse).isWithin(1e-6).of(expected)
             }

@@ -146,7 +146,7 @@ class TimelinePresenter(
      */
     private val selectionState: MutableState<SelectionState> = mutableStateOf(SelectionState.Disabled)
 
-    // GUA FORK: counts the user's sends from this device from now on, for the live wallpaper's send pulse.
+    // GUA FORK: drives the live wallpaper's send pulse.
     private val ownNewEventCounter = OwnNewEventCounter()
 
     /**
@@ -392,7 +392,6 @@ class TimelinePresenter(
                 .onEach { newTimelineItems ->
                     timelineItemIndexer.process(newTimelineItems)
                     timelineItems = newTimelineItems.toImmutableList()
-                    // GUA FORK: counts the user's sends from this device, for the live wallpaper's send pulse.
                     ownNewEventCounter.onTimelineItems(newTimelineItems)
 
                     analyticsService.run {
@@ -548,7 +547,6 @@ class TimelinePresenter(
             jumpToUnread = jumpToUnread.value,
             selectionState = selectionState.value,
             useNewTimelineEventRenderer = useNewTimelineEventRenderer,
-            // GUA FORK: the user's sends from this device, for the live wallpaper's send pulse.
             ownNewEventCount = ownNewEventCounter.count,
             eventSink = ::handleEvent,
         )

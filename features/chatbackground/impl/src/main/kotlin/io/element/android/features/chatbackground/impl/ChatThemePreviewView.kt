@@ -119,7 +119,6 @@ internal fun ChatThemePreviewView(
     }
 }
 
-/** [onPreviewSend], when given, is offered as a send button that plays the live wallpaper's send pulse. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PreviewControls(
@@ -138,7 +137,7 @@ private fun PreviewControls(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        // When large text leaves the toggle's labels too little room beside the send button, the button wraps to its own line.
+        // Under large text the send button wraps below the toggle.
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),

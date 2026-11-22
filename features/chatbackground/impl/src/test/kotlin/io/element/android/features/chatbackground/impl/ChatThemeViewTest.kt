@@ -559,7 +559,7 @@ private fun AndroidComposeUiTest<ComponentActivity>.scrollToAndClickTile(@String
     onNode(hasContentDescription(activity!!.getString(res)) and hasClickAction()).performScrollTo().performClick()
 }
 
-/** Shows the dark preview of a live artwork, whose selected label is the longer one, and returns the toggle's and the send button's bounds. */
+/** Shows a live artwork's dark preview, whose selected label is the longer one; returns the toggle's and the send button's bounds. */
 private fun AndroidComposeUiTest<ComponentActivity>.setLiveArtworkPreviewControls(): Pair<Rect, Rect> {
     val glassDrops = ChatArtwork.GlassDrops.theme
     val preview = ChatThemePreview(glassDrops, glassDrops, isDarkPreview = true)
