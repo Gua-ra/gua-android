@@ -22,7 +22,7 @@ data class ChatTheme(
     fun normalized(): ChatTheme = if (bubbleDark != null && (bubble == null || bubbleDark == bubble)) copy(bubbleDark = null) else this
 
     companion object {
-        /** No wallpaper and the stock bubble: the same as no theme at all. */
+        /** The same as no theme at all. */
         val STOCK = ChatTheme()
     }
 }

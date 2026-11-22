@@ -8,6 +8,7 @@
 
 package io.element.android.libraries.matrixmedia.impl
 
+import android.graphics.BitmapFactory
 import coil3.decode.DataSource
 import coil3.decode.ImageSource
 import coil3.fetch.FetchResult
@@ -64,7 +65,16 @@ internal class CoilMediaFetcher(
                 val maxBytes = kind.maxBytes
                 if (maxBytes != null && file.length() > maxBytes) {
                     mediaFile.close()
-                    throw MediaTooLargeException(file.length(), maxBytes)
+                    throw MediaTooLargeException("The media is ${file.length()} bytes, over the $maxBytes allowed")
+                }
+                val maxPixelEdge = kind.maxPixelEdge
+                if (maxPixelEdge != null) {
+                    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    BitmapFactory.decodeFile(file.path, options)
+                    if (options.outWidth !in 1..maxPixelEdge || options.outHeight !in 1..maxPixelEdge) {
+                        mediaFile.close()
+                        throw MediaTooLargeException("The image is ${options.outWidth}x${options.outHeight} px, outside 1..$maxPixelEdge")
+                    }
                 }
                 SourceFetchResult(
                     source = ImageSource(
@@ -122,4 +132,4 @@ internal class CoilMediaFetcher(
     }
 }
 
-internal class MediaTooLargeException(size: Long, maxBytes: Long) : IllegalStateException("The media is $size bytes, over the $maxBytes allowed")
+internal class MediaTooLargeException(message: String) : IllegalStateException(message)

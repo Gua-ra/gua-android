@@ -153,7 +153,7 @@ private fun ReadReceiptsAvatars(
     val avatarStrokeSize = 1.dp
     val avatarStrokeColor = ElementTheme.colors.bgCanvasDefault
     val receiptDescription = computeReceiptDescription(receipts)
-    // The capsule's padding takes the place of the usual 2 dp, so the row keeps its height.
+    // The capsule's padding replaces the usual 2 dp rather than adding to it.
     val paddingOrCapsule = if (LocalChatBackgroundActive.current) Modifier.legibilityCapsule() else Modifier.padding(2.dp)
     Row(
         modifier = modifier

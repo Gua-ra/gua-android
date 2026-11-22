@@ -47,7 +47,7 @@ class RustTimelineEventFilterFactory : TimelineEventFilterFactory {
             emptyList()
         }
 
-        // GUA FORK: custom state is not excluded, since an exclude filter cannot keep the chat background notice; TimelineItemEventFactory drops the rest.
+        // GUA FORK: an exclude filter cannot spare the chat background notice, so custom state passes and TimelineItemEventFactory drops the rest.
         return TimelineEventFilter.Exclude(excludedEventTypes + excludedMembershipChanges)
     }
 }
