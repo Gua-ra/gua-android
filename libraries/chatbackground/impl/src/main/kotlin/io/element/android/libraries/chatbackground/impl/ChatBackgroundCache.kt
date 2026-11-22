@@ -30,7 +30,7 @@ interface ChatBackgroundCache {
     suspend fun save(roomId: RoomId, stored: StoredChatBackground)
 }
 
-// In the session's own directory, which every sign-out deletes with the rest of the session's data.
+// Lives in the session directory, so signing out deletes it.
 @SingleIn(SessionScope::class)
 @ContributesBinding(SessionScope::class)
 class DataStoreChatBackgroundCache(

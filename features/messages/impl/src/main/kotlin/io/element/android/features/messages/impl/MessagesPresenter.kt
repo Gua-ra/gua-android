@@ -377,7 +377,7 @@ class MessagesPresenter(
             ),
             showLiveLocationShareBanner = isCurrentlySharingLiveLocationInRoom && timelineState.timelineMode !is Timeline.Mode.Thread,
             redactEventAction = redactEventAction.value,
-            // A photo is media, so it follows the chat's media previews setting; presets always show.
+            // A photo follows the chat's media previews setting; presets always show.
             chatBackground = chatBackground.takeUnless { it is ChatBackground.Photo && timelineProtectionState.protectionState !is ProtectionState.RenderAll }
                 ?: ChatBackground.None,
             eventSink = ::handleEvent,

@@ -45,7 +45,7 @@ class DefaultChatBackgroundService(
 ) : ChatBackgroundService {
     private data class Slot(
         val stored: StoredChatBackground?,
-        /** Counts changes from this device, the timeline and the SDK, so a server reply in flight meanwhile can tell it is stale. */
+        /** Bumped by every change from this device, the timeline or the SDK, so a server reply that was in flight can tell it is stale. */
         val localRevision: Long,
         /** The event ID of a change sent from this device that neither the server nor the timeline has confirmed yet. */
         val pendingEventId: String? = null,
@@ -115,7 +115,7 @@ class DefaultChatBackgroundService(
                 return
             }
         }
-        // The server's state wins whatever its timestamp, and using a chat keeps it in the cache.
+        // The server's state wins whatever its timestamp, and is saved even when unchanged to keep the chat recent in the cache.
         update(roomId, saveUnchanged = true) { current ->
             if (current.localRevision != revisionAtStart && current.outlives(stored)) current else current.copy(stored = stored, pendingEventId = null)
         }

@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import io.element.android.libraries.designsystem.components.blurhash.BlurHashImage
 import kotlin.math.max
 
-/** The blurhash of a photo still loading, laid out where the photo of [width] x [height] will be. */
+/** A loading photo's blurhash, cropped and aligned as the [width] x [height] photo will be. */
 @Composable
 fun ChatBackgroundBlurHash(
     blurhash: String?,

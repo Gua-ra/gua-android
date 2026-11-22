@@ -221,7 +221,7 @@ private fun PresetGrid(
     val textMeasurer = rememberTextMeasurer()
     val names = ChatBackgroundPreset.entries.map { stringResource(it.nameRes) }
     BoxWithConstraints(modifier = modifier) {
-        // As many columns as keep the longest name on one line in this language and font scale, phone-sized on wide screens.
+        // As many columns as keep the longest translated name on one line, with cells capped at phone size.
         val density = LocalDensity.current
         val longestName = remember(names, labelStyle, density) {
             with(density) { names.maxOf { textMeasurer.measure(it, labelStyle, maxLines = 1).size.width }.toDp() }
@@ -230,7 +230,7 @@ private fun PresetGrid(
         val gapPx = with(density) { PRESET_GAP.roundToPx() }
         val columns = ((constraints.maxWidth + gapPx) / (with(density) { minCellWidth.roundToPx() } + gapPx))
             .coerceIn(MIN_PRESETS_PER_ROW, ChatBackgroundPreset.entries.size)
-        // Whole pixels, so no column is shortened when the cells round up; the pixels left over centre the grid.
+        // Whole pixels, so rounding never shortens a column; the leftover pixels centre the grid.
         val cellWidth = with(density) {
             minOf((constraints.maxWidth - gapPx * (columns - 1)) / columns, max(minCellWidth, PRESET_MAX_WIDTH).roundToPx()).toDp()
         }

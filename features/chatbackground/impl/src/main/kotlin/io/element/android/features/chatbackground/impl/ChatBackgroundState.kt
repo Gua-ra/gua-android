@@ -30,7 +30,7 @@ data class ChatBackgroundPhotoDraft(
     val dim: Int = ChatBackground.Photo.DEFAULT_DIM,
     val alignX: Int = ChatBackground.Photo.DEFAULT_ALIGN,
     val alignY: Int = ChatBackground.Photo.DEFAULT_ALIGN,
-    /** Null follows the app's appearance; dark is the only appearance the dim applies to. */
+    /** Null follows the app theme; the dim only applies in dark. */
     val isDarkPreview: Boolean? = null,
 )
 

@@ -32,7 +32,7 @@ import java.io.ByteArrayOutputStream
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-/** Only decoded pixels are written, so nothing from the original file, EXIF and GPS included, reaches the upload. */
+/** Writes only decoded pixels, so no EXIF, GPS or other metadata from the original file reaches the upload. */
 @ContributesBinding(AppScope::class)
 class DefaultChatBackgroundPhotoProcessor(
     @ApplicationContext private val context: Context,
