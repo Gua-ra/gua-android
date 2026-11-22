@@ -49,7 +49,12 @@ class DefaultChatBackgroundPhotoProcessor(
     }
 
     private fun encode(uri: Uri, orientation: Int, maxEdge: Int, quality: Int): ChatBackgroundPhotoUpload {
-        val bitmap = decodeUpright(uri, orientation, maxEdge)
+        val bitmap = try {
+            decodeUpright(uri, orientation, maxEdge)
+        } catch (e: OutOfMemoryError) {
+            // runCatchingExceptions lets Errors through, so a photo too large for memory would crash the app.
+            throw IllegalStateException("Not a decodable image", e)
+        }
         val data = ByteArrayOutputStream().use { output ->
             check(bitmap.compress(Bitmap.CompressFormat.JPEG, quality, output)) { "JPEG encoding failed" }
             output.toByteArray()
@@ -77,6 +82,7 @@ class DefaultChatBackgroundPhotoProcessor(
         val decoded = context.contentResolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, options) }
             ?: error("Decoding the image failed")
         val upright = decoded.rotateToExifMetadataOrientation(orientation)
+        if (upright !== decoded) decoded.recycle()
         val scale = maxEdge.toFloat() / max(upright.width, upright.height)
         val sized = if (scale < 1f) {
             Bitmap.createScaledBitmap(
@@ -84,13 +90,11 @@ class DefaultChatBackgroundPhotoProcessor(
                 (upright.width * scale).roundToInt().coerceAtLeast(1),
                 (upright.height * scale).roundToInt().coerceAtLeast(1),
                 true,
-            )
+            ).also { upright.recycle() }
         } else {
             upright
         }
-        return sized.flattenedOnBlack().also {
-            listOf(decoded, upright, sized).distinct().forEach(Bitmap::recycle)
-        }
+        return sized.flattenedOnBlack().also { sized.recycle() }
     }
 
     private fun Bitmap.flattenedOnBlack(): Bitmap {
