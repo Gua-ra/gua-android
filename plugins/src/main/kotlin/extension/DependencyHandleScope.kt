@@ -133,7 +133,7 @@ fun DependencyHandlerScope.allLibrariesImpl() {
     // @SingleIn(AppScope) SelectedCountryStore and @ContributesNode CountryPickerNode are aggregated
     // into the app Metro graph here.
     implementation(project(":libraries:phonenumberentry"))
-    // GUA FORK: chat backgrounds (session service, photo processor), aggregated into the app Metro graph here.
+    // GUA FORK: the chat background service and photo processor are aggregated into the app Metro graph here.
     implementation(project(":libraries:chatbackground:impl"))
 }
 

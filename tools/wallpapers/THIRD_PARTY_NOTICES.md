@@ -1,5 +1,13 @@
 # Third-party notices
 
+## Smooth minimum
+
+`smin` in the Glass Drops shaders is Inigo Quilez's polynomial smooth minimum (https://iquilezles.org/articles/smin/).
+
+## mulberry32
+
+The pattern modules in `lab/` seed their layouts with mulberry32 by Tommy Ettinger, dedicated to the public domain under CC0 1.0.
+
 ## Hash without Sine
 
 `hash12` and `hash22` in the live wallpaper shaders are adapted from "Hash without Sine" by David Hoskins (https://www.shadertoy.com/view/4djSRW). They appear in the Lab modules in `lab/` and in the shader files generated from them by `shaders/generate.mjs`: `ElementX/Resources/Wallpapers/*.msl` in gua-ios and `libraries/matrixui/src/main/assets/wallpapers/*.agsl` in gua-android. Each generated file carries the notice below.

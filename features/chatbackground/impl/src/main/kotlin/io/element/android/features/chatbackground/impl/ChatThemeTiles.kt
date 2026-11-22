@@ -95,8 +95,7 @@ internal fun ChatThemeTileRow(
     content: LazyListScope.() -> Unit,
 ) {
     val density = LocalDensity.current
-    // A lazy row is only as tall as the tiles on screen, so it keeps the tallest height it has had: scrolling a labelled tile out
-    // of view never moves the rows below.
+    // A lazy row is only as tall as its visible tiles, so it keeps its tallest height and never moves the rows below while scrolling.
     var minHeight by remember { mutableStateOf(0.dp) }
     LazyRow(
         modifier = modifier
@@ -156,7 +155,7 @@ internal fun ChatThemeTile(
                 .clearAndSetSemantics { contentDescription = description },
         ) {
             ChatBackgroundCanvas(background = theme.background, modifier = Modifier.fillMaxSize())
-            // The badge stays out of the top row, where a translated badge would run into the selection check.
+            // The badge stays off the top edge, where a long translation would run into the selection check.
             if (showsBubbles) {
                 TileBubbles(theme = theme, isLive = isLive)
             } else if (isLive) {
@@ -169,7 +168,7 @@ internal fun ChatThemeTile(
         if (showsLabel) {
             Text(
                 text = label,
-                // Already read first in the tile's description.
+                // The tile's description already reads the label.
                 modifier = Modifier.clearAndSetSemantics {},
                 style = ElementTheme.typography.fontBodySmRegular,
                 color = if (enabled) ElementTheme.colors.textPrimary else ElementTheme.colors.textDisabled,
@@ -223,7 +222,7 @@ private fun LiveBadge(modifier: Modifier = Modifier) {
     Text(
         text = stringResource(R.string.gua_chat_theme_live_badge),
         modifier = modifier
-            // At a large font scale a translated badge can be wider than the space left inside the tile; it stays whole and centred.
+            // At a large font scale a translation can be wider than the tile; it stays whole and centred.
             .wrapContentWidth(unbounded = true)
             .background(ElementTheme.colors.bgCanvasDefault, CircleShape)
             .padding(horizontal = 6.dp, vertical = 1.dp),

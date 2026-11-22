@@ -76,7 +76,7 @@ class EventTimelineItemMapper(
     }
 }
 
-// The SDK sees Gua's background as an opaque custom state event, so its content comes from the event JSON.
+// The SDK sees the chat background as opaque custom state, so its content is read from the event JSON.
 internal fun EventContent.withChatBackgroundContent(originalJson: () -> String?): EventContent {
     val stateContent = this as? StateContent ?: return this
     val custom = stateContent.content as? OtherState.Custom ?: return this

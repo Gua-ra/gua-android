@@ -59,7 +59,7 @@ private val LegibilityCapsuleShape: Shape = object : Shape {
     }
 }
 
-/** Draws nothing unless [LocalChatBackgroundActive] is true, so a chat without a background keeps the stock timeline. */
+/** A no-op unless [LocalChatBackgroundActive] is true, so a chat without a background keeps the stock timeline. */
 @Suppress("ModifierComposable")
 @Composable
 fun Modifier.legibilityCapsule(
@@ -75,7 +75,6 @@ fun Modifier.legibilityCapsule(
 @ReadOnlyComposable
 fun legibleTextColor(default: Color): Color = if (LocalChatBackgroundActive.current) ElementTheme.colors.textPrimary else default
 
-/** Android 14's contrast setting above standard. */
 @Composable
 fun isIncreasedContrastEnabled(): Boolean {
     if (LocalInspectionMode.current || Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return false

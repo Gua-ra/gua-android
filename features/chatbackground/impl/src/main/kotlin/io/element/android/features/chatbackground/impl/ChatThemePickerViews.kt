@@ -118,7 +118,7 @@ internal fun ChatBubblePickerView(
                         bubble = bubble,
                         isSelected = isSelected,
                         enabled = state.canChange,
-                        // Choosing the checked swatch would drop the other half of a pair the user cannot see.
+                        // Choosing the checked swatch again would drop the pair's other, unseen half.
                         onClick = { if (!isSelected) state.eventSink(ChatThemeEvent.SelectBubble(bubble)) },
                     )
                 }
