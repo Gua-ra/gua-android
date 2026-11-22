@@ -68,7 +68,6 @@ enum class ChatThemeSection(@StringRes val titleRes: Int, val themes: List<ChatT
     );
 
     companion object {
-        /** The wallpaper picker's rows, which offer each section's wallpapers without their bubbles. */
         val wallpaperSections = listOf(Live, Nature, Patterns, Minimal, Gradients)
     }
 }

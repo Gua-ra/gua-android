@@ -87,7 +87,7 @@ internal fun ChatThemePreviewView(
             )
         },
     ) { padding ->
-        // The chat's own frame, with the controls drawn over it like the composer, so an artwork is cropped exactly as in the chat.
+        // The controls overlap the frame like the composer, so an artwork is cropped exactly as in the chat.
         val framePadding = PaddingValues(top = padding.calculateTopPadding())
         Box(
             modifier = Modifier

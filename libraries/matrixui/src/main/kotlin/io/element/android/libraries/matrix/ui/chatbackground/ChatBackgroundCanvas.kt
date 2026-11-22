@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.decode.BitmapFactoryDecoder
 import coil3.request.ImageRequest
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.androidutils.system.areAnimationsEnabled
@@ -61,6 +62,7 @@ import kotlin.math.roundToInt
 
 private const val CROSSFADE_DURATION_MS = 200
 internal const val MAX_DECODED_EDGE_PX = 2048
+private const val MAX_SOURCE_EDGE_PX = 4096
 
 @Composable
 fun ChatBackgroundService.collectThemeAsState(room: JoinedRoom): State<ChatTheme> {
@@ -172,10 +174,17 @@ private fun PhotoBackground(photo: ChatBackground.Photo) {
             val context = LocalContext.current
             val request = remember(photo.url, widthPx, heightPx) {
                 // Downloaded to a file, not into memory, so Coil decodes it downsampled; the declared size is not trusted.
-                val kind = MediaRequestData.Kind.File(fileName = "chat-background", mimeType = photo.mimetype, maxBytes = ChatBackground.Photo.MAX_SIZE)
+                val kind = MediaRequestData.Kind.File(
+                    fileName = "chat-background",
+                    mimeType = photo.mimetype,
+                    maxBytes = ChatBackground.Photo.MAX_SIZE,
+                    maxPixelEdge = MAX_SOURCE_EDGE_PX,
+                )
                 ImageRequest.Builder(context)
                     .data(MediaRequestData(MediaSource(photo.url), kind))
                     .size(widthPx, heightPx)
+                    // Another member's photo must decode as a still raster, never as SVG or an endless animation.
+                    .decoderFactory(BitmapFactoryDecoder.Factory())
                     .build()
             }
             AsyncImage(
@@ -197,7 +206,7 @@ fun chatBackgroundPhotoAlignment(alignX: Int, alignY: Int) = chatBackgroundAlign
     UnitPoint(alignX.toFloat() / ChatBackground.Photo.MAX_ALIGN, alignY.toFloat() / ChatBackground.Photo.MAX_ALIGN)
 )
 
-/** With [ContentScale.Crop], the image's point at [anchor] lands on the same point of the frame, so it always stays on screen. */
+/** With [ContentScale.Crop], the image's [anchor] lands on the same point of the frame, so it stays on screen. */
 fun chatBackgroundAlignment(anchor: UnitPoint) = BiasAbsoluteAlignment(
     horizontalBias = anchor.x * 2 - 1,
     verticalBias = anchor.y * 2 - 1,

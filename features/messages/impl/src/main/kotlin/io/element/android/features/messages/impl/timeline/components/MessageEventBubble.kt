@@ -184,7 +184,6 @@ object MessageEventBubbleDefaults {
     @Composable
     fun backgroundBubbleColor(isMine: Boolean): Color {
         return if (isMine) {
-            // GUA FORK: a chat theme can colour the outgoing bubble.
             LocalOutgoingBubbleColor.current ?: ElementTheme.colors.messageFromMeBackground
         } else {
             ElementTheme.colors.messageFromOtherBackground

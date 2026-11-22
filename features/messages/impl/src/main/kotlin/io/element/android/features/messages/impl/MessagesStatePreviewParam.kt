@@ -121,7 +121,6 @@ open class MessagesStatePreviewParam : PreviewParameterProvider<MessagesState> {
                 chatTheme = ChatTheme(bubble = ChatBubbleColor.Purple),
                 timelineState = aTimelineState(timelineItems = aChatBackgroundTimelineItems(), timelineRoomInfo = aChatBackgroundTimelineRoomInfo()),
             ),
-            // GUA FORK: the timeline over an illustrated wallpaper.
             aChatArtworkMessagesState(),
         )
 }

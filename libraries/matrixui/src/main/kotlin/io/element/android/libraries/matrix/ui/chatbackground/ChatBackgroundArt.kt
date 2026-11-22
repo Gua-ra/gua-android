@@ -50,9 +50,8 @@ import kotlin.math.roundToInt
 private val GRAIN_STYLE = wallpaperGrainStyle()
 
 /**
- * An artwork's still image, decoded by Coil off the main thread at the frame's size and cropped around its anchor.
- * Its fallback preset shows until the first image has loaded, and if it never does; a new size or appearance keeps the previous image until
- * its own has loaded.
+ * The fallback preset shows until the first still loads, and for good if it never does.
+ * A new size or appearance keeps the previous still on screen until its own loads.
  * With [live] cues, on Android 13 and up, the artwork tilts with the device and a live one animates. Previews and UI tests always show
  * the still, unmoved.
  */
@@ -169,7 +168,7 @@ internal fun wallpaperStillRequest(context: Context, file: String, widthPx: Int,
     .useExistingImageAsPlaceholder(true)
     .build()
 
-/** Decodes the still on the calling thread, downsampled while it still covers the frame; null if it cannot be read. */
+/** Decodes on the calling thread; null if the asset cannot be read. */
 internal fun decodeWallpaperStill(context: Context, file: String, widthPx: Int, heightPx: Int): ImageBitmap? = runCatchingExceptions {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     context.assets.open(wallpaperAssetPath(file)).use { BitmapFactory.decodeStream(it, null, bounds) }
@@ -179,7 +178,6 @@ internal fun decodeWallpaperStill(context: Context, file: String, widthPx: Int, 
     .onFailure { Timber.w(it, "Could not load the wallpaper %s", file) }
     .getOrNull()
 
-/** The largest power of two that the image can be divided by and still cover a frame of [frameWidth] x [frameHeight]. */
 internal fun wallpaperSampleSize(imageWidth: Int, imageHeight: Int, frameWidth: Int, frameHeight: Int): Int {
     var sampleSize = 1
     while (imageWidth / (sampleSize * 2) >= frameWidth && imageHeight / (sampleSize * 2) >= frameHeight) {
@@ -190,12 +188,12 @@ internal fun wallpaperSampleSize(imageWidth: Int, imageHeight: Int, frameWidth: 
 
 private fun wallpaperAssetPath(file: String) = "${ChatArtwork.ASSETS_FOLDER}/$file"
 
-/** The shared grain tile, or null until it has loaded off the main thread. */
+/** Null until the tile has loaded off the main thread. */
 @Composable
 internal fun rememberWallpaperGrain(): ImageBitmap? {
     val context = LocalContext.current
     if (LocalInspectionMode.current) {
-        // A screenshot is a single frame, so the tile is decoded in place: whether grain shows never depends on which preview ran first.
+        // A screenshot is a single frame, so decode now rather than depend on which preview filled the cache first.
         return remember(context) { WallpaperNoise.cached ?: WallpaperNoise.decode(context) }
     }
     val tile by produceState(initialValue = WallpaperNoise.cached, context) {
@@ -204,7 +202,6 @@ internal fun rememberWallpaperGrain(): ImageBitmap? {
     return tile
 }
 
-/** Draws [grain] repeated at device pixels over the content, a tile starting at [tileOrigin]; nothing while it is null. */
 internal fun Modifier.wallpaperGrain(grain: ImageBitmap?, tileOrigin: Offset = Offset.Zero): Modifier {
     grain ?: return this
     return drawWithCache {
