@@ -61,6 +61,7 @@ import kotlin.math.roundToInt
 
 private const val CROSSFADE_DURATION_MS = 200
 private const val MAX_DECODED_EDGE_PX = 2048
+private const val MAX_SOURCE_EDGE_PX = 4096
 
 @Composable
 fun ChatBackgroundService.collectBackgroundAsState(room: JoinedRoom): State<ChatBackground> {
@@ -161,7 +162,12 @@ private fun PhotoBackground(photo: ChatBackground.Photo) {
             val context = LocalContext.current
             val request = remember(photo.url, widthPx, heightPx) {
                 // Downloaded to a file, not into memory, so Coil decodes it downsampled; the declared size is not trusted.
-                val kind = MediaRequestData.Kind.File(fileName = "chat-background", mimeType = photo.mimetype, maxBytes = ChatBackground.Photo.MAX_SIZE)
+                val kind = MediaRequestData.Kind.File(
+                    fileName = "chat-background",
+                    mimeType = photo.mimetype,
+                    maxBytes = ChatBackground.Photo.MAX_SIZE,
+                    maxPixelEdge = MAX_SOURCE_EDGE_PX,
+                )
                 ImageRequest.Builder(context)
                     .data(MediaRequestData(MediaSource(photo.url), kind))
                     .size(widthPx, heightPx)
