@@ -191,7 +191,7 @@ enum class FeatureFlags(
         title = "Chat themes",
         description = "GUA FORK: show the Chat theme rows in Settings and chat details. Themes set from other devices always show." +
             "\n\nOff in production until a release that hides the raw background event in group timelines is out.",
-        // On in debug and QA builds (the .dev application ID), off in production.
+        // On everywhere but production; QA builds use the .dev application ID.
         defaultValue = { buildMeta -> buildMeta.buildType != BuildType.RELEASE || buildMeta.applicationId.endsWith(".dev") },
         isFinished = false,
     ),

@@ -14,7 +14,7 @@ sealed interface ChatBackground {
 
     data class Preset(val preset: ChatBackgroundPreset) : ChatBackground
 
-    // Whole numbers because rooms from version 6 refuse an event holding a float.
+    // Integers only: room versions 6 and later reject events that contain floats.
     data class Photo(
         val url: String,
         val mimetype: String,
@@ -22,9 +22,9 @@ sealed interface ChatBackground {
         val height: Int,
         val size: Long,
         val blurhash: String?,
-        /** The opacity in percent of the black layer drawn over the photo in dark mode, 0 to [MAX_DIM]. */
+        /** Opacity in percent of the black layer over the photo in dark mode. */
         val dim: Int = DEFAULT_DIM,
-        /** Where the photo sits when it overflows the frame horizontally, in thousandths: 0 pins its left edge, [MAX_ALIGN] its right edge. */
+        /** Horizontal position of an overflowing photo, in thousandths: 0 pins its left edge, [MAX_ALIGN] its right edge. */
         val alignX: Int = DEFAULT_ALIGN,
         /** The same vertically: 0 pins its top edge, [MAX_ALIGN] its bottom edge. */
         val alignY: Int = DEFAULT_ALIGN,
@@ -35,7 +35,7 @@ sealed interface ChatBackground {
             const val DEFAULT_ALIGN = 500
             const val MAX_ALIGN = 1000
 
-            /** The largest file a photo background may declare, and the most that is downloaded to show one. */
+            /** The largest file a photo background may declare, and the largest downloaded file that is decoded. */
             const val MAX_SIZE = 20_000_000L
         }
     }

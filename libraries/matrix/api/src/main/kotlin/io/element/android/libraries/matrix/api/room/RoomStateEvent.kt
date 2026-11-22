@@ -12,8 +12,7 @@ import io.element.android.libraries.matrix.api.core.EventId
 data class RoomStateEvent(
     val stateKey: String,
     val contentJson: String,
-    /** Null when the SDK does not know the event that set this state. */
     val eventId: EventId?,
-    /** The event's `origin_server_ts`, null when unknown. */
+    /** The event's `origin_server_ts`. */
     val timestamp: Long?,
 )
