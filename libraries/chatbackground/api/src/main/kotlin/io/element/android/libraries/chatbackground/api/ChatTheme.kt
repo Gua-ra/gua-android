@@ -15,7 +15,7 @@ data class ChatTheme(
     val bubble: ChatBubbleColor? = null,
 ) {
     companion object {
-        /** No wallpaper and the stock bubble: the same as no theme at all. */
+        /** The same as no theme at all. */
         val STOCK = ChatTheme()
     }
 }

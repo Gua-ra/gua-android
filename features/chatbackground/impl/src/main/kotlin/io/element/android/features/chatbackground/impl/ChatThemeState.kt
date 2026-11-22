@@ -51,11 +51,11 @@ data class ChatThemeState(
         if (isPhotoHidden && theme.background is ChatBackground.Photo) theme.copy(background = ChatBackground.None) else theme
 }
 
-/** A picker starts from [base], so keeping it is no change either. */
+/** Pickers start from [base], so choosing it again is not a change. */
 internal fun isChange(theme: ChatTheme, current: ChatTheme, base: ChatTheme, isPickerChoice: Boolean) =
     theme != current && !(isPickerChoice && theme == base)
 
-/** What the pickers start from: in a chat that follows the default, the default without its photo, which stays private. */
+/** A chat that follows the default starts its pickers from the default without its photo, which stays private. */
 internal fun baseChatTheme(mode: ChatThemeMode, current: ChatTheme, defaultTheme: ChatTheme): ChatTheme =
     if (mode == ChatThemeMode.Chat && current == ChatTheme.STOCK) {
         if (defaultTheme.background is ChatBackground.Photo) defaultTheme.copy(background = ChatBackground.None) else defaultTheme
@@ -84,7 +84,7 @@ data class ChatBackgroundPhotoDraft(
     val dim: Int = ChatBackground.Photo.DEFAULT_DIM,
     val alignX: Int = ChatBackground.Photo.DEFAULT_ALIGN,
     val alignY: Int = ChatBackground.Photo.DEFAULT_ALIGN,
-    /** Null follows the app's appearance; dark is the only appearance the dim applies to. */
+    /** Null follows the app's appearance. The dim applies only in dark. */
     val isDarkPreview: Boolean? = null,
 )
 

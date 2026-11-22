@@ -33,7 +33,7 @@ object ChatBackgroundCodec {
 
     fun decode(contentJson: String?): ChatTheme {
         val content = tryOrNull { Json.parseToJsonElement(contentJson.orEmpty()) } as? JsonObject ?: return ChatTheme.STOCK
-        // The bubble is part of version 1: content of any other version keeps only its fallback wallpaper.
+        // Content of any other version keeps only its fallback wallpaper.
         if (content["v"].integerOrNull() != VERSION) return ChatTheme(decodePreset(content["fallback_preset"]))
         val background = when (content["kind"].stringOrNull()) {
             KIND_NONE -> ChatBackground.None
