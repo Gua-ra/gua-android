@@ -41,9 +41,6 @@ data class WallpaperMotionPolicy(
             else -> WallpaperMotion.Animating
         }
 
-    val animates: Boolean
-        get() = motion == WallpaperMotion.Animating
-
     private fun asksForStill(): Boolean {
         val isThermalThrottled = thermalStatus >= PowerManager.THERMAL_STATUS_MODERATE
         return !animationsEnabled || isPowerSaveMode || isThermalThrottled || isOverFrameBudget

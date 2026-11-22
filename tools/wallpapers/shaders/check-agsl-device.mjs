@@ -72,8 +72,7 @@ try {
   const pulled = args.out ? path.resolve(args.out) : path.join(work, 'out');
   fs.mkdirSync(pulled, { recursive: true });
   if (api >= 34) {
-    const mode = 'gpu';
-    adb('pull', `${DEVICE_DIR}/${mode}`, pulled);
+    adb('pull', `${DEVICE_DIR}/gpu`, pulled);
     console.log(`\nGPU drawing (device API ${api}), 8-bit levels after 2x box downsample:`);
     for (const art of LIVE_ARTWORKS) {
       let worstMean = 0;
@@ -81,7 +80,7 @@ try {
       let missing = 0;
       for (const c of CASES) {
         const name = goldenName(art.id, c);
-        const file = path.join(pulled, mode, name);
+        const file = path.join(pulled, 'gpu', name);
         if (!fs.existsSync(file)) { missing++; continue; }
         const shot = decodePng(fs.readFileSync(file));
         if (shot.w !== WIDTH || shot.h !== HEIGHT) throw new Error(`${name}: device drew ${shot.w}x${shot.h}`);

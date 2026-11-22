@@ -24,21 +24,16 @@ class WallpaperMotionPolicyTest {
     @Test
     fun `a chat on screen with nothing over it animates`() {
         assertThat(animating.motion).isEqualTo(WallpaperMotion.Animating)
-        assertThat(animating.animates).isTrue()
     }
 
     @Test
     fun `a chat that is not on screen pauses`() {
-        val policy = animating.copy(isOnScreen = false)
-        assertThat(policy.motion).isEqualTo(WallpaperMotion.Paused)
-        assertThat(policy.animates).isFalse()
+        assertThat(animating.copy(isOnScreen = false).motion).isEqualTo(WallpaperMotion.Paused)
     }
 
     @Test
     fun `a sheet or the message menu over the chat pauses it`() {
-        val policy = animating.copy(isCovered = true)
-        assertThat(policy.motion).isEqualTo(WallpaperMotion.Paused)
-        assertThat(policy.animates).isFalse()
+        assertThat(animating.copy(isCovered = true).motion).isEqualTo(WallpaperMotion.Paused)
     }
 
     @Test
