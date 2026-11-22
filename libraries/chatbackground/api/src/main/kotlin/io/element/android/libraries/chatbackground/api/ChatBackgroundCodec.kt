@@ -20,7 +20,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import kotlin.math.floor
 
-// Keys are written in sorted order, as canonical JSON, so iOS and Android send identical bytes.
+// Keys are written in sorted order so iOS and Android send identical bytes.
 object ChatBackgroundCodec {
     const val REMOVED_CONTENT = "{}"
 
@@ -34,7 +34,7 @@ object ChatBackgroundCodec {
 
     fun decode(contentJson: String?): ChatTheme {
         val content = tryOrNull { Json.parseToJsonElement(contentJson.orEmpty()) } as? JsonObject ?: return ChatTheme.STOCK
-        // The bubble is part of version 1: content of any other version keeps only its fallback wallpaper.
+        // Content of any other version keeps only its fallback wallpaper.
         if (content["v"].integerOrNull() != VERSION) return ChatTheme(decodePreset(content["fallback_preset"]))
         val background = when (content["kind"].stringOrNull()) {
             KIND_NONE -> ChatBackground.None
@@ -126,7 +126,7 @@ private fun <T> JsonElement?.optional(parse: (JsonElement) -> T?): OptionalField
 
 private fun JsonElement?.stringOrNull(): String? = (this as? JsonPrimitive)?.takeIf { it.isString }?.content
 
-/** 800.0 is the same JSON number as 800, and iOS's decoder reads it as an integer too. */
+/** Reads 800.0 as 800, as iOS does. */
 private fun JsonElement?.integerOrNull(): Long? {
     val number = (this as? JsonPrimitive)?.takeUnless { it.isString } ?: return null
     return number.longOrNull ?: number.doubleOrNull?.takeIf { it.isFinite() && it == floor(it) }?.toLong()

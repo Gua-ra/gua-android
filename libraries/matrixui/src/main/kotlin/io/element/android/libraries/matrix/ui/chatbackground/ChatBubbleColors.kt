@@ -23,7 +23,6 @@ fun ChatBubbleColor.toColor(): Color = Color(color(ElementTheme.isLightTheme))
 @ReadOnlyComposable
 fun ChatBubbleColor?.outgoingBubbleColor(): Color = this?.toColor() ?: ElementTheme.colors.messageFromMeBackground
 
-/** The theme's outgoing bubble fill in the current appearance, or null for the stock one. */
 @Composable
 @ReadOnlyComposable
 fun ChatTheme.outgoingBubbleColorOrNull(): Color? = outgoingBubble(ElementTheme.isLightTheme)?.toColor()

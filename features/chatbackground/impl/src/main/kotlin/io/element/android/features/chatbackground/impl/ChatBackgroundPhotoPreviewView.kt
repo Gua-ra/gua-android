@@ -94,7 +94,7 @@ internal fun ChatBackgroundPhotoPreviewView(
             )
         },
     ) { padding ->
-        // The chat's own frame, with the controls drawn over it like the composer, so the photo is cropped exactly as in the chat.
+        // The controls overlay the frame like the composer does, so the photo crops exactly as in the chat.
         Box(
             modifier = Modifier
                 .padding(padding)
@@ -152,7 +152,7 @@ private fun PreviewControls(
             onValueChange = { eventSink(ChatThemeEvent.SetPhotoDim((it / DIM_STEP).roundToInt() * DIM_STEP)) },
             valueRange = 0f..ChatBackground.Photo.MAX_DIM.toFloat(),
             steps = ChatBackground.Photo.MAX_DIM / DIM_STEP - 1,
-            // Without this, TalkBack reads the position within 0 to 80 % as a percentage: 35 % would be "44 percent".
+            // TalkBack otherwise reads the position within 0 to 80, so 35 % would sound like "44 percent".
             modifier = Modifier.semantics {
                 contentDescription = dimLabel
                 stateDescription = dimValue
@@ -199,7 +199,7 @@ private fun PhotoFrame(
     BoxWithConstraints(
         modifier = modifier
             .background(ElementTheme.colors.bgCanvasDefault)
-            // One focusable item for screen readers, so the nudge actions are reachable and the sample bubbles are not read.
+            // One screen reader node, so the move actions are reachable and the sample bubbles are not read.
             .clearAndSetSemantics {
                 contentDescription = description
                 customActions = listOf(

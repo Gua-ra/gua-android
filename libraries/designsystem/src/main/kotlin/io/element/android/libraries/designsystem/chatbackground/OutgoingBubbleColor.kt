@@ -10,5 +10,5 @@ package io.element.android.libraries.designsystem.chatbackground
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-/** The chat theme's outgoing bubble fill, or null for the stock one. */
+/** Null keeps the stock outgoing bubble. */
 val LocalOutgoingBubbleColor = staticCompositionLocalOf<Color?> { null }

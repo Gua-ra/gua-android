@@ -6,8 +6,7 @@
  * Please see LICENSE files in the repository root for full details.
  */
 
-// Bakes the chat wallpaper stills, the grain tile and manifest.json from the Lab modules in lab/.
-// Usage and pinned tool versions: README.md.
+// Bakes the chat wallpaper stills, the grain tile and manifest.json from the Lab modules in lab/. Usage: README.md.
 
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -31,19 +30,17 @@ const BUDGET_LIMIT = 5_000_000;
 const PINNED = { node: 22, chromium: '139.0.7258.5', cwebp: '1.6.0' };
 const WEBP_ARGS = ['-q', '80', '-m', '6'];
 const LAB_FILES = ['lab/1-live.js', 'lab/2-nature.js', 'lab/3-minimal-patterns.js'];
-// Asset folders inside each checkout; the files keep the same names on both platforms.
 const IOS_DIR = 'ElementX/Resources/Wallpapers';
 const ANDROID_DIR = 'libraries/matrixui/src/main/assets/wallpapers';
-// The Lab page's full-screen triangle (its page script is not copied).
+// The Lab page's full-screen triangle, since its page script is not in lab/.
 const VERT = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.0,1.0);}';
 // The Lab's full-size preview canvas: a phone 860 points tall at 2x.
 export const LAB_PREVIEW = [794, 1720];
 
-// Patches applied to the Lab modules as they load. Each one only acts while the bake sets its
-// flag, so with every flag off the page draws exactly what the Lab draws.
+// Each patch acts only while the bake sets its flag, so with every flag off the page draws exactly what the Lab draws.
 const LAB_PATCHES = [
-  // Film grain: the apps draw noise.webp at runtime because lossy WebP smears baked grain.
-  // Nature's grain also lifts dark scenes a little, so a flat mid-grey layer keeps that tone.
+  // The apps draw noise.webp at runtime because lossy WebP smears baked grain.
+  // A flat mid-grey keeps the slight lift Nature's grain gives dark scenes.
   {
     file: 'lab/2-nature.js',
     find: "ctx.fillStyle = ctx.createPattern(GRAIN, 'repeat');",
@@ -61,8 +58,8 @@ const LAB_PATCHES = [
     replace: '(window.GUA_BAKE_STAR_AREA || w * h) / (390 * 844)',
     count: 11,
   },
-  // A crescent's shadow is cut out of the whole canvas, which leaves a hole showing the page behind
-  // it. The bake paints the sky from before the moon back through the shadow instead.
+  // The Lab cuts a crescent's shadow out of the whole canvas, leaving a hole; the bake paints the sky
+  // from before the moon through the shadow instead.
   {
     file: 'lab/2-nature.js',
     find: 'glow(ctx, x, y, r * 2.6, glowCol || col, (glowA == null ? 0.16 : glowA) * 1.3);',
@@ -81,7 +78,7 @@ const LAB_PATCHES = [
 ];
 
 // Light fills of the original ten presets, as in ChatBackgroundPreset on both platforms.
-// Only these may be a fallback, because every build since chat backgrounds shipped knows them.
+// Only these may be a fallback, because every build with chat backgrounds knows them.
 export const FALLBACK_PRESETS = {
   aurora: { glows: { base: 0xb2d8c2, glows: [[0x8fcdab, 0.30, 0.25, 0.75], [0x93cbcf, 0.75, 0.80, 0.65]] } },
   mint: { solid: 0xadd7bf },
@@ -95,9 +92,7 @@ export const FALLBACK_PRESETS = {
   night: { linear: [0.5, 0, 0.5, 1], stops: [[0xc1c6ec, 0], [0xd4c0e6, 1]] },
 };
 
-// ---------------------------------------------------------------- colour
-
-// sRGB 8-bit to OKLab (Björn Ottosson's matrices). Also injected into the page.
+// sRGB 8-bit to OKLab, with Björn Ottosson's matrices. Injected into the page as source, so it must stay self-contained.
 export function oklab(r, g, b) {
   const lin = (c) => {
     c /= 255;
@@ -122,7 +117,7 @@ function mixRgb(a, b, t) {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 }
 
-// The colour of a preset's light fill at a point of a WIDTH x HEIGHT frame, drawn the way the apps draw it.
+// Must match how the apps draw a preset's light fill on a WIDTH x HEIGHT frame.
 function presetColour(fill, x, y) {
   if (fill.solid !== undefined) return rgb(fill.solid);
   if (fill.linear) {
@@ -158,7 +153,7 @@ export function presetMeanOklab(fill) {
 }
 
 // Matched by hue: the presets share one lightness while most artworks are far paler, so a full OKLab
-// distance would pick the palest preset. Graphite, the one grey, is for an artwork with no clear hue.
+// distance would pick the palest preset.
 const NEUTRAL_CHROMA = 0.005;
 const PRESET_MEANS = new Map();
 
@@ -183,8 +178,6 @@ export function nearestPreset(mean) {
 function describeNearest(n) {
   return `${n.id}, ${n.hueDelta === null ? 'grey' : `hue ${n.hueDelta.toFixed(1)} deg away`}, chroma ${n.chroma.toFixed(3)}`;
 }
-
-// ---------------------------------------------------------------- page
 
 // Runs inside the page after the Lab modules have registered window.GUA_WALLPAPERS.
 function installPageHelpers(vert, designWidth) {
@@ -261,7 +254,7 @@ function installPageHelpers(vert, designWidth) {
     const c = document.createElement('canvas');
     c.width = w;
     c.height = h;
-    // Like the Lab: a CPU-backed context, which every per-pixel renderer reads back.
+    // CPU-backed like the Lab's, since every per-pixel renderer reads it back.
     const ctx = c.getContext('2d', { willReadFrequently: true });
     window.GUA_BAKE_NO_GRAIN = !!opts.noGrain;
     window.GUA_BAKE_STAR_AREA = opts.starArea || 0;
@@ -276,9 +269,7 @@ function installPageHelpers(vert, designWidth) {
     return c;
   }
 
-  // opts: { dark, option, time, noGrain, starArea, moonFix, renderSize, stats }.
-  // renderSize draws at that size first and scales up to w x h.
-  // Returns a PNG data URL and, if asked, the mean OKLab colour.
+  // opts as from bakeOptions(); renderSize draws at that size first and scales up to w x h.
   window.GUA_BAKE = function (labId, w, h, opts) {
     const wp = byId.get(labId);
     if (!wp) throw new Error(`No Lab wallpaper ${labId}`);
@@ -318,7 +309,7 @@ function loadPlaywright(dir) {
   return require(from ? path.resolve(from) : 'playwright-core');
 }
 
-// Opens headless Chromium with the Lab modules loaded. SwiftShader keeps WebGL output independent of the GPU.
+// SwiftShader keeps WebGL output independent of the GPU.
 export async function openLab({ playwrightCore } = {}) {
   const { chromium } = loadPlaywright(playwrightCore);
   const browser = await chromium.launch({ headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-gpu'] });
@@ -334,8 +325,6 @@ export async function openLab({ playwrightCore } = {}) {
   };
   return { browser, page, render, chromiumVersion: browser.version() };
 }
-
-// ---------------------------------------------------------------- files
 
 function png(width, height, rgbBytes) {
   const chunk = (type, data) => {
@@ -363,8 +352,8 @@ function hash01(x, y, seed) {
   return (h >>> 0) / 4294967296;
 }
 
-// Grey grain centred on mid-grey: fine triangular noise with a little clumping at about 4 px.
-// Every term is periodic in NOISE_SIZE, so the tile repeats without seams.
+// Fine triangular noise around mid-grey with a little clumping at 4 px. Every term is periodic in
+// NOISE_SIZE, so the tile repeats without seams.
 export function noiseTileRgb() {
   const N = NOISE_SIZE, CELL = 4, L = N / CELL;
   const out = new Uint8Array(N * N * 3);
@@ -396,8 +385,6 @@ function cwebpVersion(bin) {
   return execFileSync(bin, ['-version'], { encoding: 'utf8' }).split('\n')[0].trim();
 }
 
-// ---------------------------------------------------------------- main
-
 function parseArgs(argv) {
   const a = { android: null, ios: null, playwrightCore: null, cwebp: 'cwebp', png: null, only: null, imagesOnly: false };
   for (let i = 0; i < argv.length; i++) {
@@ -416,7 +403,6 @@ function parseArgs(argv) {
   return a;
 }
 
-// The live shader ports from shaders/generate.mjs, when that folder is present and wanted.
 async function shaderPorts(imagesOnly) {
   const file = path.join(HERE, 'shaders', 'generate.mjs');
   if (imagesOnly || !fs.existsSync(file)) return null;
@@ -428,7 +414,6 @@ async function shaderPorts(imagesOnly) {
   return (art) => ({ msl: mod.toMsl(art, glsl.get(art.id)), agsl: mod.toAgsl(art, glsl.get(art.id)) });
 }
 
-// How the bake draws one variant of an artwork from artworks.json.
 export function bakeOptions(art, variant) {
   return {
     dark: variant === 'dark',
@@ -463,7 +448,7 @@ async function main() {
   const lab = await openLab({ playwrightCore: args.playwrightCore });
   if (lab.chromiumVersion !== PINNED.chromium) console.warn(`warning: Chromium ${lab.chromiumVersion}, pinned is ${PINNED.chromium}; outputs may differ`);
 
-  // name -> bytes; shared files go to both platforms, shader ports only to their own.
+  // File name to bytes. Shader ports go only to their own platform.
   const shared = new Map(), ios = new Map(), android = new Map();
   const entries = [];
   try {

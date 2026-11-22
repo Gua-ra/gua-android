@@ -10,7 +10,7 @@ package io.element.android.libraries.chatbackground.api
 import androidx.annotation.StringRes
 
 /**
- * In gallery order, the same as the assets' manifest.json. iOS ships the same IDs, bubbles, anchors and fallbacks.
+ * In gallery order, as in manifest.json, with the same ids, bubbles, anchors and fallbacks as iOS.
  * Whether an artwork is live comes from here, never from the wire.
  */
 enum class ChatArtwork(
@@ -301,12 +301,10 @@ enum class ChatArtwork(
 
     fun file(isLight: Boolean): String = if (isLight) lightFile else darkFile
 
-    /** The artwork with its paired bubbles, as the gallery offers it. */
     val theme: ChatTheme
         get() = ChatTheme(ChatBackground.Art(this), bubble, bubbleDark).normalized()
 
     companion object {
-        /** The folder of the artworks' images, the grain tile and the manifest in the app's assets. */
         const val ASSETS_FOLDER = "wallpapers"
         const val NOISE_FILE = "noise.webp"
 
@@ -314,7 +312,6 @@ enum class ChatArtwork(
     }
 }
 
-/** In gallery order; [id] is the manifest's name for the section. */
 enum class ChatArtworkSection(val id: String) {
     Live("live"),
     Nature("nature"),

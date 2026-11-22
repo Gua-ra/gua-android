@@ -80,7 +80,7 @@ class TimelineItemEventFactory(
         if (config.isDirectOneToOneRoom && currentTimelineItem.event.content.isSuppressedInDirectOneToOneRoom()) {
             return null
         }
-        // GUA FORK: the SDK filter lets custom state through for the chat background notice, so the rest is dropped here.
+        // GUA FORK: the SDK filter keeps custom state for the chat background notice, so other custom state is dropped here.
         if ((currentTimelineItem.event.content as? StateContent)?.content is OtherState.Custom) {
             return null
         }

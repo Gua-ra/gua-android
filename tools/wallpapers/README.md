@@ -34,7 +34,7 @@ Pinned tools, so a re-bake is byte-identical: Node 22, playwright-core 1.54.2 wi
 
 - `lab/`: the Lab page's wallpaper modules, copied verbatim. To update, copy the whole script again.
 - `artworks.json`: the picked artworks in gallery order. `id` is the wire id, `lab` the Lab id, `option` the picked colour option, `anchor` the point of the image that stays on screen when it is cropped, `still_time` the shader time of a live still (the live view starts its clock there, see `shaders/README.md`).
-- `fallback_preset` is pinned once shipped. A new artwork without one gets the original-ten preset nearest in hue: the OKLab hue of the light image's mean colour against the mean hue of each preset's light fill, or graphite when the mean colour is too grey to have a hue (chroma under 0.005). Hue rather than full OKLab distance, because every preset has nearly the same lightness while most artworks are much paler, which would make the palest preset win. The bake prints a note if a pinned one is no longer the nearest.
+- `fallback_preset` is pinned once shipped. A new artwork without one gets the original-ten preset whose light fill is nearest in OKLab hue to the light image's mean colour, or graphite when that colour is too grey to have a hue (chroma under 0.005). Full OKLab distance would always pick the palest preset, since the presets share one lightness and most artworks are much paler. The bake prints a note if a pinned one is no longer the nearest.
 
 ## Where the bake differs from the Lab
 
