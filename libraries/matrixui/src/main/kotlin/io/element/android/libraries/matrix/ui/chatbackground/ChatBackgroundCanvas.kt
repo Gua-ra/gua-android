@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.decode.BitmapFactoryDecoder
 import coil3.request.ImageRequest
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.androidutils.system.areAnimationsEnabled
@@ -164,6 +165,8 @@ private fun PhotoBackground(photo: ChatBackground.Photo) {
                 ImageRequest.Builder(context)
                     .data(MediaRequestData(MediaSource(photo.url), kind))
                     .size(widthPx, heightPx)
+                    // Another member's photo must decode as a still raster, never as SVG or an endless animation.
+                    .decoderFactory(BitmapFactoryDecoder.Factory())
                     .build()
             }
             AsyncImage(
