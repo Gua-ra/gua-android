@@ -88,8 +88,8 @@ class DefaultChatBackgroundPhotoProcessor(
         } else {
             upright
         }
-        return sized.flattenedOnBlack().also { flattened ->
-            listOf(decoded, upright, sized).distinct().filter { it !== flattened }.forEach { it.recycle() }
+        return sized.flattenedOnBlack().also {
+            listOf(decoded, upright, sized).distinct().forEach(Bitmap::recycle)
         }
     }
 
