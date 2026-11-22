@@ -70,7 +70,7 @@ internal fun ArtBackground(
     }
 }
 
-/** A built-in photo is dimmed in dark mode like a user's own photo at its default; other art is drawn for each appearance. */
+/** A photo has one image for both appearances, so dark mode dims it like a user's own photo. */
 internal val ChatArtwork.darkDim: Int?
     get() = if (isPhoto) ChatBackground.Photo.DEFAULT_DIM else null
 

@@ -169,7 +169,6 @@ private fun ChatThemeGalleryView(
                     ChatBackgroundCanvas(background = state.shownBase.background, modifier = Modifier.fillMaxSize())
                 }
             }
-            // Never disabled: members who cannot change the theme still reach its credit.
             state.shownBase.background.photoCredit?.let { credit ->
                 PhotoCreditLine(
                     credit = credit,

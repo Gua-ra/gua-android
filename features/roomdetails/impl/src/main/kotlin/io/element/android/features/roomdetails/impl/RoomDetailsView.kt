@@ -745,7 +745,7 @@ private fun ChatBackgroundItem(
         },
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Theme())),
         trailingContent = ListItemContent.Text(stringResource(row.theme.nameRes(ElementTheme.isLightTheme))),
-        // Members who cannot change the theme still open it, to reach the credit of a photo.
+        // Stays enabled without permission so members can reach a photo's credits.
         onClick = onClick,
     )
 }

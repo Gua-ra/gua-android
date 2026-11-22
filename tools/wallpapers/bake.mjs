@@ -405,19 +405,19 @@ function serializeManifest(manifest) {
   return JSON.stringify(manifest, null, 2) + '\n';
 }
 
-// Photos sit right after Nature, as in the gallery.
+// The manifest follows the apps' catalog order, with the photos after Nature.
 function withPhotos(artworks, photoEntries) {
   const art = artworks.filter((e) => e.section !== PHOTOS_SECTION);
   const at = art.findLastIndex((e) => e.section === 'nature') + 1;
   return [...art.slice(0, at), ...photoEntries, ...art.slice(at)];
 }
 
-// webpmux reports every save on stderr, so stderr shows only when a tool fails.
+// webpmux logs every save to stderr, so stderr is shown only when a tool fails.
 function run(bin, args) {
   execFileSync(bin, args, { stdio: ['ignore', 'ignore', 'pipe'] });
 }
 
-// The EXIF orientation of a JPEG, or 1. cwebp ignores it, so the bake applies it.
+// cwebp ignores the EXIF orientation, so the bake applies it.
 export function jpegOrientation(buf) {
   if (buf.length < 4 || buf.readUInt16BE(0) !== 0xffd8) return 1;
   for (let p = 2; p + 4 <= buf.length && buf[p] === 0xff && buf[p + 1] !== 0xda; p += 2 + buf.readUInt16BE(p + 2)) {
@@ -506,7 +506,7 @@ export function photoXmp(photo) {
   ].join('\n');
 }
 
-// sRGB's colorants adapted to D50, the white of the ICC connection space (Bradford), as columns.
+// sRGB primaries in XYZ, Bradford-adapted to the ICC D50 white, one primary per column.
 const SRGB_D50 = [
   [0.4360747, 0.3850649, 0.1430804],
   [0.2225045, 0.7168786, 0.0606169],
@@ -552,7 +552,7 @@ function inverse3(m) {
   ];
 }
 
-// Only matrix/TRC RGB profiles are read. They are what cameras and phones embed, and they convert exactly.
+// Reads matrix/TRC RGB profiles only, which is what cameras and phones embed.
 export function iccToSrgb(icc) {
   const tags = new Map();
   for (let i = 0, n = icc.readUInt32BE(128); i < n; i++) {
@@ -581,7 +581,7 @@ export function convertToSrgb(rgb, { matrix: m, linear: [lr, lg, lb] }) {
   return rgb;
 }
 
-// The photo cropped upright, converted to sRGB and resized, with only the rights XMP, and its mean OKLab colour.
+// The WebP keeps no metadata from the original (EXIF, GPS, ICC), only the rights XMP.
 export function bakePhoto(photo, originalsDir, tools, work, webpArgs = PHOTO_WEBP_ARGS) {
   const dir = path.join(originalsDir, photo.id);
   const found = fs.readdirSync(dir).filter((f) => !f.startsWith('.'));
@@ -639,7 +639,7 @@ export function photoEntry(photo, webp, fallback) {
   };
 }
 
-// Rewrites only the photo entries of manifest.json; every other byte of it stays as the art bake wrote it.
+// Rewrites only the photo entries; the rest of manifest.json stays byte-identical.
 async function bakePhotos(args) {
   const { photos } = JSON.parse(fs.readFileSync(path.join(HERE, 'photos.json'), 'utf8'));
   const sibling = (name) => (args.cwebp.includes('/') ? path.join(path.dirname(args.cwebp), name) : name);
@@ -821,7 +821,6 @@ async function main() {
   shared.set('noise.webp', noise);
   fs.rmSync(work, { recursive: true, force: true });
 
-  // The photo entries come from the last --photos run and are kept as they are.
   const previous = path.join(args.android, ANDROID_DIR, 'manifest.json');
   const photoEntries = fs.existsSync(previous) ? JSON.parse(fs.readFileSync(previous, 'utf8')).artworks.filter((e) => e.section === PHOTOS_SECTION) : [];
   const photoFiles = new Set(photoEntries.flatMap((e) => Object.values(e.files)));

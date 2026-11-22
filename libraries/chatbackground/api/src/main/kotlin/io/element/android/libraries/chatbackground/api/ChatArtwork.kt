@@ -24,7 +24,7 @@ enum class ChatArtwork(
     val anchor: UnitPoint,
     /** What builds without this artwork show instead. It never changes once shipped. */
     val fallbackPreset: ChatBackgroundPreset,
-    /** Set exactly for the photos, which must show it wherever they are offered. */
+    /** Non-null exactly for photos, which must show it wherever they are offered. */
     val credit: ChatPhotoCredit? = null,
 ) {
     GlassDrops(

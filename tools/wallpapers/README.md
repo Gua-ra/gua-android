@@ -57,9 +57,9 @@ node tools/wallpapers/bake.mjs --photos <originals> --android . --ios ../gua-ios
 
 - No browser is needed. `dwebp` and `webpmux` must sit next to `cwebp`, all three at 1.6.0.
 - `<originals>/<id>/` holds exactly one file, the original, and the bake stops if its sha256 differs from `photos.json`.
-- Each photo is cropped in its upright frame, after the JPEG's EXIF orientation, and resized to 1290x2796. A photo with an ICC profile is converted to sRGB (relative colorimetric, matrix/TRC profiles only) and the file keeps nothing else from the original: no profile, no EXIF, no GPS. An XMP packet adds `dc:creator`, `dc:rights`, `xmpRights:WebStatement` (the licence URL) and, when there is one, `dc:source`.
+- Each photo is cropped upright, after applying the JPEG's EXIF orientation, and resized to 1290x2796. A photo with an ICC profile is converted to sRGB (relative colorimetric, matrix/TRC profiles only) and the file keeps nothing else from the original: no profile, no EXIF, no GPS. An XMP packet adds `dc:creator`, `dc:rights`, `xmpRights:WebStatement` (the licence URL) and, when there is one, `dc:source`.
 - Only the photo entries of `manifest.json` change; every art entry stays byte for byte. The bake fails, writing nothing, over 8 MB of photos per platform.
-- The apps draw a photo in dark appearance under the same black scrim as a user's own photo at its default dim.
+- In dark mode the apps dim a photo as much as a user's own photo at its default.
 
 `photos.json` lists the photos in gallery order. `names` are the gallery names in each app language. `author`, `licence`, `licence_url` and `source_url` (null for a photo with no public page) form the credit, and `licence_note` says why a licence applies when the source page does not show it. `original` is the sha256 and upright size of the original, `crop` a rectangle in its upright pixels. `anchor`, `bubble` and `fallback_preset` work as for the art; a new photo without `fallback_preset` gets one by the same hue rule, from the mean colour of its WebP.
 

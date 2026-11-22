@@ -179,7 +179,7 @@ internal fun ChatThemeTile(
             )
         }
         if (credit != null) {
-            // No line limit: the author's name must stay legible.
+            // No line limit, so the author's name always shows in full.
             Text(
                 text = credit,
                 modifier = Modifier.clearAndSetSemantics {},

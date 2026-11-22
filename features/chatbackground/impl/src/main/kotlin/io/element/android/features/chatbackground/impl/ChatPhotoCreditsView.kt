@@ -61,7 +61,7 @@ internal fun photoCreditText(credit: ChatPhotoCredit, withLicence: Boolean): Str
     stringResource(R.string.gua_chat_theme_photo_credit, credit.author)
 }
 
-/** Opens the photo credits. It wraps so the author's name always shows in full, and it is never disabled. */
+/** Never disabled, so members who cannot change the theme still reach the credits. */
 @Composable
 internal fun PhotoCreditLine(
     credit: ChatPhotoCredit,
