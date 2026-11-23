@@ -41,6 +41,7 @@ class ResolverVerificationVectorsTest {
             "policyLog",
             "placements",
             "resolveAnswers",
+            "ed25519Cases",
         )
         for (section in sections) {
             assertWithMessage(section).that(vectors[section]!!.jsonArray).isNotEmpty()
@@ -68,6 +69,16 @@ class ResolverVerificationVectorsTest {
                 assertWithMessage(name).that(Ed25519Signatures.verify(raw!!, message, signature)).isTrue()
                 assertWithMessage(name).that(Ed25519Signatures.verify(raw, byteArrayOf(2), signature)).isFalse()
             }
+        }
+    }
+
+    @Test
+    fun `every Ed25519 case has its expected verdict`() {
+        for (case in vectors["ed25519Cases"]!!.jsonArray.map { it.jsonObject }) {
+            val raw = Ed25519Signatures.rawPublicKey(case.string("publicKeySpkiB64"))
+            val verified = raw != null &&
+                Ed25519Signatures.verify(raw, Hex.decode(case.string("messageHex"))!!, case.string("signatureB64"))
+            assertWithMessage(case.string("name")).that(verified).isEqualTo(case["verifies"]!!.jsonPrimitive.boolean)
         }
     }
 
