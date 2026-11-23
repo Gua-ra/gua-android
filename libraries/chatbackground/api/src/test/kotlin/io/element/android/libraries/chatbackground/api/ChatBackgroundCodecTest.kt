@@ -118,7 +118,7 @@ class ChatBackgroundCodecTest {
     fun `artwork ids are unique, valid and never a reserved word`() {
         val ids = ChatArtwork.entries.map { it.id }
 
-        assertThat(ids).hasSize(49)
+        assertThat(ids).hasSize(50)
         assertThat(ids).containsNoDuplicates()
         assertThat(ids).containsNoneOf("rainbow", "pattern", "video", "Blue")
         ids.forEach { assertThat(ChatArtwork.fromId(it)?.id).isEqualTo(it) }

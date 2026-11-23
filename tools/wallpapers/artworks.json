@@ -214,6 +214,15 @@
       "fallback_preset": "ocean"
     },
     {
+      "id": "guara",
+      "lab": "nature.guara",
+      "section": "nature",
+      "live": false,
+      "bubble": { "light": "green", "dark": "green" },
+      "anchor": { "x": 0.78, "y": 0.19 },
+      "fallback_preset": "mint"
+    },
+    {
       "id": "currents",
       "lab": "pattern-currents",
       "section": "patterns",
