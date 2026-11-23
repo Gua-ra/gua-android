@@ -38,6 +38,7 @@ internal fun MessagesState.isTimelineCovered(): Boolean {
         readReceiptBottomSheetState.selectedEvent != null ||
         composerState.showAttachmentSourcePicker ||
         timelineState.resolveVerifiedUserSendFailureState.verifiedUserSendFailure !is VerifiedUserSendFailure.None ||
+        expressionPanelState.isShowingOverlay ||
         isDialogShown()
 }
 

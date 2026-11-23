@@ -67,7 +67,6 @@ class OwnNewEventCounterTest {
             aLocalEcho("reply", OPENED_AT + 1).copy(inReplyTo = InReplyToDetails.Loading(EventId("\$original"))),
             aLocalEcho("voice", OPENED_AT + 1).copy(content = aTimelineItemVoiceContent(eventId = null)),
             aLocalEcho("image or GIF", OPENED_AT + 1).copy(content = aTimelineItemImageContent()),
-            aLocalEcho("sticker", OPENED_AT + 1).copy(content = aTimelineItemStickerContent()),
             aLocalEcho("poll", OPENED_AT + 1).copy(content = aTimelineItemPollContent(isMine = true)),
             aLocalEcho("location", OPENED_AT + 1).copy(content = aTimelineItemLocationContent(mode = aStaticLocationMode())),
         )
@@ -75,6 +74,28 @@ class OwnNewEventCounterTest {
             counter.onTimelineItems(sends.take(index + 1).reversed())
             assertThat(counter.count).isEqualTo(index + 1)
         }
+    }
+
+    @Test
+    fun `a sticker counts once as it is sent, and its remote event counts nothing more`() {
+        val counter = OwnNewEventCounter(openedAtMillis = OPENED_AT)
+        counter.onTimelineItems(history)
+        counter.onStickerSent()
+        assertThat(counter.count).isEqualTo(1)
+        val remoteSticker = aTimelineItemEvent(isMine = true, content = aTimelineItemStickerContent()).copy(sentTimeMillis = OPENED_AT + 1)
+        counter.onTimelineItems(listOf(remoteSticker) + history)
+        assertThat(counter.count).isEqualTo(1)
+    }
+
+    @Test
+    fun `a GIF counts once through its local echo, next to a sticker sent through the direct path`() {
+        val counter = OwnNewEventCounter(openedAtMillis = OPENED_AT)
+        counter.onStickerSent()
+        val gif = aLocalEcho("gif", OPENED_AT + 1).copy(content = aTimelineItemImageContent())
+        counter.onTimelineItems(listOf(gif))
+        assertThat(counter.count).isEqualTo(2)
+        counter.onTimelineItems(listOf(gif.copy(transactionId = null, localSendState = null)))
+        assertThat(counter.count).isEqualTo(2)
     }
 
     @Test

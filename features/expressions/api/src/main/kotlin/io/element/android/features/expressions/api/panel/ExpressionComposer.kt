@@ -20,4 +20,7 @@ interface ExpressionComposer {
     fun insertEmoji(emoji: String)
 
     fun onSent()
+
+    /** Called as a sticker goes out, where a text send's local echo would appear; GIFs have a local echo and never call it. */
+    fun onStickerSent()
 }

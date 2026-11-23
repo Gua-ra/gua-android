@@ -10,7 +10,9 @@
 package io.element.android.features.messages.impl.chatbackground
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -21,8 +23,12 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.expressions.api.panel.ExpressionPanelRenderer
+import io.element.android.features.expressions.api.panel.ExpressionPanelState
+import io.element.android.features.expressions.api.panel.NoOpExpressionPanelRenderer
 import io.element.android.features.messages.impl.MessagesState
 import io.element.android.features.messages.impl.MessagesView
 import io.element.android.features.messages.impl.R
@@ -72,6 +78,16 @@ class MessagesViewLiveWallpaperTest : RobolectricTest() {
     }
 
     @Test
+    fun `the timeline's wallpaper is covered while the expression panel takes the chat's whole height`() = runAndroidComposeUiTest<ComponentActivity> {
+        setMessagesView(
+            aMessagesState(chatTheme = ChatArtwork.GlassDrops.theme).copy(expressionPanelState = anExpressionPanelState(isOpen = true)),
+            expressionPanelRenderer = TallPanelRenderer,
+        )
+        onNode(SemanticsMatcher.keyIsDefined(LiveWallpaperCuesKey))
+            .assert(SemanticsMatcher.expectValue(LiveWallpaperCuesKey, LiveWallpaperCues(isCovered = true, sendCount = 0)))
+    }
+
+    @Test
     fun `the timeline's wallpaper starts its send pulse in the chat between the top bar and the composer`() = runAndroidComposeUiTest<ComponentActivity> {
         setMessagesView(aMessagesState(chatTheme = ChatArtwork.GlassDrops.theme))
         val wallpaper = onNode(SemanticsMatcher.keyIsDefined(LiveWallpaperVisibleAreaKey)).fetchSemanticsNode()
@@ -115,7 +131,11 @@ class MessagesViewLiveWallpaperTest : RobolectricTest() {
     }
 }
 
-private fun AndroidComposeUiTest<ComponentActivity>.setMessagesView(state: MessagesState, modifier: Modifier = Modifier) {
+private fun AndroidComposeUiTest<ComponentActivity>.setMessagesView(
+    state: MessagesState,
+    modifier: Modifier = Modifier,
+    expressionPanelRenderer: ExpressionPanelRenderer = NoOpExpressionPanelRenderer,
+) {
     setSafeContent {
         // The rich text editor cannot run here.
         CompositionLocalProvider(LocalInspectionMode provides true) {
@@ -134,8 +154,23 @@ private fun AndroidComposeUiTest<ComponentActivity>.setMessagesView(state: Messa
                 onThreadsListClick = {},
                 knockRequestsBannerView = {},
                 modifier = modifier,
+                expressionPanelRenderer = expressionPanelRenderer,
                 customReactionBottomSheet = {},
             )
         }
     }
+}
+
+/** An open panel taller than the screen, as the expanded or searching panel is once the composer reaches the top bar. */
+private object TallPanelRenderer : ExpressionPanelRenderer {
+    @Composable
+    override fun ToggleButton(state: ExpressionPanelState, onClick: () -> Unit) = Unit
+
+    @Composable
+    override fun Panel(state: ExpressionPanelState, keyboardHeight: Dp, modifier: Modifier) {
+        if (state.isOpen) Spacer(modifier.height(10_000.dp))
+    }
+
+    @Composable
+    override fun Overlays(state: ExpressionPanelState) = Unit
 }

@@ -18,6 +18,7 @@ import io.element.android.libraries.matrix.api.core.TransactionId
  *
  * Only this device's send queue makes local echoes, and only for new events, so history, edits, reactions and other devices' events
  * never count. An echo restored from an earlier session keeps its older timestamp, which [openedAtMillis] filters out.
+ * Stickers skip the send queue, so each counts once through [onStickerSent] instead.
  */
 class OwnNewEventCounter(private val openedAtMillis: Long = System.currentTimeMillis()) {
     var count by mutableIntStateOf(0)
@@ -34,5 +35,9 @@ class OwnNewEventCounter(private val openedAtMillis: Long = System.currentTimeMi
                 counted.add(item.transactionId)
         }
         if (sent > 0) count += sent
+    }
+
+    fun onStickerSent() {
+        count++
     }
 }

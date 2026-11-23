@@ -10,6 +10,8 @@ package io.element.android.features.messages.impl.messagecomposer
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.expressions.api.sticker.StickerRelation
 import io.element.android.features.messages.impl.timeline.TimelineController
+import io.element.android.features.messages.impl.timeline.TimelineEvent
+import io.element.android.features.messages.impl.timeline.aTimelineState
 import io.element.android.libraries.matrix.api.core.asEventId
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.test.AN_EVENT_ID_2
@@ -61,10 +63,22 @@ class TimelineExpressionComposerTest {
         assertThat(events).containsExactly(MessageComposerEvent.CloseSpecialMode, MessageComposerEvent.InsertText("🐈")).inOrder()
     }
 
+    @Test
+    fun `a sticker going out counts as a send on the composer's timeline, which a finished send does not`() = runTest {
+        val timelineEvents = mutableListOf<TimelineEvent>()
+        val composer = createComposer(timelineEvents = timelineEvents)
+
+        composer.onStickerSent()
+        composer.onSent()
+
+        assertThat(timelineEvents).containsExactly(TimelineEvent.StickerSent)
+    }
+
     private fun TestScope.createComposer(
         timeline: FakeTimeline = FakeTimeline(),
         mode: MessageComposerMode = MessageComposerMode.Normal,
         events: MutableList<MessageComposerEvent> = mutableListOf(),
+        timelineEvents: MutableList<TimelineEvent> = mutableListOf(),
     ): TimelineExpressionComposer {
         val room = FakeJoinedRoom(liveTimeline = timeline)
         val controller = TimelineController(
@@ -74,6 +88,7 @@ class TimelineExpressionComposerTest {
             dispatchers = testCoroutineDispatchers(),
         )
         val state = aMessageComposerState(mode = mode, eventSink = { events += it })
-        return TimelineExpressionComposer(controller) { state }
+        val timelineState = aTimelineState(eventSink = { timelineEvents += it })
+        return TimelineExpressionComposer(controller, composerState = { state }, timelineState = { timelineState })
     }
 }

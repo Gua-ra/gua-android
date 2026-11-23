@@ -177,13 +177,16 @@ class MessagesPresenter(
         val roomInfo by room.roomInfoFlow.collectAsState()
         val localCoroutineScope = rememberCoroutineScope()
         val composerState = composerPresenter.present()
-        val latestComposerState by rememberUpdatedState(composerState)
-        val expressionPanelPresenter = remember {
-            expressionPanelPresenterFactory.create(TimelineExpressionComposer(timelineController) { latestComposerState })
-        }
-        val expressionPanelState = expressionPanelPresenter.present()
         val voiceMessageComposerState = voiceMessageComposerPresenter.present()
         val timelineState = timelinePresenter.present()
+        val latestComposerState by rememberUpdatedState(composerState)
+        val latestTimelineState by rememberUpdatedState(timelineState)
+        val expressionPanelPresenter = remember {
+            expressionPanelPresenterFactory.create(
+                TimelineExpressionComposer(timelineController, composerState = { latestComposerState }, timelineState = { latestTimelineState })
+            )
+        }
+        val expressionPanelState = expressionPanelPresenter.present()
         val timelineProtectionState = timelineProtectionPresenter.present()
         val chatTheme = chatBackgroundPresenter.present()
         val identityChangeState = identityChangeStatePresenter.present()

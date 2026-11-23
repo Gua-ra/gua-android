@@ -8,6 +8,8 @@
 package io.element.android.features.messages.impl.chatbackground
 
 import com.google.common.truth.Truth.assertThat
+import io.element.android.features.expressions.api.panel.ExpressionPanelEvent
+import io.element.android.features.expressions.api.panel.ExpressionPanelState
 import io.element.android.features.messages.api.timeline.voicemessages.composer.aVoiceMessageComposerState
 import io.element.android.features.messages.impl.MessagesState
 import io.element.android.features.messages.impl.aCustomReactionState
@@ -56,6 +58,17 @@ class MessagesLiveWallpaperTest {
     @Test
     fun `a chat squeezed to nothing covers the wallpaper`() {
         assertThat(aMessagesState().liveWallpaperCues(isChatHidden = true)).isEqualTo(LiveWallpaperCues(isCovered = true, sendCount = 0))
+    }
+
+    @Test
+    fun `a sheet or dialog of the expression panel covers the timeline, the open panel under the chat does not`() {
+        assertThat(aMessagesState().copy(expressionPanelState = anExpressionPanelState(isOpen = true)).isTimelineCovered()).isFalse()
+        listOf(
+            anExpressionPanelState(isOpen = false, isShowingOverlay = true),
+            anExpressionPanelState(isOpen = true, isShowingOverlay = true),
+        ).forEach { panel ->
+            assertThat(aMessagesState().copy(expressionPanelState = panel).isTimelineCovered()).isTrue()
+        }
     }
 
     @Test
@@ -121,4 +134,11 @@ class MessagesLiveWallpaperTest {
         assertThat(aMessagesState(redactEventAction = AsyncAction.Loading).isTimelineCovered()).isFalse()
         assertThat(aMessagesState(linkState = aLinkState(linkClick = AsyncAction.Success(aLink))).isTimelineCovered()).isFalse()
     }
+}
+
+internal fun anExpressionPanelState(isOpen: Boolean, isShowingOverlay: Boolean = false) = object : ExpressionPanelState {
+    override val isEnabled = true
+    override val isOpen = isOpen
+    override val isShowingOverlay = isShowingOverlay
+    override val eventSink: (ExpressionPanelEvent) -> Unit = {}
 }

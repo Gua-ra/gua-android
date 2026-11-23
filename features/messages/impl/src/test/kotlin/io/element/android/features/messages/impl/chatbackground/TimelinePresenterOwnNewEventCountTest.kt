@@ -14,6 +14,7 @@ import io.element.android.features.messages.impl.crypto.sendfailure.resolve.aRes
 import io.element.android.features.messages.impl.fixtures.aTimelineItemsFactoryCreator
 import io.element.android.features.messages.impl.timeline.FakeMarkAsFullyRead
 import io.element.android.features.messages.impl.timeline.TimelineController
+import io.element.android.features.messages.impl.timeline.TimelineEvent
 import io.element.android.features.messages.impl.timeline.TimelineItemIndexer
 import io.element.android.features.messages.impl.timeline.TimelinePresenter
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
@@ -30,6 +31,8 @@ import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.TransactionId
 import io.element.android.libraries.matrix.api.core.UniqueId
+import io.element.android.libraries.matrix.api.media.ImageInfo
+import io.element.android.libraries.matrix.api.media.MediaSource
 import io.element.android.libraries.matrix.api.timeline.MatrixTimelineItem
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.timeline.item.event.EventReaction
@@ -41,6 +44,7 @@ import io.element.android.libraries.matrix.test.room.FakeJoinedRoom
 import io.element.android.libraries.matrix.test.room.powerlevels.FakeRoomPermissions
 import io.element.android.libraries.matrix.test.timeline.FakeTimeline
 import io.element.android.libraries.matrix.test.timeline.aMessageContent
+import io.element.android.libraries.matrix.test.timeline.aStickerContent
 import io.element.android.libraries.matrix.test.timeline.anEventTimelineItem
 import io.element.android.libraries.preferences.test.InMemorySessionPreferencesStore
 import io.element.android.services.analytics.test.FakeAnalyticsService
@@ -97,6 +101,19 @@ class TimelinePresenterOwnNewEventCountTest {
     }
 
     @Test
+    fun `present - a sticker the user sends counts once, and its remote event counts nothing more`() = runTest {
+        val timelineItems = MutableStateFlow(listOf<MatrixTimelineItem>(historyFromThisDevice))
+        val presenter = createTimelinePresenter(FakeTimeline(timelineItems = timelineItems))
+        presenter.test {
+            consumeItemsUntilPredicate { it.timelineItems.size == 1 }.last().eventSink(TimelineEvent.StickerSent)
+            assertThat(consumeItemsUntilPredicate { it.ownNewEventCount == 1 }.last().ownNewEventCount).isEqualTo(1)
+            timelineItems.getAndUpdate { items -> listOf(aRemoteSticker(System.currentTimeMillis())) + items }
+            assertThat(consumeItemsUntilPredicate { it.timelineItems.size == 2 }.last().ownNewEventCount).isEqualTo(1)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `present - own events from another device and other people's messages count nothing`() = runTest {
         val timelineItems = MutableStateFlow(listOf<MatrixTimelineItem>(historyFromThisDevice))
         val presenter = createTimelinePresenter(FakeTimeline(timelineItems = timelineItems))
@@ -144,6 +161,28 @@ class TimelinePresenterOwnNewEventCountTest {
                 timestamp = sentAt,
             ),
         )
+
+    private fun aRemoteSticker(sentAt: Long) = MatrixTimelineItem.Event(
+        UniqueId("sticker"),
+        anEventTimelineItem(
+            eventId = EventId("\$sticker"),
+            content = aStickerContent(
+                info = ImageInfo(
+                    height = 256,
+                    width = 256,
+                    mimetype = "image/webp",
+                    size = 1000,
+                    thumbnailInfo = null,
+                    thumbnailSource = null,
+                    blurhash = null,
+                ),
+                mediaSource = MediaSource("mxc://gua.global/sticker"),
+            ),
+            isOwn = true,
+            isRemote = true,
+            timestamp = sentAt,
+        ),
+    )
 
     private fun aReaction() = EventReaction(key = "👍", senders = persistentListOf(ReactionSender(senderId = A_USER_ID, timestamp = 0L)))
 
