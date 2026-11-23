@@ -25,9 +25,14 @@ import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import io.element.android.features.messages.impl.timeline.components.MessageShieldData
 import io.element.android.features.messages.impl.timeline.components.aCriticalShield
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEventContent
+import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemImageContent
+import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemStickerContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemTextContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemUnknownContent
+import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemVideoContent
 import io.element.android.features.messages.impl.timeline.model.virtual.TimelineItemLoadingIndicatorModel
+import io.element.android.features.messages.impl.timeline.protection.ProtectionState
 import io.element.android.features.messages.impl.timeline.protection.TimelineProtectionState
 import io.element.android.features.messages.impl.timeline.protection.aTimelineProtectionState
 import io.element.android.libraries.matrix.api.core.EventId
@@ -51,6 +56,7 @@ import io.element.android.tests.testutils.robolectric.RobolectricTest
 import io.element.android.tests.testutils.setSafeContent
 import io.element.android.wysiwyg.link.Link
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toImmutableList
 import org.junit.Ignore
 import org.junit.Test
@@ -272,6 +278,41 @@ class TimelineViewTest : RobolectricTest() {
         onNodeWithText("Failed to fetch the event").assertDoesNotExist()
         onNodeWithText(activity!!.getString(CommonStrings.error_message_not_found)).assertIsDisplayed().performClick()
         eventsRecorder.assertEmpty()
+    }
+
+    @Test
+    fun `with media previews off, an image you sent shows without a Show button`() =
+        assertShowButton(aTimelineItemImageContent(), isMine = true, shown = false)
+
+    @Test
+    fun `with media previews off, a sticker you sent shows without a Show button`() =
+        assertShowButton(aTimelineItemStickerContent(), isMine = true, shown = false)
+
+    @Test
+    fun `with media previews off, a video you sent shows without a Show button`() =
+        assertShowButton(aTimelineItemVideoContent(), isMine = true, shown = false)
+
+    @Test
+    fun `with media previews off, an image from someone else stays behind a Show button`() =
+        assertShowButton(aTimelineItemImageContent(), isMine = false, shown = true)
+
+    @Test
+    fun `with media previews off, a sticker from someone else stays behind a Show button`() =
+        assertShowButton(aTimelineItemStickerContent(), isMine = false, shown = true)
+
+    @Test
+    fun `with media previews off, a video from someone else stays behind a Show button`() =
+        assertShowButton(aTimelineItemVideoContent(), isMine = false, shown = true)
+
+    // One event per test: a taller item first would push the others off Robolectric's small screen.
+    private fun assertShowButton(content: TimelineItemEventContent, isMine: Boolean, shown: Boolean) = runAndroidComposeUiTest {
+        setTimelineView(
+            state = aTimelineState(timelineItems = persistentListOf(aTimelineItemEvent(isMine = isMine, content = content))),
+            timelineProtectionState = aTimelineProtectionState(protectionState = ProtectionState.RenderOnly(persistentSetOf())),
+        )
+
+        val showButton = onNodeWithText(activity!!.getString(CommonStrings.action_show))
+        if (shown) showButton.assertIsDisplayed() else showButton.assertDoesNotExist()
     }
 
     @Ignore(

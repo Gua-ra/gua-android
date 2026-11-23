@@ -61,7 +61,6 @@
     <string name="common_group_call_in_progress">Chamada em grupo em andamento</string>
     <string name="common_header_rooms">Salas</string>
     <string name="common_location_sharing">Compartilhamento de localização</string>
-    <string name="common_media_upload_quality">Qualidade de envio de mídia</string>
     <string name="common_moderation_and_safety">Moderação e segurança</string>
     <string name="common_no_results_for">Não há resultados para “%1$s”. Tente um novo termo de pesquisa.</string>
     <string name="common_on_a_call">Em uma chamada</string>

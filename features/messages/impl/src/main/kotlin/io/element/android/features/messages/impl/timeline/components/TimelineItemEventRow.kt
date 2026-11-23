@@ -198,6 +198,7 @@ fun TimelineItemEventRow(
 
         TimelineItemEventContentView(
             eventId = event.eventId,
+            isMine = event.isMine,
             content = event.content,
             timelineProtectionState = timelineProtectionState,
             onContentClick = onContentClick,
@@ -633,6 +634,7 @@ private fun TimelineItemEventRowContent(
         val bubbleState = BubbleState(
             groupPosition = event.groupPosition,
             isMine = event.isMine,
+            displayBackground = event.content !is TimelineItemStickerContent,
             timelineRoomInfo = timelineRoomInfo,
         )
         MessageEventBubble(

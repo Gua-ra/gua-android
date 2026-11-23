@@ -14,6 +14,7 @@ es:common_sentence_delimiter
 es:common_sticker
 es:common_video
 es:dialog_title_error
+es:gua_a11y_sticker
 es:gua_chat_background_preset_aurora
 es:gua_chat_theme_art_azulejo
 es:gua_chat_theme_art_boreal
@@ -22,6 +23,7 @@ es:gua_chat_theme_art_doodles_brasil
 es:gua_chat_theme_art_guara
 es:gua_chat_theme_art_ipe
 es:gua_chat_theme_art_pantanal
+es:gua_expressions_tab_stickers
 es:notification_ticker_text_dm
 es:notification_ticker_text_group
 es:screen_change_server_error_element_pro_required_action_android

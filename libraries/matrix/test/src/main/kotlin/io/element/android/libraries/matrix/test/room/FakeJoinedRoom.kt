@@ -68,6 +68,7 @@ class FakeJoinedRoom(
     private val generateWidgetWebViewUrlResult: (MatrixWidgetSettings, String, String?, String?) -> Result<String> = { _, _, _, _ -> lambdaError() },
     private val getWidgetDriverResult: (MatrixWidgetSettings) -> Result<MatrixWidgetDriver> = { lambdaError() },
     private val typingNoticeResult: (Boolean) -> Result<Unit> = { lambdaError() },
+    private val sendRawResult: (String, String) -> Result<EventId> = { _, _ -> lambdaError() },
     private val inviteUserResult: (UserId) -> Result<Unit> = { lambdaError() },
     private val setNameResult: (String) -> Result<Unit> = { lambdaError() },
     private val setTopicResult: (String) -> Result<Unit> = { lambdaError() },
@@ -123,6 +124,10 @@ class FakeJoinedRoom(
 
     override suspend fun typingNotice(isTyping: Boolean): Result<Unit> = simulateLongTask {
         typingNoticeResult(isTyping)
+    }
+
+    override suspend fun sendRaw(eventType: String, content: String): Result<EventId> = simulateLongTask {
+        sendRawResult(eventType, content)
     }
 
     override suspend fun inviteUserById(id: UserId): Result<Unit> = simulateLongTask {

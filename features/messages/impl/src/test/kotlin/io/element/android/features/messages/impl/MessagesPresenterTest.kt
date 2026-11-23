@@ -13,6 +13,8 @@ package io.element.android.features.messages.impl
 import androidx.lifecycle.Lifecycle
 import com.google.common.truth.Truth.assertThat
 import im.vector.app.features.analytics.plan.PinUnpinAction
+import io.element.android.features.expressions.api.panel.ExpressionPanelPresenter
+import io.element.android.features.expressions.api.panel.ExpressionPanelState
 import io.element.android.features.location.test.FakeActiveLiveLocationShareManager
 import io.element.android.features.messages.impl.actionlist.ActionListEvent
 import io.element.android.features.messages.impl.actionlist.ActionListState
@@ -1656,6 +1658,7 @@ class MessagesPresenterTest {
             addRecentEmoji = addRecentEmoji,
             markAsFullyRead = markAsFullyRead,
             liveLocationShareManager = liveLocationShareManager,
+            expressionPanelPresenterFactory = { ExpressionPanelPresenter { ExpressionPanelState.Disabled } },
             sessionCoroutineScope = backgroundScope,
             chatBackgroundPresenterFactory = { MessagesChatBackgroundPresenter { chatTheme } },
         )

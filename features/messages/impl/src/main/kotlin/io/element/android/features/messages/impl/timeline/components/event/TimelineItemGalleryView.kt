@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -48,6 +49,8 @@ import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.ui.media.contentvalidation.ContentValidationValue
 import io.element.android.libraries.matrix.ui.media.contentvalidation.collectMediaState
 import io.element.android.libraries.matrix.ui.media.contentvalidation.rememberEventContentValidationState
+import io.element.android.libraries.matrixmedia.api.LocalPlayGifsAutomatically
+import io.element.android.libraries.matrixmedia.api.animatedImageModel
 import io.element.android.libraries.ui.utils.time.formatShort
 import kotlinx.collections.immutable.ImmutableList
 
@@ -301,7 +304,7 @@ private fun GalleryItemCell(
     ) {
         AsyncImage(
             modifier = Modifier.fillMaxSize(),
-            model = item.thumbnailMediaRequestData,
+            model = LocalContext.current.animatedImageModel(item.thumbnailMediaRequestData, LocalPlayGifsAutomatically.current),
             contentScale = ContentScale.Crop,
             alignment = Alignment.Center,
             contentDescription = item.filename,

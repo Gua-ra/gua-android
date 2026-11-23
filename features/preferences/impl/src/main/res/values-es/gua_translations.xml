@@ -113,4 +113,7 @@
     <string name="gua_preferences_spaces_title">Espacios</string>
     <string name="gua_preferences_spaces_description">Organiza chats y comunidades relacionados en un solo lugar</string>
     <string name="gua_chat_theme_settings_row_title">Tema del chat</string>
+    <string name="gua_media_settings_title">Ajustes de multimedia</string>
+    <string name="gua_media_settings_play_gifs_title">Reproducir automáticamente GIF y stickers animados en los chats</string>
+    <string name="gua_media_settings_play_gifs_description">Los GIF abiertos siempre se reproducen.</string>
 </resources>

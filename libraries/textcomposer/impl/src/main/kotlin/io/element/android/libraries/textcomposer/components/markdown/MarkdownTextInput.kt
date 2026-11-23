@@ -11,7 +11,6 @@ package io.element.android.libraries.textcomposer.components.markdown
 import android.content.ClipData
 import android.content.res.ColorStateList
 import android.graphics.Color
-import android.net.Uri
 import android.text.Editable
 import android.text.InputType
 import android.text.Selection
@@ -37,6 +36,7 @@ import io.element.android.libraries.textcomposer.ElementRichTextEditorStyle
 import io.element.android.libraries.textcomposer.mentions.LocalMentionSpanUpdater
 import io.element.android.libraries.textcomposer.mentions.MentionSpan
 import io.element.android.libraries.textcomposer.model.MarkdownTextEditorState
+import io.element.android.libraries.textcomposer.model.RichContent
 import io.element.android.libraries.textcomposer.model.Suggestion
 import io.element.android.libraries.textcomposer.model.SuggestionType
 import io.element.android.libraries.textcomposer.model.aMarkdownTextEditorState
@@ -54,11 +54,11 @@ fun MarkdownTextInput(
     onSendMessage: () -> Unit,
     onReceiveSuggestion: (Suggestion?) -> Unit,
     richTextEditorStyle: RichTextEditorStyle,
-    onSelectRichContent: ((Uri) -> Unit)?,
+    onSelectRichContent: ((RichContent) -> Unit)?,
 ) {
     // Copied from io.element.android.wysiwyg.internal.utils.UriContentListener
     class ReceiveUriContentListener(
-        private val onContent: (uri: Uri) -> Unit,
+        private val onContent: (content: RichContent) -> Unit,
     ) : OnReceiveContentListener {
         override fun onReceiveContent(view: View, payload: ContentInfoCompat): ContentInfoCompat? {
             val split = payload.partition { item -> item.uri != null }
@@ -67,10 +67,10 @@ fun MarkdownTextInput(
 
             if (uriContent != null) {
                 val clip: ClipData = uriContent.clip
+                val mimeType = clip.description.takeIf { it.mimeTypeCount > 0 }?.getMimeType(0)
                 for (i in 0 until clip.itemCount) {
                     val uri = clip.getItemAt(i).uri
-                    // ... app-specific logic to handle the URI ...
-                    onContent(uri)
+                    onContent(RichContent(uri, mimeType, isFromInputMethod = uriContent.source == ContentInfoCompat.SOURCE_INPUT_METHOD))
                 }
             }
             // Return anything that we didn't handle ourselves. This preserves the default platform

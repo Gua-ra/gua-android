@@ -90,6 +90,12 @@ interface JoinedRoom : BaseRoom {
     suspend fun typingNotice(isTyping: Boolean): Result<Unit>
 
     /**
+     * Sends a message event with the given raw JSON content, encrypted when the room is.
+     * It has no local echo: the timeline only shows the event once the server has it.
+     */
+    suspend fun sendRaw(eventType: String, content: String): Result<EventId>
+
+    /**
      * Invites a user to this room.
      *
      * @param id the user to invite.

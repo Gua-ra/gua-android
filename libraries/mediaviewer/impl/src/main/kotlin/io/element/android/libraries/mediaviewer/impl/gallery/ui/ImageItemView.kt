@@ -22,12 +22,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import io.element.android.libraries.designsystem.modifiers.onKeyboardContextMenuAction
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
+import io.element.android.libraries.matrixmedia.api.LocalPlayGifsAutomatically
+import io.element.android.libraries.matrixmedia.api.animatedImageModel
 import io.element.android.libraries.mediaviewer.impl.model.MediaItem
 import io.element.android.libraries.mediaviewer.impl.model.aMediaItemImage
 import io.element.android.libraries.ui.strings.CommonStrings
@@ -54,7 +57,7 @@ fun ImageItemView(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(if (isLoaded) Modifier.background(Color.White) else Modifier),
-            model = image.thumbnailMediaRequestData,
+            model = LocalContext.current.animatedImageModel(image.thumbnailMediaRequestData, LocalPlayGifsAutomatically.current),
             contentScale = ContentScale.Crop,
             alignment = Alignment.Center,
             contentDescription = null,

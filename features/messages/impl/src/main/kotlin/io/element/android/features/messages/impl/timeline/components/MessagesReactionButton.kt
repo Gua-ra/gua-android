@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -53,7 +54,9 @@ import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.Surface
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.matrix.api.media.MediaSource
+import io.element.android.libraries.matrixmedia.api.LocalPlayGifsAutomatically
 import io.element.android.libraries.matrixmedia.api.MediaRequestData
+import io.element.android.libraries.matrixmedia.api.animatedImageModel
 import io.element.android.libraries.ui.strings.CommonStrings
 
 @Composable
@@ -176,7 +179,10 @@ private fun ReactionContent(
             modifier = Modifier
                 .heightIn(min = REACTION_EMOJI_LINE_HEIGHT.toDp(), max = REACTION_EMOJI_LINE_HEIGHT.toDp())
                 .aspectRatio(REACTION_IMAGE_ASPECT_RATIO, false),
-            model = MediaRequestData(MediaSource(reaction.key), MediaRequestData.Kind.Content),
+            model = LocalContext.current.animatedImageModel(
+                MediaRequestData(MediaSource(reaction.key), MediaRequestData.Kind.Content),
+                LocalPlayGifsAutomatically.current,
+            ),
             contentDescription = null
         )
     } else {
