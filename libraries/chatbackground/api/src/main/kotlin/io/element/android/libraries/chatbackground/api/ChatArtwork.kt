@@ -205,6 +205,16 @@ enum class ChatArtwork(
         anchor = UnitPoint(0.5f, 0.72f),
         fallbackPreset = ChatBackgroundPreset.Ocean,
     ),
+    Guara(
+        id = "guara",
+        section = ChatArtworkSection.Nature,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_guara,
+        bubble = ChatBubbleColor.Green,
+        bubbleDark = ChatBubbleColor.Green,
+        anchor = UnitPoint(0.78f, 0.19f),
+        fallbackPreset = ChatBackgroundPreset.Mint,
+    ),
     Currents(
         id = "currents",
         section = ChatArtworkSection.Patterns,

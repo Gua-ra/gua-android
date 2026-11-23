@@ -69,6 +69,7 @@ class ChatThemeSectionTest {
             "canyon-glow",
             "polar-ice",
             "moon-tide",
+            "guara",
         ).inOrder()
         assertThat(ChatThemeSection.Patterns.themes.map { it.artworkId() }).containsExactly(
             "currents",

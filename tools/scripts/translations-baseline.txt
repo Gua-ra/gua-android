@@ -18,6 +18,7 @@ es:gua_chat_background_preset_aurora
 es:gua_chat_theme_art_azulejo
 es:gua_chat_theme_art_calcadao
 es:gua_chat_theme_art_doodles_brasil
+es:gua_chat_theme_art_guara
 es:gua_chat_theme_art_ipe
 es:gua_chat_theme_art_pantanal
 es:notification_ticker_text_dm
@@ -56,6 +57,7 @@ fr:gua_chat_background_value_photo
 fr:gua_chat_theme_art_azulejo
 fr:gua_chat_theme_art_calcadao
 fr:gua_chat_theme_art_doodles_canada
+fr:gua_chat_theme_art_guara
 fr:gua_chat_theme_art_ipe
 fr:gua_chat_theme_art_pantanal
 fr:gua_chat_theme_bubble_graphite
@@ -94,6 +96,7 @@ pt-rBR:gua_chat_background_preset_aurora
 pt-rBR:gua_chat_theme_art_azulejo
 pt-rBR:gua_chat_theme_art_calcadao
 pt-rBR:gua_chat_theme_art_doodles_brasil
+pt-rBR:gua_chat_theme_art_guara
 pt-rBR:gua_chat_theme_art_ipe
 pt-rBR:gua_chat_theme_art_pantanal
 pt-rBR:notification_ticker_text_dm
