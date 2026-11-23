@@ -15,7 +15,8 @@ import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 /**
  * A chat background drawn without cues shows its still, as tiles and pickers do.
  *
- * @property isCovered a sheet, a dialog or the message menu covers the wallpaper, so it pauses.
+ * @property isCovered a sheet, a dialog or the message menu covers the wallpaper, or the top bar and the composer leave the chat
+ * no room, so it pauses.
  * @property sendCount each increase plays the send pulse.
  */
 @Immutable
