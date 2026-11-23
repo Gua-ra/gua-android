@@ -10,9 +10,8 @@
 
 /*
  * Gua chat wallpapers: Minimal and Patterns sections.
- * Copyright Gua. Original work: every colour, formula, motif and chart here was written for Gua.
- * The only adapted code is the "Hash without Sine" function in the Currents Live shader
- * (David Hoskins, MIT licence).
+ * Copyright Gua. Original work for Gua, apart from two adapted pieces: the "Hash without Sine"
+ * function in the Currents Live shader (David Hoskins, MIT licence) and mulberry32 (Tommy Ettinger, CC0).
  *
  * kind 'canvas': render(ctx, w, h, { dark, t, pulse, scale, option }) draws the whole wallpaper.
  *   Output is deterministic: noise comes from integer hashes of pixel coordinates and seeded PRNGs.

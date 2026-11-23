@@ -9,8 +9,8 @@
  */
 
 // Gua live wallpapers (section 'live', kind 'webgl').
-// Original work, written from scratch for Gua. Licence: ours.
-// The only adapted snippet is hash12 / hash22 ("Hash without Sine", David Hoskins, MIT licence).
+// Original work for Gua, apart from two adapted snippets: hash12 / hash22 ("Hash without Sine",
+// David Hoskins, MIT licence) and smin (Inigo Quilez's polynomial smooth minimum).
 //
 // Uniform contract: u_res (px), u_time (s), u_dark (0|1), u_pulse (0..1 send envelope),
 // u_tilt (-1..1). Optional extension: u_origin (px, same space as gl_FragCoord) is the centre
