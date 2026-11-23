@@ -42,4 +42,5 @@
   <string name="gua_chat_theme_bubble_standard">Estándar</string>
   <string name="gua_chat_theme_bubble_a11y">Burbuja: %1$s</string>
   <string name="gua_chat_theme_live_badge">Animado</string>
+  <string name="gua_chat_theme_preview_send_a11y">Ver el efecto de envío</string>
 </resources>

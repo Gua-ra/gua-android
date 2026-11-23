@@ -24,6 +24,8 @@ enum class ChatArtwork(
     val anchor: UnitPoint,
     /** What builds without this artwork show instead. It never changes once shipped. */
     val fallbackPreset: ChatBackgroundPreset,
+    /** The shader time the stills show, where a live artwork's animation starts. */
+    val stillTime: Float = 0f,
 ) {
     GlassDrops(
         id = "glass-drops",
@@ -34,6 +36,7 @@ enum class ChatArtwork(
         bubbleDark = ChatBubbleColor.Pink,
         anchor = UnitPoint(0.5f, 0.08f),
         fallbackPreset = ChatBackgroundPreset.Blush,
+        stillTime = 0f,
     ),
     GlassDropsBlue(
         id = "glass-drops-blue",
@@ -44,6 +47,7 @@ enum class ChatArtwork(
         bubbleDark = ChatBubbleColor.Teal,
         anchor = UnitPoint(0.5f, 0.35f),
         fallbackPreset = ChatBackgroundPreset.Sky,
+        stillTime = 14f,
     ),
     MoltenPearl(
         id = "molten-pearl",
@@ -54,6 +58,7 @@ enum class ChatArtwork(
         bubbleDark = ChatBubbleColor.Blue,
         anchor = UnitPoint(0.5f, 0.5f),
         fallbackPreset = ChatBackgroundPreset.Sky,
+        stillTime = 24f,
     ),
     Silk(
         id = "silk",
@@ -64,6 +69,7 @@ enum class ChatArtwork(
         bubbleDark = ChatBubbleColor.Teal,
         anchor = UnitPoint(0.5f, 0.5f),
         fallbackPreset = ChatBackgroundPreset.Mint,
+        stillTime = 0f,
     ),
     Ipe(
         id = "ipe",
@@ -74,6 +80,7 @@ enum class ChatArtwork(
         bubbleDark = ChatBubbleColor.Yellow,
         anchor = UnitPoint(0.5f, 0f),
         fallbackPreset = ChatBackgroundPreset.Sunset,
+        stillTime = 24f,
     ),
     RainOnGlass(
         id = "rain-on-glass",
@@ -84,6 +91,7 @@ enum class ChatArtwork(
         bubbleDark = ChatBubbleColor.Blue,
         anchor = UnitPoint(0.5f, 0.3f),
         fallbackPreset = ChatBackgroundPreset.Aurora,
+        stillTime = 48f,
     ),
     Pantanal(
         id = "pantanal",
@@ -94,6 +102,7 @@ enum class ChatArtwork(
         bubbleDark = ChatBubbleColor.Green,
         anchor = UnitPoint(0.5f, 0.38f),
         fallbackPreset = ChatBackgroundPreset.Mint,
+        stillTime = 24f,
     ),
     CurrentsLive(
         id = "currents-live",
@@ -104,6 +113,51 @@ enum class ChatArtwork(
         bubbleDark = ChatBubbleColor.Purple,
         anchor = UnitPoint(0.5f, 0.5f),
         fallbackPreset = ChatBackgroundPreset.Lavender,
+        stillTime = 24f,
+    ),
+    Boreal(
+        id = "boreal",
+        section = ChatArtworkSection.Live,
+        isLive = true,
+        nameRes = R.string.gua_chat_theme_art_boreal,
+        bubble = ChatBubbleColor.Blue,
+        bubbleDark = ChatBubbleColor.Green,
+        anchor = UnitPoint(0.5f, 0.3f),
+        fallbackPreset = ChatBackgroundPreset.Graphite,
+        stillTime = 151f,
+    ),
+    Lagoon(
+        id = "lagoon",
+        section = ChatArtworkSection.Live,
+        isLive = true,
+        nameRes = R.string.gua_chat_theme_art_lagoon,
+        bubble = ChatBubbleColor.Blue,
+        bubbleDark = ChatBubbleColor.Teal,
+        anchor = UnitPoint(0.5f, 0.5f),
+        fallbackPreset = ChatBackgroundPreset.Mint,
+        stillTime = 36f,
+    ),
+    SeaSparks(
+        id = "sea-sparks",
+        section = ChatArtworkSection.Live,
+        isLive = true,
+        nameRes = R.string.gua_chat_theme_art_sea_sparks,
+        bubble = ChatBubbleColor.Blue,
+        bubbleDark = ChatBubbleColor.Teal,
+        anchor = UnitPoint(0.5f, 0.3f),
+        fallbackPreset = ChatBackgroundPreset.Aurora,
+        stillTime = 0f,
+    ),
+    TropicDusk(
+        id = "tropic-dusk",
+        section = ChatArtworkSection.Live,
+        isLive = true,
+        nameRes = R.string.gua_chat_theme_art_tropic_dusk,
+        bubble = ChatBubbleColor.Pink,
+        bubbleDark = ChatBubbleColor.Orange,
+        anchor = UnitPoint(0.5f, 0.35f),
+        fallbackPreset = ChatBackgroundPreset.Sunset,
+        stillTime = 24f,
     ),
     DuneLagoons(
         id = "dune-lagoons",
@@ -290,6 +344,8 @@ enum class ChatArtwork(
     val darkFile: String get() = "$id-dark.webp"
 
     fun file(isLight: Boolean): String = if (isLight) lightFile else darkFile
+
+    val shaderFile: String? get() = if (isLive) "$id.agsl" else null
 
     val theme: ChatTheme
         get() = ChatTheme(ChatBackground.Art(this), bubble, bubbleDark).normalized()

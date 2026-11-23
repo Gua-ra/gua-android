@@ -37,6 +37,10 @@
   <string name="gua_chat_theme_art_rain_on_glass">Rain on Glass</string>
   <string name="gua_chat_theme_art_pantanal">Pantanal</string>
   <string name="gua_chat_theme_art_currents_live">Currents Live</string>
+  <string name="gua_chat_theme_art_boreal">Boreal</string>
+  <string name="gua_chat_theme_art_lagoon">Lagoon</string>
+  <string name="gua_chat_theme_art_sea_sparks">Sea Sparks</string>
+  <string name="gua_chat_theme_art_tropic_dusk">Tropic Dusk</string>
   <string name="gua_chat_theme_art_dune_lagoons">Dune Lagoons</string>
   <string name="gua_chat_theme_art_palm_coast">Palm Coast</string>
   <string name="gua_chat_theme_art_river_bends">River Bends</string>

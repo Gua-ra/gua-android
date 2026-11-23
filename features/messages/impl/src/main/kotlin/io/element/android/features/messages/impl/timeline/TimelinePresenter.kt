@@ -26,6 +26,7 @@ import dev.zacsweers.metro.AssistedInject
 import io.element.android.features.location.api.live.ActiveLiveLocationShareManager
 import io.element.android.features.messages.impl.MessagesNavigator
 import io.element.android.features.messages.impl.UserEventPermissions
+import io.element.android.features.messages.impl.chatbackground.OwnNewEventCounter
 import io.element.android.features.messages.impl.crypto.sendfailure.resolve.ResolveVerifiedUserSendFailureEvent
 import io.element.android.features.messages.impl.crypto.sendfailure.resolve.ResolveVerifiedUserSendFailureState
 import io.element.android.features.messages.impl.timeline.components.MessageShieldData
@@ -144,6 +145,9 @@ class TimelinePresenter(
      * this timeline being stashed while another screen (i.e. the forward screen) is on top of it.
      */
     private val selectionState: MutableState<SelectionState> = mutableStateOf(SelectionState.Disabled)
+
+    // GUA FORK: drives the live wallpaper's send pulse.
+    private val ownNewEventCounter = OwnNewEventCounter()
 
     /**
      * Exit the selection mode. Can be called from outside the composition, see [TimelineSelectionOwner].
@@ -388,6 +392,7 @@ class TimelinePresenter(
                 .onEach { newTimelineItems ->
                     timelineItemIndexer.process(newTimelineItems)
                     timelineItems = newTimelineItems.toImmutableList()
+                    ownNewEventCounter.onTimelineItems(newTimelineItems)
 
                     analyticsService.run {
                         finishLongRunningTransaction(DisplayFirstTimelineItems)
@@ -542,6 +547,7 @@ class TimelinePresenter(
             jumpToUnread = jumpToUnread.value,
             selectionState = selectionState.value,
             useNewTimelineEventRenderer = useNewTimelineEventRenderer,
+            ownNewEventCount = ownNewEventCounter.count,
             eventSink = ::handleEvent,
         )
     }

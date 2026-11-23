@@ -16,6 +16,7 @@ es:common_video
 es:dialog_title_error
 es:gua_chat_background_preset_aurora
 es:gua_chat_theme_art_azulejo
+es:gua_chat_theme_art_boreal
 es:gua_chat_theme_art_calcadao
 es:gua_chat_theme_art_doodles_brasil
 es:gua_chat_theme_art_ipe
@@ -54,6 +55,7 @@ fr:dialog_title_confirmation
 fr:gua_chat_background_preset_graphite
 fr:gua_chat_background_value_photo
 fr:gua_chat_theme_art_azulejo
+fr:gua_chat_theme_art_boreal
 fr:gua_chat_theme_art_calcadao
 fr:gua_chat_theme_art_doodles_canada
 fr:gua_chat_theme_art_ipe
@@ -92,6 +94,7 @@ pt-rBR:common_name_and_id
 pt-rBR:common_sentence_delimiter
 pt-rBR:gua_chat_background_preset_aurora
 pt-rBR:gua_chat_theme_art_azulejo
+pt-rBR:gua_chat_theme_art_boreal
 pt-rBR:gua_chat_theme_art_calcadao
 pt-rBR:gua_chat_theme_art_doodles_brasil
 pt-rBR:gua_chat_theme_art_ipe

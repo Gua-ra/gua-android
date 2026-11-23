@@ -245,6 +245,7 @@ Compose:
       - LocalMessageMenuController
       - LocalChatBackgroundActive
       - LocalOutgoingBubbleColor
+      - LocalLiveWallpaperHidden
   CompositionLocalNaming:
     active: true
   ContentEmitterReturningValues:

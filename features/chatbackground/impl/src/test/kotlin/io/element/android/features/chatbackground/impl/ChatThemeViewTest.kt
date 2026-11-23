@@ -10,13 +10,16 @@
 package io.element.android.features.chatbackground.impl
 
 import android.content.Context
+import android.os.PowerManager
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsEqualTo
@@ -39,7 +42,10 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
+import com.google.common.collect.Range
+import com.google.common.truth.Truth.assertThat
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.theme.Theme
 import io.element.android.libraries.architecture.AsyncAction
@@ -48,6 +54,10 @@ import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
 import io.element.android.libraries.chatbackground.api.ChatBubbleColor
 import io.element.android.libraries.chatbackground.api.ChatTheme
+import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperCues
+import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperCuesKey
+import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperSession
+import io.element.android.libraries.matrix.ui.chatbackground.LiveWallpaperVisibleAreaKey
 import io.element.android.libraries.matrix.ui.chatbackground.aChatBackgroundPhoto
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.tests.testutils.EnsureNeverCalled
@@ -57,7 +67,9 @@ import io.element.android.tests.testutils.ensureCalledOnce
 import io.element.android.tests.testutils.pressBack
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.Test
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import io.element.android.libraries.chatbackground.api.R as ChatBackgroundR
 
 @Config(qualifiers = "w411dp-h1500dp")
@@ -436,10 +448,126 @@ class ChatThemeViewTest : RobolectricTest() {
         clickOn(CommonStrings.action_ok)
         eventsRecorder.assertSingle(ChatThemeEvent.ClearError)
     }
+
+    @Test
+    fun `the preview of a live artwork previews a send from its send button without saving, and Set still saves`() =
+        runAndroidComposeUiTest<ComponentActivity> {
+            val eventsRecorder = EventsRecorder<ChatThemeEvent>()
+            val glassDrops = ChatArtwork.GlassDrops.theme
+            setChatThemeView(aChatThemeState(preview = ChatThemePreview(glassDrops, glassDrops), eventSink = eventsRecorder))
+            val wallpaper = onNode(SemanticsMatcher.keyIsDefined(LiveWallpaperCuesKey))
+            wallpaper.assert(SemanticsMatcher.expectValue(LiveWallpaperCuesKey, LiveWallpaperCues(sendCount = 0)))
+            val sendButton = onNodeWithContentDescription(activity!!.getString(R.string.gua_chat_theme_preview_send_a11y))
+            sendButton.assert(hasClickAction()).performClick()
+            wallpaper.assert(SemanticsMatcher.expectValue(LiveWallpaperCuesKey, LiveWallpaperCues(sendCount = 1)))
+            sendButton.performClick()
+            wallpaper.assert(SemanticsMatcher.expectValue(LiveWallpaperCuesKey, LiveWallpaperCues(sendCount = 2)))
+            clickOn(R.string.gua_chat_theme_action_set_theme)
+            eventsRecorder.assertSingle(ChatThemeEvent.Save)
+        }
+
+    @Test
+    fun `touching the preview of a live artwork plays no send`() = runAndroidComposeUiTest<ComponentActivity> {
+        val glassDrops = ChatArtwork.GlassDrops.theme
+        setChatThemeView(aChatThemeState(preview = ChatThemePreview(glassDrops, glassDrops), eventSink = EventsRecorder(expectEvents = false)))
+        val wallpaper = onNode(SemanticsMatcher.keyIsDefined(LiveWallpaperCuesKey))
+        onNodeWithText(activity!!.getString(R.string.gua_chat_background_sample_outgoing)).assert(hasClickAction().not()).performClick()
+        onNodeWithText(activity!!.getString(R.string.gua_chat_background_sample_incoming)).performClick()
+        wallpaper.performClick()
+        wallpaper.assert(SemanticsMatcher.expectValue(LiveWallpaperCuesKey, LiveWallpaperCues(sendCount = 0)))
+    }
+
+    @Test
+    fun `the preview of a live artwork starts its send pulse above its controls`() = runAndroidComposeUiTest<ComponentActivity> {
+        val glassDrops = ChatArtwork.GlassDrops.theme
+        setChatThemeView(aChatThemeState(preview = ChatThemePreview(glassDrops, glassDrops), eventSink = EventsRecorder(expectEvents = false)))
+        val wallpaper = onNode(SemanticsMatcher.keyIsDefined(LiveWallpaperVisibleAreaKey)).fetchSemanticsNode()
+        val area = wallpaper.config[LiveWallpaperVisibleAreaKey]
+        val lightToggle = onNodeWithText(activity!!.getString(R.string.gua_chat_background_preview_light)).fetchSemanticsNode().boundsInRoot
+        val cancel = onNodeWithText(activity!!.getString(CommonStrings.action_cancel)).fetchSemanticsNode().boundsInRoot
+        runOnIdle {
+            assertThat(area.top).isNull()
+            assertThat(area.bottom).isLessThan(wallpaper.boundsInRoot.bottom)
+            assertThat(area.bottom).isAtMost(lightToggle.top)
+            assertThat(lightToggle.top - area.bottom!!).isLessThan(with(density) { 16.dp.toPx() })
+            assertThat(cancel.bottom).isAtMost(wallpaper.boundsInRoot.bottom)
+        }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(qualifiers = "fr-w320dp-h1500dp")
+    fun `on a narrow screen the preview's send button sits beside the light and dark toggle`() = runAndroidComposeUiTest<ComponentActivity> {
+        val (toggle, send) = setLiveArtworkPreviewControls()
+        runOnIdle {
+            assertThat(send.left).isAtLeast(toggle.right)
+            assertThat(send.center.y).isIn(Range.closed(toggle.top, toggle.bottom))
+        }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(qualifiers = "fr-w320dp-h1500dp", fontScale = 2f)
+    fun `with the largest text on a narrow screen the preview's send button wraps below the toggle, which keeps the full width`() =
+        runAndroidComposeUiTest<ComponentActivity> {
+            val (toggle, send) = setLiveArtworkPreviewControls()
+            runOnIdle {
+                assertThat(send.top).isAtLeast(toggle.bottom)
+                assertThat(toggle.width).isWithin(1f).of(with(density) { (320 - 2 * 16).dp.toPx() })
+            }
+        }
+
+    @Test
+    fun `the preview of a still artwork offers no send preview`() = runAndroidComposeUiTest<ComponentActivity> {
+        val palmCoast = ChatArtwork.PalmCoast.theme
+        setChatThemeView(aChatThemeState(preview = ChatThemePreview(palmCoast, palmCoast), eventSink = EventsRecorder(expectEvents = false)))
+        onNodeWithContentDescription(activity!!.getString(R.string.gua_chat_theme_preview_send_a11y)).assertDoesNotExist()
+        onNodeWithText(activity!!.getString(R.string.gua_chat_background_sample_outgoing)).performClick()
+        onNode(SemanticsMatcher.keyIsDefined(LiveWallpaperCuesKey))
+            .assert(SemanticsMatcher.expectValue(LiveWallpaperCuesKey, LiveWallpaperCues(sendCount = 0)))
+    }
+
+    @Test
+    fun `the preview of a live artwork offers no send preview while Battery Saver shows its still`() = runAndroidComposeUiTest<ComponentActivity> {
+        val powerManager = activity!!.getSystemService(PowerManager::class.java)
+        shadowOf(powerManager).setIsPowerSaveMode(true)
+        try {
+            val silk = ChatArtwork.Silk.theme
+            setChatThemeView(aChatThemeState(preview = ChatThemePreview(silk, silk), eventSink = EventsRecorder(expectEvents = false)))
+            onNodeWithContentDescription(activity!!.getString(R.string.gua_chat_theme_preview_send_a11y)).assertDoesNotExist()
+        } finally {
+            shadowOf(powerManager).setIsPowerSaveMode(false)
+        }
+    }
+
+    @Test
+    fun `the preview of a live artwork stops offering a send preview once its shader fails`() = runAndroidComposeUiTest<ComponentActivity> {
+        try {
+            val glassDrops = ChatArtwork.GlassDrops.theme
+            setChatThemeView(aChatThemeState(preview = ChatThemePreview(glassDrops, glassDrops), eventSink = EventsRecorder(expectEvents = false)))
+            val sendButton = onNodeWithContentDescription(activity!!.getString(R.string.gua_chat_theme_preview_send_a11y))
+            sendButton.assertExists()
+            LiveWallpaperSession.reportUnavailable(ChatArtwork.GlassDrops)
+            sendButton.assertDoesNotExist()
+        } finally {
+            LiveWallpaperSession.reset()
+        }
+    }
 }
 
 private fun AndroidComposeUiTest<ComponentActivity>.scrollToAndClickTile(@StringRes res: Int) {
     onNode(hasContentDescription(activity!!.getString(res)) and hasClickAction()).performScrollTo().performClick()
+}
+
+/** Shows a live artwork's dark preview, whose selected label is the longer one; returns the toggle's and the send button's bounds. */
+private fun AndroidComposeUiTest<ComponentActivity>.setLiveArtworkPreviewControls(): Pair<Rect, Rect> {
+    val glassDrops = ChatArtwork.GlassDrops.theme
+    val preview = ChatThemePreview(glassDrops, glassDrops, isDarkPreview = true)
+    setChatThemeView(aChatThemeState(preview = preview, eventSink = EventsRecorder(expectEvents = false)))
+    val light = onNodeWithText(activity!!.getString(R.string.gua_chat_background_preview_light)).fetchSemanticsNode().boundsInRoot
+    val dark = onNodeWithText(activity!!.getString(R.string.gua_chat_background_preview_dark)).fetchSemanticsNode().boundsInRoot
+    val send = onNodeWithContentDescription(activity!!.getString(R.string.gua_chat_theme_preview_send_a11y)).fetchSemanticsNode().boundsInRoot
+    return Rect(light.left, minOf(light.top, dark.top), dark.right, maxOf(light.bottom, dark.bottom)) to send
 }
 
 private fun AndroidComposeUiTest<ComponentActivity>.setChatThemeView(

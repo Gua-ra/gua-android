@@ -57,6 +57,10 @@ class ChatThemeSectionTest {
             "rain-on-glass",
             "pantanal",
             "currents-live",
+            "boreal",
+            "lagoon",
+            "sea-sparks",
+            "tropic-dusk",
         ).inOrder()
         assertThat(ChatThemeSection.Nature.themes.map { it.artworkId() }).containsExactly(
             "dune-lagoons",

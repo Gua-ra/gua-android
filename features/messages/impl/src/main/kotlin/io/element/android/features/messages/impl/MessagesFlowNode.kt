@@ -43,6 +43,7 @@ import io.element.android.features.location.api.ShowLocationMode
 import io.element.android.features.messages.api.MessagesEntryPoint
 import io.element.android.features.messages.impl.attachments.Attachment
 import io.element.android.features.messages.impl.attachments.preview.AttachmentsPreviewNode
+import io.element.android.features.messages.impl.chatbackground.PauseLiveWallpapersUnder
 import io.element.android.features.messages.impl.pinned.DefaultPinnedEventsTimelineProvider
 import io.element.android.features.messages.impl.pinned.list.PinnedMessagesListNode
 import io.element.android.features.messages.impl.report.ReportMessageNode
@@ -989,7 +990,7 @@ class MessagesFlowNode(
             LocalMentionSpanUpdater provides mentionSpanUpdater
         ) {
             Box(modifier = modifier) {
-                BackstackView()
+                PauseLiveWallpapersUnder(overlay) { BackstackView() }
                 OverlayView()
                 AsyncIndicatorHost(modifier = Modifier.statusBarsPadding(), state = asyncIndicatorState)
             }

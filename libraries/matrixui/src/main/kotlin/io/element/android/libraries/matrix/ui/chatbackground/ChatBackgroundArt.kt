@@ -9,6 +9,8 @@ package io.element.android.libraries.matrix.ui.chatbackground
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -21,11 +23,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageShader
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -37,6 +41,7 @@ import coil3.request.ImageRequest
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.chatbackground.api.ChatArtwork
 import io.element.android.libraries.core.extensions.runCatchingExceptions
+import io.element.android.libraries.designsystem.utils.LocalUiTestMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -47,22 +52,73 @@ private val GRAIN_STYLE = wallpaperGrainStyle()
 /**
  * The fallback preset shows until the first still loads, and for good if it never does.
  * A new size or appearance keeps the previous still on screen until its own loads.
+ * With [live] cues, on Android 13 and up, the artwork tilts with the device and a live one animates. Previews and UI tests always show
+ * the still, unmoved.
  */
 @Composable
 internal fun ArtBackground(
     artwork: ChatArtwork,
     modifier: Modifier = Modifier,
+    live: LiveWallpaperCues? = null,
+    visibleArea: LiveWallpaperVisibleArea? = null,
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxSize().wallpaperGrain(rememberWallpaperGrain())) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
-        val widthPx = with(density) { maxWidth.toPx() }.roundToInt().coerceIn(1, MAX_DECODED_EDGE_PX)
-        val heightPx = with(density) { maxHeight.toPx() }.roundToInt().coerceIn(1, MAX_DECODED_EDGE_PX)
+        val viewWidthPx = with(density) { maxWidth.toPx() }.roundToInt()
+        val viewHeightPx = with(density) { maxHeight.toPx() }.roundToInt()
+        val moves = live != null && !LocalInspectionMode.current && !LocalUiTestMode.current
+        if (moves && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            MovingArt(artwork = artwork, cues = live, visibleArea = visibleArea, viewWidthPx = viewWidthPx, viewHeightPx = viewHeightPx)
+        } else {
+            ArtStill(artwork = artwork, viewWidthPx = viewWidthPx, viewHeightPx = viewHeightPx, parallax = null)
+        }
+        ChatBackgroundScrim(photoDim = null)
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@Composable
+private fun MovingArt(
+    artwork: ChatArtwork,
+    cues: LiveWallpaperCues,
+    visibleArea: LiveWallpaperVisibleArea?,
+    viewWidthPx: Int,
+    viewHeightPx: Int,
+) {
+    val sensor = rememberWallpaperTiltSensor()
+    // Overscanned even while a still condition stops the tilt, so the framing never changes on screen.
+    val parallax = sensor?.let {
+        WallpaperParallax(it, shift = wallpaperParallaxShift(viewWidthPx.toDouble(), viewHeightPx.toDouble()).roundToInt())
+    }
+    val motion = rememberWallpaperMotion(isCovered = cues.isCovered)
+    if (sensor != null) {
+        WallpaperTiltEffect(sensor = sensor, motion = motion)
+    }
+    val still = @Composable { ArtStill(artwork = artwork, viewWidthPx = viewWidthPx, viewHeightPx = viewHeightPx, parallax = parallax) }
+    if (artwork.isLive) {
+        LiveArt(artwork = artwork, cues = cues, motion = motion, visibleArea = visibleArea, parallax = parallax, still = still)
+    } else {
+        still()
+    }
+}
+
+/** With a [parallax] the still and its grain overscan the view and move with the tilt. */
+@Composable
+private fun ArtStill(artwork: ChatArtwork, viewWidthPx: Int, viewHeightPx: Int, parallax: WallpaperParallax?) {
+    val shift = parallax?.shift ?: 0
+    val widthPx = (viewWidthPx + 2 * shift).coerceIn(1, MAX_DECODED_EDGE_PX)
+    val heightPx = (viewHeightPx + 2 * shift).coerceIn(1, MAX_DECODED_EDGE_PX)
+    Box(
+        modifier = Modifier
+            .then(if (parallax == null) Modifier.fillMaxSize() else Modifier.wallpaperParallax(parallax))
+            // The overscanned box starts at (-shift, -shift), so at rest its tile starts where the live view's does.
+            .wallpaperGrain(rememberWallpaperGrain(), tileOrigin = Offset(shift.toFloat(), shift.toFloat())),
+    ) {
         if (LocalInspectionMode.current) {
             InspectedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
         } else {
             LoadedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
         }
-        ChatBackgroundScrim(photoDim = null)
     }
 }
 
@@ -146,13 +202,15 @@ internal fun rememberWallpaperGrain(): ImageBitmap? {
     return tile
 }
 
-internal fun Modifier.wallpaperGrain(grain: ImageBitmap?): Modifier {
+internal fun Modifier.wallpaperGrain(grain: ImageBitmap?, tileOrigin: Offset = Offset.Zero): Modifier {
     grain ?: return this
     return drawWithCache {
         val brush = ShaderBrush(ImageShader(grain, TileMode.Repeated, TileMode.Repeated))
         onDrawWithContent {
             drawContent()
-            drawRect(brush = brush, alpha = GRAIN_STYLE.alpha, blendMode = GRAIN_STYLE.blendMode)
+            translate(left = tileOrigin.x, top = tileOrigin.y) {
+                drawRect(brush = brush, topLeft = -tileOrigin, size = size, alpha = GRAIN_STYLE.alpha, blendMode = GRAIN_STYLE.blendMode)
+            }
         }
     }
 }

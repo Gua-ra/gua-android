@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -70,6 +71,7 @@ import io.element.android.features.messages.api.timeline.voicemessages.composer.
 import io.element.android.features.messages.impl.actionlist.ActionListEvent
 import io.element.android.features.messages.impl.actionlist.ActionListView
 import io.element.android.features.messages.impl.actionlist.model.TimelineItemAction
+import io.element.android.features.messages.impl.chatbackground.liveWallpaperCues
 import io.element.android.features.messages.impl.crypto.identity.IdentityChangeStateView
 import io.element.android.features.messages.impl.link.LinkEvent
 import io.element.android.features.messages.impl.link.LinkView
@@ -153,8 +155,10 @@ import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSen
 import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundCanvas
 import io.element.android.libraries.matrix.ui.chatbackground.isShowingBackground
+import io.element.android.libraries.matrix.ui.chatbackground.liveWallpaperChatArea
 import io.element.android.libraries.matrix.ui.chatbackground.outgoingBubbleColorOrNull
 import io.element.android.libraries.matrix.ui.chatbackground.rememberChatBackgroundTransition
+import io.element.android.libraries.matrix.ui.chatbackground.rememberLiveWallpaperVisibleArea
 import io.element.android.libraries.matrix.ui.media.contentvalidation.ContentValidationValue
 import io.element.android.libraries.matrix.ui.media.contentvalidation.LocalEventContentValidationState
 import io.element.android.libraries.textcomposer.model.TextEditorState
@@ -300,6 +304,15 @@ fun MessagesView(
     val chatBackgroundTransition = rememberChatBackgroundTransition(state.chatTheme.background)
     val isShowingChatBackground = chatBackgroundTransition.isShowingBackground
     var topBarHeight by remember { mutableStateOf(0.dp) }
+    val chatArea = rememberLiveWallpaperVisibleArea()
+    val density = LocalDensity.current
+    val isChatHidden by remember(density) {
+        derivedStateOf {
+            val top = chatArea.top
+            val bottom = chatArea.bottom
+            top != null && bottom != null && bottom - top < with(density) { 4.dp.toPx() }
+        }
+    }
     MessageMenuHost(
         controller = messageMenuController,
         modifier = modifier,
@@ -329,6 +342,8 @@ fun MessagesView(
                     .messageMenuBackdrop(messageMenuController, isMenuShown = state.messageMenuState.target is MessageMenuState.Target.Shown)
                     .systemBarsPadding()
                     .padding(top = topBarHeight),
+                live = state.liveWallpaperCues(isChatHidden = isChatHidden),
+                visibleArea = chatArea,
             )
         }
         ExpandableBottomSheetLayout(
@@ -401,6 +416,7 @@ fun MessagesView(
                             modifier = Modifier
                                 .padding(padding)
                                 .consumeWindowInsets(padding)
+                                .liveWallpaperChatArea(chatArea)
                         ) {
                             MessagesViewContent(
                                 state = state,
