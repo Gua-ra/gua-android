@@ -24,7 +24,10 @@
   <string name="gua_chat_theme_chat_bubble">Bulle de conversation</string>
   <string name="gua_chat_theme_wallpaper">Fond d’écran</string>
   <string name="gua_chat_theme_section_featured">À la une</string>
-  <string name="gua_chat_theme_section_colours">Couleurs</string>
+  <string name="gua_chat_theme_section_live">Animés</string>
+  <string name="gua_chat_theme_section_nature">Nature</string>
+  <string name="gua_chat_theme_section_patterns">Motifs</string>
+  <string name="gua_chat_theme_section_minimal">Minimalistes</string>
   <string name="gua_chat_theme_section_gradients">Dégradés</string>
   <string name="gua_chat_theme_classic">Classique</string>
   <string name="gua_chat_theme_default_note">S’applique à toutes les conversations qui n’ont pas leur propre thème.</string>
@@ -38,4 +41,5 @@
   <string name="gua_chat_theme_no_wallpaper">Aucun fond d’écran</string>
   <string name="gua_chat_theme_bubble_standard">Standard</string>
   <string name="gua_chat_theme_bubble_a11y">Bulle : %1$s</string>
+  <string name="gua_chat_theme_live_badge">Animé</string>
 </resources>

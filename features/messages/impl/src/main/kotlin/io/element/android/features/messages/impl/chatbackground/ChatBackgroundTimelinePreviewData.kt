@@ -7,11 +7,13 @@
 
 package io.element.android.features.messages.impl.chatbackground
 
+import io.element.android.features.messages.impl.aMessagesState
 import io.element.android.features.messages.impl.timeline.aGroupedEvents
 import io.element.android.features.messages.impl.timeline.aTimelineItemDaySeparator
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
 import io.element.android.features.messages.impl.timeline.aTimelineItemReactions
 import io.element.android.features.messages.impl.timeline.aTimelineRoomInfo
+import io.element.android.features.messages.impl.timeline.aTimelineState
 import io.element.android.features.messages.impl.timeline.components.receipt.aReadReceiptData
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.TimelineItemGroupPosition
@@ -24,6 +26,7 @@ import io.element.android.features.messages.impl.timeline.model.virtual.Timeline
 import io.element.android.features.messages.impl.timeline.model.virtual.TimelineItemTypingNotificationModel
 import io.element.android.features.messages.impl.typing.aTypingNotificationState
 import io.element.android.features.messages.impl.typing.aTypingRoomMember
+import io.element.android.libraries.chatbackground.api.ChatArtwork
 import io.element.android.libraries.matrix.api.core.UniqueId
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import kotlinx.collections.immutable.ImmutableList
@@ -55,4 +58,9 @@ internal fun aChatBackgroundTimelineItems(): ImmutableList<TimelineItem> = persi
 
 internal fun aChatBackgroundTimelineRoomInfo() = aTimelineRoomInfo(
     typingNotificationState = aTypingNotificationState(typingMembers = listOf(aTypingRoomMember("Alice"))),
+)
+
+internal fun aChatArtworkMessagesState() = aMessagesState(
+    chatTheme = ChatArtwork.PalmCoast.theme,
+    timelineState = aTimelineState(timelineItems = aChatBackgroundTimelineItems(), timelineRoomInfo = aChatBackgroundTimelineRoomInfo()),
 )

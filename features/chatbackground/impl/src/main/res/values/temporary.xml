@@ -24,7 +24,10 @@
   <string name="gua_chat_theme_chat_bubble">Chat bubble</string>
   <string name="gua_chat_theme_wallpaper">Wallpaper</string>
   <string name="gua_chat_theme_section_featured">Featured</string>
-  <string name="gua_chat_theme_section_colours">Colours</string>
+  <string name="gua_chat_theme_section_live">Live</string>
+  <string name="gua_chat_theme_section_nature">Nature</string>
+  <string name="gua_chat_theme_section_patterns">Patterns</string>
+  <string name="gua_chat_theme_section_minimal">Minimal</string>
   <string name="gua_chat_theme_section_gradients">Gradients</string>
   <string name="gua_chat_theme_classic">Classic</string>
   <string name="gua_chat_theme_default_note">Applies to every chat that doesn’t have its own theme.</string>
@@ -38,4 +41,5 @@
   <string name="gua_chat_theme_no_wallpaper">No wallpaper</string>
   <string name="gua_chat_theme_bubble_standard">Standard</string>
   <string name="gua_chat_theme_bubble_a11y">%1$s bubble</string>
+  <string name="gua_chat_theme_live_badge">Live</string>
 </resources>

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -62,9 +63,11 @@ private val BUBBLE_SWATCHES = listOf(null) + ChatBubbleColor.entries
 @Composable
 internal fun ChatBubblePickerView(
     state: ChatThemeState,
-    selection: ChatBubbleColor?,
+    picker: ChatThemePage.BubblePicker,
     modifier: Modifier = Modifier,
 ) {
+    val chosen = picker.appliedTo(state.baseTheme)
+    val shownBubble = chosen.outgoingBubble(ElementTheme.isLightTheme)
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -77,7 +80,7 @@ internal fun ChatBubblePickerView(
             Button(
                 text = stringResource(R.string.gua_chat_theme_action_set),
                 onClick = { state.eventSink(ChatThemeEvent.Save) },
-                enabled = state.canSave(state.baseTheme.copy(bubble = selection), isPickerChoice = true),
+                enabled = state.canSave(chosen, isPickerChoice = true),
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
@@ -91,7 +94,7 @@ internal fun ChatBubblePickerView(
                 .consumeWindowInsets(padding)
                 .verticalScroll(rememberScrollState()),
         ) {
-            ChatThemePreviewCard(theme = state.shownTheme(saving = state.baseTheme.copy(bubble = selection)), modifier = Modifier.padding(16.dp))
+            ChatThemePreviewCard(theme = state.shownTheme(saving = chosen), modifier = Modifier.padding(16.dp))
             FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -101,16 +104,18 @@ internal fun ChatBubblePickerView(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 BUBBLE_SWATCHES.forEach { bubble ->
+                    val isSelected = bubble == shownBubble
                     BubbleSwatch(
                         bubble = bubble,
-                        isSelected = bubble == selection,
+                        isSelected = isSelected,
                         enabled = state.canChange,
-                        onClick = { state.eventSink(ChatThemeEvent.SelectBubble(bubble)) },
+                        // Choosing the checked swatch again would drop the pair's other, unseen half.
+                        onClick = { if (!isSelected) state.eventSink(ChatThemeEvent.SelectBubble(bubble)) },
                     )
                 }
             }
             Text(
-                text = stringResource(selection?.nameRes ?: R.string.gua_chat_theme_bubble_standard),
+                text = stringResource(shownBubble?.nameRes ?: R.string.gua_chat_theme_bubble_standard),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
@@ -194,7 +199,7 @@ internal fun ChatWallpaperPickerView(
             ChatThemeSection.wallpaperSections.forEach { section ->
                 ChatThemeSectionTitle(section.titleRes)
                 ChatThemeTileRow {
-                    section.themes.map { it.background }.forEach { background ->
+                    items(section.themes.map { it.background }) { background ->
                         ChatThemeTile(
                             theme = ChatTheme(background),
                             label = stringResource(background.nameRes),
@@ -215,7 +220,7 @@ private fun ChatThemePreviewCard(
     theme: ChatTheme,
     modifier: Modifier = Modifier,
 ) {
-    val description = "${stringResource(R.string.gua_chat_background_preview_a11y)}, ${stringResource(theme.nameRes)}"
+    val description = "${stringResource(R.string.gua_chat_background_preview_a11y)}, ${stringResource(theme.nameRes(ElementTheme.isLightTheme))}"
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -225,6 +230,6 @@ private fun ChatThemePreviewCard(
             .clearAndSetSemantics { contentDescription = description },
     ) {
         ChatBackgroundCanvas(background = theme.background, modifier = Modifier.matchParentSize())
-        ChatBackgroundSampleMessages(isOnBackground = theme.background != ChatBackground.None, bubble = theme.bubble)
+        ChatBackgroundSampleMessages(isOnBackground = theme.background != ChatBackground.None, theme = theme)
     }
 }

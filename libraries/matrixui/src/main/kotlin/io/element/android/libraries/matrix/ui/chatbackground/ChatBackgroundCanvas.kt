@@ -61,7 +61,7 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 private const val CROSSFADE_DURATION_MS = 200
-private const val MAX_DECODED_EDGE_PX = 2048
+internal const val MAX_DECODED_EDGE_PX = 2048
 private const val MAX_SOURCE_EDGE_PX = 4096
 
 @Composable
@@ -96,9 +96,12 @@ fun ChatBackgroundCanvas(
             when (background) {
                 ChatBackground.None -> Box(Modifier.fillMaxSize().background(ElementTheme.colors.bgCanvasDefault))
                 is ChatBackground.Preset -> {
-                    Box(Modifier.fillMaxSize().drawChatBackgroundFill(background.preset.fill(ElementTheme.isLightTheme)))
+                    val fill = background.preset.fill(ElementTheme.isLightTheme)
+                    val grain = if (fill is ChatBackgroundFill.Solid) null else rememberWallpaperGrain()
+                    Box(Modifier.fillMaxSize().drawChatBackgroundFill(fill).wallpaperGrain(grain))
                     ChatBackgroundScrim(photoDim = null)
                 }
+                is ChatBackground.Art -> ArtBackground(background.artwork)
                 is ChatBackground.Photo -> PhotoBackground(background)
             }
         }
@@ -191,9 +194,14 @@ private fun PhotoBackground(photo: ChatBackground.Photo) {
 }
 
 /** With [ContentScale.Crop], a photo overflowing by `o` on an axis is offset by `-o × align / 1000` as on iOS, never mirrored for right-to-left. */
-fun chatBackgroundPhotoAlignment(alignX: Int, alignY: Int) = BiasAbsoluteAlignment(
-    horizontalBias = alignX.toFloat() / ChatBackground.Photo.MAX_ALIGN * 2 - 1,
-    verticalBias = alignY.toFloat() / ChatBackground.Photo.MAX_ALIGN * 2 - 1,
+fun chatBackgroundPhotoAlignment(alignX: Int, alignY: Int) = chatBackgroundAlignment(
+    UnitPoint(alignX.toFloat() / ChatBackground.Photo.MAX_ALIGN, alignY.toFloat() / ChatBackground.Photo.MAX_ALIGN)
+)
+
+/** With [ContentScale.Crop], the image's [anchor] lands on the same point of the frame, so it stays on screen. */
+fun chatBackgroundAlignment(anchor: UnitPoint) = BiasAbsoluteAlignment(
+    horizontalBias = anchor.x * 2 - 1,
+    verticalBias = anchor.y * 2 - 1,
 )
 
 @PreviewsDayNight

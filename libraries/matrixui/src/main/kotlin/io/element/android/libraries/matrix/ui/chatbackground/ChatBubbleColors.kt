@@ -12,6 +12,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.chatbackground.api.ChatBubbleColor
+import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.designsystem.theme.messageFromMeBackground
 
 @Composable
@@ -21,3 +22,11 @@ fun ChatBubbleColor.toColor(): Color = Color(color(ElementTheme.isLightTheme))
 @Composable
 @ReadOnlyComposable
 fun ChatBubbleColor?.outgoingBubbleColor(): Color = this?.toColor() ?: ElementTheme.colors.messageFromMeBackground
+
+@Composable
+@ReadOnlyComposable
+fun ChatTheme.outgoingBubbleColorOrNull(): Color? = outgoingBubble(ElementTheme.isLightTheme)?.toColor()
+
+@Composable
+@ReadOnlyComposable
+fun ChatTheme.outgoingBubbleColor(): Color = outgoingBubble(ElementTheme.isLightTheme).outgoingBubbleColor()

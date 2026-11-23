@@ -69,7 +69,7 @@ class ChatThemePresenter(
 
         fun save() {
             val draft = photoDraft
-            val theme = preview?.saved ?: (page as? ChatThemePage.BubblePicker)?.let { base.copy(bubble = it.selection) }
+            val theme = preview?.saved ?: (page as? ChatThemePage.BubblePicker)?.appliedTo(base)
             val isPickerChoice = preview == null || page == ChatThemePage.WallpaperPicker
             val write: suspend () -> Result<Unit> = when {
                 draft != null -> {
@@ -96,8 +96,8 @@ class ChatThemePresenter(
             when (event) {
                 is ChatThemeEvent.SelectTheme -> if (canChange) preview = previewOf(event.theme)
                 ChatThemeEvent.SelectDefault -> if (canChange) preview = previewOf(ChatTheme.STOCK)
-                ChatThemeEvent.OpenBubblePicker -> if (canChange) page = ChatThemePage.BubblePicker(base.bubble)
-                is ChatThemeEvent.SelectBubble -> (page as? ChatThemePage.BubblePicker)?.let { page = it.copy(selection = event.bubble) }
+                ChatThemeEvent.OpenBubblePicker -> if (canChange) page = ChatThemePage.BubblePicker(base.bubble, base.bubbleDark)
+                is ChatThemeEvent.SelectBubble -> if (page is ChatThemePage.BubblePicker) page = ChatThemePage.BubblePicker(selection = event.bubble)
                 ChatThemeEvent.OpenWallpaperPicker -> if (canChange) page = ChatThemePage.WallpaperPicker
                 is ChatThemeEvent.SelectWallpaper -> if (canChange) preview = previewOf(base.copy(background = event.background))
                 ChatThemeEvent.ChoosePhoto -> if (canChange) photoPicker.launch()

@@ -12,22 +12,38 @@ package io.element.android.features.chatbackground.impl
 import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasStateDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performCustomAccessibilityActionWithLabel
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
+import androidx.compose.ui.unit.height
+import io.element.android.compound.theme.ElementTheme
+import io.element.android.compound.theme.Theme
 import io.element.android.libraries.architecture.AsyncAction
+import io.element.android.libraries.chatbackground.api.ChatArtwork
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
 import io.element.android.libraries.chatbackground.api.ChatBubbleColor
@@ -44,7 +60,7 @@ import org.junit.Test
 import org.robolectric.annotation.Config
 import io.element.android.libraries.chatbackground.api.R as ChatBackgroundR
 
-@Config(qualifiers = "h1500dp")
+@Config(qualifiers = "w411dp-h1500dp")
 class ChatThemeViewTest : RobolectricTest() {
     private val oceanTeal = ChatTheme(ChatBackground.Preset(ChatBackgroundPreset.Ocean), ChatBubbleColor.Teal)
 
@@ -95,17 +111,74 @@ class ChatThemeViewTest : RobolectricTest() {
     fun `clicking on a tile selects its theme`() = runAndroidComposeUiTest<ComponentActivity> {
         val eventsRecorder = EventsRecorder<ChatThemeEvent>()
         setChatThemeView(aChatThemeState(eventSink = eventsRecorder))
-        val ocean = activity!!.getString(ChatBackgroundPreset.Ocean.nameRes)
-        onNodeWithText(ocean).assertDoesNotExist()
-        onAllNodesWithContentDescription(ocean, substring = true)[0].performClick()
-        eventsRecorder.assertSingle(ChatThemeEvent.SelectTheme(oceanTeal))
+        val silk = activity!!.getString(ChatArtwork.Silk.nameRes)
+        onNodeWithText(silk).assertDoesNotExist()
+        onAllNodesWithContentDescription(silk, substring = true)[0].performClick()
+        eventsRecorder.assertSingle(ChatThemeEvent.SelectTheme(ChatArtwork.Silk.theme))
+    }
+
+    @Test
+    fun `a tile is selected only while the theme has its wallpaper and its bubble pair`() = runAndroidComposeUiTest<ComponentActivity> {
+        var current by mutableStateOf(ChatArtwork.GlassDrops.theme)
+        setContent { ChatThemeView(state = aChatThemeState(current = current), onBackClick = EnsureNeverCalled()) }
+        val glassDrops = activity!!.getString(ChatArtwork.GlassDrops.nameRes)
+        val tiles = onAllNodesWithContentDescription("$glassDrops,", substring = true)
+        tiles.assertCountEquals(2)
+        tiles[0].assertIsSelected()
+        tiles[1].assertIsSelected()
+        current = ChatTheme(ChatBackground.Art(ChatArtwork.GlassDrops), ChatBubbleColor.Purple)
+        tiles[0].assertIsNotSelected()
+        tiles[1].assertIsNotSelected()
+    }
+
+    @Test
+    fun `live tiles say they are live, the others do not`() = runAndroidComposeUiTest<ComponentActivity> {
+        setChatThemeView(aChatThemeState())
+        val context: Context = activity!!
+        val live = context.getString(R.string.gua_chat_theme_live_badge)
+        onAllNodesWithContentDescription("${context.getString(ChatArtwork.GlassDrops.nameRes)}, $live", substring = true).assertCountEquals(2)
+        onAllNodesWithContentDescription("${context.getString(ChatArtwork.PalmCoast.nameRes)}, $live", substring = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun `a row shows the tiles on screen and scrolls to the others`() = runAndroidComposeUiTest<ComponentActivity> {
+        val eventsRecorder = EventsRecorder<ChatThemeEvent>()
+        setChatThemeView(aChatThemeState(eventSink = eventsRecorder))
+        val context: Context = activity!!
+        val citrus = hasContentDescription("${context.getString(ChatBackgroundPreset.Citrus.nameRes)},", substring = true)
+        onNode(citrus).assertDoesNotExist()
+        // The gradients, the last row, end with Citrus.
+        onAllNodes(hasScrollToIndexAction()).onLast().performScrollToNode(citrus)
+        onNode(citrus).performClick()
+        eventsRecorder.assertSingle(ChatThemeEvent.SelectTheme(ChatTheme(ChatBackground.Preset(ChatBackgroundPreset.Citrus), ChatBubbleColor.Green)))
+    }
+
+    @Test
+    fun `a row keeps its height when its labelled tile scrolls out of view`() = runAndroidComposeUiTest<ComponentActivity> {
+        setChatThemeView(aChatThemeState())
+        val featured = onAllNodes(hasScrollToIndexAction()).onFirst()
+        val height = featured.getUnclippedBoundsInRoot().height
+        featured.performScrollToIndex(ChatThemeSection.Featured.themes.size)
+        onNodeWithContentDescription("${activity!!.getString(ChatBackgroundR.string.gua_chat_background_value_default)},", substring = true)
+            .assertDoesNotExist()
+        featured.assertHeightIsEqualTo(height)
+    }
+
+    @Test
+    fun `in dark appearance the tiles and the bubble button tell the dark bubble of a pair`() = runAndroidComposeUiTest<ComponentActivity> {
+        setChatThemeView(aChatThemeState(current = ChatArtwork.GlassDrops.theme), isDark = true)
+        val context: Context = activity!!
+        onNodeWithText(context.getString(R.string.gua_chat_theme_chat_bubble)).assert(hasStateDescription(context.getString(ChatBubbleColor.Pink.nameRes)))
+        val pinkBubble = context.getString(R.string.gua_chat_theme_bubble_a11y, context.getString(ChatBubbleColor.Pink.nameRes))
+        onAllNodesWithContentDescription("${context.getString(ChatArtwork.GlassDrops.nameRes)}, ", substring = true)[0]
+            .assert(hasContentDescription(pinkBubble, substring = true))
     }
 
     @Test
     fun `in a chat the first tile is Default, selected while the chat has no theme`() = runAndroidComposeUiTest<ComponentActivity> {
         val eventsRecorder = EventsRecorder<ChatThemeEvent>()
         setChatThemeView(aChatThemeState(eventSink = eventsRecorder))
-        val defaultTile = onNodeWithText(activity!!.getString(ChatBackgroundR.string.gua_chat_background_value_default))
+        val defaultTile = onNodeWithContentDescription("${activity!!.getString(ChatBackgroundR.string.gua_chat_background_value_default)},", substring = true)
         defaultTile.assertIsSelected()
         defaultTile.performClick()
         eventsRecorder.assertSingle(ChatThemeEvent.SelectDefault)
@@ -114,9 +187,9 @@ class ChatThemeViewTest : RobolectricTest() {
 
     @Test
     fun `for the default the first tile is Classic, and the note says where it applies`() = runAndroidComposeUiTest<ComponentActivity> {
-        setChatThemeView(aChatThemeState(mode = ChatThemeMode.Default, current = oceanTeal))
-        onNodeWithText(activity!!.getString(R.string.gua_chat_theme_classic)).assertIsNotSelected()
-        onAllNodesWithContentDescription(activity!!.getString(ChatBackgroundPreset.Ocean.nameRes), substring = true)[0].assertIsSelected()
+        setChatThemeView(aChatThemeState(mode = ChatThemeMode.Default, current = ChatArtwork.Silk.theme))
+        onNodeWithContentDescription("${activity!!.getString(R.string.gua_chat_theme_classic)},", substring = true).assertIsNotSelected()
+        onAllNodesWithContentDescription(activity!!.getString(ChatArtwork.Silk.nameRes), substring = true)[0].assertIsSelected()
         onNode(hasText(activity!!.getString(R.string.gua_chat_theme_default_note))).performScrollTo()
     }
 
@@ -125,7 +198,7 @@ class ChatThemeViewTest : RobolectricTest() {
         setChatThemeView(aChatThemeState(current = oceanTeal, hasPermission = false, eventSink = EventsRecorder(expectEvents = false)))
         clickOn(R.string.gua_chat_theme_chat_bubble)
         clickOn(R.string.gua_chat_theme_wallpaper)
-        onAllNodesWithContentDescription(activity!!.getString(ChatBackgroundPreset.Ocean.nameRes), substring = true)[0].performClick()
+        onAllNodesWithContentDescription(activity!!.getString(ChatArtwork.Silk.nameRes), substring = true)[0].performClick()
         onNode(hasText(activity!!.getString(R.string.gua_chat_theme_no_permission))).performScrollTo()
     }
 
@@ -203,6 +276,31 @@ class ChatThemeViewTest : RobolectricTest() {
     }
 
     @Test
+    fun `the bubble picker shows the pair's bubble per appearance and keeps the pair`() = runAndroidComposeUiTest<ComponentActivity> {
+        var isDark by mutableStateOf(false)
+        setContent {
+            ElementTheme(theme = if (isDark) Theme.Dark else Theme.Light, applySystemBarsUpdate = false) {
+                ChatThemeView(
+                    state = aChatThemeState(
+                        current = ChatArtwork.GlassDrops.theme,
+                        page = ChatThemePage.BubblePicker(selection = ChatBubbleColor.Purple, selectionDark = ChatBubbleColor.Pink),
+                        eventSink = EventsRecorder(expectEvents = false),
+                    ),
+                    onBackClick = EnsureNeverCalled(),
+                )
+            }
+        }
+        val context: Context = activity!!
+        onNodeWithContentDescription(context.getString(ChatBubbleColor.Purple.nameRes)).assertIsSelected()
+        onNodeWithContentDescription(context.getString(ChatBubbleColor.Pink.nameRes)).assertIsNotSelected()
+        isDark = true
+        onNodeWithContentDescription(context.getString(ChatBubbleColor.Pink.nameRes)).assertIsSelected()
+        onNodeWithContentDescription(context.getString(ChatBubbleColor.Purple.nameRes)).assertIsNotSelected()
+        onNodeWithContentDescription(context.getString(ChatBubbleColor.Pink.nameRes)).performClick()
+        clickOn(R.string.gua_chat_theme_action_set)
+    }
+
+    @Test
     fun `the bubble picker cannot set the bubble the theme already has`() = runAndroidComposeUiTest<ComponentActivity> {
         setChatThemeView(
             aChatThemeState(
@@ -245,8 +343,8 @@ class ChatThemeViewTest : RobolectricTest() {
         clickOn(R.string.gua_chat_theme_choose_photo)
         onNodeWithText(activity!!.getString(R.string.gua_chat_theme_no_wallpaper)).assertIsNotSelected()
         clickOn(R.string.gua_chat_theme_no_wallpaper)
-        onNodeWithText(activity!!.getString(ChatBackgroundPreset.Ocean.nameRes)).assertIsSelected()
-        scrollToAndClick(ChatBackgroundPreset.Mint.nameRes)
+        onNodeWithContentDescription(activity!!.getString(ChatBackgroundPreset.Ocean.nameRes)).assertIsSelected()
+        scrollToAndClickTile(ChatBackgroundPreset.Mint.nameRes)
         pressBack()
         eventsRecorder.assertList(
             listOf(
@@ -256,6 +354,25 @@ class ChatThemeViewTest : RobolectricTest() {
                 ChatThemeEvent.Cancel,
             )
         )
+    }
+
+    @Test
+    fun `the wallpaper picker offers the artworks by name and marks the current one`() = runAndroidComposeUiTest<ComponentActivity> {
+        val eventsRecorder = EventsRecorder<ChatThemeEvent>()
+        setChatThemeView(aChatThemeState(current = ChatArtwork.Azulejo.theme, page = ChatThemePage.WallpaperPicker, eventSink = eventsRecorder))
+        onNodeWithContentDescription(activity!!.getString(ChatArtwork.Azulejo.nameRes)).assertIsSelected()
+        onNodeWithContentDescription(activity!!.getString(ChatArtwork.Silk.nameRes), substring = true).assertIsNotSelected()
+        scrollToAndClickTile(ChatArtwork.PaperCut.nameRes)
+        eventsRecorder.assertSingle(ChatThemeEvent.SelectWallpaper(ChatBackground.Art(ChatArtwork.PaperCut)))
+    }
+
+    @Test
+    fun `a live wallpaper in the picker is read by its name, then as live`() = runAndroidComposeUiTest<ComponentActivity> {
+        setChatThemeView(aChatThemeState(current = ChatArtwork.GlassDrops.theme, page = ChatThemePage.WallpaperPicker))
+        val context: Context = activity!!
+        val glassDrops = context.getString(ChatArtwork.GlassDrops.nameRes)
+        onNodeWithContentDescription("$glassDrops, ${context.getString(R.string.gua_chat_theme_live_badge)}").assertIsSelected()
+        onNodeWithText(glassDrops).assertDoesNotExist()
     }
 
     @Test
@@ -321,18 +438,21 @@ class ChatThemeViewTest : RobolectricTest() {
     }
 }
 
-private fun AndroidComposeUiTest<ComponentActivity>.scrollToAndClick(@StringRes res: Int) {
-    onNode(hasText(activity!!.getString(res)) and hasClickAction()).performScrollTo().performClick()
+private fun AndroidComposeUiTest<ComponentActivity>.scrollToAndClickTile(@StringRes res: Int) {
+    onNode(hasContentDescription(activity!!.getString(res)) and hasClickAction()).performScrollTo().performClick()
 }
 
 private fun AndroidComposeUiTest<ComponentActivity>.setChatThemeView(
     state: ChatThemeState,
     onBackClick: () -> Unit = EnsureNeverCalled(),
+    isDark: Boolean = false,
 ) {
     setContent {
-        ChatThemeView(
-            state = state,
-            onBackClick = onBackClick,
-        )
+        ElementTheme(theme = if (isDark) Theme.Dark else Theme.Light, applySystemBarsUpdate = false) {
+            ChatThemeView(
+                state = state,
+                onBackClick = onBackClick,
+            )
+        }
     }
 }

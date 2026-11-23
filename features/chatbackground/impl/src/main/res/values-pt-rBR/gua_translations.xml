@@ -24,7 +24,10 @@
   <string name="gua_chat_theme_chat_bubble">Balão da conversa</string>
   <string name="gua_chat_theme_wallpaper">Papel de parede</string>
   <string name="gua_chat_theme_section_featured">Destaques</string>
-  <string name="gua_chat_theme_section_colours">Cores</string>
+  <string name="gua_chat_theme_section_live">Animados</string>
+  <string name="gua_chat_theme_section_nature">Natureza</string>
+  <string name="gua_chat_theme_section_patterns">Padrões</string>
+  <string name="gua_chat_theme_section_minimal">Minimalistas</string>
   <string name="gua_chat_theme_section_gradients">Degradês</string>
   <string name="gua_chat_theme_classic">Clássico</string>
   <string name="gua_chat_theme_default_note">Vale para todas as conversas que não têm um tema próprio.</string>
@@ -38,4 +41,5 @@
   <string name="gua_chat_theme_no_wallpaper">Sem papel de parede</string>
   <string name="gua_chat_theme_bubble_standard">Padrão</string>
   <string name="gua_chat_theme_bubble_a11y">Balão: %1$s</string>
+  <string name="gua_chat_theme_live_badge">Animado</string>
 </resources>

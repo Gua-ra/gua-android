@@ -8,6 +8,8 @@
 package io.element.android.features.chatbackground.impl
 
 import androidx.annotation.StringRes
+import io.element.android.libraries.chatbackground.api.ChatArtwork
+import io.element.android.libraries.chatbackground.api.ChatArtworkSection
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatBackgroundPreset
 import io.element.android.libraries.chatbackground.api.ChatBubbleColor
@@ -18,19 +20,31 @@ enum class ChatThemeSection(@StringRes val titleRes: Int, val themes: List<ChatT
     Featured(
         titleRes = R.string.gua_chat_theme_section_featured,
         themes = listOf(
-            theme(ChatBackgroundPreset.Aurora, ChatBubbleColor.Green),
-            theme(ChatBackgroundPreset.Ocean, ChatBubbleColor.Teal),
-            theme(ChatBackgroundPreset.Sunset, ChatBubbleColor.Pink),
-            theme(ChatBackgroundPreset.Night, ChatBubbleColor.Purple),
-            theme(ChatBackgroundPreset.Dawn, ChatBubbleColor.Blue),
-            theme(ChatBackgroundPreset.Forest, ChatBubbleColor.Green),
-            theme(ChatBackgroundPreset.Dusk, ChatBubbleColor.Orange),
-            theme(ChatBackgroundPreset.Citrus, ChatBubbleColor.Yellow),
-        ),
+            ChatArtwork.Silk,
+            ChatArtwork.GlacierLake,
+            ChatArtwork.GlassDrops,
+            ChatArtwork.Currents,
+            ChatArtwork.PalmCoast,
+            ChatArtwork.Ipe,
+            ChatArtwork.Azulejo,
+            ChatArtwork.Paper,
+        ).map { it.theme },
     ),
-    Colours(
-        titleRes = R.string.gua_chat_theme_section_colours,
-        themes = listOf(
+    Live(
+        titleRes = R.string.gua_chat_theme_section_live,
+        themes = artworkThemes(ChatArtworkSection.Live),
+    ),
+    Nature(
+        titleRes = R.string.gua_chat_theme_section_nature,
+        themes = artworkThemes(ChatArtworkSection.Nature),
+    ),
+    Patterns(
+        titleRes = R.string.gua_chat_theme_section_patterns,
+        themes = artworkThemes(ChatArtworkSection.Patterns),
+    ),
+    Minimal(
+        titleRes = R.string.gua_chat_theme_section_minimal,
+        themes = artworkThemes(ChatArtworkSection.Minimal) + listOf(
             theme(ChatBackgroundPreset.Mint, ChatBubbleColor.Green),
             theme(ChatBackgroundPreset.Sky, ChatBubbleColor.Blue),
             theme(ChatBackgroundPreset.Sand, ChatBubbleColor.Orange),
@@ -54,8 +68,10 @@ enum class ChatThemeSection(@StringRes val titleRes: Int, val themes: List<ChatT
     );
 
     companion object {
-        val wallpaperSections = listOf(Colours, Gradients)
+        val wallpaperSections = listOf(Live, Nature, Patterns, Minimal, Gradients)
     }
 }
+
+private fun artworkThemes(section: ChatArtworkSection) = ChatArtwork.entries.filter { it.section == section }.map { it.theme }
 
 private fun theme(preset: ChatBackgroundPreset, bubble: ChatBubbleColor) = ChatTheme(ChatBackground.Preset(preset), bubble)
