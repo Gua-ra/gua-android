@@ -739,14 +739,13 @@ private fun ChatBackgroundItem(
     ListItem(
         content = { Text(stringResource(R.string.gua_chat_theme_row_title)) },
         supportingContent = if (row.canChange == false) {
-            // The disabled colour would make the reason the hardest text on the row to read.
-            { Text(stringResource(R.string.gua_chat_background_row_no_permission), color = ElementTheme.colors.textSecondary) }
+            { Text(stringResource(R.string.gua_chat_background_row_no_permission)) }
         } else {
             null
         },
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Theme())),
         trailingContent = ListItemContent.Text(stringResource(row.theme.nameRes(ElementTheme.isLightTheme))),
-        enabled = row.canChange != false,
+        // Stays enabled without permission so members can reach a photo's credits.
         onClick = onClick,
     )
 }

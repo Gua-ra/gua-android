@@ -38,6 +38,8 @@ import coil3.compose.useExistingImageAsPlaceholder
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import io.element.android.libraries.chatbackground.api.ChatArtwork
+import io.element.android.libraries.chatbackground.api.ChatArtworkSection
+import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.tests.testutils.robolectric.RobolectricTest
 import org.junit.Test
 import org.robolectric.annotation.GraphicsMode
@@ -105,6 +107,15 @@ class ChatBackgroundArtTest : RobolectricTest() {
         val live = onNodeWithTag("live").captureToImage().asAndroidBitmap()
         assertThat(onNodeWithTag("still").captureToImage().asAndroidBitmap().sameAs(live)).isTrue()
         assertThat(onNodeWithTag("unaligned").captureToImage().asAndroidBitmap().sameAs(live)).isFalse()
+    }
+
+    @Test
+    fun `a photo wallpaper gets a user photo's default dim in dark mode, other art none`() {
+        ChatArtwork.entries.forEach { artwork ->
+            val expected = if (artwork.section == ChatArtworkSection.Photos) ChatBackground.Photo.DEFAULT_DIM else null
+            assertWithMessage(artwork.id).that(artwork.darkDim).isEqualTo(expected)
+        }
+        assertThat(ChatArtwork.PhotoIpe.darkDim).isEqualTo(35)
     }
 
     @Test

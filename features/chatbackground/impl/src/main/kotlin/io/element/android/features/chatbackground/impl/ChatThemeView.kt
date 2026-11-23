@@ -34,6 +34,7 @@ import io.element.android.libraries.chatbackground.api.ChatArtwork
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatTheme
 import io.element.android.libraries.chatbackground.api.nameRes
+import io.element.android.libraries.chatbackground.api.photoCredit
 import io.element.android.libraries.designsystem.components.async.AsyncActionView
 import io.element.android.libraries.designsystem.components.async.AsyncActionViewDefaults
 import io.element.android.libraries.designsystem.components.button.BackButton
@@ -52,6 +53,7 @@ import io.element.android.libraries.chatbackground.api.R as ChatBackgroundR
 fun ChatThemeView(
     state: ChatThemeState,
     onBackClick: () -> Unit,
+    onOpenUrl: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val photoDraft = state.photoDraft
@@ -59,6 +61,10 @@ fun ChatThemeView(
     val page = state.page
     val cancel = { state.eventSink(ChatThemeEvent.Cancel) }
     when {
+        state.showsPhotoCredits -> {
+            BackHandler(onBack = cancel)
+            ChatPhotoCreditsView(onBackClick = cancel, onOpenUrl = onOpenUrl, modifier = modifier)
+        }
         photoDraft != null -> {
             BackHandler(onBack = cancel)
             ChatBackgroundPhotoPreviewView(
@@ -163,8 +169,15 @@ private fun ChatThemeGalleryView(
                     ChatBackgroundCanvas(background = state.shownBase.background, modifier = Modifier.fillMaxSize())
                 }
             }
+            state.shownBase.background.photoCredit?.let { credit ->
+                PhotoCreditLine(
+                    credit = credit,
+                    onClick = { state.eventSink(ChatThemeEvent.OpenPhotoCredits) },
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
+            }
             ChatThemeSection.entries.forEach { section ->
-                ChatThemeSectionTitle(section.titleRes)
+                ChatThemeSectionTitle(section.titleRes, action = photoCreditsAction(section, state.eventSink))
                 ChatThemeTileRow {
                     if (section == ChatThemeSection.Featured) {
                         item {
@@ -184,13 +197,15 @@ private fun ChatThemeGalleryView(
                         }
                     }
                     items(section.themes) { theme ->
+                        val credit = theme.background.photoCredit
                         ChatThemeTile(
                             theme = theme,
                             label = stringResource(theme.nameRes(ElementTheme.isLightTheme)),
                             isSelected = theme == state.current,
                             enabled = state.canChange,
                             showsBubbles = true,
-                            showsLabel = false,
+                            showsLabel = credit != null,
+                            credit = credit?.let { photoCreditText(it, withLicence = false) },
                             onClick = { state.eventSink(ChatThemeEvent.SelectTheme(theme)) },
                         )
                     }
@@ -210,6 +225,13 @@ private fun ChatThemeGalleryView(
         }
     }
 }
+
+internal fun photoCreditsAction(section: ChatThemeSection, eventSink: (ChatThemeEvent) -> Unit): (@Composable () -> Unit)? =
+    if (section == ChatThemeSection.Photos) {
+        { PhotoCreditsButton(onClick = { eventSink(ChatThemeEvent.OpenPhotoCredits) }) }
+    } else {
+        null
+    }
 
 @get:StringRes
 private val ChatBackground.wallpaperNameRes: Int
@@ -231,15 +253,17 @@ internal fun ChatThemeViewPreview(@PreviewParameter(ChatThemeStatePreviewParam::
     ChatThemeView(
         state = state,
         onBackClick = {},
+        onOpenUrl = {},
     )
 }
 
-@Preview(name = DAY_MODE_NAME, heightDp = 1600)
-@Preview(name = NIGHT_MODE_NAME, heightDp = 1600, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Preview(name = DAY_MODE_NAME, heightDp = 1900)
+@Preview(name = NIGHT_MODE_NAME, heightDp = 1900, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 internal fun ChatThemeViewAllSectionsPreview() = ElementPreview {
     ChatThemeView(
         state = aChatThemeState(current = ChatArtwork.Silk.theme),
         onBackClick = {},
+        onOpenUrl = {},
     )
 }

@@ -38,6 +38,10 @@ enum class ChatThemeSection(@StringRes val titleRes: Int, val themes: List<ChatT
         titleRes = R.string.gua_chat_theme_section_nature,
         themes = artworkThemes(ChatArtworkSection.Nature),
     ),
+    Photos(
+        titleRes = R.string.gua_chat_theme_section_photos,
+        themes = artworkThemes(ChatArtworkSection.Photos),
+    ),
     Patterns(
         titleRes = R.string.gua_chat_theme_section_patterns,
         themes = artworkThemes(ChatArtworkSection.Patterns),
@@ -68,7 +72,7 @@ enum class ChatThemeSection(@StringRes val titleRes: Int, val themes: List<ChatT
     );
 
     companion object {
-        val wallpaperSections = listOf(Live, Nature, Patterns, Minimal, Gradients)
+        val wallpaperSections = listOf(Live, Nature, Photos, Patterns, Minimal, Gradients)
     }
 }
 

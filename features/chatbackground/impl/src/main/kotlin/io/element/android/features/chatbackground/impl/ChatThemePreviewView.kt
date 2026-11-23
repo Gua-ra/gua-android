@@ -36,6 +36,8 @@ import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.theme.Theme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.libraries.chatbackground.api.ChatBackground
+import io.element.android.libraries.chatbackground.api.ChatPhotoCredit
+import io.element.android.libraries.chatbackground.api.photoCredit
 import io.element.android.libraries.designsystem.components.button.BackButton
 import io.element.android.libraries.designsystem.theme.components.Button
 import io.element.android.libraries.designsystem.theme.components.Icon
@@ -78,6 +80,7 @@ internal fun ChatThemePreviewView(
         },
         bottomBar = {
             PreviewControls(
+                credit = preview.shown.background.photoCredit,
                 isDarkPreview = isDarkPreview,
                 saveLabel = saveLabel,
                 canChange = canChange,
@@ -122,6 +125,7 @@ internal fun ChatThemePreviewView(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PreviewControls(
+    credit: ChatPhotoCredit?,
     isDarkPreview: Boolean,
     saveLabel: String,
     canChange: Boolean,
@@ -137,6 +141,13 @@ private fun PreviewControls(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        if (credit != null) {
+            PhotoCreditLine(
+                credit = credit,
+                onClick = { eventSink(ChatThemeEvent.OpenPhotoCredits) },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+        }
         // Under large text the send button wraps below the toggle.
         FlowRow(
             modifier = Modifier.fillMaxWidth(),

@@ -59,4 +59,23 @@
   <string name="gua_chat_theme_art_doodles_canada">Canada</string>
   <string name="gua_chat_theme_art_paper">Paper</string>
   <string name="gua_chat_theme_art_paper_cut">Paper Cut</string>
+  <string name="gua_chat_theme_art_photo_lencois_lagoon">Lençóis Lagoon</string>
+  <string name="gua_chat_theme_art_photo_lencois_dunes">Lençóis Dusk</string>
+  <string name="gua_chat_theme_art_photo_gruta_azul">Blue Grotto</string>
+  <string name="gua_chat_theme_art_photo_ipe">Ipê at Sunset</string>
+  <string name="gua_chat_theme_art_photo_araucaria">Araucária Crown</string>
+  <string name="gua_chat_theme_art_photo_maned_wolf">Sleeping Maned Wolf</string>
+  <string name="gua_chat_theme_art_photo_maned_wolf_standing">Maned Wolf</string>
+  <string name="gua_chat_theme_art_photo_yukon_trail">Yukon Trail</string>
+  <string name="gua_chat_theme_art_photo_yukon_sun">Yukon Sun</string>
+  <string name="gua_chat_theme_art_photo_yukon_forest">Boreal Trail</string>
+  <string name="gua_chat_theme_art_photo_yukon_sled">Yukon Sled</string>
+  <string name="gua_chat_theme_art_photo_yukon_sled_2">Sled Dogs</string>
+  <string name="gua_chat_theme_art_photo_peyto_lake">Peyto Lake</string>
+  <string name="gua_chat_theme_art_photo_lone_canoe">Lone Canoe</string>
+  <string name="gua_chat_theme_art_photo_jasper_aurora">Jasper Aurora</string>
+  <string name="gua_chat_theme_art_photo_nunavik_aurora">Nunavik Aurora</string>
+  <string name="gua_chat_theme_art_photo_lac_delage">Moonlit Lake</string>
+  <string name="gua_chat_theme_art_photo_quebec_ice">Cedar Ice</string>
+  <string name="gua_chat_theme_art_photo_quebec_leaves">Maple Leaves</string>
 </resources>

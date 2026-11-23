@@ -25,6 +25,7 @@ setupDependencyInjection()
 
 dependencies {
     api(projects.features.chatbackground.api)
+    implementation(projects.libraries.androidutils)
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.chatbackground.api)
     implementation(projects.libraries.core)

@@ -51,3 +51,6 @@ val ChatBackground.nameRes: Int
         is ChatBackground.Art -> artwork.nameRes
         is ChatBackground.Photo -> R.string.gua_chat_background_value_photo
     }
+
+val ChatBackground.photoCredit: ChatPhotoCredit?
+    get() = (this as? ChatBackground.Art)?.artwork?.credit

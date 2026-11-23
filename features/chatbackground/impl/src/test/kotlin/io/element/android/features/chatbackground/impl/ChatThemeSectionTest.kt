@@ -22,6 +22,7 @@ class ChatThemeSectionTest {
             R.string.gua_chat_theme_section_featured,
             R.string.gua_chat_theme_section_live,
             R.string.gua_chat_theme_section_nature,
+            R.string.gua_chat_theme_section_photos,
             R.string.gua_chat_theme_section_patterns,
             R.string.gua_chat_theme_section_minimal,
             R.string.gua_chat_theme_section_gradients,
@@ -86,6 +87,36 @@ class ChatThemeSectionTest {
     }
 
     @Test
+    fun `Photos holds the photos in catalog order with their paired bubbles`() {
+        assertThat(ChatThemeSection.Photos.themes.map { it.artworkId() }).containsExactly(
+            "photo-lencois-lagoon",
+            "photo-lencois-dunes",
+            "photo-gruta-azul",
+            "photo-ipe",
+            "photo-araucaria",
+            "photo-maned-wolf",
+            "photo-maned-wolf-standing",
+            "photo-yukon-trail",
+            "photo-yukon-sun",
+            "photo-yukon-forest",
+            "photo-yukon-sled",
+            "photo-yukon-sled-2",
+            "photo-peyto-lake",
+            "photo-lone-canoe",
+            "photo-jasper-aurora",
+            "photo-nunavik-aurora",
+            "photo-lac-delage",
+            "photo-quebec-ice",
+            "photo-quebec-leaves",
+        ).inOrder()
+        assertThat(ChatThemeSection.Photos.themes).isEqualTo(ChatArtwork.photos.map { it.theme })
+        assertThat(ChatThemeSection.Photos.themes).contains(
+            ChatTheme(ChatBackground.Art(ChatArtwork.PhotoLencoisLagoon), ChatBubbleColor.Teal, ChatBubbleColor.Purple)
+        )
+        assertThat(ChatThemeSection.Photos.themes).contains(ChatTheme(ChatBackground.Art(ChatArtwork.PhotoLacDelage), ChatBubbleColor.Blue))
+    }
+
+    @Test
     fun `Minimal holds paper, paper-cut, then the six solid presets with their bubbles`() {
         assertThat(ChatThemeSection.Minimal.themes).containsExactly(
             ChatArtwork.Paper.theme,
@@ -118,6 +149,7 @@ class ChatThemeSectionTest {
         assertThat(ChatThemeSection.wallpaperSections).containsExactly(
             ChatThemeSection.Live,
             ChatThemeSection.Nature,
+            ChatThemeSection.Photos,
             ChatThemeSection.Patterns,
             ChatThemeSection.Minimal,
             ChatThemeSection.Gradients,

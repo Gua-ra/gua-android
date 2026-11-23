@@ -23,6 +23,7 @@ data class ChatThemeState(
     val page: ChatThemePage,
     val preview: ChatThemePreview?,
     val photoDraft: ChatBackgroundPhotoDraft?,
+    val showsPhotoCredits: Boolean,
     val operation: ChatThemeOperation,
     val action: AsyncAction<Unit>,
     val eventSink: (ChatThemeEvent) -> Unit,

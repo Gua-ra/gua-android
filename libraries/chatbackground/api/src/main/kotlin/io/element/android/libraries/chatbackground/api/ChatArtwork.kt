@@ -26,6 +26,8 @@ enum class ChatArtwork(
     val fallbackPreset: ChatBackgroundPreset,
     /** The shader time the stills show, where a live artwork's animation starts. */
     val stillTime: Float = 0f,
+    /** Non-null exactly for photos, which must show it wherever they are offered. */
+    val credit: ChatPhotoCredit? = null,
 ) {
     GlassDrops(
         id = "glass-drops",
@@ -259,6 +261,291 @@ enum class ChatArtwork(
         anchor = UnitPoint(0.5f, 0.72f),
         fallbackPreset = ChatBackgroundPreset.Ocean,
     ),
+    PhotoLencoisLagoon(
+        id = "photo-lencois-lagoon",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_lencois_lagoon,
+        bubble = ChatBubbleColor.Teal,
+        bubbleDark = ChatBubbleColor.Purple,
+        anchor = UnitPoint(0.5f, 0.52f),
+        fallbackPreset = ChatBackgroundPreset.Sky,
+        credit = ChatPhotoCredit(
+            author = "Gerda Arendt",
+            licence = ChatPhotoLicence.Cc0,
+            sourceUrl = "https://commons.wikimedia.org/wiki/File:Lagoon_in_curved_sanddunes%2C_Len%C3%A7%C3%B3is_Maranhenses.jpg",
+        ),
+    ),
+    PhotoLencoisDunes(
+        id = "photo-lencois-dunes",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_lencois_dunes,
+        bubble = ChatBubbleColor.Blue,
+        bubbleDark = ChatBubbleColor.Purple,
+        anchor = UnitPoint(0.35f, 0.46f),
+        fallbackPreset = ChatBackgroundPreset.Graphite,
+        credit = ChatPhotoCredit(
+            author = "Gerda Arendt",
+            licence = ChatPhotoLicence.Cc0,
+            sourceUrl = "https://commons.wikimedia.org/wiki/File:Sand_dunes_before_sunset%2C_Len%C3%A7%C3%B3is_Maranhenses.jpg",
+        ),
+    ),
+    PhotoGrutaAzul(
+        id = "photo-gruta-azul",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_gruta_azul,
+        bubble = ChatBubbleColor.Teal,
+        bubbleDark = ChatBubbleColor.Blue,
+        anchor = UnitPoint(0.65f, 0.68f),
+        fallbackPreset = ChatBackgroundPreset.Sky,
+        credit = ChatPhotoCredit(
+            author = "Wilfredo Rodriguez (Wilfredor)",
+            licence = ChatPhotoLicence.Cc0,
+            sourceUrl = "https://commons.wikimedia.org/wiki/File:Rock_walls_and_entrance_of_Gruta_Azul%2C_Arraial_do_Cabo%2C_Brazil.jpg",
+        ),
+    ),
+    PhotoIpe(
+        id = "photo-ipe",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_ipe,
+        bubble = ChatBubbleColor.Blue,
+        bubbleDark = ChatBubbleColor.Orange,
+        anchor = UnitPoint(0.47f, 0.28f),
+        fallbackPreset = ChatBackgroundPreset.Graphite,
+        credit = ChatPhotoCredit(
+            author = "Thyrome",
+            licence = ChatPhotoLicence.Cc0,
+            sourceUrl = "https://commons.wikimedia.org/wiki/File:Handroanthus_ochraceus.jpg",
+        ),
+    ),
+    PhotoAraucaria(
+        id = "photo-araucaria",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_araucaria,
+        bubble = ChatBubbleColor.Green,
+        bubbleDark = ChatBubbleColor.Teal,
+        anchor = UnitPoint(0.45f, 0.42f),
+        fallbackPreset = ChatBackgroundPreset.Sky,
+        credit = ChatPhotoCredit(
+            author = "Themium",
+            licence = ChatPhotoLicence.Cc0,
+            sourceUrl = "https://commons.wikimedia.org/wiki/File:Arauc%C3%A1ria_jordanense_1.jpg",
+        ),
+    ),
+    PhotoManedWolf(
+        id = "photo-maned-wolf",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_maned_wolf,
+        bubble = ChatBubbleColor.Blue,
+        bubbleDark = ChatBubbleColor.Purple,
+        anchor = UnitPoint(0.38f, 0.55f),
+        fallbackPreset = ChatBackgroundPreset.Sand,
+        credit = ChatPhotoCredit(
+            author = "Wilfredo Rodriguez (Wilfredor)",
+            licence = ChatPhotoLicence.Cc0,
+            sourceUrl = "https://commons.wikimedia.org/wiki/File:Chrysocyon_brachyurus_in_S%C3%A3o_Paulo_Zoo.jpg",
+        ),
+    ),
+    PhotoManedWolfStanding(
+        id = "photo-maned-wolf-standing",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_maned_wolf_standing,
+        bubble = ChatBubbleColor.Blue,
+        bubbleDark = ChatBubbleColor.Purple,
+        anchor = UnitPoint(0.72f, 0.25f),
+        fallbackPreset = ChatBackgroundPreset.Mint,
+        credit = ChatPhotoCredit(
+            author = "Gil Myers, Smithsonian's National Zoo",
+            licence = ChatPhotoLicence.Cc0,
+            sourceUrl = "https://nationalzoo.si.edu/object/nzp_NZP-20160729-011GM",
+        ),
+    ),
+    PhotoYukonTrail(
+        id = "photo-yukon-trail",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_yukon_trail,
+        bubble = ChatBubbleColor.Blue,
+        bubbleDark = ChatBubbleColor.Teal,
+        anchor = UnitPoint(0.45f, 0.55f),
+        fallbackPreset = ChatBackgroundPreset.Sky,
+        credit = ChatPhotoCredit(
+            author = "Sarah Lacerda",
+            licence = ChatPhotoLicence.CcBy4,
+            sourceUrl = null,
+        ),
+    ),
+    PhotoYukonSun(
+        id = "photo-yukon-sun",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_yukon_sun,
+        bubble = ChatBubbleColor.Orange,
+        bubbleDark = ChatBubbleColor.Blue,
+        anchor = UnitPoint(0.5f, 0.72f),
+        fallbackPreset = ChatBackgroundPreset.Sky,
+        credit = ChatPhotoCredit(
+            author = "Sarah Lacerda",
+            licence = ChatPhotoLicence.CcBy4,
+            sourceUrl = null,
+        ),
+    ),
+    PhotoYukonForest(
+        id = "photo-yukon-forest",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_yukon_forest,
+        bubble = ChatBubbleColor.Green,
+        bubbleDark = ChatBubbleColor.Teal,
+        anchor = UnitPoint(0.53f, 0.68f),
+        fallbackPreset = ChatBackgroundPreset.Sky,
+        credit = ChatPhotoCredit(
+            author = "Sarah Lacerda",
+            licence = ChatPhotoLicence.CcBy4,
+            sourceUrl = null,
+        ),
+    ),
+    PhotoYukonSled(
+        id = "photo-yukon-sled",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_yukon_sled,
+        bubble = ChatBubbleColor.Purple,
+        bubbleDark = ChatBubbleColor.Blue,
+        anchor = UnitPoint(0.5f, 0.62f),
+        fallbackPreset = ChatBackgroundPreset.Sky,
+        credit = ChatPhotoCredit(
+            author = "Sarah Lacerda",
+            licence = ChatPhotoLicence.CcBy4,
+            sourceUrl = null,
+        ),
+    ),
+    PhotoYukonSled2(
+        id = "photo-yukon-sled-2",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_yukon_sled_2,
+        bubble = ChatBubbleColor.Teal,
+        bubbleDark = ChatBubbleColor.Purple,
+        anchor = UnitPoint(0.5f, 0.7f),
+        fallbackPreset = ChatBackgroundPreset.Sky,
+        credit = ChatPhotoCredit(
+            author = "Sarah Lacerda",
+            licence = ChatPhotoLicence.CcBy4,
+            sourceUrl = null,
+        ),
+    ),
+    PhotoPeytoLake(
+        id = "photo-peyto-lake",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_peyto_lake,
+        bubble = ChatBubbleColor.Teal,
+        bubbleDark = ChatBubbleColor.Blue,
+        anchor = UnitPoint(0.4f, 0.6f),
+        fallbackPreset = ChatBackgroundPreset.Ocean,
+        credit = ChatPhotoCredit(
+            author = "Ezra Jeffrey-Comeau",
+            licence = ChatPhotoLicence.Cc0,
+            sourceUrl = "https://commons.wikimedia.org/wiki/File:The_Highest_Highs_(Unsplash).jpg",
+        ),
+    ),
+    PhotoLoneCanoe(
+        id = "photo-lone-canoe",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_lone_canoe,
+        bubble = ChatBubbleColor.Orange,
+        bubbleDark = ChatBubbleColor.Purple,
+        anchor = UnitPoint(0.48f, 0.62f),
+        fallbackPreset = ChatBackgroundPreset.Ocean,
+        credit = ChatPhotoCredit(
+            author = "Braxton Stuntz",
+            licence = ChatPhotoLicence.Cc0,
+            sourceUrl = "https://commons.wikimedia.org/wiki/File:The_Lone_Canoe_(Unsplash).jpg",
+        ),
+    ),
+    PhotoJasperAurora(
+        id = "photo-jasper-aurora",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_jasper_aurora,
+        bubble = ChatBubbleColor.Green,
+        bubbleDark = ChatBubbleColor.Teal,
+        anchor = UnitPoint(0.5f, 0.55f),
+        fallbackPreset = ChatBackgroundPreset.Sky,
+        credit = ChatPhotoCredit(
+            author = "Priscilla Du Preez",
+            licence = ChatPhotoLicence.Cc0,
+            sourceUrl = "https://commons.wikimedia.org/wiki/File:Northern_lights_over_a_lake_(Unsplash).jpg",
+        ),
+    ),
+    PhotoNunavikAurora(
+        id = "photo-nunavik-aurora",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_nunavik_aurora,
+        bubble = ChatBubbleColor.Purple,
+        bubbleDark = ChatBubbleColor.Pink,
+        anchor = UnitPoint(0.5f, 0.4f),
+        fallbackPreset = ChatBackgroundPreset.Mint,
+        credit = ChatPhotoCredit(
+            author = "Nicolas M. Perrault",
+            licence = ChatPhotoLicence.Cc0,
+            sourceUrl = "https://commons.wikimedia.org/wiki/File:Aurora_Borealis_in_Kangiqsualujjaq.tif",
+        ),
+    ),
+    PhotoLacDelage(
+        id = "photo-lac-delage",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_lac_delage,
+        bubble = ChatBubbleColor.Blue,
+        bubbleDark = ChatBubbleColor.Blue,
+        anchor = UnitPoint(0.5f, 0.35f),
+        fallbackPreset = ChatBackgroundPreset.Sand,
+        credit = ChatPhotoCredit(
+            author = "Wilfredo Rodriguez (Wilfredor)",
+            licence = ChatPhotoLicence.Cc0,
+            sourceUrl = "https://commons.wikimedia.org/wiki/File:Lac_Delage_at_night,_Quebec,_Canada.jpg",
+        ),
+    ),
+    PhotoQuebecIce(
+        id = "photo-quebec-ice",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_quebec_ice,
+        bubble = ChatBubbleColor.Green,
+        bubbleDark = ChatBubbleColor.Teal,
+        anchor = UnitPoint(0.47f, 0.7f),
+        fallbackPreset = ChatBackgroundPreset.Sand,
+        credit = ChatPhotoCredit(
+            author = "Wilfredo Rodriguez (Wilfredor)",
+            licence = ChatPhotoLicence.Cc0,
+            sourceUrl = "https://commons.wikimedia.org/wiki/File:Ice_on_a_branch_in_Quebec_City.jpg",
+        ),
+    ),
+    PhotoQuebecLeaves(
+        id = "photo-quebec-leaves",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_quebec_leaves,
+        bubble = ChatBubbleColor.Teal,
+        bubbleDark = ChatBubbleColor.Graphite,
+        anchor = UnitPoint(0.5f, 0.5f),
+        fallbackPreset = ChatBackgroundPreset.Sand,
+        credit = ChatPhotoCredit(
+            author = "Wilfredo Rodriguez (Wilfredor)",
+            licence = ChatPhotoLicence.Cc0,
+            sourceUrl = "https://commons.wikimedia.org/wiki/File:Autumn_leaves_on_the_ground_in_Quebec_City.jpg",
+        ),
+    ),
     Currents(
         id = "currents",
         section = ChatArtworkSection.Patterns,
@@ -340,8 +627,10 @@ enum class ChatArtwork(
         fallbackPreset = ChatBackgroundPreset.Sand,
     );
 
-    val lightFile: String get() = "$id-light.webp"
-    val darkFile: String get() = "$id-dark.webp"
+    val isPhoto: Boolean get() = credit != null
+
+    val lightFile: String get() = if (isPhoto) "$id.webp" else "$id-light.webp"
+    val darkFile: String get() = if (isPhoto) "$id.webp" else "$id-dark.webp"
 
     fun file(isLight: Boolean): String = if (isLight) lightFile else darkFile
 
@@ -355,12 +644,15 @@ enum class ChatArtwork(
         const val NOISE_FILE = "noise.webp"
 
         fun fromId(id: String?): ChatArtwork? = entries.firstOrNull { it.id == id }
+
+        val photos: List<ChatArtwork> = entries.filter { it.isPhoto }
     }
 }
 
 enum class ChatArtworkSection(val id: String) {
     Live("live"),
     Nature("nature"),
+    Photos("photos"),
     Patterns("patterns"),
     Minimal("minimal"),
 }

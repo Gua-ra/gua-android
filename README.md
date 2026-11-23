@@ -145,4 +145,6 @@ Upstream Element X Android is dual licensed by Element Creations Ltd (Element). 
 
 Gua's modifications are available under the GNU Affero General Public License version 3 only (`AGPL-3.0-only`), see [LICENSE](LICENSE). The Element Commercial License ([LICENSE-COMMERCIAL](LICENSE-COMMERCIAL)) comes from Element and covers only code Element holds the copyright to. It does not extend to Gua's modifications.
 
+The photo wallpapers (`libraries/matrixui/src/main/assets/wallpapers/photo-*.webp`) are not under the AGPL. Each keeps its own licence; see [tools/wallpapers/THIRD_PARTY_NOTICES.md](tools/wallpapers/THIRD_PARTY_NOTICES.md).
+
 Unless required by applicable law or agreed to in writing, software distributed under the Licenses is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the Licenses for the specific language governing permissions and limitations under the Licenses.

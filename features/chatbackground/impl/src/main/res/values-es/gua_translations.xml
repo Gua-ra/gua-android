@@ -43,4 +43,10 @@
   <string name="gua_chat_theme_bubble_a11y">Burbuja: %1$s</string>
   <string name="gua_chat_theme_live_badge">Animado</string>
   <string name="gua_chat_theme_preview_send_a11y">Ver el efecto de envío</string>
+  <string name="gua_chat_theme_section_photos">Fotos</string>
+  <string name="gua_chat_theme_photo_credit">Foto: %1$s</string>
+  <string name="gua_chat_theme_photo_credit_licence">Foto: %1$s · %2$s</string>
+  <string name="gua_chat_theme_photo_credits">Créditos de las fotos</string>
+  <string name="gua_chat_theme_photo_source">Fuente</string>
+  <string name="gua_chat_theme_photo_changes">Recortada y redimensionada para móviles.</string>
 </resources>
