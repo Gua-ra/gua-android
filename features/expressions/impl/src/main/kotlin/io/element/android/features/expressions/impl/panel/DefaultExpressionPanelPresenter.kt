@@ -192,18 +192,19 @@ class DefaultExpressionPanelPresenter(
             )
         }
 
-        fun sendSticker(image: StickerImage) {
+        fun sendSticker(image: StickerImage, isRetry: Boolean = false) {
             if (image.url in sendingStickerUrls) return
             sendingStickerUrls = sendingStickerUrls + image.url
             sessionCoroutineScope.launch {
                 val relation = composer.stickerRelation()
-                composer.onStickerSent()
+                // A retry stays still, like a text retry, which resends its existing local echo.
+                if (!isRetry) composer.onStickerSent()
                 stickerSender.send(image, relation)
                     .onSuccess {
                         recentStickersStore.add(image)
                         composer.onSent()
                     }
-                    .onFailure { showError(it, R.string.gua_sticker_send_failed) { sendSticker(image) } }
+                    .onFailure { showError(it, R.string.gua_sticker_send_failed) { sendSticker(image, isRetry = true) } }
                 sendingStickerUrls = sendingStickerUrls - image.url
             }
         }
