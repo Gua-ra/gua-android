@@ -15,15 +15,7 @@ import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
 
-/**
- * GUA FORK: this decoder exists to refuse exactly what identity-service refuses (ADM-008 decision 1), so
- * every case here is asserted twice: once against this implementation and once against the JDK Ed25519
- * provider, which is the decoder the server actually runs.
- *
- * The published vectors do not cover the sign bit, and a decoder that ignored it accepted two encodings
- * the server rejects: x = 0 has a single root, so the encoding that asks for its negative names no point.
- * Only y = 1 and y = p - 1 can reach that, and both are pinned below.
- */
+/** GUA FORK: point decoding must match identity-service, so those cases are also checked with the JDK provider. */
 class Ed25519PublicKeysTest {
     @Test
     fun `x is zero with the sign bit set is refused, exactly as the server refuses it`() {
@@ -51,6 +43,17 @@ class Ed25519PublicKeysTest {
             assertThat(Ed25519PublicKeys.isOnCurve(raw)).isTrue()
             assertThat(decodesWithTheJdk(raw)).isTrue()
         }
+    }
+
+    @Test
+    fun `small-order points decode but are refused as keys`() {
+        for (encoded in SMALL_ORDER_POINTS) {
+            val raw = encoded.hexToBytes()
+            assertThat(Ed25519PublicKeys.isOnCurve(raw)).isTrue()
+            assertThat(Ed25519PublicKeys.hasSmallOrder(raw)).isTrue()
+            assertThat(runCatchingExceptions { Ed25519PublicKeys.require(raw, "invalid_key") }.isFailure).isTrue()
+        }
+        assertThat(Ed25519PublicKeys.hasSmallOrder(Ed25519Sign.KeyPair.newKeyPair().publicKey)).isFalse()
     }
 
     @Test
@@ -83,6 +86,17 @@ class Ed25519PublicKeysTest {
 
         /** y = p, which no encoding may name. */
         private const val Y_IS_THE_FIELD_PRIME = "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
+
+        private val SMALL_ORDER_POINTS = listOf(
+            Y_IS_ONE,
+            Y_IS_P_MINUS_ONE,
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000080",
+            "26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05",
+            "26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc85",
+            "c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a",
+            "c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa",
+        )
 
         private fun String.hexToBytes(): ByteArray = chunked(2).map { it.toInt(16).toByte() }.toByteArray()
     }

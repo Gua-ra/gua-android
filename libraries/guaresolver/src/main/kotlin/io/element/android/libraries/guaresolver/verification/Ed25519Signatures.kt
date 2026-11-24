@@ -25,7 +25,7 @@ internal object Ed25519Signatures {
         val spki = decode(publicKeySpkiB64) ?: return null
         if (spki.size != SPKI_LENGTH || !spki.copyOfRange(0, SPKI_PREFIX.size).contentEquals(SPKI_PREFIX)) return null
         val raw = spki.copyOfRange(SPKI_PREFIX.size, SPKI_LENGTH)
-        if (Ed25519PublicKeys.isAllZero(raw) || !Ed25519PublicKeys.isOnCurve(raw)) return null
+        if (!Ed25519PublicKeys.isOnCurve(raw) || Ed25519PublicKeys.hasSmallOrder(raw)) return null
         return raw
     }
 
