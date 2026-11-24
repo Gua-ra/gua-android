@@ -401,6 +401,24 @@ jobs:
           track: ${{ needs.gate.outputs.track }}
           status: ${{ needs.gate.outputs.status }}
 
+  tag-source:
+    name: Tag the uploaded commit
+    needs: publish-prod
+    if: needs.publish-prod.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create play/<versionCode>
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: play/${{ needs.publish-prod.outputs.version_code }}
+          SHA: ${{ github.sha }}
+        # A re-run finds the tag already pointing at the same commit.
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$SHA" ||
+            gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq .object.sha | grep -qx "$SHA"
+
   # Android beta testers get every production-signed upload through Firebase App Distribution: this
   # job follows every successful publish-prod, whether it went to production, internal, alpha or
   # beta, because the Firebase group is the beta channel. What they get is the universal APK Play
