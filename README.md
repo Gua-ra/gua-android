@@ -75,7 +75,7 @@ Synapse homeserver in the Gua federation
 Everything above describes the current implementation. Parts of the target design are not shipped yet, including:
 
 - **Per-homeserver authentication.** Today every sign-in completes at the single Gua identity host.
-- **Verified routing.** Today the app follows the resolver's answer as given. It does not check that answer against signed federation state.
+- **Verified routing.** The app checks the resolver's answer against signed federation state in report-only mode, without affecting sign-in. It still follows the answer as given.
 
 [Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md) explains the target in plain language. [ADM-001](https://github.com/Gua-ra/gua-resolver/blob/main/docs/decisions/ADM-001-identifier-binding-placement-trust.md) records the decision behind it.
 
