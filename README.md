@@ -12,21 +12,21 @@
 
 **Gua** is a private messenger. End-to-end encryption is on by default. It is built on [Matrix](https://matrix.org/).
 
-This repository is Gua-ra's fork of [`element-hq/element-x-android`](https://github.com/element-hq/element-x-android) (Element X Android). Upstream provides the messaging core. This fork adds the Gua product layer on top: sign-in, routing, contact discovery, account management and the Gua look and feel.
+The Gua Android client is based on [`element-hq/element-x-android`](https://github.com/element-hq/element-x-android), with Gua's sign-in, routing, contact discovery, account management and interface.
 
 ## Get the app
 
-Gua for Android is in an invite-only beta. Request access with the beta form at [gua.global/support](https://gua.global/support#beta-form). Approved testers receive an invitation by email with the install steps. The iOS app lives in [`gua-ios`](https://github.com/Gua-ra/gua-ios) and is distributed through TestFlight the same way.
+Gua for Android is in an invite-only beta. Request access with the beta form at [gua.global/support](https://gua.global/support#beta-form). Approved testers receive installation instructions by email. The [iOS client](https://github.com/Gua-ra/gua-ios) is available through an invite-only TestFlight beta.
 
 ---
 
 ## What the app does today
 
-- **Finds your homeserver for you.** The resolver's roster lists the Gua homeservers and decides where new Gua accounts are created. At sign-in, the app asks [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) which homeserver to use for your phone number. It then signs in through the Gua identity host and connects to that homeserver. You see usernames, never a server address.
-- **Simple sign-in with a second step.** You enter your phone number and confirm a verification code, then use the account's passkey or 6-digit PIN. A code alone never completes a sign-in. The flow is built to stay flexible: institutional SSO is planned for organizations that bring their own identity.
-- **Private contact discovery.** Find Friends shows which of your contacts already use Gua and feeds straight into Start Chat. The app sends the phone numbers from your contacts over an encrypted connection to the Gua identity service, which hashes them in memory with a secret key, compares them with Gua accounts and discards them. Contact names stay on the device.
+- **Automatic homeserver selection.** At sign-in, the app sends your phone number to [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) and connects to the returned homeserver through the Gua identity host. For new accounts, the resolver selects a homeserver using its routing policy and roster. The interface displays usernames without server addresses.
+- **Two-step sign-in.** Enter your phone number and confirm a verification code, then use the account's passkey or six-digit PIN. Both steps are required. Institutional SSO is planned.
+- **Contact discovery.** Find Friends lists your contacts who use Gua and makes them available in Start Chat. The app sends contact phone numbers over an encrypted connection to the Gua identity service. The service hashes the numbers in memory with a secret key, matches them to Gua accounts and discards them. Contact names remain on the device.
 - **Phone number changes.** You can change the number linked to your account from Settings. The new number receives a one-time code. The account PIN is the second factor.
-- **Account recovery warnings.** While someone is recovering the account through the delayed recovery, the chat list on every signed-in device says so and offers to cancel it.
+- **Account recovery warnings.** During delayed account recovery, every signed-in device displays a warning in the chat list with an option to cancel recovery.
 - **A Gua welcome screen.** The app opens on a native welcome screen with the Gua aurora, phone entry and a country picker.
 
 ### What is different from upstream Element X
@@ -34,14 +34,14 @@ Gua for Android is in an invite-only beta. Request access with the beta form at 
 | Area | Upstream (Element X) | Gua |
 |---|---|---|
 | Brand | Element / New Vector | Gua (`global.gua` application id) |
-| Login flow | Matrix password / SSO with manual homeserver selection | Phone number and verification code, then passkey or PIN, no homeserver picking. Institutional SSO planned |
+| Login flow | Matrix password / SSO with manual homeserver selection | Phone number and verification code, then passkey or PIN. Automatic homeserver selection. Institutional SSO planned |
 | Welcome screen | Element onboarding | Gua aurora welcome with native phone entry and country picker |
-| Account home | user selects a homeserver | resolved automatically behind the scenes (`libraries/guaresolver`) |
-| Contact discovery | user directory search | Find Friends (phone number lookups) wired into Start Chat (`features/findfriends`) |
+| Account home | user selects a homeserver | selected by the resolver (`libraries/guaresolver`) |
+| Contact discovery | user directory search | Find Friends phone number lookups, available in Start Chat (`features/findfriends`) |
 | Two-step verification | device verification | 6-digit account PIN: set, change, reset (`features/preferences` two-step verification) |
-| Settings identity | full user id with server suffix | username only, server abstracted |
-| Chat list | all rooms, including Spaces and empty rooms | chats-first: Spaces and state-only rooms are hidden |
-| 1:1 conversations | state events visible in the timeline | configuration noise suppressed for clean 1:1 chats |
+| Settings identity | full user id with server suffix | username without the server suffix |
+| Chat list | all rooms, including Spaces and empty rooms | Spaces and rooms containing only state events are hidden |
+| 1:1 conversations | state events visible in the timeline | configuration events are hidden |
 | Sign-in session handling | may silently resume a previous web session | fresh authentication forced on every sign-in (`prompt=login`), in a private Custom Tab where the browser supports one |
 | Languages | upstream translations | adds Gua pt-BR and fr strings |
 
@@ -63,22 +63,20 @@ Gua Identity Service
 Synapse homeserver in the Gua federation
 ```
 
-- Before sign-in, the app asks [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) which homeserver to use (`libraries/guaresolver`). The client never hardcodes a server. The federation layout stays out of the UI.
-- The app registers as a public OIDC client and requires PKCE. It opens the sign-in flow in a private (ephemeral) Custom Tab when the browser supports one, so no earlier browser session is carried into it. Account management stays in the shared tab and names the signed-in account (`org.matrix.msc4198.login_hint`). The [Gua fork of MAS](https://github.com/Gua-ra/gua-auth-service) and the [Gua Identity Service](https://github.com/Gua-ra/identity-service) serve that flow.
-- Find Friends, the account PIN and phone number changes talk to the Gua Identity Service, not the resolver.
+- Before sign-in, the app requests a homeserver from [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) through `libraries/guaresolver`. The client does not hardcode a server or display the federation layout.
+- The app registers as a public OIDC client and requires PKCE. Sign-in requests fresh authentication with `prompt=login` and uses an ephemeral Custom Tab when supported by the browser. Account management uses the shared tab and identifies the signed-in account with `org.matrix.msc4198.login_hint`. The [Gua fork of MAS](https://github.com/Gua-ra/gua-auth-service) and the [Gua Identity Service](https://github.com/Gua-ra/identity-service) implement authentication.
+- Find Friends, the account PIN and phone number changes use the Gua Identity Service API.
 - End-to-end encryption stays on by default.
 
 ---
 
-## How this relates to the target design
-
-Everything above describes the current implementation. Parts of the target design are not shipped yet, including:
+## Current limits and planned work
 
 - **Per-homeserver authentication.** Today every sign-in completes at the single Gua identity host.
-- **Verified routing.** Today the app follows the resolver's answer as given. It does not check that answer against signed federation state.
-- **Federation policy.** Each homeserver operator chooses whether to federate openly, with chosen servers, or not at all. Gua's homeservers currently federate openly at the Matrix layer. Limiting them to the homeservers on the roster is planned and not in place.
+- **Routing verification.** The app uses the resolver's response without verifying it against signed federation state.
+- **Federation policy.** Each homeserver operator sets its Matrix federation policy: open, restricted to selected servers, or disabled. Gua's homeservers currently federate with other Matrix servers. Restricting them to roster members is planned.
 
-[Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md) describes the system as it runs today, in plain language. [Planned federation work](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/planned-federation-work.md) describes the target and the rules it must keep.
+[Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md) documents the current system. [Planned federation work](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/planned-federation-work.md) lists proposed changes and their requirements.
 
 ---
 
@@ -126,8 +124,7 @@ This repository tracks [`element-hq/element-x-android`](https://github.com/eleme
 
 ```bash
 git fetch upstream
-git merge upstream/develop   # or the relevant release tag
-# Resolve conflicts, then push
+git merge upstream/develop
 ```
 
 Element X Android is the Matrix client made by [Element](https://element.io/). It uses the [Matrix Rust SDK](https://github.com/matrix-org/matrix-rust-sdk) through an FFI layer, [Jetpack Compose](https://developer.android.com/jetpack/compose) for the UI and [Appyx](https://github.com/bumble-tech/appyx) for navigation, and requires Android 7.0 (API 24) or newer. Gua inherits all of that. Element X's own store listings, translation project, community rooms and support channels are Element's and do not cover Gua.
