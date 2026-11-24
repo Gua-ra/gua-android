@@ -9,10 +9,7 @@ package io.element.android.libraries.guaresolver.genesis
 
 import java.math.BigInteger
 
-/**
- * GUA FORK: raw RFC 8032 Ed25519 public keys, as the genesis objects carry them. The platform provider has
- * no Ed25519 at this module's minSdk, so point decoding is done here and refuses what identity-service refuses.
- */
+/** The platform provider has no Ed25519 at this module's minSdk, so points are decoded here, refusing what identity-service refuses. */
 internal object Ed25519PublicKeys {
     const val RAW_PUBLIC_KEY_LENGTH = 32
     const val SIGNATURE_LENGTH = 64
@@ -20,13 +17,11 @@ internal object Ed25519PublicKeys {
     // Not BigInteger.TWO: that field is API 33, above this module's minSdk.
     private val TWO: BigInteger = BigInteger.valueOf(2)
 
-    /** The field prime, 2^255 - 19. */
     private val P: BigInteger = TWO.pow(255) - BigInteger.valueOf(19)
 
     /** The curve constant d = -121665/121666 mod p. */
     private val D: BigInteger = BigInteger("37095705934669439343138083508754565189542113879843219016388785533085940283555")
 
-    /** A square root of -1 mod p, used to recover the other root. */
     private val SQRT_MINUS_ONE: BigInteger = TWO.modPow((P - BigInteger.ONE) / BigInteger.valueOf(4), P)
 
     /** The y-coordinates of the eight points of order 1, 2, 4 and 8. */
@@ -38,7 +33,6 @@ internal object Ed25519PublicKeys {
         BigInteger("7a03ac9277fdc74ec6cc392cfa53202a0f67100d760b3cba4fd84d3d706a17c7", 16),
     )
 
-    /** True when every byte is zero. */
     fun isAllZero(value: ByteArray): Boolean {
         var accumulator = 0
         for (byte in value) {
@@ -85,11 +79,6 @@ internal object Ed25519PublicKeys {
         rawPublicKey.size == RAW_PUBLIC_KEY_LENGTH &&
             BigInteger(1, rawPublicKey.reversedArray()).clearBit(255) in SMALL_ORDER_Y
 
-    /**
-     * Refuses a key that is not a usable curve point, with the caller's rejection [reason].
-     *
-     * @throws InvalidGenesisException when the bytes are not a well-formed Ed25519 public key.
-     */
     fun require(rawPublicKey: ByteArray, reason: String) {
         if (rawPublicKey.size != RAW_PUBLIC_KEY_LENGTH) {
             throw InvalidGenesisException(reason, "Ed25519 public key is not $RAW_PUBLIC_KEY_LENGTH bytes")

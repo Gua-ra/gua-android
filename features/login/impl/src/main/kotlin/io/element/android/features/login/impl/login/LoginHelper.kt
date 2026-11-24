@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import kotlin.coroutines.cancellation.CancellationException
 
-/** GUA FORK: phone and passkey sign-in for the phone entry screen. The account provider screens use [LoginModePresenter]. */
+/** GUA FORK: phone and passkey sign-in; the account provider screens use [LoginModePresenter]. */
 @Inject
 class LoginHelper(
     private val oAuthActionFlow: OAuthActionFlow,
@@ -68,27 +68,13 @@ class LoginHelper(
         loginModeState.value = AsyncData.Uninitialized
     }
 
-    /**
-     * GUA FORK: phone-first entry. Resolves the E.164 phone number to its homeserver via the Gua
-     * resolver, configures the auth service for that homeserver, then builds the MAS OIDC url with the
-     * phone as the OIDC `login_hint` — mirroring iOS `AuthenticationFlowCoordinator.handlePhoneSubmission`
-     * (resolve -> configure -> urlForOIDCLogin -> continueWithOIDC). The whole pipeline runs as one
-     * [loginModeState] Loading -> Success/Failure cycle; the resulting [LoginMode.OAuth] is handed to the
-     * navigator (Custom Tab) by the screen, exactly like the legacy account-provider path.
-     *
-     * The resolver decides login vs register; the homeserver base URL it returns is never surfaced in UI.
-     */
     suspend fun submitPhone(e164Phone: String) {
         suspend {
             val resolution = resolverClient.resolve(e164Phone).getOrThrow()
             appCoroutineScope.launch { verifyResolution(e164Phone, resolution) }
             val homeserverUrl = resolution.homeserver.baseUrl
             val isAccountCreation = !resolution.exists
-            // GUA FORK: ADM-008 Phase 3. A brand-new account registers its on-device genesis BEFORE the
-            // OIDC flow starts and carries the handle in the reserved login_hint grammar. With the
-            // feature flag off this is exactly the bare E.164 hint it has always been.
             val loginHint = loginHintFor(e164Phone = e164Phone, isAccountCreation = isAccountCreation)
-            // Configure the auth service for the resolved homeserver, then build the OIDC url.
             authenticationService.setHomeserver(homeserverUrl)
                 .map { matrixHomeServerDetails ->
                     if (matrixHomeServerDetails.supportsOAuthLogin) {
@@ -104,36 +90,28 @@ class LoginHelper(
         }.runCatchingUpdatingState(
             state = loginModeState,
             errorTransform = {
-                // A genesis the device meant to register and could not must reach the user as itself,
-                // not as a generic server error, because it is the one case that stops the signup.
+                // Left unmapped: it is the one failure that stops the signup.
                 if (it is AccountGenesisSignupError) it else signInError(it)
             }
         )
     }
 
     /**
-     * GUA FORK: the OIDC `login_hint` for a phone submission.
+     * A returning user gets no genesis: their account already has an accountId, and registering another would re-point it.
      *
-     * Returns the bare E.164 number, exactly as before account genesis existed, unless the feature flag
-     * is on AND this is a brand-new account AND the deployment issued a handle. A returning user is
-     * never given a genesis here: their account already has an accountId, and registering another would
-     * be an attempt to re-point it.
-     *
-     * @throws AccountGenesisSignupError.SetupFailed when the device meant to register a genesis and
-     * could not, so the signup stops instead of silently creating an account without one.
+     * @throws AccountGenesisSignupError.SetupFailed when a genesis could not be registered, so no account is created without one.
      */
     private suspend fun loginHintFor(e164Phone: String, isAccountCreation: Boolean): String {
         if (!featureFlagService.isFeatureEnabled(FeatureFlags.AccountGenesis)) return e164Phone
         if (!isAccountCreation) return e164Phone
         return when (val registration = accountGenesisManager.registerForSignup()) {
             is GenesisRegistration.Registered -> GuaLoginHint.forPhone(e164Phone, registration.attachHandle)
-            // The deployment does not do genesis. Continue with today's signup, showing nothing.
             GenesisRegistration.Unavailable -> e164Phone
             is GenesisRegistration.Failed -> throw AccountGenesisSignupError.SetupFailed
         }
     }
 
-    /** GUA FORK: report-only verification of the resolver's answer. It runs detached and never delays sign-in. */
+    /** Report-only verification of the resolver's answer, without affecting sign-in. */
     private suspend fun verifyResolution(e164Phone: String, resolution: HomeserverResolution) {
         try {
             if (featureFlagService.isFeatureEnabled(FeatureFlags.ResolverVerification)) {
@@ -148,23 +126,8 @@ class LoginHelper(
     }
 
     /**
-     * GUA FORK: sign in with a passkey. Mirrors iOS `AuthenticationFlowCoordinator.handlePasskeySignIn`.
-     *
-     * A passkey is a discoverable credential: it was registered with a resident key and the assertion
-     * carries neither a username nor an allow list, so the credential identifies the account by itself.
-     * Nothing about signing in this way needs a phone number, so the resolver is skipped for the same
-     * reason it cannot be used: it maps a number to a homeserver, and there is no number here. The
-     * deployment's default account provider is configured instead (the first configured provider, as
-     * on iOS), so an account that lives elsewhere still signs in by number.
-     *
-     * The OIDC request keeps `prompt=login` and sends the reserved [PASSKEY_LOGIN_HINT] as the
-     * `login_hint`. MAS forwards the hint verbatim; identity-service maps it to a PASSKEY session
-     * intent so the sign-in page leads with the passkey instead of auto-submitting a number and
-     * sending a code. An older identity-service that does not know the hint maps it to no phone
-     * hint, which is today's behaviour, so nothing regresses if the app ships first.
-     *
-     * Fails closed with [PasskeySignInError.NotConfigured] when the deployment has no default account
-     * provider, the way the phone path fails with `ResolverError.NotConfigured`.
+     * Without a number the resolver cannot be used, so the default account provider is configured; accounts elsewhere sign in by number.
+     * An identity-service that does not know [PASSKEY_LOGIN_HINT] treats it as no hint, so the app can ship first.
      */
     suspend fun submitPasskey() {
         suspend {
@@ -187,17 +150,14 @@ class LoginHelper(
         )
     }
 
-    /**
-     * GUA FORK: the user never typed a server address on the phone or passkey path, so an
-     * unreachable server is reported as a connection problem, not with the homeserver copy.
-     */
+    /** The user never typed a server address on these paths, so an unreachable server is reported as a connection problem. */
     private fun signInError(error: Throwable): ChangeServerError = when (val mapped = ChangeServerError.from(error)) {
         ChangeServerError.InvalidServer -> ChangeServerError.Error(messageId = CommonStrings.error_network_or_server_issue)
         else -> mapped
     }
 
     private suspend fun onOAuthAction(oAuthAction: OAuthAction) {
-        // GUA FORK: the identity-reset return is for the reset flow, not for login.
+        // GUA FORK: an identity-reset return belongs to the reset flow.
         if (oAuthAction is OAuthAction.IdentityResetApproved) return
         if (oAuthAction is OAuthAction.GoBack && oAuthAction.toUnblock && loginModeState.value !is AsyncData.Loading) {
             // Ignore GoBack action if the current state is not Loading. This GoBack action is coming from LoginFlowNode.
@@ -227,10 +187,7 @@ class LoginHelper(
     }
 
     companion object {
-        /**
-         * GUA FORK: the reserved OIDC `login_hint` value that asks the sign-in page to lead with a
-         * passkey. Defined once here; the identity-service maps this literal to its PASSKEY intent.
-         */
+        /** Reserved `login_hint` that identity-service maps to its PASSKEY intent, so the sign-in page leads with a passkey. */
         const val PASSKEY_LOGIN_HINT = "passkey"
     }
 }

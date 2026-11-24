@@ -15,7 +15,7 @@ import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
 
-/** GUA FORK: point decoding must match identity-service, so those cases are also checked with the JDK provider. */
+/** Point decoding must match identity-service, so those cases are also checked with the JDK provider. */
 class Ed25519PublicKeysTest {
     @Test
     fun `x is zero with the sign bit set is refused, exactly as the server refuses it`() {
@@ -37,7 +37,6 @@ class Ed25519PublicKeysTest {
 
     @Test
     fun `real keys still decode on both sides, sign bit set or not`() {
-        // Half of these carry the sign bit, which is the path the rule above must not have broken.
         repeat(REAL_KEY_SAMPLES) {
             val raw = Ed25519Sign.KeyPair.newKeyPair().publicKey
             assertThat(Ed25519PublicKeys.isOnCurve(raw)).isTrue()
@@ -75,16 +74,10 @@ class Ed25519PublicKeysTest {
         private const val SPKI_PREFIX = "302a300506032b6570032100"
         private const val REAL_KEY_SAMPLES = 32
 
-        /** y = 1, the identity, with the sign bit asking for a negative x that does not exist. */
         private const val Y_IS_ONE_SIGN_SET = "0100000000000000000000000000000000000000000000000000000000000080"
-
-        /** y = p - 1, the order 2 point, same rule. */
         private const val Y_IS_P_MINUS_ONE_SIGN_SET = "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-
         private const val Y_IS_ONE = "0100000000000000000000000000000000000000000000000000000000000000"
         private const val Y_IS_P_MINUS_ONE = "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
-
-        /** y = p, which no encoding may name. */
         private const val Y_IS_THE_FIELD_PRIME = "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"
 
         private val SMALL_ORDER_POINTS = listOf(

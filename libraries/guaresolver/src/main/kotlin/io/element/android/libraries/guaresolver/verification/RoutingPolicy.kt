@@ -159,7 +159,6 @@ internal object CanonicalRoutingPolicy {
     private fun epoch(instant: String?): Long = instant?.toEpochMillis() ?: 0L
 }
 
-/** The policy keys sign the whole bundle; each zone's delegate signs its rules under the key the bundle attests. */
 internal class RoutingPolicyVerifier(
     private val policyKeys: List<TrustedKey>,
     private val threshold: Int,

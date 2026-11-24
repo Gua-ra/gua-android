@@ -15,7 +15,7 @@ import java.nio.charset.CodingErrorAction
 
 internal class CanonicalEncodingException(message: String) : Exception(message)
 
-/** The `gua-lp.v1` length-prefixed encoding of the signed federation objects, a port of the resolver's `CanonicalEncoder`. */
+/** Port of the resolver's `gua-lp.v1` `CanonicalEncoder`. */
 internal class CanonicalEncoder {
     private val out = ByteArrayOutputStream()
 
