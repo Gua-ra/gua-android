@@ -24,7 +24,7 @@ Gua for Android is in an invite-only beta. Request access with the beta form at 
 
 - **Finds your homeserver for you.** The resolver's roster lists the Gua homeservers and decides where new Gua accounts are created. At sign-in, the app asks [`gua-resolver`](https://github.com/Gua-ra/gua-resolver) which homeserver to use for your phone number. It then signs in through the Gua identity host and connects to that homeserver. You see usernames, never a server address.
 - **Simple sign-in with a second step.** You enter your phone number and confirm a verification code, then use the account's passkey or 6-digit PIN. A code alone never completes a sign-in. The flow is built to stay flexible: institutional SSO is planned for organizations that bring their own identity.
-- **Contact discovery.** Find Friends shows which of your contacts already use Gua and feeds straight into Start Chat. The app sends the phone numbers from your contacts over TLS to the Gua identity service, which digests them with a secret pepper, matches them in memory and does not store them. Contact names stay on the device.
+- **Private contact discovery.** Find Friends shows which of your contacts already use Gua and feeds straight into Start Chat. The app sends the phone numbers from your contacts over an encrypted connection to the Gua identity service, which hashes them in memory with a secret key, compares them with Gua accounts and discards them. Contact names stay on the device.
 - **Phone number changes.** You can change the number linked to your account from Settings. The new number receives a one-time code. The account PIN is the second factor.
 - **Account recovery warnings.** While someone is recovering the account through the delayed recovery, the chat list on every signed-in device says so and offers to cancel it.
 - **A Gua welcome screen.** The app opens on a native welcome screen with the Gua aurora, phone entry and a country picker.
@@ -138,12 +138,12 @@ Copyright (c) 2025 Element Creations Ltd.
 Copyright (c) 2022 - 2025 New Vector Ltd.
 Copyright (c) 2026 Gua (Gua modifications)
 
-This software is dual licensed by Element Creations Ltd (Element). It can be used either:
+Upstream Element X Android is dual licensed by Element Creations Ltd (Element). It can be used either:
 
 (1) for free under the terms of the GNU Affero General Public License (as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version); OR
 
 (2) under the terms of a paid-for Element Commercial License agreement between you and Element (the terms of which may vary depending on what you and Element have agreed to).
 
-Gua's modifications are available under the same AGPL terms. See [LICENSE](LICENSE) and [LICENSE-COMMERCIAL](LICENSE-COMMERCIAL).
+Gua's modifications are available under the GNU Affero General Public License version 3 only (`AGPL-3.0-only`), see [LICENSE](LICENSE). The Element Commercial License ([LICENSE-COMMERCIAL](LICENSE-COMMERCIAL)) comes from Element and covers only code Element holds the copyright to. It does not extend to Gua's modifications.
 
 Unless required by applicable law or agreed to in writing, software distributed under the Licenses is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the Licenses for the specific language governing permissions and limitations under the Licenses.

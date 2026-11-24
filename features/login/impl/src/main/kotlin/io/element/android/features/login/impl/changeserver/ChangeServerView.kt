@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.dialogs.SlidingSyncNotSupportedDialog
 import io.element.android.features.login.impl.error.ChangeServerError
+import io.element.android.features.login.impl.error.retryLaterMessage
 import io.element.android.libraries.androidutils.system.openGooglePlay
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.designsystem.components.ProgressDialog
@@ -27,6 +28,7 @@ import io.element.android.libraries.designsystem.components.dialogs.ErrorDialog
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.LocalBuildMeta
+import io.element.android.libraries.permissions.api.localnetwork.LocalNetworkPermissionDialogView
 
 @Composable
 fun ChangeServerView(
@@ -45,7 +47,7 @@ fun ChangeServerView(
                         modifier = modifier,
                         content = stringResource(R.string.screen_change_server_error_invalid_homeserver),
                         onSubmit = {
-                            eventSink.invoke(ChangeServerEvents.ClearError)
+                            eventSink.invoke(ChangeServerEvent.ClearError)
                         }
                     )
                 ChangeServerError.UnsupportedServer ->
@@ -53,7 +55,7 @@ fun ChangeServerView(
                         modifier = modifier,
                         content = stringResource(R.string.screen_login_error_unsupported_authentication),
                         onSubmit = {
-                            eventSink.invoke(ChangeServerEvents.ClearError)
+                            eventSink.invoke(ChangeServerEvent.ClearError)
                         }
                     )
                 is ChangeServerError.Error -> {
@@ -61,7 +63,16 @@ fun ChangeServerView(
                         modifier = modifier,
                         content = stringResource(error.messageId),
                         onSubmit = {
-                            eventSink.invoke(ChangeServerEvents.ClearError)
+                            eventSink.invoke(ChangeServerEvent.ClearError)
+                        }
+                    )
+                }
+                is ChangeServerError.RetryLater -> {
+                    ErrorDialog(
+                        modifier = modifier,
+                        content = retryLaterMessage(error),
+                        onSubmit = {
+                            eventSink.invoke(ChangeServerEvent.ClearError)
                         }
                     )
                 }
@@ -70,10 +81,10 @@ fun ChangeServerView(
                         modifier = modifier,
                         onLearnMoreClick = {
                             onLearnMoreClick()
-                            eventSink.invoke(ChangeServerEvents.ClearError)
+                            eventSink.invoke(ChangeServerEvent.ClearError)
                         },
                         onDismiss = {
-                            eventSink.invoke(ChangeServerEvents.ClearError)
+                            eventSink.invoke(ChangeServerEvent.ClearError)
                         }
                     )
                 }
@@ -88,10 +99,10 @@ fun ChangeServerView(
                         submitText = stringResource(R.string.screen_change_server_error_element_pro_required_action_android),
                         onSubmitClick = {
                             context.openGooglePlay(error.applicationId)
-                            eventSink.invoke(ChangeServerEvents.ClearError)
+                            eventSink.invoke(ChangeServerEvent.ClearError)
                         },
                         onDismiss = {
-                            eventSink.invoke(ChangeServerEvents.ClearError)
+                            eventSink.invoke(ChangeServerEvent.ClearError)
                         },
                     )
                 }
@@ -104,7 +115,7 @@ fun ChangeServerView(
                             error.unauthorisedAccountProviderTitle,
                         ),
                         onSubmit = {
-                            eventSink.invoke(ChangeServerEvents.ClearError)
+                            eventSink.invoke(ChangeServerEvent.ClearError)
                         }
                     )
                 }
@@ -120,11 +131,20 @@ fun ChangeServerView(
         }
         AsyncData.Uninitialized -> Unit
     }
+    LocalNetworkPermissionDialogView(
+        dialog = state.localNetworkPermissionDialog,
+        onSubmit = {
+            eventSink.invoke(ChangeServerEvent.RequestLocalNetworkPermission)
+        },
+        onDismiss = {
+            eventSink.invoke(ChangeServerEvent.DismissLocalNetworkPermission)
+        }
+    )
 }
 
 @PreviewsDayNight
 @Composable
-internal fun ChangeServerViewPreview(@PreviewParameter(ChangeServerStateProvider::class) state: ChangeServerState) = ElementPreview {
+internal fun ChangeServerViewPreview(@PreviewParameter(ChangeServerStatePreviewParam::class) state: ChangeServerState) = ElementPreview {
     ChangeServerView(
         state = state,
         onLearnMoreClick = {},

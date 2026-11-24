@@ -4,4 +4,7 @@
   <!-- GUA FORK: replaces upstream's "Sender's verified digital identity was reset".
        Says what the reader can and cannot do, in plain language. -->
   <string name="gua_identity_change_undecryptable">Ce message ne peut pas être ouvert, car les informations de sécurité de l’expéditeur ont changé.</string>
+  <string name="gua_action_more">Plus</string>
+  <string name="gua_action_select">Sélectionner</string>
+  <string name="gua_message_text_selection_title">Sélectionner le texte</string>
 </resources>

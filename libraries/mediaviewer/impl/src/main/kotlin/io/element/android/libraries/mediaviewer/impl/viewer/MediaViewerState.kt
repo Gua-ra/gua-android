@@ -15,6 +15,7 @@ import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.media.MediaSource
 import io.element.android.libraries.matrix.api.timeline.Timeline
+import io.element.android.libraries.matrix.ui.media.contentvalidation.ContentValidationState
 import io.element.android.libraries.mediaviewer.api.MediaInfo
 import io.element.android.libraries.mediaviewer.api.local.LocalMedia
 import io.element.android.libraries.mediaviewer.impl.details.MediaBottomSheetState
@@ -48,9 +49,12 @@ sealed interface MediaViewerPageData {
     data class MediaViewerData(
         val eventId: EventId?,
         val mediaInfo: MediaInfo,
+        /** The [MediaInfo.htmlCaption] converted to styled text, if any. */
+        val formattedCaption: CharSequence? = null,
         val mediaSource: MediaSource,
         val thumbnailSource: MediaSource?,
         val downloadedMedia: State<AsyncData<LocalMedia>>,
+        val validationState: ContentValidationState,
         override val pagerKey: Long,
     ) : MediaViewerPageData
 }

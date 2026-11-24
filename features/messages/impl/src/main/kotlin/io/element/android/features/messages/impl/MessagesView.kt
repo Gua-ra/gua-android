@@ -8,6 +8,7 @@
 
 package io.element.android.features.messages.impl
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -20,19 +21,23 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +49,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -70,28 +76,43 @@ import io.element.android.features.messages.impl.messagecomposer.DisabledCompose
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerEvent
 import io.element.android.features.messages.impl.messagecomposer.MessageComposerView
 import io.element.android.features.messages.impl.messagecomposer.suggestions.SuggestionsPickerView
+import io.element.android.features.messages.impl.messagemenu.MessageMenuEvent
+import io.element.android.features.messages.impl.messagemenu.MessageMenuGesture
+import io.element.android.features.messages.impl.messagemenu.MessageMenuHost
+import io.element.android.features.messages.impl.messagemenu.MessageMenuOverlay
+import io.element.android.features.messages.impl.messagemenu.MessageMenuState
+import io.element.android.features.messages.impl.messagemenu.MessageTextSelectionSheet
+import io.element.android.features.messages.impl.messagemenu.messageMenuBackdrop
+import io.element.android.features.messages.impl.messagemenu.rememberMessageMenuController
 import io.element.android.features.messages.impl.pinned.banner.PinnedMessagesBannerState
 import io.element.android.features.messages.impl.pinned.banner.PinnedMessagesBannerView
 import io.element.android.features.messages.impl.pinned.banner.PinnedMessagesBannerViewDefaults
 import io.element.android.features.messages.impl.timeline.FOCUS_ON_PINNED_EVENT_DEBOUNCE_DURATION_IN_MILLIS
+import io.element.android.features.messages.impl.timeline.SelectionAction
+import io.element.android.features.messages.impl.timeline.SelectionState
 import io.element.android.features.messages.impl.timeline.TimelineEvent
 import io.element.android.features.messages.impl.timeline.TimelineView
 import io.element.android.features.messages.impl.timeline.aGroupedEvents
 import io.element.android.features.messages.impl.timeline.aTimelineItemDaySeparator
 import io.element.android.features.messages.impl.timeline.aTimelineItemEvent
+import io.element.android.features.messages.impl.timeline.aTimelineItemList
 import io.element.android.features.messages.impl.timeline.aTimelineState
+import io.element.android.features.messages.impl.timeline.canApplyTo
 import io.element.android.features.messages.impl.timeline.components.CallMenuItem
-import io.element.android.features.messages.impl.timeline.components.customreaction.CustomReactionBottomSheet
 import io.element.android.features.messages.impl.timeline.components.customreaction.CustomReactionEvent
 import io.element.android.features.messages.impl.timeline.components.reactionsummary.ReactionSummaryEvent
 import io.element.android.features.messages.impl.timeline.components.reactionsummary.ReactionSummaryView
 import io.element.android.features.messages.impl.timeline.components.receipt.bottomsheet.ReadReceiptBottomSheet
 import io.element.android.features.messages.impl.timeline.components.receipt.bottomsheet.ReadReceiptBottomSheetEvent
+import io.element.android.features.messages.impl.timeline.isSelectionModeActive
 import io.element.android.features.messages.impl.timeline.model.TimelineItem
 import io.element.android.features.messages.impl.timeline.model.TimelineItemGroupPosition
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemStateEventContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemTextContent
+import io.element.android.features.messages.impl.timeline.selectedCount
+import io.element.android.features.messages.impl.timeline.sendfailure.SendFailureDialogView
 import io.element.android.features.messages.impl.topbars.MessagesViewTopBar
+import io.element.android.features.messages.impl.topbars.SelectionModeTopBar
 import io.element.android.features.messages.impl.topbars.ThreadTopBar
 import io.element.android.features.messages.impl.voicemessages.composer.VoiceMessagePermissionRationaleDialog
 import io.element.android.features.messages.impl.voicemessages.composer.VoiceMessageSendingFailedDialog
@@ -101,6 +122,7 @@ import io.element.android.libraries.designsystem.atomic.molecules.ComposerAlertM
 import io.element.android.libraries.designsystem.components.ExpandableBottomSheetLayout
 import io.element.android.libraries.designsystem.components.ExpandableBottomSheetLayoutState
 import io.element.android.libraries.designsystem.components.dialogs.ConfirmationDialog
+import io.element.android.libraries.designsystem.components.dialogs.TextFieldDialog
 import io.element.android.libraries.designsystem.components.rememberExpandableBottomSheetLayoutState
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
@@ -113,6 +135,7 @@ import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.designsystem.utils.HideKeyboardWhenDisposed
 import io.element.android.libraries.designsystem.utils.KeepScreenOn
 import io.element.android.libraries.designsystem.utils.OnLifecycleEvent
+import io.element.android.libraries.designsystem.utils.scaffoldScrollableContentInsets
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarHost
 import io.element.android.libraries.designsystem.utils.snackbar.rememberSnackbarHostState
 import io.element.android.libraries.matrix.api.core.EventId
@@ -123,10 +146,14 @@ import io.element.android.libraries.matrix.api.room.tombstone.SuccessorRoom
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSendState
 import io.element.android.libraries.matrix.api.user.MatrixUser
+import io.element.android.libraries.matrix.ui.media.contentvalidation.ContentValidationValue
+import io.element.android.libraries.matrix.ui.media.contentvalidation.LocalEventContentValidationState
 import io.element.android.libraries.textcomposer.model.TextEditorState
 import io.element.android.libraries.ui.strings.CommonStrings
+import io.element.android.libraries.ui.utils.a11y.isTalkbackActive
 import io.element.android.wysiwyg.link.Link
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableSet
 import timber.log.Timber
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -136,6 +163,7 @@ fun MessagesView(
     onBackClick: () -> Unit,
     onRoomDetailsClick: () -> Unit,
     onEventContentClick: (isLive: Boolean, event: TimelineItem.Event) -> Boolean,
+    onGalleryEventItemClick: (isLive: Boolean, event: TimelineItem.Event, index: Int) -> Boolean,
     onUserDataClick: (UserId) -> Unit,
     onLinkClick: (String, Boolean) -> Unit,
     onSendLocationClick: () -> Unit,
@@ -143,10 +171,13 @@ fun MessagesView(
     onJoinCallClick: (isAudioCall: Boolean) -> Unit,
     onViewAllPinnedMessagesClick: () -> Unit,
     onThreadsListClick: () -> Unit,
+    knockRequestsBannerView: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     forceJumpToBottomVisibility: Boolean = false,
-    knockRequestsBannerView: @Composable () -> Unit,
+    customReactionBottomSheet: @Composable () -> Unit,
 ) {
+    val eventContentValidationState = LocalEventContentValidationState.current
+
     OnLifecycleEvent { _, event ->
         state.voiceMessageComposerState.eventSink(VoiceMessageComposerEvent.LifecycleEvent(event))
     }
@@ -167,24 +198,74 @@ fun MessagesView(
         block()
     }
 
+    val isTalkbackActive = isTalkbackActive()
+    val messageMenuController = rememberMessageMenuController()
+    val focusManager = LocalFocusManager.current
+
+    // Entering selection mode collapses the composer, so dismiss the keyboard too. hideKeyboard
+    // triggers the IME hide animation, keeping it in sync with the composer collapse.
+    LaunchedEffect(state.timelineState.isSelectionModeActive) {
+        if (state.timelineState.isSelectionModeActive) {
+            localView.hideKeyboard()
+        }
+    }
+
+    BackHandler(enabled = state.timelineState.isSelectionModeActive) {
+        state.timelineState.eventSink(TimelineEvent.ExitSelectionMode)
+    }
+
     fun onContentClick(event: TimelineItem.Event) {
         Timber.v("onMessageClick= ${event.id}")
+        val eventId = event.eventId
+        if (eventId != null && eventContentValidationState[eventId].getCurrentOverallState() != ContentValidationValue.Valid) return
+
         val hideKeyboard = onEventContentClick(state.timelineState.isLive, event)
         if (hideKeyboard) {
             localView.hideKeyboard()
         }
     }
 
+    fun showActionSheet(event: TimelineItem.Event) {
+        state.actionListState.eventSink(
+            ActionListEvent.ComputeForMessage(
+                event = event,
+                userEventPermissions = state.userEventPermissions,
+            )
+        )
+    }
+
+    fun showMessageMenu(event: TimelineItem.Event, gesture: MessageMenuGesture) {
+        focusManager.clearFocus(force = true)
+        state.messageMenuState.eventSink(MessageMenuEvent.Show(event, gesture, state.userEventPermissions))
+    }
+
     fun onMessageLongClick(event: TimelineItem.Event) {
         Timber.v("OnMessageLongClicked= ${event.id}")
         hidingKeyboard {
-            state.actionListState.eventSink(
-                ActionListEvent.ComputeForMessage(
-                    event = event,
-                    userEventPermissions = state.userEventPermissions,
-                )
-            )
+            val opensActionSheet = isTalkbackActive ||
+                messageMenuController.isKeyboardGesture(event.id) ||
+                event.localSendState is LocalEventSendState.Failed.VerifiedUser ||
+                !messageMenuController.hasBubble(event.id)
+            if (opensActionSheet) {
+                showActionSheet(event)
+            } else {
+                showMessageMenu(event, MessageMenuGesture.LongPress)
+            }
         }
+    }
+
+    fun onMessageKeyboardMenu(event: TimelineItem.Event) {
+        hidingKeyboard { showActionSheet(event) }
+    }
+
+    fun onMessageDoubleTap(event: TimelineItem.Event) {
+        if (messageMenuController.isKeyboardGesture(event.id)) return
+        hidingKeyboard { showMessageMenu(event, MessageMenuGesture.DoubleTap) }
+    }
+
+    SideEffect {
+        messageMenuController.onDoubleTap = ::onMessageDoubleTap
+        messageMenuController.onKeyboardMenu = ::onMessageKeyboardMenu
     }
 
     fun onActionSelected(action: TimelineItemAction, event: TimelineItem.Event) {
@@ -204,10 +285,33 @@ fun MessagesView(
         state.customReactionState.eventSink(CustomReactionEvent.ShowCustomReactionSheet(event))
     }
 
+    var endPollConfirmingEvent: TimelineItem.Event? by remember { mutableStateOf(null) }
+
     val expandableState = rememberExpandableBottomSheetLayoutState()
-    ExpandableBottomSheetLayout(
-        modifier = modifier
+    MessageMenuHost(
+        controller = messageMenuController,
+        modifier = modifier,
+        overlay = {
+            MessageMenuOverlay(
+                state = state.messageMenuState,
+                controller = messageMenuController,
+                onReactionClick = ::onEmojiReactionClick,
+                onAddReactionClick = ::onMoreReactionsClick,
+                onActionClick = { action, event ->
+                    if (action == TimelineItemAction.EndPoll) {
+                        endPollConfirmingEvent = event
+                    } else {
+                        onActionSelected(action, event)
+                    }
+                },
+                onSelectClick = { event -> state.messageMenuState.eventSink(MessageMenuEvent.SelectText(event)) },
+            )
+        },
+    ) {
+        ExpandableBottomSheetLayout(
+            modifier = Modifier
                 .fillMaxSize()
+                .messageMenuBackdrop(messageMenuController, isMenuShown = state.messageMenuState.target is MessageMenuState.Target.Shown)
                 .imePadding()
                 .systemBarsPadding()
                 .onSizeChanged { size ->
@@ -216,149 +320,176 @@ fun MessagesView(
                     // or not.
                     maxComposerHeightPx = (size.height * 0.5f).toInt()
                 },
-        content = {
-            Scaffold(
-                contentWindowInsets = WindowInsets.statusBars,
-                topBar = {
-                    if (state.timelineState.timelineMode is Timeline.Mode.Thread) {
-                        ThreadTopBar(
-                            roomName = state.roomName,
-                            roomAvatarData = state.roomAvatar,
-                            heroes = state.heroes,
-                            isTombstoned = state.isTombstoned,
-                            onBackClick = onBackClick,
-                        )
-                    } else {
-                        MessagesViewTopBar(
-                            roomName = state.roomName,
-                            roomAvatar = state.roomAvatar,
-                            isTombstoned = state.isTombstoned,
-                            heroes = state.heroes,
-                            dmUserIdentityState = state.dmUserVerificationState,
-                            sharedHistoryIcon = state.topBarSharedHistoryIcon,
-                            onBackClick = { hidingKeyboard { onBackClick() } },
-                            onRoomDetailsClick = { hidingKeyboard { onRoomDetailsClick() } },
-                            menuActions = {
-                                MessagesMenuActions(
-                                    displayThreads = state.timelineState.timelineMode !is Timeline.Mode.Thread && state.threads.hasThreads,
-                                    roomCallState = state.roomCallState,
-                                    onJoinCallClick = onJoinCallClick,
-                                    onThreadsListClick = onThreadsListClick
+            content = {
+                Scaffold(
+                    contentWindowInsets = scaffoldScrollableContentInsets,
+                    topBar = {
+                        when {
+                            state.timelineState.isSelectionModeActive -> {
+                                val selection = state.timelineState.selectionState as SelectionState.Active
+                                SelectionModeTopBar(
+                                    selectedCount = state.timelineState.selectedCount,
+                                    action = selection.action,
+                                    onCancelClick = {
+                                        state.timelineState.eventSink(TimelineEvent.ExitSelectionMode)
+                                    },
+                                    onConfirmClick = {
+                                        state.eventSink(MessagesEvent.ConfirmSelectionAction)
+                                    },
                                 )
                             }
-                        )
-                    }
-                },
-                content = { padding ->
-                    Box(
-                        modifier = Modifier
+                            state.timelineState.timelineMode is Timeline.Mode.Thread -> {
+                                ThreadTopBar(
+                                    roomName = state.roomName,
+                                    roomAvatarData = state.roomAvatar,
+                                    heroes = state.heroes,
+                                    isTombstoned = state.isTombstoned,
+                                    onBackClick = onBackClick,
+                                )
+                            }
+                            else -> {
+                                MessagesViewTopBar(
+                                    roomName = state.roomName,
+                                    roomAvatar = state.roomAvatar,
+                                    isTombstoned = state.isTombstoned,
+                                    heroes = state.heroes,
+                                    dmUserIdentityState = state.dmUserVerificationState,
+                                    sharedHistoryIcon = state.topBarSharedHistoryIcon,
+                                    dmUserStatus = state.dmUserStatus,
+                                    onBackClick = { hidingKeyboard { onBackClick() } },
+                                    onRoomDetailsClick = { hidingKeyboard { onRoomDetailsClick() } },
+                                    menuActions = {
+                                        MessagesMenuActions(
+                                            displayThreads = state.timelineState.timelineMode !is Timeline.Mode.Thread && state.threads.hasThreads,
+                                            roomCallState = state.roomCallState,
+                                            onJoinCallClick = onJoinCallClick,
+                                            onThreadsListClick = onThreadsListClick
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    },
+                    content = { padding ->
+                        Box(
+                            modifier = Modifier
                                 .padding(padding)
                                 .consumeWindowInsets(padding)
-                    ) {
-                        MessagesViewContent(
-                            state = state,
-                            onContentClick = ::onContentClick,
-                            onMessageLongClick = ::onMessageLongClick,
-                            onUserDataClick = {
-                                hidingKeyboard {
-                                    state.eventSink(MessagesEvent.OnUserClicked(it))
-                                }
-                            },
-                            onLinkClick = { link, customTab ->
-                                if (customTab) {
-                                    onLinkClick(link.url, true)
-                                    // Do not check those links, they are internal link only
-                                } else {
-                                    state.linkState.eventSink(LinkEvent.OnLinkClick(link))
-                                }
-                            },
-                            onReactionClick = ::onEmojiReactionClick,
-                            onReactionLongClick = ::onEmojiReactionLongClick,
-                            onMoreReactionsClick = ::onMoreReactionsClick,
-                            onReadReceiptClick = { event ->
-                                state.readReceiptBottomSheetState.eventSink(ReadReceiptBottomSheetEvent.EventSelected(event))
-                            },
-                            onSendLocationClick = onSendLocationClick,
-                            onCreatePollClick = onCreatePollClick,
-                            onSwipeToReply = { targetEvent ->
-                                state.eventSink(MessagesEvent.HandleAction(TimelineItemAction.Reply, targetEvent))
-                            },
-                            forceJumpToBottomVisibility = forceJumpToBottomVisibility,
-                            onViewAllPinnedMessagesClick = onViewAllPinnedMessagesClick,
-                            knockRequestsBannerView = knockRequestsBannerView,
-                        )
+                        ) {
+                            MessagesViewContent(
+                                state = state,
+                                onContentClick = ::onContentClick,
+                                onGalleryItemClick = { event, index ->
+                                    val hideKeyboard = onGalleryEventItemClick(
+                                        state.timelineState.isLive,
+                                        event,
+                                        index,
+                                    )
+                                    if (hideKeyboard) {
+                                        localView.hideKeyboard()
+                                    }
+                                },
+                                onMessageLongClick = ::onMessageLongClick,
+                                onUserDataClick = {
+                                    hidingKeyboard {
+                                        state.eventSink(MessagesEvent.OnUserClicked(it))
+                                    }
+                                },
+                                onLinkClick = { link, customTab ->
+                                    if (customTab) {
+                                        onLinkClick(link.url, true)
+                                        // Do not check those links, they are internal link only
+                                    } else {
+                                        state.linkState.eventSink(LinkEvent.OnLinkClick(link))
+                                    }
+                                },
+                                onReactionClick = ::onEmojiReactionClick,
+                                onReactionLongClick = ::onEmojiReactionLongClick,
+                                onMoreReactionsClick = ::onMoreReactionsClick,
+                                onReadReceiptClick = { event ->
+                                    state.readReceiptBottomSheetState.eventSink(ReadReceiptBottomSheetEvent.EventSelected(event))
+                                },
+                                onSendLocationClick = onSendLocationClick,
+                                onCreatePollClick = onCreatePollClick,
+                                onSwipeToReply = { targetEvent ->
+                                    state.eventSink(MessagesEvent.HandleAction(TimelineItemAction.Reply, targetEvent))
+                                },
+                                onJoinCallClick = onJoinCallClick,
+                                forceJumpToBottomVisibility = forceJumpToBottomVisibility,
+                                onViewAllPinnedMessagesClick = onViewAllPinnedMessagesClick,
+                                knockRequestsBannerView = knockRequestsBannerView,
+                            )
 
-                        SuggestionsPickerView(
-                            modifier = Modifier
+                            SuggestionsPickerView(
+                                modifier = Modifier
                                     .shadow(10.dp)
                                     .background(ElementTheme.colors.bgCanvasDefault)
                                     .align(Alignment.BottomStart)
                                     .heightIn(max = 230.dp),
-                            roomId = state.roomId,
-                            roomName = state.roomName,
-                            roomAvatarData = state.roomAvatar,
-                            suggestions = state.composerState.suggestions,
-                            onSelectSuggestion = {
-                                state.composerState.eventSink(MessageComposerEvent.InsertSuggestion(it))
-                            }
+                                roomId = state.roomId,
+                                roomName = state.roomName,
+                                roomAvatarData = state.roomAvatar,
+                                suggestions = state.composerState.suggestions,
+                                onSelectSuggestion = {
+                                    state.composerState.eventSink(MessageComposerEvent.InsertSuggestion(it))
+                                }
+                            )
+                        }
+                    },
+                    snackbarHost = {
+                        SnackbarHost(
+                            snackbarHostState,
+                            modifier = Modifier.navigationBarsPadding()
                         )
-                    }
-                },
-                snackbarHost = {
-                    SnackbarHost(
-                        snackbarHostState,
-                        modifier = Modifier.navigationBarsPadding()
-                    )
-                },
-            )
-        },
-        bottomSheetContent = {
-            MessagesViewComposerBottomSheetContents(
-                state = state,
-                onLinkClick = { url, customTab -> onLinkClick(url, customTab) },
-                onRoomSuccessorClick = { roomId ->
-                    state.timelineState.eventSink(TimelineEvent.NavigateToPredecessorOrSuccessorRoom(roomId = roomId))
-                },
-            )
-        },
-        sheetDragHandle = @Composable { toggleAction ->
-            if (state.composerState.showTextFormatting) {
-                val expandA11yLabel = stringResource(CommonStrings.a11y_expand_message_text_field)
-                val collapseA11yLabel = stringResource(CommonStrings.a11y_collapse_message_text_field)
-                BottomSheetDragHandle(
-                    modifier = Modifier.semantics {
-                        role = Role.Button
-                        // Accessibility action to toggle the bottom sheet state
-                        val label = when (expandableState.position) {
-                            ExpandableBottomSheetLayoutState.Position.COLLAPSED, ExpandableBottomSheetLayoutState.Position.DRAGGING -> expandA11yLabel
-                            ExpandableBottomSheetLayoutState.Position.EXPANDED -> collapseA11yLabel
-                        }
-                        onClick(label) {
-                            toggleAction()
-                            true
-                        }
-                    }
+                    },
                 )
-            } else {
-                LaunchedEffect(Unit) {
-                    // Ensure that the bottom sheet is collapsed
-                    if (expandableState.position == ExpandableBottomSheetLayoutState.Position.EXPANDED) {
-                        toggleAction()
+            },
+            bottomSheetContent = {
+                MessagesViewComposerBottomSheetContents(
+                    state = state,
+                    onLinkClick = { url, customTab -> onLinkClick(url, customTab) },
+                    onRoomSuccessorClick = { roomId ->
+                        state.timelineState.eventSink(TimelineEvent.NavigateToPredecessorOrSuccessorRoom(roomId = roomId))
+                    },
+                )
+            },
+            sheetDragHandle = @Composable { toggleAction ->
+                if (state.composerState.showTextFormatting) {
+                    val expandA11yLabel = stringResource(CommonStrings.a11y_expand_message_text_field)
+                    val collapseA11yLabel = stringResource(CommonStrings.a11y_collapse_message_text_field)
+                    BottomSheetDragHandle(
+                        modifier = Modifier.semantics {
+                            role = Role.Button
+                            // Accessibility action to toggle the bottom sheet state
+                            val label = when (expandableState.position) {
+                                ExpandableBottomSheetLayoutState.Position.COLLAPSED, ExpandableBottomSheetLayoutState.Position.DRAGGING -> expandA11yLabel
+                                ExpandableBottomSheetLayoutState.Position.EXPANDED -> collapseA11yLabel
+                            }
+                            onClick(label) {
+                                toggleAction()
+                                true
+                            }
+                        }
+                    )
+                } else {
+                    LaunchedEffect(Unit) {
+                        // Ensure that the bottom sheet is collapsed
+                        if (expandableState.position == ExpandableBottomSheetLayoutState.Position.EXPANDED) {
+                            toggleAction()
+                        }
                     }
                 }
-            }
-        },
-        isSwipeGestureEnabled = state.composerState.showTextFormatting,
-        state = expandableState,
-        sheetShape = if (state.composerState.showTextFormatting || state.composerState.suggestions.isNotEmpty()) {
-            MaterialTheme.shapes.large
-        } else {
-            RectangleShape
-        },
-        maxBottomSheetContentHeight = maxComposerHeightPx.toDp(),
-    )
-
-    var endPollConfirmingEvent: TimelineItem.Event? by remember { mutableStateOf(null) }
+            },
+            isSwipeGestureEnabled = state.composerState.showTextFormatting,
+            state = expandableState,
+            sheetShape = if (state.composerState.showTextFormatting || state.composerState.suggestions.isNotEmpty()) {
+                MaterialTheme.shapes.large
+            } else {
+                RectangleShape
+            },
+            maxBottomSheetContentHeight = maxComposerHeightPx.toDp(),
+        )
+    }
 
     if (endPollConfirmingEvent != null) {
         ConfirmationDialog(
@@ -391,11 +522,11 @@ fun MessagesView(
         },
     )
 
-    CustomReactionBottomSheet(
-        state = state.customReactionState,
-        onSelectEmoji = { uniqueId, emoji ->
-            state.eventSink(MessagesEvent.ToggleReaction(emoji.unicode, uniqueId))
-        }
+    customReactionBottomSheet()
+
+    MessageTextSelectionSheet(
+        text = state.messageMenuState.selectableText,
+        onDismiss = { state.messageMenuState.eventSink(MessageMenuEvent.DismissTextSelection) },
     )
 
     ReactionSummaryView(state = state.reactionSummaryState)
@@ -410,6 +541,44 @@ fun MessagesView(
         },
         state = state.linkState,
     )
+
+    SendFailureDialogView(
+        sendFailureDialogState = state.timelineState.sendFailureDialogState,
+        onDismiss = {
+            state.timelineState.eventSink(TimelineEvent.HideSendFailureDialog)
+        },
+        onRetry = { event ->
+            state.eventSink(
+                MessagesEvent.HandleAction(
+                    action = TimelineItemAction.RetrySending,
+                    event = event,
+                )
+            )
+            state.timelineState.eventSink(TimelineEvent.HideSendFailureDialog)
+        },
+        onRemoveMessage = { event ->
+            state.eventSink(
+                MessagesEvent.HandleAction(
+                    action = TimelineItemAction.AbortSending,
+                    event = event,
+                )
+            )
+            state.timelineState.eventSink(TimelineEvent.HideSendFailureDialog)
+        },
+    )
+
+    if (state.redactEventAction is MessagesState.ConfirmingRedaction) {
+        TextFieldDialog(
+            title = stringResource(R.string.screen_room_confirm_removal_title),
+            placeholder = stringResource(R.string.screen_room_confirm_removal_reason_placeholder),
+            supportingText = stringResource(R.string.screen_room_confirm_removal_reason_supporting_text),
+            value = null,
+            submitText = stringResource(CommonStrings.action_remove),
+            destructiveSubmit = true,
+            onSubmit = { reason -> state.eventSink(MessagesEvent.ConfirmRedact(reason)) },
+            onDismissRequest = { state.eventSink(MessagesEvent.CancelRedact) },
+        )
+    }
 }
 
 @Composable
@@ -459,9 +628,11 @@ private fun MessagesViewContent(
     onMoreReactionsClick: (TimelineItem.Event) -> Unit,
     onReadReceiptClick: (TimelineItem.Event) -> Unit,
     onMessageLongClick: (TimelineItem.Event) -> Unit,
+    onGalleryItemClick: ((TimelineItem.Event, Int) -> Unit),
     onSendLocationClick: () -> Unit,
     onCreatePollClick: () -> Unit,
     onViewAllPinnedMessagesClick: () -> Unit,
+    onJoinCallClick: (isAudioCall: Boolean) -> Unit,
     forceJumpToBottomVisibility: Boolean,
     onSwipeToReply: (TimelineItem.Event) -> Unit,
     modifier: Modifier = Modifier,
@@ -469,9 +640,9 @@ private fun MessagesViewContent(
 ) {
     Box(
         modifier = modifier
-                .fillMaxSize()
-                .navigationBarsPadding()
-                .imePadding(),
+            .fillMaxSize()
+            .navigationBarsPadding()
+            .imePadding(),
     ) {
         AttachmentsBottomSheet(
             state = state.composerState,
@@ -502,7 +673,9 @@ private fun MessagesViewContent(
                 pinnedMessagesCount = (state.pinnedMessagesBannerState as? PinnedMessagesBannerState.Visible)?.pinnedMessagesCount() ?: 0,
             )
             val density = LocalDensity.current
-            var pinnedBannerHeightDp by remember { mutableStateOf(0.dp) }
+            // Combined height of the banners overlaid above the timeline. Drives the floating
+            // date badge offset so the badge sits below whichever banners are currently showing.
+            var topBannersHeightDp by remember { mutableStateOf(0.dp) }
 
             TimelineView(
                 state = state.timelineState,
@@ -510,22 +683,25 @@ private fun MessagesViewContent(
                 onUserDataClick = onUserDataClick,
                 onLinkClick = { link -> onLinkClick(link, false) },
                 onContentClick = onContentClick,
+                onGalleryItemClick = onGalleryItemClick,
                 onMessageLongClick = onMessageLongClick,
                 onSwipeToReply = onSwipeToReply,
                 onReactionClick = onReactionClick,
                 onReactionLongClick = onReactionLongClick,
                 onMoreReactionsClick = onMoreReactionsClick,
                 onReadReceiptClick = onReadReceiptClick,
+                onJoinCallClick = onJoinCallClick,
                 forceJumpToBottomVisibility = forceJumpToBottomVisibility,
                 nestedScrollConnection = scrollBehavior.nestedScrollConnection,
-                floatingDateTopOffset = pinnedBannerHeightDp,
+                floatingDateTopOffset = topBannersHeightDp,
             )
 
             if (state.timelineState.timelineMode !is Timeline.Mode.Thread) {
-                Column {
+                Column(
+                    modifier = Modifier.onSizeChanged { topBannersHeightDp = with(density) { it.height.toDp() } },
+                ) {
                     AnimatedVisibility(
                         visible = state.pinnedMessagesBannerState is PinnedMessagesBannerState.Visible && scrollBehavior.isVisible,
-                        modifier = Modifier.onSizeChanged { pinnedBannerHeightDp = with(density) { it.height.toDp() } },
                         enter = expandVertically(),
                         exit = shrinkVertically(),
                     ) {
@@ -560,12 +736,23 @@ private fun MessagesViewComposerBottomSheetContents(
     onRoomSuccessorClick: (RoomId) -> Unit,
     onLinkClick: (String, Boolean) -> Unit,
 ) {
+    val contentPadding = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal).asPaddingValues()
     when {
         state.successorRoom != null -> {
-            SuccessorRoomBanner(roomSuccessor = state.successorRoom, onRoomSuccessorClick = onRoomSuccessorClick)
+            SuccessorRoomBanner(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(contentPadding),
+                roomSuccessor = state.successorRoom,
+                onRoomSuccessorClick = onRoomSuccessorClick
+            )
         }
         state.userEventPermissions.canSendMessage -> {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(contentPadding)
+            ) {
                 // Do not show the identity change if user is composing a Rich message or is seeing suggestion(s).
                 if (state.composerState.suggestions.isEmpty() &&
                     state.composerState.textEditorState is TextEditorState.Markdown) {
@@ -589,18 +776,18 @@ private fun MessagesViewComposerBottomSheetContents(
             }
         }
         else -> {
-            CantSendMessageBanner()
+            CantSendMessageBanner(Modifier.padding(contentPadding))
         }
     }
 }
 
 @Composable
-private fun CantSendMessageBanner() {
+private fun CantSendMessageBanner(modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier
-                .fillMaxWidth()
-                .background(ElementTheme.colors.bgSubtleSecondary)
-                .padding(16.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .background(ElementTheme.colors.bgSubtleSecondary)
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
@@ -631,12 +818,13 @@ private fun SuccessorRoomBanner(
 
 @PreviewsDayNight
 @Composable
-internal fun MessagesViewPreview(@PreviewParameter(MessagesStateProvider::class) state: MessagesState) = ElementPreview {
+internal fun MessagesViewPreview(@PreviewParameter(MessagesStatePreviewParam::class) state: MessagesState) = ElementPreview {
     MessagesView(
         state = state,
         onBackClick = {},
         onRoomDetailsClick = {},
         onEventContentClick = { _, _ -> false },
+        onGalleryEventItemClick = { _, _, _ -> false },
         onUserDataClick = {},
         onLinkClick = { _, _ -> },
         onSendLocationClick = {},
@@ -645,6 +833,41 @@ internal fun MessagesViewPreview(@PreviewParameter(MessagesStateProvider::class)
         onViewAllPinnedMessagesClick = { },
         forceJumpToBottomVisibility = true,
         knockRequestsBannerView = {},
+        customReactionBottomSheet = {},
+        onThreadsListClick = {},
+    )
+}
+
+@PreviewsDayNight
+@Composable
+internal fun MessagesViewSelectionModePreview() = ElementPreview {
+    val timelineItems = aTimelineItemList(aTimelineItemTextContent())
+    val selectedEventIds = timelineItems
+        .filterIsInstance<TimelineItem.Event>()
+        .filter { SelectionAction.Forward.canApplyTo(it) }
+        .take(2)
+        .mapNotNull { it.eventId }
+        .toImmutableSet()
+    MessagesView(
+        state = aMessagesState(
+            timelineState = aTimelineState(
+                timelineItems = timelineItems,
+                selectionState = SelectionState.Active(SelectionAction.Forward, selectedEventIds),
+            ),
+        ),
+        onBackClick = {},
+        onRoomDetailsClick = {},
+        onEventContentClick = { _, _ -> false },
+        onGalleryEventItemClick = { _, _, _ -> false },
+        onUserDataClick = {},
+        onLinkClick = { _, _ -> },
+        onSendLocationClick = {},
+        onCreatePollClick = {},
+        onJoinCallClick = {},
+        onViewAllPinnedMessagesClick = { },
+        forceJumpToBottomVisibility = true,
+        knockRequestsBannerView = {},
+        customReactionBottomSheet = {},
         onThreadsListClick = {},
     )
 }
@@ -692,6 +915,7 @@ internal fun MessagesViewA11yPreview() = ElementPreview {
         onBackClick = {},
         onRoomDetailsClick = {},
         onEventContentClick = { _, _ -> false },
+        onGalleryEventItemClick = { _, _, _ -> false },
         onUserDataClick = {},
         onLinkClick = { _, _ -> },
         onSendLocationClick = {},
@@ -701,5 +925,6 @@ internal fun MessagesViewA11yPreview() = ElementPreview {
         onThreadsListClick = {},
         forceJumpToBottomVisibility = true,
         knockRequestsBannerView = {},
+        customReactionBottomSheet = {},
     )
 }

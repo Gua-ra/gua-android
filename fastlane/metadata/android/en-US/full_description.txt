@@ -17,7 +17,7 @@ Gua does not mine your conversations and does not sell your data. Direct message
 Gua is open source and built on the open, federated Matrix protocol. Anyone can study how it works and check how their data is handled. The network is designed so that organizations will be able to run their own trusted servers within it, giving communities and institutions control of their own data.
 
 <b>Permissions</b>
- • Contacts: used to help you find people you already know who are on Gua. Phone numbers are hashed on your device before matching, and your address book itself is never uploaded.
+ • Contacts: used to help you find people you already know who are on Gua. Phone numbers from your contacts are sent over an encrypted connection, compared with Gua accounts and not stored. Contact names stay on your device.
  • Camera and microphone: used to capture and send photos, videos and voice messages.
  • Notifications: used to let you know about new messages, including on your lock screen.
 

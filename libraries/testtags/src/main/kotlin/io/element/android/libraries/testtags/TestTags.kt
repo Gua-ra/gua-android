@@ -49,6 +49,11 @@ object TestTags {
     val homeScreenClearFilters = TestTag("home_screen-clear_filters")
 
     /**
+     * Settings screen.
+     */
+    val settingsUserProfile = TestTag("settings-user_profile")
+
+    /**
      * Room detail screen.
      */
     val roomDetailAvatar = TestTag("room_detail-avatar")
@@ -99,6 +104,12 @@ object TestTags {
      * Floating Action Button.
      */
     val floatingActionButton = TestTag("floating-action-button")
+
+    /**
+     * Timeline jump-to-position buttons (long-press exposes "Mark as read").
+     */
+    val jumpToUnreadButton = TestTag("jump-to-unread-button")
+    val jumpToBottomButton = TestTag("jump-to-bottom-button")
 
     /**
      * Timeline.

@@ -16,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -24,6 +25,8 @@ import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import im.vector.app.features.analytics.plan.CreatedRoom
+import io.element.android.features.enterprise.api.SessionEnterpriseService
+import io.element.android.features.space.api.SpacesSwitch
 import io.element.android.libraries.architecture.AsyncAction
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.architecture.runCatchingUpdatingState
@@ -73,6 +76,8 @@ class ConfigureRoomPresenter(
     private val featureFlagService: FeatureFlagService,
     private val roomAliasHelper: RoomAliasHelper,
     private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
+    private val sessionEnterpriseService: SessionEnterpriseService,
+    private val spacesSwitch: SpacesSwitch,
 ) : Presenter<ConfigureRoomState> {
     @AssistedFactory
     interface Factory {
@@ -90,6 +95,9 @@ class ConfigureRoomPresenter(
         val isKnockFeatureEnabled by remember {
             featureFlagService.isFeatureEnabledFlow(FeatureFlags.Knock)
         }.collectAsState(initial = false)
+        val arePublicRoomsDisabled by produceState(false) {
+            value = sessionEnterpriseService.arePublicRoomsDisabledByHomeserver()
+        }
         val roomAddressValidity = remember {
             mutableStateOf<RoomAddressValidity>(RoomAddressValidity.Unknown)
         }
@@ -112,6 +120,7 @@ class ConfigureRoomPresenter(
         }
 
         var spaces by remember { mutableStateOf<ImmutableList<SpaceRoom>>(persistentListOf()) }
+        val isSpacesEnabled by spacesSwitch.isEnabled.collectAsState()
         LaunchedEffect(Unit) {
             spaces = matrixClient.spaceService.editableSpaces().getOrElse { emptyList() }.toImmutableList()
             val parentSpace = spaces.find { it.roomId == initialParentSpaceId }
@@ -143,12 +152,18 @@ class ConfigureRoomPresenter(
         // 1. If we are creating a space.
         // 2. If it has a parent space.
         // 3. If knocking is enabled.
+        // 4. If the homeserver forbids public rooms.
         val parentSpace = createRoomConfig.parentSpace
-        val availableJoinRules = remember(parentSpace, isSpace, isKnockFeatureEnabled) {
+        LaunchedEffect(isSpacesEnabled, parentSpace) {
+            if (!isSpacesEnabled && initialParentSpaceId == null && parentSpace != null) {
+                dataStore.setParentSpace(parentSpace = null, updateVisibility = false)
+            }
+        }
+        val availableJoinRules = remember(parentSpace, isSpace, isKnockFeatureEnabled, arePublicRoomsDisabled) {
             when {
                 isSpace && parentSpace != null -> TODO("Adding a space to a parent space is not supported yet! How did you get here?")
                 parentSpace == null || parentSpace.joinRule == JoinRule.Public -> listOfNotNull(
-                    JoinRuleItem.PublicVisibility.Public,
+                    JoinRuleItem.PublicVisibility.Public.takeIf { !isSpace && !arePublicRoomsDisabled },
                     JoinRuleItem.PublicVisibility.AskToJoin.takeIf { !isSpace && isKnockFeatureEnabled },
                     JoinRuleItem.PrivateVisibility.Private,
                 ).toImmutableList()
@@ -186,14 +201,14 @@ class ConfigureRoomPresenter(
             localCoroutineScope.createRoom(config, createRoomAction)
         }
 
-        fun handleEvent(event: ConfigureRoomEvents) {
+        fun handleEvent(event: ConfigureRoomEvent) {
             when (event) {
-                is ConfigureRoomEvents.RoomNameChanged -> dataStore.setRoomName(event.name)
-                is ConfigureRoomEvents.TopicChanged -> dataStore.setTopic(event.topic)
-                is ConfigureRoomEvents.JoinRuleChanged -> dataStore.setJoinRule(event.joinRuleItem)
-                is ConfigureRoomEvents.RoomAddressChanged -> dataStore.setRoomAddress(event.roomAddress)
-                is ConfigureRoomEvents.CreateRoom -> createRoom(createRoomConfig)
-                is ConfigureRoomEvents.HandleAvatarAction -> {
+                is ConfigureRoomEvent.RoomNameChanged -> dataStore.setRoomName(event.name)
+                is ConfigureRoomEvent.TopicChanged -> dataStore.setTopic(event.topic)
+                is ConfigureRoomEvent.JoinRuleChanged -> dataStore.setJoinRule(event.joinRuleItem)
+                is ConfigureRoomEvent.RoomAddressChanged -> dataStore.setRoomAddress(event.roomAddress)
+                is ConfigureRoomEvent.CreateRoom -> createRoom(createRoomConfig)
+                is ConfigureRoomEvent.HandleAvatarAction -> {
                     when (event.action) {
                         AvatarAction.ChoosePhoto -> galleryImagePicker.launch()
                         AvatarAction.TakePhoto -> if (cameraPermissionState.permissionGranted) {
@@ -205,10 +220,10 @@ class ConfigureRoomPresenter(
                         AvatarAction.Remove -> dataStore.setAvatarUri(uri = null)
                     }
                 }
-                is ConfigureRoomEvents.SetParentSpace -> {
+                is ConfigureRoomEvent.SetParentSpace -> {
                     dataStore.setParentSpace(event.space, false)
                 }
-                ConfigureRoomEvents.CancelCreateRoom -> {
+                ConfigureRoomEvent.CancelCreateRoom -> {
                     createRoomAction.value = AsyncAction.Uninitialized
                 }
             }
@@ -222,7 +237,7 @@ class ConfigureRoomPresenter(
             homeserverName = homeserverName,
             roomAddressValidity = roomAddressValidity.value,
             availableJoinRules = availableJoinRules,
-            spaces = spaces,
+            spaces = if (isSpacesEnabled || initialParentSpaceId != null) spaces else persistentListOf(),
             isSpace = isSpace,
             eventSink = ::handleEvent,
         )
@@ -256,7 +271,7 @@ class ConfigureRoomPresenter(
                     CreateRoomParameters(
                         name = config.roomName,
                         topic = config.topic,
-                        isEncrypted = true,
+                        isEncrypted = !sessionEnterpriseService.isEncryptionDisabledByHomeserver(),
                         isDirect = false,
                         visibility = RoomVisibility.Private,
                         historyVisibilityOverride = RoomHistoryVisibility.Invited,
