@@ -9,6 +9,7 @@ package io.element.android.features.login.impl.login
 
 import io.element.android.libraries.guaresolver.GuaDeployment
 
+/** GUA FORK: test [GuaDeployment] with explicit values. */
 data class FakeGuaDeployment(
     override val resolverBaseUrl: String? = "https://resolver.gua.global",
     override val defaultAccountProvider: String? = "gua.global",

@@ -35,6 +35,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 
+/** GUA FORK: account genesis in the phone submission. */
 class LoginHelperAccountGenesisTest {
     @get:Rule
     val warmUpRule = WarmUpRule()
