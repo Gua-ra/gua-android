@@ -76,7 +76,7 @@ Everything above describes the current implementation. Parts of the target desig
 
 - **Per-homeserver authentication.** Today every sign-in completes at the single Gua identity host.
 - **Verified routing.** Today the app follows the resolver's answer as given. It does not check that answer against signed federation state, and it does not check the roster's signatures yet.
-- **Federation limited to the roster.** Today federation is open at the Matrix layer, so a Gua homeserver can also exchange messages with other Matrix servers. Limiting federation to the homeservers on the roster is a proposal and is not in place yet.
+- **Federation policy.** Each homeserver operator chooses whether to federate openly, with chosen servers, or not at all. Gua's homeservers currently federate openly at the Matrix layer. Limiting them to the homeservers on the roster is planned and not in place.
 
 [Gua identity and federation](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/gua-identity-and-federation.md) describes the system as it runs today, in plain language. [Planned federation work](https://github.com/Gua-ra/gua-resolver/blob/main/docs/architecture/planned-federation-work.md) describes the target and the rules it must keep.
 
