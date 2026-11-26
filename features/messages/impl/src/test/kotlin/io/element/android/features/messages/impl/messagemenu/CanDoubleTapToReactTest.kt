@@ -9,6 +9,7 @@ package io.element.android.features.messages.impl.messagemenu
 
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.messages.impl.fixtures.aMessageEvent
+import io.element.android.features.messages.impl.timeline.components.event.aMediaStackEvent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEmoteContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemNoticeContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRedactedContent
@@ -41,6 +42,23 @@ class CanDoubleTapToReactTest {
     @Test
     fun `a message that failed to send keeps its taps`() {
         assertThat(aMessageEvent(sendState = LocalEventSendState.Failed.Unknown("error")).canDoubleTapToReact(canSendReaction = true)).isFalse()
+    }
+
+    @Test
+    fun `a media stack reacts to a double tap through its first member`() {
+        assertThat(aMediaStackEvent(isMine = true, members = List(2) { aTimelineItemImageContent() }).canDoubleTapToReact(canSendReaction = true)).isTrue()
+        val laterMemberFailed = aMediaStackEvent(
+            isMine = true,
+            members = List(2) { aTimelineItemImageContent() },
+            sendStates = listOf(null, LocalEventSendState.Failed.Unknown("error")),
+        )
+        assertThat(laterMemberFailed.canDoubleTapToReact(canSendReaction = true)).isTrue()
+        val firstMemberFailed = aMediaStackEvent(
+            isMine = true,
+            members = List(2) { aTimelineItemImageContent() },
+            sendStates = listOf(LocalEventSendState.Failed.Unknown("error"), null),
+        )
+        assertThat(firstMemberFailed.canDoubleTapToReact(canSendReaction = true)).isFalse()
     }
 
     @Test

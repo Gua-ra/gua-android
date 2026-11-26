@@ -37,6 +37,14 @@ class FakePickerProvider : PickerProvider {
     }
 
     @Composable
+    override fun registerGalleryOrderedMultiPicker(
+        maxItems: Int,
+        onResult: (uris: List<Uri>) -> Unit,
+    ): PickerLauncher<PickVisualMediaRequest, List<Uri>> {
+        return NoOpPickerLauncher { onResult(multipleResults ?: result?.let { listOf(it) } ?: emptyList()) }
+    }
+
+    @Composable
     override fun registerFilePicker(mimeType: String, onResult: (Uri?, String?) -> Unit): PickerLauncher<String, Uri?> {
         return NoOpPickerLauncher { onResult(result, this.mimeType) }
     }

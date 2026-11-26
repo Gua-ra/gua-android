@@ -20,6 +20,8 @@ import io.element.android.libraries.architecture.runCatchingUpdatingState
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.matrix.api.timeline.ForwardExtraContents
+import io.element.android.libraries.matrix.api.timeline.ForwardProgress
 import io.element.android.libraries.matrix.api.timeline.TimelineProvider
 import io.element.android.libraries.matrix.api.timeline.getActiveTimeline
 import kotlinx.coroutines.CoroutineScope
@@ -30,15 +32,23 @@ import timber.log.Timber
 class ForwardMessagesPresenter(
     @Assisted private val eventIds: List<EventId>,
     @Assisted private val timelineProvider: TimelineProvider,
+    @Assisted extraContents: ForwardExtraContents?,
     @SessionCoroutineScope
     private val sessionCoroutineScope: CoroutineScope,
 ) : Presenter<ForwardMessagesState> {
     @AssistedFactory
     fun interface Factory {
-        fun create(eventIds: List<EventId>, timelineProvider: TimelineProvider): ForwardMessagesPresenter
+        fun create(eventIds: List<EventId>, timelineProvider: TimelineProvider, extraContents: ForwardExtraContents?): ForwardMessagesPresenter
     }
 
     private val forwardingActionState: MutableState<AsyncAction<List<RoomId>>> = mutableStateOf(AsyncAction.Uninitialized)
+
+    // GUA FORK: one per forward, so that forwarding again after a failure sends each room only what it has not received.
+    private val forwardProgress = ForwardProgress(eventIds, extraContents)
+
+    // GUA FORK: the rooms that received everything when another failed; as on iOS, the picker then closes once the error is dismissed.
+    @Volatile
+    private var forwardedRoomIds = emptyList<RoomId>()
 
     fun onRoomSelected(roomIds: List<RoomId>) {
         sessionCoroutineScope.forwardEvents(eventIds, roomIds)
@@ -48,7 +58,11 @@ class ForwardMessagesPresenter(
     override fun present(): ForwardMessagesState {
         fun handleEvent(event: ForwardMessagesEvent) {
             when (event) {
-                ForwardMessagesEvent.ClearError -> forwardingActionState.value = AsyncAction.Uninitialized
+                ForwardMessagesEvent.ClearError -> forwardingActionState.value = if (forwardedRoomIds.isEmpty()) {
+                    AsyncAction.Uninitialized
+                } else {
+                    AsyncAction.Success(forwardedRoomIds)
+                }
             }
         }
 
@@ -63,11 +77,16 @@ class ForwardMessagesPresenter(
         roomIds: List<RoomId>,
     ) = launch {
         suspend {
-            timelineProvider.getActiveTimeline().forwardEvents(eventIds, roomIds)
-                .onFailure {
-                    Timber.e(it, "Error while forwarding events")
-                }
-                .getOrThrow()
+            try {
+                timelineProvider.getActiveTimeline().forwardEvents(eventIds, roomIds, forwardProgress)
+                    .onFailure {
+                        Timber.e(it, "Error while forwarding events")
+                    }
+                    .getOrThrow()
+            } finally {
+                // GUA FORK: from what each room received, since a send timeout throws past onFailure and the error need not list every failed room.
+                forwardedRoomIds = roomIds.filter(forwardProgress::hasSentAll)
+            }
             roomIds
         }.runCatchingUpdatingState(forwardingActionState)
     }

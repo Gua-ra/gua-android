@@ -136,10 +136,26 @@ class MessageMenuSectionsTest {
     }
 
     @Test
-    fun `every action has a place except the ones the action list never shows`() {
+    fun `every action has a place`() {
         val unplaced = TimelineItemAction.entries.filter { MessageMenuAction.Timeline(it).placement == null }
 
-        assertThat(unplaced).containsExactly(TimelineItemAction.RetrySending, TimelineItemAction.AbortSending)
+        assertThat(unplaced).isEmpty()
+    }
+
+    @Test
+    fun `a media stack with a failed member offers to save, retry and cancel`() {
+        val sections = MessageMenuSections.from(
+            listOf(TimelineItemAction.Save, TimelineItemAction.RetrySending, TimelineItemAction.Redact, TimelineItemAction.AbortSending)
+        )
+
+        assertThat(sections.primary).containsExactly(
+            MessageMenuAction.Timeline(TimelineItemAction.Save),
+            MessageMenuAction.Timeline(TimelineItemAction.RetrySending),
+        ).inOrder()
+        assertThat(sections.destructive).containsExactly(
+            MessageMenuAction.Timeline(TimelineItemAction.Redact),
+            MessageMenuAction.Timeline(TimelineItemAction.AbortSending),
+        ).inOrder()
     }
 
     @Test

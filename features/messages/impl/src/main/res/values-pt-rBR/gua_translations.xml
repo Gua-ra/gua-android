@@ -31,4 +31,38 @@
   <string name="gua_action_more">Mais</string>
   <string name="gua_action_select">Selecionar</string>
   <string name="gua_message_text_selection_title">Selecionar texto</string>
+  <plurals name="gua_media_stack_photos">
+    <item quantity="one">%1$d foto</item>
+    <item quantity="other">%1$d fotos</item>
+  </plurals>
+  <plurals name="gua_media_stack_videos">
+    <item quantity="one">%1$d vídeo</item>
+    <item quantity="other">%1$d vídeos</item>
+  </plurals>
+  <plurals name="gua_media_stack_items">
+    <item quantity="one">%1$d item</item>
+    <item quantity="other">%1$d itens</item>
+  </plurals>
+  <plurals name="gua_media_stack_remove_photos_title">
+    <item quantity="one">Remover %1$d foto?</item>
+    <item quantity="other">Remover %1$d fotos?</item>
+  </plurals>
+  <plurals name="gua_media_stack_remove_videos_title">
+    <item quantity="one">Remover %1$d vídeo?</item>
+    <item quantity="other">Remover %1$d vídeos?</item>
+  </plurals>
+  <plurals name="gua_media_stack_remove_items_title">
+    <item quantity="one">Remover %1$d item?</item>
+    <item quantity="other">Remover %1$d itens?</item>
+  </plurals>
+  <plurals name="gua_media_stack_saved">
+    <item quantity="one">%1$d item salvo</item>
+    <item quantity="other">%1$d itens salvos</item>
+  </plurals>
+  <string name="gua_media_stack_remove_subtitle">A exclusão vale para todos nesta conversa.</string>
+  <string name="gua_media_stack_a11y_photo_position">Foto %1$d de %2$d</string>
+  <string name="gua_media_stack_a11y_video_position">Vídeo %1$d de %2$d, %3$s</string>
+  <string name="gua_media_stack_a11y_next">Próximo</string>
+  <string name="gua_media_stack_a11y_previous">Anterior</string>
+  <string name="gua_media_stack_show_all">Ver tudo</string>
 </resources>

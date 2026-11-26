@@ -44,6 +44,17 @@ sealed interface PickerType<Input, Output> {
         }
     }
 
+    data class ImageAndVideoOrderedMulti(val maxItems: Int) : PickerType<PickVisualMediaRequest, List<Uri>> {
+        override fun getContract() = ActivityResultContracts.PickMultipleVisualMedia(maxItems)
+        override fun getDefaultRequest(): PickVisualMediaRequest {
+            return PickVisualMediaRequest(
+                mediaType = ActivityResultContracts.PickVisualMedia.ImageAndVideo,
+                maxItems = maxItems,
+                isOrderedSelection = true,
+            )
+        }
+    }
+
     object Camera {
         data class Photo(val destUri: Uri) : PickerType<Uri, Boolean> {
             override fun getContract() = ActivityResultContracts.TakePicture()

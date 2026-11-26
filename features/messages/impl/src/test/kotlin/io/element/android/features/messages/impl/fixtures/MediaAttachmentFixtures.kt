@@ -11,7 +11,8 @@ package io.element.android.features.messages.impl.fixtures
 import io.element.android.features.messages.impl.attachments.Attachment
 import io.element.android.libraries.mediaviewer.api.local.LocalMedia
 
-fun aMediaAttachment(localMedia: LocalMedia, sendAsFile: Boolean = false) = Attachment.Media(
+fun aMediaAttachment(localMedia: LocalMedia, sendAsFile: Boolean = false, isFromPhotoLibrary: Boolean = false) = Attachment.Media(
     localMedia = localMedia,
     sendAsFile = sendAsFile,
+    isFromPhotoLibrary = isFromPhotoLibrary,
 )

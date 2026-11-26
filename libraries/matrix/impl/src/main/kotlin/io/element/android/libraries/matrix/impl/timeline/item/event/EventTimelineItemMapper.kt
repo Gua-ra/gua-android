@@ -65,6 +65,7 @@ class EventTimelineItemMapper(
             sendHandleProvider = { lazyProvider.getSendHandle()?.let(::RustSendHandle) },
             forwarder = forwarder?.let { UserId(it) },
             forwarderProfile = forwarderProfile?.map(),
+            latestJsonProvider = { lazyProvider.latestJson() },
         )
     }
 }

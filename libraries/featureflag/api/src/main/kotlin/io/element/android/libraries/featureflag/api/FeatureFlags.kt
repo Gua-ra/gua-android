@@ -140,13 +140,22 @@ enum class FeatureFlags(
         defaultValue = { true },
         isFinished = false,
     ),
+
+    // GUA FORK: finished so a stored "on" is ignored; Gua sends several photos as a media stack instead (GuaMediaStacks).
     SendGalleryMessages(
         key = "feature.send_gallery_messages",
         title = "Send gallery messages",
         description = "Allow sending multiple media items in a single message.",
         defaultValue = { false },
-        isFinished = false,
+        isFinished = true,
         isInLabs = true,
+    ),
+    GuaMediaStacks(
+        key = "feature.gua_media_stacks",
+        title = "Send photos and videos as a stack",
+        description = "Several photos and videos picked together are sent as one stack.",
+        defaultValue = { buildMeta -> buildMeta.buildType != BuildType.RELEASE || buildMeta.applicationId.endsWith(".dev") },
+        isFinished = false,
     ),
     Knock(
         key = "feature.knock",

@@ -72,6 +72,7 @@ import io.element.android.features.messages.impl.timeline.model.event.TimelineIt
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemImageContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemLegacyCallInviteContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemLocationContent
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemMediaStackContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemPollContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRedactedContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemRtcNotificationContent
@@ -309,6 +310,9 @@ private fun MessageSummary(
         }
         is TimelineItemAttachmentsContent -> {
             content = { ContentForBody(event.content.body) }
+        }
+        is TimelineItemMediaStackContent -> {
+            content = { ContentForBody(textContent) }
         }
         is TimelineItemStickerContent -> {
             content = { ContentForBody(event.content.bestDescription) }

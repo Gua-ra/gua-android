@@ -15,9 +15,11 @@ package io.element.android.features.messages.impl.timeline.factories
  * @param isDirectOneToOneRoom GUA FORK: when true, the room is a 1:1 direct chat, so
  * state/membership/profile-change events are dropped from the rendered timeline (and
  * therefore never grouped into a "N room changes" summary), mirroring Element X iOS.
+ * @param groupMediaStacks GUA FORK: when true, the photos and videos sent as one batch are shown as a media stack.
  */
 data class TimelineItemsFactoryConfig(
     val computeReadReceipts: Boolean,
     val computeReactions: Boolean,
     val isDirectOneToOneRoom: Boolean,
+    val groupMediaStacks: Boolean = false,
 )
