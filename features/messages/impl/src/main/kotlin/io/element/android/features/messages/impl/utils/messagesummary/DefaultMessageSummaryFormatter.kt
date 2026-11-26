@@ -10,6 +10,7 @@ package io.element.android.features.messages.impl.utils.messagesummary
 
 import android.content.Context
 import dev.zacsweers.metro.ContributesBinding
+import io.element.android.features.messages.impl.timeline.actions.plainTextWithFallback
 import io.element.android.features.messages.impl.timeline.model.event.RtcNotificationState
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemAttachmentsContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemAudioContent
@@ -41,7 +42,8 @@ class DefaultMessageSummaryFormatter(
 ) : MessageSummaryFormatter {
     override fun format(content: TimelineItemEventContent): String {
         return when (content) {
-            is TimelineItemTextBasedContent -> content.plainText
+            // GUA FORK: a read-only preview keeps the fallback link that the bubble hides behind an action.
+            is TimelineItemTextBasedContent -> content.plainTextWithFallback
             is TimelineItemProfileChangeContent -> content.body
             is TimelineItemStateContent -> content.body
             is TimelineItemLocationContent -> when (content.mode) {

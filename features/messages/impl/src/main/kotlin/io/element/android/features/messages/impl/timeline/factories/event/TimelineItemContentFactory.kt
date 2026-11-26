@@ -28,6 +28,7 @@ import io.element.android.libraries.matrix.api.timeline.item.event.EventContent
 import io.element.android.libraries.matrix.api.timeline.item.event.EventTimelineItem
 import io.element.android.libraries.matrix.api.timeline.item.event.FailedToParseMessageLikeContent
 import io.element.android.libraries.matrix.api.timeline.item.event.FailedToParseStateContent
+import io.element.android.libraries.matrix.api.timeline.item.event.LatestJsonProvider
 import io.element.android.libraries.matrix.api.timeline.item.event.LegacyCallInviteContent
 import io.element.android.libraries.matrix.api.timeline.item.event.LiveLocationContent
 import io.element.android.libraries.matrix.api.timeline.item.event.MessageContent
@@ -65,6 +66,7 @@ class TimelineItemContentFactory(
         return create(
             itemContent = eventTimelineItem.content,
             eventId = eventTimelineItem.eventId,
+            latestJsonProvider = eventTimelineItem.latestJsonProvider,
             isEditable = eventTimelineItem.isEditable,
             sender = eventTimelineItem.sender,
             senderProfile = eventTimelineItem.senderProfile,
@@ -75,6 +77,8 @@ class TimelineItemContentFactory(
     suspend fun create(
         itemContent: EventContent,
         eventId: EventId?,
+        // GUA FORK: null for summaries and previews, which keep the fallback link and show no actions.
+        latestJsonProvider: LatestJsonProvider? = null,
         isEditable: Boolean,
         sender: UserId,
         senderProfile: ProfileDetails,
@@ -90,6 +94,7 @@ class TimelineItemContentFactory(
                     senderProfile = senderProfile,
                     content = itemContent,
                     eventId = eventId,
+                    latestJsonProvider = latestJsonProvider,
                 )
             }
             is ProfileChangeContent -> {
