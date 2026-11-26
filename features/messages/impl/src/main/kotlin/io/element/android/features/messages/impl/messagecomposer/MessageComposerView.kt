@@ -27,6 +27,7 @@ import io.element.android.libraries.designsystem.components.async.AsyncActionVie
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.textcomposer.TextComposer
+import io.element.android.libraries.textcomposer.model.RichContent
 import io.element.android.libraries.textcomposer.model.Suggestion
 import io.element.android.libraries.textcomposer.model.VoiceMessagePlayerEvent
 import io.element.android.libraries.textcomposer.model.VoiceMessageRecorderEvent
@@ -38,14 +39,22 @@ internal fun MessageComposerView(
     state: MessageComposerState,
     voiceMessageState: VoiceMessageComposerState,
     modifier: Modifier = Modifier,
+    expressionButton: (@Composable () -> Unit)? = null,
+    onReceiveContent: ((RichContent) -> Unit)? = null,
+    onComposerAction: () -> Unit = {},
 ) {
     val view = LocalView.current
     fun sendMessage() {
+        onComposerAction()
         state.eventSink(MessageComposerEvent.SendMessage)
     }
 
     fun sendUri(uri: Uri) {
         state.eventSink(MessageComposerEvent.SendUri(uri))
+    }
+
+    fun receiveContent(content: RichContent) {
+        if (onReceiveContent != null) onReceiveContent(content) else sendUri(content.uri)
     }
 
     fun onAddAttachment() {
@@ -81,6 +90,7 @@ internal fun MessageComposerView(
     }
 
     val onVoiceRecorderEvent = { press: VoiceMessageRecorderEvent ->
+        if (press == VoiceMessageRecorderEvent.Start) onComposerAction()
         voiceMessageState.eventSink(VoiceMessageComposerEvent.RecorderEvent(press))
     }
 
@@ -118,7 +128,8 @@ internal fun MessageComposerView(
         resolveAtRoomMentionDisplay = state.resolveAtRoomMentionDisplay,
         onError = ::onError,
         onTyping = ::onTyping,
-        onSelectRichContent = ::sendUri,
+        onSelectRichContent = ::receiveContent,
+        expressionButton = expressionButton,
     )
 
     AsyncActionView(

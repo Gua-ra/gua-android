@@ -52,6 +52,8 @@ import io.element.android.features.callnative.api.NativeCallHost
 import io.element.android.features.createroom.api.CreateRoomEntryPoint
 import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.features.enterprise.api.SessionEnterpriseService
+import io.element.android.features.expressions.api.gif.GifLibrarySetting
+import io.element.android.features.expressions.api.sticker.StickerLibrarySetting
 import io.element.android.features.ftue.api.FtueEntryPoint
 import io.element.android.features.ftue.api.state.FtueService
 import io.element.android.features.ftue.api.state.FtueState
@@ -83,6 +85,7 @@ import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatch
 import io.element.android.libraries.di.SessionScope
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.featureflag.api.FeatureFlagService
+import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.EventId
 import io.element.android.libraries.matrix.api.core.RoomId
@@ -159,6 +162,8 @@ class LoggedInFlowNode(
     private val locationService: LocationService,
     private val loggedInEventProcessorFactory: LoggedInEventProcessor.Factory,
     private val newSignInMonitor: NewSignInMonitor,
+    private val stickerLibrarySetting: StickerLibrarySetting,
+    private val gifLibrarySetting: GifLibrarySetting,
 ) : BaseFlowNode<LoggedInFlowNode.NavTarget>(
     backstack = BackStack(
         initialElement = NavTarget.Placeholder,
@@ -218,6 +223,12 @@ class LoggedInFlowNode(
                     )
                 }
                 mediaPreviewConfigMigration()
+                sessionCoroutineScope.launch {
+                    if (featureFlagService.isFeatureEnabled(FeatureFlags.StickersAndGifs)) {
+                        stickerLibrarySetting.preload()
+                        gifLibrarySetting.preload()
+                    }
+                }
                 sessionCoroutineScope.launch {
                     // Wait for the network to be connected before pre-fetching the max file upload size
                     networkMonitor.connectivity.first { networkStatus -> networkStatus == NetworkStatus.Connected }

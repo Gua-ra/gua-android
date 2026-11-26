@@ -13,4 +13,5 @@ import io.element.android.libraries.preferences.api.store.VideoCompressionPreset
 sealed interface MediaSettingsEvent {
     data class SetCompressMedia(val compress: Boolean) : MediaSettingsEvent
     data class SetVideoUploadQuality(val videoPreset: VideoCompressionPreset) : MediaSettingsEvent
+    data class SetPlayGifsAutomatically(val enabled: Boolean) : MediaSettingsEvent
 }

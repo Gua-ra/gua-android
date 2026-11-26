@@ -45,6 +45,7 @@ dependencies {
     implementation(projects.libraries.uiCommon)
     implementation(projects.libraries.uiStrings)
     implementation(projects.features.login.api)
+    implementation(projects.features.expressions.api)
 
     implementation(libs.coil)
 

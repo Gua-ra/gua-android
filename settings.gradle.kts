@@ -48,6 +48,7 @@ dependencyResolutionManagement {
                 includeGroupByRegex("com\\.android\\.tools.*")
                 includeGroupByRegex("com\\.google\\.firebase.*")
                 includeGroupByRegex("com\\.google\\.android.*")
+                includeGroupByRegex("com\\.google\\.mlkit.*")
             }
         }
         mavenCentral()

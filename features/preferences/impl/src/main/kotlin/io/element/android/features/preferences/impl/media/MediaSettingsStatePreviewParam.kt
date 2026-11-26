@@ -22,13 +22,16 @@ open class MediaSettingsStatePreviewParam : PreviewParameterProvider<MediaSettin
                     videoPreset = VideoCompressionPreset.HIGH,
                 )
             ),
+            aMediaSettingsState(playGifsAutomatically = false),
         )
 }
 
 fun aMediaSettingsState(
     mediaOptimizationState: MediaOptimizationState? = MediaOptimizationState.AllMedia(isEnabled = false),
+    playGifsAutomatically: Boolean = true,
     eventSink: (MediaSettingsEvent) -> Unit = {},
 ) = MediaSettingsState(
     mediaOptimizationState = mediaOptimizationState,
+    playGifsAutomatically = playGifsAutomatically,
     eventSink = eventSink
 )

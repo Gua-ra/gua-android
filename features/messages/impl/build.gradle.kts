@@ -31,6 +31,7 @@ dependencies {
     implementation(projects.features.call.api)
     implementation(projects.features.enterprise.api)
     implementation(projects.features.forward.api)
+    implementation(projects.features.expressions.api)
     implementation(projects.features.location.api)
     implementation(projects.features.poll.api)
     implementation(projects.features.roomcall.api)
@@ -79,6 +80,7 @@ dependencies {
     implementation(projects.features.roommembermoderation.api)
 
     testCommonDependencies(libs, true)
+    testImplementation(projects.libraries.matrixmedia.test)
     testImplementation(projects.libraries.matrix.test)
     testImplementation(projects.libraries.dateformatter.test)
     testImplementation(projects.libraries.push.test)

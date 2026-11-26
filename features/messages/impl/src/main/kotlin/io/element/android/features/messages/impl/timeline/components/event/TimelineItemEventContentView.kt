@@ -67,6 +67,7 @@ import io.element.android.wysiwyg.link.Link
 @Composable
 fun TimelineItemEventContentView(
     eventId: EventId?,
+    isMine: Boolean,
     content: TimelineItemEventContent,
     onContentClick: (() -> Unit)?,
     onGalleryItemClick: ((Int) -> Unit),
@@ -78,8 +79,9 @@ fun TimelineItemEventContentView(
     modifier: Modifier = Modifier,
     onContentLayoutChange: (ContentAvoidingLayoutData) -> Unit = {},
 ) {
-    val hideMediaContent = remember(eventId, timelineProtectionState.protectionState) {
-        timelineProtectionState.hideMediaContent(eventId)
+    // GUA FORK: media you sent always shows, whatever the media preview setting.
+    val hideMediaContent = remember(eventId, isMine, timelineProtectionState.protectionState) {
+        timelineProtectionState.hideMediaContent(eventId, isMine)
     }
 
     val onShowContentClick = remember(timelineProtectionState.eventSink) {

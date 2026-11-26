@@ -11,4 +11,5 @@
   <string name="gua_action_more">"More"</string>
   <string name="gua_action_select">"Select"</string>
   <string name="gua_message_text_selection_title">"Select text"</string>
+  <string name="gua_gif_badge" translatable="false">GIF</string>
 </resources>
