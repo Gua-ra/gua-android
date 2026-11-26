@@ -34,6 +34,8 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
+import io.element.android.libraries.designsystem.chatbackground.legibilityCapsule
+import io.element.android.libraries.designsystem.chatbackground.legibleTextColor
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Icon
@@ -80,12 +82,13 @@ fun GroupHeaderView(
         ) {
             Row(
                 modifier = Modifier
-                    .padding(8.dp),
+                    .padding(8.dp)
+                    .legibilityCapsule(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = text,
-                    color = ElementTheme.colors.textSecondary,
+                    color = legibleTextColor(ElementTheme.colors.textSecondary),
                     style = ElementTheme.typography.fontBodyMdRegular,
                 )
                 val rotation: Float by animateFloatAsState(

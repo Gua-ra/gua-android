@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemStateContent
 import io.element.android.features.messages.impl.timeline.model.event.aTimelineItemStateEventContent
+import io.element.android.libraries.designsystem.chatbackground.legibleTextColor
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Text
@@ -25,7 +26,7 @@ fun TimelineItemStateView(
 ) {
     Text(
         modifier = modifier,
-        color = ElementTheme.colors.textSecondary,
+        color = legibleTextColor(ElementTheme.colors.textSecondary),
         style = ElementTheme.typography.fontBodyMdRegular,
         text = content.body,
         textAlign = TextAlign.Center,

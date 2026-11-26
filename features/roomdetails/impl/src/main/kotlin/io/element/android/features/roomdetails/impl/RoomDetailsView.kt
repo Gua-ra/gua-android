@@ -48,6 +48,7 @@ import io.element.android.features.userprofile.api.UserProfileVerificationState
 import io.element.android.features.userprofile.shared.blockuser.BlockUserDialogs
 import io.element.android.features.userprofile.shared.blockuser.BlockUserSection
 import io.element.android.libraries.architecture.coverage.ExcludeFromCoverage
+import io.element.android.libraries.chatbackground.api.nameRes
 import io.element.android.libraries.designsystem.atomic.atoms.MatrixBadgeAtom
 import io.element.android.libraries.designsystem.atomic.molecules.MatrixBadgeRowMolecule
 import io.element.android.libraries.designsystem.components.ClickableLinkText
@@ -121,6 +122,7 @@ fun RoomDetailsView(
     onSecurityAndPrivacyClick: () -> Unit,
     onProfileClick: (UserId) -> Unit,
     onReportRoomClick: () -> Unit,
+    onChatBackgroundClick: () -> Unit,
     modifier: Modifier = Modifier,
     additionalSections: @Composable ColumnScope.() -> Unit = {},
     leaveRoomView: @Composable () -> Unit,
@@ -306,6 +308,9 @@ fun RoomDetailsView(
                         state.eventSink(RoomDetailsEvent.SetFavorite(it))
                     }
                 )
+                state.chatBackgroundRow?.let { row ->
+                    ChatBackgroundItem(row = row, onClick = onChatBackgroundClick)
+                }
                 if (state.canShowSecurityAndPrivacy && state.roomType is RoomDetailsType.Room) {
                     SecurityAndPrivacyItem(
                         onClick = onSecurityAndPrivacyClick
@@ -727,6 +732,26 @@ private fun FavoriteItem(
 }
 
 @Composable
+private fun ChatBackgroundItem(
+    row: ChatBackgroundRowState,
+    onClick: () -> Unit,
+) {
+    ListItem(
+        content = { Text(stringResource(R.string.gua_chat_background_row_title)) },
+        supportingContent = if (row.canChange == false) {
+            // The disabled colour would make the reason the hardest text on the row to read.
+            { Text(stringResource(R.string.gua_chat_background_row_no_permission), color = ElementTheme.colors.textSecondary) }
+        } else {
+            null
+        },
+        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Theme())),
+        trailingContent = ListItemContent.Text(stringResource(row.background.nameRes)),
+        enabled = row.canChange != false,
+        onClick = onClick,
+    )
+}
+
+@Composable
 private fun ProfileItem(
     verificationState: UserProfileVerificationState,
     onClick: () -> Unit,
@@ -937,6 +962,7 @@ private fun ContentToPreview(state: RoomDetailsState) {
         onSecurityAndPrivacyClick = {},
         onProfileClick = {},
         onReportRoomClick = {},
+        onChatBackgroundClick = {},
         leaveRoomView = {},
     )
 }

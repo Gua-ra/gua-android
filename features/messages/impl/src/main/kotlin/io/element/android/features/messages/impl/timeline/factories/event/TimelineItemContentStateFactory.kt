@@ -9,19 +9,26 @@
 package io.element.android.features.messages.impl.timeline.factories.event
 
 import dev.zacsweers.metro.Inject
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemChatBackgroundContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEventContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemStateEventContent
 import io.element.android.libraries.core.extensions.orEmpty
 import io.element.android.libraries.eventformatter.api.TimelineEventFormatter
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.timeline.item.event.EventContent
+import io.element.android.libraries.matrix.api.timeline.item.event.OtherState
+import io.element.android.libraries.matrix.api.timeline.item.event.StateContent
 
 @Inject
 class TimelineItemContentStateFactory(
     private val timelineEventFormatter: TimelineEventFormatter,
 ) {
     fun create(eventContent: EventContent, isOutgoing: Boolean, sender: UserId, senderDisambiguatedDisplayName: String): TimelineItemEventContent {
-        val text = timelineEventFormatter.format(eventContent, isOutgoing, sender, senderDisambiguatedDisplayName)
-        return TimelineItemStateEventContent(text.orEmpty().toString())
+        val text = timelineEventFormatter.format(eventContent, isOutgoing, sender, senderDisambiguatedDisplayName).orEmpty().toString()
+        return if ((eventContent as? StateContent)?.content is OtherState.ChatBackground) {
+            TimelineItemChatBackgroundContent(text)
+        } else {
+            TimelineItemStateEventContent(text)
+        }
     }
 }

@@ -39,6 +39,7 @@ dependencies {
     implementation(projects.libraries.architecture)
     implementation(projects.libraries.matrix.api)
     implementation(projects.libraries.matrixui)
+    implementation(projects.libraries.chatbackground.api)
     implementation(projects.libraries.matrixmedia.api)
     implementation(projects.libraries.designsystem)
     implementation(projects.libraries.textcomposer.impl)
@@ -80,6 +81,7 @@ dependencies {
 
     testCommonDependencies(libs, true)
     testImplementation(projects.libraries.matrix.test)
+    testImplementation(projects.libraries.chatbackground.test)
     testImplementation(projects.libraries.dateformatter.test)
     testImplementation(projects.libraries.push.test)
     testImplementation(projects.features.call.test)

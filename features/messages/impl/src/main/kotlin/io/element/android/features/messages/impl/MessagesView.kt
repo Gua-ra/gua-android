@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -46,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -118,7 +120,9 @@ import io.element.android.features.messages.impl.voicemessages.composer.VoiceMes
 import io.element.android.features.messages.impl.voicemessages.composer.VoiceMessageSendingFailedDialog
 import io.element.android.features.roomcall.api.RoomCallState
 import io.element.android.libraries.androidutils.ui.hideKeyboard
+import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.designsystem.atomic.molecules.ComposerAlertMolecule
+import io.element.android.libraries.designsystem.chatbackground.LocalChatBackgroundActive
 import io.element.android.libraries.designsystem.components.ExpandableBottomSheetLayout
 import io.element.android.libraries.designsystem.components.ExpandableBottomSheetLayoutState
 import io.element.android.libraries.designsystem.components.dialogs.ConfirmationDialog
@@ -146,6 +150,9 @@ import io.element.android.libraries.matrix.api.room.tombstone.SuccessorRoom
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.timeline.item.event.LocalEventSendState
 import io.element.android.libraries.matrix.api.user.MatrixUser
+import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundCanvas
+import io.element.android.libraries.matrix.ui.chatbackground.isShowingBackground
+import io.element.android.libraries.matrix.ui.chatbackground.rememberChatBackgroundTransition
 import io.element.android.libraries.matrix.ui.media.contentvalidation.ContentValidationValue
 import io.element.android.libraries.matrix.ui.media.contentvalidation.LocalEventContentValidationState
 import io.element.android.libraries.textcomposer.model.TextEditorState
@@ -288,6 +295,9 @@ fun MessagesView(
     var endPollConfirmingEvent: TimelineItem.Event? by remember { mutableStateOf(null) }
 
     val expandableState = rememberExpandableBottomSheetLayoutState()
+    val chatBackgroundTransition = rememberChatBackgroundTransition(state.chatBackground)
+    val isShowingChatBackground = chatBackgroundTransition.isShowingBackground
+    var topBarHeight by remember { mutableStateOf(0.dp) }
     MessageMenuHost(
         controller = messageMenuController,
         modifier = modifier,
@@ -308,6 +318,17 @@ fun MessagesView(
             )
         },
     ) {
+        if (isShowingChatBackground) {
+            // Outside the keyboard padding, so opening the keyboard neither resizes nor moves the background.
+            ChatBackgroundCanvas(
+                transition = chatBackgroundTransition,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .messageMenuBackdrop(messageMenuController, isMenuShown = state.messageMenuState.target is MessageMenuState.Target.Shown)
+                    .systemBarsPadding()
+                    .padding(top = topBarHeight),
+            )
+        }
         ExpandableBottomSheetLayout(
             modifier = Modifier
                 .fillMaxSize()
@@ -323,6 +344,7 @@ fun MessagesView(
             content = {
                 Scaffold(
                     contentWindowInsets = scaffoldScrollableContentInsets,
+                    containerColor = if (isShowingChatBackground) Color.Transparent else ElementTheme.colors.bgCanvasDefault,
                     topBar = {
                         when {
                             state.timelineState.isSelectionModeActive -> {
@@ -371,6 +393,8 @@ fun MessagesView(
                         }
                     },
                     content = { padding ->
+                        val contentTop = padding.calculateTopPadding()
+                        SideEffect { topBarHeight = contentTop }
                         Box(
                             modifier = Modifier
                                 .padding(padding)
@@ -488,6 +512,8 @@ fun MessagesView(
                 RectangleShape
             },
             maxBottomSheetContentHeight = maxComposerHeightPx.toDp(),
+            // The composer has no background of its own and would show the chat background through it.
+            backgroundColor = if (isShowingChatBackground) ElementTheme.colors.bgCanvasDefault else Color.Transparent,
         )
     }
 
@@ -677,24 +703,26 @@ private fun MessagesViewContent(
             // date badge offset so the badge sits below whichever banners are currently showing.
             var topBannersHeightDp by remember { mutableStateOf(0.dp) }
 
-            TimelineView(
-                state = state.timelineState,
-                timelineProtectionState = state.timelineProtectionState,
-                onUserDataClick = onUserDataClick,
-                onLinkClick = { link -> onLinkClick(link, false) },
-                onContentClick = onContentClick,
-                onGalleryItemClick = onGalleryItemClick,
-                onMessageLongClick = onMessageLongClick,
-                onSwipeToReply = onSwipeToReply,
-                onReactionClick = onReactionClick,
-                onReactionLongClick = onReactionLongClick,
-                onMoreReactionsClick = onMoreReactionsClick,
-                onReadReceiptClick = onReadReceiptClick,
-                onJoinCallClick = onJoinCallClick,
-                forceJumpToBottomVisibility = forceJumpToBottomVisibility,
-                nestedScrollConnection = scrollBehavior.nestedScrollConnection,
-                floatingDateTopOffset = topBannersHeightDp,
-            )
+            CompositionLocalProvider(LocalChatBackgroundActive provides (state.chatBackground != ChatBackground.None)) {
+                TimelineView(
+                    state = state.timelineState,
+                    timelineProtectionState = state.timelineProtectionState,
+                    onUserDataClick = onUserDataClick,
+                    onLinkClick = { link -> onLinkClick(link, false) },
+                    onContentClick = onContentClick,
+                    onGalleryItemClick = onGalleryItemClick,
+                    onMessageLongClick = onMessageLongClick,
+                    onSwipeToReply = onSwipeToReply,
+                    onReactionClick = onReactionClick,
+                    onReactionLongClick = onReactionLongClick,
+                    onMoreReactionsClick = onMoreReactionsClick,
+                    onReadReceiptClick = onReadReceiptClick,
+                    onJoinCallClick = onJoinCallClick,
+                    forceJumpToBottomVisibility = forceJumpToBottomVisibility,
+                    nestedScrollConnection = scrollBehavior.nestedScrollConnection,
+                    floatingDateTopOffset = topBannersHeightDp,
+                )
+            }
 
             if (state.timelineState.timelineMode !is Timeline.Mode.Thread) {
                 Column(
