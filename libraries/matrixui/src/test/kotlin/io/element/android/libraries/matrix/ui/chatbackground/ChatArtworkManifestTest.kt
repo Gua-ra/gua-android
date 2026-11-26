@@ -67,7 +67,7 @@ class ChatArtworkManifestTest {
             } else {
                 val entryCredit = entry.obj("credit")
                 message.that(credit.author).isEqualTo(entryCredit.string("author"))
-                message.that(credit.licence.displayName).isEqualTo(entryCredit.string("licence"))
+                message.that(credit.licence.manifestName).isEqualTo(entryCredit.string("licence"))
                 message.that(credit.licence.deedUrl).isEqualTo(entryCredit.string("licence_url"))
                 message.that(credit.sourceUrl).isEqualTo(entryCredit.getValue("source_url").jsonPrimitive.contentOrNull)
                 message.that(entryCredit.string("modified")).isEqualTo("cropped and resized")
