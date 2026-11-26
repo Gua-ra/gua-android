@@ -517,7 +517,7 @@ class ChatThemeViewTest : RobolectricTest() {
         val eventsRecorder = EventsRecorder<ChatThemeEvent>()
         setChatThemeView(aChatThemeState(current = ChatArtwork.PhotoYukonSled.theme, hasPermission = false, eventSink = eventsRecorder))
         val credit = requireNotNull(ChatArtwork.PhotoYukonSled.credit)
-        onNode(hasText("Photo: ${credit.author} · ${credit.licence.displayName}") and hasClickAction()).assertIsEnabled().performClick()
+        onNode(hasText("Photo: ${credit.author} · ${credit.licence.manifestName}") and hasClickAction()).assertIsEnabled().performClick()
         onNode(hasText(activity!!.getString(R.string.gua_chat_theme_photo_credits)) and hasClickAction()).performScrollTo().performClick()
         eventsRecorder.assertList(listOf(ChatThemeEvent.OpenPhotoCredits, ChatThemeEvent.OpenPhotoCredits))
     }
@@ -547,7 +547,7 @@ class ChatThemeViewTest : RobolectricTest() {
             list.performScrollToIndex(index)
             val inRow = hasParent(hasAnyChild(hasText(context.getString(photo.nameRes))))
             onNode(hasText("Photo: ${credit.author}") and inRow).assertExists()
-            onNode(hasText(credit.licence.displayName) and inRow).assertExists()
+            onNode(hasText(credit.licence.nameRes?.let { context.getString(it) } ?: credit.licence.manifestName) and inRow).assertExists()
             onNode(hasText(context.getString(R.string.gua_chat_theme_photo_changes)) and inRow).assertExists()
             val source = onNode(hasText(context.getString(R.string.gua_chat_theme_photo_source)) and inRow)
             if (credit.sourceUrl == null) source.assertDoesNotExist() else source.assertExists()

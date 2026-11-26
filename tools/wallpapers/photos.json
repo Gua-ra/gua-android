@@ -99,6 +99,20 @@
       "fallback_preset": "mint"
     },
     {
+      "id": "photo-maned-wolf-smiling",
+      "names": { "en": "Smiling Maned Wolf", "pt-BR": "Lobo-guará sorrindo", "es": "Lobo de crin sonriente", "fr": "Loup à crinière souriant" },
+      "author": "Gabriel Bonfa",
+      "licence": "All rights reserved",
+      "licence_url": "https://github.com/Gua-ra/gua-android/blob/develop/tools/wallpapers/licenses/LicenseRef-Gabriel-Bonfa-Photo.txt",
+      "source_url": null,
+      "original_url": null,
+      "original": { "sha256": "15b5d14e1ecfd6b11f37357aaab09c03bcd1edd4d009da7a85483816eda2714e", "width": 3385, "height": 5078 },
+      "crop": { "x": 880, "y": 0, "w": 2343, "h": 5078 },
+      "anchor": { "x": 0.38, "y": 0.32 },
+      "bubble": { "light": "blue", "dark": "purple" },
+      "fallback_preset": "mint"
+    },
+    {
       "id": "photo-yukon-trail",
       "names": { "en": "Yukon Trail", "pt-BR": "Trilha do Yukon", "es": "Sendero del Yukón", "fr": "Piste du Yukon" },
       "author": "Sarah Lacerda",

@@ -67,6 +67,7 @@
   <string name="gua_chat_theme_art_photo_araucaria">Cime d\'araucaria</string>
   <string name="gua_chat_theme_art_photo_maned_wolf">Loup à crinière endormi</string>
   <string name="gua_chat_theme_art_photo_maned_wolf_standing">Loup à crinière</string>
+  <string name="gua_chat_theme_art_photo_maned_wolf_smiling">Loup à crinière souriant</string>
   <string name="gua_chat_theme_art_photo_yukon_trail">Piste du Yukon</string>
   <string name="gua_chat_theme_art_photo_yukon_sun">Soleil du Yukon</string>
   <string name="gua_chat_theme_art_photo_yukon_forest">Piste boréale</string>
@@ -79,4 +80,5 @@
   <string name="gua_chat_theme_art_photo_lac_delage">Lac sous la lune</string>
   <string name="gua_chat_theme_art_photo_quebec_ice">Cèdre verglacé</string>
   <string name="gua_chat_theme_art_photo_quebec_leaves">Feuilles d\'érable</string>
+  <string name="gua_chat_theme_photo_licence_all_rights_reserved">Tous droits réservés</string>
 </resources>

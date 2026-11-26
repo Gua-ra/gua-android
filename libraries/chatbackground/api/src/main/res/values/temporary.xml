@@ -67,6 +67,7 @@
   <string name="gua_chat_theme_art_photo_araucaria">Araucária Crown</string>
   <string name="gua_chat_theme_art_photo_maned_wolf">Sleeping Maned Wolf</string>
   <string name="gua_chat_theme_art_photo_maned_wolf_standing">Maned Wolf</string>
+  <string name="gua_chat_theme_art_photo_maned_wolf_smiling">Smiling Maned Wolf</string>
   <string name="gua_chat_theme_art_photo_yukon_trail">Yukon Trail</string>
   <string name="gua_chat_theme_art_photo_yukon_sun">Yukon Sun</string>
   <string name="gua_chat_theme_art_photo_yukon_forest">Boreal Trail</string>
@@ -79,4 +80,5 @@
   <string name="gua_chat_theme_art_photo_lac_delage">Moonlit Lake</string>
   <string name="gua_chat_theme_art_photo_quebec_ice">Cedar Ice</string>
   <string name="gua_chat_theme_art_photo_quebec_leaves">Maple Leaves</string>
+  <string name="gua_chat_theme_photo_licence_all_rights_reserved">All rights reserved</string>
 </resources>
