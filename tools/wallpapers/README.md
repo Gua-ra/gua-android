@@ -49,7 +49,7 @@ Pinned tools, so a re-bake is byte-identical: Node 22, playwright-core 1.54.2 wi
 
 ## Photo wallpapers
 
-The photo wallpapers are not under the AGPL. Each keeps its own licence, CC0 1.0 or CC BY 4.0, as listed in `THIRD_PARTY_NOTICES.md`; the legal code of both is in `licenses/`. Originals never go in a repository.
+The photo wallpapers are not under the AGPL. Each keeps its own licence, CC0 1.0 or CC BY 4.0, as listed in `THIRD_PARTY_NOTICES.md`; the legal code of both is in `licenses/`. Smiling Maned Wolf is the exception: its author licensed it to Gua alone, all rights reserved, on the terms in `licenses/LicenseRef-Gabriel-Bonfa-Photo.txt`, which its `licence_url` points to. Originals never go in a repository.
 
 ```sh
 node tools/wallpapers/bake.mjs --photos <originals> --android . --ios ../gua-ios --cwebp /usr/local/bin/cwebp

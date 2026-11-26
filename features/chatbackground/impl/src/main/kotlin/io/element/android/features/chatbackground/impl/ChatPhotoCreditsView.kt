@@ -44,6 +44,7 @@ import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.chatbackground.api.ChatArtwork
 import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.chatbackground.api.ChatPhotoCredit
+import io.element.android.libraries.chatbackground.api.ChatPhotoLicence
 import io.element.android.libraries.designsystem.components.button.BackButton
 import io.element.android.libraries.designsystem.theme.components.ButtonSize
 import io.element.android.libraries.designsystem.theme.components.Scaffold
@@ -55,8 +56,11 @@ import io.element.android.libraries.matrix.ui.chatbackground.ChatBackgroundCanva
 private val THUMBNAIL_SHAPE = RoundedCornerShape(8.dp)
 
 @Composable
+internal fun ChatPhotoLicence.displayName(): String = nameRes?.let { stringResource(it) } ?: manifestName
+
+@Composable
 internal fun photoCreditText(credit: ChatPhotoCredit, withLicence: Boolean): String = if (withLicence) {
-    stringResource(R.string.gua_chat_theme_photo_credit_licence, credit.author, credit.licence.displayName)
+    stringResource(R.string.gua_chat_theme_photo_credit_licence, credit.author, credit.licence.displayName())
 } else {
     stringResource(R.string.gua_chat_theme_photo_credit, credit.author)
 }
@@ -157,7 +161,7 @@ private fun PhotoCreditRow(
                 color = ElementTheme.colors.textSecondary,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                LinkText(text = credit.licence.displayName, url = credit.licence.deedUrl, onOpenUrl = onOpenUrl)
+                LinkText(text = credit.licence.displayName(), url = credit.licence.deedUrl, onOpenUrl = onOpenUrl)
                 credit.sourceUrl?.let { url ->
                     LinkText(text = stringResource(R.string.gua_chat_theme_photo_source), url = url, onOpenUrl = onOpenUrl)
                 }

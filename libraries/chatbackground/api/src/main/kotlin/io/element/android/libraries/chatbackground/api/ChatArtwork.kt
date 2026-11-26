@@ -312,6 +312,21 @@ enum class ChatArtwork(
             sourceUrl = "https://nationalzoo.si.edu/object/nzp_NZP-20160729-011GM",
         ),
     ),
+    PhotoManedWolfSmiling(
+        id = "photo-maned-wolf-smiling",
+        section = ChatArtworkSection.Photos,
+        isLive = false,
+        nameRes = R.string.gua_chat_theme_art_photo_maned_wolf_smiling,
+        bubble = ChatBubbleColor.Blue,
+        bubbleDark = ChatBubbleColor.Purple,
+        anchor = UnitPoint(0.38f, 0.32f),
+        fallbackPreset = ChatBackgroundPreset.Mint,
+        credit = ChatPhotoCredit(
+            author = "Gabriel Bonfa",
+            licence = ChatPhotoLicence.AllRightsReserved,
+            sourceUrl = null,
+        ),
+    ),
     PhotoYukonTrail(
         id = "photo-yukon-trail",
         section = ChatArtworkSection.Photos,

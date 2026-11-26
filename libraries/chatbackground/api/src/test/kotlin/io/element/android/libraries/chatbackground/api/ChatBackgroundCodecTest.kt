@@ -153,10 +153,12 @@ class ChatBackgroundCodecTest {
 
     @Test
     fun `the photo licences carry their own names and deed links`() {
-        assertThat(ChatPhotoLicence.entries.map { it.displayName to it.deedUrl }).containsExactly(
+        assertThat(ChatPhotoLicence.entries.map { it.manifestName to it.deedUrl }).containsExactly(
             "CC0 1.0" to "https://creativecommons.org/publicdomain/zero/1.0/",
             "CC BY 4.0" to "https://creativecommons.org/licenses/by/4.0/",
+            "All rights reserved" to "https://github.com/Gua-ra/gua-android/blob/develop/tools/wallpapers/licenses/LicenseRef-Gabriel-Bonfa-Photo.txt",
         ).inOrder()
+        assertThat(ChatPhotoLicence.entries.filter { it.nameRes != null }).containsExactly(ChatPhotoLicence.AllRightsReserved)
     }
 
     @Test
