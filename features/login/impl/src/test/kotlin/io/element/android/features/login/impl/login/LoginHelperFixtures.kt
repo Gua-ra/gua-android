@@ -12,10 +12,13 @@ import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
 import io.element.android.libraries.guaresolver.GuaDeployment
 import io.element.android.libraries.guaresolver.ResolverClient
 import io.element.android.libraries.guaresolver.genesis.AccountGenesisManager
+import io.element.android.libraries.guaresolver.verification.ResolverVerifier
 import io.element.android.libraries.matrix.api.auth.MatrixAuthenticationService
 import io.element.android.libraries.matrix.test.auth.FakeMatrixAuthenticationService
 import io.element.android.libraries.oauth.api.OAuthActionFlow
 import io.element.android.libraries.oauth.test.FakeOAuthActionFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 fun createLoginHelper(
     oAuthActionFlow: OAuthActionFlow = FakeOAuthActionFlow(),
@@ -23,6 +26,8 @@ fun createLoginHelper(
     resolverClient: ResolverClient = FakeResolverClient(),
     featureFlagService: FeatureFlagService = FakeFeatureFlagService(),
     accountGenesisManager: AccountGenesisManager = FakeAccountGenesisManager(),
+    resolverVerifier: ResolverVerifier = FakeResolverVerifier(),
+    appCoroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Unconfined),
     deployment: GuaDeployment = FakeGuaDeployment(),
 ): LoginHelper = LoginHelper(
     oAuthActionFlow = oAuthActionFlow,
@@ -30,5 +35,7 @@ fun createLoginHelper(
     resolverClient = resolverClient,
     featureFlagService = featureFlagService,
     accountGenesisManager = accountGenesisManager,
+    resolverVerifier = resolverVerifier,
+    appCoroutineScope = appCoroutineScope,
     deployment = deployment,
 )

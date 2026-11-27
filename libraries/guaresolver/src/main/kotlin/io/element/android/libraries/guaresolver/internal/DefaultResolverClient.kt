@@ -19,17 +19,13 @@ import io.element.android.libraries.guaresolver.ResolverClient
 import io.element.android.libraries.guaresolver.ResolverError
 import io.element.android.libraries.guaresolver.ResolverResolveOptions
 import io.element.android.libraries.network.RetrofitFactory
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import okhttp3.Headers
 import retrofit2.HttpException
 import timber.log.Timber
 
-/**
- * GUA FORK: default [ResolverClient]. Talks to the active [GuaDeployment]'s resolver via Retrofit,
- * reusing the app-wide [RetrofitFactory] (OkHttp + kotlinx-serialization). Mirrors iOS
- * `ResolverClient`.
- *
- * PII note: the phone number is sent plaintext over TLS to the resolver only, and is never logged.
- */
+/** PII: the phone number is sent only to the resolver, over TLS, and is never logged. */
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class DefaultResolverClient(
@@ -84,6 +80,7 @@ class DefaultResolverClient(
                     masIssuer = ref.masIssuer,
                     region = ref.region,
                 ),
+                rosterVersion = (response.rosterVersion as? JsonPrimitive)?.takeUnless { it.isString }?.longOrNull,
             )
         )
     }
@@ -98,11 +95,7 @@ class DefaultResolverClient(
     }
 }
 
-/**
- * The Retry-After delay in whole seconds, rounded up, from delta-seconds or an HTTP-date. An HTTP-date
- * is measured from the response's Date header when there is one, so client clock skew does not change
- * the wait.
- */
+/** An HTTP-date is measured from the response's Date header when there is one, so client clock skew does not change the wait. */
 internal fun Headers.retryAfterSeconds(nowMillis: Long = System.currentTimeMillis()): Long? {
     val value = get("Retry-After")?.trim()?.takeIf { it.isNotEmpty() } ?: return null
     if (value.all { it in '0'..'9' }) return value.toLongOrNull()
