@@ -10,15 +10,11 @@ package io.element.android.libraries.guaresolver.internal
 import io.element.android.libraries.guaresolver.FederationRoster
 import io.element.android.libraries.guaresolver.ResolverRoutingClaimsEnvelope
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 
-/**
- * GUA FORK: Retrofit surface for the Gua resolver endpoints. Internal to the module; the public
- * API only ever exposes [io.element.android.libraries.guaresolver.HomeserverResolution] and
- * [FederationRoster].
- */
 internal interface ResolverApi {
     @POST("resolve")
     suspend fun resolve(@Body body: ResolveRequest): ResolveResponse
@@ -53,6 +49,8 @@ internal data class ResolveResponse(
     val exists: Boolean,
     val homeserver: HomeserverRef? = null,
     val registerAt: HomeserverRef? = null,
+    // Only the verifier reads it, so it is decoded loosely: a malformed value must not fail the sign-in.
+    val rosterVersion: JsonElement? = null,
     val trace: DecisionTrace? = null,
 )
 
@@ -67,6 +65,5 @@ internal data class DecisionTrace(
     val delegatedZoneId: String? = null,
     val assignmentPolicy: String? = null,
     val homeserverId: String? = null,
-    /** The roster version the decision was made against; what a verifying client pins. */
     val rosterVersion: Long? = null,
 )

@@ -195,6 +195,15 @@ enum class FeatureFlags(
         defaultValue = { buildMeta -> buildMeta.buildType != BuildType.RELEASE || buildMeta.applicationId.endsWith(".dev") },
         isFinished = false,
     ),
+    ResolverVerification(
+        key = "feature.resolver_verification",
+        title = "Resolver verification",
+        description = "GUA FORK: after a phone number is resolved, verify the routing service's answer against its signed roster, " +
+            "transparency log and routing policy, and log the outcome. Report-only: it never changes which server the app connects to." +
+            "\n\nOff is the kill switch.",
+        defaultValue = { true },
+        isFinished = false,
+    ),
     ReceiveNotificationsFromOtherSignedInAccounts(
         key = "feature.receive_notifications_from_other_signed_in_accounts",
         title = "Receive notifications from other signed-in accounts",
