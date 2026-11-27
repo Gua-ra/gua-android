@@ -429,6 +429,35 @@ class ChatThemePresenterTest : RobolectricTest() {
     }
 
     @Test
+    fun `the photo credits open without permission, and cancel closes them first`() = runTest {
+        createChatPresenter(service = FakeChatBackgroundService(ChatArtwork.PhotoIpe.theme), canChange = false).test {
+            val state = consumeItemsUntilPredicate { it.hasPermission == false }.last()
+            assertThat(state.showsPhotoCredits).isFalse()
+            state.eventSink(ChatThemeEvent.OpenPhotoCredits)
+            val credits = awaitItem()
+            assertThat(credits.showsPhotoCredits).isTrue()
+            credits.eventSink(ChatThemeEvent.Cancel)
+            assertThat(awaitItem().showsPhotoCredits).isFalse()
+        }
+    }
+
+    @Test
+    fun `the photo credits open over the preview of a photo, which stays open behind them`() = runTest {
+        val ipe = ChatArtwork.PhotoIpe.theme
+        createChatPresenter().test {
+            consumeItemsUntilPredicate { it.canChange }.last().eventSink(ChatThemeEvent.SelectTheme(ipe))
+            awaitItem().eventSink(ChatThemeEvent.OpenPhotoCredits)
+            val credits = awaitItem()
+            assertThat(credits.showsPhotoCredits).isTrue()
+            assertThat(credits.preview).isEqualTo(ChatThemePreview(shown = ipe, saved = ipe))
+            credits.eventSink(ChatThemeEvent.Cancel)
+            val back = awaitItem()
+            assertThat(back.showsPhotoCredits).isFalse()
+            assertThat(back.preview).isEqualTo(ChatThemePreview(shown = ipe, saved = ipe))
+        }
+    }
+
+    @Test
     fun `a chosen photo is previewed, adjusted, uploaded and saved with the bubble unchanged`() = runTest {
         val service = FakeChatBackgroundService(auroraGreen)
         val upload = aChatBackgroundPhotoUpload(size = 1_000)

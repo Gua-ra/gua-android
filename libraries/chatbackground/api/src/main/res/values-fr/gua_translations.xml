@@ -55,4 +55,25 @@
   <string name="gua_chat_theme_art_doodles_canada">Canada</string>
   <string name="gua_chat_theme_art_paper">Papier</string>
   <string name="gua_chat_theme_art_paper_cut">Papier découpé</string>
+  <string name="gua_chat_theme_art_photo_lencois_lagoon">Lagune des Lençóis</string>
+  <string name="gua_chat_theme_art_photo_lencois_dunes">Crépuscule sur les Lençóis</string>
+  <string name="gua_chat_theme_art_photo_gruta_azul">Grotte bleue</string>
+  <string name="gua_chat_theme_art_photo_ipe">Ipê au couchant</string>
+  <string name="gua_chat_theme_art_photo_araucaria">Cime d\'araucaria</string>
+  <string name="gua_chat_theme_art_photo_maned_wolf">Loup à crinière endormi</string>
+  <string name="gua_chat_theme_art_photo_maned_wolf_standing">Loup à crinière</string>
+  <string name="gua_chat_theme_art_photo_maned_wolf_smiling">Loup à crinière souriant</string>
+  <string name="gua_chat_theme_art_photo_yukon_trail">Piste du Yukon</string>
+  <string name="gua_chat_theme_art_photo_yukon_sun">Soleil du Yukon</string>
+  <string name="gua_chat_theme_art_photo_yukon_forest">Piste boréale</string>
+  <string name="gua_chat_theme_art_photo_yukon_sled">Traîneau au Yukon</string>
+  <string name="gua_chat_theme_art_photo_yukon_sled_2">Chiens de traîneau</string>
+  <string name="gua_chat_theme_art_photo_peyto_lake">Lac Peyto</string>
+  <string name="gua_chat_theme_art_photo_lone_canoe">Canot solitaire</string>
+  <string name="gua_chat_theme_art_photo_jasper_aurora">Aurore à Jasper</string>
+  <string name="gua_chat_theme_art_photo_nunavik_aurora">Aurore au Nunavik</string>
+  <string name="gua_chat_theme_art_photo_lac_delage">Lac sous la lune</string>
+  <string name="gua_chat_theme_art_photo_quebec_ice">Cèdre verglacé</string>
+  <string name="gua_chat_theme_art_photo_quebec_leaves">Feuilles d\'érable</string>
+  <string name="gua_chat_theme_photo_licence_all_rights_reserved">Tous droits réservés</string>
 </resources>

@@ -36,6 +36,7 @@ import coil3.compose.useExistingImageAsPlaceholder
 import coil3.request.ImageRequest
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.chatbackground.api.ChatArtwork
+import io.element.android.libraries.chatbackground.api.ChatBackground
 import io.element.android.libraries.core.extensions.runCatchingExceptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -53,18 +54,24 @@ internal fun ArtBackground(
     artwork: ChatArtwork,
     modifier: Modifier = Modifier,
 ) {
-    BoxWithConstraints(modifier = modifier.fillMaxSize().wallpaperGrain(rememberWallpaperGrain())) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val widthPx = with(density) { maxWidth.toPx() }.roundToInt().coerceIn(1, MAX_DECODED_EDGE_PX)
         val heightPx = with(density) { maxHeight.toPx() }.roundToInt().coerceIn(1, MAX_DECODED_EDGE_PX)
-        if (LocalInspectionMode.current) {
-            InspectedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
-        } else {
-            LoadedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
+        Box(Modifier.fillMaxSize().wallpaperGrain(rememberWallpaperGrain())) {
+            if (LocalInspectionMode.current) {
+                InspectedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
+            } else {
+                LoadedArtStill(artwork = artwork, widthPx = widthPx, heightPx = heightPx)
+            }
         }
-        ChatBackgroundScrim(photoDim = null)
+        ChatBackgroundScrim(photoDim = artwork.darkDim)
     }
 }
+
+/** A photo has one image for both appearances, so dark mode dims it like a user's own photo. */
+internal val ChatArtwork.darkDim: Int?
+    get() = if (isPhoto) ChatBackground.Photo.DEFAULT_DIM else null
 
 @Composable
 private fun LoadedArtStill(artwork: ChatArtwork, widthPx: Int, heightPx: Int) {

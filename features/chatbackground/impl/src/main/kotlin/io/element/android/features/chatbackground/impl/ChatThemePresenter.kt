@@ -52,6 +52,7 @@ class ChatThemePresenter(
         var page by remember { mutableStateOf<ChatThemePage>(ChatThemePage.Gallery) }
         var preview by remember { mutableStateOf<ChatThemePreview?>(null) }
         var photoDraft by remember { mutableStateOf<ChatBackgroundPhotoDraft?>(null) }
+        var showsPhotoCredits by remember { mutableStateOf(false) }
         var operation by remember { mutableStateOf(ChatThemeOperation.Save) }
         val action = remember { mutableStateOf<AsyncAction<Unit>>(AsyncAction.Uninitialized) }
 
@@ -117,8 +118,10 @@ class ChatThemePresenter(
                         preview = preview?.copy(isDarkPreview = event.isDark)
                     }
                 }
+                ChatThemeEvent.OpenPhotoCredits -> showsPhotoCredits = true
                 ChatThemeEvent.Save -> if (canChange) save()
                 ChatThemeEvent.Cancel -> when {
+                    showsPhotoCredits -> showsPhotoCredits = false
                     photoDraft != null -> photoDraft = null
                     preview != null -> preview = null
                     else -> page = ChatThemePage.Gallery
@@ -136,6 +139,7 @@ class ChatThemePresenter(
             page = page,
             preview = preview,
             photoDraft = photoDraft,
+            showsPhotoCredits = showsPhotoCredits,
             operation = operation,
             action = action.value,
             eventSink = ::handleEvent,
